@@ -36,7 +36,10 @@ public class CacheData implements Serializable {
     private final CacheConfiguration cacheCfg;
 
     /** */
-    private final Integer cacheId;
+    private final int cacheId;
+
+    /** */
+    private final int grpId;
 
     /** */
     private final CacheType cacheType;
@@ -76,6 +79,7 @@ public class CacheData implements Serializable {
      */
     CacheData(CacheConfiguration cacheCfg,
         int cacheId,
+        int grpId,
         CacheType cacheType,
         AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
@@ -89,9 +93,11 @@ public class CacheData implements Serializable {
         assert startTopVer != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
         assert template || cacheId != 0 : cacheCfg.getName();
+        assert template || grpId != 0 : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
         this.cacheId = cacheId;
+        this.grpId = grpId;
         this.cacheType = cacheType;
         this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
@@ -103,9 +109,16 @@ public class CacheData implements Serializable {
     }
 
     /**
+     * @return Cache group ID.
+     */
+    public int groupId() {
+        return grpId;
+    }
+
+    /**
      * @return Cache ID.
      */
-    public Integer cacheId() {
+    public int cacheId() {
         return cacheId;
     }
 

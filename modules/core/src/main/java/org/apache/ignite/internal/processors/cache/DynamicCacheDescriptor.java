@@ -99,7 +99,7 @@ public class DynamicCacheDescriptor {
     private QuerySchema schema;
 
     /** */
-    private int grpId;
+    private final CacheGroupDescriptor grpDesc;
 
     /**
      * @param ctx Context.
@@ -112,16 +112,17 @@ public class DynamicCacheDescriptor {
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
-        int grpId,
+        CacheGroupDescriptor grpDesc,
         boolean template,
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
+        assert grpDesc != null || template;
         assert schema != null;
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
-        this.grpId = grpId;
+        this.grpDesc = grpDesc;
         this.template = template;
         this.deploymentId = deploymentId;
 
@@ -137,8 +138,13 @@ public class DynamicCacheDescriptor {
         }
     }
 
-    public int groupId() {
-        return grpId;
+    /**
+     * @return Cache group ID.
+     */
+    public CacheGroupDescriptor groupDescriptor() {
+        assert grpDesc != null : this;
+
+        return grpDesc;
     }
 
     /**

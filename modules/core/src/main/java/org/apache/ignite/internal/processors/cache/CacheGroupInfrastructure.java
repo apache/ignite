@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -28,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
 /**
@@ -47,13 +44,15 @@ public class CacheGroupInfrastructure {
     /** */
     private final GridCacheSharedContext ctx;
 
+    /** */
     private GridDhtPartitionTopology top;
 
     /**
+     * @param id Group ID.
      * @param ctx Context.
      * @param ccfg Cache configuration.
      */
-    public CacheGroupInfrastructure(int id, GridCacheSharedContext ctx, CacheConfiguration ccfg) {
+    CacheGroupInfrastructure(int id, GridCacheSharedContext ctx, CacheConfiguration ccfg) {
         assert id != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
 

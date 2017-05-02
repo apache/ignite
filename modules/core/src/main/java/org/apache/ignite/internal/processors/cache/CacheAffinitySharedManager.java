@@ -82,7 +82,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private AffinityTopologyVersion lastAffVer;
 
     /** Registered caches (updated from exchange thread). */
-    private final Map<Integer, DynamicCacheDescriptor> registeredCaches = new HashMap<>();
+    private final Map<Integer, CacheGroupDescriptor> registeredCacheGrps = new HashMap<>();
 
     /** */
     private WaitRebalanceInfo waitInfo;
@@ -127,14 +127,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
         if (type == EVT_NODE_JOINED && node.isLocal()) {
             // Clean-up in case of client reconnect.
-            registeredCaches.clear();
+            registeredCacheGrps.clear();
 
             affCalcVer = null;
 
             lastAffVer = null;
 
-            for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors())
-                registeredCaches.put(desc.cacheId(), desc);
+            for (CacheGroupDescriptor desc : cctx.cache().cacheGroupDescriptors())
+                registeredCacheGrps.put(desc.groupId(), desc);
         }
 
         if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) {
@@ -382,6 +382,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
+            DynamicCacheDescriptor desc = action.descriptor();
+
             DynamicCacheChangeRequest req = action.request();
 
             Integer cacheId = CU.cacheId(req.cacheName());
@@ -404,7 +406,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cctx.cache().prepareCacheStart(req, nearCfg, action.descriptor(), fut.topologyVersion());
 
             if (fut.isCacheAdded(cacheId, fut.topologyVersion())) {
-                if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
+                if (fut.discoCache().cacheGroupAffinityNodes(desc.groupDescriptor().groupId()).isEmpty())
                     U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
             }
 
@@ -862,7 +864,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
         else {
             GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                aff.cacheName(),
+                aff.groupId(),
                 fut.topologyVersion(),
                 fut.discoCache());
 

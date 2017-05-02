@@ -63,7 +63,7 @@ public class GridAffinityAssignmentCache {
     /** Group name. */
     private final String grpName;
 
-    /** */
+    /** Group ID. */
     private final int grpId;
 
     /** Number of backups. */
@@ -162,12 +162,18 @@ public class GridAffinityAssignmentCache {
         return similarAffKey;
     }
 
+    /**
+     * @return Cache group name.
+     */
     public String groupName() {
         return grpName;
     }
 
+    /**
+     * @return Cache group ID.
+     */
     public int groupId() {
-        return 0;
+        return grpId;
     }
 
     /**
@@ -265,7 +271,7 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted;
 
         if (!locCache) {
-            sorted = new ArrayList<>(discoCache.cacheAffinityNodes(cacheId()));
+            sorted = new ArrayList<>(discoCache.cacheGroupAffinityNodes(groupId()));
 
             Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
         }

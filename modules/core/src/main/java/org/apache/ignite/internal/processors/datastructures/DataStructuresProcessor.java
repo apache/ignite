@@ -224,10 +224,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      */
     private void onKernalStart0(boolean activeOnStart){
-        // TODO IGNITE-5075.
-        if (true)
-            return;
-
         if (!activeOnStart && ctx.state().active())
             ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 

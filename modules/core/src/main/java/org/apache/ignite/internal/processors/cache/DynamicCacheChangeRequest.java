@@ -402,14 +402,6 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.schema = schema != null ? schema.copy() : null;
     }
 
-    public DynamicCacheDescriptor cacheDescriptor() {
-        return cacheDesc;
-    }
-
-    public void cacheDescriptor(DynamicCacheDescriptor cacheDesc) {
-        this.cacheDesc = cacheDesc;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());

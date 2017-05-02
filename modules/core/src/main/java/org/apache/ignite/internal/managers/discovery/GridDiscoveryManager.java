@@ -69,11 +69,11 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -248,10 +248,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         new ConcurrentHashMap8<>();
 
     /** Local node initialization event listeners. */
-    private final Collection<IgniteInClosure<ClusterNode>> localNodeInitLsnrs = new ArrayList<>();
+    private final Collection<IgniteInClosure<ClusterNode>> locNodeInitLsnrs = new ArrayList<>();
 
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
+
+    /** */
+    private Map<Integer, CacheGroupAffinity> registeredCacheGrps = new HashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -302,24 +305,38 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Adds dynamic cache filter.
-     *
-     * @param cacheName Cache name.
-     * @param filter Cache filter.
-     * @param nearEnabled Near enabled flag.
+     * @param grpDesc Cache group descriptor.
+     * @param filter Node filter.
      * @param cacheMode Cache mode.
      */
+    public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
+        CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
+            new CacheGroupAffinity(grpDesc.groupName(), filter, cacheMode));
+
+        assert old == null : old;
+    }
+
+    /**
+     * Adds dynamic cache filter.
+     *
+     * @param grpId Cache group ID.
+     * @param cacheName Cache name.
+     * @param nearEnabled Near enabled flag.
+     */
     public void setCacheFilter(
+        int grpId,
         String cacheName,
-        IgnitePredicate<ClusterNode> filter,
-        boolean nearEnabled,
-        CacheMode cacheMode
+        boolean nearEnabled
     ) {
         if (!registeredCaches.containsKey(cacheName)) {
-            if (cacheMode == CacheMode.REPLICATED)
+            CacheGroupAffinity grp = registeredCacheGrps.get(grpId);
+
+            assert grp != null : "Failed to find cache group [grpId=" + grpId + ", cache=" + cacheName + ']';
+
+            if (grp.cacheMode == CacheMode.REPLICATED)
                 nearEnabled = false;
             
-            registeredCaches.put(cacheName, new CachePredicate(filter, nearEnabled, cacheMode));
+            registeredCaches.put(cacheName, new CachePredicate(grp, nearEnabled));
         }
     }
 
@@ -471,7 +488,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public void onLocalNodeInitialized(ClusterNode locNode) {
-                for (IgniteInClosure<ClusterNode> lsnr : localNodeInitLsnrs)
+                for (IgniteInClosure<ClusterNode> lsnr : locNodeInitLsnrs)
                     lsnr.apply(locNode);
             }
 
@@ -779,7 +796,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param lsnr Listener to add.
      */
     public void addLocalNodeInitializedEventListener(IgniteInClosure<ClusterNode> lsnr) {
-        localNodeInitLsnrs.add(lsnr);
+        locNodeInitLsnrs.add(lsnr);
     }
 
     /**
@@ -1688,27 +1705,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets cache nodes for cache with given name that participate in affinity calculation.
-     *
-     * @param cacheName Cache name.
-     * @param topVer Topology version.
-     * @return Collection of cache affinity nodes.
-     */
-    public Collection<ClusterNode> cacheAffinityNodes(@Nullable String cacheName, AffinityTopologyVersion topVer) {
-        int cacheId = CU.cacheId(cacheName);
-
-        return resolveDiscoCache(cacheId, topVer).cacheAffinityNodes(cacheId);
-    }
-
-    /**
      * Gets cache nodes for cache with given ID that participate in affinity calculation.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param topVer Topology version.
      * @return Collection of cache affinity nodes.
      */
-    public Collection<ClusterNode> cacheAffinityNodes(int cacheId, AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(cacheId, topVer).cacheAffinityNodes(cacheId);
+    public Collection<ClusterNode> cacheGroupAffinityNodes(int grpId, AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(grpId, topVer).cacheGroupAffinityNodes(grpId);
     }
 
     /**
@@ -1771,7 +1775,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             if (!CU.isSystemCache(cacheName) && !CU.isIgfsCache(ctx.config(), cacheName) &&
                 pred != null && pred.cacheNode(node))
-                caches.put(cacheName, pred.cacheMode);
+                caches.put(cacheName, pred.aff.cacheMode);
         }
 
         return caches;
@@ -1791,21 +1795,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Gets discovery cache for given topology version.
      *
-     * @param cacheId Cache ID (participates in exception message).
+     * @param grpId Cache group ID (participates in exception message).
      * @param topVer Topology version.
      * @return Discovery cache.
      */
-    private DiscoCache resolveDiscoCache(int cacheId, AffinityTopologyVersion topVer) {
+    private DiscoCache resolveDiscoCache(int grpId, AffinityTopologyVersion topVer) {
         Snapshot snap = topSnap.get();
 
         DiscoCache cache = AffinityTopologyVersion.NONE.equals(topVer) || topVer.equals(snap.topVer) ?
             snap.discoCache : discoCacheHist.get(topVer);
 
         if (cache == null) {
-            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheId);
+            CacheGroupAffinity grpAff = registeredCacheGrps.get(grpId);
 
             throw new IgniteException("Failed to resolve nodes topology [" +
-                "cacheName=" + (desc != null ? desc.cacheConfiguration().getName() : "N/A") +
+                "cacheGrp=" + (grpAff != null ? grpAff.grpName : "N/A") +
                 ", topVer=" + topVer +
                 ", history=" + discoCacheHist.keySet() +
                 ", snap=" + snap +
@@ -2019,7 +2023,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             " [rmtNodes=" + rmtNodes + ", loc=" + loc + ']';
 
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
-        Map<Integer, List<ClusterNode>> affCacheNodes = U.newHashMap(allNodes.size());
+        Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
 
         Set<ClusterNode> allNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
         Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
@@ -2030,6 +2034,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         for (ClusterNode node : allNodes) {
             assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
             assert !node.isDaemon();
+
+            for (Map.Entry<Integer, CacheGroupAffinity> e : registeredCacheGrps.entrySet()) {
+                CacheGroupAffinity grpAff = e.getValue();
+                Integer grpId = e.getKey();
+
+                if (grpAff.cacheFilter.apply(node)) {
+                    List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
+
+                    if (nodes == null)
+                        cacheGrpAffNodes.put(grpId, nodes = new ArrayList<>());
+
+                    nodes.add(node);
+                }
+            }
 
             for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
                 String cacheName = entry.getKey();
@@ -2045,9 +2063,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         rmtNodesWithCaches.add(node);
 
                     addToMap(allCacheNodes, cacheName, node);
-
-                    if (filter.dataNode(node))
-                        addToMap(affCacheNodes, cacheName, node);
 
                     if (filter.nearNode(node))
                         nearEnabledCaches.add(CU.cacheId(cacheName));
@@ -2065,7 +2080,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             U.sealList(allNodesWithCaches),
             U.sealList(rmtNodesWithCaches),
             Collections.unmodifiableMap(allCacheNodes),
-            Collections.unmodifiableMap(affCacheNodes),
+            Collections.unmodifiableMap(cacheGrpAffNodes),
             Collections.unmodifiableMap(nodeMap),
             Collections.unmodifiableSet(nearEnabledCaches),
             alives);
@@ -2604,9 +2619,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Discovery topology future. */
     private static class DiscoTopologyFuture extends GridFutureAdapter<Long> implements GridLocalEventListener {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private GridKernalContext ctx;
 
         /** Topology await version. */
@@ -2681,32 +2693,54 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * TODO IGNTIE-5075: also store list of started caches.
+     */
+    private static class CacheGroupAffinity {
+        /** */
+        private final String grpName;
+
+        /** Cache filter. */
+        private final IgnitePredicate<ClusterNode> cacheFilter;
+
+        /** Cache mode. */
+        private final CacheMode cacheMode;
+
+        /**
+         * @param grpName Group name.
+         * @param cacheFilter Node filter.
+         * @param cacheMode Cache mode.
+         */
+        CacheGroupAffinity(String grpName,
+            IgnitePredicate<ClusterNode> cacheFilter,
+            CacheMode cacheMode) {
+            this.grpName = grpName;
+            this.cacheFilter = cacheFilter;
+            this.cacheMode = cacheMode;
+        }
+    }
+
+    /**
      * Cache predicate.
      */
     private static class CachePredicate {
         /** Cache filter. */
-        private final IgnitePredicate<ClusterNode> cacheFilter;
+        private final CacheGroupAffinity aff;
 
         /** If near cache is enabled on data nodes. */
         private final boolean nearEnabled;
-
-        /** Cache mode. */
-        private final CacheMode cacheMode;
 
         /** Collection of client near nodes. */
         private final ConcurrentHashMap<UUID, Boolean> clientNodes;
 
         /**
-         * @param cacheFilter Cache filter.
+         * @param aff Cache group affinity.
          * @param nearEnabled Near enabled flag.
-         * @param cacheMode Cache mode.
          */
-        private CachePredicate(IgnitePredicate<ClusterNode> cacheFilter, boolean nearEnabled, CacheMode cacheMode) {
-            assert cacheFilter != null;
+        private CachePredicate(CacheGroupAffinity aff, boolean nearEnabled) {
+            assert aff != null;
 
-            this.cacheFilter = cacheFilter;
+            this.aff = aff;
             this.nearEnabled = nearEnabled;
-            this.cacheMode = cacheMode;
 
             clientNodes = new ConcurrentHashMap<>();
         }
@@ -2741,7 +2775,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return CU.affinityNode(node, cacheFilter);
+            return CU.affinityNode(node, aff.cacheFilter);
         }
 
         /**
@@ -2749,7 +2783,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !node.isDaemon() && (CU.affinityNode(node, cacheFilter) || clientNodes.containsKey(node.id()));
+            return !node.isDaemon() && (CU.affinityNode(node, aff.cacheFilter) || clientNodes.containsKey(node.id()));
         }
 
         /**
@@ -2757,7 +2791,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if near cache is present on the given nodes.
          */
         public boolean nearNode(ClusterNode node) {
-            if (CU.affinityNode(node, cacheFilter))
+            if (CU.affinityNode(node, aff.cacheFilter))
                 return nearEnabled;
 
             Boolean near = clientNodes.get(node.id());

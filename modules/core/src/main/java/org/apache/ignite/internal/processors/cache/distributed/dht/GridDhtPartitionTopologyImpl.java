@@ -991,7 +991,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         AffinityTopologyVersion topVer,
         GridDhtPartitionState state,
         GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(discoCache.cacheAffinityNodes(cctx.cacheId())) : null;
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ?
+            F.nodeIds(discoCache.cacheGroupAffinityNodes(cctx.group().groupId())) :
+            null;
 
         lock.readLock().lock();
 

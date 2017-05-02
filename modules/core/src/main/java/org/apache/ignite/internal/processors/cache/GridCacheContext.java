@@ -329,7 +329,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert locStartTopVer != null : cacheCfg.getName();
 
         assert grp != null;
-
         assert evtMgr != null;
         assert storeMgr != null;
         assert evictMgr != null;
@@ -394,6 +393,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
 
+    /**
+     * @return Cache group infrastructure.
+     */
     public CacheGroupInfrastructure group() {
         return grp;
     }

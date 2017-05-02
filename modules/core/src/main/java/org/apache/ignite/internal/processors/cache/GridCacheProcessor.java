@@ -678,11 +678,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheType cacheType;
 
             if (CU.isUtilityCache(cfg.getName()))
-            cacheType = CacheType.UTILITY;
-        else if (internalCaches.contains(cfg.getName()))
-            cacheType = CacheType.INTERNAL;
-        else
-            cacheType = CacheType.USER;
+                cacheType = CacheType.UTILITY;
+            else if (internalCaches.contains(cfg.getName()))
+                cacheType = CacheType.INTERNAL;
+            else
+                cacheType = CacheType.USER;
 
             if (cacheType != CacheType.USER && cfg.getMemoryPolicyName() == null)
                 cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
@@ -769,23 +769,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         internalCaches.add(CU.ATOMICS_CACHE_NAME);
     }
 
+    /**
+     * @param grpId Group ID.
+     * @return
+     */
     @Nullable public CacheGroupInfrastructure cacheGroup(int grpId) {
         return cacheGrps.get(grpId);
     }
 
+    /**
+     * @return Cache groups.
+     */
     public Collection<CacheGroupInfrastructure> cacheGroups() {
         return cacheGrps.values();
-    }
-
-    private int nextCacheGroupId(CacheConfiguration ccfg) {
-        if (ccfg.getGroupName() != null) {
-            for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
-                if (ccfg.getGroupName().equals(cacheDesc.cacheConfiguration().getGroupName()))
-                    return cacheDesc.groupId();
-            }
-        }
-
-        return registeredCaches.size() + 1;
     }
 
     /** {@inheritDoc} */
@@ -1348,6 +1344,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Cache configuration to use to create cache.
+     * @param grp Cache group infrastructure.
      * @param pluginMgr Cache plugin manager.
      * @param cacheType Cache type.
      * @param cacheObjCtx Cache object context.
@@ -3105,6 +3102,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public Collection<DynamicCacheDescriptor> cacheDescriptors() {
         return cachesInfo.registeredCaches().values();
+    }
+
+    public Collection<CacheGroupDescriptor> cacheGroupDescriptors() {
+        return cachesInfo.registeredCacheGroups().values();
     }
 
     /**

@@ -48,9 +48,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  * Future that fetches affinity assignment from remote cache nodes.
  */
 public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffinityAssignmentResponse> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -73,21 +70,19 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
 
     /**
      * @param ctx Context.
-     * @param cacheName Cache name.
      * @param topVer Topology version.
      * @param discoCache Discovery cache.
      */
     public GridDhtAssignmentFetchFuture(
         GridCacheSharedContext ctx,
-        String cacheName,
+        int grpId,
         AffinityTopologyVersion topVer,
         DiscoCache discoCache
     ) {
         this.ctx = ctx;
-        int cacheId = CU.cacheId(cacheName);
-        this.key = new T2<>(cacheId, topVer);
+        this.key = new T2<>(grpId, topVer);
 
-        Collection<ClusterNode> availableNodes = discoCache.cacheAffinityNodes(cacheId);
+        Collection<ClusterNode> availableNodes = discoCache.cacheGroupAffinityNodes(grpId);
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
