@@ -323,12 +323,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param exchActions Cache change requests to execte on exchange.
      */
     private void updateCachesInfo(ExchangeActions exchActions) {
-        for (DynamicCacheChangeRequest req : exchActions.stopRequests()) {
-            Integer cacheId = CU.cacheId(req.cacheName());
+        for (ExchangeActions.ActionData action : exchActions.stopRequests()) {
+            DynamicCacheDescriptor desc = registeredCaches.remove(action.descriptor().cacheId());
 
-            DynamicCacheDescriptor desc = registeredCaches.remove(cacheId);
-
-            assert desc != null : req.cacheName();
+            assert desc != null : action.request().cacheName();
         }
 
         for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
@@ -380,9 +378,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
-            DynamicCacheChangeRequest req = action.request();
+            DynamicCacheDescriptor cacheDesc = action.descriptor();
 
-            Integer cacheId = CU.cacheId(req.cacheName());
+            DynamicCacheChangeRequest req = action.request();
 
             boolean startCache;
 
@@ -399,15 +397,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             if (startCache)
-                cctx.cache().prepareCacheStart(req, nearCfg, action.descriptor(), fut.topologyVersion());
+                cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
-            if (fut.isCacheAdded(cacheId, fut.topologyVersion())) {
+            if (fut.isCacheAdded(cacheDesc.cacheId(), fut.topologyVersion())) {
                 if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
                     U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
             }
 
             if (!crd || !lateAffAssign) {
-                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                GridCacheContext cacheCtx = cctx.cacheContext(cacheDesc.cacheId());
 
                 if (cacheCtx != null && !cacheCtx.isLocal()) {
                     boolean clientCacheStarted =
@@ -430,7 +428,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
             else
-                initStartedCacheOnCoordinator(fut, cacheId);
+                initStartedCacheOnCoordinator(fut, cacheDesc.cacheId());
         }
 
         for (DynamicCacheChangeRequest req : exchActions.closeRequests(cctx.localNodeId())) {
@@ -459,22 +457,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> stoppedCaches = null;
 
-        for (DynamicCacheChangeRequest req : exchActions.stopRequests()) {
-            Integer cacheId = CU.cacheId(req.cacheName());
+        for (ExchangeActions.ActionData action : exchActions.stopRequests()) {
+            DynamicCacheDescriptor desc = action.descriptor();
 
-            cctx.cache().blockGateway(req);
+            cctx.cache().blockGateway(action.request());
 
-            if (crd) {
-                CacheHolder cache = caches.remove(cacheId);
+            if (crd && desc.cacheConfiguration().getCacheMode() != LOCAL) {
+                CacheHolder cache = caches.remove(desc.cacheId());
 
-                assert cache != null : req;
+                assert cache != null : action.request();
 
                 if (stoppedCaches == null)
                     stoppedCaches = new HashSet<>();
 
                 stoppedCaches.add(cache.cacheId());
 
-                cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                cctx.io().removeHandler(desc.cacheId(), GridDhtAffinityAssignmentResponse.class);
             }
         }
 

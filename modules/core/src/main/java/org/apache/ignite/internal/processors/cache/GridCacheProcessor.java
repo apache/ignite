@@ -1338,6 +1338,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion cacheStartTopVer,
         AffinityTopologyVersion locStartTopVer,
         CacheObjectContext cacheObjCtx,
+        boolean affNode,
         boolean updatesAllowed)
         throws IgniteCheckedException {
         assert cfg != null;
@@ -1397,8 +1398,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheOffheapManager offheapMgr = pluginMgr.createComponent(IgniteCacheOffheapManager.class);
 
         storeMgr.initialize(cfgStore, sesHolders);
-
-        boolean affNode = cfg.getCacheMode() == LOCAL || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
 
         String memPlcName = cfg.getMemoryPolicyName();
 
@@ -1710,42 +1709,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param req Cache start request.
+     * @param cacheDesc Cache start request.
      * @param nearCfg Near cache configuration.
-     * @param desc Cache descriptor.
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
-    void prepareCacheStart(DynamicCacheChangeRequest req,
+    void prepareCacheStart(DynamicCacheDescriptor cacheDesc,
         @Nullable NearCacheConfiguration nearCfg,
-        DynamicCacheDescriptor desc,
         AffinityTopologyVersion exchTopVer)
         throws IgniteCheckedException {
-        assert req.start() : req;
-        assert req.cacheType() != null : req;
-
         prepareCacheStart(
-            req.startCacheConfiguration(),
+            cacheDesc.cacheConfiguration(),
             nearCfg,
-            req.cacheType(),
-            req.deploymentId(),
-            desc.startTopologyVersion(),
+            cacheDesc.cacheType(),
+            cacheDesc.deploymentId(),
+            cacheDesc.startTopologyVersion(),
             exchTopVer,
-            desc.schema()
+            cacheDesc.schema()
         );
     }
 
     /**
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
-     * @return Collection of started caches.
      */
-    public List<DynamicCacheDescriptor> startCachesOnLocalJoin(AffinityTopologyVersion exchTopVer) throws IgniteCheckedException {
+    public void startCachesOnLocalJoin(AffinityTopologyVersion exchTopVer) throws IgniteCheckedException {
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches = cachesInfo.cachesToStartOnLocalJoin();
 
         if (!F.isEmpty(caches)) {
-            List<DynamicCacheDescriptor> started = new ArrayList<>(caches.size());
-
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
                 DynamicCacheDescriptor desc = t.get1();
 
@@ -1758,14 +1749,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     exchTopVer,
                     desc.schema()
                 );
-
-                started.add(desc);
             }
-
-            return started;
         }
-        else
-            return Collections.emptyList();
     }
 
     /**
@@ -1802,8 +1787,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cfg Start configuration.
-     * @param nearCfg Near configuration.
+     * @param startCfg Start configuration.
+     * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param cacheType Cache type.
      * @param deploymentId Deployment ID.
      * @param cacheStartTopVer Cache start topology version.
@@ -1812,22 +1797,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void prepareCacheStart(
-        CacheConfiguration cfg,
-        NearCacheConfiguration nearCfg,
+        CacheConfiguration startCfg,
+        @Nullable NearCacheConfiguration reqNearCfg,
         CacheType cacheType,
         IgniteUuid deploymentId,
         AffinityTopologyVersion cacheStartTopVer,
         AffinityTopologyVersion exchTopVer,
         @Nullable QuerySchema schema
     ) throws IgniteCheckedException {
-        assert !caches.containsKey(cfg.getName()) : cfg.getName();
+        assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
 
-        CacheConfiguration ccfg = new CacheConfiguration(cfg);
-
-        if (nearCfg != null)
-            ccfg.setNearConfiguration(nearCfg);
+        CacheConfiguration ccfg = new CacheConfiguration(startCfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
+
+        boolean affNode;
+
+        if (ccfg.getCacheMode() == LOCAL) {
+            affNode = true;
+
+            ccfg.setNearConfiguration(null);
+        }
+        else if (CU.affinityNode(ctx.discovery().localNode(), ccfg.getNodeFilter()))
+            affNode = true;
+        else {
+            affNode = false;
+
+            ccfg.setNearConfiguration(reqNearCfg);
+        }
 
         GridCacheContext cacheCtx = createCache(ccfg,
             null,
@@ -1835,6 +1832,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartTopVer,
             exchTopVer,
             cacheObjCtx,
+            affNode,
             true);
 
         cacheCtx.dynamicDeploymentId(deploymentId);
@@ -1931,10 +1929,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (exchActions != null && err == null) {
-            for (DynamicCacheChangeRequest req : exchActions.stopRequests()) {
-                stopGateway(req);
+            for (ExchangeActions.ActionData action : exchActions.stopRequests()) {
+                stopGateway(action.request());
 
-                prepareCacheStop(req);
+                prepareCacheStop(action.request());
             }
 
             for (DynamicCacheChangeRequest req : exchActions.closeRequests(ctx.localNodeId())) {
@@ -1961,7 +1959,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
-     * @param deploymentId
+     * @param deploymentId Future deployment ID.
      */
     void completeTemplateAddFuture(String cacheName, IgniteUuid deploymentId) {
         GridCacheProcessor.TemplateConfigurationFuture fut =
@@ -1975,7 +1973,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Request to complete future for.
      * @param err Error if any.
      */
-    public void completeCacheStartFuture(DynamicCacheChangeRequest req, @Nullable Exception err) {
+    void completeCacheStartFuture(DynamicCacheChangeRequest req, @Nullable Exception err) {
         if (req.initiatingNodeId().equals(ctx.localNodeId())) {
             DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 

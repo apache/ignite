@@ -104,17 +104,8 @@ public class ExchangeActions {
     /**
      * @return Stop cache requests.
      */
-    public List<DynamicCacheChangeRequest> stopRequests() {
-        List<DynamicCacheChangeRequest> res = null;
-
-        if (cachesToStop != null) {
-            res = new ArrayList<>(cachesToStop.size());
-
-            for (ActionData req : cachesToStop.values())
-                res.add(req.req);
-        }
-
-        return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
+    Collection<ActionData> stopRequests() {
+        return cachesToStop != null ? cachesToStop.values() : Collections.EMPTY_LIST;
     }
 
     /**
