@@ -1265,6 +1265,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.Throws<BinaryObjectException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+
+            var ex = Assert.Throws<IgniteException>(() =>
+                _grid1.GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.AreEqual("", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("", ex.InnerException.Message);
         }
 
         /// <summary>
@@ -1462,6 +1469,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void ReadBinary(IBinaryReader reader)
         {
             throw new BinaryObjectException("Expected");
+        }
+    }
+
+    class ExceptionalComputeAction : IComputeAction
+    {
+        public void Invoke()
+        {
+            throw new OverflowException("Expected user exception");
         }
     }
 
