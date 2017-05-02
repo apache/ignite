@@ -378,15 +378,12 @@ class ClusterCachesInfo {
 
         List<DynamicCacheDescriptor> started = null;
 
-        if (!ctx.clientNode() && !ctx.isDaemon()) {
+        if (!ctx.isDaemon()) {
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (desc.staticallyConfigured()) {
                     assert desc.receivedFrom() != null : desc;
 
-                    IgnitePredicate<ClusterNode> filter = desc.cacheConfiguration().getNodeFilter();
-
-                    if (joinedNodeId.equals(desc.receivedFrom()) &&
-                        CU.affinityNode(ctx.discovery().localNode(), filter)) {
+                    if (joinedNodeId.equals(desc.receivedFrom())) {
                         if (started == null)
                             started = new ArrayList<>();
 
@@ -486,7 +483,8 @@ class ClusterCachesInfo {
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
-                false);
+                false,
+                (byte)0);
 
             caches.put(desc.cacheName(), cacheData);
         }
@@ -502,7 +500,8 @@ class ClusterCachesInfo {
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
-                true);
+                true,
+                (byte)0);
 
             templates.put(desc.cacheName(), cacheData);
         }

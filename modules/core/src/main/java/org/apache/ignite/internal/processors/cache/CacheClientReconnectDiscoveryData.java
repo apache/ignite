@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 import java.io.Serializable;
 import java.util.Map;
 
 /**
- *
+ * Discovery data sent from client reconnecting to cluster.
  */
 public class CacheClientReconnectDiscoveryData implements Serializable {
     /** */
@@ -60,9 +61,16 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
         /** */
         private final boolean nearCache;
 
-        /** */
+        /** Flags added for future usage. */
         private final byte flags;
 
+        /**
+         * @param ccfg Cache configuration.
+         * @param cacheType Cache type.
+         * @param deploymentId Cache deployment ID.
+         * @param nearCache Near cache flag.
+         * @param flags Flags (for future usage).
+         */
         public CacheInfo(CacheConfiguration ccfg,
             CacheType cacheType,
             IgniteUuid deploymentId,
@@ -79,20 +87,42 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
             this.flags = flags;
         }
 
+        /**
+         * @return Cache configuraiton.
+         */
         CacheConfiguration config() {
             return ccfg;
         }
 
+        /**
+         * @return Cache type.
+         */
         CacheType cacheType() {
             return cacheType;
         }
 
+        /**
+         * @return Cache deployment ID.
+         */
         IgniteUuid deploymentId() {
             return deploymentId;
         }
 
+        /**
+         * @return Near cache flag.
+         */
         boolean nearCache() {
             return nearCache;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CacheInfo.class, this);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheClientReconnectDiscoveryData.class, this);
     }
 }

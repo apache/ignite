@@ -31,7 +31,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Cache change requests to execute on request.
  */
 public class ExchangeActions {
     /** */
@@ -52,6 +52,9 @@ public class ExchangeActions {
     /** */
     private ClusterState newState;
 
+    /**
+     * @return {@code True} if server nodes should not participate in exchange.
+     */
     public boolean clientOnlyExchange() {
         return F.isEmpty(cachesToStart) &&
             F.isEmpty(cachesToStop) &&
@@ -99,13 +102,6 @@ public class ExchangeActions {
     }
 
     /**
-     * @return Start cache requests.
-     */
-    Collection<ActionData> newCachesStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
-    }
-
-    /**
      * @return Stop cache requests.
      */
     public List<DynamicCacheChangeRequest> stopRequests() {
@@ -132,6 +128,10 @@ public class ExchangeActions {
         completeRequestFutures(cachesToResetLostParts, ctx);
     }
 
+    /**
+     * @param map Actions map.
+     * @param ctx Context.
+     */
     private void completeRequestFutures(Map<String, ActionData> map, GridCacheSharedContext ctx) {
         if (map != null) {
             for (ActionData req : map.values())
@@ -147,7 +147,7 @@ public class ExchangeActions {
     }
 
     /**
-     * @return
+     * @return Caches to reset lost partitions for.
      */
     public Set<String> cachesToResetLostPartitions() {
         Set<String> caches = null;
@@ -157,7 +157,11 @@ public class ExchangeActions {
 
         return caches != null ? caches : Collections.<String>emptySet();
     }
-    
+
+    /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if cache stop was requested.
+     */
     public boolean cacheStopped(int cacheId) {
         if (cachesToStop != null) {
             for (ActionData cache : cachesToStop.values()) {
@@ -169,6 +173,10 @@ public class ExchangeActions {
         return false;
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if cache start was requested.
+     */
     public boolean cacheStarted(int cacheId) {
         if (cachesToStart != null) {
             for (ActionData cache : cachesToStart.values()) {
@@ -202,7 +210,15 @@ public class ExchangeActions {
         return newState;
     }
 
-    private Map<String, ActionData> add(Map<String, ActionData> map, DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    /**
+     * @param map Actions map.
+     * @param req Request.
+     * @param desc Cache descriptor.
+     * @return Actions map.
+     */
+    private Map<String, ActionData> add(Map<String, ActionData> map,
+        DynamicCacheChangeRequest req,
+        DynamicCacheDescriptor desc) {
         assert req != null;
         assert desc != null;
 
@@ -216,30 +232,50 @@ public class ExchangeActions {
         return map;
     }
 
+    /**
+     * @param req Request.
+     * @param desc Cache descriptor.
+     */
     void addCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.start() : req;
 
         cachesToStart = add(cachesToStart, req, desc);
     }
 
+    /**
+     * @param req Request.
+     * @param desc Cache descriptor.
+     */
     void addClientCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.start() : req;
 
         clientCachesToStart = add(clientCachesToStart, req, desc);
     }
 
+    /**
+     * @param req Request.
+     * @param desc Cache descriptor.
+     */
     void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
         cachesToStop = add(cachesToStop, req, desc);
     }
 
+    /**
+     * @param req Request.
+     * @param desc Cache descriptor.
+     */
     void addCacheToClose(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.close() : req;
 
         cachesToClose = add(cachesToClose, req, desc);
     }
 
+    /**
+     * @param req Request.
+     * @param desc Cache descriptor.
+     */
     void addCacheToResetLostPartitions(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.resetLostPartitions() : req;
 
@@ -267,6 +303,10 @@ public class ExchangeActions {
         /** */
         private DynamicCacheDescriptor desc;
 
+        /**
+         * @param req Request.
+         * @param desc Cache descriptor.
+         */
         ActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
             assert req != null;
             assert desc != null;
@@ -275,10 +315,16 @@ public class ExchangeActions {
             this.desc = desc;
         }
 
+        /**
+         * @return Request.
+         */
         public DynamicCacheChangeRequest request() {
             return req;
         }
 
+        /**
+         * @return Cache descriptor.
+         */
         public DynamicCacheDescriptor descriptor() {
             return desc;
         }

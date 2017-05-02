@@ -272,8 +272,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         qryTopVer = cctx.startTopologyVersion();
 
-        if (qryTopVer == null)
-            qryTopVer = new AffinityTopologyVersion(cctx.localNode().order(), 0);
+        assert qryTopVer != null : cctx.name();
     }
 
     /**

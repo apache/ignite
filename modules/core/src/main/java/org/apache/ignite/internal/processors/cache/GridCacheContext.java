@@ -235,7 +235,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Topology version when cache was started on local node. */
-    private AffinityTopologyVersion startTopVer;
+    private AffinityTopologyVersion locStartTopVer;
 
     /** Global cache start topology version. */
     private AffinityTopologyVersion cacheStartTopVer;
@@ -292,6 +292,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
+        AffinityTopologyVersion cacheStartTopVer,
+        AffinityTopologyVersion locStartTopVer,
         boolean affNode,
         boolean updatesAllowed,
         MemoryPolicy memPlc,
@@ -319,6 +321,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
+        assert cacheStartTopVer != null : cacheCfg.getName();
+        assert locStartTopVer != null : cacheCfg.getName();
 
         assert evtMgr != null;
         assert storeMgr != null;
@@ -336,6 +340,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
+        this.locStartTopVer = locStartTopVer;
+        this.cacheStartTopVer = cacheStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
@@ -448,24 +454,21 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Start topology version.
+     * @return Topology version when cache was started on local node.
      */
     public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
+        assert locStartTopVer != null : name();
+
+        return locStartTopVer;
     }
 
     /**
-     * @param startTopVer Start topology version.
+     * @return Cache start topology version.
      */
-    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
-        this.startTopVer = startTopVer;
-    }
+    public AffinityTopologyVersion cacheStartTopologyVersion() {
+        assert cacheStartTopVer != null : name();
 
-    /**
-     * @param cacheStartTopVer Global cache start topology version.
-     */
-    public void cacheStartTopologyVersion(AffinityTopologyVersion cacheStartTopVer) {
-        this.cacheStartTopVer = cacheStartTopVer;
+        return cacheStartTopVer;
     }
 
     /**

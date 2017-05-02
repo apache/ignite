@@ -85,6 +85,12 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
         checkCache(0, "c1", true);
         checkCache(1, "c1", true);
         checkCache(2, "c1", false);
+
+        ignite(2).destroyCache("c1");
+
+        checkCache(0, "c1", false);
+        checkCache(1, "c1", false);
+        checkCache(2, "c1", false);
     }
 
     /**
@@ -144,6 +150,11 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
         checkCache(3, "c1", true);
         checkCache(4, "c1", true);
         checkCache(5, "c1", false);
+
+        ignite(5).destroyCache("c1");
+
+        for (int i = 0; i < 5; i++)
+            checkCache(i, "c1", false);
     }
 
     /**
@@ -151,11 +162,7 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        ccfg.setName(cacheName);
-
-        return ccfg;
+        return new CacheConfiguration(cacheName);
     }
 
     /**

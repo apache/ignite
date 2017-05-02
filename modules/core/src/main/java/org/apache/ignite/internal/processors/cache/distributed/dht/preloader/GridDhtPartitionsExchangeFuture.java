@@ -634,8 +634,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridDhtPartitionTopology top = cacheCtx.topology();
 
             if (crd) {
-                boolean updateTop = !cacheCtx.isLocal() &&
-                    exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
+                boolean updateTop = exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                 if (updateTop && clientTop != null)
                     top.update(exchId, clientTop.partitionMap(true), clientTop.updateCounters(false));
@@ -737,7 +736,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void clientOnlyExchange() throws IgniteCheckedException {
         clientOnlyExchange = true;
 
-        //todo checl invoke on client
         if (crd != null) {
             if (crd.isLocal()) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {

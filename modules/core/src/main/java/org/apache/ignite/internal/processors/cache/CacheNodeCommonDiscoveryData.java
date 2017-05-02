@@ -20,24 +20,28 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache information sent in discovery data to joining node.
  */
 class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
+    @GridToStringInclude
     private final Map<String, CacheData> caches;
 
     /** */
+    @GridToStringInclude
     private final Map<String, CacheData> templates;
 
     /** */
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
 
     /**
-     * @param caches
-     * @param templates
-     * @param clientNodesMap
+     * @param caches Started caches.
+     * @param templates Configured templates.
+     * @param clientNodesMap Information about cache client nodes.
      */
     CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
@@ -47,15 +51,29 @@ class CacheNodeCommonDiscoveryData implements Serializable {
         this.clientNodesMap = clientNodesMap;
     }
 
+    /**
+     * @return Started caches.
+     */
     Map<String, CacheData> caches() {
         return caches;
     }
 
+    /**
+     * @return Configured templates.
+     */
     Map<String, CacheData> templates() {
         return templates;
     }
 
+    /**
+     * @return Information about cache client nodes.
+     */
     Map<String, Map<UUID, Boolean>> clientNodesMap() {
         return clientNodesMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheNodeCommonDiscoveryData.class, this);
     }
 }

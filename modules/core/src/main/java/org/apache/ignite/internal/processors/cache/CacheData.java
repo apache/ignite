@@ -56,6 +56,21 @@ public class CacheData implements Serializable {
     /** */
     private final boolean template;
 
+    /** Flags added for future usage. */
+    private final byte flags;
+
+    /**
+     * @param cacheCfg Cache configuration.
+     * @param cacheId Cache ID.
+     * @param cacheType Cache ID.
+     * @param startTopVer Topology version when cache was started.
+     * @param deploymentId Cache deployment ID.
+     * @param schema Query schema.
+     * @param rcvdFrom Node ID cache was started from.
+     * @param staticCfg {@code True} if cache was statically configured.
+     * @param template {@code True} if this is cache template.
+     * @param flags Flags (added for future usage).
+     */
     CacheData(CacheConfiguration cacheCfg,
         int cacheId,
         CacheType cacheType,
@@ -64,7 +79,8 @@ public class CacheData implements Serializable {
         QuerySchema schema,
         UUID rcvdFrom,
         boolean staticCfg,
-        boolean template) {
+        boolean template,
+        byte flags) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
         assert startTopVer != null : cacheCfg.getName();
@@ -80,6 +96,7 @@ public class CacheData implements Serializable {
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
         this.template = template;
+        this.flags = flags;
     }
 
     /**

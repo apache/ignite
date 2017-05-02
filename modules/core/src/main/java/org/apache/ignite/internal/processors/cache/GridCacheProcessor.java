@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -60,13 +58,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.QuerySchema;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -109,7 +100,14 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -842,7 +840,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.service().onUtilityCacheStarted();
 
-        AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(locNode.order(), 0);
+        AffinityTopologyVersion startTopVer =
+            new AffinityTopologyVersion(ctx.discovery().localJoinEvent().topologyVersion(), 0);
 
         for (GridCacheAdapter cache : caches.values()) {
             CacheConfiguration cfg = cache.configuration();
@@ -1336,6 +1335,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheContext createCache(CacheConfiguration<?, ?> cfg,
         @Nullable CachePluginManager pluginMgr,
         CacheType cacheType,
+        AffinityTopologyVersion cacheStartTopVer,
+        AffinityTopologyVersion locStartTopVer,
         CacheObjectContext cacheObjCtx,
         boolean updatesAllowed)
         throws IgniteCheckedException {
@@ -1410,6 +1411,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx,
             cfg,
             cacheType,
+            cacheStartTopVer,
+            locStartTopVer,
             affNode,
             updatesAllowed,
             memPlc,
@@ -1541,6 +1544,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sharedCtx,
                 cfg,
                 cacheType,
+                cacheStartTopVer,
+                locStartTopVer,
                 affNode,
                 true,
                 memPlc,
@@ -1733,23 +1738,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
+     * @return Collection of started caches.
      */
-    public void startCachesOnLocalJoin(AffinityTopologyVersion exchTopVer) throws IgniteCheckedException {
+    public List<DynamicCacheDescriptor> startCachesOnLocalJoin(AffinityTopologyVersion exchTopVer) throws IgniteCheckedException {
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches = cachesInfo.cachesToStartOnLocalJoin();
 
-        for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
-            DynamicCacheDescriptor desc = t.get1();
+        if (!F.isEmpty(caches)) {
+            List<DynamicCacheDescriptor> started = new ArrayList<>(caches.size());
 
-            prepareCacheStart(
-                desc.cacheConfiguration(),
-                t.get2(),
-                desc.cacheType(),
-                desc.deploymentId(),
-                desc.startTopologyVersion(),
-                exchTopVer,
-                desc.schema()
-            );
+            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
+                DynamicCacheDescriptor desc = t.get1();
+
+                prepareCacheStart(
+                    desc.cacheConfiguration(),
+                    t.get2(),
+                    desc.cacheType(),
+                    desc.deploymentId(),
+                    desc.startTopologyVersion(),
+                    exchTopVer,
+                    desc.schema()
+                );
+
+                started.add(desc);
+            }
+
+            return started;
         }
+        else
+            return Collections.emptyList();
     }
 
     /**
@@ -1766,19 +1782,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (started != null) {
             for (DynamicCacheDescriptor desc : started) {
-                prepareCacheStart(
-                    desc.cacheConfiguration(),
-                    null,
-                    desc.cacheType(),
-                    desc.deploymentId(),
-                    desc.startTopologyVersion(),
-                    exchTopVer,
-                    desc.schema()
-                );
+                IgnitePredicate<ClusterNode> filter = desc.cacheConfiguration().getNodeFilter();
+
+                if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
+                    prepareCacheStart(
+                        desc.cacheConfiguration(),
+                        null,
+                        desc.cacheType(),
+                        desc.deploymentId(),
+                        desc.startTopologyVersion(),
+                        exchTopVer,
+                        desc.schema()
+                    );
+                }
             }
         }
 
-        return started;
+        return started != null ? started : Collections.<DynamicCacheDescriptor>emptyList();
     }
 
     /**
@@ -1809,11 +1829,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        GridCacheContext cacheCtx = createCache(ccfg, null, cacheType, cacheObjCtx, true);
-
-        cacheCtx.startTopologyVersion(exchTopVer);
-
-        cacheCtx.cacheStartTopologyVersion(cacheStartTopVer);
+        GridCacheContext cacheCtx = createCache(ccfg,
+            null,
+            cacheType,
+            cacheStartTopVer,
+            exchTopVer,
+            cacheObjCtx,
+            true);
 
         cacheCtx.dynamicDeploymentId(deploymentId);
 

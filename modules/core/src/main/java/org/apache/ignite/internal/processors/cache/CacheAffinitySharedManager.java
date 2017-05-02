@@ -319,30 +319,35 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
+    /**
+     * @param exchActions Cache change requests to execte on exchange.
+     */
     private void updateCachesInfo(ExchangeActions exchActions) {
         for (DynamicCacheChangeRequest req : exchActions.stopRequests()) {
             Integer cacheId = CU.cacheId(req.cacheName());
 
             DynamicCacheDescriptor desc = registeredCaches.remove(cacheId);
 
-            assert desc != null : cacheId;
+            assert desc != null : req.cacheName();
         }
 
-        for (ExchangeActions.ActionData action : exchActions.newCachesStartRequests()) {
+        for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
             DynamicCacheChangeRequest req = action.request();
 
-            Integer cacheId = CU.cacheId(req.cacheName());
+            if (!req.clientStartOnly()) {
+                Integer cacheId = CU.cacheId(req.cacheName());
 
-            DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cctx.kernalContext(),
-                req.startCacheConfiguration(),
-                req.cacheType(),
-                false,
-                req.deploymentId(),
-                req.schema());
+                DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cctx.kernalContext(),
+                    req.startCacheConfiguration(),
+                    req.cacheType(),
+                    false,
+                    req.deploymentId(),
+                    req.schema());
 
-            DynamicCacheDescriptor old = registeredCaches.put(cacheId, desc);
+                DynamicCacheDescriptor old = registeredCaches.put(cacheId, desc);
 
-            assert old == null : old;
+                assert old == null : old;
+            }
         }
     }
 
@@ -411,7 +416,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     if (clientCacheStarted)
                         initAffinity(cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
                     else if (!req.clientStartOnly()) {
-                        assert fut.topologyVersion().equals(cacheCtx.startTopologyVersion());
+                        assert fut.topologyVersion().equals(cacheCtx.cacheStartTopologyVersion());
 
                         GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
 
@@ -600,7 +605,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 assert affTopVer.topologyVersion() > 0 : affTopVer;
 
-                IgniteUuid deploymentId = registeredCaches.get(aff.cacheId()).deploymentId();
+                DynamicCacheDescriptor desc = registeredCaches.get(aff.cacheId());
+
+                assert desc != null : aff.cacheName();
+
+                IgniteUuid deploymentId = desc.deploymentId();
 
                 if (!deploymentId.equals(deploymentIds.get(aff.cacheId()))) {
                     aff.clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
@@ -804,12 +813,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void initStartedCaches(boolean crd,
         final GridDhtPartitionsExchangeFuture fut,
-        @Nullable Collection<DynamicCacheDescriptor> descs) throws IgniteCheckedException {
-        if (descs != null) {
-            for (DynamicCacheDescriptor desc : descs) {
-                if (!registeredCaches.containsKey(desc.cacheId()))
-                    registeredCaches.put(desc.cacheId(), desc);
-            }
+        Collection<DynamicCacheDescriptor> descs) throws IgniteCheckedException {
+        for (DynamicCacheDescriptor desc : descs) {
+            if (!registeredCaches.containsKey(desc.cacheId()))
+                registeredCaches.put(desc.cacheId(), desc);
         }
 
         if (crd && lateAffAssign) {

@@ -32,7 +32,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Custom message ID. */
+    /** Discovery custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Change requests. */
@@ -91,7 +91,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      * @param exchangeActions Cache updates to be executed on exchange.
      */
     void exchangeActions(ExchangeActions exchangeActions) {
-        assert !exchangeActions.empty() : exchangeActions;
+        assert exchangeActions != null && !exchangeActions.empty() : exchangeActions;
 
         this.exchangeActions = exchangeActions;
     }

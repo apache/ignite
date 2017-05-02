@@ -136,6 +136,11 @@ public class DynamicCacheChangeRequest implements Serializable {
         return req;
     }
 
+    /**
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @return Request to close client cache.
+     */
     static DynamicCacheChangeRequest closeRequest(GridKernalContext ctx, String cacheName) {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
@@ -144,6 +149,12 @@ public class DynamicCacheChangeRequest implements Serializable {
         return req;
     }
 
+    /**
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @param destroy Destroy flag.
+     * @return Cache stop request.
+     */
     static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean destroy) {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 

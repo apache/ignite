@@ -363,10 +363,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        T2<DiscoveryEvent, DiscoCache> localJoin = cctx.discovery().localJoin();
+        T2<DiscoveryEvent, DiscoCache> locJoin = cctx.discovery().localJoin();
 
-        DiscoveryEvent discoEvt = localJoin.get1();
-        DiscoCache discoCache = localJoin.get2();
+        DiscoveryEvent discoEvt = locJoin.get1();
+        DiscoCache discoCache = locJoin.get2();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
@@ -466,8 +466,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
+            AffinityTopologyVersion nodeStartVer = new AffinityTopologyVersion(discoEvt.topologyVersion(), 0);
+
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.startTopologyVersion() == null)
+                if (nodeStartVer.equals(cacheCtx.startTopologyVersion()))
                     cacheCtx.preloader().onInitialExchangeComplete(null);
             }
 
@@ -893,9 +895,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     boolean ready;
 
                     if (exchId != null) {
-                        AffinityTopologyVersion startTopVer = cacheCtx.startTopologyVersion();
+                        AffinityTopologyVersion startTopVer = cacheCtx.cacheStartTopologyVersion();
 
-                        ready = startTopVer == null || startTopVer.compareTo(exchId.topologyVersion()) <= 0;
+                        ready = startTopVer.compareTo(exchId.topologyVersion()) <= 0;
                     }
                     else
                         ready = cacheCtx.started();
@@ -1298,10 +1300,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    if (cacheCtx != null && cacheCtx.startTopologyVersion() != null &&
-                        entry.getValue() != null &&
-                        entry.getValue().topologyVersion() != null && // Backward compatibility.
-                        cacheCtx.startTopologyVersion().compareTo(entry.getValue().topologyVersion()) > 0)
+                    if (cacheCtx != null &&
+                        cacheCtx.cacheStartTopologyVersion().compareTo(entry.getValue().topologyVersion()) > 0)
                         continue;
 
                     GridDhtPartitionTopology top = null;
