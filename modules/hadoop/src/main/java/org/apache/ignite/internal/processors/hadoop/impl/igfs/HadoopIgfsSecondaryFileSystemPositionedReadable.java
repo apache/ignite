@@ -43,7 +43,7 @@ public class HadoopIgfsSecondaryFileSystemPositionedReadable implements IgfsSeco
     private final int bufSize;
 
     /** Actual input stream. */
-    private FSDataInputStream in;
+    private volatile FSDataInputStream in;
 
     /** Cached error occurred during output stream open. */
     private IOException err;
@@ -96,7 +96,12 @@ public class HadoopIgfsSecondaryFileSystemPositionedReadable implements IgfsSeco
      * Close wrapped input stream in case it was previously opened.
      */
     @Override public void close() {
-        U.closeQuiet(in);
+        if (in != null) {
+            // Synchronization is needed there since #read() may be
+            synchronized (this) {
+                U.closeQuiet(in);
+            }
+        }
     }
 
     /** {@inheritDoc} */
