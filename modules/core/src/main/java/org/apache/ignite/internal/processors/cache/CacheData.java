@@ -30,6 +30,9 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class CacheData implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final CacheConfiguration cacheCfg;
 
     /** */

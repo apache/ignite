@@ -29,6 +29,9 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 class CacheJoinNodeDiscoveryData implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private final Map<String, CacheInfo> caches;
 
@@ -79,6 +82,9 @@ class CacheJoinNodeDiscoveryData implements Serializable {
      *
      */
     static class CacheInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         @GridToStringInclude
         private final CacheConfiguration ccfg;
