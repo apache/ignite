@@ -90,6 +90,9 @@ class ClusterCachesInfo {
         this.ctx = ctx;
     }
 
+    /**
+     * @param joinDiscoData Information about configured caches and templates.
+     */
     void onStart(CacheJoinNodeDiscoveryData joinDiscoData) {
         this.joinDiscoData = joinDiscoData;
     }
@@ -326,9 +329,12 @@ class ClusterCachesInfo {
         return incMinorTopVer;
     }
 
+    /**
+     * @param dataBag Discovery data bag.
+     */
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         if (!ctx.isDaemon())
-        dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), joinDiscoveryData());
+            dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), joinDiscoveryData());
     }
 
     /**
@@ -420,26 +426,27 @@ class ClusterCachesInfo {
                     assert joinDiscoData != null;
                 }
 
-                processJoiningNode(joinDiscoData, node.id(), topVer);
-
                 assert locJoinStartCaches == null;
 
                 locJoinStartCaches = new ArrayList<>();
 
-                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                    CacheConfiguration cfg = desc.cacheConfiguration();
+                if (!disconnectedState()) {
+                    processJoiningNode(joinDiscoData, node.id(), topVer);
 
-                    CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
+                    for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                        CacheConfiguration cfg = desc.cacheConfiguration();
 
-                    boolean affNode = CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
+                        CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
-                    NearCacheConfiguration nearCfg = (!affNode && locCfg != null) ? locCfg.config().getNearConfiguration() : null;
+                        NearCacheConfiguration nearCfg = locCfg != null ? locCfg.config().getNearConfiguration() :
+                            null;
 
-                    if (locCfg != null || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
-                        locJoinStartCaches.add(new T2<>(desc, nearCfg));
+                        if (locCfg != null || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
+                            locJoinStartCaches.add(new T2<>(desc, nearCfg));
+                    }
+
+                    joinDiscoData = null;
                 }
-
-                joinDiscoData = null;
             }
             else {
                 CacheJoinNodeDiscoveryData discoData = joiningNodesDiscoData.remove(node.id());
@@ -468,6 +475,9 @@ class ClusterCachesInfo {
         }
     }
 
+    /**
+     * @param dataBag Discovery data bag.
+     */
     void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (ctx.isDaemon())
             return;
@@ -541,7 +551,7 @@ class ClusterCachesInfo {
         if (ctx.isDaemon() || data.commonData() == null)
             return;
 
-        assert joinDiscoData != null;
+        assert joinDiscoData != null || disconnectedState();
         assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
@@ -624,15 +634,9 @@ class ClusterCachesInfo {
         gridData = cachesData;
     }
 
-    private CacheGroupDescriptor groupDescriptor(int grpId) {
-        for (CacheGroupDescriptor desc : registeredCacheGrps.values()) {
-            if (desc.groupId() == grpId)
-                return desc;
-        }
-
-        return null;
-    }
-
+    /**
+     * @param data Joining node data.
+     */
     void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
@@ -646,6 +650,15 @@ class ClusterCachesInfo {
                 assert old == null : old;
             }
         }
+    }
+
+    private CacheGroupDescriptor groupDescriptor(int grpId) {
+        for (CacheGroupDescriptor desc : registeredCacheGrps.values()) {
+            if (desc.groupId() == grpId)
+                return desc;
+        }
+
+        return null;
     }
 
     /**
@@ -667,6 +680,10 @@ class ClusterCachesInfo {
         }
     }
 
+    /**
+     * @param joinData Joined node discovery data.
+     * @param nodeId Joined node ID.
+     */
     private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, AffinityTopologyVersion topVer) {
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
             CacheConfiguration cfg = cacheInfo.config();
@@ -776,7 +793,7 @@ class ClusterCachesInfo {
      * @return Stopped caches names.
      */
     Set<String> onReconnected() {
-        assert cachesOnDisconnect != null;
+        assert disconnectedState();
 
         Set<String> stoppedCaches = new HashSet<>();
 
@@ -804,6 +821,17 @@ class ClusterCachesInfo {
         return stoppedCaches;
     }
 
+    /**
+     * @return {@code True} if client node is currently in disconnected state.
+     */
+    private boolean disconnectedState() {
+        return cachesOnDisconnect != null;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if cache with given name if system cache which should always survive client node disconnect.
+     */
     private boolean surviveReconnect(String cacheName) {
         return CU.isUtilityCache(cacheName) || CU.isAtomicsCache(cacheName);
     }
