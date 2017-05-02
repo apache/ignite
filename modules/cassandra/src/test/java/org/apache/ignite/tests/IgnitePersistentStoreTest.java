@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tests;
 
+import com.datastax.driver.core.SimpleStatement;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -35,6 +36,7 @@ import org.apache.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Assert;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -346,20 +348,29 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Running loadCache test");
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
-            IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
+            CacheConfiguration<PersonId, Person> ccfg = new CacheConfiguration<>("cache3");
+
+            IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(ccfg);
+
             int size = personCache3.size(CachePeekMode.ALL);
 
             LOGGER.info("Initial cache size " + size);
 
             LOGGER.info("Loading cache data from Cassandra table");
 
-            personCache3.loadCache(null, new String[] {"select * from test1.pojo_test3 limit 3"});
+            String qry = "select * from test1.pojo_test3 limit 3";
+
+            personCache3.loadCache(null, qry);
 
             size = personCache3.size(CachePeekMode.ALL);
-            if (size != 3) {
-                throw new RuntimeException("Cache data was incorrectly loaded from Cassandra. " +
-                    "Expected number of records is 3, but loaded number of records is " + size);
-            }
+            Assert.assertEquals("Cache data was incorrectly loaded from Cassandra table by '" + qry + "'", 3, size);
+
+            personCache3.clear();
+
+            personCache3.loadCache(null, new SimpleStatement(qry));
+
+            size = personCache3.size(CachePeekMode.ALL);
+            Assert.assertEquals("Cache data was incorrectly loaded from Cassandra table by statement", 3, size);
 
             LOGGER.info("Cache data loaded from Cassandra table");
         }
