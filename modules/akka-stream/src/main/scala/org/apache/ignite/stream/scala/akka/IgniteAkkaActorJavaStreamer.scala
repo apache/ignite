@@ -18,7 +18,7 @@
 package org.apache.ignite.stream.scala.akka
 
 import akka.actor.Actor
-import org.apache.ignite.{IgniteDataStreamer}
+import org.apache.ignite.{Ignite, IgniteDataStreamer}
 import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
 /**
@@ -39,9 +39,21 @@ class IgniteAkkaActorJavaStreamer[T, K, V](
     require(strm != null, "the IgniteDataStreamer must be initialize.")
     require(singleTupleExtractor != null || multipleTupleExtractor != null, "the extractor must be initialize.")
 
-    setMultipleTupleExtractor(multipleTupleExtractor)
-    setSingleTupleExtractor(singleTupleExtractor)
     setStreamer(strm)
+
+    def this(
+        strm: IgniteDataStreamer[K, V],
+        singleTupleExtractor: StreamSingleTupleExtractor[T, K, V]) {
+        this(strm, singleTupleExtractor, null)
+        setSingleTupleExtractor(singleTupleExtractor)
+    }
+
+    def this(
+        strm: IgniteDataStreamer[K, V],
+        multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]) {
+        this(strm, null, multipleTupleExtractor)
+        setMultipleTupleExtractor(multipleTupleExtractor)
+    }
 
     def receive = {
         case msg: T => {

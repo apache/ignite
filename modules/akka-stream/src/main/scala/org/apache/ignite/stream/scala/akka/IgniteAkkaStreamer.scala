@@ -2,7 +2,7 @@ package org.apache.ignite.stream.scala.akka
 
 import akka.Done
 import akka.stream.scaladsl.Sink
-import org.apache.ignite.IgniteDataStreamer
+import org.apache.ignite.{Ignite, IgniteDataStreamer}
 import org.apache.ignite.stream.{StreamAdapter, StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,26 +15,31 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 class IgniteAkkaStreamer[T, K, V](
     val strm: IgniteDataStreamer[K, V],
+    // TODO А нужен ли он вообще?
+    val ignite: Ignite,
     val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V],
     val multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]
 ) extends StreamAdapter[T, K, V] {
     require(strm != null, "the IgniteDataStreamer must be initialize.")
 
     setStreamer(strm)
+    setIgnite(ignite)
 
     require(singleTupleExtractor != null || multipleTupleExtractor != null, "the extractor must be initialize.")
 
     def this(
         strm: IgniteDataStreamer[K, V],
+        ignite: Ignite,
         singleTupleExtractor: StreamSingleTupleExtractor[T, K, V]) {
-        this(strm, singleTupleExtractor, null)
+        this(strm, ignite, singleTupleExtractor, null)
         setSingleTupleExtractor(singleTupleExtractor)
     }
 
     def this(
         strm: IgniteDataStreamer[K, V],
+        ignite: Ignite,
         multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]) {
-        this(strm, null, multipleTupleExtractor)
+        this(strm, ignite, null, multipleTupleExtractor)
         setMultipleTupleExtractor(multipleTupleExtractor)
     }
 
