@@ -65,6 +65,7 @@ public class MemcacheRestExampleNodeStartup {
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
+        cacheCfg.setName("default");
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);

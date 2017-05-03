@@ -24,6 +24,8 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSpis;
+import org.apache.ignite.configuration.ExecutorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
@@ -136,7 +138,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
+    public void affinityRun(String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes given job asynchronously on the node where data for provided affinity key is located
@@ -149,7 +151,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity run.
      * @throws IgniteException If job failed.
      */
-    public IgniteFuture<Void> affinityRunAsync(@Nullable String cacheName, Object affKey, IgniteRunnable job)
+    public IgniteFuture<Void> affinityRunAsync(String cacheName, Object affKey, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -229,7 +231,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
+    public <R> R affinityCall(String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes given job asynchronously on the node where data for provided affinity key is located
@@ -242,7 +244,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
-    public <R> IgniteFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey, IgniteCallable<R> job)
+    public <R> IgniteFuture<R> affinityCallAsync(String cacheName, Object affKey, IgniteCallable<R> job)
         throws IgniteException;
 
     /**
@@ -751,4 +753,16 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Deprecated
     @Override public IgniteCompute withAsync();
+
+    /**
+     * Gets instance of the compute API associated with custom executor. All tasks and closures submitted to returned
+     * instance will be processed by this executor on both remote and local nodes. If executor with the given name
+     * doesn't exist, task will be processed in default ("public") pool.
+     * <p>
+     * Executor should be defined in {@link IgniteConfiguration#setExecutorConfiguration(ExecutorConfiguration...)}.
+     *
+     * @param name Custom executor name.
+     * @return Instance of compute API associated with custom executor.
+     */
+    public IgniteCompute withExecutor(@NotNull String name);
 }

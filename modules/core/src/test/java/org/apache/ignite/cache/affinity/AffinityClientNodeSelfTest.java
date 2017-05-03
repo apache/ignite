@@ -62,26 +62,26 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg1.setBackups(1);
         ccfg1.setName(CACHE1);
         ccfg1.setAffinity(new RendezvousAffinityFunction());
         ccfg1.setNodeFilter(new TestNodesFilter());
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration ccfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg2.setBackups(1);
         ccfg2.setName(CACHE2);
         ccfg2.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration ccfg4 = new CacheConfiguration();
+        CacheConfiguration ccfg4 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg4.setCacheMode(REPLICATED);
         ccfg4.setName(CACHE4);
         ccfg4.setNodeFilter(new TestNodesFilter());
 
-        CacheConfiguration ccfg5 = new CacheConfiguration();
+        CacheConfiguration ccfg5 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg5.setBackups(1);
         ccfg5.setName(CACHE5);
@@ -125,7 +125,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
 
         Ignite client = ignite(NODE_CNT - 1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(0);
 
@@ -134,7 +134,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = client.createCache(ccfg);
 
         try {
-            checkCache(null, 1);
+            checkCache(DEFAULT_CACHE_NAME, 1);
         }
         finally {
             cache.destroy();
@@ -143,7 +143,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         cache = client.createCache(ccfg, new NearCacheConfiguration());
 
         try {
-            checkCache(null, 1);
+            checkCache(DEFAULT_CACHE_NAME, 1);
         }
         finally {
             cache.destroy();

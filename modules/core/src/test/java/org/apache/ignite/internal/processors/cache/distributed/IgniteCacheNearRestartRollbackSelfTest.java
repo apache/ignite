@@ -71,8 +71,8 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
-        discoSpi.setMaxMissedClientHeartbeats(50);
 
+        cfg.setClientFailureDetectionTimeout(50000);
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
@@ -97,7 +97,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
      * @return Cache configuration.
      */
     protected CacheConfiguration<Object, Object> cacheConfiguration(String igniteInstanceName) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
@@ -205,7 +205,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         boolean rollback,
         Set<Integer> keys
     ) {
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         if (rollback) {
             while (true) {

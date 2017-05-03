@@ -1303,7 +1303,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         const _closeOldQuery = (paragraph) => {
             const nid = paragraph.resNodeId;
 
-            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.includes(nodes, nid)))
+            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.find(nodes, {nid: nid.toUpperCase()})))
                 return agentMgr.queryClose(nid, paragraph.queryId);
 
             return $q.when();
@@ -1478,8 +1478,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         $scope.scan = (paragraph, local = false) => {
             const cacheName = paragraph.cacheName;
-            const filter = paragraph.filter;
             const caseSensitive = !!paragraph.caseSensitive;
+            const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
             $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)

@@ -80,6 +80,7 @@
         <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/hibernate-core</module>
         <module>modules/camel</module>
         <module>modules/storm</module>
         <module>modules/osgi-paxlogging</module>
@@ -91,6 +92,7 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
+        <module>modules/rocketmq</module>
     </modules>
 
     <profiles>
@@ -100,12 +102,10 @@
                 <module>examples</module>
                 <module>modules/benchmarks</module>
                 <module>modules/geospatial</module>
-                <module>modules/hibernate5</module>
-                <module>modules/hibernate</module>
-                <module>modules/ml</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
-                <module>modules/web-console</module>
                 <module>modules/yardstick</module>
             </modules>
         </profile>
@@ -120,6 +120,14 @@
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
+            <modules> <!-- sorted alphabetically -->
+                <module>modules/ml</module> <!-- it uses Java8 and can't be compiled by Java7 used to compile Ignite -->
+                <module>modules/web-console</module>
             </modules>
         </profile>
 
@@ -191,8 +199,8 @@
         <profile>
             <id>lgpl</id>
             <modules>
-                <module>modules/hibernate</module>
-                <module>modules/hibernate5</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>

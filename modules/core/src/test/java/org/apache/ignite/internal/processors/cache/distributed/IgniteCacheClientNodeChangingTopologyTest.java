@@ -173,7 +173,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      */
     private void atomicPut(final boolean putAll,
         @Nullable NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -207,7 +207,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -295,7 +295,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void atomicNoRemap() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -317,9 +317,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final Map<Integer, Integer> map = new HashMap<>();
 
-        map.put(primaryKey(ignite0.cache(null)), 0);
-        map.put(primaryKey(ignite1.cache(null)), 1);
-        map.put(primaryKey(ignite2.cache(null)), 2);
+        map.put(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), 0);
+        map.put(primaryKey(ignite1.cache(DEFAULT_CACHE_NAME)), 1);
+        map.put(primaryKey(ignite2.cache(DEFAULT_CACHE_NAME)), 2);
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
@@ -330,7 +330,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearAtomicFullUpdateRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -362,9 +362,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertEquals(3, msgs.size());
 
-        map.put(primaryKey(ignite0.cache(null)), 3);
-        map.put(primaryKey(ignite1.cache(null)), 4);
-        map.put(primaryKey(ignite2.cache(null)), 5);
+        map.put(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), 3);
+        map.put(primaryKey(ignite1.cache(DEFAULT_CACHE_NAME)), 4);
+        map.put(primaryKey(ignite2.cache(DEFAULT_CACHE_NAME)), 5);
 
         cache.putAll(map);
 
@@ -382,7 +382,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void atomicGetAndPut() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -395,7 +395,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = true;
 
-        ignite0.cache(null).put(0, 0);
+        ignite0.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
         Ignite ignite2 = startGrid(2);
 
@@ -411,7 +411,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<Integer> putFut = GridTestUtils.runAsync(new Callable<Integer>() {
             @Override public Integer call() throws Exception {
@@ -442,7 +442,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testTxPutAll() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -469,7 +469,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearTxPrepareRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearTxPrepareRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -523,7 +523,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void pessimisticTx(NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -555,7 +555,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearLockRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -670,17 +670,17 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             new AffinityTopologyVersion(topVer + 1),
             1);
 
-        AffinityFunction affFunc = ignite.cache(null).getConfiguration(CacheConfiguration.class).getAffinity();
+        AffinityFunction affFunc = ignite.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getAffinity();
 
         List<List<ClusterNode>> newAff = affFunc.assignPartitions(ctx);
 
-        List<List<ClusterNode>> curAff = ((IgniteKernal)ignite).context().cache().internalCache(null).context().
+        List<List<ClusterNode>> curAff = ((IgniteKernal)ignite).context().cache().internalCache(DEFAULT_CACHE_NAME).context().
             affinity().assignments(new AffinityTopologyVersion(topVer));
 
         Integer key1 = null;
         Integer key2 = null;
 
-        Affinity<Integer> aff = ignite.affinity(null);
+        Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < curAff.size(); i++) {
             if (key1 == null) {
@@ -733,7 +733,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPessimisticTx2() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -755,7 +755,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         AffinityTopologyVersion topVer1 = new AffinityTopologyVersion(4, 0);
 
-        assertEquals(topVer1, ignite0.context().cache().internalCache(null).context().topology().topologyVersion());
+        assertEquals(topVer1, ignite0.context().cache().internalCache(DEFAULT_CACHE_NAME).context().topology().topologyVersion());
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
@@ -769,7 +769,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
         spi.blockMessages(GridNearLockRequest.class, ignite2.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -796,9 +796,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ignite0.context().cache().context().exchange().affinityReadyFuture(topVer2).get();
 
-        assertEquals(topVer2, ignite0.context().cache().internalCache(null).context().topology().topologyVersion());
+        assertEquals(topVer2, ignite0.context().cache().internalCache(DEFAULT_CACHE_NAME).context().topology().topologyVersion());
 
-        GridCacheAffinityManager aff = ignite0.context().cache().internalCache(null).context().affinity();
+        GridCacheAffinityManager aff = ignite0.context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity();
 
         List<ClusterNode> nodes1 = aff.nodesByKey(key1, topVer1);
         List<ClusterNode> nodes2 = aff.nodesByKey(key1, topVer2);
@@ -840,7 +840,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void pessimisticTxNoRemap(@Nullable NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -864,7 +864,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
         for (int i = 0; i < 100; i++)
-            primaryCache(i, null).put(i, -1);
+            primaryCache(i, DEFAULT_CACHE_NAME).put(i, -1);
 
         final Map<Integer, Integer> map = new HashMap<>();
 
@@ -877,7 +877,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearLockRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -945,7 +945,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void optimisticSerializableTx(NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -977,7 +977,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearTxPrepareRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1097,7 +1097,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void lock(NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1127,7 +1127,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch lockedLatch = new CountDownLatch(1);
 
@@ -1165,7 +1165,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertTrue(lockedLatch.await(3000, TimeUnit.MILLISECONDS));
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         for (Integer key : keys) {
             Lock lock = cache0.lock(key);
@@ -1190,7 +1190,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
 
             private boolean unlocked(Ignite ignite) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 for (Integer key : keys) {
                     if (cache.isLocalLocked(key, false)) {
@@ -1219,7 +1219,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPessimisticTxMessageClientFirstFlag() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1243,9 +1243,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearLockRequest.class);
 
-        IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer key1 = findKey(aff, 1);
@@ -1263,10 +1263,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         Map<Integer, Integer> map = new LinkedHashMap<>();
 
-        map.put(primaryKey(ignite0.cache(null)), 4);
-        map.put(primaryKey(ignite1.cache(null)), 5);
-        map.put(primaryKey(ignite2.cache(null)), 6);
-        map.put(primaryKeys(ignite0.cache(null), 1, 10_000).get(0), 7);
+        map.put(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), 4);
+        map.put(primaryKey(ignite1.cache(DEFAULT_CACHE_NAME)), 5);
+        map.put(primaryKey(ignite2.cache(DEFAULT_CACHE_NAME)), 6);
+        map.put(primaryKeys(ignite0.cache(DEFAULT_CACHE_NAME), 1, 10_000).get(0), 7);
 
         try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.putAll(map);
@@ -1282,9 +1282,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi0.record(GridNearLockRequest.class);
 
-        List<Integer> keys = primaryKeys(ignite1.cache(null), 3, 0);
+        List<Integer> keys = primaryKeys(ignite1.cache(DEFAULT_CACHE_NAME), 3, 0);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache0.put(keys.get(0), 0);
@@ -1319,7 +1319,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testOptimisticTxMessageClientFirstFlag() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1341,11 +1341,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
-        IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
-        List<Integer> keys0 = primaryKeys(ignite0.cache(null), 2, 0);
-        List<Integer> keys1 = primaryKeys(ignite1.cache(null), 2, 0);
-        List<Integer> keys2 = primaryKeys(ignite2.cache(null), 2, 0);
+        List<Integer> keys0 = primaryKeys(ignite0.cache(DEFAULT_CACHE_NAME), 2, 0);
+        List<Integer> keys1 = primaryKeys(ignite1.cache(DEFAULT_CACHE_NAME), 2, 0);
+        List<Integer> keys2 = primaryKeys(ignite2.cache(DEFAULT_CACHE_NAME), 2, 0);
 
         LinkedHashMap<Integer, Integer> map = new LinkedHashMap<>();
 
@@ -1377,7 +1377,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkData(map, null, cache, 4);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
 
@@ -1414,7 +1414,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testLockRemoveAfterClientFailed() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1431,7 +1431,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertTrue(ignite2.configuration().isClientMode());
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         final Integer key = 0;
 
@@ -1441,11 +1441,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ignite2.close();
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         assertFalse(cache0.isLocalLocked(key, false));
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         assertFalse(cache1.isLocalLocked(key, false));
 
@@ -1459,7 +1459,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertTrue(ignite2.configuration().isClientMode());
 
-        cache2 = ignite2.cache(null);
+        cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         lock2 = cache2.lock(0);
 
@@ -1472,7 +1472,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testLockFromClientBlocksExchange() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1487,7 +1487,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         Ignite ignite2 = startGrid(2);
 
-        IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(0);
 
@@ -1549,7 +1549,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     {
         final List<Ignite> nodes = G.allGrids();
 
-        final Affinity<Integer> aff = nodes.get(0).affinity(null);
+        final Affinity<Integer> aff = nodes.get(0).affinity(DEFAULT_CACHE_NAME);
 
         assertEquals(expNodes, nodes.size());
 
@@ -1569,7 +1569,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                         Object val = null;
 
                         for (Ignite node : nodes) {
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             boolean affNode = aff.isPrimaryOrBackup(node.cluster().localNode(), key);
 
@@ -1581,7 +1581,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                 else
                                     assertNotNull("Unexpected value for " + node.name(), val0);
 
-                                GridCacheAdapter cache0 = ((IgniteKernal)node).internalCache(null);
+                                GridCacheAdapter cache0 = ((IgniteKernal)node).internalCache(DEFAULT_CACHE_NAME);
 
                                 if (affNode && cache0.isNear())
                                     cache0 = ((GridNearCacheAdapter)cache0).dht();
@@ -1686,7 +1686,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      */
     private void multinode(CacheAtomicityMode atomicityMode, final TestType testType)
         throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1734,7 +1734,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                     Thread.currentThread().setName("update-thread-" + ignite.name());
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     boolean useTx = testType == TestType.OPTIMISTIC_TX ||
                         testType == TestType.OPTIMISTIC_SERIALIZABLE_TX ||
@@ -1817,7 +1817,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                     IgniteEx ignite = startGrid(SRV_CNT + CLIENT_CNT);
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     assertNotNull(cache);
                 }
@@ -1904,14 +1904,14 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         fut.get(30_000);
 
         if (testType != TestType.LOCK)
-            checkData(null, putKeys, grid(SRV_CNT).cache(null), SRV_CNT + CLIENT_CNT);
+            checkData(null, putKeys, grid(SRV_CNT).cache(DEFAULT_CACHE_NAME), SRV_CNT + CLIENT_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testServersLeaveOnStart() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1957,7 +1957,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         for (int i = 0; i < CLIENTS; i++) {
             Ignite ignite = grid(i + 2);
 
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             cache.put(i, i);
 

@@ -61,7 +61,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(ATOMIC);
@@ -170,7 +170,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                 ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            IgniteCache<String, TestObject> cache = ignite.<String, TestObject>cache(null).withNoRetries();
+            IgniteCache<String, TestObject> cache = ignite.<String, TestObject>cache(DEFAULT_CACHE_NAME).withNoRetries();
 
             assertNotNull(cache);
 

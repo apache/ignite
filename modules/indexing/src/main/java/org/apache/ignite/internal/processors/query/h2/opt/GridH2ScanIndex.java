@@ -184,8 +184,8 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-        return delegate().createLookupBatch(filter);
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
+        return delegate().createLookupBatch(filters, filter);
     }
 
     /** {@inheritDoc} */

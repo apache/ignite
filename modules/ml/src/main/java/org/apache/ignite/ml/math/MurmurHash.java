@@ -22,8 +22,8 @@ import java.nio.ByteOrder;
 
 /**
  * This is a very fast, non-cryptographic hash suitable for general hash-based lookup.
- *
- * See http://murmurhash.googlepages.com/ for mre details.
+ * <p>
+ * See http://murmurhash.googlepages.com/ for mre details.</p>
  */
 public class MurmurHash {
     /** Hide it. */
@@ -33,18 +33,18 @@ public class MurmurHash {
     /**
      * This produces exactly the same hash values as the final C+ version of MurmurHash3 and is
      * thus suitable for producing the same hash values across platforms.
-     *
-     * The 32 bit x86 version of this hash should be the fastest variant for relatively short keys like IDs.
-     *
+     * <p>
+     * The 32 bit x86 version of this hash should be the fastest variant for relatively short keys like IDs.</p>
+     * <p>
      * Note - The x86 and x64 versions do _not_ produce the same results, as the algorithms are
-     * optimized for their respective platforms.
+     * optimized for their respective platforms.</p>
+     * <p>
+     * See also http://github.com/yonik/java_util for future updates to this method.</p>
      *
-     * See also http://github.com/yonik/java_util for future updates to this method.
-     *
-     * @param data
-     * @param off
-     * @param len
-     * @param seed
+     * @param data Data to hash.
+     * @param off Where to start munging.
+     * @param len How many bytes to process.
+     * @param seed The seed to start with.
      * @return 32 bit hash platform compatible with C++ MurmurHash3 implementation on x86.
      */
     public static int hash3X86(byte[] data, int off, int len, int seed) {
@@ -101,7 +101,7 @@ public class MurmurHash {
      * Hashes an int.
      *
      * @param data The int to hash.
-     * @param seed The seed for the hash.
+     * @param seed The seed to start with.
      * @return The 32 bit hash of the bytes in question.
      */
     public static int hash(int data, int seed) {
@@ -119,7 +119,7 @@ public class MurmurHash {
      * Hashes bytes in an array.
      *
      * @param data The bytes to hash.
-     * @param seed The seed for the hash.
+     * @param seed The seed to start with.
      * @return The 32 bit hash of the bytes in question.
      */
     public static int hash(byte[] data, int seed) {
@@ -143,7 +143,7 @@ public class MurmurHash {
      * Hashes the bytes in a buffer from the current position to the limit.
      *
      * @param buf The bytes to hash.
-     * @param seed The seed for the hash.
+     * @param seed The seed to start with.
      * @return The 32 bit murmur hash of the bytes in the buffer.
      */
     public static int hash(ByteBuffer buf, int seed) {
@@ -185,26 +185,27 @@ public class MurmurHash {
     }
 
     /**
-     * @param data
-     * @param seed
+     * @param data The data to hash.
+     * @param seed The seed to start with.
+     * @return Hash value for given data and seed.
      */
     public static long hash64A(byte[] data, int seed) {
         return hash64A(ByteBuffer.wrap(data), seed);
     }
 
     /**
-     * @param data
-     * @param off
-     * @param len
-     * @param seed
+     * @param data The data to hash.
+     * @param off Where to start munging.
+     * @param len How many bytes to process.
+     * @param seed The seed to start with.
      */
     public static long hash64A(byte[] data, int off, int len, int seed) {
         return hash64A(ByteBuffer.wrap(data, off, len), seed);
     }
 
     /**
-     * @param buf
-     * @param seed
+     * @param buf The data to hash.
+     * @param seed The seed to start with.
      */
     public static long hash64A(ByteBuffer buf, int seed) {
         ByteOrder byteOrder = buf.order();

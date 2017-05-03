@@ -132,8 +132,7 @@ public class GridIntList implements Message, Externalizable {
 
         for (int i = 0; i < idx; i++) {
             int element  = arr[i];
-            int elementHash = (int)(element ^ (element >>> 32));
-            res = 31 * res + elementHash;
+            res = 31 * res + element;
         }
 
         return res;
@@ -577,11 +576,28 @@ public class GridIntList implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 85;
+        return -52;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
-    }    
+    }
+
+    /**
+     * @return Iterator.
+     */
+    public GridIntIterator iterator() {
+        return new GridIntIterator() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < idx;
+            }
+
+            @Override public int next() {
+                return arr[c++];
+            }
+        };
+    }
 }
