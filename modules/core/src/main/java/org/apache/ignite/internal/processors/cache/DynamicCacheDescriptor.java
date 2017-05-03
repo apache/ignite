@@ -47,9 +47,6 @@ public class DynamicCacheDescriptor {
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
-    /** Locally configured flag. */
-    private boolean locCfg;
-
     /** Statically configured flag. */
     private boolean staticCfg;
 
@@ -69,16 +66,10 @@ public class DynamicCacheDescriptor {
     private AffinityTopologyVersion startTopVer;
 
     /** */
-    private boolean rcvdOnDiscovery;
-
-    /** */
     private Integer cacheId;
 
     /** */
     private UUID rcvdFrom;
-
-    /** */
-    private AffinityTopologyVersion rcvdFromVer;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -147,6 +138,8 @@ public class DynamicCacheDescriptor {
      * @param startTopVer Start topology version.
      */
     public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        assert startTopVer != null;
+
         this.startTopVer = startTopVer;
     }
 
@@ -169,27 +162,6 @@ public class DynamicCacheDescriptor {
      */
     public IgniteUuid deploymentId() {
         return deploymentId;
-    }
-
-    /**
-     * @param deploymentId Deployment ID.
-     */
-    public void deploymentId(IgniteUuid deploymentId) {
-        this.deploymentId = deploymentId;
-    }
-
-    /**
-     * @return Locally configured flag.
-     */
-    public boolean locallyConfigured() {
-        return locCfg;
-    }
-
-    /**
-     * @param locCfg Locally configured flag.
-     */
-    public void locallyConfigured(boolean locCfg) {
-        this.locCfg = locCfg;
     }
 
     /**
@@ -260,38 +232,12 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return {@code True} if received in discovery data.
-     */
-    public boolean receivedOnDiscovery() {
-        return rcvdOnDiscovery;
-    }
-
-    /**
-     * @param rcvdOnDiscovery {@code True} if received in discovery data.
-     */
-    public void receivedOnDiscovery(boolean rcvdOnDiscovery) {
-        this.rcvdOnDiscovery = rcvdOnDiscovery;
-    }
-
-    /**
      * @param nodeId ID of node provided cache configuration in discovery data.
      */
     public void receivedFrom(UUID nodeId) {
+        assert nodeId != null;
+
         rcvdFrom = nodeId;
-    }
-
-    /**
-     * @return Topology version when node provided cache configuration was started.
-     */
-    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
-        return rcvdFromVer;
-    }
-
-    /**
-     * @param rcvdFromVer Topology version when node provided cache configuration was started.
-     */
-    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
-        this.rcvdFromVer = rcvdFromVer;
     }
 
     /**

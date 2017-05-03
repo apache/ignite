@@ -793,10 +793,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CacheConfiguration c = desc.cacheConfiguration();
                         IgnitePredicate filter = c.getNodeFilter();
 
-                        if (c.getName().equals(conf.getName()) &&
-                            ((desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) ||
-                                CU.isSystemCache(c.getName()))) {
-
+                        // TODO IGNITE-5075.
+                        if (c.getName().equals(conf.getName()) && ((CU.affinityNode(locNode, filter)) || CU.isSystemCache(c.getName()))) {
                             tmpCacheCfg.add(c);
 
                             break;
@@ -836,9 +834,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Escape if start active on start false
         if (!activeOnStart)
             return;
-
-        for (GridCacheAdapter<?, ?> cache : caches.values())
-            onKernalStart(cache);
 
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();

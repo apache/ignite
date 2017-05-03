@@ -540,15 +540,32 @@ class ClusterCachesInfo {
                 locJoinStartCaches = new ArrayList<>();
 
                 if (!disconnectedState()) {
-                    processJoiningNode(joinDiscoData, node.id());
+                    processJoiningNode(joinDiscoData, node.id(), topVer);
 
                     for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                         CacheConfiguration cfg = desc.cacheConfiguration();
 
                         CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
-                        NearCacheConfiguration nearCfg = locCfg != null ? locCfg.config().getNearConfiguration() :
-                            null;
+                        NearCacheConfiguration nearCfg = null;
+
+                        if (locCfg != null) {
+                            DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
+                                locCfg.config(),
+                                desc.cacheType(),
+                                desc.template(),
+                                desc.deploymentId(),
+                                desc.schema());
+
+                            desc0.startTopologyVersion(desc.startTopologyVersion());
+                            desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
+                            desc0.receivedFrom(desc.receivedFrom());
+                            desc0.staticallyConfigured(desc.staticallyConfigured());
+
+                            desc = desc0;
+
+                            nearCfg = locCfg.config().getNearConfiguration();
+                        }
 
                         if (locCfg != null || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
                             locJoinStartCaches.add(new T2<>(desc, nearCfg));
@@ -559,26 +576,8 @@ class ClusterCachesInfo {
                 CacheJoinNodeDiscoveryData discoData = joiningNodesDiscoData.remove(node.id());
 
                 if (discoData != null)
-                    processJoiningNode(discoData, node.id());
+                    processJoiningNode(discoData, node.id(), topVer);
             }
-
-            initStartVersionOnJoin(registeredCaches.values(), node, topVer);
-
-            initStartVersionOnJoin(registeredTemplates.values(), node, topVer);
-        }
-    }
-
-    /**
-     * @param descs Cache descriptors.
-     * @param joinedNode Joined node.
-     * @param topVer Current topology version.
-     */
-    private void initStartVersionOnJoin(Collection<DynamicCacheDescriptor> descs,
-        ClusterNode joinedNode,
-        AffinityTopologyVersion topVer) {
-        for (DynamicCacheDescriptor cacheDesc : descs) {
-            if (cacheDesc.staticallyConfigured() && joinedNode.id().equals(cacheDesc.receivedFrom()))
-                cacheDesc.startTopologyVersion(topVer);
         }
     }
 
@@ -621,7 +620,7 @@ class ClusterCachesInfo {
                 0,
                 desc.cacheType(),
                 desc.startTopologyVersion(),
-                null,
+                desc.deploymentId(),
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
@@ -743,7 +742,7 @@ class ClusterCachesInfo {
      * @param joinData Joined node discovery data.
      * @param nodeId Joined node ID.
      */
-    private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId) {
+    private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, AffinityTopologyVersion topVer) {
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
             CacheConfiguration cfg = cacheInfo.config();
 
@@ -757,6 +756,7 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
+                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);
 
@@ -777,6 +777,7 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
+                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
