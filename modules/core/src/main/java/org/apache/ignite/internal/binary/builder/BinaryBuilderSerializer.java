@@ -124,7 +124,7 @@ class BinaryBuilderSerializer {
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(typeId);
-            writer.writeInt(((Enum)val).ordinal());
+            writer.doWriteUnsignedVarint(((Enum)val).ordinal());
 
             return;
         }

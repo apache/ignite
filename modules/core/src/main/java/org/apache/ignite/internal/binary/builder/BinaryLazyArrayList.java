@@ -126,7 +126,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     /** {@inheritDoc} */
     @Override public int size() {
         if (delegate == null)
-            return reader.readIntPositioned(off + 1);
+            return BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
         return delegate.size();
     }
@@ -150,9 +150,9 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
         }
         else {
             writer.writeByte(GridBinaryMarshaller.COL);
-            writer.writeInt(delegate.size());
+            writer.doWriteUnsignedVarint(delegate.size());
 
-            byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];
+            byte colType = reader.array()[off + 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(delegate.size()) /* size */];
             writer.writeByte(colType);
 
             int oldPos = reader.position();

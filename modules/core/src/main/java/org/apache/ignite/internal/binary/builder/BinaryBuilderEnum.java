@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,7 +71,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
             this.clsName = null;
         }
 
-        ordinal = reader.readInt();
+        ordinal = BinaryUtils.doReadUnsignedVarint(reader);
     }
 
     /**
@@ -91,7 +92,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
         else
             writer.writeInt(typeId);
 
-        writer.writeInt(ordinal);
+        writer.doWriteUnsignedVarint(ordinal);
     }
 
     /** {@inheritDoc} */

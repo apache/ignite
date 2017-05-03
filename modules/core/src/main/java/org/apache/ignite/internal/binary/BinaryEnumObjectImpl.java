@@ -123,7 +123,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             this.clsName = new String(bytes, UTF_8);
         }
 
-        this.ord = BinaryPrimitives.readInt(arr, off);
+        this.ord = BinaryUtils.doReadUnsignedVarint(arr, off);
     }
 
     /**

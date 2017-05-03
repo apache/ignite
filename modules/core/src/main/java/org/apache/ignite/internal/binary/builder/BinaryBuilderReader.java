@@ -253,8 +253,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.ENUM:
-                //skipping type id and ordinal value
-                len = 8;
+                int ord = BinaryUtils.doReadSignedVarint(arr, pos + 4);
+                len = 4 + BinaryUtils.sizeInUnsignedVarint(ord); //skipping type id and ordinal value
 
                 break;
 

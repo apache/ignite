@@ -66,9 +66,9 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
             Collection<Object> c = (Collection<Object>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
-            writer.writeInt(c.size());
+            writer.doWriteUnsignedVarint(c.size());
 
-            byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];
+            byte colType = reader.array()[off + 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(c.size()) /* size */];
             writer.writeByte(colType);
 
             for (Object o : c)
@@ -78,9 +78,9 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
 
     /** {@inheritDoc} */
     @Override protected Object init() {
-        int size = reader.readIntPositioned(off + 1);
+        int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-        reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
+        reader.position(off + 1/* flag */ + BinaryUtils.sizeInUnsignedVarint(size)/* size */ + 1/* col type */);
 
         Set<Object> res = U.newLinkedHashSet(size);
 
