@@ -840,6 +840,11 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
+    @Override public void destroy() {
+        getStorage().destroy();
+    }
+
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         Matrix cp = like(rowSize(), columnSize());
 
