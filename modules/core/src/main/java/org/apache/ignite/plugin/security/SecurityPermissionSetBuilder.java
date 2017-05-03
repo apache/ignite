@@ -17,16 +17,17 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.util.Map;
-import java.util.List;
-import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
 
 /**
  * Provides a convenient way to create a permission set.
@@ -61,7 +62,7 @@ public class SecurityPermissionSetBuilder {
     private Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
 
     /** System permissions.*/
-    private List<SecurityPermission> sysPerms = new ArrayList<>();
+    private Set<SecurityPermission> sysPerms = new HashSet<>();
 
     /** Default allow all.*/
     private boolean dfltAllowAll;
@@ -193,7 +194,7 @@ public class SecurityPermissionSetBuilder {
     private final <T> Collection<T> toCollection(T... perms) {
         assert perms != null;
 
-        Collection<T> col = new ArrayList<>(perms.length);
+        Collection<T> col = U.newHashSet(perms.length);
 
         Collections.addAll(col, perms);
 
@@ -234,7 +235,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
         permSet.setServicePermissions(unmodifiableMap(srvcPerms));
-        permSet.setSystemPermissions(unmodifiableList(sysPerms));
+        permSet.setSystemPermissions(unmodifiableSet(sysPerms));
 
         return permSet;
     }

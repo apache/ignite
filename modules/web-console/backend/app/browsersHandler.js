@@ -155,8 +155,8 @@ module.exports.factory = (_, socketio, configure, errors) => {
             });
 
             // Return tables from database to browser.
-            sock.on('schemaImport:tables', (...args) => {
-                this.executeOnAgent(token(), demo, 'schemaImport:tables', ...args);
+            sock.on('schemaImport:metadata', (...args) => {
+                this.executeOnAgent(token(), demo, 'schemaImport:metadata', ...args);
             });
         }
 
