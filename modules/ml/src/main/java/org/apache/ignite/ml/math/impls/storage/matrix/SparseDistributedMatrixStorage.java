@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
@@ -277,7 +278,9 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /** Delete all data from cache. */
     @Override public void destroy() {
-        cache.clearAll(IntStream.range(0,rows).mapToObj(this::getCacheKey).collect(Collectors.toSet()));
+        Set<IgniteBiTuple<Integer, IgniteUuid>> keyset = IntStream.range(0, rows).mapToObj(this::getCacheKey).collect(Collectors.toSet());
+
+        cache.clearAll(keyset);
     }
 
     /** {@inheritDoc} */
