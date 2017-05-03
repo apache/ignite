@@ -35,7 +35,9 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <akka-stream.version></akka-stream.version>
+        <scala.version>2.11</scala.version>
+        <lib.version>2.5.0</lib.version>
+        <testki.version>2.2.5</testki.version>
     </properties>
 
     <dependencies>
@@ -68,26 +70,26 @@
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
-            <version>2.5.0</version>
+            <artifactId>akka-actor_${scala.version}</artifactId>
+            <version>${lib.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-testkit_2.11</artifactId>
-            <version>2.5.0</version>
+            <artifactId>akka-testkit_${scala.version}</artifactId>
+            <version>${lib.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-stream_2.11</artifactId>
-            <version>2.5.0</version>
+            <artifactId>akka-stream_${scala.version}</artifactId>
+            <version>${lib.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.11</artifactId>
-            <version>2.2.5</version>
+            <artifactId>scalatest_${scala.version}</artifactId>
+            <version>${testki.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
