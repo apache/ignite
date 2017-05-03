@@ -194,6 +194,12 @@ public class ExchangeActions {
         return false;
     }
 
+    public void newClusterState(ClusterState state) {
+        assert state != null;
+
+        newState = state;
+    }
+
     /**
      * @return New cluster state if state change was requested.
      */

@@ -89,8 +89,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     private QuerySchema schema;
 
     /**
-     * Constructor creates cache stop request.
-     *
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
@@ -102,6 +100,21 @@ public class DynamicCacheChangeRequest implements Serializable {
 
         this.reqId = reqId;
         this.cacheName = cacheName;
+        this.initiatingNodeId = initiatingNodeId;
+    }
+
+    /**
+     * @param reqId Unique request ID.
+     * @param state New cluster state.
+     * @param initiatingNodeId Initiating node ID.
+     */
+    public DynamicCacheChangeRequest(UUID reqId, ClusterState state, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert state != null;
+        assert initiatingNodeId != null;
+
+        this.reqId = reqId;
+        this.state = state;
         this.initiatingNodeId = initiatingNodeId;
     }
 
@@ -176,13 +189,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public ClusterState state() {
         return state;
-    }
-
-    /**
-     * @param state State.
-     */
-    public void state(ClusterState state) {
-        this.state = state;
     }
 
     /**

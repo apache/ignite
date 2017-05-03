@@ -427,7 +427,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
-        if (spiMBean != null) {
+        if (spiMBean != null && ignite != null) {
             MBeanServer jmx = ignite.configuration().getMBeanServer();
 
             assert jmx != null;

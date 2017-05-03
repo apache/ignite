@@ -1563,20 +1563,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 assert discoEvt instanceof DiscoveryCustomEvent;
 
                 if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof DynamicCacheChangeBatch) {
-                    DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)((DiscoveryCustomEvent)discoEvt)
-                        .customMessage();
-
-                    Set<String> caches = new HashSet<>();
-
-                    for (DynamicCacheChangeRequest req : batch.requests()) {
-                        if (req.resetLostPartitions())
-                            caches.add(req.cacheName());
-                        else if (req.globalStateChange() && req.state() != ClusterState.INACTIVE)
+                    if (exchActions != null) {
+                        if (exchActions.newClusterState() == ClusterState.ACTIVE)
                             assignPartitionsStates();
-                    }
 
-                    if (!F.isEmpty(caches))
-                        resetLostPartitions(caches);
+                        Set<String> caches = exchActions.cachesToResetLostPartitions();
+
+                        if (!F.isEmpty(caches))
+                            resetLostPartitions(caches);
+                    }
                 }
             }
             else if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)

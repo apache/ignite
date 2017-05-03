@@ -261,7 +261,7 @@ class ClusterCachesInfo {
                 continue;
             }
 
-            DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
+            DynamicCacheDescriptor desc = req.globalStateChange() ? null : registeredCaches.get(req.cacheName());
 
             boolean needExchange = false;
 
@@ -355,7 +355,7 @@ class ClusterCachesInfo {
                 }
             }
             else if (req.globalStateChange())
-                needExchange = true;
+                exchangeActions.newClusterState(req.state());
             else if (req.resetLostPartitions()) {
                 if (desc != null) {
                     needExchange = true;
@@ -472,7 +472,7 @@ class ClusterCachesInfo {
             return new CacheClientReconnectDiscoveryData(cachesInfo);
         }
         else {
-            assert ctx.config().isDaemon() || joinDiscoData != null;
+            assert ctx.config().isDaemon() || joinDiscoData != null || !ctx.state().active();
 
             return joinDiscoData;
         }
@@ -536,14 +536,14 @@ class ClusterCachesInfo {
                 if (gridData == null) { // First node starts.
                     assert registeredCaches.isEmpty();
                     assert registeredTemplates.isEmpty();
-                    assert joinDiscoData != null;
+                    assert joinDiscoData != null || !ctx.state().active();
                 }
 
                 assert locJoinStartCaches == null;
 
                 locJoinStartCaches = new ArrayList<>();
 
-                if (!disconnectedState()) {
+                if (!disconnectedState() && joinDiscoData != null) {
                     processJoiningNode(joinDiscoData, node.id(), topVer);
 
                     for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -644,7 +644,7 @@ class ClusterCachesInfo {
         if (ctx.isDaemon() || data.commonData() == null)
             return;
 
-        assert joinDiscoData != null || disconnectedState();
+        assert joinDiscoData != null || disconnectedState() || !ctx.state().active();
         assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
