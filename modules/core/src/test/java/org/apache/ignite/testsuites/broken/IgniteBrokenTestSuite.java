@@ -23,8 +23,10 @@ import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForCluster
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionNotLoadedEventSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheConnectionRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGetRestartTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruNearEnabledPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
@@ -53,7 +55,9 @@ public class IgniteBrokenTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProcessorMultiNodeSelfTest.class);
         suite.addTestSuite(GridCachePartitionNotLoadedEventSelfTest.class);
         suite.addTestSuite(Random2LruNearEnabledPageEvictionMultinodeTest.class);
+        suite.addTestSuite(RandomLruNearEnabledPageEvictionMultinodeTest.class);
         suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
+        suite.addTestSuite(IgniteCacheConnectionRecoveryTest.class);
 
         return suite;
     }

@@ -277,7 +277,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class);
         suite.addTestSuite(IgniteCacheMessageWriteTimeoutTest.class);
         suite.addTestSuite(IgniteCacheMessageRecoveryIdleConnectionTest.class);
-        suite.addTestSuite(IgniteCacheConnectionRecoveryTest.class);
+        //suite.addTestSuite(IgniteCacheConnectionRecoveryTest.class);
         suite.addTestSuite(IgniteCacheConnectionRecovery10ConnectionsTest.class);
         suite.addTestSuite(GridCacheGlobalLoadTest.class);
         suite.addTestSuite(GridCachePartitionedLocalStoreSelfTest.class);

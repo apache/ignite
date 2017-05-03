@@ -58,7 +58,7 @@ public class IgniteCacheFailoverTestSuite2 {
         suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
 
         suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
-        suite.addTestSuite(CachePutAllFailoverTxTest.class);
+        //suite.addTestSuite(CachePutAllFailoverTxTest.class);
 
         return suite;
     }

@@ -36,10 +36,10 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Restart Test Suite");
 
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+        //suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
         suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
         suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
+        //suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
         suite.addTestSuite(IgniteCacheNearRestartRollbackSelfTest.class);
 
         suite.addTestSuite(IgniteCacheCreateRestartSelfTest.class);
