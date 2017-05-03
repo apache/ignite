@@ -35,16 +35,8 @@
                     Partitioned cache example configuration with binary objects enabled.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="atomic"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="backups" value="1"/>
-                </bean>
-
-                <!--
-                    Partitioned cache example configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="tx"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="backups" value="1"/>
                 </bean>
             </list>
