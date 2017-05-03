@@ -175,6 +175,9 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
 
+            if (map == null)
+                map = cache.get(getCacheKey(a));
+
             return (map == null || !map.containsKey(b)) ? 0.0 : map.get(b);
         });
     }
@@ -194,8 +197,13 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
             // Local get.
             Map<Integer, Double> map = cache.localPeek(getCacheKey(a), CachePeekMode.PRIMARY);
 
-            if (map == null)
-                map = acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap();
+
+            if (map == null) {
+                map = cache.get(getCacheKey(a)); //Remote entry get.
+
+                if (map == null)
+                    map = acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap();
+            }
 
             if (v != 0.0)
                 map.put(b, v);

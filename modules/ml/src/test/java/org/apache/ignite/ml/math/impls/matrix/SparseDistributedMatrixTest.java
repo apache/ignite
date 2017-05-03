@@ -35,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -110,7 +111,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
                 double v = Math.random();
                 cacheMatrix.set(i, j, v);
 
-                assert Double.compare(v, cacheMatrix.get(i, j)) == 0;
+                assertEquals("Unexpected value for matrix element["+ i +" " + j + "]", v, cacheMatrix.get(i, j), PRECISION);
             }
         }
     }
@@ -134,7 +135,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         SparseDistributedMatrix objRestored = (SparseDistributedMatrix)objInputStream.readObject();
 
         assertTrue(MathTestConstants.VAL_NOT_EQUALS, cacheMatrix.equals(objRestored));
-        assertEquals(MathTestConstants.VAL_NOT_EQUALS, objRestored.get(1, 1), 1.0, 0.0);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, objRestored.get(1, 1), 1.0, PRECISION);
     }
 
     /** Test simple math. */
