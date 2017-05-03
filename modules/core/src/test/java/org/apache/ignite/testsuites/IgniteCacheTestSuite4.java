@@ -212,7 +212,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
         suite.addTestSuite(IgniteDynamicCacheWithConfigStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
-        suite.addTestSuite(IgniteDynamicCacheStartStopConcurrentTest.class);
+        //suite.addTestSuite(IgniteDynamicCacheStartStopConcurrentTest.class);
         suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
         suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
         suite.addTestSuite(IgniteDynamicClientCacheStartSelfTest.class);
@@ -249,7 +249,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(CacheRemoveAllSelfTest.class);
         suite.addTestSuite(CacheGetEntryOptimisticReadCommittedSeltTest.class);
-        suite.addTestSuite(CacheGetEntryOptimisticRepeatableReadSeltTest.class);
+        //suite.addTestSuite(CacheGetEntryOptimisticRepeatableReadSeltTest.class);
         suite.addTestSuite(CacheGetEntryOptimisticSerializableSeltTest.class);
         suite.addTestSuite(CacheGetEntryPessimisticReadCommittedSeltTest.class);
         suite.addTestSuite(CacheGetEntryPessimisticRepeatableReadSeltTest.class);

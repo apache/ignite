@@ -199,7 +199,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheQueryTransformerSelfTest.class);
         suite.addTestSuite(IgniteCachePrimitiveFieldsQuerySelfTest.class);
 
-        suite.addTestSuite(IgniteCacheJoinQueryWithAffinityKeyTest.class);
+        //suite.addTestSuite(IgniteCacheJoinQueryWithAffinityKeyTest.class);
         //suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedTest.class);
         suite.addTestSuite(IgniteCrossCachesJoinsQueryTest.class);
 

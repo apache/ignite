@@ -129,7 +129,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
         //suite.addTestSuite(GridServiceProcessorMultiNodeSelfTest.class);
-        suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
+        //suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
         suite.addTestSuite(GridServiceProcessorProxySelfTest.class);
         suite.addTestSuite(GridServiceReassignmentSelfTest.class);
         suite.addTestSuite(GridServiceClientNodeTest.class);

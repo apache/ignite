@@ -18,19 +18,32 @@
 package org.apache.ignite.testsuites.broken;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticRepeatableReadSeltTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartStopConcurrentTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionNotLoadedEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheConnectionRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGetRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruNearEnabledPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionMessageMarshallingTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionUnmasrhalErrorsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionCrossCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsMetaManagerSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeSelfTest;
 
 /**
@@ -58,6 +71,20 @@ public class IgniteBrokenTestSuite extends TestSuite {
         suite.addTestSuite(RandomLruNearEnabledPageEvictionMultinodeTest.class);
         suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
         suite.addTestSuite(IgniteCacheConnectionRecoveryTest.class);
+        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
+        suite.addTestSuite(IgniteDynamicCacheStartStopConcurrentTest.class);
+        suite.addTestSuite(CacheGetEntryOptimisticRepeatableReadSeltTest.class);
+        suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
+
+        suite.addTestSuite(DepthFirstSearchTest.class);
+        suite.addTestSuite(TxOptimisticDeadlockDetectionTest.class);
+        suite.addTestSuite(TxOptimisticDeadlockDetectionCrossCacheTest.class);
+        suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
+        suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
+        suite.addTestSuite(TxDeadlockDetectionTest.class);
+        suite.addTestSuite(TxDeadlockDetectionNoHangsTest.class);
+        suite.addTestSuite(TxDeadlockDetectionUnmasrhalErrorsTest.class);
+        suite.addTestSuite(TxDeadlockDetectionMessageMarshallingTest.class);
 
         return suite;
     }
