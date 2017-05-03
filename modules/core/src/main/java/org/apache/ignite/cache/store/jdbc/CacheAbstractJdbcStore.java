@@ -758,7 +758,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     Object arg = args[i + 1];
 
-                    LoadCacheCustomQueryWorker<K, V> task;
+                    final LoadCacheCustomQueryWorker<K, V> task;
 
                     if (arg instanceof PreparedStatement) {
                         PreparedStatement stmt = (PreparedStatement)arg;
@@ -2036,10 +2036,16 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 throw new CacheLoaderException("Failed to execute custom query for load cache", e);
             }
             finally {
-                //TODO: correctly handle resources in case when user statement vs user query provided
-                U.closeQuiet(stmt);
-
-                U.closeQuiet(conn);
+                if (conn != null) {
+                    try {
+                        stmt.close();
+                    } catch (Exception ignored) {
+                    }
+                    try {
+                        conn.close();
+                    } catch (Exception ignored) {
+                    }
+                }
             }
         }
     }
