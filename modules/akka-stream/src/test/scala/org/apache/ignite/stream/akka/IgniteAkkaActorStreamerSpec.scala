@@ -27,7 +27,7 @@ import akka.stream.scaladsl.{Flow, GraphDSL, RunnableGraph, Source}
 import org.apache.ignite.cache.CachePeekMode
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
-import org.apache.ignite.events.{CacheEvent, Event}
+import org.apache.ignite.events.CacheEvent
 import org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT
 import org.apache.ignite.lang.{IgniteBiTuple, IgnitePredicate}
 import org.apache.ignite.stream.StreamSingleTupleExtractor
@@ -40,13 +40,13 @@ import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnitRunner])
 class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
-
-    var ignite: Ignite = null
-
     describe("Ignite Akka stream.") {
         it("should successfully store data to ignite cache via akka-stream") {
             val system = ActorSystem.create("ignite-streamer")
+
             implicit val materialize = ActorMaterializer.create(system)
+
+            val ignite = Ignition.getOrStart(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, false))
 
             val cache = ignite.cache[Int, Int](IgniteAkkaActorStreamerSpec.CACHE_NAME)
 
@@ -99,27 +99,23 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
 
             g.run()
 
-            cache.put(9999, 1000)
-            cache.put(9998, 1000)
-
             latch.await(10000, TimeUnit.MILLISECONDS)
-
-            println(cache.size(CachePeekMode.PRIMARY))
-            println(cache.get(999))
-            println(cache.get(100))
-            println(cache.get(10))
-            println(cache.get(1))
 
             IgniteAkkaActorStreamerSpec.unsubscribeToPutEvents(ignite, listener)
 
             assert(cache.size(CachePeekMode.PRIMARY) == IgniteAkkaActorStreamerSpec.CACHE_ENTRY_COUNT)
 
             cache.clear()
+
+            materialize.shutdown()
         }
 
         it("should successfully store data to ignite cache via akka actor") {
             val system = ActorSystem.create("ignite-streamer")
+
             implicit val materialize = ActorMaterializer.create(system)
+
+            val ignite = Ignition.getOrStart(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, false))
 
             val cache = ignite.cache[Int, Int](IgniteAkkaActorStreamerSpec.CACHE_NAME)
 
@@ -147,11 +143,13 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
             assert(cache.size(CachePeekMode.PRIMARY) == IgniteAkkaActorStreamerSpec.CACHE_ENTRY_COUNT)
 
             cache.clear()
+
+            materialize.shutdown()
         }
     }
 
     override protected def beforeAll() = {
-        ignite = Ignition.start(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, client = false))
+        Ignition.start(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, client = false))
     }
 
     override protected def afterAll() = {
@@ -183,8 +181,12 @@ object IgniteAkkaActorStreamerSpec {
         val cfg = new IgniteConfiguration
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME))
+
         cfg.setClientMode(client)
+
         cfg.setIgniteInstanceName(igniteInstanceName)
+
+        cfg.setIncludeEventTypes(EVT_CACHE_OBJECT_PUT)
 
         cfg
     }
@@ -252,7 +254,6 @@ object IgniteAkkaActorStreamerSpec {
           */
         override def apply(evt: CacheEvent): Boolean = {
             latch.countDown()
-            println("!!!!")
 
             true
         }
