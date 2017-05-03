@@ -1543,6 +1543,27 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected void assertEqualsCollectionsIgnoreSequence(Collection<?> exp, Collection<?> act) {
+        assertNotNull(exp);
+        assertNotNull(act);
+
+        if (exp.size() != act.size())
+            fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+
+        for (Object o : exp) {
+            if (!act.contains(o)) {
+                error("Expected: " + exp.toString());
+                error("Actual: " + act.toString());
+
+                assertTrue( String.format("Actual collection doesn't contain the object [%s]", o), false);
+            }
+        }
+    }
+
+    /**
      * @param ignite Ignite instance.
      * @param clo Closure.
      * @return Result of closure execution.

@@ -33,6 +33,9 @@ import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheQueryCloseRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheQueryExecuteRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheQueryFetchRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
@@ -50,6 +53,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateReq
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -68,7 +72,10 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_P
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLOSE_SQL_QUERY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_FIELDS_QUERY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.FETCH_SQL_QUERY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
@@ -99,7 +106,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
-    /**
+    /*
      * Fills {@code cacheCmdMap}.
      */
     static {
@@ -356,7 +363,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restTopReq.command(TOPOLOGY);
 
             restReq = restTopReq;
-        }else if (msg instanceof GridClientStateRequest) {
+        }
+        else if (msg instanceof GridClientStateRequest) {
             GridClientStateRequest req = (GridClientStateRequest)msg;
 
             GridRestChangeStateRequest restChangeReq = new GridRestChangeStateRequest();
@@ -371,6 +379,47 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             }
 
             restReq = restChangeReq;
+        }
+        else if (msg instanceof GridClientCacheQueryExecuteRequest) {
+            GridClientCacheQueryExecuteRequest req = (GridClientCacheQueryExecuteRequest)msg;
+
+            RestQueryRequest restQueryReq = new RestQueryRequest();
+
+            restQueryReq.command(EXECUTE_SQL_FIELDS_QUERY);
+
+            restQueryReq.queryType(RestQueryRequest.QueryType.SQL_FIELDS);
+            restQueryReq.cacheName(req.cacheName());
+            restQueryReq.sqlQuery(req.sql());
+            restQueryReq.arguments(req.arguments());
+            restQueryReq.distributedJoins(req.distributedJoins());
+            restQueryReq.pageSize(req.pageSize());
+
+            restReq = restQueryReq;
+        }
+        else if (msg instanceof GridClientCacheQueryFetchRequest) {
+            GridClientCacheQueryFetchRequest req = (GridClientCacheQueryFetchRequest)msg;
+
+            RestQueryRequest restQueryReq = new RestQueryRequest();
+
+            restQueryReq.command(FETCH_SQL_QUERY);
+
+            restQueryReq.queryType(RestQueryRequest.QueryType.SQL_FIELDS);
+            restQueryReq.queryId(req.cursorId());
+            restQueryReq.pageSize(req.pageSize());
+
+            restReq = restQueryReq;
+        }
+        else if (msg instanceof GridClientCacheQueryCloseRequest) {
+            GridClientCacheQueryCloseRequest req = (GridClientCacheQueryCloseRequest)msg;
+
+            RestQueryRequest restQueryReq = new RestQueryRequest();
+
+            restQueryReq.command(CLOSE_SQL_QUERY);
+
+            restQueryReq.queryType(RestQueryRequest.QueryType.SQL_FIELDS);
+            restQueryReq.queryId(req.cursorId());
+
+            restReq = restQueryReq;
         }
 
         if (restReq != null) {
