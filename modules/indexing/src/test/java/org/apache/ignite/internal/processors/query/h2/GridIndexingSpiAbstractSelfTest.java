@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -263,16 +262,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(0, spi.size(typeAB.space(), typeAB.name()));
         assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
-        assertFalse(spi.queryLocalSql(typeAA.space(), "select * from A.A", null, Collections.emptySet(), typeAA.name(), null, null).hasNext());
-        assertFalse(spi.queryLocalSql(typeAB.space(), "select * from A.B", null, Collections.emptySet(), typeAB.name(), null, null).hasNext());
-        assertFalse(spi.queryLocalSql(typeBA.space(), "select * from B.A", null, Collections.emptySet(), typeBA.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(typeAA.space(), "select * from A.A", null, null, typeAA.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(typeAB.space(), "select * from A.B", null, null, typeAB.name(), null, null).hasNext());
+        assertFalse(spi.queryLocalSql(typeBA.space(), "select * from B.A", null, null, typeBA.name(), null, null).hasNext());
 
         assertFalse(spi.queryLocalSql(typeBA.space(), "select * from B.A, A.B, A.A", null,
-            Collections.emptySet(), typeBA.name(), null, null).hasNext());
+            null, typeBA.name(), null, null).hasNext());
 
         try {
             spi.queryLocalSql(typeBA.space(), "select aa.*, ab.*, ba.* from A.A aa, A.B ab, B.A ba", null,
-                Collections.emptySet(), typeBA.name(), null, null).hasNext();
+                null, typeBA.name(), null, null).hasNext();
 
             fail("Enumerations of aliases in select block must be prohibited");
         }
@@ -281,10 +280,10 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         assertFalse(spi.queryLocalSql(typeAB.space(), "select ab.* from A.B ab", null,
-            Collections.emptySet(), typeAB.name(), null, null).hasNext());
+            null, typeAB.name(), null, null).hasNext());
 
         assertFalse(spi.queryLocalSql(typeBA.space(), "select   ba.*   from B.A  as ba", null,
-            Collections.emptySet(), typeBA.name(), null, null).hasNext());
+            null, typeBA.name(), null, null).hasNext());
 
         cacheA.put(1, aa("A", 1, "Vasya", 10).build());
 
@@ -333,7 +332,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Query data.
         Iterator<IgniteBiTuple<Integer, BinaryObjectImpl>> res =
-            spi.queryLocalSql(typeAA.space(), "from a order by age", null, Collections.emptySet(), typeAA.name(), null, null);
+            spi.queryLocalSql(typeAA.space(), "from a order by age", null, null, typeAA.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(aa("A", 3, "Borya", 18).build(), value(res.next()));
@@ -342,7 +341,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(res.hasNext());
 
         res = spi.queryLocalSql(typeAA.space(), "select aa.* from a aa order by aa.age", null,
-            Collections.emptySet(), typeAA.name(), null, null);
+            null, typeAA.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(aa("A", 3, "Borya", 18).build(), value(res.next()));
@@ -350,7 +349,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(aa("A", 2, "Valera", 19).build(), value(res.next()));
         assertFalse(res.hasNext());
 
-        res = spi.queryLocalSql(typeAB.space(), "from b order by name", null, Collections.emptySet(), typeAB.name(), null, null);
+        res = spi.queryLocalSql(typeAB.space(), "from b order by name", null, null, typeAB.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").build(), value(res.next()));
@@ -359,7 +358,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(res.hasNext());
 
         res = spi.queryLocalSql(typeAB.space(), "select bb.* from b as bb order by bb.name", null,
-            Collections.emptySet(), typeAB.name(), null, null);
+            null, typeAB.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").build(), value(res.next()));
@@ -368,7 +367,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(res.hasNext());
 
 
-        res = spi.queryLocalSql(typeBA.space(), "from a", null, Collections.emptySet(), typeBA.name(), null, null);
+        res = spi.queryLocalSql(typeBA.space(), "from a", null, null, typeBA.name(), null, null);
 
         assertTrue(res.hasNext());
         assertEquals(ba(2, "Kolya", 25, true).build(), value(res.next()));
@@ -385,7 +384,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         // Fields query
         GridQueryFieldsResult fieldsRes =
             spi.queryLocalSqlFields("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false, 0, null);
+            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", null, null, false, 0, null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
@@ -468,7 +467,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, Arrays.<Object>asList(1, range), null,
+                GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, new Object[]{1, range}, null,
                     false, 0, null);
 
                 assert res.iterator().hasNext();

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -193,7 +192,7 @@ public class GridSqlQuerySplitter {
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
-        qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder),
+        qry = parse(optimize(conn, qry.getSQL(), params, false, enforceJoinOrder),
             true);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
@@ -209,7 +208,7 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
+                Prepared prepared = optimize(conn, mapSqlQry.query(), mapSqlQry.parameters(params),
                     true, enforceJoinOrder);
 
                 allCollocated &= isCollocated((Query)prepared);
@@ -1407,7 +1406,6 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     private static Prepared optimize(
-        IgniteH2Indexing h2,
         H2Connection c,
         String qry,
         Object[] params,
@@ -1416,11 +1414,7 @@ public class GridSqlQuerySplitter {
     ) throws SQLException, IgniteCheckedException {
         c.setupConnection(distributedJoins, enforceJoinOrder);
 
-        try (PreparedStatement s = c.prepare(qry, false)) {
-            h2.bindParameters(s, F.asList(params));
-
-            return prepared(s);
-        }
+        return prepared(c.prepare(qry, params));
     }
 
     /**

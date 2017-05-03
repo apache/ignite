@@ -31,18 +31,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
-import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.Driver;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.IndexColumn;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
@@ -304,7 +298,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             assertTrue(tbl.doUpdate(row, false));
         }
 
-        PreparedStatement ps = conn.prepare("select count(*) from t where x = ?", false);
+        PreparedStatement ps = conn.prepare("select count(*) from t where x = ?", null);
 
         int cnt = 0;
 
@@ -378,7 +372,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         assertTrue(deleted.get() > 0);
 
-        PreparedStatement p = conn.prepare("select count(*) from t where id = ?", false);
+        PreparedStatement p = conn.prepare("select count(*) from t where id = ?", null);
 
         for (int i = 1; i < ids.length; i += 2) {
             p.setObject(1, ids[i]);

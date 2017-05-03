@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -82,13 +82,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
-import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
 import org.h2.table.Column;
 import org.h2.util.IntArray;
@@ -817,7 +815,7 @@ public class GridReduceQueryExecutor {
                             ResultSet res = h2.executeSqlQueryWithTimer(space,
                                 conn,
                                 rdc.query(),
-                                F.asList(rdc.parameters(params)),
+                                rdc.parameters(params),
                                 false, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
@@ -1269,7 +1267,7 @@ public class GridReduceQueryExecutor {
         ResultSet rs = h2.executeSqlQueryWithTimer(space,
             c,
             "EXPLAIN " + rdc.query(),
-            F.asList(rdc.parameters(params)),
+            rdc.parameters(params),
             false,
             0,
             null);

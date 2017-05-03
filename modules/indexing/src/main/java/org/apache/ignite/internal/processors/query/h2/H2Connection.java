@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE;
@@ -111,17 +113,51 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
 
     /**
      * @param sql SQL.
-     * @param cache If we need to cache the statement for reuse.
+     * @param params Parameters array.
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    public PreparedStatement prepare(String sql, boolean cache) throws SQLException {
-        PreparedStatement ps = cache ? stmtCache.get(sql) : null;
+    public PreparedStatement prepare(String sql, Object[] params) throws SQLException {
+        PreparedStatement ps = stmtCache.get(sql);
 
-        if (ps == null)
+        if (ps == null || ps.isClosed()) {
             ps = conn.prepareStatement(sql);
 
+            stmtCache.put(sql, ps);
+        }
+
+        bindParameters(ps, params);
+
         return ps;
+    }
+
+    /**
+     * Binds parameters to prepared statement.
+     *
+     * @param stmt Prepared statement.
+     * @param params Parameters array.
+     */
+    private void bindParameters(PreparedStatement stmt, @Nullable Object[] params) throws SQLException {
+        if (!F.isEmpty(params)) {
+            int idx = 1;
+
+            for (Object arg : params)
+                bindObject(stmt, idx++, arg);
+        }
+    }
+
+    /**
+     * Binds object to prepared statement.
+     *
+     * @param stmt SQL statement.
+     * @param idx Index.
+     * @param obj Value to store.
+     */
+    private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws SQLException {
+        if (obj == null)
+            stmt.setNull(idx, Types.VARCHAR);
+        else
+            stmt.setObject(idx, obj);
     }
 
     /**
