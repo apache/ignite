@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
+
 /**
  * Cache proxy stub.
  */
-@SuppressWarnings("unchecked")
 public class IgniteCacheProxyStub<K, V> extends IgniteCacheProxy<K, V>{
-
     /** */
     private static final long serialVersionUID = 0L;
 
+    /**
+     * Empty constructor.
+     */
     public IgniteCacheProxyStub() {
         // No-op.
     }
