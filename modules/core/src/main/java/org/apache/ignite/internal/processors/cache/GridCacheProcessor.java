@@ -3738,8 +3738,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
 
         if (cache == null)
-            if (cacheDescriptor(name) != null)
-                cache = new IgniteCacheProxyDelegate<K, V>(name, this);
+            if (cacheDescriptor(name) != null && CU.isSystemCache(name))
+                cache = new IgniteCacheProxyStub<K, V>();
             else
                 throw new IllegalArgumentException("Cache is not configured: " + name);
 
