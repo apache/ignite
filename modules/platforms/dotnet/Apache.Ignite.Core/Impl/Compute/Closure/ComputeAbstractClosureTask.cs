@@ -68,22 +68,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
 
             if (err != null)
             {
-                if (IsFailoverException(err) || IsFailoverException(err.InnerException))
+                if (Compute.IsFailoverException(err))
                     return ComputeJobResultPolicy.Failover;
                 
                 throw err;
             }
             
             return Result0(res);
-        }
-
-        /// <summary>
-        /// Determines whether specified exception should result in a job failover.
-        /// </summary>
-        private static bool IsFailoverException(Exception err)
-        {
-            return err is ComputeExecutionRejectedException || err is ClusterTopologyException || 
-                   err is ComputeJobFailoverException;
         }
 
         /// <summary>
