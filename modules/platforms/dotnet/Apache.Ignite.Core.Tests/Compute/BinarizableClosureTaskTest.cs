@@ -72,9 +72,11 @@ namespace Apache.Ignite.Core.Tests.Compute
             if (aggregate != null)
                 err = aggregate.InnerException;
 
-            BinarizableException err0 = err as BinarizableException;
+            Assert.IsNotNull(err);
 
-            Assert.IsTrue(err0 != null);
+            var err0 = err.InnerException as BinarizableException;
+
+            Assert.IsNotNull(err0);
             Assert.AreEqual(ErrMsg, err0.Msg);
         }
 
