@@ -14,22 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.ml.math.exceptions;
 
 /**
- * This exception is used to indicate error condition of matrix elements failing the positivity check.
+ * This class is based on the corresponding class from Apache Common Math lib.
+ * Exception to be thrown when the required data is missing.
  */
-public class NonPositiveDefiniteMatrixException extends MathIllegalArgumentException {
+public class NoDataException extends MathIllegalArgumentException {
+    /** Serializable version Id. */
+    private static final long serialVersionUID = -3629324471511904459L;
+
+    /** */
+    private static final String NO_DATA = "No data.";
+
     /**
-     * Construct an exception.
-     *
-     * @param wrong Value that fails the positivity check.
-     * @param idx Row (and column) index.
-     * @param threshold Absolute positivity threshold.
+     * Construct the exception.
      */
-    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index %d and has value %f with this threshold %f",
-            idx, wrong, threshold);
+    public NoDataException() {
+        this(NO_DATA);
+    }
+
+    /**
+     * Construct the exception with a specific message.
+     *
+     * @param msg Message.
+     */
+    public NoDataException(String msg) {
+        super(msg);
     }
 }

@@ -14,22 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.ml.math.exceptions;
 
 /**
- * This exception is used to indicate error condition of matrix elements failing the positivity check.
+ * Base class for all preconditions violation exceptions.
+ * In most cases, this class should not be instantiated directly: it should
+ * serve as a base class to create all the exceptions that have the semantics
+ * of the standard {@link IllegalArgumentException}.
  */
-public class NonPositiveDefiniteMatrixException extends MathIllegalArgumentException {
+public class MathIllegalArgumentException extends MathRuntimeException {
+    /** Serializable version Id. */
+    private static final long serialVersionUID = -6024911025449780478L;
+
     /**
-     * Construct an exception.
-     *
-     * @param wrong Value that fails the positivity check.
-     * @param idx Row (and column) index.
-     * @param threshold Absolute positivity threshold.
+     * @param format Message format string explaining the cause of the error.
+     * @param args Arguments.
      */
-    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index %d and has value %f with this threshold %f",
-            idx, wrong, threshold);
+    public MathIllegalArgumentException(String format, Object... args) {
+        super(String.format(format, args));
     }
+
 }

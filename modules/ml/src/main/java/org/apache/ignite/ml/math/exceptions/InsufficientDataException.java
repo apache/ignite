@@ -18,18 +18,27 @@
 package org.apache.ignite.ml.math.exceptions;
 
 /**
- * This exception is used to indicate error condition of matrix elements failing the positivity check.
+ * This class is based on the corresponding class from Apache Common Math lib.
+ * Exception to be thrown when there is insufficient data to perform a computation.
  */
-public class NonPositiveDefiniteMatrixException extends MathIllegalArgumentException {
+public class InsufficientDataException extends MathIllegalArgumentException {
+    /** Serializable version Id. */
+    private static final long serialVersionUID = -2629324471511903359L;
+
+    /** */
+    private static final String INSUFFICIENT_DATA = "Insufficient data.";
+
     /**
-     * Construct an exception.
-     *
-     * @param wrong Value that fails the positivity check.
-     * @param idx Row (and column) index.
-     * @param threshold Absolute positivity threshold.
+     * Construct the exception.
      */
-    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index %d and has value %f with this threshold %f",
-            idx, wrong, threshold);
+    public InsufficientDataException() {
+        this(INSUFFICIENT_DATA);
+    }
+
+    /**
+     * Construct the exception.
+     */
+    public InsufficientDataException(String msg, Object... args) {
+        super(msg, args);
     }
 }
