@@ -28,6 +28,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -2462,6 +2463,31 @@ public class BinaryUtils {
     }
 
     /**
+     * Reads from given {@link ByteBuffer} integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param buf ByteBuffer.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(ByteBuffer buf) throws BinaryObjectException {
+        int val = 0;
+        int n = 0;
+        int b;
+
+        while (((b = buf.get()) & 0x80) != 0) {
+            val |= (b & 0x7F) << n;
+            n += 7;
+
+            if (n > 35)
+                throw new BinaryObjectException("Varint reading failed, sequence length is too long");
+        }
+
+        return val | (b << n);
+    }
+
+    /**
      * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
      * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
      *
@@ -2491,7 +2517,7 @@ public class BinaryUtils {
         int raw = doReadUnsignedVarint(arr, off);
         // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
         int tmp = (((raw << 31) >> 31) ^ raw) >> 1;
-
+        // top bit must be reflip if the original read value had it set.
         return tmp ^ (raw & (1 << 31));
     }
 

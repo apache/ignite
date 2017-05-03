@@ -546,11 +546,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * Writes integer value in varint encoding.
      * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * Value must be positive.
+     * For negative values use {@link #doWriteSignedVarint}.
      *
      * @param val Value to write.
      */
     public void doWriteUnsignedVarint(int val) {
-        while ((val & 0xFFFFFF80) != 0L) {
+        while ((val & 0xFFFFFF80) != 0) {
             out.writeByte((byte)((val & 0x7F) | 0x80));
             val >>>= 7;
         }
@@ -561,6 +563,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * Writes integer value in varint encoding.
      * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * Represents negative values as large unsigned value.
      *
      * @param val Value to write.
      */
