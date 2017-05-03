@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -82,6 +83,9 @@ class ClusterCachesInfo {
 
     /** */
     private Map<UUID, CacheJoinNodeDiscoveryData> joiningNodesDiscoData = new HashMap<>();
+
+    /** */
+    private Map<UUID, CacheClientReconnectDiscoveryData> clientReconnectReqs;
 
     /**
      * @param ctx Context.
@@ -708,8 +712,16 @@ class ClusterCachesInfo {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
 
-            if (joiningNodeData instanceof CacheClientReconnectDiscoveryData)
-                processClientReconnectData((CacheClientReconnectDiscoveryData)joiningNodeData, data.joiningNodeId());
+            if (joiningNodeData instanceof CacheClientReconnectDiscoveryData) {
+                if (disconnectedState()) {
+                    if (clientReconnectReqs == null)
+                        clientReconnectReqs = new LinkedHashMap<>();
+
+                    clientReconnectReqs.put(data.joiningNodeId(), (CacheClientReconnectDiscoveryData)joiningNodeData);
+                }
+                else
+                    processClientReconnectData((CacheClientReconnectDiscoveryData) joiningNodeData, data.joiningNodeId());
+            }
             else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData) {
                 CacheJoinNodeDiscoveryData old =
                     joiningNodesDiscoData.put(data.joiningNodeId(), (CacheJoinNodeDiscoveryData)joiningNodeData);
@@ -816,6 +828,8 @@ class ClusterCachesInfo {
 
         registeredCaches.clear();
         registeredTemplates.clear();
+
+        clientReconnectReqs = null;
     }
 
     /**
@@ -843,6 +857,13 @@ class ClusterCachesInfo {
 
             if (stopped)
                 stoppedCaches.add(cacheName);
+        }
+
+        if (clientReconnectReqs != null) {
+            for (Map.Entry<UUID, CacheClientReconnectDiscoveryData> e : clientReconnectReqs.entrySet())
+                processClientReconnectData(e.getValue(), e.getKey());
+
+            clientReconnectReqs = null;
         }
 
         cachesOnDisconnect = null;
