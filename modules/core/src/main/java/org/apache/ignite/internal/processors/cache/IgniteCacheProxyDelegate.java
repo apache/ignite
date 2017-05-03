@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -24,9 +25,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Consumer;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Configuration;
@@ -71,6 +70,13 @@ public class IgniteCacheProxyDelegate<K, V> extends IgniteCacheProxy<K, V>{
 
     /** Context. */
     private IgniteCacheProxy<K, V> cache;
+
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public IgniteCacheProxyDelegate() {
+        // No-op.
+    }
 
     public IgniteCacheProxyDelegate(String name, GridCacheProcessor processor) {
         cacheName = name;
@@ -1012,20 +1018,6 @@ public class IgniteCacheProxyDelegate<K, V> extends IgniteCacheProxy<K, V>{
         checkCache();
 
         return cache.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void forEach(Consumer<? super Entry<K, V>> action) {
-        checkCache();
-
-        cache.forEach(action);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Spliterator<Entry<K, V>> spliterator() {
-        checkCache();
-
-        return cache.spliterator();
     }
 
     private void checkCache() {
