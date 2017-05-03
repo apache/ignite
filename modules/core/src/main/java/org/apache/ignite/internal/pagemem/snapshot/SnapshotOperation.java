@@ -135,6 +135,7 @@ public class SnapshotOperation implements Serializable {
         return (File)op.extraParameter();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -149,18 +150,21 @@ public class SnapshotOperation implements Serializable {
             return false;
         if (msg != null ? !msg.equals(operation.msg) : operation.msg != null)
             return false;
+
         return extraParam != null ? extraParam.equals(operation.extraParam) : operation.extraParam == null;
 
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = type.hashCode();
-        result = 31 * result + (int)(snapshotId ^ (snapshotId >>> 32));
-        result = 31 * result + (msg != null ? msg.hashCode() : 0);
-        result = 31 * result + (extraParam != null ? extraParam.hashCode() : 0);
-        return result;
+        int res = type.hashCode();
+        res = 31 * res + (int)(snapshotId ^ (snapshotId >>> 32));
+        res = 31 * res + (msg != null ? msg.hashCode() : 0);
+        res = 31 * res + (extraParam != null ? extraParam.hashCode() : 0);
+        return res;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "SnapshotOperation{" +
             "type=" + type +
