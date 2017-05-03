@@ -115,15 +115,15 @@ module.exports.factory = (_, socketio, configure, errors) => {
                         acc.hasDemo |= _.get(agentSock, 'demo.enabled');
 
                         if (agentSock.cluster) {
-                            acc.clusters.add({
+                            acc.clusters.push({
                                 id: agentSock.cluster.id
                             });
                         }
 
                         return acc;
-                    }, {count: 0, hasDemo: false, clusters: new Set()});
+                    }, {count: 0, hasDemo: false, clusters: []});
 
-                    stat.clusters = Array.from(stat.clusters);
+                    stat.clusters = _.uniqWith(stat.clusters, _.isEqual);
 
                     return stat;
                 })
