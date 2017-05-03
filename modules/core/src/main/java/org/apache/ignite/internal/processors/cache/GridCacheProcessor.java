@@ -3729,7 +3729,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param name Cache name.
-     * @return Cache instance for given name.
+     * @return Cache instance for given name or delegate if cache not created yet, but cache descriptor exists.
      */
     @SuppressWarnings("unchecked")
     public <K, V> IgniteCacheProxy<K, V> safeJcache(String name) {
