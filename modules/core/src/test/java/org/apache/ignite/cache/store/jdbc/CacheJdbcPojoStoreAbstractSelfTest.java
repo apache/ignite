@@ -328,6 +328,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         assertEquals(PERSON_CNT, c1.size());
     }
 
+    /**
+     * Checks that data was loaded correctly with prepared statement.
+     */
     protected void checkCacheLoadWithStatement() throws SQLException {
         Connection conn = null;
 
@@ -347,7 +350,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", stmt);
 
             assertEquals(PERSON_CNT, c1.size());
-        } finally {
+        }
+        finally {
             U.closeQuiet(stmt);
 
             U.closeQuiet(conn);

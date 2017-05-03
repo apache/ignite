@@ -81,7 +81,6 @@ import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 import static org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory.DFLT_WRITE_ATTEMPTS;
 import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TYPES;
-import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TYPES;
 
 /**
  * Implementation of {@link CacheStore} backed by JDBC.
@@ -753,30 +752,33 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         }
                     }))
                         throw new CacheLoaderException("Provided key type is not found in store or cache configuration " +
-                            "[cache=" + U.maskName(cacheName) + ", key=" + keyType + "]");
+                            "[cache=" + U.maskName(cacheName) + ", key=" + keyType + ']');
 
                     EntryMapping em = entryMapping(cacheName, typeIdForTypeName(kindForName(keyType), keyType));
 
                     Object arg = args[i + 1];
 
-                    final LoadCacheCustomQueryWorker<K, V> task;
+                    LoadCacheCustomQueryWorker<K, V> task;
 
                     if (arg instanceof PreparedStatement) {
                         PreparedStatement stmt = (PreparedStatement)arg;
+
                         if (log.isInfoEnabled())
                             log.info("Started load cache using custom statement [cache=" + U.maskName(cacheName) +
-                                      ", keyType=" + keyType + "]");
+                                      ", keyType=" + keyType + ", stmt=" + stmt + ']');
 
                         task = new LoadCacheCustomQueryWorker<>(em, stmt, clo);
-                    } else {
+                    }
+                    else {
                         String qry = arg.toString();
 
                         if (log.isInfoEnabled())
                               log.info("Started load cache using custom query [cache=" + U.maskName(cacheName) +
-                                  ", keyType=" + keyType + ", query=" + qry + "]");
+                                  ", keyType=" + keyType + ", query=" + qry + ']');
 
                         task = new LoadCacheCustomQueryWorker<>(em, qry, clo);
                     }
+
                     futs.add(pool.submit(task));
                 }
             }
@@ -792,7 +794,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     processedKeyTypes.add(keyType);
 
                     if (log.isInfoEnabled())
-                        log.info("Started load cache [cache=" + U.maskName(cacheName) + ", keyType=" + keyType + "]");
+                        log.info("Started load cache [cache=" + U.maskName(cacheName) + ", keyType=" + keyType + ']');
 
                     if (parallelLoadCacheMinThreshold > 0) {
                         Connection conn = null;
@@ -809,7 +811,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             if (rs.next()) {
                                 if (log.isDebugEnabled())
                                     log.debug("Multithread loading entries from db [cache=" + U.maskName(cacheName) +
-                                        ", keyType=" + keyType + "]");
+                                        ", keyType=" + keyType + ']');
 
                                 int keyCnt = em.keyCols.size();
 
@@ -838,7 +840,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         }
                         catch (SQLException e) {
                             log.warning("Failed to load entries from db in multithreaded mode, will try in single thread " +
-                                "[cache=" + U.maskName(cacheName) + ", keyType=" + keyType + " ]", e);
+                                "[cache=" + U.maskName(cacheName) + ", keyType=" + keyType + ']', e);
                         }
                         finally {
                             U.closeQuiet(conn);
@@ -847,7 +849,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     if (log.isDebugEnabled())
                         log.debug("Single thread loading entries from db [cache=" + U.maskName(cacheName) +
-                            ", keyType=" + keyType + "]");
+                            ", keyType=" + keyType + ']');
 
                     futs.add(pool.submit(loadCacheFull(em, clo)));
                 }
@@ -874,7 +876,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         EntryMapping em = entryMapping(session().cacheName(), typeIdForObject(key));
 
         if (log.isDebugEnabled())
-            log.debug("Load value from db [table= " + em.fullTableName() + ", key=" + key + "]");
+            log.debug("Load value from db [table= " + em.fullTableName() + ", key=" + key + ']');
 
         Connection conn = null;
 
@@ -2034,6 +2036,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 throw new CacheLoaderException("Failed to execute custom query for load cache", e);
             }
             finally {
+                //TODO: correctly handle resources in case when user statement vs user query provided
                 U.closeQuiet(stmt);
 
                 U.closeQuiet(conn);

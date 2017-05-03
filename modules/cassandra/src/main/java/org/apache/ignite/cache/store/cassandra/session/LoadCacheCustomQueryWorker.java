@@ -36,7 +36,7 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     /** Cassandra session to execute CQL query */
     private final CassandraSession ses;
 
-    /** User query. */
+    /** Statement. */
     private final Statement stmt;
 
     /** Persistence controller */
@@ -49,14 +49,22 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     private final IgniteBiInClosure<K, V> clo;
 
     /**
+     * @param ses Session.
+     * @param qry Query.
+     * @param ctrl Control.
+     * @param log Logger.
      * @param clo Closure for loaded values.
      */
     public LoadCacheCustomQueryWorker(CassandraSession ses, String qry, PersistenceController ctrl,
                                       IgniteLogger log, IgniteBiInClosure<K, V> clo) {
-        this(ses, new SimpleStatement(qry.trim().endsWith(";") ? qry : qry + ";"), ctrl, log, clo);
+        this(ses, new SimpleStatement(qry.trim().endsWith(";") ? qry : qry + ';'), ctrl, log, clo);
     }
 
     /**
+     * @param ses Session.
+     * @param stmt Statement.
+     * @param ctrl Control.
+     * @param log Logger.
      * @param clo Closure for loaded values.
      */
     public LoadCacheCustomQueryWorker(CassandraSession ses, Statement stmt, PersistenceController ctrl,
