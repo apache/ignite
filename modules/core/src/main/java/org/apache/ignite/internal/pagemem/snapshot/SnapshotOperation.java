@@ -53,7 +53,13 @@ public class SnapshotOperation implements Serializable {
      * @param msg
      * @param extraParam Additional parameter.
      */
-    public SnapshotOperation(SnapshotOperationType type, long snapshotId, Set<String> cacheNames, String msg, Object extraParam) {
+    public SnapshotOperation(
+        SnapshotOperationType type,
+        long snapshotId,
+        Set<String> cacheNames,
+        String msg,
+        Object extraParam
+    ) {
         this.type = type;
         this.snapshotId = snapshotId;
         this.cacheNames = cacheNames;
