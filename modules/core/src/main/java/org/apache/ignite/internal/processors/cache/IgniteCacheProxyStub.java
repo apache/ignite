@@ -23,6 +23,9 @@ package org.apache.ignite.internal.processors.cache;
 @SuppressWarnings("unchecked")
 public class IgniteCacheProxyStub<K, V> extends IgniteCacheProxy<K, V>{
 
+    /** */
+    private static final long serialVersionUID = 0L;
+
     public IgniteCacheProxyStub() {
         // No-op.
     }
