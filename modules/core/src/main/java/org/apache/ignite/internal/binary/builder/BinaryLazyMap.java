@@ -76,7 +76,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
         if (delegate == null) {
             int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            reader.position(off + 1/* flag */ + BinaryUtils.sizeInVarint(size)/* size */ + 1/* col type */);
+            reader.position(off + 1/* flag */ + BinaryUtils.sizeInUnsignedVarint(size)/* size */ + 1/* col type */);
 
             delegate = new LinkedHashMap<>();
 
@@ -90,7 +90,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
         if (delegate == null) {
             int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            int hdrSize = 1 /* flag */ + BinaryUtils.sizeInVarint(size) /* size */ + 1 /* col type */;
+            int hdrSize = 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(size) /* size */ + 1 /* col type */;
             writer.write(reader.array(), off, hdrSize);
 
             reader.position(off + hdrSize);

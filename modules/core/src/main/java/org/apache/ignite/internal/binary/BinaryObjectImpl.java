@@ -283,7 +283,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
             int strLen = BinaryUtils.doReadUnsignedVarint(arr, ++off);
 
-            int len = BinaryUtils.sizeInVarint(strLen);
+            int len = BinaryUtils.sizeInUnsignedVarint(strLen);
 
             String clsName = new String(arr, off + len, strLen, UTF_8);
 
@@ -337,7 +337,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int len = BinaryUtils.doReadUnsignedVarint(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + BinaryUtils.sizeInVarint(len) + len;
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + BinaryUtils.sizeInUnsignedVarint(len) + len;
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -426,7 +426,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             case GridBinaryMarshaller.STRING: {
                 int dataLen = BinaryUtils.doReadUnsignedVarint(arr, fieldPos + 1);
 
-                int len = BinaryUtils.sizeInVarint(dataLen);
+                int len = BinaryUtils.sizeInUnsignedVarint(dataLen);
 
                 val = new String(arr, fieldPos + 1 + len, dataLen, UTF_8);
 
@@ -573,7 +573,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             case GridBinaryMarshaller.STRING: {
                 int dataLen = BinaryUtils.doReadUnsignedVarint(arr, fieldPos + 1);
 
-                totalLen = 1 + dataLen + BinaryUtils.sizeInVarint(dataLen);
+                totalLen = 1 + dataLen + BinaryUtils.sizeInUnsignedVarint(dataLen);
 
                 break;
             }

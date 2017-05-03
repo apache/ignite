@@ -227,9 +227,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            int len = BinaryPrimitives.readUnsignedVarint(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
+            int len = BinaryUtils.readUnsignedVarint(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + len + BinaryUtils.sizeInVarint(len);
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + len + BinaryUtils.sizeInUnsignedVarint(len);
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -316,9 +316,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readUnsignedVarint(ptr, fieldPos + 1);
+                int dataLen = BinaryUtils.readUnsignedVarint(ptr, fieldPos + 1);
 
-                int len = BinaryUtils.sizeInVarint(dataLen);
+                int len = BinaryUtils.sizeInUnsignedVarint(dataLen);
 
                 byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 1 + len, dataLen);
 

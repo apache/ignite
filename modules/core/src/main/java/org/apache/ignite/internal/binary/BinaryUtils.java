@@ -1173,131 +1173,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
-     *
-     * @param in BinaryInputStream.
-     * @return Decoded integer value.
-     * @throws BinaryObjectException if have been read more than 5 bytes.
-     */
-    public static int doReadUnsignedVarint(BinaryInputStream in) throws BinaryObjectException {
-        int val = doReadUnsignedVarint(in.array(), in.position());
-
-        in.position(in.position() + sizeInVarint(val));
-
-        return val;
-    }
-
-    /**
-     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
-     *
-     * @param in BinaryInputStream.
-     * @return Decoded integer value.
-     * @throws BinaryObjectException if have been read more than 5 bytes.
-     */
-    public static int doReadUnsignedVarint(BinaryBuilderReader in, int off) throws BinaryObjectException {
-        return doReadUnsignedVarint(in.array(), off);
-    }
-
-    /**
-     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
-     *
-     * @param in BinaryInputStream.
-     * @return Decoded integer value.
-     * @throws BinaryObjectException if have been read more than 5 bytes.
-     */
-    public static int doReadUnsignedVarint(BinaryBuilderReader in) throws BinaryObjectException {
-        int val = doReadUnsignedVarint(in.array(), in.position());
-
-        in.position(in.position() + sizeInVarint(val));
-
-        return val;
-    }
-
-    /**
-     * Reads from array integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
-     *
-     * @param arr Bytes array.
-     * @param off Offset.
-     * @return Decoded integer value.
-     * @throws BinaryObjectException if have been read more than 5 bytes.
-     */
-    public static int doReadUnsignedVarint(byte[] arr, int off) throws BinaryObjectException {
-        int val = 0;
-        int n = 0;
-        int b;
-
-        while (((b = arr[off++]) & 0x80) != 0) {
-            val |= (b & 0x7F) << n;
-            n += 7;
-
-            if (n > 35)
-                throw new BinaryObjectException("Failed to read varint, variable length is too long");
-        }
-
-        return val | (b << n);
-    }
-
-    /**
-     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
-     *
-     * @param in BinaryInputStream.
-     * @return Decoded integer value.
-     * @throws BinaryObjectException if have been read more than 5 bytes.
-     */
-    public static int doReadSignedVarint(BinaryInputStream in) throws BinaryObjectException {
-        int val = doReadSignedVarint(in.array(), in.position());
-
-        in.position(in.position() + sizeInVarint(val));
-
-        return val;
-    }
-
-    /**
-     * Reads from array integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
-     *
-     * @param arr Bytes array.
-     * @param off Offset.
-     * @return Decoded integer value.
-     * @throws BinaryObjectException if have been read more than 5 bytes.
-     */
-    public static int doReadSignedVarint(byte[] arr, int off) throws BinaryObjectException {
-        int raw = doReadUnsignedVarint(arr, off);
-        // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
-        return (((raw << 31) >> 31) ^ raw) >> 1;
-    }
-
-    /**
-     * Returns the encoded size of the given unsigned integer value.
-     *
-     * @param val Value to be encoded
-     * @return Encoded size
-     */
-    public static int sizeInVarint(int val) {
-        int size = 1;
-
-        while (val > 0x7f)
-            val >>>= 7;
-
-        return size;
-    }
-
-    /**
-     * Returns the encoded size of the given unsigned integer value.
-     *
-     * @param val Value to be encoded
-     * @return Encoded size
-     */
-    public static int sizeInSignedVarint(int val) {
-        return sizeInVarint((val << 1) ^ (val >> 31));
-    }
-
-    /**
      * @return Value.
      */
     public static int[] doReadIntArray(BinaryInputStream in) {
@@ -1777,7 +1652,7 @@ public class BinaryUtils {
      * @return Enum array.
      */
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
-        int len = BinaryUtils.doReadUnsignedVarint(in);
+        int len = doReadUnsignedVarint(in);
 
         Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
 
@@ -2487,6 +2362,165 @@ public class BinaryUtils {
      */
     public static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
+    }
+
+    /**
+     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param in BinaryInputStream.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(BinaryInputStream in) throws BinaryObjectException {
+        int val = doReadUnsignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeInUnsignedVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from {@link BinaryBuilderReader} integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param in BinaryInputStream.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(BinaryBuilderReader in, int off) throws BinaryObjectException {
+        return doReadUnsignedVarint(in.array(), off);
+    }
+
+    /**
+     * Reads from {@link BinaryBuilderReader} integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param in BinaryInputStream.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(BinaryBuilderReader in) throws BinaryObjectException {
+        int val = doReadUnsignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeInUnsignedVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from given bytes array integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param arr Bytes array.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(byte[] arr, int off) throws BinaryObjectException {
+        int val = 0;
+        int n = 0;
+        int b;
+
+        while (((b = arr[off++]) & 0x80) != 0) {
+            val |= (b & 0x7F) << n;
+            n += 7;
+
+            if (n > 35)
+                throw new BinaryObjectException("Varint reading failed, sequence length is too long");
+        }
+
+        return val | (b << n);
+    }
+
+    /**
+     * Reads via pointer integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     *
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int readUnsignedVarint(long ptr, int off) throws BinaryObjectException {
+        int val = 0;
+        int n = 0;
+        int b;
+
+        while (((b = BinaryPrimitives.readByte(ptr, off++)) & 0x80) != 0) {
+            val |= (b & 0x7F) << n;
+            n += 7;
+
+            if (n > 35)
+                throw new BinaryObjectException("Varint reading failed, sequence length is too long");
+        }
+
+        return val | (b << n);
+    }
+
+    /**
+     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param in BinaryInputStream.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException If have been read more than 5 bytes.
+     */
+    public static int doReadSignedVarint(BinaryInputStream in) throws BinaryObjectException {
+        int val = doReadSignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeInSignedVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from given bytes array integer value which is presented in varint encoding. Starts reading from given
+     * offset. <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about
+     * varint.</a>
+     *
+     * @param arr Bytes array.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadSignedVarint(byte[] arr, int off) throws BinaryObjectException {
+        int raw = doReadUnsignedVarint(arr, off);
+        // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
+        int tmp = (((raw << 31) >> 31) ^ raw) >> 1;
+
+        return tmp ^ (raw & (1 << 31));
+    }
+
+    /**
+     * Returns the encoded size of the given unsigned integer value.
+     *
+     * @param val Value to be encoded
+     * @return Encoded size
+     */
+    public static int sizeInUnsignedVarint(int val) {
+        int size = 1;
+
+        while ((val & 0xFFFFFF80) != 0L) {
+            val >>>= 7;
+            size++;
+        }
+
+        return size;
+    }
+
+    /**
+     * Returns the encoded size of the given signed integer value.
+     *
+     * @param val Value to be encoded
+     * @return Encoded size
+     */
+    public static int sizeInSignedVarint(int val) {
+        // trick from https://developers.google.com/protocol-buffers/docs/encoding#types
+        return sizeInUnsignedVarint((val << 1) ^ (val >> 31));
     }
 
     /**
