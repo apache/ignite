@@ -56,9 +56,6 @@ public class DynamicCacheDescriptor {
     /** Cache type. */
     private CacheType cacheType;
 
-    /** */
-    private volatile Map<UUID, CacheConfiguration> rmtCfgs;
-
     /** Template configuration flag. */
     private boolean template;
 
@@ -246,36 +243,6 @@ public class DynamicCacheDescriptor {
      */
     public CachePluginManager pluginManager() {
         return pluginMgr;
-    }
-
-    /**
-     * @param nodeId Remote node ID.
-     * @return Configuration.
-     */
-    public CacheConfiguration remoteConfiguration(UUID nodeId) {
-        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
-
-        return cfgs == null ? null : cfgs.get(nodeId);
-    }
-
-    /**
-     * @param nodeId Remote node ID.
-     * @param cfg Remote node configuration.
-     */
-    public void addRemoteConfiguration(UUID nodeId, CacheConfiguration cfg) {
-        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
-
-        if (cfgs == null)
-            rmtCfgs = cfgs = new HashMap<>();
-
-        cfgs.put(nodeId, cfg);
-    }
-
-    /**
-     *
-     */
-    public void clearRemoteConfigurations() {
-        rmtCfgs = null;
     }
 
     /**
