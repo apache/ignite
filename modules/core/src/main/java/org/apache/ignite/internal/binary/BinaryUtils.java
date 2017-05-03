@@ -2438,7 +2438,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Reads via pointer integer value which is presented in varint encoding.
+     * Reads via given pointer integer value which is presented in varint encoding.
      * Starts reading from given offset.
      *
      * @param ptr Pointer.
@@ -2446,7 +2446,7 @@ public class BinaryUtils {
      * @return Decoded integer value.
      * @throws BinaryObjectException If have been read more than 5 bytes.
      */
-    public static int readUnsignedVarint(long ptr, int off) throws BinaryObjectException {
+    public static int doReadUnsignedVarint(long ptr, int off) throws BinaryObjectException {
         int val = 0;
         int n = 0;
         int b;
@@ -2504,9 +2504,9 @@ public class BinaryUtils {
     }
 
     /**
-     * Reads from given bytes array integer value which is presented in varint encoding. Starts reading from given
-     * offset. <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about
-     * varint.</a>
+     * Reads from given bytes array integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
      *
      * @param arr Bytes array.
      * @param off Offset.
@@ -2515,6 +2515,24 @@ public class BinaryUtils {
      */
     public static int doReadSignedVarint(byte[] arr, int off) throws BinaryObjectException {
         int raw = doReadUnsignedVarint(arr, off);
+        // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
+        int tmp = (((raw << 31) >> 31) ^ raw) >> 1;
+        // top bit must be reflip if the original read value had it set.
+        return tmp ^ (raw & (1 << 31));
+    }
+
+    /**
+     * Reads via given pointer integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadSignedVarint(long ptr, int off) throws BinaryObjectException {
+        int raw = doReadUnsignedVarint(ptr, off);
         // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
         int tmp = (((raw << 31) >> 31) ^ raw) >> 1;
         // top bit must be reflip if the original read value had it set.

@@ -181,6 +181,19 @@ public class BinarySerializedFieldComparator {
     }
 
     /**
+     * Read int value.
+     *
+     * @param off Offset.
+     * @return Value.
+     */
+    private int readUnsignedVarint(int off) {
+        if (offheap())
+            return BinaryUtils.doReadUnsignedVarint(ptr, curFieldPos + off);
+        else
+            return BinaryUtils.doReadUnsignedVarint(arr, curFieldPos + off);
+    }
+
+    /**
      * Read long value.
      *
      * @param off Offset.
@@ -239,7 +252,9 @@ public class BinarySerializedFieldComparator {
                 return compareByteArrays(c1, c2, 1);
 
             case GridBinaryMarshaller.DECIMAL:
-                return c1.readInt(1) == c2.readInt(1) && compareByteArrays(c1, c2, 5);
+                int c1Len = c1.readUnsignedVarint(1);
+
+                return c1Len == c2.readUnsignedVarint(1) && compareByteArrays(c1, c2, 1 + BinaryUtils.sizeInUnsignedVarint(c1Len));
 
             case GridBinaryMarshaller.NULL:
                 return true;
@@ -302,12 +317,12 @@ public class BinarySerializedFieldComparator {
      */
     private static boolean compareByteArrays(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2,
                                              int off) {
-        int len = c1.readInt(off);
+        int len = c1.readUnsignedVarint(off);
 
-        if (len != c2.readInt(off))
+        if (len != c2.readUnsignedVarint(off))
             return false;
         else {
-            off += 4;
+            off += BinaryUtils.sizeInUnsignedVarint(len);
 
             if (c1.offheap()) {
                 if (c2.offheap())

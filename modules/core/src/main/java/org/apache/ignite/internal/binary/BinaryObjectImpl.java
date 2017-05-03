@@ -472,10 +472,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             }
 
             case GridBinaryMarshaller.DECIMAL: {
-                int scale = BinaryPrimitives.readInt(arr, fieldPos + 1);
+                int scale = BinaryUtils.doReadSignedVarint(arr, fieldPos + 1);
+                int sLen = BinaryUtils.sizeInSignedVarint(scale);
 
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
-                byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + 9, dataLen);
+                int dataLen = BinaryUtils.doReadUnsignedVarint(arr, fieldPos + 1 + sLen);
+                int dLen = BinaryUtils.sizeInUnsignedVarint(dataLen);
+
+                byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + 1 + sLen + dLen, dataLen);
 
                 BigInteger intVal = new BigInteger(data);
 
