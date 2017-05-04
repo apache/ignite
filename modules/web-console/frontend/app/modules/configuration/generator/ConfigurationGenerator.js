@@ -1342,7 +1342,8 @@ export default class IgniteConfigurationGenerator {
             const fields = _.map(domain.fields,
                 (e) => ({name: e.name, className: javaTypes.fullClassName(e.className)}));
 
-            cfg.mapProperty('fields', fields, 'fields', true)
+            cfg.stringProperty('tableName')
+                .mapProperty('fields', fields, 'fields', true)
                 .mapProperty('aliases', 'aliases');
 
             const indexes = _.map(domain.indexes, (index) =>
