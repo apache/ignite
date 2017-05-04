@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteException;
  * Various ODBC utility methods.
  */
 public class OdbcUtils {
+    /** Latest version. */
+    public static final OdbcProtocolVersion VER_LATEST = OdbcProtocolVersion.VER_2_1_0;
+
     /**
      * Add quotation marks at the beginning and end of the string.
      *

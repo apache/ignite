@@ -83,13 +83,11 @@ public class OdbcMessageParser {
 
                 OdbcProtocolVersion version = res.version();
 
-                if (version.isUnknown())
+                if (version == OdbcProtocolVersion.UNKNOWN)
                     return res;
 
-                if (version.isDistributedJoinsSupported()) {
-                    res.distributedJoins(reader.readBoolean());
-                    res.enforceJoinOrder(reader.readBoolean());
-                }
+                res.distributedJoins(reader.readBoolean());
+                res.enforceJoinOrder(reader.readBoolean());
 
                 return res;
             }

@@ -141,22 +141,20 @@ public class OdbcRequestHandler {
         try {
             OdbcProtocolVersion version = req.version();
 
-            if (version.isUnknown()) {
+            if (version == OdbcProtocolVersion.UNKNOWN) {
                 IgniteProductVersion ver = ctx.grid().version();
 
                 String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-                OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcProtocolVersion.current().since(), verStr);
+                OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcUtils.VER_LATEST.since(), verStr);
 
                 return new OdbcResponse(res);
             }
 
             OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
 
-            if (version.isDistributedJoinsSupported()) {
-                distributedJoins = req.distributedJoins();
-                enforceJoinOrder = req.enforceJoinOrder();
-            }
+            distributedJoins = req.distributedJoins();
+            enforceJoinOrder = req.enforceJoinOrder();
 
             return new OdbcResponse(res);
         }
