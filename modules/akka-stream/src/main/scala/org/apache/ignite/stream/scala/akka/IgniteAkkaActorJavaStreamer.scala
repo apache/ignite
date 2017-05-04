@@ -18,15 +18,15 @@
 package org.apache.ignite.stream.scala.akka
 
 import akka.actor.Actor
-import org.apache.ignite.{Ignite, IgniteDataStreamer}
+import org.apache.ignite.IgniteDataStreamer
 import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
 /**
- * Actor
+ * Implements actor for Ignite Streamer.
  *
- * @param strm
- * @param singleTupleExtractor
- * @param multipleTupleExtractor
+ * @param strm Ignite data streamer.
+ * @param singleTupleExtractor Single tuple extractor.
+ * @param multipleTupleExtractor Multiple tuple extractor.
  * @tparam T Message type.
  * @tparam K Key type.
  * @tparam V Value type.

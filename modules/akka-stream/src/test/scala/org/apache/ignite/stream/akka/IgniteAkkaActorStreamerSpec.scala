@@ -20,7 +20,6 @@ package org.apache.ignite.stream.akka
 import java.util.Map
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.{ActorSystem, Props}
 import akka.stream._
 import akka.stream.scaladsl.{Flow, GraphDSL, RunnableGraph, Source}
@@ -35,7 +34,6 @@ import org.apache.ignite.stream.scala.akka.IgniteAkkaActorJavaStreamer
 import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpec, Matchers}
 import org.scalatest.junit.JUnitRunner
-
 import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnitRunner])
@@ -46,7 +44,8 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
 
             implicit val materialize = ActorMaterializer.create(system)
 
-            val ignite = Ignition.getOrStart(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, false))
+            val ignite = Ignition.getOrStart(
+                IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, false))
 
             val cache = ignite.cache[Int, Int](IgniteAkkaActorStreamerSpec.CACHE_NAME)
 
@@ -61,7 +60,8 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
             dataStreamer.allowOverwrite(true)
             dataStreamer.autoFlushFrequency(1)
 
-            val akkaStreamer = new org.apache.ignite.stream.scala.akka.IgniteAkkaStreamer[Int, Int, Int](dataStreamer, ignite, IgniteAkkaActorStreamerSpec.singleExtractor)
+            val akkaStreamer = new org.apache.ignite.stream.scala.akka.IgniteAkkaStreamer[Int, Int, Int](
+                dataStreamer, IgniteAkkaActorStreamerSpec.singleExtractor)
 
             val sourceData: Iterator[Int] = {
                 var list = new ListBuffer[Int]
@@ -115,7 +115,8 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
 
             implicit val materialize = ActorMaterializer.create(system)
 
-            val ignite = Ignition.getOrStart(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, false))
+            val ignite = Ignition.getOrStart(
+                IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, false))
 
             val cache = ignite.cache[Int, Int](IgniteAkkaActorStreamerSpec.CACHE_NAME)
 
@@ -130,7 +131,8 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
             dataStreamer.allowOverwrite(true)
             dataStreamer.autoFlushFrequency(1)
 
-            val actorStreamer = system.actorOf(Props(new IgniteAkkaActorJavaStreamer(dataStreamer, IgniteAkkaActorStreamerSpec.singleExtractor)), "streamer")
+            val actorStreamer = system.actorOf(Props(new IgniteAkkaActorJavaStreamer(
+                dataStreamer, IgniteAkkaActorStreamerSpec.singleExtractor)), "streamer")
 
             for (i <- 1 to IgniteAkkaActorStreamerSpec.CACHE_ENTRY_COUNT) {
                 actorStreamer ! i
@@ -149,7 +151,8 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
     }
 
     override protected def beforeAll() = {
-        Ignition.start(IgniteAkkaActorStreamerSpec.configuration(IgniteAkkaActorStreamerSpec.GRID_NAME, client = false))
+        Ignition.start(IgniteAkkaActorStreamerSpec.configuration(
+            IgniteAkkaActorStreamerSpec.GRID_NAME, client = false))
     }
 
     override protected def afterAll() = {
@@ -208,21 +211,24 @@ object IgniteAkkaActorStreamerSpec {
 
     val singleExtractor = new StreamSingleTupleExtractor[Int, Int, Int] {
         val count: AtomicInteger = new AtomicInteger(0)
+
         /**
          * Extracts a key-value tuple from a message.
          *
          * @param msg Message.
          * @return Key-value tuple.
          */
-        override def extract(msg: Int): Map.Entry[Int, Int] = return new IgniteBiTuple[Int, Int](count.getAndIncrement, msg)
+        override def extract(msg: Int): Map.Entry[Int, Int] =
+            return new IgniteBiTuple[Int, Int](count.getAndIncrement, msg)
     }
 
     /**
+      * @param ignite Ignite instance.
       * @return Cache listener.
       */
     private def subscribeToPutEvents(ignite: Ignite): CacheListener = {
         // Listen to cache PUT events and expect as many as messages as test data items.
-        var listener = new CacheListener
+        val listener = new CacheListener
 
         ignite.events(ignite.cluster.forCacheNodes(CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT)
 

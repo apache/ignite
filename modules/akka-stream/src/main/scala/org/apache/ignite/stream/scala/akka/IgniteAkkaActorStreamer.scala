@@ -18,26 +18,26 @@
 package org.apache.ignite.stream.scala.akka
 
 import akka.actor.Actor
-import org.apache.ignite.{IgniteDataStreamer, IgniteLogger}
+import org.apache.ignite.IgniteDataStreamer
 import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
 /**
- * Actor
+ * Implements actor for Ignite Streamer.
  *
- * @param _strm
- * @param _singleTupleExtractor
- * @param _multipleTupleExtractor
+ * @param stm Ignite data streamer.
+ * @param ste Single tuple extractor.
+ * @param mte Multiple tuple extractor.
  * @tparam T Message type.
  * @tparam K Key type.
  * @tparam V Value type.
  */
 class IgniteAkkaActorStreamer[T, K, V](
-    val _strm: IgniteDataStreamer[K, V],
-    val _singleTupleExtractor: StreamSingleTupleExtractor[T, K, V],
-    val _multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]
+    val stm: IgniteDataStreamer[K, V],
+    val ste: StreamSingleTupleExtractor[T, K, V],
+    val mte: StreamMultipleTupleExtractor[T, K, V]
 ) extends Actor with StreamAdapterTrait[T, K, V] {
-    require(_strm != null, "the IgniteDataStreamer must be initialize.")
-    require(_singleTupleExtractor != null || _multipleTupleExtractor != null, "the extractor must be initialize.")
+    require(stm != null, "the IgniteDataStreamer must be initialize.")
+    require(ste != null || mte != null, "the extractor must be initialize.")
 
     def receive = {
         case msg: T => {
@@ -45,7 +45,7 @@ class IgniteAkkaActorStreamer[T, K, V](
         }
     }
 
-    override val strm: IgniteDataStreamer[K, V] = _strm
-    override val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V] = _singleTupleExtractor
-    override val multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V] = _multipleTupleExtractor
+    override val strm: IgniteDataStreamer[K, V] = strm
+    override val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V] = ste
+    override val multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V] = mte
 }

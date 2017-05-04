@@ -37,7 +37,7 @@
     <properties>
         <scala.version>2.11</scala.version>
         <lib.version>2.5.0</lib.version>
-        <testki.version>2.2.5</testki.version>
+        <testkit.version>2.2.5</testkit.version>
     </properties>
 
     <dependencies>
@@ -89,7 +89,7 @@
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.version}</artifactId>
-            <version>${testki.version}</version>
+            <version>${testkit.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
