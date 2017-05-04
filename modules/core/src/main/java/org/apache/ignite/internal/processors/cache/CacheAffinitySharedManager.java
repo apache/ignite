@@ -412,7 +412,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId());
 
                     if (clientCacheStarted)
-                        initAffinity(cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
+                        initAffinity(cacheDesc, cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
                     else if (!req.clientStartOnly()) {
                         assert fut.topologyVersion().equals(cacheCtx.cacheStartTopologyVersion());
 
@@ -835,7 +835,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             forAllCaches(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
                 @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                     if (aff.lastVersion().equals(AffinityTopologyVersion.NONE))
-                        initAffinity(aff, fut, false);
+                        initAffinity(registeredCaches.get(aff.cacheId()), aff, fut, false);
                 }
             });
         }
@@ -847,7 +847,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fetch Force fetch flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void initAffinity(GridAffinityAssignmentCache aff, GridDhtPartitionsExchangeFuture fut, boolean fetch)
+    private void initAffinity(DynamicCacheDescriptor desc,
+        GridAffinityAssignmentCache aff,
+        GridDhtPartitionsExchangeFuture fut,
+        boolean fetch)
         throws IgniteCheckedException {
         if (!fetch && canCalculateAffinity(aff, fut)) {
             List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
@@ -856,7 +859,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
         else {
             GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                aff.cacheName(),
+                desc,
                 fut.topologyVersion(),
                 fut.discoCache());
 
@@ -985,7 +988,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
             else {
                 GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                    cacheCtx.name(),
+                    cacheDesc,
                     topVer,
                     fut.discoCache());
 
@@ -1094,7 +1097,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (cacheCtx.isLocal())
                 continue;
 
-            initAffinity(cacheCtx.affinity().affinityCache(), fut, false);
+            initAffinity(registeredCaches.get(cacheCtx.cacheId()), cacheCtx.affinity().affinityCache(), fut, false);
         }
     }
 
@@ -1152,7 +1155,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     assert prev.topologyVersion().compareTo(fut.topologyVersion()) < 0 : prev;
 
                     GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                        aff.cacheName(),
+                        desc,
                         prev.topologyVersion(),
                         prev.discoCache());
 

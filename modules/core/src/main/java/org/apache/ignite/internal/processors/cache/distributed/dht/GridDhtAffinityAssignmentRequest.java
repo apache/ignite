@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Affinity assignment request.
@@ -35,6 +34,9 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /** Topology version being queried. */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    private AffinityTopologyVersion waitTopVer;
+
     /**
      * Empty constructor.
      */
@@ -45,10 +47,24 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /**
      * @param cacheId Cache ID.
      * @param topVer Topology version.
+     * @param waitTopVer Topology version to wait for before message processing.
      */
-    public GridDhtAffinityAssignmentRequest(int cacheId, @NotNull AffinityTopologyVersion topVer) {
+    public GridDhtAffinityAssignmentRequest(int cacheId,
+        AffinityTopologyVersion topVer,
+        AffinityTopologyVersion waitTopVer) {
+        assert topVer != null;
+        assert waitTopVer != null;
+
         this.cacheId = cacheId;
         this.topVer = topVer;
+        this.waitTopVer = waitTopVer;
+    }
+
+    /**
+     * @return Topology version to wait for before message processing.
+     */
+    public AffinityTopologyVersion waitTopologyVersion() {
+        return waitTopVer;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +91,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -99,6 +115,12 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
                 writer.incrementState();
 
+            case 4:
+                if (!writer.writeMessage("waitTopVer", waitTopVer))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -117,6 +139,14 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
         switch (reader.state()) {
             case 3:
                 topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                waitTopVer = reader.readMessage("waitTopVer");
 
                 if (!reader.isLastRead())
                     return false;
