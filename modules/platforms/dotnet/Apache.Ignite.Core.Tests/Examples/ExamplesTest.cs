@@ -17,12 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    extern alias ExamplesDll;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
-    using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -130,7 +130,8 @@ namespace Apache.Ignite.Core.Tests.Examples
                 var args = new List<string>
                 {
                     "-configFileName=" + _configPath,
-                    "-assembly=" + typeof(AverageSalaryJob).Assembly.Location
+                    "-assembly=" + typeof(ExamplesDll::Apache.Ignite.ExamplesDll.Compute.AverageSalaryJob)
+                        .Assembly.Location
                 };
 
                 var proc = new IgniteProcess(args.ToArray());
