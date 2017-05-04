@@ -266,7 +266,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final ConcurrentMap<T2<Integer, Integer>, T2<Long, WALPointer>> reservedForPreloading = new ConcurrentHashMap<>();
 
     /** Snapshot manager. */
-    private final IgniteCacheSnapshotManager snapshotMgr;
+    private IgniteCacheSnapshotManager snapshotMgr;
 
     /**
      * @param cfg Ignite configuration.
@@ -292,8 +292,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return tmpWriteBuf;
             }
         };
-
-        snapshotMgr = cctx.snapshot();
     }
 
     /**
@@ -327,6 +325,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        snapshotMgr = cctx.snapshot();
+
         initDataBase();
 
         if (!cctx.kernalContext().clientNode()) {
@@ -343,8 +343,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
         }
-
-        snapshotMgr.start(cctx);
     }
 
     /**

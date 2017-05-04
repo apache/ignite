@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,6 +58,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PersistenceConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1487,7 +1489,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
-        IgniteCacheOffheapManager offheapMgr = pluginMgr.createComponent(IgniteCacheOffheapManager.class);
+
+        IgniteCacheOffheapManager offheapMgr;
+
+        if (ctx.config().getPersistenceConfiguration() != null) {
+            ClassLoader clsLdr = U.gridClassLoader();
+
+            try {
+                offheapMgr = (IgniteCacheOffheapManager) clsLdr
+                    .loadClass("org.apache.ignite.internal.processors.cache.database.GridCacheOffheapManager")
+                    .getConstructor()
+                    .newInstance();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to initialize offheap manager", e);
+            }
+        }
+        else
+            offheapMgr = new IgniteCacheOffheapManagerImpl();
+
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -2125,18 +2145,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
         GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
 
-        IgniteCacheDatabaseSharedManager dbMgr = ctx.plugins().createComponent(IgniteCacheDatabaseSharedManager.class);
+        IgniteCacheDatabaseSharedManager dbMgr;
+        IgnitePageStoreManager pageStoreMgr = null;
+        IgniteWriteAheadLogManager walMgr = null;
 
-        if (dbMgr == null)
+        if (ctx.config().getPersistenceConfiguration() != null) {
+            ClassLoader clsLdr = U.gridClassLoader();
+
+            try {
+                dbMgr = (IgniteCacheDatabaseSharedManager) clsLdr
+                    .loadClass("org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager")
+                    .getConstructor(IgniteConfiguration.class)
+                    .newInstance(ctx.config());
+
+                pageStoreMgr = (IgnitePageStoreManager) clsLdr
+                    .loadClass("org.apache.ignite.internal.processors.cache.database.file.FilePageStoreManager")
+                    .getConstructor(IgniteConfiguration.class)
+                    .newInstance(ctx.config());
+
+                walMgr = (IgniteWriteAheadLogManager) clsLdr
+                    .loadClass("org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager")
+                    .getConstructor(IgniteConfiguration.class)
+                    .newInstance(ctx.config());
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to initialize persistent store", e);
+            }
+        }
+        else
             dbMgr = new IgniteCacheDatabaseSharedManager();
 
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
         if (snpMgr == null)
             snpMgr = new IgniteCacheSnapshotManager();
-
-        IgnitePageStoreManager pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
-        IgniteWriteAheadLogManager walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
 
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();

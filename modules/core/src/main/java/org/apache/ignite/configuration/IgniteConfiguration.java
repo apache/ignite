@@ -485,6 +485,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
         memCfg = cfg.getMemoryConfiguration();
+        pstCfg = cfg.getPersistenceConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();

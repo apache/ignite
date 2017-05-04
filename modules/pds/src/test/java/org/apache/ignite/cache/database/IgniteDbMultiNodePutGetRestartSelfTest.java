@@ -66,9 +66,7 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
 
         cfg.setCacheConfiguration(ccfg);
 
-        PersistenceConfiguration dbCfg = new PersistenceConfiguration();
-
-        cfg.setPersistenceConfiguration(dbCfg);
+        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
