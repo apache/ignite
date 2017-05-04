@@ -91,6 +91,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -490,6 +491,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         validate(cfg);
 
+        ctx.security().authorize(cfg.getName(), SecurityPermission.SERVICE_DEPLOY, null);
+
         if (!state.srvcCompatibility) {
             Marshaller marsh = ctx.config().getMarshaller();
 
@@ -624,6 +627,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Future.
      */
     public IgniteInternalFuture<?> cancel(String name) {
+        ctx.security().authorize(name, SecurityPermission.SERVICE_CANCEL, null);
+
         while (true) {
             try {
                 GridFutureAdapter<?> fut = new GridFutureAdapter<>();
@@ -761,6 +766,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     @SuppressWarnings("unchecked")
     public <T> T service(String name) {
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
@@ -825,6 +832,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     @SuppressWarnings("unchecked")
     public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException {
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
 
@@ -864,6 +873,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      */
     @SuppressWarnings("unchecked")
     public <T> Collection<T> services(String name) {
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
