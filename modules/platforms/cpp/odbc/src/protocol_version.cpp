@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <ignite/common/concurrent.h>
-#include <ignite/common/utils.h>
+
+#include <sstream>
+
 #include <ignite/ignite_error.h>
 
 #include "ignite/odbc/protocol_version.h"
@@ -25,112 +26,147 @@ namespace ignite
 {
     namespace odbc
     {
-        const ProtocolVersion ProtocolVersion::VERSION_2_0_0(MakeVersion(2,0,0));
-        const ProtocolVersion ProtocolVersion::VERSION_UNKNOWN(INT64_MIN);
+        const ProtocolVersion ProtocolVersion::VERSION_2_1_0(ProtocolVersion(2,1,0));
 
-        ProtocolVersion::StringToVersionMap::value_type s2vInitVals[] = {
-            std::make_pair("2.0.0", ProtocolVersion::VERSION_2_0_0)
+        ProtocolVersion::VersionSet::value_type supportedArray[] = {
+            ProtocolVersion::VERSION_2_1_0
         };
 
-        const ProtocolVersion::StringToVersionMap ProtocolVersion::stringToVersionMap(s2vInitVals,
-            s2vInitVals + (sizeof(s2vInitVals) / sizeof(s2vInitVals[0])));
+        const ProtocolVersion::VersionSet ProtocolVersion::supported(supportedArray,
+            supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
-        ProtocolVersion::VersionToStringMap::value_type v2sInitVals[] = {
-            std::make_pair(ProtocolVersion::VERSION_2_0_0, "2.0.0")
-        };
-
-        const ProtocolVersion::VersionToStringMap ProtocolVersion::versionToStringMap(v2sInitVals,
-            v2sInitVals + (sizeof(v2sInitVals) / sizeof(v2sInitVals[0])));
-
-        ProtocolVersion::ProtocolVersion(int64_t val) :
-            val(val)
+        ProtocolVersion::ProtocolVersion(int16_t major, int16_t minor, int16_t maintenance) :
+            major(major),
+            minor(minor),
+            maintenance(maintenance)
         {
             // No-op.
         }
 
-        int64_t ProtocolVersion::MakeVersion(uint16_t major, uint16_t minor, uint16_t revision)
+        ProtocolVersion::ProtocolVersion() :
+            major(0),
+            minor(0),
+            maintenance(0)
         {
-            const static int64_t MASK = 0x000000000000FFFFLL;
-            return ((major & MASK) << 48) | ((minor & MASK) << 32) | ((revision & MASK) << 16);
+            // No-op.
         }
 
-        const ProtocolVersion::StringToVersionMap& ProtocolVersion::GetMap()
+        const ProtocolVersion::VersionSet& ProtocolVersion::GetSupported()
         {
-            return stringToVersionMap;
+            return supported;
         }
 
         const ProtocolVersion& ProtocolVersion::GetCurrent()
         {
-            return VERSION_2_0_0;
+            return VERSION_2_1_0;
+        }
+
+        void ThrowParseError()
+        {
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major, "
+                "minor and maintenance version parts of Ignite since which protocol is introduced.");
         }
 
         ProtocolVersion ProtocolVersion::FromString(const std::string& version)
         {
-            StringToVersionMap::const_iterator it = stringToVersionMap.find(common::ToLower(version));
+            ProtocolVersion res;
 
-            if (it == stringToVersionMap.end())
-            {
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Invalid version format. Valid format is X.Y.Z, where X, Y and Z are major "
-                    "and minor versions and revision of Ignite since which protocol is introduced.");
-            }
+            std::stringstream buf(version);
 
-            return it->second;
+            buf >> res.major;
+
+            if (!buf.good())
+                ThrowParseError();
+
+            if (buf.get() != '.' || !buf.good())
+                ThrowParseError();
+
+            buf >> res.minor;
+
+            if (!buf.good())
+                ThrowParseError();
+
+            if (buf.get() != '.' || !buf.good())
+                ThrowParseError();
+
+            buf >> res.maintenance;
+
+            if (!buf.good())
+                ThrowParseError();
+
+            return res;
         }
 
-        const std::string& ProtocolVersion::ToString() const
+        std::string ProtocolVersion::ToString() const
         {
-            VersionToStringMap::const_iterator it = versionToStringMap.find(*this);
+            std::stringstream buf;
+            buf << major << '.' << minor << '.' << maintenance;
 
-            if (it == versionToStringMap.end())
-            {
-                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                    "Unknown protocol version can not be converted to string.");
-            }
-
-            return it->second;
+            return buf.str();
         }
 
-        int64_t ProtocolVersion::GetIntValue() const
+        int16_t ProtocolVersion::GetMajor() const
         {
-            assert(!IsUnknown());
-
-            return val;
+            return major;
         }
 
-        bool ProtocolVersion::IsUnknown() const
+        int16_t ProtocolVersion::GetMinor() const
         {
-            return *this == VERSION_UNKNOWN;
+            return minor;
+        }
+
+        int16_t ProtocolVersion::GetMaintenance() const
+        {
+            return maintenance;
+        }
+
+        bool ProtocolVersion::IsSupported() const
+        {
+            return supported.count(*this) != 0;
+        }
+
+        int32_t ProtocolVersion::Compare(const ProtocolVersion& other) const
+        {
+            int32_t res = major - other.major;
+
+            if (res == 0)
+                res = minor - other.minor;
+
+            if (res == 0)
+                res = maintenance - other.maintenance;
+
+            return res;
         }
 
         bool operator==(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
-            return val1.val == val2.val;
+            return val1.Compare(val2) == 0;
         }
 
         bool operator!=(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
-            return val1.val != val2.val;
+            return val1.Compare(val2) != 0;
         }
 
         bool operator<(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
-            return val1.val < val2.val;
+            return val1.Compare(val2) < 0;
         }
 
         bool operator<=(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
-            return val1.val <= val2.val;
+            return val1.Compare(val2) <= 0;
         }
 
         bool operator>(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
-            return val1.val > val2.val;
+            return val1.Compare(val2) > 0;
         }
 
         bool operator>=(const ProtocolVersion& val1, const ProtocolVersion& val2)
         {
-            return val1.val >= val2.val;
+            return val1.Compare(val2) >= 0;
         }
     }
 }

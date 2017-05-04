@@ -77,7 +77,7 @@ namespace ignite
              * @param distributedJoins Distributed joins flag.
              * @param enforceJoinOrder Enforce join order flag.
              */
-            HandshakeRequest(int64_t version, bool distributedJoins, bool enforceJoinOrder) :
+            HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder) :
                 version(version),
                 distributedJoins(distributedJoins),
                 enforceJoinOrder(enforceJoinOrder)
@@ -101,7 +101,9 @@ namespace ignite
             {
                 writer.WriteInt8(RequestType::HANDSHAKE);
 
-                writer.WriteInt64(version);
+                writer.WriteInt16(version.GetMajor());
+                writer.WriteInt16(version.GetMinor());
+                writer.WriteInt16(version.GetMaintenance());
 
                 writer.WriteBool(distributedJoins);
                 writer.WriteBool(enforceJoinOrder);
@@ -109,7 +111,7 @@ namespace ignite
 
         private:
             /** Protocol version. */
-            int64_t version;
+            ProtocolVersion version;
 
             /** Distributed joins flag. */
             bool distributedJoins;
@@ -516,8 +518,8 @@ namespace ignite
              */
             HandshakeResponse() :
                 accepted(false),
-                protoVerSince(),
-                currentVer()
+                currentVer(),
+                error()
             {
                 // No-op.
             }
@@ -540,19 +542,19 @@ namespace ignite
             }
 
             /**
-             * Get host Apache Ignite version when protocol version has been introduced.
-             * @return Host Apache Ignite version when protocol version has been introduced.
+             * Get optional error.
+             * @return Optional error message.
              */
-            const std::string& ProtoVerSince() const
+            const std::string& GetOptionalError() const
             {
-                return protoVerSince;
+                return error;
             }
 
             /**
              * Current host Apache Ignite version.
              * @return Current host Apache Ignite version.
              */
-            const std::string& CurrentVer() const
+            const ProtocolVersion& GetCurrentVer() const
             {
                 return currentVer;
             }
@@ -566,21 +568,26 @@ namespace ignite
             {
                 accepted = reader.ReadBool();
 
+                int16_t major = reader.ReadInt16();
+                int16_t minor = reader.ReadInt16();
+                int16_t maintenance = reader.ReadInt16();
+
+                currentVer = ProtocolVersion(major, minor, maintenance);
+
                 if (!accepted)
                 {
-                    utility::ReadString(reader, protoVerSince);
-                    utility::ReadString(reader, currentVer);
+                    utility::ReadString(reader, error);
                 }
             }
 
             /** Handshake accepted. */
             bool accepted;
 
-            /** Host Apache Ignite version when protocol version has been introduced. */
-            std::string protoVerSince;
+            /** Node's protocol version. */
+            ProtocolVersion currentVer;
 
-            /** Current host Apache Ignite version. */
-            std::string currentVer;
+            /** Optional error message. */
+            std::string error;
         };
 
         /**

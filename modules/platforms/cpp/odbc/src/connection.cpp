@@ -321,17 +321,24 @@ namespace ignite
         {
             bool distributedJoins = false;
             bool enforceJoinOrder = false;
-            int64_t protocolVersion = 0;
+            ProtocolVersion protocolVersion;
 
             try
             {
                 distributedJoins = config.IsDistributedJoins();
                 enforceJoinOrder = config.IsEnforceJoinOrder();
-                protocolVersion = config.GetProtocolVersion().GetIntValue();
+                protocolVersion = config.GetProtocolVersion();
             }
             catch (const IgniteError& err)
             {
                 AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
+
+                return SqlResult::AI_ERROR;
+            }
+
+            if (!protocolVersion.IsSupported())
+            {
+                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, "Protocol version is not supported: " + protocolVersion.ToString());
 
                 return SqlResult::AI_ERROR;
             }
@@ -367,10 +374,13 @@ namespace ignite
 
                 std::stringstream constructor;
 
-                constructor << "Node rejected handshake message. "
-                    << "Current node Apache Ignite version: " << rsp.CurrentVer() << ", "
-                    << "node protocol version introduced in version: " << rsp.ProtoVerSince() << ", "
-                    << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";
+                constructor << "Node rejected handshake message. ";
+
+                if (!rsp.GetOptionalError().empty())
+                    constructor << "Additional info: " << rsp.GetOptionalError();
+
+                constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
+                            << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";
 
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, constructor.str());
 
