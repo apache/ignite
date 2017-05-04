@@ -69,6 +69,9 @@ public class GridCacheSqlQuery implements Message {
     /** Single node to execute the query on. */
     private UUID node;
 
+    /** */
+    private transient int[] partitions;
+
     /**
      * For {@link Message}.
      */
@@ -253,6 +256,7 @@ public class GridCacheSqlQuery implements Message {
         cp.paramIdxs = paramIdxs;
         cp.sort = sort;
         cp.partitioned = partitioned;
+        cp.partitions = partitions;
 
         return cp;
     }
@@ -323,5 +327,17 @@ public class GridCacheSqlQuery implements Message {
         }
 
         return res;
+    }
+
+    /** */
+    public int[] partitions() {
+        return partitions;
+    }
+
+    /** */
+    public GridCacheSqlQuery partitions(int[] partitions) {
+        this.partitions = partitions;
+
+        return this;
     }
 }

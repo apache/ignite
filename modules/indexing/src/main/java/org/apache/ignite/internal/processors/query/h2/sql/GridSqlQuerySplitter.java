@@ -34,9 +34,12 @@ import java.util.TreeSet;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -197,8 +200,9 @@ public class GridSqlQuerySplitter {
         qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder),
             true);
 
-        // Do the actual query split. We will update the original query AST, need to be careful.
-        splitter.splitQuery(qry);
+        if (!splitter.checkAffinityKeyEquality(qry, params, h2.kernalContext()))
+            // Do the actual query split. We will update the original query AST, need to be careful.
+            splitter.splitQuery(qry);
 
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
@@ -1973,6 +1977,90 @@ public class GridSqlQuerySplitter {
      */
     private static GridSqlFunction function(GridSqlFunctionType type) {
         return new GridSqlFunction(type);
+    }
+
+    /** */
+    private boolean checkAffinityKeyEquality(GridSqlQuery qry, Object[] params, GridKernalContext ctx) {
+        if (!(qry instanceof GridSqlSelect))
+            return false;
+
+        GridSqlSelect select = (GridSqlSelect)qry;
+
+        //no joins allowed yet
+        if (select.from() == null || select.from().size() != 1)
+            return false;
+
+        if (!(select.where() instanceof GridSqlOperation))
+            return false;
+
+        GridSqlOperation where = (GridSqlOperation)select.where();
+
+        if (where.operationType() != GridSqlOperationType.EQUAL)
+            return false;
+
+        if (where.size() != 2)
+            return false;
+
+        GridSqlElement left = where.child(0);
+        GridSqlElement right = where.child(1);
+
+        if (!(left instanceof GridSqlColumn))
+            return false;
+
+        if (!(right instanceof GridSqlConst) && !(right instanceof GridSqlParameter))
+            return false;
+
+
+        GridSqlColumn column = (GridSqlColumn)left;
+
+        assert column.column().getTable() instanceof GridH2Table;
+
+        GridH2Table tbl = (GridH2Table) column.column().getTable();
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        int affKeyColId = tbl.getAffinityKeyColumn().column.getColumnId();
+
+        if (column.column().getColumnId() != affKeyColId &&
+                !desc.isKeyColumn(column.column().getColumnId()))
+            return false;
+
+        int[] parts = null;
+        try {
+
+            Object val;
+            if (right instanceof GridSqlConst) {
+                GridSqlConst constant = (GridSqlConst)right;
+                val = constant.value().getObject();
+            }
+            else {
+                assert right instanceof GridSqlParameter;
+                GridSqlParameter param = (GridSqlParameter) right;
+                val = params[param.index()];
+            }
+
+            int part = ctx.affinity().partition(tbl.spaceName(), val);
+            parts = new int[] {part};
+        }
+        catch (IgniteCheckedException ex) {
+            return false;
+        }
+
+        GridCacheSqlQuery map = new GridCacheSqlQuery(qry.getSQL()).partitions(parts);
+        map.partitioned(true);
+
+        setupParameters(map, qry, params);
+
+        List<GridSqlAst> mapExps = new ArrayList<>(((GridSqlSelect) qry).allColumns());
+        mapExps.addAll(((GridSqlSelect) qry).columns(false));
+
+        map.columns(collectColumns(mapExps));
+        map.sortColumns(qry.sort());
+
+        this.mapSqlQrys.add(map);
+        this.rdcSqlQry = map;
+        this.rdcQrySimple = true;
+
+        return true;
     }
 
     /**

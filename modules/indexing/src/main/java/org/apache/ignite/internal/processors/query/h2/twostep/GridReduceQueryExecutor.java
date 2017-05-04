@@ -590,6 +590,14 @@ public class GridReduceQueryExecutor {
             if (qry.isLocal())
                 nodes = singletonList(ctx.discovery().localNode());
             else {
+                int[] parts2 = parts;
+                if (parts2 == null) {
+                    for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+                        if (!F.isEmpty(mapQry.partitions()))
+                            parts2 = mapQry.partitions();
+                    }
+                }
+
                 if (isPreloadingActive(cctx, extraSpaces)) {
                     if (isReplicatedOnly)
                         nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
@@ -597,13 +605,13 @@ public class GridReduceQueryExecutor {
                         partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
 
                         if (partsMap != null) {
-                            qryMap = narrowForQuery(partsMap, parts);
+                            qryMap = narrowForQuery(partsMap, parts2);
 
                             nodes = qryMap == null ? null : qryMap.keySet();
                         }
                     }
                 } else {
-                    qryMap = stableDataNodes(isReplicatedOnly, topVer, cctx, extraSpaces, parts);
+                    qryMap = stableDataNodes(isReplicatedOnly, topVer, cctx, extraSpaces, parts2);
 
                     if (qryMap != null)
                         nodes = qryMap.keySet();
