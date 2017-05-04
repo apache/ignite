@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
  */
 public class OdbcUtils {
     /** Latest version. */
-    public static final SqlListenerProtocolVersion VER_LATEST = SqlListenerProtocolVersion.VER_2_1_0;
+    public static final SqlListenerProtocolVersion VER_LATEST = SqlListenerProtocolVersion.VER_2_0_0;
 
     /**
      * Add quotation marks at the beginning and end of the string.
