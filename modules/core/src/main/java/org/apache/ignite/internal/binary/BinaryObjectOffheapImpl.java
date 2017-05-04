@@ -367,12 +367,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
             case GridBinaryMarshaller.DECIMAL: {
                 int scale = BinaryUtils.doReadSignedVarint(ptr, fieldPos + 1);
-                int sLen = BinaryUtils.sizeInSignedVarint(scale);
+                int len = 1 + BinaryUtils.sizeInSignedVarint(scale);
 
-                int dataLen = BinaryUtils.doReadUnsignedVarint(ptr, fieldPos + 1 + sLen);
-                int dLen = BinaryUtils.sizeInUnsignedVarint(dataLen);
+                int dataLen = BinaryUtils.doReadUnsignedVarint(ptr, fieldPos + len);
+                len += BinaryUtils.sizeInUnsignedVarint(dataLen);
 
-                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 1 + sLen + dLen, dataLen);
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + len, dataLen);
 
                 BigInteger intVal = new BigInteger(data);
 

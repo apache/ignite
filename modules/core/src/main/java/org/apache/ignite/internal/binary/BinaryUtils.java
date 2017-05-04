@@ -2367,7 +2367,7 @@ public class BinaryUtils {
 
     /**
      * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param in BinaryInputStream.
      * @return Decoded integer value.
@@ -2384,7 +2384,7 @@ public class BinaryUtils {
     /**
      * Reads from {@link BinaryBuilderReader} integer value which is presented in varint encoding.
      * Starts reading from given offset.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param in BinaryInputStream.
      * @param off Offset.
@@ -2397,7 +2397,7 @@ public class BinaryUtils {
 
     /**
      * Reads from {@link BinaryBuilderReader} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param in BinaryInputStream.
      * @return Decoded integer value.
@@ -2414,7 +2414,7 @@ public class BinaryUtils {
     /**
      * Reads from given bytes array integer value which is presented in varint encoding.
      * Starts reading from given offset.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param arr Bytes array.
      * @param off Offset.
@@ -2465,7 +2465,7 @@ public class BinaryUtils {
     /**
      * Reads from given {@link ByteBuffer} integer value which is presented in varint encoding.
      * Starts reading from given offset.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param buf ByteBuffer.
      * @return Decoded integer value.
@@ -2489,7 +2489,7 @@ public class BinaryUtils {
 
     /**
      * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param in BinaryInputStream.
      * @return Decoded integer value.
@@ -2506,7 +2506,7 @@ public class BinaryUtils {
     /**
      * Reads from given bytes array integer value which is presented in varint encoding.
      * Starts reading from given offset.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param arr Bytes array.
      * @param off Offset.
@@ -2517,14 +2517,14 @@ public class BinaryUtils {
         int raw = doReadUnsignedVarint(arr, off);
         // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
         int tmp = (((raw << 31) >> 31) ^ raw) >> 1;
-        // top bit must be reflip if the original read value had it set.
+        // Top bit must be reflip if the original read value had it set.
         return tmp ^ (raw & (1 << 31));
     }
 
     /**
      * Reads via given pointer integer value which is presented in varint encoding.
      * Starts reading from given offset.
-     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param ptr Pointer.
      * @param off Offset.
@@ -2535,15 +2535,16 @@ public class BinaryUtils {
         int raw = doReadUnsignedVarint(ptr, off);
         // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
         int tmp = (((raw << 31) >> 31) ^ raw) >> 1;
-        // top bit must be reflip if the original read value had it set.
+        // Top bit must be reflip if the original read value had it set
         return tmp ^ (raw & (1 << 31));
     }
 
     /**
      * Returns the encoded size of the given unsigned integer value.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
-     * @param val Value to be encoded
-     * @return Encoded size
+     * @param val Value to be encoded.
+     * @return Encoded size.
      */
     public static int sizeInUnsignedVarint(int val) {
         int size = 1;
@@ -2558,12 +2559,13 @@ public class BinaryUtils {
 
     /**
      * Returns the encoded size of the given signed integer value.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
-     * @param val Value to be encoded
-     * @return Encoded size
+     * @param val Value to be encoded.
+     * @return Encoded size.
      */
     public static int sizeInSignedVarint(int val) {
-        // trick from https://developers.google.com/protocol-buffers/docs/encoding#types
+        // Trick from https://developers.google.com/protocol-buffers/docs/encoding#types
         return sizeInUnsignedVarint((val << 1) ^ (val >> 31));
     }
 

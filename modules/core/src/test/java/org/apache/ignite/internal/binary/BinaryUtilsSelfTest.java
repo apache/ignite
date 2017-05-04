@@ -29,6 +29,7 @@ public class BinaryUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     private int[] ints;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

@@ -181,10 +181,12 @@ public class BinarySerializedFieldComparator {
     }
 
     /**
-     * Read int value.
+     * Reads integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
      *
      * @param off Offset.
-     * @return Value.
+     * @return Decoded integer value.
      */
     private int readUnsignedVarint(int off) {
         if (offheap())
