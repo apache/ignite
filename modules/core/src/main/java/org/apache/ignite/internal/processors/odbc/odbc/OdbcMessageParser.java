@@ -27,8 +27,8 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.OdbcHandshakeRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcHandshakeResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeResult;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaResult;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaRequest;
@@ -93,7 +93,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             {
                 long longVersion = reader.readLong();
 
-                OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
+                SqlListenerHandshakeRequest res = new SqlListenerHandshakeRequest(longVersion);
 
                 res.distributedJoins(reader.readBoolean());
                 res.enforceJoinOrder(reader.readBoolean());
@@ -197,8 +197,8 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
         if (res0 == null)
             return writer.array();
-        if (res0 instanceof OdbcHandshakeResult) {
-            OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
+        if (res0 instanceof SqlListenerHandshakeResult) {
+            SqlListenerHandshakeResult res = (SqlListenerHandshakeResult) res0;
 
             if (log.isDebugEnabled())
                 log.debug("Handshake result: " + (res.accepted() ? "accepted" : "rejected"));

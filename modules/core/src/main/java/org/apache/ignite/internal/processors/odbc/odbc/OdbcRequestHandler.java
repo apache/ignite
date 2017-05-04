@@ -24,8 +24,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.OdbcHandshakeRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcHandshakeResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeResult;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaResult;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaRequest;
@@ -117,7 +117,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         try {
             switch (req.command()) {
                 case HANDSHAKE:
-                    return performHandshake((OdbcHandshakeRequest)req);
+                    return performHandshake((SqlListenerHandshakeRequest)req);
 
                 case QRY_EXEC:
                     return executeQuery((SqlListenerQueryExecuteRequest)req);
@@ -146,12 +146,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcHandshakeRequest} command handler.
+     * {@link SqlListenerHandshakeRequest} command handler.
      *
      * @param req Handshake request.
      * @return Response.
      */
-    private SqlListenerResponse performHandshake(OdbcHandshakeRequest req) {
+    private SqlListenerResponse performHandshake(SqlListenerHandshakeRequest req) {
         try {
             SqlListenerProtocolVersion version = req.version();
 
@@ -160,12 +160,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
                 String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
 
-                OdbcHandshakeResult res = new OdbcHandshakeResult(false, OdbcUtils.VER_LATEST.since(), verStr);
+                SqlListenerHandshakeResult res = new SqlListenerHandshakeResult(false, OdbcUtils.VER_LATEST.since(), verStr);
 
                 return new SqlListenerResponse(res);
             }
 
-            OdbcHandshakeResult res = new OdbcHandshakeResult(true, null, null);
+            SqlListenerHandshakeResult res = new SqlListenerHandshakeResult(true, null, null);
 
             distributedJoins = req.distributedJoins();
             enforceJoinOrder = req.enforceJoinOrder();
