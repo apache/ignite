@@ -446,7 +446,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (typeName != null)
                 {
-                    var type = new TypeResolver().ResolveType(typeName, nameMapper: GetDefaultNameMapper());
+                    var type = new TypeResolver().ResolveType(typeName, nameMapper: 
+                        _cfg.NameMapper ?? GetDefaultNameMapper());
 
                     if (type != null)
                     {
