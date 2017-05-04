@@ -153,6 +153,9 @@ public class GridBinaryMarshaller {
     /** Time array. */
     public static final byte TIME_ARR = 37;
 
+    /** Binary enum */
+    public static final byte BINARY_ENUM = 38;
+
     /** */
     public static final byte NULL = (byte)101;
 

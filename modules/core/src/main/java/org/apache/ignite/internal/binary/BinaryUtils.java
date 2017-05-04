@@ -266,6 +266,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME_ARR] = "Time[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
 
         if (wrapTrees()) {
             CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
@@ -975,6 +976,18 @@ public class BinaryUtils {
 
             boolean changed = false;
 
+            Map<String, Integer> mergedEnumMap = null;
+            if (!F.isEmpty(newMeta.enumMap())) {
+                if (F.isEmpty(oldMeta.enumMap()))
+                    mergedEnumMap = newMeta.enumMap();
+                else {
+                    mergedEnumMap = new LinkedHashMap<>(oldMeta.enumMap());
+                    for (Map.Entry<String, Integer> e: newMeta.enumMap().entrySet())
+                        mergedEnumMap.put(e.getKey(), e.getValue());
+                }
+                changed = true;
+            }
+
             for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
                 BinaryFieldMetadata oldFieldMeta = mergedFields.put(newField.getKey(), newField.getValue());
 
@@ -1005,7 +1018,7 @@ public class BinaryUtils {
 
             // Return either old meta if no changes detected, or new merged meta.
             return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
-                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum()) : oldMeta;
+                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum(), mergedEnumMap) : oldMeta;
         }
     }
 
@@ -1106,6 +1119,8 @@ public class BinaryUtils {
             return BinaryWriteMode.MAP;
         else if (cls.isEnum())
             return BinaryWriteMode.ENUM;
+        else if (cls == BinaryEnumObjectImpl.class)
+            return BinaryWriteMode.BINARY_ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
         else if (Proxy.class.isAssignableFrom(cls))
@@ -1627,6 +1642,17 @@ public class BinaryUtils {
      *
      * @param in Input stream.
      * @param ctx Binary context.
+     * @return Enum.
+     */
+    public static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param in Input stream.
+     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
@@ -1903,6 +1929,7 @@ public class BinaryUtils {
                 return doReadBinaryObject(in, ctx, detach);
 
             case GridBinaryMarshaller.ENUM:
+            case GridBinaryMarshaller.BINARY_ENUM:
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
