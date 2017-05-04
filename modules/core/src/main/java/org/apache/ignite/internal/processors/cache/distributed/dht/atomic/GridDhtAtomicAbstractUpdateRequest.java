@@ -122,6 +122,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         boolean keepBinary,
         boolean skipStore
     ) {
+        assert topVer.topologyVersion() > 0 : topVer;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
@@ -136,6 +138,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);
         if (keepBinary)
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     void nearReplyInfo(UUID nearNodeId, long nearFutId) {

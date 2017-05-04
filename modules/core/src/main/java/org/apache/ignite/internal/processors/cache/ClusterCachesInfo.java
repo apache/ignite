@@ -554,6 +554,8 @@ class ClusterCachesInfo {
                         NearCacheConfiguration nearCfg = null;
 
                         if (locCfg != null) {
+                            nearCfg = locCfg.config().getNearConfiguration();
+
                             DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
                                 locCfg.config(),
                                 desc.cacheType(),
@@ -567,8 +569,6 @@ class ClusterCachesInfo {
                             desc0.staticallyConfigured(desc.staticallyConfigured());
 
                             desc = desc0;
-
-                            nearCfg = locCfg.config().getNearConfiguration();
                         }
 
                         if (locCfg != null || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))

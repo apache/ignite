@@ -1901,13 +1901,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
-            if (F.eq(cacheCtx.startTopologyVersion(), topVer)) {
+            if (cacheCtx.startTopologyVersion().equals(topVer)) {
+                jCacheProxies.put(cacheCtx.name(), new IgniteCacheProxy(cache.context(), cache, null, false));
+
                 if (cacheCtx.preloader() != null)
                     cacheCtx.preloader().onInitialExchangeComplete(err);
-
-                String masked = cacheCtx.name();
-
-                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
             }
         }
 
@@ -1921,16 +1919,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (DynamicCacheChangeRequest req : exchActions.closeRequests(ctx.localNodeId())) {
                 String cacheName = req.cacheName();
 
-                IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(cacheName);
+                IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
                 if (proxy != null) {
                     if (proxy.context().affinityNode()) {
                         GridCacheAdapter<?, ?> cache = caches.get(cacheName);
 
-                        if (cache != null)
-                            jCacheProxies.put(cacheName, new IgniteCacheProxy(cache.context(), cache, null, false));
+                        assert cache != null : cacheName;
+
+                        jCacheProxies.put(cacheName, new IgniteCacheProxy(cache.context(), cache, null, false));
                     }
                     else {
+                        jCacheProxies.remove(cacheName);
+
                         proxy.context().gate().onStopped();
 
                         prepareCacheStop(req);
@@ -3002,6 +3003,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IllegalArgumentException("Cache is not configured: " + name);
 
         return cache;
+    }
+
+    /**
+     * @param name Cache name.
+     * @return Cache proxy.
+     */
+    @Nullable public IgniteCacheProxy jcacheProxy(String name) {
+        return jCacheProxies.get(name);
     }
 
     /**

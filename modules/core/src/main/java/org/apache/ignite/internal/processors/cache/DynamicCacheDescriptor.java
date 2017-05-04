@@ -103,6 +103,12 @@ public class DynamicCacheDescriptor {
         assert cacheCfg != null;
         assert schema != null;
 
+        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
+            cacheCfg = new CacheConfiguration(cacheCfg);
+
+            cacheCfg.setNearConfiguration(null);
+        }
+
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.template = template;
@@ -111,9 +117,6 @@ public class DynamicCacheDescriptor {
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
-
-        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED)
-            cacheCfg.setNearConfiguration(null);
 
         synchronized (schemaMux) {
             this.schema = schema.copy();
