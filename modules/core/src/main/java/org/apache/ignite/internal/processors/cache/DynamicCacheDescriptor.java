@@ -47,17 +47,11 @@ public class DynamicCacheDescriptor {
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
-    /** Locally configured flag. */
-    private boolean locCfg;
-
     /** Statically configured flag. */
     private boolean staticCfg;
 
     /** Cache type. */
     private CacheType cacheType;
-
-    /** */
-    private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
     /** Template configuration flag. */
     private boolean template;
@@ -72,16 +66,10 @@ public class DynamicCacheDescriptor {
     private AffinityTopologyVersion startTopVer;
 
     /** */
-    private boolean rcvdOnDiscovery;
-
-    /** */
     private Integer cacheId;
 
     /** */
     private UUID rcvdFrom;
-
-    /** */
-    private AffinityTopologyVersion rcvdFromVer;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -120,6 +108,12 @@ public class DynamicCacheDescriptor {
         assert grpDesc != null || template;
         assert schema != null;
 
+        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
+            cacheCfg = new CacheConfiguration(cacheCfg);
+
+            cacheCfg.setNearConfiguration(null);
+        }
+
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.grpDesc = grpDesc;
@@ -129,9 +123,6 @@ public class DynamicCacheDescriptor {
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
-
-        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED)
-            cacheCfg.setNearConfiguration(null);
 
         synchronized (schemaMux) {
             this.schema = schema.copy();
@@ -165,6 +156,8 @@ public class DynamicCacheDescriptor {
      * @param startTopVer Start topology version.
      */
     public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        assert startTopVer != null;
+
         this.startTopVer = startTopVer;
     }
 
@@ -187,27 +180,6 @@ public class DynamicCacheDescriptor {
      */
     public IgniteUuid deploymentId() {
         return deploymentId;
-    }
-
-    /**
-     * @param deploymentId Deployment ID.
-     */
-    public void deploymentId(IgniteUuid deploymentId) {
-        this.deploymentId = deploymentId;
-    }
-
-    /**
-     * @return Locally configured flag.
-     */
-    public boolean locallyConfigured() {
-        return locCfg;
-    }
-
-    /**
-     * @param locCfg Locally configured flag.
-     */
-    public void locallyConfigured(boolean locCfg) {
-        this.locCfg = locCfg;
     }
 
     /**
@@ -264,36 +236,6 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @param nodeId Remote node ID.
-     * @return Configuration.
-     */
-    public CacheConfiguration remoteConfiguration(UUID nodeId) {
-        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
-
-        return cfgs == null ? null : cfgs.get(nodeId);
-    }
-
-    /**
-     * @param nodeId Remote node ID.
-     * @param cfg Remote node configuration.
-     */
-    public void addRemoteConfiguration(UUID nodeId, CacheConfiguration cfg) {
-        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
-
-        if (cfgs == null)
-            rmtCfgs = cfgs = new HashMap<>();
-
-        cfgs.put(nodeId, cfg);
-    }
-
-    /**
-     *
-     */
-    public void clearRemoteConfigurations() {
-        rmtCfgs = null;
-    }
-
-    /**
      * @return Updates allowed flag.
      */
     public boolean updatesAllowed() {
@@ -308,38 +250,12 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return {@code True} if received in discovery data.
-     */
-    public boolean receivedOnDiscovery() {
-        return rcvdOnDiscovery;
-    }
-
-    /**
-     * @param rcvdOnDiscovery {@code True} if received in discovery data.
-     */
-    public void receivedOnDiscovery(boolean rcvdOnDiscovery) {
-        this.rcvdOnDiscovery = rcvdOnDiscovery;
-    }
-
-    /**
      * @param nodeId ID of node provided cache configuration in discovery data.
      */
     public void receivedFrom(UUID nodeId) {
+        assert nodeId != null;
+
         rcvdFrom = nodeId;
-    }
-
-    /**
-     * @return Topology version when node provided cache configuration was started.
-     */
-    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
-        return rcvdFromVer;
-    }
-
-    /**
-     * @param rcvdFromVer Topology version when node provided cache configuration was started.
-     */
-    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
-        this.rcvdFromVer = rcvdFromVer;
     }
 
     /**

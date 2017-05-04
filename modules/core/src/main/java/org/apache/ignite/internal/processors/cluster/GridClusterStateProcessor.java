@@ -280,9 +280,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
                 DynamicCacheChangeRequest changeGlobalStateReq = new DynamicCacheChangeRequest(
-                    requestId, null, ctx.localNodeId());
-
-                changeGlobalStateReq.state(activate ? ACTIVE : INACTIVE);
+                    requestId, activate ? ACTIVE : INACTIVE, ctx.localNodeId());
 
                 reqs.add(changeGlobalStateReq);
 

@@ -130,7 +130,8 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 var compute = ignite.GetCluster().ForRemotes().GetCompute();
 
-                Assert.Throws<ArithmeticException>(() => compute.Call(new FailFunc()));
+                var ex = Assert.Throws<IgniteException>(() => compute.Call(new FailFunc()));
+                Assert.IsInstanceOf<ArithmeticException>(ex.InnerException);
 
                 // Log updates may not arrive immediately
                 TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.Exception != null), 3000);

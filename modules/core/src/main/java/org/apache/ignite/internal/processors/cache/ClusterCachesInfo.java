@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -46,6 +48,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 
@@ -69,6 +73,9 @@ class ClusterCachesInfo {
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private Map<String, DynamicCacheDescriptor> cachesOnDisconnect;
 
     /** */
@@ -83,11 +90,16 @@ class ClusterCachesInfo {
     /** */
     private Map<UUID, CacheJoinNodeDiscoveryData> joiningNodesDiscoData = new HashMap<>();
 
+    /** */
+    private Map<UUID, CacheClientReconnectDiscoveryData> clientReconnectReqs;
+
     /**
      * @param ctx Context.
      */
     ClusterCachesInfo(GridKernalContext ctx) {
         this.ctx = ctx;
+
+        log = ctx.log(getClass());
     }
 
     /**
@@ -97,8 +109,118 @@ class ClusterCachesInfo {
         this.joinDiscoData = joinDiscoData;
     }
 
-    void onKernalStart() throws IgniteCheckedException {
-        // TODO: validate cache configurations.
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    void onKernalStart(boolean checkConsistency) throws IgniteCheckedException {
+        if (checkConsistency && joinDiscoData != null && gridData != null) {
+            for (CacheJoinNodeDiscoveryData.CacheInfo locCacheInfo : joinDiscoData.caches().values()) {
+                CacheConfiguration locCfg = locCacheInfo.config();
+
+                CacheData cacheData = gridData.caches().get(locCfg.getName());
+
+                if (cacheData != null)
+                    checkCache(locCfg, cacheData.cacheConfiguration(), cacheData.receivedFrom());
+            }
+        }
+
+        joinDiscoData = null;
+        gridData = null;
+    }
+    /**
+     * Checks that remote caches has configuration compatible with the local.
+     *
+     * @param locCfg Local configuration.
+     * @param rmtCfg Remote configuration.
+     * @param rmt Remote node.
+     * @throws IgniteCheckedException If check failed.
+     */
+    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, UUID rmt) throws IgniteCheckedException {
+        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtCfg);
+        GridCacheAttributes locAttr = new GridCacheAttributes(locCfg);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
+            locAttr.cacheMode(), rmtAttr.cacheMode(), true);
+
+        if (rmtAttr.cacheMode() != LOCAL) {
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
+                locAttr.interceptorClassName(), rmtAttr.interceptorClassName(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicityMode",
+                "Cache atomicity mode", locAttr.atomicityMode(), rmtAttr.atomicityMode(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
+                "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
+
+            if (CU.affinityNode(ctx.discovery().localNode(), locCfg.getNodeFilter())) {
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
+                    locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
+            }
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinity", "Cache affinity",
+                    locAttr.cacheAffinityClassName(), rmtAttr.cacheAffinityClassName(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheAffinityMapper",
+                "Cache affinity mapper", locAttr.cacheAffinityMapperClassName(),
+                rmtAttr.cacheAffinityMapperClassName(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityPartitionsCount",
+                "Affinity partitions count", locAttr.affinityPartitionsCount(),
+                rmtAttr.affinityPartitionsCount(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilter", "Eviction filter",
+                locAttr.evictionFilterClassName(), rmtAttr.evictionFilterClassName(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
+                locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
+                "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
+                rmtAttr.transactionManagerLookupClassName(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
+                "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "preloadBatchSize",
+                "Preload batch size", locAttr.rebalanceBatchSize(), rmtAttr.rebalanceBatchSize(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeSynchronizationMode",
+                "Write synchronization mode", locAttr.writeSynchronization(), rmtAttr.writeSynchronization(),
+                true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindBatchSize",
+                "Write behind batch size", locAttr.writeBehindBatchSize(), rmtAttr.writeBehindBatchSize(),
+                false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindEnabled",
+                "Write behind enabled", locAttr.writeBehindEnabled(), rmtAttr.writeBehindEnabled(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushFrequency",
+                "Write behind flush frequency", locAttr.writeBehindFlushFrequency(),
+                rmtAttr.writeBehindFlushFrequency(), false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushSize",
+                "Write behind flush size", locAttr.writeBehindFlushSize(), rmtAttr.writeBehindFlushSize(),
+                false);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindFlushThreadCount",
+                "Write behind flush thread count", locAttr.writeBehindFlushThreadCount(),
+                rmtAttr.writeBehindFlushThreadCount(), false);
+
+            if (locAttr.cacheMode() == PARTITIONED) {
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
+                    "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
+                    rmtAttr.nearEvictionPolicyClassName(), false);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityIncludeNeighbors",
+                    "Affinity include neighbors", locAttr.affinityIncludeNeighbors(),
+                    rmtAttr.affinityIncludeNeighbors(), true);
+
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityKeyBackups",
+                    "Affinity key backups", locAttr.affinityKeyBackups(),
+                    rmtAttr.affinityKeyBackups(), true);
+            }
+        }
     }
 
     /**
@@ -146,7 +268,7 @@ class ClusterCachesInfo {
                 continue;
             }
 
-            DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
+            DynamicCacheDescriptor desc = req.globalStateChange() ? null : registeredCaches.get(req.cacheName());
 
             boolean needExchange = false;
 
@@ -247,7 +369,7 @@ class ClusterCachesInfo {
                 }
             }
             else if (req.globalStateChange())
-                needExchange = true;
+                exchangeActions.newClusterState(req.state());
             else if (req.resetLostPartitions()) {
                 if (desc != null) {
                     needExchange = true;
@@ -376,7 +498,7 @@ class ClusterCachesInfo {
             return new CacheClientReconnectDiscoveryData(cachesInfo);
         }
         else {
-            assert ctx.config().isDaemon() || joinDiscoData != null;
+            assert ctx.config().isDaemon() || joinDiscoData != null || !ctx.state().active();
 
             return joinDiscoData;
         }
@@ -440,14 +562,14 @@ class ClusterCachesInfo {
                 if (gridData == null) { // First node starts.
                     assert registeredCaches.isEmpty();
                     assert registeredTemplates.isEmpty();
-                    assert joinDiscoData != null;
+                    assert joinDiscoData != null || !ctx.state().active();
                 }
 
                 assert locJoinStartCaches == null;
 
                 locJoinStartCaches = new ArrayList<>();
 
-                if (!disconnectedState()) {
+                if (!disconnectedState() && joinDiscoData != null) {
                     processJoiningNode(joinDiscoData, node.id(), topVer);
 
                     for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -455,14 +577,29 @@ class ClusterCachesInfo {
 
                         CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
-                        NearCacheConfiguration nearCfg = locCfg != null ? locCfg.config().getNearConfiguration() :
-                            null;
+                        NearCacheConfiguration nearCfg = null;
+
+                        if (locCfg != null) {
+                            nearCfg = locCfg.config().getNearConfiguration();
+
+                            DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
+                                locCfg.config(),
+                                desc.cacheType(),
+                                desc.template(),
+                                desc.deploymentId(),
+                                desc.schema());
+
+                            desc0.startTopologyVersion(desc.startTopologyVersion());
+                            desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
+                            desc0.receivedFrom(desc.receivedFrom());
+                            desc0.staticallyConfigured(desc.staticallyConfigured());
+
+                            desc = desc0;
+                        }
 
                         if (locCfg != null || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
                             locJoinStartCaches.add(new T2<>(desc, nearCfg));
                     }
-
-                    joinDiscoData = null;
                 }
             }
             else {
@@ -471,24 +608,6 @@ class ClusterCachesInfo {
                 if (discoData != null)
                     processJoiningNode(discoData, node.id(), topVer);
             }
-
-            initStartVersionOnJoin(registeredCaches.values(), node, topVer);
-
-            initStartVersionOnJoin(registeredTemplates.values(), node, topVer);
-        }
-    }
-
-    /**
-     * @param descs Cache descriptors.
-     * @param joinedNode Joined node.
-     * @param topVer Current topology version.
-     */
-    private void initStartVersionOnJoin(Collection<DynamicCacheDescriptor> descs,
-        ClusterNode joinedNode,
-        AffinityTopologyVersion topVer) {
-        for (DynamicCacheDescriptor cacheDesc : descs) {
-            if (cacheDesc.staticallyConfigured() && joinedNode.id().equals(cacheDesc.receivedFrom()))
-                cacheDesc.startTopologyVersion(topVer);
         }
     }
 
@@ -545,7 +664,7 @@ class ClusterCachesInfo {
                 0,
                 desc.cacheType(),
                 desc.startTopologyVersion(),
-                null,
+                desc.deploymentId(),
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
@@ -569,7 +688,7 @@ class ClusterCachesInfo {
         if (ctx.isDaemon() || data.commonData() == null)
             return;
 
-        assert joinDiscoData != null || disconnectedState();
+        assert joinDiscoData != null || disconnectedState() || !ctx.state().active();
         assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
@@ -660,8 +779,16 @@ class ClusterCachesInfo {
         if (data.hasJoiningNodeData()) {
             Serializable joiningNodeData = data.joiningNodeData();
 
-            if (joiningNodeData instanceof CacheClientReconnectDiscoveryData)
-                processClientReconnectData((CacheClientReconnectDiscoveryData)joiningNodeData, data.joiningNodeId());
+            if (joiningNodeData instanceof CacheClientReconnectDiscoveryData) {
+                if (disconnectedState()) {
+                    if (clientReconnectReqs == null)
+                        clientReconnectReqs = new LinkedHashMap<>();
+
+                    clientReconnectReqs.put(data.joiningNodeId(), (CacheClientReconnectDiscoveryData)joiningNodeData);
+                }
+                else
+                    processClientReconnectData((CacheClientReconnectDiscoveryData) joiningNodeData, data.joiningNodeId());
+            }
             else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData) {
                 CacheJoinNodeDiscoveryData old =
                     joiningNodesDiscoData.put(data.joiningNodeId(), (CacheJoinNodeDiscoveryData)joiningNodeData);
@@ -718,6 +845,7 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
+                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);
 
@@ -743,6 +871,7 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
+                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
@@ -824,6 +953,8 @@ class ClusterCachesInfo {
 
         registeredCaches.clear();
         registeredTemplates.clear();
+
+        clientReconnectReqs = null;
     }
 
     /**
@@ -851,6 +982,13 @@ class ClusterCachesInfo {
 
             if (stopped)
                 stoppedCaches.add(cacheName);
+        }
+
+        if (clientReconnectReqs != null) {
+            for (Map.Entry<UUID, CacheClientReconnectDiscoveryData> e : clientReconnectReqs.entrySet())
+                processClientReconnectData(e.getValue(), e.getKey());
+
+            clientReconnectReqs = null;
         }
 
         cachesOnDisconnect = null;

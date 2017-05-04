@@ -146,23 +146,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
                     assert cacheMsg.topologyVersion() != null : cacheMsg;
 
-                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
-
-                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
-
-                    // TODO: should be specified in request since cache desc can be removed,
-                    if (cacheDesc != null)
-                        startTopVer = cacheDesc.startTopologyVersion();
+                    AffinityTopologyVersion waitVer =
+                        ((GridDhtAffinityAssignmentRequest)cacheMsg).waitTopologyVersion();
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
-                    fut = cctx.exchange().affinityReadyFuture(startTopVer);
+                    fut = cctx.exchange().affinityReadyFuture(waitVer);
 
                     if (fut != null && !fut.isDone()) {
                         if (log.isDebugEnabled()) {
                             log.debug("Wait for exchange before processing message [msg=" + msg +
                                 ", node=" + nodeId +
-                                ", waitVer=" + startTopVer +
-                                ", cacheDesc=" + cacheDesc + ']');
+                                ", waitVer=" + waitVer +
+                                ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');
                         }
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {

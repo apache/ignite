@@ -122,6 +122,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         boolean keepBinary,
         boolean skipStore
     ) {
+        assert topVer.topologyVersion() > 0 : topVer;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
@@ -138,6 +140,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
     }
 
+    /** {@inheritDoc} */
+    @Override public final AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @param nearNodeId Near node ID.
+     * @param nearFutId Future ID on near node.
+     */
     void nearReplyInfo(UUID nearNodeId, long nearFutId) {
         assert nearNodeId != null;
 
@@ -145,10 +156,16 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         this.nearFutId = nearFutId;
     }
 
+    /**
+     * @return {@code True} if backups should reply immediately.
+     */
     boolean replyWithoutDelay() {
         return isFlag(DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
 
+    /**
+     * @param replyWithoutDelay {@code True} if backups should reply immediately.
+     */
     void replyWithoutDelay(boolean replyWithoutDelay) {
         setFlag(replyWithoutDelay, DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }

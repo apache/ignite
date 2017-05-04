@@ -32,12 +32,13 @@ import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -68,21 +69,26 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     @GridToStringInclude
     private final T2<Integer, AffinityTopologyVersion> key;
 
+    /** */
+    private final CacheGroupDescriptor grpDesc;
+
     /**
      * @param ctx Context.
+     * @param grpDesc Group descriptor.
      * @param topVer Topology version.
      * @param discoCache Discovery cache.
      */
     public GridDhtAssignmentFetchFuture(
         GridCacheSharedContext ctx,
-        int grpId,
+        CacheGroupDescriptor grpDesc,
         AffinityTopologyVersion topVer,
         DiscoCache discoCache
     ) {
         this.ctx = ctx;
-        this.key = new T2<>(grpId, topVer);
+        this.grpDesc = grpDesc;
+        this.key = new T2<>(grpDesc.groupId(), topVer);
 
-        Collection<ClusterNode> availableNodes = discoCache.cacheGroupAffinityNodes(grpId);
+        Collection<ClusterNode> availableNodes = discoCache.cacheGroupAffinityNodes(grpDesc.groupId());
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
@@ -183,7 +189,8 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                         log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(key.get1(), key.get2()),
+                    ctx.io().send(node,
+                        new GridDhtAffinityAssignmentRequest(key.get1(), key.get2(), grpDesc.startTopologyVersion()),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.
