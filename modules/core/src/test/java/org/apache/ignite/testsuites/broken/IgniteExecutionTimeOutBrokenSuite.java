@@ -22,6 +22,15 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailov
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteAtomicLongChangingTopologySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionMessageMarshallingTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionUnmasrhalErrorsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionCrossCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
 
 /**
  *
@@ -38,6 +47,16 @@ public class IgniteExecutionTimeOutBrokenSuite extends TestSuite {
         suite.addTestSuite(CachePutAllFailoverTxTest.class);
         suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
+
+        suite.addTestSuite(DepthFirstSearchTest.class);
+        suite.addTestSuite(TxOptimisticDeadlockDetectionTest.class);
+        suite.addTestSuite(TxOptimisticDeadlockDetectionCrossCacheTest.class);
+        suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
+        suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
+        suite.addTestSuite(TxDeadlockDetectionTest.class);
+        suite.addTestSuite(TxDeadlockDetectionNoHangsTest.class);
+        suite.addTestSuite(TxDeadlockDetectionUnmasrhalErrorsTest.class);
+        suite.addTestSuite(TxDeadlockDetectionMessageMarshallingTest.class);
 
         return suite;
     }
