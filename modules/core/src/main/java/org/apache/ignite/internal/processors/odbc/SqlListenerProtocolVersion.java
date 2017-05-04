@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * ODBC protocol version.
+ * SQL listener protocol version.
  */
-public enum OdbcProtocolVersion {
+public enum SqlListenerProtocolVersion {
     /** Version 2.1.0. */
     VER_2_1_0(makeVersion(2, 1, 0), "2.1.0"),
 
@@ -42,7 +42,7 @@ public enum OdbcProtocolVersion {
      * @param longVal Long value.
      * @param since Since string.
      */
-    OdbcProtocolVersion(long longVal, String since) {
+    SqlListenerProtocolVersion(long longVal, String since) {
         this.longVal = longVal;
         this.since = since;
     }
@@ -63,8 +63,8 @@ public enum OdbcProtocolVersion {
      * @param longVal Long value.
      * @return Protocol version.
      */
-    public static OdbcProtocolVersion fromLong(long longVal) {
-        for (OdbcProtocolVersion ver : OdbcProtocolVersion.values()) {
+    public static SqlListenerProtocolVersion fromLong(long longVal) {
+        for (SqlListenerProtocolVersion ver : SqlListenerProtocolVersion.values()) {
             if (ver.longValue() == longVal)
                 return ver;
         }

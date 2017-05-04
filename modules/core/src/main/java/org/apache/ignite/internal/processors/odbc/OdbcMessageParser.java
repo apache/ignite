@@ -63,7 +63,7 @@ public class OdbcMessageParser {
      * @param msg Message.
      * @return Assembled ODBC request.
      */
-    public OdbcRequest decode(byte[] msg) {
+    public SqlListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -75,15 +75,15 @@ public class OdbcMessageParser {
         // This is a special case because we can not decode protocol messages until
         // we has not confirmed that the remote client uses the same protocol version.
         if (!verConfirmed) {
-            if (cmd == OdbcRequest.HANDSHAKE)
+            if (cmd == SqlListenerRequest.HANDSHAKE)
             {
                 long longVersion = reader.readLong();
 
                 OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
 
-                OdbcProtocolVersion version = res.version();
+                SqlListenerProtocolVersion version = res.version();
 
-                if (version == OdbcProtocolVersion.UNKNOWN)
+                if (version == SqlListenerProtocolVersion.UNKNOWN)
                     return res;
 
                 res.distributedJoins(reader.readBoolean());
@@ -96,10 +96,10 @@ public class OdbcMessageParser {
                         "(first message is not a handshake request): [cmd=" + cmd + ']');
         }
 
-        OdbcRequest res;
+        SqlListenerRequest res;
 
         switch (cmd) {
-            case OdbcRequest.EXECUTE_SQL_QUERY: {
+            case SqlListenerRequest.QRY_EXEC: {
                 String cache = reader.readString();
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
@@ -109,29 +109,29 @@ public class OdbcMessageParser {
                 for (int i = 0; i < argsNum; ++i)
                     params[i] = reader.readObjectDetached();
 
-                res = new OdbcQueryExecuteRequest(cache, sql, params);
+                res = new SqlListenerQueryExecuteRequest(cache, sql, params);
 
                 break;
             }
 
-            case OdbcRequest.FETCH_SQL_QUERY: {
+            case SqlListenerRequest.QRY_FETCH: {
                 long queryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                res = new OdbcQueryFetchRequest(queryId, pageSize);
+                res = new SqlListenerQueryFetchRequest(queryId, pageSize);
 
                 break;
             }
 
-            case OdbcRequest.CLOSE_SQL_QUERY: {
+            case SqlListenerRequest.QRY_CLOSE: {
                 long queryId = reader.readLong();
 
-                res = new OdbcQueryCloseRequest(queryId);
+                res = new SqlListenerQueryCloseRequest(queryId);
 
                 break;
             }
 
-            case OdbcRequest.GET_COLUMNS_META: {
+            case SqlListenerRequest.META_COLS: {
                 String cache = reader.readString();
                 String table = reader.readString();
                 String column = reader.readString();
@@ -141,7 +141,7 @@ public class OdbcMessageParser {
                 break;
             }
 
-            case OdbcRequest.GET_TABLES_META: {
+            case SqlListenerRequest.META_TBLS: {
                 String catalog = reader.readString();
                 String schema = reader.readString();
                 String table = reader.readString();
@@ -152,7 +152,7 @@ public class OdbcMessageParser {
                 break;
             }
 
-            case OdbcRequest.GET_PARAMS_META: {
+            case SqlListenerRequest.META_PARAMS: {
                 String cacheName = reader.readString();
                 String sqlQuery = reader.readString();
 
@@ -212,25 +212,25 @@ public class OdbcMessageParser {
                 writer.writeString(res.currentVersion());
             }
         }
-        else if (res0 instanceof OdbcQueryExecuteResult) {
-            OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
+        else if (res0 instanceof SqlListenerQueryExecuteResult) {
+            SqlListenerQueryExecuteResult res = (SqlListenerQueryExecuteResult) res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 
-            Collection<OdbcColumnMeta> metas = res.getColumnsMetadata();
+            Collection<SqlListenerColumnMeta> metas = res.getColumnsMetadata();
 
             assert metas != null;
 
             writer.writeInt(metas.size());
 
-            for (OdbcColumnMeta meta : metas)
+            for (SqlListenerColumnMeta meta : metas)
                 meta.write(writer);
         }
-        else if (res0 instanceof OdbcQueryFetchResult) {
-            OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
+        else if (res0 instanceof SqlListenerQueryFetchResult) {
+            SqlListenerQueryFetchResult res = (SqlListenerQueryFetchResult) res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.queryId());
@@ -271,8 +271,8 @@ public class OdbcMessageParser {
                 }
             }
         }
-        else if (res0 instanceof OdbcQueryCloseResult) {
-            OdbcQueryCloseResult res = (OdbcQueryCloseResult) res0;
+        else if (res0 instanceof SqlListenerQueryCloseResult) {
+            SqlListenerQueryCloseResult res = (SqlListenerQueryCloseResult) res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.getQueryId());
@@ -282,13 +282,13 @@ public class OdbcMessageParser {
         else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
             OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult) res0;
 
-            Collection<OdbcColumnMeta> columnsMeta = res.meta();
+            Collection<SqlListenerColumnMeta> columnsMeta = res.meta();
 
             assert columnsMeta != null;
 
             writer.writeInt(columnsMeta.size());
 
-            for (OdbcColumnMeta columnMeta : columnsMeta)
+            for (SqlListenerColumnMeta columnMeta : columnsMeta)
                 columnMeta.write(writer);
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {

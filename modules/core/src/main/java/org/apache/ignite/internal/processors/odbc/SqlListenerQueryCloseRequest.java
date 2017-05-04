@@ -17,38 +17,33 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Query execute result.
+ * SQL listener query close request.
  */
-public class OdbcQueryExecuteResult {
+public class SqlListenerQueryCloseRequest extends SqlListenerRequest {
     /** Query ID. */
     private final long queryId;
 
-    /** Fields metadata. */
-    private final Collection<OdbcColumnMeta> columnsMeta;
-
     /**
      * @param queryId Query ID.
-     * @param columnsMeta Columns metadata.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta) {
+    public SqlListenerQueryCloseRequest(long queryId) {
+        super(QRY_CLOSE);
+
         this.queryId = queryId;
-        this.columnsMeta = columnsMeta;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
     }
 
-    /**
-     * @return Columns metadata.
-     */
-    public Collection<OdbcColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SqlListenerQueryCloseRequest.class, this);
     }
 }

@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.*;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.*;
 
 /**
  * SQL query handler.
@@ -92,7 +92,7 @@ public class OdbcRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    public OdbcResponse handle(long reqId, OdbcRequest req) {
+    public OdbcResponse handle(long reqId, SqlListenerRequest req) {
         assert req != null;
 
         if (!busyLock.enterBusy())
@@ -104,22 +104,22 @@ public class OdbcRequestHandler {
                 case HANDSHAKE:
                     return performHandshake(reqId, (OdbcHandshakeRequest)req);
 
-                case EXECUTE_SQL_QUERY:
-                    return executeQuery(reqId, (OdbcQueryExecuteRequest)req);
+                case QRY_EXEC:
+                    return executeQuery(reqId, (SqlListenerQueryExecuteRequest)req);
 
-                case FETCH_SQL_QUERY:
-                    return fetchQuery(reqId, (OdbcQueryFetchRequest)req);
+                case QRY_FETCH:
+                    return fetchQuery(reqId, (SqlListenerQueryFetchRequest)req);
 
-                case CLOSE_SQL_QUERY:
-                    return closeQuery(reqId, (OdbcQueryCloseRequest)req);
+                case QRY_CLOSE:
+                    return closeQuery(reqId, (SqlListenerQueryCloseRequest)req);
 
-                case GET_COLUMNS_META:
+                case META_COLS:
                     return getColumnsMeta(reqId, (OdbcQueryGetColumnsMetaRequest)req);
 
-                case GET_TABLES_META:
+                case META_TBLS:
                     return getTablesMeta(reqId, (OdbcQueryGetTablesMetaRequest)req);
 
-                case GET_PARAMS_META:
+                case META_PARAMS:
                     return getParamsMeta(reqId, (OdbcQueryGetParamsMetaRequest)req);
             }
 
@@ -139,9 +139,9 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse performHandshake(long reqId, OdbcHandshakeRequest req) {
         try {
-            OdbcProtocolVersion version = req.version();
+            SqlListenerProtocolVersion version = req.version();
 
-            if (version == OdbcProtocolVersion.UNKNOWN) {
+            if (version == SqlListenerProtocolVersion.UNKNOWN) {
                 IgniteProductVersion ver = ctx.grid().version();
 
                 String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
@@ -166,13 +166,13 @@ public class OdbcRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryExecuteRequest} command handler.
+     * {@link SqlListenerQueryExecuteRequest} command handler.
      *
      * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse executeQuery(long reqId, OdbcQueryExecuteRequest req) {
+    private OdbcResponse executeQuery(long reqId, SqlListenerQueryExecuteRequest req) {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
@@ -214,7 +214,7 @@ public class OdbcRequestHandler {
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
 
             return new OdbcResponse(res);
         }
@@ -228,13 +228,13 @@ public class OdbcRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryCloseRequest} command handler.
+     * {@link SqlListenerQueryCloseRequest} command handler.
      *
      * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse closeQuery(long reqId, OdbcQueryCloseRequest req) {
+    private OdbcResponse closeQuery(long reqId, SqlListenerQueryCloseRequest req) {
         try {
             IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
@@ -249,7 +249,7 @@ public class OdbcRequestHandler {
 
             qryCursors.remove(req.queryId());
 
-            OdbcQueryCloseResult res = new OdbcQueryCloseResult(req.queryId());
+            SqlListenerQueryCloseResult res = new SqlListenerQueryCloseResult(req.queryId());
 
             return new OdbcResponse(res);
         }
@@ -263,13 +263,13 @@ public class OdbcRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryFetchRequest} command handler.
+     * {@link SqlListenerQueryFetchRequest} command handler.
      *
      * @param reqId Request ID.
      * @param req Execute query request.
      * @return Response.
      */
-    private OdbcResponse fetchQuery(long reqId, OdbcQueryFetchRequest req) {
+    private OdbcResponse fetchQuery(long reqId, SqlListenerQueryFetchRequest req) {
         try {
             IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
 
@@ -291,7 +291,7 @@ public class OdbcRequestHandler {
             for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
                 items.add(iter.next());
 
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !iter.hasNext());
+            SqlListenerQueryFetchResult res = new SqlListenerQueryFetchResult(req.queryId(), items, !iter.hasNext());
 
             return new OdbcResponse(res);
         }
@@ -311,7 +311,7 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse getColumnsMeta(long reqId, OdbcQueryGetColumnsMetaRequest req) {
         try {
-            List<OdbcColumnMeta> meta = new ArrayList<>();
+            List<SqlListenerColumnMeta> meta = new ArrayList<>();
 
             String cacheName;
             String tableName;
@@ -340,7 +340,7 @@ public class OdbcRequestHandler {
                     if (!matches(field.getKey(), req.columnName()))
                         continue;
 
-                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(req.cacheName(), table.name(),
+                    SqlListenerColumnMeta columnMeta = new SqlListenerColumnMeta(req.cacheName(), table.name(),
                         field.getKey(), field.getValue());
 
                     if (!meta.contains(columnMeta))
@@ -497,19 +497,19 @@ public class OdbcRequestHandler {
 
     /**
      * Convert metadata in collection from {@link GridQueryFieldMetadata} to
-     * {@link OdbcColumnMeta}.
+     * {@link SqlListenerColumnMeta}.
      *
      * @param meta Internal query field metadata.
      * @return Odbc query field metadata.
      */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<?> meta) {
-        List<OdbcColumnMeta> res = new ArrayList<>();
+    private static Collection<SqlListenerColumnMeta> convertMetadata(Collection<?> meta) {
+        List<SqlListenerColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {
             for (Object info : meta) {
                 assert info instanceof GridQueryFieldMetadata;
 
-                res.add(new OdbcColumnMeta((GridQueryFieldMetadata)info));
+                res.add(new SqlListenerColumnMeta((GridQueryFieldMetadata)info));
             }
         }
 

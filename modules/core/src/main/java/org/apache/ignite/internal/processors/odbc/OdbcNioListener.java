@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Connection-related metadata key. */
-    private static final int CONNECTION_DATA_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    private static final int CONN_DATA_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
@@ -69,7 +69,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         if (log.isDebugEnabled())
             log.debug("ODBC client connected: " + ses.remoteAddress());
 
-        ses.addMeta(CONNECTION_DATA_META_KEY, new ConnectionData(ctx, busyLock));
+        ses.addMeta(CONN_DATA_META_KEY, new OdbcConnectionData(ctx, busyLock, maxCursors));
     }
 
     /** {@inheritDoc} */
@@ -88,13 +88,13 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         long reqId = REQ_ID_GEN.incrementAndGet();
 
-        ConnectionData connData = ses.meta(CONNECTION_DATA_META_KEY);
+        OdbcConnectionData connData = ses.meta(CONN_DATA_META_KEY);
 
         assert connData != null;
 
         OdbcMessageParser parser = connData.getParser();
 
-        OdbcRequest req;
+        SqlListenerRequest req;
 
         try {
             req = parser.decode(msg);
@@ -138,42 +138,6 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
 
             ses.send(parser.encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString())));
-        }
-    }
-
-    /**
-     * Connection-related data.
-     */
-    private class ConnectionData {
-        /** Request handler. */
-        private final OdbcRequestHandler handler;
-
-        /** Message parser. */
-        private final OdbcMessageParser parser;
-
-        /**
-         * @param ctx Context.
-         * @param busyLock Shutdown busy lock.
-         */
-        public ConnectionData(GridKernalContext ctx, GridSpinBusyLock busyLock) {
-            handler = new OdbcRequestHandler(ctx, busyLock, maxCursors);
-            parser = new OdbcMessageParser(ctx);
-        }
-
-        /**
-         * Handler getter.
-         * @return Request handler for the connection.
-         */
-        public OdbcRequestHandler getHandler() {
-            return handler;
-        }
-
-        /**
-         * Parser getter
-         * @return Message parser for the connection.
-         */
-        public OdbcMessageParser getParser() {
-            return parser;
         }
     }
 }

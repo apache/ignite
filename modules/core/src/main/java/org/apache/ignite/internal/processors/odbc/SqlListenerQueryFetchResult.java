@@ -17,24 +17,50 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.Collection;
+
 /**
- * ODBC query result.
+ * SQL listener query fetch result.
  */
-public class OdbcQueryCloseResult {
+public class SqlListenerQueryFetchResult {
     /** Query ID. */
     private final long queryId;
 
+    /** Query result rows. */
+    private final Collection<?> items;
+
+    /** Flag indicating the query has no unfetched results. */
+    private final boolean last;
+
     /**
      * @param queryId Query ID.
+     * @param items Query result rows.
+     * @param last Flag indicating the query has no unfetched results.
      */
-    public OdbcQueryCloseResult(long queryId){
+    public SqlListenerQueryFetchResult(long queryId, Collection<?> items, boolean last){
         this.queryId = queryId;
+        this.items = items;
+        this.last = last;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
+    }
+
+    /**
+     * @return Query result rows.
+     */
+    public Collection<?> items() {
+        return items;
+    }
+
+    /**
+     * @return Flag indicating the query has no unfetched results.
+     */
+    public boolean last() {
+        return last;
     }
 }

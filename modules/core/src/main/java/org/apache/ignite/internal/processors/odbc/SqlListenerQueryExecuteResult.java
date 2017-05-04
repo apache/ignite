@@ -20,47 +20,35 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.Collection;
 
 /**
- * Query fetch result.
+ * SQL listener query execute result.
  */
-public class OdbcQueryFetchResult {
+public class SqlListenerQueryExecuteResult {
     /** Query ID. */
     private final long queryId;
 
-    /** Query result rows. */
-    private final Collection<?> items;
-
-    /** Flag indicating the query has no unfetched results. */
-    private final boolean last;
+    /** Fields metadata. */
+    private final Collection<SqlListenerColumnMeta> columnsMeta;
 
     /**
      * @param queryId Query ID.
-     * @param items Query result rows.
-     * @param last Flag indicating the query has no unfetched results.
+     * @param columnsMeta Columns metadata.
      */
-    public OdbcQueryFetchResult(long queryId, Collection<?> items, boolean last){
+    public SqlListenerQueryExecuteResult(long queryId, Collection<SqlListenerColumnMeta> columnsMeta) {
         this.queryId = queryId;
-        this.items = items;
-        this.last = last;
+        this.columnsMeta = columnsMeta;
     }
 
     /**
      * @return Query ID.
      */
-    public long queryId() {
+    public long getQueryId() {
         return queryId;
     }
 
     /**
-     * @return Query result rows.
+     * @return Columns metadata.
      */
-    public Collection<?> items() {
-        return items;
-    }
-
-    /**
-     * @return Flag indicating the query has no unfetched results.
-     */
-    public boolean last() {
-        return last;
+    public Collection<SqlListenerColumnMeta> getColumnsMetadata() {
+        return columnsMeta;
     }
 }

@@ -20,19 +20,31 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * ODBC query close request.
+ * SQL listener query fetch request.
  */
-public class OdbcQueryCloseRequest extends OdbcRequest {
+public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
     /** Query ID. */
     private final long queryId;
 
+    /** Page size - maximum number of rows to return. */
+    private final int pageSize;
+
     /**
      * @param queryId Query ID.
+     * @param pageSize Page size.
      */
-    public OdbcQueryCloseRequest(long queryId) {
-        super(CLOSE_SQL_QUERY);
+    public SqlListenerQueryFetchRequest(long queryId, int pageSize) {
+        super(QRY_FETCH);
 
         this.queryId = queryId;
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
     }
 
     /**
@@ -44,6 +56,6 @@ public class OdbcQueryCloseRequest extends OdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcQueryCloseRequest.class, this);
+        return S.toString(SqlListenerQueryFetchRequest.class, this);
     }
 }
