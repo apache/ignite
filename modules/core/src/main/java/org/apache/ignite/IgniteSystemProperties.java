@@ -588,6 +588,22 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE = "IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE";
 
+    /**
+     * Skip CRC calculation flag.
+     */
+    public static final String IGNITE_PDS_SKIP_CRC = "IGNITE_PDS_SKIP_CRC";
+
+    /**
+     * WAL rebalance threshold.
+     */
+    public static final String IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY =
+        "IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY";
+
+    /**
+     * WAL rebalance threshold.
+     */
+     public static final String IGNITE_WAL_REBALANCE_THRESHOLD = "IGNITE_WAL_REBALANCE_THRESHOLD";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {

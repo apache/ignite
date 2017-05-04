@@ -443,6 +443,9 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private MemoryConfiguration memCfg;
 
+    /** Persistence store configuration. */
+    private PersistenceConfiguration pstCfg;
+
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
 
@@ -2107,6 +2110,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
         this.memCfg = memCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets persistence configuration.
+     *
+     * @return Persistence configuration.
+     */
+    public PersistenceConfiguration getPersistenceConfiguration() {
+        return pstCfg;
+    }
+
+    /**
+     * Sets persistence configuration.
+     *
+     * @param pstCfg Persistence configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPersistenceConfiguration(PersistenceConfiguration pstCfg) {
+        this.pstCfg = pstCfg;
 
         return this;
     }

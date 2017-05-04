@@ -60,6 +60,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
@@ -1325,6 +1326,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.kernalContext().cache().context().database().onCacheStop(ctx);
 
+        ctx.kernalContext().cache().context().snapshot().onCacheStop(ctx);
+
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 
         if (log.isInfoEnabled())
@@ -2127,6 +2130,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (dbMgr == null)
             dbMgr = new IgniteCacheDatabaseSharedManager();
 
+        IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
+
+        if (snpMgr == null)
+            snpMgr = new IgniteCacheSnapshotManager();
+
         IgnitePageStoreManager pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
         IgniteWriteAheadLogManager walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
 
@@ -2144,6 +2152,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pageStoreMgr,
             walMgr,
             dbMgr,
+            snpMgr,
             depMgr,
             exchMgr,
             topMgr,
