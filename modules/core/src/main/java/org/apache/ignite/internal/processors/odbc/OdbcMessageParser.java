@@ -81,11 +81,6 @@ public class OdbcMessageParser {
 
                 OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
 
-                SqlListenerProtocolVersion version = res.version();
-
-                if (version == SqlListenerProtocolVersion.UNKNOWN)
-                    return res;
-
                 res.distributedJoins(reader.readBoolean());
                 res.enforceJoinOrder(reader.readBoolean());
 
