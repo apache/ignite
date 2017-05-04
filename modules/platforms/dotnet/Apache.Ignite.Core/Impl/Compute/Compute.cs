@@ -461,5 +461,22 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             return null;
         }
+
+        /// <summary>
+        /// Determines whether specified exception should result in a job failover.
+        /// </summary>
+        internal static bool IsFailoverException(Exception err)
+        {
+            while (err != null)
+            {
+                if (err is ComputeExecutionRejectedException || err is ClusterTopologyException ||
+                    err is ComputeJobFailoverException)
+                    return true;
+
+                err = err.InnerException;
+            }
+
+            return false;
+        }
     }
 }

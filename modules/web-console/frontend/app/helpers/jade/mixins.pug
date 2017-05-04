@@ -15,10 +15,10 @@
     limitations under the License.
 
 include ./form
-include ../../primitives/tooltip/index
 include ../../primitives/btn-group/index
 include ../../primitives/datepicker/index
 include ../../primitives/dropdown/index
+include ../../primitives/tooltip/index
 include ../../primitives/ui-grid-settings/index
 
 //- Mixin for advanced options toggle.
@@ -203,17 +203,15 @@ mixin text(lbl, model, name, required, placeholder, tip)
         if  block
             block
 
-//- Mixin for text field.
+//- Mixin for url field.
 mixin url(lbl, model, name, required, placeholder, tip)
-    +ignite-form-field-url(lbl, model, name, required, placeholder, tip)
+    -var errLbl = lbl.substring(0, lbl.length - 1)
+
+    +ignite-form-field-text(lbl, model, name, 'false', required, placeholder, tip)(type='url')
         if  block
             block
 
-//- Mixin for text field.
-mixin url(lbl, model, name, required, placeholder, tip)
-    +ignite-form-field-url(lbl, model, name, required, placeholder, tip)
-        if  block
-            block
+        +form-field-feedback(name, 'url', errLbl + ' should be a valid URL!')
 
 //- Mixin for password field.
 mixin password(lbl, model, name, required, placeholder, tip)
@@ -377,11 +375,15 @@ mixin table-url-field(name, model, items, valid, save, newItem)
     -var onBlur = `${valid} && (${save}); ${resetOnBlur};`
 
     div(ignite-on-focus-out=onBlur)
+        +form-field-feedback(name, 'url', 'URL should be valid!')
+
         if block
             block
 
         .input-tip
-            +ignite-form-field-url-input(name, model, false, 'true', 'Enter URL')(
+            +ignite-form-field-input(name, model, false, 'true', 'Enter URL')(
+                type='url'
+
                 data-ignite-unique=items
                 data-ignite-form-field-input-autofocus='true'
 

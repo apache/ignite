@@ -165,7 +165,7 @@ angular
 
             return dialog.$promise
                 .then(dialog.show)
-                .then(() => Promise.race([agentMgr.awaitAgent(), closePromise.promise]))
+                .then(() => Promise.race([agentMgr.awaitCluster(), closePromise.promise]))
                 .then(() => scope.hasAgents = true);
         }
     };

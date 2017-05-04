@@ -44,7 +44,7 @@ import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- *
+ * API to retranslate topology from Ignite cluster available by node-uri.
  */
 public class ClusterListener {
     /** */

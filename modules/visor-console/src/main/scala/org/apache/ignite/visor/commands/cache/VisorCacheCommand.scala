@@ -895,7 +895,6 @@ object VisorCacheCommand {
         cacheT +=("Query Execution Time Threshold", queryCfg.getLongQueryWarningTimeout)
         cacheT +=("Query Schema Name", queryCfg.getSqlSchema)
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.isSqlEscapeAll))
-        cacheT +=("Query Onheap Cache Size", queryCfg.getSqlOnheapRowCacheSize)
 
         val sqlFxs = queryCfg.getSqlFunctionClasses
 

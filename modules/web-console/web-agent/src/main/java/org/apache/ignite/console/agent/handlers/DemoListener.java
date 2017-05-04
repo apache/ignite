@@ -37,7 +37,7 @@ import static org.apache.ignite.console.agent.AgentUtils.safeCallback;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 
 /**
- *
+ * API to retranslate topology from Ignite demo cluster.
  */
 public class DemoListener {
     /** */
