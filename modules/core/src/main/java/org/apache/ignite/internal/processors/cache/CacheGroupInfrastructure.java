@@ -17,17 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
  *
@@ -37,7 +49,7 @@ public class CacheGroupInfrastructure {
     private GridAffinityAssignmentCache aff;
 
     /** */
-    private final int id;
+    private final int grpId;
 
     /** */
     private final CacheConfiguration ccfg;
@@ -46,24 +58,37 @@ public class CacheGroupInfrastructure {
     private final GridCacheSharedContext ctx;
 
     /** */
-    private GridDhtPartitionTopology top;
+    private final IgniteLogger log;
 
+    /** */
+    private GridDhtPartitionTopologyImpl top;
+
+    /** */
     private AffinityTopologyVersion grpStartVer;
 
+    /** */
     private AffinityTopologyVersion locStartVer;
 
     /**
-     * @param id Group ID.
+     * @param grpId Group ID.
      * @param ctx Context.
      * @param ccfg Cache configuration.
      */
-    CacheGroupInfrastructure(int id, GridCacheSharedContext ctx, CacheConfiguration ccfg) {
-        assert id != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
+    CacheGroupInfrastructure(GridCacheSharedContext ctx,
+        int grpId,
+        CacheConfiguration ccfg,
+        AffinityTopologyVersion grpStartVer,
+        AffinityTopologyVersion locStartVer) {
+        assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
 
-        this.id = id;
+        this.grpId = grpId;
         this.ctx = ctx;
         this.ccfg = ccfg;
+        this.grpStartVer = grpStartVer;
+        this.locStartVer = locStartVer;
+
+        log = ctx.kernalContext().log(getClass());
     }
 
     public AffinityTopologyVersion groupStartVersion() {
@@ -89,12 +114,12 @@ public class CacheGroupInfrastructure {
         return aff;
     }
 
-    @Nullable public String groupName() {
+    @Nullable public String name() {
         return ccfg.getGroupName();
     }
 
     public int groupId() {
-        return id;
+        return grpId;
     }
 
     public boolean sharedGroup() {
@@ -103,12 +128,92 @@ public class CacheGroupInfrastructure {
 
     public void start() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-            groupName(),
-            id,
+            name(),
+            grpId,
             ccfg.getAffinity(),
             ccfg.getNodeFilter(),
             ccfg.getBackups(),
             ccfg.getCacheMode() == LOCAL);
+
+        if (ccfg.getCacheMode() != LOCAL) {
+            GridCacheMapEntryFactory entryFactory = new GridCacheMapEntryFactory() {
+                @Override public GridCacheMapEntry create(
+                    GridCacheContext ctx,
+                    AffinityTopologyVersion topVer,
+                    KeyCacheObject key,
+                    int hash,
+                    CacheObject val
+                ) {
+                    return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
+                }
+            };
+
+            top = new GridDhtPartitionTopologyImpl(ctx, entryFactory);
+
+            if (!ctx.kernalContext().clientNode()) {
+                ctx.io().addHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                    new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>() {
+                        @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentRequest msg) {
+                            processAffinityAssignmentRequest(nodeId, msg);
+                        }
+                    });
+            }
+        }
+
+        ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    private void processAffinityAssignmentRequest(final UUID nodeId,
+        final GridDhtAffinityAssignmentRequest req) {
+        if (log.isDebugEnabled())
+            log.debug("Processing affinity assignment request [node=" + nodeId + ", req=" + req + ']');
+
+        IgniteInternalFuture<AffinityTopologyVersion> fut = aff.readyFuture(req.topologyVersion());
+
+        if (fut != null) {
+            fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                    processAffinityAssignmentRequest0(nodeId, req);
+                }
+            });
+        }
+        else
+            processAffinityAssignmentRequest0(nodeId, req);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    private void processAffinityAssignmentRequest0(UUID nodeId, final GridDhtAffinityAssignmentRequest req) {
+        AffinityTopologyVersion topVer = req.topologyVersion();
+
+        if (log.isDebugEnabled())
+            log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
+                ", node=" + nodeId + ']');
+
+        AffinityAssignment assignment = aff.cachedAffinity(topVer);
+
+        GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(grpId,
+            topVer,
+            assignment.assignment());
+
+        if (aff.centralizedAffinityFunction()) {
+            assert assignment.idealAssignment() != null;
+
+            res.idealAffinityAssignment(assignment.idealAssignment());
+        }
+
+        try {
+            ctx.io().send(nodeId, res, AFFINITY_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send affinity assignment response to remote node [node=" + nodeId + ']', e);
+        }
     }
 
     /**
@@ -136,9 +241,15 @@ public class CacheGroupInfrastructure {
     public void onReconnected() {
         // TODO IGNITE-5075.
         aff.onReconnected();
+
+        if (top != null)
+            top.onReconnected();
     }
 
     public GridDhtPartitionTopology topology() {
+        if (top == null)
+            throw new IllegalStateException("Topology is not initialized: " + groupName());
+
         return top;
     }
 }

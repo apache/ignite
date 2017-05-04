@@ -393,6 +393,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
 
+    public int groupId() {
+        return grp.groupId();
+    }
+
     /**
      * @return Cache group infrastructure.
      */

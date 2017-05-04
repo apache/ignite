@@ -90,7 +90,7 @@ public interface GridDhtPartitionTopology {
     /**
      * @return Cache ID.
      */
-    public int cacheId();
+    public int groupId();
 
     /**
      * Pre-initializes this topology.

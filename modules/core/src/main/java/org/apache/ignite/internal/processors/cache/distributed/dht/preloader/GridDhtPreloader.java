@@ -177,17 +177,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             });
 
-        if (!cctx.kernalContext().clientNode()) {
-            cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
-                new MessageHandler<GridDhtAffinityAssignmentRequest>() {
-                    @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
-                        processAffinityAssignmentRequest(node, msg);
-                    }
-                });
-        }
-
-        cctx.shared().affinity().onCacheCreated(cctx);
-
         supplier = new GridDhtPartitionSupplier(cctx);
         demander = new GridDhtPartitionDemander(cctx);
 
@@ -587,45 +576,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         finally {
             leaveBusy();
         }
-    }
-
-    /**
-     * @param node Node.
-     * @param req Request.
-     */
-    private void processAffinityAssignmentRequest(final ClusterNode node,
-        final GridDhtAffinityAssignmentRequest req) {
-        final AffinityTopologyVersion topVer = req.topologyVersion();
-
-        if (log.isDebugEnabled())
-            log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
-
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                if (log.isDebugEnabled())
-                    log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
-                        ", node=" + node + ']');
-
-                AffinityAssignment assignment = cctx.affinity().assignment(topVer);
-
-                GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
-                    topVer,
-                    assignment.assignment());
-
-                if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
-                    assert assignment.idealAssignment() != null;
-
-                    res.idealAffinityAssignment(assignment.idealAssignment());
-                }
-
-                try {
-                    cctx.io().send(node, res, AFFINITY_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
-                }
-            }
-        });
     }
 
     /**

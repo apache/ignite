@@ -96,9 +96,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Topology. */
-    private GridDhtPartitionTopologyImpl top;
-
     /** Preloader. */
     protected GridCachePreloader preldr;
 
@@ -174,13 +171,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() {
-        super.init();
-
-        top = new GridDhtPartitionTopologyImpl(ctx, entryFactory());
-    }
-
-    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
@@ -200,7 +190,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         // Clean up to help GC.
         preldr = null;
-        top = null;
     }
 
     /** {@inheritDoc} */
@@ -209,7 +198,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         ctx.affinity().onReconnected();
 
-        top.onReconnected();
+        // TODO IGNITE-5075.
+        //top.onReconnected();
 
         if (preldr != null)
             preldr.onReconnected();
@@ -235,7 +225,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public void printMemoryStats() {
         super.printMemoryStats();
 
-        top.printMemoryStats(1024);
+        ctx.group().topology().printMemoryStats(1024);
     }
 
     /**
@@ -264,7 +254,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Partition topology.
      */
     public GridDhtPartitionTopology topology() {
-        return top;
+        return ctx.group().topology();
     }
 
     /** {@inheritDoc} */
@@ -301,6 +291,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         if (tup != null)
             throw new IgniteCheckedException("Nested multi-update locks are not supported");
+
+        GridDhtPartitionTopology top = ctx.group().topology();
 
         top.readLock();
 
@@ -344,7 +336,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (tup == null)
             throw new IgniteCheckedException("Multi-update was not started or released twice.");
 
-        top.readLock();
+        ctx.group().topology().readLock();
 
         try {
             IgniteUuid lockId = tup.get1();
@@ -357,7 +349,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             multiFut.onDone(lockId);
         }
         finally {
-            top.readUnlock();
+            ctx.group().topology().readUnlock();
         }
     }
 
@@ -518,7 +510,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             return;
 
         try {
-            GridDhtLocalPartition part = top.localPartition(ctx.affinity().partition(key),
+            GridDhtLocalPartition part = ctx.group().topology().localPartition(ctx.affinity().partition(key),
                 AffinityTopologyVersion.NONE, true);
 
             // Reserve to make sure that partition does not get unloaded.
@@ -1201,8 +1193,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (expVer.equals(curVer))
             return false;
 
-        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.cacheId(), expVer);
-        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.cacheId(), curVer);
+        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
+        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
 
         if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
             return true;

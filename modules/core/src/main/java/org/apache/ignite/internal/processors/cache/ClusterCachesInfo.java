@@ -927,6 +927,10 @@ class ClusterCachesInfo {
             topVer,
             caches);
 
+        CacheGroupDescriptor old = registeredCacheGrps.put(grpName, grpDesc);
+
+        assert old == null : old;
+
         ctx.discovery().addCacheGroup(grpDesc, startedCacheCfg.getNodeFilter(), startedCacheCfg.getCacheMode());
 
         if (exchActions != null)

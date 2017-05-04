@@ -1725,10 +1725,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer)
         throws IgniteCheckedException {
         prepareCacheStart(
+            cacheDesc.groupDescriptor(),
             cacheDesc.cacheConfiguration(),
             nearCfg,
             cacheDesc.cacheType(),
-            cacheDesc.groupDescriptor().groupId(),
             cacheDesc.deploymentId(),
             cacheDesc.startTopologyVersion(),
             exchTopVer,
@@ -1748,10 +1748,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor desc = t.get1();
 
                 prepareCacheStart(
+                    desc.groupDescriptor(),
                     desc.cacheConfiguration(),
                     t.get2(),
                     desc.cacheType(),
-                    desc.groupDescriptor().groupId(),
                     desc.deploymentId(),
                     desc.startTopologyVersion(),
                     exchTopVer,
@@ -1779,10 +1779,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
                     prepareCacheStart(
+                        desc.groupDescriptor(),
                         desc.cacheConfiguration(),
                         null,
                         desc.cacheType(),
-                        desc.groupDescriptor().groupId(),
                         desc.deploymentId(),
                         desc.startTopologyVersion(),
                         exchTopVer,
@@ -1806,10 +1806,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void prepareCacheStart(
+        CacheGroupDescriptor grpDesc,
         CacheConfiguration startCfg,
         @Nullable NearCacheConfiguration reqNearCfg,
         CacheType cacheType,
-        int grpId,
         IgniteUuid deploymentId,
         AffinityTopologyVersion cacheStartTopVer,
         AffinityTopologyVersion exchTopVer,
@@ -1831,10 +1831,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (grp == null)
-                grp = startCacheGroup(startCfg, grpId);
+                grp = startCacheGroup(grpDesc, exchTopVer);
         }
         else
-            grp = startCacheGroup(startCfg, grpId);
+            grp = startCacheGroup(grpDesc, exchTopVer);
 
         CacheConfiguration ccfg = new CacheConfiguration(startCfg);
 
@@ -1878,14 +1878,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         onKernalStart(cache);
     }
 
-    private CacheGroupInfrastructure startCacheGroup(CacheConfiguration cfg0, int grpId) throws IgniteCheckedException {
-        CacheConfiguration ccfg = new CacheConfiguration(cfg0);
+    private CacheGroupInfrastructure startCacheGroup(CacheGroupDescriptor desc, AffinityTopologyVersion exchTopVer)
+        throws IgniteCheckedException {
+        CacheConfiguration ccfg = new CacheConfiguration(desc.config());
 
-        CacheGroupInfrastructure grp = new CacheGroupInfrastructure(grpId, sharedCtx, ccfg);
+        CacheGroupInfrastructure grp = new CacheGroupInfrastructure(sharedCtx,
+            desc.groupId(),
+            ccfg,
+            desc.startTopologyVersion(),
+            exchTopVer);
 
         grp.start();
 
-        CacheGroupInfrastructure old = cacheGrps.put(grpId, grp);
+        CacheGroupInfrastructure old = cacheGrps.put(desc.groupId(), grp);
 
         assert old == null;
 
