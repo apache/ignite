@@ -94,7 +94,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
-        ignite0.cache(null).put(1, new TestValue());
+        ignite0.cache(DEFAULT_CACHE_NAME).put(1, new TestValue());
     }
 
     /** {@inheritDoc} */
@@ -168,7 +168,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     }
 
     protected GridCacheContext cacheContext() {
-        return ((IgniteCacheProxy)grid(0).cache(null)).context();
+        return ((IgniteCacheProxy)grid(0).cache(DEFAULT_CACHE_NAME)).context();
     }
 
     protected GridCacheIoManager cacheIoManager() {

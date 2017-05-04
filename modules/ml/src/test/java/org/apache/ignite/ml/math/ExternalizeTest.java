@@ -34,6 +34,7 @@ import static org.junit.Assert.fail;
  */
 public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
     /** */
+    @SuppressWarnings("unchecked")
     protected void externalizeTest(T initObj) {
         T objRestored = null;
 

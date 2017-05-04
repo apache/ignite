@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.apache.ignite.internal.processors.cache.database.evict;
 
 import java.util.LinkedList;
@@ -21,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /**
@@ -36,7 +37,8 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
      * @param plcCfg Memory policy configuration.
      * @param sharedCtx Shared context.
      */
-    public FairFifoPageEvictionTracker(PageMemory pageMem,
+    public FairFifoPageEvictionTracker(
+        PageMemoryNoStoreImpl pageMem,
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext sharedCtx) {
         super(pageMem, plcCfg, sharedCtx);

@@ -76,7 +76,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -114,7 +114,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite1.cache(null).get(1);
+                ignite1.cache(DEFAULT_CACHE_NAME).get(1);
 
                 return null;
             }
@@ -122,7 +122,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite2.cache(null).get(1);
+                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
 
                 return null;
             }
@@ -134,7 +134,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite2.cache(null).get(1);
+                ignite2.cache(DEFAULT_CACHE_NAME).get(1);
 
                 return null;
             }
@@ -427,12 +427,12 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         Ignite ignite0 = it.next();
 
-        Affinity<Integer> aff0 = ignite0.affinity(null);
+        Affinity<Integer> aff0 = ignite0.affinity(DEFAULT_CACHE_NAME);
 
         while (it.hasNext()) {
             Ignite ignite = it.next();
 
-            Affinity<Integer> aff = ignite.affinity(null);
+            Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
             assertEquals(aff0.partitions(), aff.partitions());
 
@@ -498,7 +498,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final String CACHE_NAME1 = "cache1";
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME1);
 
@@ -577,7 +577,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final String CACHE_NAME2 = "cache2";
 
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME2);
 

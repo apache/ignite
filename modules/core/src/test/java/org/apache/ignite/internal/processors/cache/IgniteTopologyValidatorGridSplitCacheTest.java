@@ -90,7 +90,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                 CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
 
                 for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(testCacheName(cnt));
                     ccfg.setCacheMode(PARTITIONED);

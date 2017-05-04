@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.commons.io.Charsets;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -130,17 +131,16 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** */
     public void testStringTruncate() throws Exception {
-        long[] sizes = new long[CPUS];
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        JavaLogger log = new JavaLogger();
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
-            null,
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             false);
 
         pageMem.start();
@@ -177,17 +177,16 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** */
     public void testBytes() throws Exception {
-        long[] sizes = new long[CPUS];
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        JavaLogger log = new JavaLogger();
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
-            null,
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             false);
 
         pageMem.start();
@@ -293,17 +292,16 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** */
     private void testPutGet(Value v1, Value v2, Value v3) throws Exception {
-        long[] sizes = new long[CPUS];
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        JavaLogger log = new JavaLogger();
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
-            null,
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             false);
 
         pageMem.start();

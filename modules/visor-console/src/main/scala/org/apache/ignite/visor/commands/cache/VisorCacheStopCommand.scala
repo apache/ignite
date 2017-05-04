@@ -19,7 +19,7 @@ package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.visor.visor._
-import org.apache.ignite.internal.visor.cache.VisorCacheStopTask
+import org.apache.ignite.internal.visor.cache.{VisorCacheStopTask, VisorCacheStopTaskArg}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 /**
@@ -106,7 +106,7 @@ class VisorCacheStopCommand {
         ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [$dflt]: ", dflt) match {
             case "y" | "Y" =>
                 try {
-                    executeRandom(grp, classOf[VisorCacheStopTask], cacheName)
+                    executeRandom(grp, classOf[VisorCacheStopTask], new VisorCacheStopTaskArg(cacheName))
 
                     println("Visor successfully stop cache: " + escapeName(cacheName))
                 }

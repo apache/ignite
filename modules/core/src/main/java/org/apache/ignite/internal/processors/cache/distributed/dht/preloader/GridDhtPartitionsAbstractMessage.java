@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -61,6 +62,11 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     GridDhtPartitionsAbstractMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         this.exchId = exchId;
         this.lastVer = lastVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return GridIoMessage.STRIPE_DISABLED_PART;
     }
 
     /** {@inheritDoc} */
