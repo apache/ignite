@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractQueue;
@@ -588,6 +589,159 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleEnclosingObject other = marshalUnmarshal(obj);
 
         assertEquals(((SimpleExternalizable)obj.simpl).field, ((SimpleExternalizable)other.simpl).field);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleExternalizable() throws Exception {
+        SimpleExternalizable exp = new SimpleExternalizable("field");
+
+        SimpleExternalizable obj = marshalUnmarshal(exp);
+
+        assertEquals(obj.field, exp.field);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExternalizable() throws Exception {
+        ExternalizableTestObject1 obj = new ExternalizableTestObject1();
+
+        obj.longVal = 100L;
+        obj.doubleVal = 100.0d;
+        obj.longArr = new Long[] {200L, 300L};
+        obj.doubleArr = new Double[] {200.0d, 300.0d};
+
+        assertEquals(obj, marshalUnmarshal(obj));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExternalizableWithNulls() throws Exception {
+        ExternalizableTestObject2 obj = new ExternalizableTestObject2();
+
+        obj.longVal = 100L;
+        obj.doubleVal = 100.0d;
+        obj.longArr = new Long[] {200L, 300L};
+        obj.doubleArr = new Double[] {200.0d, 300.0d};
+
+        obj = marshalUnmarshal(obj);
+
+        assertEquals(100L, obj.longVal.longValue());
+        assertNull(obj.doubleVal);
+        assertArrayEquals(new Long[] {200L, 300L}, obj.longArr);
+        assertNull(obj.doubleArr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryInsideExternalizable() throws Exception {
+        TestBinary bo = binaryObject();
+
+        ObjectInsideExternalizable exp = new ObjectInsideExternalizable(bo);
+
+        ObjectInsideExternalizable obj = marshalUnmarshal(exp);
+
+        assertEquals(obj.field, exp.field);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryObjectInsideExternalizable() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())
+            , new BinaryTypeConfiguration(ObjectInsideExternalizable.class.getName())));
+
+        SimpleObject obj = simpleObject();
+
+        BinaryObject po = marshal(obj, marsh);
+
+        ObjectInsideExternalizable ext = marshalUnmarshal(new ObjectInsideExternalizable(po), marsh);
+
+        BinaryObject po0 = (BinaryObject)ext.field;
+
+        assertTrue(po.hasField("b"));
+        assertTrue(po.hasField("s"));
+        assertTrue(po.hasField("i"));
+        assertTrue(po.hasField("l"));
+        assertTrue(po.hasField("f"));
+        assertTrue(po.hasField("d"));
+        assertTrue(po.hasField("c"));
+        assertTrue(po.hasField("bool"));
+
+        assertFalse(po.hasField("no_such_field"));
+
+        assertEquals(obj, po.deserialize());
+        assertEquals(obj, po0.deserialize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetValueQuicklyExternalizable() throws Exception {
+        SimpleEnclosingObject obj = new SimpleEnclosingObject();
+
+        obj.simpl = new SimpleExternalizable("field");
+
+        BinaryObject po = marshal(obj, binaryMarshaller());
+
+        BinaryObjectBuilder builder = BinaryObjectBuilderImpl.wrap(po);
+
+        assertTrue(builder.build().hasField("simpl"));
+
+        assertEquals(obj.simpl, builder.getField("simpl"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSkipValueExternalizable() throws Exception {
+        SimpleEnclosingObject obj = new SimpleEnclosingObject();
+
+        Map<Integer, SimpleExternalizable> map = new HashMap<>();
+
+        map.put(1, new SimpleExternalizable("val1"));
+        map.put(2, new SimpleExternalizable("val2"));
+
+        obj.simpl = map;
+
+        BinaryObject po = marshal(obj, binaryMarshaller());
+
+        BinaryObjectBuilder builder = BinaryObjectBuilderImpl.wrap(po);
+
+        BinaryObject obj2 = builder.build();
+
+        assertEquals(map, obj2.field("simpl"));
+
+        assertEquals(map, obj2.toBuilder().getField("simpl"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testwriteFieldByOrderWithExternalizable() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        SimpleEnclosingObject obj = new SimpleEnclosingObject();
+
+        obj.simpl = new SimpleExternalizable("field");
+
+        int len = marshal(obj.simpl, marsh).array().length;
+
+        BinaryObjectImpl bObj = marshal(obj, marsh);
+
+        BinaryFieldEx field = (BinaryFieldEx)bObj.type().field("simpl");
+
+        ByteBuffer buf = ByteBuffer.allocate(len);
+
+        field.writeField(bObj, buf);
+
+        Object obj2 = marsh.unmarshal(buf.array(), null);
+
+        assertEquals(obj.simpl, obj2);
     }
 
     /**
@@ -5173,6 +5327,173 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return field.hashCode();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class ObjectInsideExternalizable implements Externalizable {
+        /** */
+        private Object field;
+
+        /**
+         * {@link Externalizable} support.
+         */
+        public ObjectInsideExternalizable() {
+            // No-op.
+        }
+
+        /**
+         * @param field Field.
+         */
+        public ObjectInsideExternalizable(Object field) {
+            this.field = field;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            field = in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectInsideExternalizable that = (ObjectInsideExternalizable)o;
+
+            return field.equals(that.field);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return field.hashCode();
+        }
+    }
+
+    /**
+     * Externalizable test object.
+     */
+    private static class ExternalizableTestObject1 implements Externalizable {
+        /** */
+        private Long longVal;
+
+        /** */
+        private Double doubleVal;
+
+        /** */
+        private Long[] longArr;
+
+        /** */
+        private Double[] doubleArr;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public ExternalizableTestObject1() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ExternalizableTestObject1 obj = (ExternalizableTestObject1)o;
+
+            return longVal != null ? longVal.equals(obj.longVal) : obj.longVal == null &&
+                doubleVal != null ? doubleVal.equals(obj.doubleVal) : obj.doubleVal == null &&
+                Arrays.equals(longArr, obj.longArr) &&
+                Arrays.equals(doubleArr, obj.doubleArr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(longVal);
+            out.writeDouble(doubleVal);
+            U.writeArray(out, longArr);
+            U.writeArray(out, doubleArr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            longVal = in.readLong();
+            doubleVal = in.readDouble();
+
+            Object[] arr = U.readArray(in);
+
+            longArr = Arrays.copyOf(arr, arr.length, Long[].class);
+
+            arr = U.readArray(in);
+
+            doubleArr = Arrays.copyOf(arr, arr.length, Double[].class);
+        }
+    }
+
+    /**
+     * Externalizable test object.
+     */
+    private static class ExternalizableTestObject2 implements Externalizable {
+        /** */
+        private Long longVal;
+
+        /** */
+        private Double doubleVal;
+
+        /** */
+        private Long[] longArr;
+
+        /** */
+        private Double[] doubleArr;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public ExternalizableTestObject2() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ExternalizableTestObject2 obj = (ExternalizableTestObject2)o;
+
+            return longVal != null ? longVal.equals(obj.longVal) : obj.longVal == null &&
+                doubleVal != null ? doubleVal.equals(obj.doubleVal) : obj.doubleVal == null &&
+                Arrays.equals(longArr, obj.longArr) &&
+                Arrays.equals(doubleArr, obj.doubleArr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(longVal);
+            U.writeArray(out, longArr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            longVal = in.readLong();
+
+            Object[] arr = U.readArray(in);
+
+            longArr = Arrays.copyOf(arr, arr.length, Long[].class);
         }
     }
 

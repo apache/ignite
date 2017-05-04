@@ -600,6 +600,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
                 break;
 
+            case GridBinaryMarshaller.EXTERNALIZABLE:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                break;
+
             case GridBinaryMarshaller.OPTM_MARSH:
                 totalLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
 

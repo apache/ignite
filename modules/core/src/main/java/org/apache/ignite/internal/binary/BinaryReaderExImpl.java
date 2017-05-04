@@ -60,6 +60,8 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DOUBLE;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DOUBLE_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ENUM;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ENUM_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.EXTERNALIZABLE;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.EXTERNALIZABLE_HDR_LEN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.FLOAT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.FLOAT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.HANDLE;
@@ -212,8 +214,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         start = in.position();
 
+        byte objType = in.readByte();
+
         // Perform full header parsing in case of binary object.
-        if (!skipHdrCheck && (in.readByte() == GridBinaryMarshaller.OBJ)) {
+        if (!skipHdrCheck && (objType == GridBinaryMarshaller.OBJ)) {
             // Ensure protocol is fine.
             BinaryUtils.checkProtocolVersion(in.readByte());
 
@@ -282,6 +286,44 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
+        }
+        else if (objType == GridBinaryMarshaller.EXTERNALIZABLE) {
+            in.readInt(); //skip len
+
+            int typeId0 = in.readInt();
+
+            if (typeId0 == UNREGISTERED_TYPE_ID) {
+                // Read header content.
+                int off = in.position();
+
+                if (forUnmarshal) {
+                    // Registers class by type ID, at least locally if the cache is not ready yet.
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+
+                    typeId = desc.typeId();
+                }
+                else
+                    typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
+
+                int clsNameLen = in.position() - off;
+
+                dataStart = start + EXTERNALIZABLE_HDR_LEN + clsNameLen;
+            }
+            else {
+                typeId = typeId0;
+
+                dataStart = start + EXTERNALIZABLE_HDR_LEN;
+            }
+
+            rawOff = 0;
+            footerStart = 0;
+            footerLen = 0;
+            mapper = null;
+            schemaId = 0;
+            userType = false;
+            fieldIdLen = 0;
+            fieldOffLen = 0;
+            schema = null;
         }
         else {
             dataStart = 0;
@@ -1762,6 +1804,16 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 obj = desc.read(this);
 
                 streamPosition(footerStart + footerLen);
+
+                break;
+
+            case EXTERNALIZABLE:
+                if (desc == null)
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+
+                streamPosition(dataStart);
+
+                obj = desc.read(this);
 
                 break;
 

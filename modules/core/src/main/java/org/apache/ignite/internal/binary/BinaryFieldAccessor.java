@@ -52,7 +52,7 @@ public abstract class BinaryFieldAccessor {
      * @return Accessor.
      */
     public static BinaryFieldAccessor create(Field field, int id) {
-        BinaryWriteMode mode = BinaryUtils.mode(field.getType());
+        BinaryWriteMode mode = BinaryUtils.mode(field.getType(), true);
 
         switch (mode) {
             case P_BYTE:
@@ -111,6 +111,7 @@ public abstract class BinaryFieldAccessor {
             case OBJECT_ARR:
             case BINARY_OBJ:
             case BINARY:
+            case EXTERNALIZABLE:
                 return new DefaultFinalClassAccessor(field, id, mode, false);
 
             default:
@@ -658,6 +659,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case BINARY:
+                case EXTERNALIZABLE:
                 case OBJECT:
                 case PROXY:
                     writer.writeObjectField(val);
@@ -874,6 +876,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case BINARY:
+                case EXTERNALIZABLE:
                 case OBJECT:
                     val = reader.readObject(id);
 
@@ -897,7 +900,7 @@ public abstract class BinaryFieldAccessor {
          */
         protected BinaryWriteMode mode(Object val) {
             return dynamic ?
-                val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass()) :
+                val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass(), true) :
                 mode;
         }
     }

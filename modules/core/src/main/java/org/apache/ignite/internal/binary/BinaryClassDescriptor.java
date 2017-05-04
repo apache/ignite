@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -40,6 +42,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -51,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.computeSerialVersionUid;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 
 /**
@@ -81,6 +85,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final int typeId;
+
+    /** Short ID. */
+    private final short checksum;
 
     /** */
     private final String typeName;
@@ -114,6 +121,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final boolean useOptMarshaller;
+
+    /** Flag indicating that the Externalizable objects marshal through custom serialization methods. */
+    private final boolean useCustomSerialization;
 
     /** */
     private final boolean excluded;
@@ -156,7 +166,15 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null || isGeometryClass(cls);
+        // But if class represents the Externalizable, then we have to use BinaryMarshaller.
+        if (serializer == null || isGeometryClass(cls)) {
+            useCustomSerialization = Externalizable.class.isAssignableFrom(cls);
+            useOptMarshaller = !useCustomSerialization;
+        }
+        else {
+            useOptMarshaller = false;
+            useCustomSerialization = false;
+        }
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -184,17 +202,16 @@ public class BinaryClassDescriptor {
             if (cls == BinaryEnumObjectImpl.class)
                 mode = BinaryWriteMode.BINARY_ENUM;
             else
-                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
+                mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls, useCustomSerialization);
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
-                BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
-                "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
-                "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
-                "have this class in classpath. To enable binary serialization either implement " +
-                Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
-                "BinaryTypeConfiguration.setSerializer() method.");
+                BinaryMarshaller.class.getSimpleName() + " because it  have writeObject/readObject methods. " +
+                OptimizedMarshaller.class.getSimpleName() + " will be used instead and class instances will be " +
+                "deserialized on the server. Please ensure that all nodes have this class in classpath. To enable " +
+                "binary serialization either implement " + Binarylizable.class.getSimpleName() + " interface or set " +
+                "explicit serializer using BinaryTypeConfiguration.setSerializer() method.");
         }
 
         switch (mode) {
@@ -262,6 +279,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case BINARY:
+            case EXTERNALIZABLE:
                 ctor = constructor(cls);
                 fields = null;
                 stableFieldsMeta = null;
@@ -343,8 +361,8 @@ public class BinaryClassDescriptor {
 
         Method writeReplaceMthd;
 
-        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = U.getNonPublicMethod(cls, "readResolve");
+        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT || mode == BinaryWriteMode.EXTERNALIZABLE) {
+            readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
 
             writeReplaceMthd = U.getNonPublicMethod(cls, "writeReplace");
         }
@@ -357,6 +375,13 @@ public class BinaryClassDescriptor {
             writeReplacer0 = new BinaryMethodWriteReplacer(writeReplaceMthd);
 
         writeReplacer = writeReplacer0;
+
+        try {
+            checksum = computeSerialVersionUid(cls, null);
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException("Failed to compute serialVersionUID [typeName=" + typeName + ']', e);
+        }
     }
 
     /**
@@ -486,6 +511,14 @@ public class BinaryClassDescriptor {
      */
     public boolean useOptimizedMarshaller() {
         return useOptMarshaller;
+    }
+
+    /**
+     * @return {@code true} if {@link BinaryMarshaller} marshal the Externalizable objects
+     * through custom serialization methods.
+     */
+    boolean useCustomSerialization() {
+        return useCustomSerialization;
     }
 
     /**
@@ -774,6 +807,41 @@ public class BinaryClassDescriptor {
 
                 break;
 
+            case EXTERNALIZABLE:
+                if (writer.tryWriteAsHandle(obj))
+                    break;
+
+                BinaryOutputStream out = writer.out();
+
+                int start = out.position();
+
+                out.position(start + GridBinaryMarshaller.EXTERNALIZABLE_HDR_LEN);
+
+                if (!registered)
+                    writer.doWriteString(cls.getName());
+
+                writer.writeShort(checksum);
+
+                try {
+                    ((Externalizable)obj).writeExternal(writer);
+                }
+                catch (IOException e) {
+                    throw new BinaryObjectException("Failed to serialize externalizable object [typeName=" + typeName + ']', e);
+                }
+
+                // Actual write.
+                int retPos = out.position();
+
+                out.position(start);
+
+                out.unsafeWriteByte(GridBinaryMarshaller.EXTERNALIZABLE);
+                out.unsafeWriteInt(retPos - start);
+                out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+
+                out.position(retPos);
+
+                break;
+
             case OBJECT:
                 if (userType && !stableSchemaPublished) {
                     // Update meta before write object with new schema
@@ -831,6 +899,22 @@ public class BinaryClassDescriptor {
                         serializer.readBinary(res, reader);
                     else
                         ((Binarylizable)res).readBinary(reader);
+
+                    break;
+
+                case EXTERNALIZABLE:
+                    res = newInstance();
+
+                    reader.setHandle(res);
+
+                    short checksum = reader.readShort();
+
+                    if (checksum != this.checksum)
+                        throw new ClassNotFoundException("Binary stream class checksum mismatch " +
+                            "(is same version of marshalled class present on all nodes?) " +
+                            "[expected=" + this.checksum + ", actual=" + checksum + ", cls=" + cls + ']');
+
+                    ((Externalizable)res).readExternal(reader);
 
                     break;
 
