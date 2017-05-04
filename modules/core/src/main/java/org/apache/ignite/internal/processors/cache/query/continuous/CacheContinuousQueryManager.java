@@ -341,7 +341,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 updateCntr,
                 topVer);
 
-            IgniteCacheProxy jcache = cctx.kernalContext().cache().jcache(cctx.name());
+            IgniteCacheProxy jcache = cctx.kernalContext().cache().jcacheProxy(cctx.name());
 
             assert jcache != null : "Failed to get cache proxy [name=" + cctx.name() +
                 ", locStart=" + cctx.startTopologyVersion() +
