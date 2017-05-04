@@ -24,8 +24,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeResult;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaResult;
 import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaRequest;
@@ -35,7 +33,6 @@ import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaResult;
 import org.apache.ignite.internal.processors.odbc.OdbcTableMeta;
 import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseResult;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteRequest;
@@ -52,16 +49,24 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Types;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.*;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.META_COLS;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.META_TBLS;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_CLOSE;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_EXEC;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_FETCH;
 
 /**
  * SQL query handler.
@@ -86,10 +91,10 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
-    private boolean distributedJoins = false;
+    private final boolean distributedJoins;
 
     /** Enforce join order flag. */
-    private boolean enforceJoinOrder = false;
+    private final boolean enforceJoinOrder;
 
     /**
      * Constructor.
@@ -97,11 +102,16 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
+     * @param distributedJoins Distributed joins flag.
+     * @param enforceJoinOrder Enforce join order flag.
      */
-    public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
+        boolean distributedJoins, boolean enforceJoinOrder) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+        this.distributedJoins = distributedJoins;
+        this.enforceJoinOrder = enforceJoinOrder;
 
         log = ctx.log(getClass());
     }
@@ -116,9 +126,6 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
         try {
             switch (req.command()) {
-                case HANDSHAKE:
-                    return performHandshake((SqlListenerHandshakeRequest)req);
-
                 case QRY_EXEC:
                     return executeQuery((SqlListenerQueryExecuteRequest)req);
 
@@ -142,40 +149,6 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         }
         finally {
             busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * {@link SqlListenerHandshakeRequest} command handler.
-     *
-     * @param req Handshake request.
-     * @return Response.
-     */
-    private SqlListenerResponse performHandshake(SqlListenerHandshakeRequest req) {
-        try {
-            SqlListenerProtocolVersion version = req.version();
-
-            if (version == SqlListenerProtocolVersion.UNKNOWN) {
-                IgniteProductVersion ver = ctx.grid().version();
-
-                String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
-
-                SqlListenerHandshakeResult res = new SqlListenerHandshakeResult(false, OdbcUtils.VER_LATEST.since(), verStr);
-
-                return new SqlListenerResponse(res);
-            }
-
-            SqlListenerHandshakeResult res = new SqlListenerHandshakeResult(true, null, null);
-
-            distributedJoins = req.distributedJoins();
-            enforceJoinOrder = req.enforceJoinOrder();
-
-            return new SqlListenerResponse(res);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to perform handshake [reqId=" + req.requestId() + ", req=" + req + ']', e);
-
-            return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
     }
 
