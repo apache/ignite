@@ -2437,7 +2437,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param cacheId Cache id.
      * @param part Partition.
      */
-    static void completeSavingAllocatedIndex(
+    public static void completeSavingAllocatedIndex(
         PageMemoryEx pageMem, IgniteWriteAheadLogManager wal, int cacheId, int part
     ) throws IgniteCheckedException {
         long pageId = getSuperPageId(pageMem, cacheId, part);
