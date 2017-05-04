@@ -256,6 +256,7 @@
     <ProjectReference Include="..\Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
       <Name>Apache.Ignite.ExamplesDll</Name>
+      <Aliases>ExamplesDll</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
       <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>
