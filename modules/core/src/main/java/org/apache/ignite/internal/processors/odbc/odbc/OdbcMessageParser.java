@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -27,13 +27,32 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.odbc.OdbcHandshakeRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcHandshakeResult;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaResult;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaResult;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaResult;
+import org.apache.ignite.internal.processors.odbc.OdbcTableMeta;
+import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 
 import java.util.Collection;
 
 /**
  * ODBC message parser.
  */
-public class OdbcMessageParser {
+public class OdbcMessageParser implements SqlListenerMessageParser {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
@@ -57,13 +76,8 @@ public class OdbcMessageParser {
         this.log = ctx.log(getClass());
     }
 
-    /**
-     * Decode OdbcRequest from byte array.
-     *
-     * @param msg Message.
-     * @return Assembled ODBC request.
-     */
-    public SqlListenerRequest decode(byte[] msg) {
+    /** {@inheritDoc} */
+    @Override public SqlListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -163,13 +177,8 @@ public class OdbcMessageParser {
         return res;
     }
 
-    /**
-     * Encode OdbcResponse to byte array.
-     *
-     * @param msg Message.
-     * @return Byte array.
-     */
-    public byte[] encode(OdbcResponse msg) {
+    /** {@inheritDoc} */
+    @Override public byte[] encode(SqlListenerResponse msg) {
         assert msg != null;
 
         // Creating new binary writer
@@ -178,7 +187,7 @@ public class OdbcMessageParser {
         // Writing status.
         writer.writeByte((byte) msg.status());
 
-        if (msg.status() != OdbcResponse.STATUS_SUCCESS) {
+        if (msg.status() != SqlListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
             return writer.array();

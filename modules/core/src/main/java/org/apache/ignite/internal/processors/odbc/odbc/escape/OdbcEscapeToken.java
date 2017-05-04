@@ -15,59 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.escape;
+package org.apache.ignite.internal.processors.odbc.odbc.escape;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * ODBC escape sequence parse result.
+ * ODBC escape sequence token.
  */
-public class OdbcEscapeParseResult {
-    /** Original start position. */
-    private final int originalStart;
+public class OdbcEscapeToken {
+    /** Escape sequence type. */
+    private final OdbcEscapeType type;
 
-    /** Original length. */
-    private final int originalLen;
-
-    /** Resulting text. */
-    private final String res;
+    /** Token length. */
+    private final int len;
 
     /**
      * Constructor.
      *
-     * @param originalStart Original start position.
-     * @param originalLen Original length.
-     * @param res Resulting text.
+     * @param type Escape sequence type.
+     * @param len Token length.
      */
-    public OdbcEscapeParseResult(int originalStart, int originalLen, String res) {
-        this.originalStart = originalStart;
-        this.originalLen = originalLen;
-        this.res = res;
+    public OdbcEscapeToken(OdbcEscapeType type, int len) {
+        this.type = type;
+        this.len = len;
     }
 
     /**
-     * @return Original start position.
+     * @return Escape sequence type.
      */
-    public int originalStart() {
-        return originalStart;
+    public OdbcEscapeType type() {
+        return type;
     }
 
     /**
-     * @return Original length.
+     * @return Token length.
      */
-    public int originalLength() {
-        return originalLen;
-    }
-
-    /**
-     * @return Resulting text.
-     */
-    public String result() {
-        return res;
+    public int length() {
+        return len;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcEscapeParseResult.class, this);
+        return S.toString(OdbcEscapeToken.class, this);
     }
 }

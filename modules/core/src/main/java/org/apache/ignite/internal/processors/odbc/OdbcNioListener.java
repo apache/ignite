@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -32,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Connection-related metadata key. */
-    private static final int CONN_DATA_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
@@ -67,18 +69,21 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
-            log.debug("ODBC client connected: " + ses.remoteAddress());
+            log.debug("SQL client connected: " + ses.remoteAddress());
 
-        ses.addMeta(CONN_DATA_META_KEY, new OdbcConnectionData(ctx, busyLock, maxCursors));
+        OdbcRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors);
+        OdbcMessageParser parser = new OdbcMessageParser(ctx);
+
+        ses.addMeta(CONN_CTX_META_KEY, new SqlListenerConnectionContext(handler, parser));
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         if (log.isDebugEnabled()) {
             if (e == null)
-                log.debug("ODBC client disconnected: " + ses.remoteAddress());
+                log.debug("SQL client disconnected: " + ses.remoteAddress());
             else
-                log.debug("ODBC client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
+                log.debug("SQL client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
         }
     }
 
@@ -86,13 +91,11 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     @Override public void onMessage(GridNioSession ses, byte[] msg) {
         assert msg != null;
 
-        long reqId = REQ_ID_GEN.incrementAndGet();
-
-        OdbcConnectionData connData = ses.meta(CONN_DATA_META_KEY);
+        SqlListenerConnectionContext connData = ses.meta(CONN_CTX_META_KEY);
 
         assert connData != null;
 
-        OdbcMessageParser parser = connData.getParser();
+        SqlListenerMessageParser parser = connData.parser();
 
         SqlListenerRequest req;
 
@@ -100,7 +103,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse message [id=" + reqId + ", err=" + e + ']');
+            log.error("Failed to parse SQL client request [err=" + e + ']');
 
             ses.close();
 
@@ -109,24 +112,26 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         assert req != null;
 
+        req.requestId(REQ_ID_GEN.incrementAndGet());
+
         try {
             long startTime = 0;
 
             if (log.isDebugEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() +
+                log.debug("SQL client request received [reqId=" + req.requestId() + ", addr=" + ses.remoteAddress() +
                     ", req=" + req + ']');
             }
 
-            OdbcRequestHandler handler = connData.getHandler();
+            SqlListenerRequestHandler handler = connData.handler();
 
-            OdbcResponse resp = handler.handle(reqId, req);
+            SqlListenerResponse resp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
 
-                log.debug("ODBC request processed [id=" + reqId + ", dur(mcs)=" + dur  +
+                log.debug("SQL client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur  +
                     ", resp=" + resp.status() + ']');
             }
 
@@ -135,9 +140,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
+            log.error("Failed to process SQL client request [reqId=" + req.requestId() + ", err=" + e + ']');
 
-            ses.send(parser.encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.toString())));
+            ses.send(parser.encode(new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString())));
         }
     }
 }
