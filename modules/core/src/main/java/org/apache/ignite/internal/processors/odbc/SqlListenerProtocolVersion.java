@@ -21,8 +21,8 @@ package org.apache.ignite.internal.processors.odbc;
  * SQL listener protocol version.
  */
 public enum SqlListenerProtocolVersion {
-    /** Version 2.1.0. */
-    VER_2_1_0(makeVersion(2, 1, 0), "2.1.0"),
+    /** Version 2.0.0. */
+    VER_2_0_0(makeVersion(2, 0, 0), "2.0.0"),
 
     /** Unknown version. */
     UNKNOWN(Long.MIN_VALUE, "UNKNOWN");
