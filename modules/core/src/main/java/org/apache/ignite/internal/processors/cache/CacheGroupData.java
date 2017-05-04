@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
@@ -37,6 +38,9 @@ public class CacheGroupData implements Serializable {
 
     /** */
     private final int grpId;
+
+    /** */
+    private final IgniteUuid deploymentId;
 
     /** */
     private final CacheConfiguration cacheCfg;
@@ -56,16 +60,19 @@ public class CacheGroupData implements Serializable {
     public CacheGroupData(CacheConfiguration cacheCfg,
         String grpName,
         int grpId,
+        IgniteUuid deploymentId,
         AffinityTopologyVersion startTopVer,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
         assert grpName != null;
         assert grpId != 0;
+        assert deploymentId != null;
         assert startTopVer != null;
 
         this.cacheCfg = cacheCfg;
         this.grpName = grpName;
         this.grpId = grpId;
+        this.deploymentId = deploymentId;
         this.startTopVer = startTopVer;
         this.caches = caches;
     }
@@ -76,6 +83,10 @@ public class CacheGroupData implements Serializable {
 
     public int groupId() {
         return grpId;
+    }
+
+    public IgniteUuid deploymentId() {
+        return deploymentId;
     }
 
     public CacheConfiguration config() {

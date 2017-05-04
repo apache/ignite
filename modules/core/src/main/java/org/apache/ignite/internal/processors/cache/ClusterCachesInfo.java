@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
 import java.io.Serializable;
@@ -291,6 +292,7 @@ class ClusterCachesInfo {
                         CacheGroupDescriptor grpDesc = registerCacheGroup(exchangeActions,
                             ccfg,
                             cacheId,
+                            req.deploymentId(),
                             topVer.nextMinorVersion());
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
@@ -585,6 +587,7 @@ class ClusterCachesInfo {
                             DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
                                 locCfg.config(),
                                 desc.cacheType(),
+                                desc.groupDescriptor(),
                                 desc.template(),
                                 desc.deploymentId(),
                                 desc.schema());
@@ -650,6 +653,7 @@ class ClusterCachesInfo {
             CacheGroupData grpData = new CacheGroupData(grpDesc.config(),
                 grpDesc.groupName(),
                 grpDesc.groupId(),
+                grpDesc.deploymentId(),
                 grpDesc.startTopologyVersion(),
                 grpDesc.caches());
 
@@ -698,6 +702,7 @@ class ClusterCachesInfo {
         for (CacheGroupData grpData : cachesData.cacheGroups().values()) {
             CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(grpData.groupName(),
                 grpData.groupId(),
+                grpData.deploymentId(),
                 grpData.config(),
                 grpData.startTopologyVersion(),
                 grpData.caches());
@@ -859,7 +864,11 @@ class ClusterCachesInfo {
             if (!registeredCaches.containsKey(cfg.getName())) {
                 int cacheId = CU.cacheId(cfg.getName());
 
-                CacheGroupDescriptor grpDesc = registerCacheGroup(null, cfg, cacheId, topVer);
+                CacheGroupDescriptor grpDesc = registerCacheGroup(null,
+                    cfg,
+                    cacheId,
+                    joinData.cacheDeploymentId(),
+                    topVer);
 
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
                     cfg,
@@ -891,6 +900,7 @@ class ClusterCachesInfo {
         ExchangeActions exchActions,
         CacheConfiguration startedCacheCfg,
         Integer cacheId,
+        IgniteUuid deploymentId,
         AffinityTopologyVersion topVer) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = registeredCacheGrps.get(startedCacheCfg.getGroupName());
@@ -912,6 +922,7 @@ class ClusterCachesInfo {
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             grpName,
             grpId,
+            deploymentId,
             startedCacheCfg,
             topVer,
             caches);

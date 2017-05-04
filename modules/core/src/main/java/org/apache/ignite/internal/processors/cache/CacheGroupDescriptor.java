@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,6 +38,9 @@ public class CacheGroupDescriptor {
     private final int grpId;
 
     /** */
+    private final IgniteUuid deploymentId;
+
+    /** */
     private final CacheConfiguration cacheCfg;
 
     /** */
@@ -48,6 +52,7 @@ public class CacheGroupDescriptor {
 
     CacheGroupDescriptor(String grpName,
         int grpId,
+        IgniteUuid deploymentId,
         CacheConfiguration cacheCfg,
         AffinityTopologyVersion startTopVer,
         Map<String, Integer> caches) {
@@ -58,9 +63,14 @@ public class CacheGroupDescriptor {
 
         this.grpName = grpName;
         this.grpId = grpId;
+        this.deploymentId = deploymentId;
         this.cacheCfg = cacheCfg;
         this.startTopVer = startTopVer;
         this.caches = caches;
+    }
+
+    public IgniteUuid deploymentId() {
+        return deploymentId;
     }
 
     void onCacheAdded(String cacheName, int cacheId) {

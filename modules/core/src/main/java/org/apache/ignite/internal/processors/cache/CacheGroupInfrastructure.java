@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.lang.IgniteFuture;
@@ -47,6 +48,10 @@ public class CacheGroupInfrastructure {
     /** */
     private GridDhtPartitionTopology top;
 
+    private AffinityTopologyVersion grpStartVer;
+
+    private AffinityTopologyVersion locStartVer;
+
     /**
      * @param id Group ID.
      * @param ctx Context.
@@ -59,6 +64,14 @@ public class CacheGroupInfrastructure {
         this.id = id;
         this.ctx = ctx;
         this.ccfg = ccfg;
+    }
+
+    public AffinityTopologyVersion groupStartVersion() {
+        return grpStartVer;
+    }
+
+    public AffinityTopologyVersion localStartVersion() {
+        return locStartVer;
     }
 
     /**
