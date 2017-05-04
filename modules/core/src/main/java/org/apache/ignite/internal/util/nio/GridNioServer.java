@@ -768,7 +768,7 @@ public class GridNioServer<T> {
                 filterChain.onMessageReceived(ses, readBuf);
 
                 if (readBuf.remaining() > 0) {
-                    LT.warn(log, null, "Read buffer contains data after filter chain processing (will discard " +
+                    LT.warn(log, "Read buffer contains data after filter chain processing (will discard " +
                         "remaining bytes) [ses=" + ses + ", remainingCnt=" + readBuf.remaining() + ']');
 
                     readBuf.clear();

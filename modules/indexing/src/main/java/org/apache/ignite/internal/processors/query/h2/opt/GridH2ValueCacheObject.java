@@ -21,8 +21,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -123,7 +121,15 @@ public class GridH2ValueCacheObject extends Value {
 
     /** {@inheritDoc} */
     @Override public Object getObject() {
-        return obj.isPlatformType() ? obj.value(objectContext(), false) : obj;
+        return getObject(false);
+    }
+
+    /**
+     * @param cpy Copy flag.
+     * @return Value.
+     */
+    public Object getObject(boolean cpy) {
+        return obj.isPlatformType() ? obj.value(objectContext(), cpy) : obj;
     }
 
     /** {@inheritDoc} */
@@ -145,13 +151,6 @@ public class GridH2ValueCacheObject extends Value {
             Comparable<Object> c1 = (Comparable<Object>)o1;
 
             return c1.compareTo(o2);
-        }
-
-        if (o1 instanceof BinaryEnumObjectImpl && o2 instanceof Enum) {
-            final BinaryEnumObjectImpl bo1 = (BinaryEnumObjectImpl)o1;
-
-            if (bo1.isTypeEquals(o2.getClass()))
-                return Integer.compare(bo1.enumOrdinal(), ((Enum)o2).ordinal());
         }
 
         // Group by types.

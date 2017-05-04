@@ -598,7 +598,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                                 addrRes = new AddressResponse(data);
                             }
                             catch (IgniteCheckedException e) {
-                                LT.warn(log, e, "Failed to deserialize multicast response.");
+                                LT.error(log, e, "Failed to deserialize multicast response.");
 
                                 continue;
                             }
@@ -617,9 +617,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 finally {
                     U.close(sock);
                 }
-
-                if (rmtAddrs.size() > locNodeAddrs.size())
-                    break;
 
                 if (i < addrReqAttempts - 1) // Wait some time before re-sending address request.
                     U.sleep(200);
@@ -693,7 +690,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         private AddressResponse(Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
             this.addrs = addrs;
 
-            byte[] addrsData = marsh.marshal(addrs);
+            byte[] addrsData = U.marshal(marsh, addrs);
             data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
@@ -712,7 +709,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             this.data = data;
 
-            addrs = marsh.unmarshal(Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
+            addrs = U.unmarshal(marsh, Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
         }
 
         /**
@@ -879,7 +876,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 }
                 catch (IOException e) {
                     if (!isInterrupted()) {
-                        LT.warn(log, e, "Failed to send/receive address message (will try to reconnect).");
+                        LT.error(log, e, "Failed to send/receive address message (will try to reconnect).");
 
                         synchronized (this) {
                             U.close(sock);

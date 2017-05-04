@@ -22,6 +22,7 @@ import java.util.Random;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSession;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Failover test context.
@@ -71,6 +72,11 @@ public class GridFailoverTestContext implements FailoverContext {
     /** {@inheritDoc} */
     @Override public Object affinityKey() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public int partition() {
+        return -1;
     }
 
     /** {@inheritDoc} */

@@ -39,11 +39,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data source abstraction to specify configuration of the Cassandra session to be used.
  */
 public class DataSource {
+    /** Default expiration timeout for Cassandra driver session. */
+    public static final long DFLT_SESSION_EXPIRATION_TIMEOUT = 300000; // 5 minutes.
+
     /** Number of rows to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
 
@@ -54,9 +59,11 @@ public class DataSource {
     private ConsistencyLevel writeConsistency;
 
     /** Username to use for authentication. */
+    @GridToStringExclude
     private String user;
 
     /** Password to use for authentication. */
+    @GridToStringExclude
     private String pwd;
 
     /** Port to use for Cassandra connection. */
@@ -118,6 +125,9 @@ public class DataSource {
 
     /** Netty options to use for connection. */
     private NettyOptions nettyOptions;
+
+    /** Expiration timeout for Cassandra driver session. */
+    private long sessionExpirationTimeout = DFLT_SESSION_EXPIRATION_TIMEOUT;
 
     /** Cassandra session wrapper instance. */
     private volatile CassandraSession ses;
@@ -438,6 +448,23 @@ public class DataSource {
     }
 
     /**
+     * Sets expiration timeout for Cassandra driver session. Idle sessions that are not
+     * used during this timeout value will be automatically closed and recreated later
+     * on demand.
+     * <p>
+     * If set to {@code 0}, timeout is disabled.
+     * <p>
+     * Default value is {@link #DFLT_SESSION_EXPIRATION_TIMEOUT}.
+     *
+     * @param sessionExpirationTimeout Expiration timeout for Cassandra driver session.
+     */
+    public void setSessionExpirationTimeout(long sessionExpirationTimeout) {
+        this.sessionExpirationTimeout = sessionExpirationTimeout;
+
+        invalidate();
+    }
+
+    /**
      * Creates Cassandra session wrapper if it wasn't created yet and returns it
      *
      * @param log logger
@@ -519,7 +546,8 @@ public class DataSource {
         if (nettyOptions != null)
             builder = builder.withNettyOptions(nettyOptions);
 
-        return ses = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, log);
+        return ses = new CassandraSessionImpl(
+            builder, fetchSize, readConsistency, writeConsistency, sessionExpirationTimeout, log);
     }
 
     /**
@@ -546,5 +574,10 @@ public class DataSource {
      */
     private synchronized void invalidate() {
         ses = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataSource.class, this);
     }
 }

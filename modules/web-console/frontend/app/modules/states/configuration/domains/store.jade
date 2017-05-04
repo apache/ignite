@@ -1,0 +1,127 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+-var form = 'store'
+-var model = 'backupItem'
+-var keyFields = model + '.keyFields'
+-var valueFields = model + '.valueFields'
+-var keyFieldsForm = 'storeKeyFields'
+-var valueFieldsForm = 'storeValueFields'
+
+//- LEGACY mixin for LEGACY db fields tables.
+mixin table-db-field-edit(tbl, prefix, focusId, index)
+    -var databaseName = prefix + 'DatabaseFieldName'
+    -var databaseType = prefix + 'DatabaseFieldType'
+    -var javaName = prefix + 'JavaFieldName'
+    -var javaType = prefix + 'JavaFieldType'
+
+    -var databaseNameModel = tbl + '.' + databaseName
+    -var databaseTypeModel = tbl + '.' + databaseType
+    -var javaNameModel = tbl + '.' + javaName
+    -var javaTypeModel = tbl + '.' + javaType
+
+    -var databaseNameId = databaseName + focusId
+    -var databaseTypeId = databaseType + focusId
+    -var javaNameId = javaName + focusId
+    -var javaTypeId = javaType + focusId
+
+    .col-xs-3.col-sm-3.col-md-3
+        .fieldSep /
+        .input-tip
+            input.form-control(id=databaseNameId ignite-on-enter-focus-move=databaseTypeId type='text' ng-model=databaseNameModel placeholder='DB name' ignite-on-enter='#{javaNameModel} = #{javaNameModel} ? #{javaNameModel} : #{databaseNameModel}' ignite-on-escape='tableReset(false)')
+    .col-xs-3.col-sm-3.col-md-3
+        .fieldSep /
+        .input-tip
+            button.select-toggle.form-control(id=databaseTypeId ignite-on-enter-focus-move=javaNameId ng-model=databaseTypeModel data-placeholder='DB type' ng-class='{placeholder: !#{databaseTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJdbcTypes}}' ignite-on-escape='tableReset(false)' tabindex='0')
+    .col-xs-3.col-sm-3.col-md-3
+        .fieldSep /
+        .input-tip
+            input.form-control(id=javaNameId ignite-on-enter-focus-move=javaTypeId type='text' ng-model=javaNameModel placeholder='Java name' ignite-on-escape='tableReset(false)')
+    .col-xs-3.col-sm-3.col-md-3
+        -var btnVisible = 'tableDbFieldSaveVisible(' + tbl + ', ' + index +')'
+        -var btnSave = 'tableDbFieldSave(' + tbl + ', ' + index +')'
+        -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)' tabindex='0')
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label(id='store-title') Domain model for cache store
+        ignite-form-field-tooltip.tipLabel
+            | Domain model properties for binding database with cache via POJO cache store#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/persistent-store" target="_blank") More info]
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +text('Database schema:', model + '.databaseSchema', '"databaseSchema"', 'false', 'Input DB schema name', 'Schema name in database')
+                .settings-row
+                    +text('Database table:', model + '.databaseTable', '"databaseTable"', 'false', 'Input DB table name', 'Table name in database')
+                .settings-row(ng-init='keysTbl={type: "table-db-fields", model: "keyFields", focusId: "KeyField", ui: "table-db-fields"}')
+                    +ignite-form-group(ng-form=keyFieldsForm ng-model=keyFields)
+                        ignite-form-field-label(id='keyFields')
+                            | Key fields
+                        ignite-form-group-tooltip
+                            | Collection of key fields descriptions for CacheJdbcPojoStore
+                        ignite-form-group-add(ng-click='tableNewItem(keysTbl)')
+                            | Add key field
+                        .group-content-empty(ng-show='!((#{keyFields} && #{keyFields}.length > 0) || tableNewItemActive(keysTbl))') Not defined
+                        .group-content(ng-show='(#{keyFields} && #{keyFields}.length > 0) || tableNewItemActive(keysTbl)')
+                            table.links-edit(st-table=keyFields)
+                                tbody
+                                    tr(ng-repeat='item in #{keyFields} track by $index')
+                                        td
+                                            div(ng-hide='tableEditing(keysTbl, $index)')
+                                                a.labelFormField(ng-click='tableStartEdit(backupItem, keysTbl, $index)') {{$index + 1}}) {{item.databaseFieldName}} / {{item.databaseFieldType}} / {{item.javaFieldName}} / {{item.javaFieldType}}
+                                                +btn-remove('tableRemove(backupItem, keysTbl, $index)', '"Remove key field"')
+                                            div(ng-if='tableEditing(keysTbl, $index)')
+                                                +table-db-field-edit('keysTbl', 'cur', '{{::keysTbl.focusId + $index}}', '$index')
+                                tfoot(ng-show='tableNewItemActive(keysTbl)')
+                                    tr
+                                        td
+                                            +table-db-field-edit('keysTbl', 'new', 'KeyField', '-1')
+                .settings-row(ng-init='valuesTbl={type: "table-db-fields", model: "valueFields", focusId: "ValueField", ui: "table-db-fields"}')
+                    +ignite-form-group(ng-form=valueFieldsForm ng-model=valueFields)
+                        ignite-form-field-label(id='valueFields')
+                            | Value fields
+                        ignite-form-group-tooltip
+                            | Collection of value fields descriptions for CacheJdbcPojoStore
+                        ignite-form-group-add(ng-click='tableNewItem(valuesTbl)')
+                            | Add value field
+                        .group-content-empty(ng-show='!((#{valueFields} && #{valueFields}.length > 0) || tableNewItemActive(valuesTbl))') Not defined
+                        .group-content(ng-show='(#{valueFields} && #{valueFields}.length > 0) || tableNewItemActive(valuesTbl)')
+                            table.links-edit(st-table=valueFields)
+                                tbody
+                                    tr(ng-repeat='item in #{valueFields} track by $index')
+                                        td
+                                            div(ng-hide='tableEditing(valuesTbl, $index)')
+                                                a.labelFormField(ng-click='tableStartEdit(backupItem, valuesTbl, $index)') {{$index + 1}}) {{item.databaseFieldName}} / {{item.databaseFieldType}} / {{item.javaFieldName}} / {{item.javaFieldType}}
+                                                +btn-remove('tableRemove(backupItem, valuesTbl, $index)', '"Remove key field"')
+                                            div(ng-if='tableEditing(valuesTbl, $index)')
+                                                +table-db-field-edit('valuesTbl', 'cur', '{{::valuesTbl.focusId + $index}}', '$index')
+                                tfoot(ng-show='tableNewItemActive(valuesTbl)')
+                                    tr
+                                        td
+                                            +table-db-field-edit('valuesTbl', 'new', 'ValueField', '-1')
+            .col-sm-6
+                +preview-xml-java(model, 'domainStore')
+

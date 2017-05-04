@@ -1,0 +1,6 @@
+docker/standalone/backend/build
+docker/standalone/frontend/build
+docker/standalone/data
+docker/compose/backend/build
+docker/compose/frontend/build
+docker/dev/data

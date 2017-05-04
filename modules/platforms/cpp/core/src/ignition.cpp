@@ -216,9 +216,9 @@ namespace ignite
 
                 int optsLen;
                 char** opts = CreateJvmOptions(cfg, homeFound ? &home : NULL, cp, &optsLen);
-                
+
                 envTarget = new SharedPointer<IgniteEnvironment>(env);
-                
+
                 SharedPointer<JniContext> ctx(
                     JniContext::Create(opts, optsLen, env.Get()->GetJniHandlers(envTarget), &jniErr));
 
@@ -230,9 +230,11 @@ namespace ignite
                 if (!ctx.Get())
                 {
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                    
+
                     failed = true;
                 }
+
+                env.Get()->SetContext(ctx);
 
                 // 5. Start Ignite.
                 if (!failed)
@@ -258,12 +260,12 @@ namespace ignite
 
                     if (!javaRef) {
                         IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                        
+
                         failed = true;
                     }
                     else {
                         // 6. Ignite is started at this point.
-                        env.Get()->Initialize(ctx);
+                        env.Get()->Initialize();
 
                         started = true;
                     }
@@ -288,6 +290,8 @@ namespace ignite
         }
         else 
         {
+            env.Get()->ProcessorReleaseStart();
+
             IgniteImpl* impl = new IgniteImpl(env, javaRef);
 
             return Ignite(impl);
@@ -458,7 +462,7 @@ namespace ignite
             JniErrorInfo jniErr;
 
             SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
-             
+
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
             if (err->GetCode() == IgniteError::IGNITE_SUCCESS)

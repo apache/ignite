@@ -20,6 +20,7 @@ package org.apache.ignite.cache.store.cassandra;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.ExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.session.GenericBatchExecutionAssistant;
 import org.apache.ignite.cache.store.cassandra.session.LoadCacheCustomQueryWorker;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -102,10 +104,19 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             CassandraSession ses = getCassandraSession();
 
             for (Object obj : args) {
-                if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
-                    continue;
+                LoadCacheCustomQueryWorker<K, V> task = null;
 
-                futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo)));
+                if (obj instanceof Statement)
+                    task = new LoadCacheCustomQueryWorker<>(ses, (Statement)obj, controller, log, clo);
+                else if (obj instanceof String) {
+                    String qry = ((String)obj).trim();
+
+                    if (qry.toLowerCase().startsWith("select"))
+                        task = new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo);
+                }
+
+                if (task != null)
+                    futs.add(pool.submit(task));
             }
 
             for (Future<?> fut : futs)
@@ -405,5 +416,10 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     private void closeCassandraSession(CassandraSession ses) {
         if (ses != null && (storeSes == null || storeSes.transaction() == null))
             U.closeQuiet(ses);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CassandraCacheStore.class, this);
     }
 }

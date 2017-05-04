@@ -1949,6 +1949,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the unsupported type exception.
+        /// </summary>
+        public static BinaryObjectException GetUnsupportedTypeException(Type type, object obj)
+        {
+            return new BinaryObjectException(string.Format(
+                "Unsupported object type [type={0}, object={1}].\nSpecified type " +
+                "can not be serialized by Ignite: it is neither [Serializable], " +
+                "nor registered in IgniteConfiguration.BinaryConfiguration." +
+                "\nSee https://apacheignite-net.readme.io/docs/serialization for more details.", type, obj));
+        }
+
+        /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
         private static T CreateInstance<T>(BinaryReader reader)

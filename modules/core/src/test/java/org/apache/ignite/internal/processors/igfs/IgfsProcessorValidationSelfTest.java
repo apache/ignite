@@ -239,6 +239,36 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testLocalIfMetaCacheNameEquals() throws Exception {
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+
+        g1IgfsCfg1.setDataCacheName(dataCache1Name);
+        g1IgfsCfg1.setMetaCacheName(metaCache1Name);
+
+        g1IgfsCfg2.setDataCacheName(dataCache2Name);
+        g1IgfsCfg2.setMetaCacheName(metaCache1Name);
+
+        checkGridStartFails(g1Cfg, "Meta cache names should be different for different IGFS instances", true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalIfDataCacheNameEquals() throws Exception {
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+
+        g1IgfsCfg1.setDataCacheName(dataCache1Name);
+        g1IgfsCfg1.setMetaCacheName(metaCache1Name);
+
+        g1IgfsCfg2.setDataCacheName(dataCache1Name);
+        g1IgfsCfg2.setMetaCacheName(metaCache2Name);
+
+        checkGridStartFails(g1Cfg, "Data cache names should be different for different IGFS instances", true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoteIfDataBlockSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 

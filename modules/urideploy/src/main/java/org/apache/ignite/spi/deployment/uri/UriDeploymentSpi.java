@@ -111,7 +111,7 @@ import org.jetbrains.annotations.Nullable;
  * {@code META-INF/} entry may contain {@code ignite.xml} file which is a
  * task descriptor file. The purpose of task descriptor XML file is to specify
  * all tasks to be deployed. This file is a regular
- * <a href="http://www.springframework.org/documentation">Spring</a> XML
+ * <a href="https://spring.io/docs">Spring</a> XML
  * definition file.  {@code META-INF/} entry may also contain any other file
  * specified by JAR format.
  * </li>
@@ -1029,7 +1029,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
         URI uri;
 
         try {
-            uri = U.resolveWorkDirectory(DFLT_DEPLOY_DIR, false).toURI();
+            uri = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), DFLT_DEPLOY_DIR, false).toURI();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to initialize default file scanner", e);

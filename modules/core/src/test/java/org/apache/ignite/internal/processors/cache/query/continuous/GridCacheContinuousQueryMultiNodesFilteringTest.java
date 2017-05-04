@@ -17,9 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryCreatedListener;
@@ -33,9 +41,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -45,8 +56,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
 @SuppressWarnings("unchecked")
@@ -57,12 +70,20 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /** */
     private static final int SERVER_GRIDS_COUNT = 6;
 
+    /** */
+    public static final int KEYS = 2_000;
+
     /** Cache entry operations' counts. */
     private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap8<>();
+
+    /** Client. */
+    private static boolean client = false;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        client = false;
 
         super.afterTest();
     }
@@ -122,6 +143,108 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWithNodeFilter() throws Exception {
+        List<QueryCursor> qryCursors = new ArrayList<>();
+
+        final int nodesCnt = 3;
+
+        startGridsMultiThreaded(nodesCnt);
+
+        awaitPartitionMapExchange();
+
+        CacheConfiguration ccfg = cacheConfiguration(new NodeFilterByRegexp(".*(0|1)$"));
+
+        grid(0).createCache(ccfg);
+
+        final AtomicInteger cntr = new AtomicInteger();
+
+        final ConcurrentMap<ClusterNode, Set<Integer>> maps = new ConcurrentHashMap<>();
+
+        final AtomicBoolean doubleNtfFail = new AtomicBoolean(false);
+
+        CacheEntryUpdatedListener<Integer, Integer> lsnr = new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts)
+                throws CacheEntryListenerException {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
+                    cntr.incrementAndGet();
+
+                    ClusterNode node = ((Ignite)e.getSource().unwrap(Ignite.class)).cluster().localNode();
+
+                    Set<Integer> set = maps.get(node);
+
+                    if (set == null) {
+                        set = new ConcurrentSkipListSet<>();
+
+                        Set<Integer> oldVal = maps.putIfAbsent(node, set);
+
+                        set = oldVal != null ? oldVal : set;
+                    }
+
+                    if (!set.add(e.getValue()))
+                        doubleNtfFail.set(false);
+                }
+            }
+        };
+
+        for (int i = 0; i < nodesCnt; i++) {
+            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+            qry.setLocalListener(lsnr);
+
+            Ignite ignite = grid(i);
+
+            log.info("Try to start CQ on node: " + ignite.cluster().localNode().id());
+
+            qryCursors.add(ignite.cache(ccfg.getName()).query(qry));
+
+            log.info("CQ started on node: " + ignite.cluster().localNode().id());
+        }
+
+        client = true;
+
+        startGrid(nodesCnt);
+
+        awaitPartitionMapExchange();
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        qry.setLocalListener(lsnr);
+
+        qryCursors.add(grid(nodesCnt).cache(ccfg.getName()).query(qry));
+
+        for (int i = 0; i <= nodesCnt; i++) {
+            for (int key = 0; key < KEYS; key++) {
+                int val = (i * KEYS) + key;
+
+                grid(i).cache(ccfg.getName()).put(val, val);
+            }
+        }
+
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return cntr.get() >= 2 * (nodesCnt + 1) * KEYS;
+            }
+        }, 5000L));
+
+        assertFalse("Got duplicate", doubleNtfFail.get());
+
+        for (int i = 0; i < (nodesCnt + 1) * KEYS; i++) {
+            for (Map.Entry<ClusterNode, Set<Integer>> e : maps.entrySet())
+                assertTrue("Lost event on node: " + e.getKey().id() + ", event: " + i, e.getValue().remove(i));
+        }
+
+        for (Map.Entry<ClusterNode, Set<Integer>> e : maps.entrySet())
+            assertTrue("Unexpected event on node: " + e.getKey(), e.getValue().isEmpty());
+
+        assertEquals("Not expected count of CQ", nodesCnt + 1, qryCursors.size());
+
+        for (QueryCursor cur : qryCursors)
+            cur.close();
+    }
+
     /** */
     private Ignite startGrid(final int idx, boolean isClientMode) throws Exception {
         String gridName = getTestGridName(idx);
@@ -177,6 +300,28 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         replCache.query(qry);
 
         return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setClientMode(client);
+
+        return cfg;
+    }
+
+    /**
+     * @param filter Node filter.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfiguration(NodeFilterByRegexp filter) {
+        return new CacheConfiguration("test-cache-cq")
+            .setBackups(1)
+            .setNodeFilter(filter)
+            .setAtomicityMode(ATOMIC)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setCacheMode(PARTITIONED);
     }
 
     /** */
@@ -273,6 +418,22 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
             return ((Integer)clusterNode.attributes().get("idx") % 2) == idx % 2;
+        }
+    }
+
+    /** */
+    private final static class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final Pattern pattern;
+
+        /** */
+        private NodeFilterByRegexp(String regExp) {
+            this.pattern = Pattern.compile(regExp);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return pattern.matcher(clusterNode.id().toString()).matches();
         }
     }
 }

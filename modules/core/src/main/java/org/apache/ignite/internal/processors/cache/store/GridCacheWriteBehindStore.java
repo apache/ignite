@@ -705,7 +705,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
         }
         catch (Exception e) {
-            LT.warn(log, e, "Unable to update underlying store: " + store);
+            LT.error(log, e, "Unable to update underlying store: " + store);
 
             if (writeCache.sizex() > cacheCriticalSize || stopping.get()) {
                 for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
@@ -908,7 +908,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         private static final long serialVersionUID = 0L;
 
         /** Value. */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private Entry<? extends K, ? extends V> val;
 
         /** Store operation. */

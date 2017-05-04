@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -86,16 +87,6 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         finally {
             finished.set(true);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testGetAndPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testInvoke() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
     }
 
     /**
@@ -214,6 +205,70 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    public void testOriginatingNodeFailureForcesOnePhaseCommitDataCleanup() throws Exception {
+        ignite(0).createCache(cacheConfiguration(TestMemoryMode.HEAP, false));
+
+        final AtomicBoolean finished = new AtomicBoolean();
+
+        final int keysCnt = keysCount();
+
+        IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Random rnd = new Random();
+
+                while (!finished.get()) {
+                    stopGrid(0);
+
+                    U.sleep(300);
+
+                    startGrid(0);
+
+                    if (rnd.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
+                        awaitPartitionMapExchange();
+                }
+
+                return null;
+            }
+        });
+
+        IgniteInternalFuture<Object> fut2 = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+
+                while (!finished.get()) {
+                    try {
+                        IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+
+                        Integer val = ++iter;
+
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.invoke(i, new SetEntryProcessor(val));
+                    }
+                    catch (Exception e) {
+                        // No-op.
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        try {
+            U.sleep(DURATION);
+        }
+        finally {
+            finished.set(true);
+
+            fut.get();
+            fut2.get();
+        }
+
+        checkOnePhaseCommitReturnValuesCleaned();
     }
 
     /**

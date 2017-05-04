@@ -28,6 +28,7 @@ namespace Apache.Ignite.Linq
     /// <summary>
     /// Represents a compiled cache query.
     /// </summary>
+    [Obsolete("Use CompiledQuery2 class.")]
     public static class CompiledQuery
     {
         /// <summary>

@@ -750,14 +750,14 @@ public class MessageCodeGenerator {
         else if (type.isArray()) {
             Class<?> compType = type.getComponentType();
 
-            returnFalseIfReadFailed(name, "reader.readObjectArray", field, setExpr,
+            returnFalseIfReadFailed(name, "reader.readObjectArray", setExpr, field,
                 "MessageCollectionItemType." + typeEnum(compType),
                 compType.getSimpleName() + ".class");
         }
         else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfReadFailed(name, "reader.readCollection", field, setExpr,
+            returnFalseIfReadFailed(name, "reader.readCollection", setExpr, field,
                 "MessageCollectionItemType." + typeEnum(colItemType));
         }
         else if (Map.class.isAssignableFrom(type)) {
@@ -766,7 +766,7 @@ public class MessageCodeGenerator {
 
             boolean linked = type.equals(LinkedHashMap.class);
 
-            returnFalseIfReadFailed(name, "reader.readMap", field, setExpr,
+            returnFalseIfReadFailed(name, "reader.readMap", setExpr, field,
                 "MessageCollectionItemType." + typeEnum(mapKeyType),
                 "MessageCollectionItemType." + typeEnum(mapValType),
                 linked ? "true" : "false");

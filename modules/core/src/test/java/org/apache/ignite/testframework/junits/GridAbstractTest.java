@@ -102,6 +102,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -155,12 +156,25 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
+    /** Force failure flag. */
+    private boolean forceFailure;
+
+    /** Force failure message. */
+    private String forceFailureMsg;
+
+    /** Whether test count is known is advance. */
+    private boolean forceTestCnt;
+
+    /** Number of tests. */
+    private int testCnt;
+
     /**
      *
      */
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
 
         if (BINARY_MARSHALLER)
             GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
@@ -485,7 +499,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected void beforeTestsStarted() throws Exception {
         // Will clean and re-create marshaller directory from scratch.
-        U.resolveWorkDirectory("marshaller", true);
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
     }
 
     /**
@@ -1753,11 +1767,34 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Force test failure.
+     *
+     * @param msg Message.
+     */
+    public void forceFailure(@Nullable String msg) {
+        forceFailure = true;
+
+        forceFailureMsg = msg;
+    }
+
+    /**
+     * Set test count.
+     */
+    public void forceTestCount(int cnt) {
+        testCnt = cnt;
+
+        forceTestCnt = true;
+    }
+
+    /**
      * @throws Throwable If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     private void runTestInternal() throws Throwable {
-        super.runTest();
+        if (forceFailure)
+            fail("Forced failure: " + forceFailureMsg);
+        else
+            super.runTest();
     }
 
     /**
@@ -2056,11 +2093,19 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                int cnt = 0;
+                GridAbstractTest this0 = GridAbstractTest.this;
 
-                for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                        cnt++;
+                int cnt;
+
+                if (this0.forceTestCnt)
+                    cnt = this0.testCnt;
+                else {
+                    cnt = 0;
+
+                    for (Method m : this0.getClass().getMethods())
+                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                            cnt++;
+                }
 
                 numOfTests = cnt;
             }

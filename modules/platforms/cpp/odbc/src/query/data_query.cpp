@@ -141,11 +141,7 @@ namespace ignite
             SqlResult DataQuery::Close()
             {
                 if (!cursor.get())
-                {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query cursor is not in open state.");
-
-                    return SQL_RESULT_ERROR;
-                }
+                    return SQL_RESULT_SUCCESS;
 
                 SqlResult result = MakeRequestClose();
 
@@ -245,7 +241,7 @@ namespace ignite
             {
                 std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
-                QueryFetchRequest req(cursor->GetQueryId(), ResultPage::DEFAULT_SIZE);
+                QueryFetchRequest req(cursor->GetQueryId(), connection.GetConfiguration().GetPageSize());
                 QueryFetchResponse rsp(*resultPage);
 
                 try

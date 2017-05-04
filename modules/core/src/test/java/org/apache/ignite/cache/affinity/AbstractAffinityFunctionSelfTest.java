@@ -104,6 +104,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param backups Number of backups.
      * @throws Exception If failed.
      */
     protected void checkNodeRemoved(int backups) throws Exception {
@@ -246,7 +247,6 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
             i++;
         }
     }
-
 
     /**
      * @param assignment Assignment to verify.

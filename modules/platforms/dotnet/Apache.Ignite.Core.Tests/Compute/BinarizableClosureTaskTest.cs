@@ -40,12 +40,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected BinarizableClosureTaskTest(bool fork) : base(fork) { }
 
         /** <inheritDoc /> */
-        protected override void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override ICollection<Type> GetBinaryTypes()
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableException)));
+            return new []
+            {
+                typeof(BinarizableOutFunc),
+                typeof(BinarizableFunc),
+                typeof(BinarizableResult),
+                typeof(BinarizableException)
+            };
         }
 
         /** <inheritDoc /> */
@@ -75,6 +78,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected override void CheckError(Exception err)
         {
             Assert.IsTrue(err != null);
+
+            var aggregate = err as AggregateException;
+
+            if (aggregate != null)
+                err = aggregate.InnerException;
 
             BinarizableException err0 = err as BinarizableException;
 

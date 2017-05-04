@@ -34,6 +34,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1442,6 +1443,22 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     @Nullable Object deserialize() throws BinaryObjectException {
+        String newName = ctx.configuration().getGridName();
+        String oldName = IgniteUtils.setCurrentIgniteName(newName);
+
+        try {
+            return deserialize0();
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldName, newName);
+        }
+    }
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable private Object deserialize0() throws BinaryObjectException {
         Object obj;
 
         byte flag = in.readByte();
@@ -2047,6 +2064,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         // No-op.
+    }
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext context() {
+        return ctx;
     }
 
     /**

@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Resource;
-using Apache.Ignite.Core.Services;
-
 namespace Apache.Ignite.ExamplesDll.Services
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Services;
+
     /// <summary>
     /// Service implementation.
     /// </summary>

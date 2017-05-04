@@ -62,7 +62,8 @@ namespace ignite
                     DBG_STR_CASE(SQL_CATALOG_TERM);
                     DBG_STR_CASE(SQL_TABLE_TERM);
                     DBG_STR_CASE(SQL_SCHEMA_TERM);
-                    DBG_STR_CASE(SQL_ASYNC_DBC_FUNCTIONS);
+                    DBG_STR_CASE(SQL_NEED_LONG_DATA_LEN);
+//                    DBG_STR_CASE(SQL_ASYNC_DBC_FUNCTIONS);
                     DBG_STR_CASE(SQL_ASYNC_NOTIFICATION);
                     DBG_STR_CASE(SQL_GETDATA_EXTENSIONS);
                     DBG_STR_CASE(SQL_ODBC_INTERFACE_CONFORMANCE);
@@ -92,6 +93,8 @@ namespace ignite
                     DBG_STR_CASE(SQL_SQL92_PREDICATES);
                     DBG_STR_CASE(SQL_SQL92_RELATIONAL_JOIN_OPERATORS);
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
+                    DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES1);
+                    DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES2);
                 default: 
                     break;
                 }
@@ -104,7 +107,7 @@ namespace ignite
             ConnectionInfo::ConnectionInfo() : strParams(), intParams(),
                 shortParams()
             {
-                //========================= String Params =========================
+                //======================= String Params =======================
                 // Driver name.
                 strParams[SQL_DRIVER_NAME] = "Apache Ignite";
                 strParams[SQL_DBMS_NAME]   = "Apache Ignite";
@@ -124,7 +127,7 @@ namespace ignite
 #ifdef SQL_COLUMN_ALIAS
                 // A character string: "Y" if the data source supports column 
                 // aliases; otherwise, "N".
-                strParams[SQL_COLUMN_ALIAS] = "N";
+                strParams[SQL_COLUMN_ALIAS] = "Y";
 #endif // SQL_COLUMN_ALIAS
 
 #ifdef SQL_IDENTIFIER_QUOTE_CHAR
@@ -170,8 +173,16 @@ namespace ignite
                 strParams[SQL_SCHEMA_TERM] = "schema";
 #endif // SQL_SCHEMA_TERM
 
+#ifdef SQL_NEED_LONG_DATA_LEN
+                // A character string: "Y" if the data source needs the length
+                // of a long data value (the data type is SQL_LONGVARCHAR,
+                // SQL_LONGVARBINARY) before that value is sent to the data
+                // source, "N" if it does not.
+                strParams[SQL_NEED_LONG_DATA_LEN ] = "Y";
+#endif // SQL_NEED_LONG_DATA_LEN
+
 #ifdef SQL_ASYNC_DBC_FUNCTIONS
-                //======================== Integer Params =========================
+                //====================== Integer Params =======================
                 // Indicates if the driver can execute functions asynchronously
                 // on the connection handle.
                 // SQL_ASYNC_DBC_CAPABLE = The driver can execute connection
@@ -192,7 +203,7 @@ namespace ignite
 
 #ifdef SQL_GETDATA_EXTENSIONS
                 // Bitmask enumerating extensions to SQLGetData.
-                intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN;
+                intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN | SQL_GD_ANY_ORDER | SQL_GD_BOUND;
 #endif // SQL_GETDATA_EXTENSIONS
 
 #ifdef SQL_ODBC_INTERFACE_CONFORMANCE
@@ -203,7 +214,7 @@ namespace ignite
 
 #ifdef SQL_SQL_CONFORMANCE
                 // Indicates the level of SQL-92 supported by the driver.
-                intParams[SQL_SQL_CONFORMANCE] = 0; // SQL_SC_SQL92_ENTRY;
+                intParams[SQL_SQL_CONFORMANCE] = SQL_SC_SQL92_ENTRY;
 #endif // SQL_SQL_CONFORMANCE
 
 #ifdef SQL_CATALOG_USAGE
@@ -213,7 +224,8 @@ namespace ignite
 
 #ifdef SQL_SCHEMA_USAGE
                 // Bitmask enumerating the statements in which schemas can be used.
-                intParams[SQL_SCHEMA_USAGE] = 0;
+                intParams[SQL_SCHEMA_USAGE] = SQL_SU_DML_STATEMENTS |
+                    SQL_SU_TABLE_DEFINITION | SQL_SU_PRIVILEGE_DEFINITION;
 #endif // SQL_SCHEMA_USAGE
 
 #ifdef SQL_MAX_IDENTIFIER_LEN
@@ -224,27 +236,40 @@ namespace ignite
 
 #ifdef SQL_AGGREGATE_FUNCTIONS
                 // Bitmask enumerating support for aggregation functions.
-                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_ALL | SQL_AF_AVG | 
-                    SQL_AF_COUNT | SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN |
-                    SQL_AF_SUM;
+                intParams[SQL_AGGREGATE_FUNCTIONS] = SQL_AF_AVG | SQL_AF_COUNT |
+                    SQL_AF_DISTINCT | SQL_AF_MAX | SQL_AF_MIN | SQL_AF_SUM;
 #endif // SQL_AGGREGATE_FUNCTIONS
 
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS;
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN | 
+                    SQL_FN_NUM_ATAN | SQL_FN_NUM_ATAN2 | SQL_FN_NUM_CEILING | SQL_FN_NUM_COS | SQL_FN_NUM_COT |
+                    SQL_FN_NUM_EXP | SQL_FN_NUM_FLOOR | SQL_FN_NUM_LOG | SQL_FN_NUM_MOD | SQL_FN_NUM_SIGN |
+                    SQL_FN_NUM_SIN | SQL_FN_NUM_SQRT | SQL_FN_NUM_TAN | SQL_FN_NUM_PI | SQL_FN_NUM_RAND |
+                    SQL_FN_NUM_DEGREES | SQL_FN_NUM_LOG10 | SQL_FN_NUM_POWER | SQL_FN_NUM_RADIANS | SQL_FN_NUM_ROUND |
+                    SQL_FN_NUM_TRUNCATE;
 #endif // SQL_NUMERIC_FUNCTIONS
 
 #ifdef SQL_STRING_FUNCTIONS
                 // Bitmask enumerating the scalar string functions supported by the
                 // driver and associated data source.
-                intParams[SQL_STRING_FUNCTIONS] = 0;
+                intParams[SQL_STRING_FUNCTIONS] = SQL_FN_STR_ASCII | SQL_FN_STR_BIT_LENGTH | SQL_FN_STR_CHAR |
+                    SQL_FN_STR_CONCAT | SQL_FN_STR_DIFFERENCE | SQL_FN_STR_INSERT | SQL_FN_STR_LEFT |
+                    SQL_FN_STR_LENGTH | SQL_FN_STR_LOCATE | SQL_FN_STR_LTRIM | SQL_FN_STR_OCTET_LENGTH |
+                    SQL_FN_STR_POSITION | SQL_FN_STR_REPEAT | SQL_FN_STR_REPLACE | SQL_FN_STR_RIGHT | SQL_FN_STR_RTRIM |
+                    SQL_FN_STR_SOUNDEX | SQL_FN_STR_SPACE | SQL_FN_STR_SUBSTRING | SQL_FN_STR_LCASE | SQL_FN_STR_UCASE |
+                    SQL_FN_STR_LOCATE_2 | SQL_FN_STR_CHAR_LENGTH | SQL_FN_STR_CHARACTER_LENGTH;
 #endif // SQL_STRING_FUNCTIONS
 
 #ifdef SQL_TIMEDATE_FUNCTIONS
                 // Bitmask enumerating the scalar date and time functions supported
                 // by the driver and associated data source.
-                intParams[SQL_TIMEDATE_FUNCTIONS] = 0;
+                intParams[SQL_TIMEDATE_FUNCTIONS] = SQL_FN_TD_CURRENT_DATE | SQL_FN_TD_CURRENT_TIME |
+                    SQL_FN_TD_CURRENT_TIMESTAMP | SQL_FN_TD_CURDATE | SQL_FN_TD_CURTIME | SQL_FN_TD_DAYNAME |
+                    SQL_FN_TD_DAYOFMONTH | SQL_FN_TD_DAYOFWEEK | SQL_FN_TD_DAYOFYEAR | SQL_FN_TD_EXTRACT |
+                    SQL_FN_TD_HOUR | SQL_FN_TD_MINUTE | SQL_FN_TD_MONTH | SQL_FN_TD_MONTHNAME | SQL_FN_TD_NOW |
+                    SQL_FN_TD_QUARTER | SQL_FN_TD_SECOND | SQL_FN_TD_WEEK | SQL_FN_TD_YEAR;
 #endif // SQL_TIMEDATE_FUNCTIONS
 
 #ifdef SQL_TIMEDATE_ADD_INTERVALS
@@ -262,21 +287,13 @@ namespace ignite
 #ifdef SQL_DATETIME_LITERALS
                 // Bitmask enumerating the SQL-92 datetime literals supported by
                 // the data source.
-                intParams[SQL_DATETIME_LITERALS] = SQL_DL_SQL92_INTERVAL_HOUR |
-                    SQL_DL_SQL92_DATE | SQL_DL_SQL92_INTERVAL_MINUTE_TO_SECOND |
-                    SQL_DL_SQL92_TIME | SQL_DL_SQL92_INTERVAL_HOUR_TO_SECOND |
-                    SQL_DL_SQL92_TIMESTAMP | SQL_DL_SQL92_INTERVAL_HOUR_TO_MINUTE |
-                    SQL_DL_SQL92_INTERVAL_YEAR | SQL_DL_SQL92_INTERVAL_DAY_TO_SECOND |
-                    SQL_DL_SQL92_INTERVAL_MONTH | SQL_DL_SQL92_INTERVAL_DAY_TO_HOUR |
-                    SQL_DL_SQL92_INTERVAL_DAY | SQL_DL_SQL92_INTERVAL_DAY_TO_MINUTE |
-                    SQL_DL_SQL92_INTERVAL_MINUTE | SQL_DL_SQL92_INTERVAL_SECOND |
-                    SQL_DL_SQL92_INTERVAL_YEAR_TO_MONTH;
+                intParams[SQL_DATETIME_LITERALS] =  SQL_DL_SQL92_DATE | SQL_DL_SQL92_TIME | SQL_DL_SQL92_TIMESTAMP;
 #endif // SQL_DATETIME_LITERALS
 
 #ifdef SQL_SYSTEM_FUNCTIONS
                 // Bitmask enumerating the scalar system functions supported by the
                 // driver and associated data source.
-                intParams[SQL_SYSTEM_FUNCTIONS] = 0;
+                intParams[SQL_SYSTEM_FUNCTIONS] = SQL_FN_SYS_USERNAME | SQL_FN_SYS_DBNAME | SQL_FN_SYS_IFNULL;
 #endif // SQL_SYSTEM_FUNCTIONS
 
 #ifdef SQL_CONVERT_FUNCTIONS
@@ -288,9 +305,7 @@ namespace ignite
 #ifdef SQL_OJ_CAPABILITIES
                 // Bitmask enumerating the types of outer joins supported by the 
                 // driver and data source.
-                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_RIGHT |
-                    SQL_OJ_FULL | SQL_OJ_NESTED | SQL_OJ_INNER | 
-                    SQL_OJ_ALL_COMPARISON_OPS;
+                intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_NOT_ORDERED | SQL_OJ_ALL_COMPARISON_OPS;
 #endif // SQL_OJ_CAPABILITIES
 
 #ifdef SQL_POS_OPERATIONS
@@ -305,7 +320,8 @@ namespace ignite
 
 #ifdef SQL_SQL92_STRING_FUNCTIONS
                 // Bitmask enumerating the string scalar functions.
-                intParams[SQL_SQL92_STRING_FUNCTIONS] = 0;
+                intParams[SQL_SQL92_STRING_FUNCTIONS] = SQL_SSF_LOWER | SQL_SSF_UPPER | SQL_SSF_SUBSTRING |
+                    SQL_SSF_TRIM_BOTH | SQL_SSF_TRIM_LEADING | SQL_SSF_TRIM_TRAILING;
 #endif // SQL_SQL92_STRING_FUNCTIONS
 
 #ifdef SQL_SQL92_DATETIME_FUNCTIONS
@@ -318,32 +334,42 @@ namespace ignite
                 // Bitmask enumerating the value expressions supported,
                 // as defined in SQL-92.
                 intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
-                    SQL_SVE_COALESCE | SQL_SVE_NULLIF;
+                    SQL_SVE_CAST | SQL_SVE_COALESCE | SQL_SVE_NULLIF;
 #endif // SQL_SQL92_VALUE_EXPRESSIONS
 
 #ifdef SQL_SQL92_PREDICATES
                 // Bitmask enumerating the datetime scalar functions.
-                intParams[SQL_SQL92_PREDICATES] = SQL_SP_BETWEEN |
-                    SQL_SP_COMPARISON | SQL_SP_EXISTS | SQL_SP_IN |
-                    SQL_SP_ISNOTNULL | SQL_SP_ISNULL | SQL_SP_LIKE |
-                    SQL_SP_MATCH_FULL | SQL_SP_MATCH_PARTIAL |
-                    SQL_SP_MATCH_UNIQUE_FULL | SQL_SP_MATCH_UNIQUE_PARTIAL |
-                    SQL_SP_OVERLAPS | SQL_SP_QUANTIFIED_COMPARISON |
-                    SQL_SP_UNIQUE;
+                intParams[SQL_SQL92_PREDICATES] = SQL_SP_BETWEEN | SQL_SP_COMPARISON | SQL_SP_EXISTS | SQL_SP_IN |
+                    SQL_SP_ISNOTNULL | SQL_SP_ISNULL | SQL_SP_LIKE | SQL_SP_MATCH_FULL | SQL_SP_MATCH_PARTIAL |
+                    SQL_SP_MATCH_UNIQUE_FULL | SQL_SP_MATCH_UNIQUE_PARTIAL | SQL_SP_OVERLAPS | SQL_SP_UNIQUE |
+                    SQL_SP_QUANTIFIED_COMPARISON;
 #endif // SQL_SQL92_PREDICATES
 
 #ifdef SQL_SQL92_RELATIONAL_JOIN_OPERATORS
                 // Bitmask enumerating the relational join operators supported
                 // in a SELECT statement, as defined in SQL-92.
-                intParams[SQL_SQL92_RELATIONAL_JOIN_OPERATORS] =
-                    SQL_SRJO_CORRESPONDING_CLAUSE | SQL_SRJO_CROSS_JOIN |
-                    SQL_SRJO_EXCEPT_JOIN | SQL_SRJO_EXCEPT_JOIN |
-                    SQL_SRJO_INNER_JOIN | SQL_SRJO_INTERSECT_JOIN |
-                    SQL_SRJO_LEFT_OUTER_JOIN | SQL_SRJO_NATURAL_JOIN |
-                    SQL_SRJO_RIGHT_OUTER_JOIN | SQL_SRJO_UNION_JOIN;
+                intParams[SQL_SQL92_RELATIONAL_JOIN_OPERATORS] = SQL_SRJO_CORRESPONDING_CLAUSE | SQL_SRJO_CROSS_JOIN |
+                    SQL_SRJO_EXCEPT_JOIN | SQL_SRJO_INNER_JOIN | SQL_SRJO_LEFT_OUTER_JOIN| SQL_SRJO_RIGHT_OUTER_JOIN |
+                    SQL_SRJO_NATURAL_JOIN | SQL_SRJO_INTERSECT_JOIN | SQL_SRJO_UNION_JOIN;
 #endif // SQL_SQL92_RELATIONAL_JOIN_OPERATORS
 
-                //========================= Short Params ==========================
+#ifdef SQL_STATIC_CURSOR_ATTRIBUTES1
+                // Bitmask that describes the attributes of a static cursor that
+                // are supported by the driver. This bitmask contains the first
+                // subset of attributes; for the second subset, see
+                // SQL_STATIC_CURSOR_ATTRIBUTES2.
+                intParams[SQL_STATIC_CURSOR_ATTRIBUTES1] = SQL_CA1_NEXT;
+#endif //SQL_STATIC_CURSOR_ATTRIBUTES1
+
+#ifdef SQL_STATIC_CURSOR_ATTRIBUTES2
+                // Bitmask that describes the attributes of a static cursor that
+                // are supported by the driver. This bitmask contains the second
+                // subset of attributes; for the first subset, see
+                // SQL_STATIC_CURSOR_ATTRIBUTES1.
+                intParams[SQL_STATIC_CURSOR_ATTRIBUTES2] = 0;
+#endif //SQL_STATIC_CURSOR_ATTRIBUTES2
+
+                //======================= Short Params ========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                 // The maximum number of active statements that the driver can
                 // support for a connection. Zero mean no limit.

@@ -24,6 +24,8 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Text;
+    using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -37,7 +39,10 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -87,6 +92,11 @@
         /// </summary>
         public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -116,6 +126,9 @@
 
         /** */
         private bool? _clientMode;
+
+        /** */
+        private TimeSpan? _failureDetectionTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -192,6 +205,7 @@
             writer.WriteString(Localhost);
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
+            writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -285,10 +299,28 @@
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionConcurrency);
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
-                writer.WriteLong((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
+
+            // Swap space
+            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var ccfg = CacheConfiguration;
+            if (ccfg != null)
+            {
+                foreach (var cfg in ccfg)
+                    cfg.Validate(log);
+            }
         }
 
         /// <summary>
@@ -311,6 +343,7 @@
             Localhost = r.ReadString();
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
+            _failureDetectionTimeout = r.ReadTimeSpanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -358,6 +391,9 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
+
+            // Swap
+            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
         }
 
         /// <summary>
@@ -398,6 +434,7 @@
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
+            Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
         }
@@ -678,5 +715,93 @@
             get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
             set { _isLateAffinityAssignment = value; }
         }
+
+        /// <summary>
+        /// Serializes this instance to the specified XML writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        public void ToXml(XmlWriter writer, string rootElementName)
+        {
+            IgniteArgumentCheck.NotNull(writer, "writer");
+            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
+
+            IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
+        }
+
+        /// <summary>
+        /// Serializes this instance to an XML string.
+        /// </summary>
+        public string ToXml()
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                ToXml(xmlWriter, "igniteConfiguration");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Deserializes IgniteConfiguration from the XML reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Deserialized instance.</returns>
+        public static IgniteConfiguration FromXml(XmlReader reader)
+        {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
+            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+        }
+
+        /// <summary>
+        /// Deserializes IgniteConfiguration from the XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Deserialized instance.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        public static IgniteConfiguration FromXml(string xml)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
+
+            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
+            {
+                // Skip XML header.
+                xmlReader.MoveToContent();
+
+                return FromXml(xmlReader);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the logger.
+        /// <para />
+        /// If no logger is set, logging is delegated to Java, which uses the logger defined in Spring XML (if present)
+        /// or logs to console otherwise.
+        /// </summary>
+        public ILogger Logger { get; set; }
+
+        /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/> 
+        /// and <see cref="TcpCommunicationSpi"/>.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        public TimeSpan FailureDetectionTimeout
+        {
+            get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
+            set { _failureDetectionTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the swap space SPI.
+        /// </summary>
+        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
     }
 }

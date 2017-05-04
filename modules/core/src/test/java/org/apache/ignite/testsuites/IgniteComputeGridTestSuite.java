@@ -66,10 +66,12 @@ import org.apache.ignite.internal.IgniteComputeEmptyClusterGroupTest;
 import org.apache.ignite.internal.IgniteComputeTopologyExceptionTest;
 import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
+import org.apache.ignite.internal.IgniteRoundRobinErrorAfterClientReconnectTest;
 import org.apache.ignite.internal.TaskNodeRestartTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerSelfTest;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
+import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
@@ -148,6 +150,8 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeTopologyExceptionTest.class);
         suite.addTestSuite(GridTaskFailoverAffinityRunTest.class);
         suite.addTestSuite(TaskNodeRestartTest.class);
+        suite.addTestSuite(IgniteRoundRobinErrorAfterClientReconnectTest.class);
+        suite.addTestSuite(PublicThreadpoolStarvationTest.class);
 
         return suite;
     }

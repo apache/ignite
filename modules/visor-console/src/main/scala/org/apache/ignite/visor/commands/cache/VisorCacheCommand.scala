@@ -22,7 +22,8 @@ import java.util.{Collection => JavaCollection, Collections, UUID}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.util.typedef._
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
@@ -58,6 +59,9 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * +-----------------------------------------------------------------------------------------+
  * | cache -stop    | Stop cache with specified name.                                        |
  * +-----------------------------------------------------------------------------------------+
+ * | cache -reset   | Reset metrics for cache with specified name.                           |
+ * +-----------------------------------------------------------------------------------------+
+ *
  * }}}
  *
  * ====Specification====
@@ -69,6 +73,7 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
  *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
  *     cache -stop -c=<cache-name>
+ *     cache -reset -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -113,6 +118,8 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *          Swaps backup entries in cache.
  *     -stop
  *          Stop cache with specified name.
+ *     -reset
+ *          Reset metrics for cache with specified name.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -153,6 +160,9 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         Swaps entries in cache with name taken from 'c0' memory variable.
  *     cache -stop -c=cache
  *         Stops cache with name 'cache'.
+ *     cache -reset -c=cache
+ *         Reset metrics for cache with name 'cache'.
+ *
  * }}}
  */
 class VisorCacheCommand {
@@ -210,6 +220,9 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -stop -c=@c0</ex>
      *     Stop cache with name taken from 'c0' memory variable.
+     * <br>
+     * <ex>cache -reset -c=@c0</ex>
+     *     Reset metrics for cache with name taken from 'c0' memory variable.
      *
      * @param args Command arguments.
      */
@@ -260,9 +273,9 @@ class VisorCacheCommand {
             // Get cache stats data from all nodes.
             val aggrData = cacheData(node, cacheName, showSystem)
 
-            if (hasArgFlagIn("clear", "swap", "scan", "stop")) {
+            if (hasArgFlagIn("clear", "swap", "scan", "stop", "reset")) {
                 if (cacheName.isEmpty)
-                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop"), aggrData) match {
+                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop", "reset"), aggrData) match {
                         case Some(name) =>
                             argLst = argLst ++ Seq("c" -> name)
 
@@ -275,13 +288,15 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (aggrData.nonEmpty && !aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
+                        if (aggrData.nonEmpty && !aggrData.exists(cache => F.eq(cache.name(), name) && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
                             else if (hasArgFlag("swap", argLst))
                                 VisorCacheSwapCommand().swap(argLst, node)
                             else if (hasArgFlag("stop", argLst))
                                 VisorCacheStopCommand().stop(argLst, node)
+                            else if (hasArgFlag("reset", argLst))
+                              VisorCacheResetCommand().reset(argLst, node)
                         }
                         else {
                             if (hasArgFlag("clear", argLst))
@@ -290,6 +305,8 @@ class VisorCacheCommand {
                                 warn("Backup swapping of system cache is not allowed: " + name)
                             else if (hasArgFlag("stop", argLst))
                                 warn("Stopping of system cache is not allowed: " + name)
+                            else if (hasArgFlag("reset", argLst))
+                                warn("Reset metrics of system cache is not allowed: " + name)
                         }
                     }
                 })
@@ -323,7 +340,7 @@ class VisorCacheCommand {
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off heap)", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off-heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -397,7 +414,7 @@ class VisorCacheCommand {
                         (ad.maximumHeapSize() + ad.maximumOffHeapSize()))
                     csT += ("  Heap size Min/Avg/Max", ad.minimumHeapSize() + " / " +
                         formatDouble(ad.averageHeapSize()) + " / " + ad.maximumHeapSize())
-                    csT += ("  Off heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
+                    csT += ("  Off-heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
                         formatDouble(ad.averageOffHeapSize()) + " / " + ad.maximumOffHeapSize())
 
                     val ciT = VisorTextTable()
@@ -414,7 +431,15 @@ class VisorCacheCommand {
 
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
-                            cm.keySize(),
+                            cm match {
+                                case v2: VisorCacheMetricsV2 => (
+                                    "Total: " + (v2.keySize() + v2.offHeapEntriesCount()),
+                                    "  Heap: " + v2.keySize(),
+                                    "  Off-Heap: " + v2.offHeapEntriesCount(),
+                                    "  Off-Heap Memory: " + formatMemory(v2.offHeapAllocatedSize())
+                                )
+                                case v1 => v1.keySize()
+                            },
                             (
                                 "Hi: " + cm.hits(),
                                 "Mi: " + cm.misses(),
@@ -446,7 +471,7 @@ class VisorCacheCommand {
                     println("  Total number of executions: " + ad.execsQuery)
                     println("  Total number of failures:   " + ad.failsQuery)
 
-                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => safeEquals(ccfg.name(), ad.name()))
+                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => F.eq(ccfg.name(), ad.name()))
                         .foreach(ccfg => {
                             nl()
 
@@ -633,7 +658,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off heap)")
+        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off-heap)")
 
         sortedAggrData.indices.foreach(i => {
             val ad = sortedAggrData(i)
@@ -708,8 +733,9 @@ object VisorCacheCommand {
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
-            "cache -stop -c=<cache-name>"
-    ),
+            "cache -stop -c=<cache-name>",
+            "cache -reset -c=<cache-name>"
+  ),
         args = Seq(
             "-id8=<node-id>" -> Seq(
                 "ID8 of the node to get cache statistics from.",
@@ -741,7 +767,10 @@ object VisorCacheCommand {
                 "Swaps backup entries in cache."
             ),
             "-stop" -> Seq(
-                "Stop cache with specified name"
+                "Stop cache with specified name."
+            ),
+            "-reset" -> Seq(
+                "Reset metrics of cache with specified name."
             ),
             "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -801,7 +830,8 @@ object VisorCacheCommand {
             "cache -swap" -> "Swaps entries in interactively selected cache.",
             "cache -swap -c=cache" -> "Swaps entries in cache with name 'cache'.",
             "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable.",
-            "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable."
+            "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable.",
+            "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable."
         ),
         emptyArgs = cmd.cache,
         withArgs = cmd.cache

@@ -42,9 +42,6 @@ namespace ignite
             /** Default initial size of operational memory. */
             enum { DEFAULT_MEM_ALLOCATION = 4096 };
 
-            /** ODBC communication protocol version. */
-            enum { PROTOCOL_VERSION = 1 };
-
             /**
              * Constructor.
              */

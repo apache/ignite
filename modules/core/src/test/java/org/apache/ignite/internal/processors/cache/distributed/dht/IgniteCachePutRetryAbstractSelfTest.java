@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +31,6 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
@@ -43,8 +43,10 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -59,6 +61,7 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -70,7 +73,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long DURATION = 60_000;
+    protected static final long DURATION = 60_000;
 
     /** */
     protected static final int GRID_CNT = 4;
@@ -78,8 +81,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @return Keys count for the test.
      */
-    private int keysCount() {
-        return 10_000;
+    protected int keysCount() {
+        return 2_000;
     }
 
     /**
@@ -249,12 +252,17 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                Random rnd = new Random();
+
                 while (!finished.get()) {
                     stopGrid(3);
 
                     U.sleep(300);
 
                     startGrid(3);
+
+                    if (rnd.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
+                        awaitPartitionMapExchange();
                 }
 
                 return null;
@@ -455,6 +463,29 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
 
             assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
+        }
+
+        checkOnePhaseCommitReturnValuesCleaned();
+    }
+
+    /**
+     *
+     */
+    protected void checkOnePhaseCommitReturnValuesCleaned() throws IgniteInterruptedCheckedException {
+        U.sleep(DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT);
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            IgniteKernal ignite = (IgniteKernal)grid(i);
+
+            IgniteTxManager tm = ignite.context().cache().context().tm();
+
+            Map completedVersHashMap = U.field(tm, "completedVersHashMap");
+
+            for (Object o : completedVersHashMap.values()) {
+                assertTrue("completedVersHashMap contains" + o.getClass() + " instead of boolean. " +
+                    "These values should be replaced by boolean after onePhaseCommit finished. " +
+                    "[node=" + i + "]", o instanceof Boolean);
+            }
         }
     }
 

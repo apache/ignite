@@ -62,7 +62,10 @@ namespace Apache.Ignite.Core.Impl.Common
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                if (ex.InnerException != null)
+                    throw ex.InnerException;
+
+                throw;
             }
         }
 
@@ -174,33 +177,12 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Cancels this instance.
-        /// </summary>
-        internal bool Cancel()
-        {
-            if (_unmanagedTarget == null)
-                return false;
-
-            return UnmanagedUtils.ListenableCancel(_unmanagedTarget);
-        }
-
-        /// <summary>
-        /// Determines whether this instance is cancelled.
-        /// </summary>
-        internal bool IsCancelled()
-        {
-            if (_unmanagedTarget == null)
-                return false;
-
-            return UnmanagedUtils.ListenableIsCancelled(_unmanagedTarget);
-        }
-
-        /// <summary>
         /// Called when token cancellation occurs.
         /// </summary>
         private void OnTokenCancel()
         {
-            Cancel();
+            if (_unmanagedTarget != null)
+                UnmanagedUtils.ListenableCancel(_unmanagedTarget);
         }
     }
 }

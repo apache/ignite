@@ -156,7 +156,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
     private val guard = new AtomicBoolean(false)
 
     /** Node metric update listener. */
-    private var lsnr: IgnitePredicate[Event] = null
+    private var lsnr: IgnitePredicate[Event] = _
 
     /**
      * ===Command===
@@ -274,8 +274,8 @@ class VisorAlertCommand extends VisorConsoleCommand {
                         val (n, v) = arg
 
                         n match {
-                            case c if alertDescr.contains(c) && v != null =>
-                                val meta = alertDescr(c)
+                            case c if ALERT_DESCRIPTORS.contains(c) && v != null =>
+                                val meta = ALERT_DESCRIPTORS(c)
 
                                 if (meta.byGrid)
                                     conditions += VisorAlertCondition(arg, gridFunc = makeGridFilter(v, meta.gridFunc))
@@ -310,21 +310,18 @@ class VisorAlertCommand extends VisorConsoleCommand {
                     break()
                 }
 
-                val alert = new VisorAlert(
+                val alert = VisorAlert(
                     id = id8,
                     name = name,
-                    conditions = conditions.toSeq,
+                    conditions = conditions,
                     perGrid = conditions.exists(_.gridFunc.isDefined),
                     perNode = conditions.exists(_.nodeFunc.isDefined),
-                    spec = makeArgs(args),
+                    spec = makeArgs(args.filter((arg) => arg._1 != "r")),
                     conditionSpec = makeArgs(conditions.map(_.arg)),
                     freq = freq,
                     createdOn = System.currentTimeMillis(),
                     varName = setVar(id8, "a"),
-                    notification = new VisorAlertNotification(
-                        script = script,
-                        throttleInterval = interval * 1000
-                    )
+                    notification = VisorAlertNotification(script, interval * 1000)
                 )
 
                 // Subscribe for node metric updates - if needed.
@@ -359,27 +356,33 @@ class VisorAlertCommand extends VisorConsoleCommand {
                             val (id, alert) = t
 
                             var check = (true, true)
+                            var printNid = false
 
                             val values = mutable.ArrayBuffer.empty[String]
+                            var valuesView = mutable.ArrayBuffer.empty[String]
 
                             try
                                 check = alert.conditions.foldLeft(check) {
                                     (res, cond) => {
-                                        val gridRes = cond.gridFunc.map(f => {
+                                        val gridRes = cond.gridFunc.forall(f => {
                                             val (value, check) = f()
 
                                             values += value.toString
+                                            valuesView += cond.arg._1 + "=" + value.toString
 
                                             check
-                                        }).getOrElse(true)
+                                        })
 
-                                        val nodeRes = cond.nodeFunc.map(f => {
+                                        val nodeRes = cond.nodeFunc.forall(f => {
                                             val (value, check) = f(node)
 
                                             values += value.toString
+                                            valuesView += cond.arg._1 + "=" + value.toString
+
+                                            printNid = true
 
                                             check
-                                        }).getOrElse(true)
+                                        })
 
                                         (res._1 && gridRes) -> (res._2 && nodeRes)
                                     }
@@ -412,16 +415,22 @@ class VisorAlertCommand extends VisorConsoleCommand {
 
                                     stats = stats + (id -> stat)
 
+                                    val nodeIdIp = nodeId8Addr(node.id()).split(", ")
+
                                     // Write to Visor log if it is started (see 'log' command).
                                     logText(
                                         "Alert [" +
                                             "id=" + alert.id + "(@" + alert.varName + "), " +
-                                            "spec=" + alert.spec + ", " +
+                                            (if (printNid)
+                                                "nid8=" + nodeIdIp(0) + ", ip=" + nodeIdIp.lift(1).getOrElse(NA) + ", "
+                                            else "") +
+                                            "spec=[" + alert.spec + "], " +
+                                            "values=[" + valuesView.mkString("; ") + "], " +
                                             "created on=" + formatDateTime(alert.createdOn) +
                                         "]"
                                     )
 
-                                    executeAlertScript(alert, node, values.toSeq)
+                                    executeAlertScript(alert, node, values)
 
                                     last10 = VisorSentAlert(
                                         id = alert.id,
@@ -794,7 +803,7 @@ object VisorAlertCommand {
     private[this] val BY_GRID = true
     private[this] val BY_NODE = false
 
-    private val alertDescr = Map(
+    private val ALERT_DESCRIPTORS = Map(
         "cc" -> VisorAlertMeta(BY_GRID, () => cl().metrics().getTotalCpus, dfltNodeValF),
         "nc" -> VisorAlertMeta(BY_GRID, () => cl().nodes().size, dfltNodeValF),
         "hc" -> VisorAlertMeta(BY_GRID, () => U.neighborhood(cl().nodes()).size, dfltNodeValF),

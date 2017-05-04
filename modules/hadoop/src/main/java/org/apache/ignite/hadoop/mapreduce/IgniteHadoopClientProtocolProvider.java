@@ -19,6 +19,8 @@ package org.apache.ignite.hadoop.mapreduce;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.hadoop.conf.Configuration;
@@ -26,13 +28,14 @@ import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.mapreduce.protocol.ClientProtocol;
 import org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
-import org.apache.ignite.internal.processors.hadoop.proto.HadoopClientProtocol;
+import org.apache.ignite.internal.processors.hadoop.impl.proto.HadoopClientProtocol;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -52,17 +55,27 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
         if (FRAMEWORK_NAME.equals(conf.get(MRConfig.FRAMEWORK_NAME))) {
-            String addr = conf.get(MRConfig.MASTER_ADDRESS);
+            Collection<String> addrs = conf.getTrimmedStringCollection(MRConfig.MASTER_ADDRESS);
 
-            if (F.isEmpty(addr))
-                throw new IOException("Failed to create client protocol because server address is not specified (is " +
-                    MRConfig.MASTER_ADDRESS + " property set?).");
+            if (F.isEmpty(addrs))
+                throw new IOException("Failed to create client protocol because Ignite node addresses are not " +
+                    "specified (did you set " + MRConfig.MASTER_ADDRESS + " property?).");
 
-            if (F.eq(addr, "local"))
+            if (F.contains(addrs, "local"))
                 throw new IOException("Local execution mode is not supported, please point " +
-                    MRConfig.MASTER_ADDRESS + " to real Ignite node.");
+                    MRConfig.MASTER_ADDRESS + " to real Ignite nodes.");
 
-            return createProtocol(addr, conf);
+            Collection<String> addrs0 = new ArrayList<>(addrs.size());
+
+            // Set up port by default if need
+            for (String addr : addrs) {
+                if (!addr.contains(":"))
+                    addrs0.add(addr + ':' + ConnectorConfiguration.DFLT_TCP_PORT);
+                else
+                    addrs0.add(addr);
+            }
+
+            return new HadoopClientProtocol(conf, client(conf.get(MRConfig.MASTER_ADDRESS), addrs0));
         }
 
         return null;
@@ -90,24 +103,25 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @throws IOException If failed.
      */
     private static ClientProtocol createProtocol(String addr, Configuration conf) throws IOException {
-        return new HadoopClientProtocol(conf, client(addr));
+        return new HadoopClientProtocol(conf, client(addr, Collections.singletonList(addr)));
     }
 
     /**
      * Create client.
      *
-     * @param addr Endpoint address.
+     * @param clusterName Ignite cluster logical name.
+     * @param addrs Endpoint addresses.
      * @return Client.
      * @throws IOException If failed.
      */
-    private static GridClient client(String addr) throws IOException {
+    private static GridClient client(String clusterName, Collection<String> addrs) throws IOException {
         try {
-            IgniteInternalFuture<GridClient> fut = cliMap.get(addr);
+            IgniteInternalFuture<GridClient> fut = cliMap.get(clusterName);
 
             if (fut == null) {
                 GridFutureAdapter<GridClient> fut0 = new GridFutureAdapter<>();
 
-                IgniteInternalFuture<GridClient> oldFut = cliMap.putIfAbsent(addr, fut0);
+                IgniteInternalFuture<GridClient> oldFut = cliMap.putIfAbsent(clusterName, fut0);
 
                 if (oldFut != null)
                     return oldFut.get();
@@ -115,7 +129,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                     GridClientConfiguration cliCfg = new GridClientConfiguration();
 
                     cliCfg.setProtocol(TCP);
-                    cliCfg.setServers(Collections.singletonList(addr));
+                    cliCfg.setServers(addrs);
                     cliCfg.setMarshaller(new GridClientJdkMarshaller());
                     cliCfg.setMaxConnectionIdleTime(24 * 60 * 60 * 1000L); // 1 day.
                     cliCfg.setDaemon(true);
@@ -130,7 +144,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                     catch (GridClientException e) {
                         fut0.onDone(e);
 
-                        throw new IOException("Failed to establish connection with Ignite node: " + addr, e);
+                        throw new IOException("Failed to establish connection with Ignite: " + addrs, e);
                     }
                 }
             }
@@ -138,7 +152,7 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
                 return fut.get();
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("Failed to establish connection with Ignite node: " + addr, e);
+            throw new IOException("Failed to establish connection with Ignite сдгые: " + addrs, e);
         }
     }
 }
