@@ -709,7 +709,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         }
 
                         throw new BinaryObjectException(string.Format(
-                            "No matching type found for object [typeId={0}, typeName={1}]." +
+                            "No matching type found for object [typeId={0}, typeName={1}]. " +
                             "This usually indicates that assembly with specified type is not loaded on a node." +
                             "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter.",
                             desc.TypeId, desc.TypeName));

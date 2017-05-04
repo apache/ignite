@@ -86,6 +86,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Int", res.Generics.Single().GetName());
             Assert.AreEqual("Int", res.Generics.Single().GetFullName());
 
+            // Open generic.
+            res = TypeNameParser.Parse("List`1");
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("List`1", res.GetFullName());
+            Assert.IsEmpty(res.Generics);
+
             // One arg.
             res = TypeNameParser.Parse(typeof(List<int>).AssemblyQualifiedName);
             Assert.AreEqual("List`1", res.GetName());
@@ -97,6 +103,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Int32", gen.GetName());
             Assert.AreEqual("System.Int32", gen.GetFullName());
             Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
+
+            // One arg open.
+            res = TypeNameParser.Parse(typeof(List<>).AssemblyQualifiedName);
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("System.Collections.Generic.List`1", res.GetFullName());
+            Assert.IsTrue(res.GetAssemblyName().StartsWith("mscorlib,"));
+            Assert.IsEmpty(res.Generics);
 
             // Two args.
             res = TypeNameParser.Parse(typeof(Dictionary<int, string>).AssemblyQualifiedName);
@@ -184,12 +197,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x["));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x[[]"));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`["));
-            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`]"));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`[ ]"));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x,"));
-            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`x"));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`2[x"));
-            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`2xx"));
         }
 
         /// <summary>
