@@ -3352,9 +3352,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> IgniteCacheProxy<K, V> safeJcache(String name, int id) {
-        assert name != null;
-
-        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(name);
+        IgniteCacheProxy<K, V> cache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
         if (cache == null)
             if (cacheDescriptor(id) != null && CU.isSystemCache(name))
