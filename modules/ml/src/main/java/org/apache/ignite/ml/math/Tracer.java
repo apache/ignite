@@ -58,9 +58,9 @@ public class Tracer {
         return new ColorMapper() {
             /** {@inheritDoc} */
             @Override public Color apply(Double d) {
-                int r = (int) Math.round(255 * d);
+                int r = (int)Math.round(255 * d);
                 int g = 0;
-                int b = (int) Math.round(255 * (1 - d));
+                int b = (int)Math.round(255 * (1 - d));
 
                 return new Color(r, g, b);
             }
@@ -195,8 +195,8 @@ public class Tracer {
     /**
      * Saves given vector as CSV file.
      *
-     * @param vec      Vector to save.
-     * @param fmt      Format to use.
+     * @param vec Vector to save.
+     * @param fmt Format to use.
      * @param filePath Path of the file to save to.
      */
     public static void saveAsCsv(Vector vec, String fmt, String filePath) throws IOException {
@@ -208,8 +208,8 @@ public class Tracer {
     /**
      * Saves given matrix as CSV file.
      *
-     * @param mtx      Matrix to save.
-     * @param fmt      Format to use.
+     * @param mtx Matrix to save.
+     * @param fmt Format to use.
      * @param filePath Path of the file to save to.
      */
     public static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
@@ -232,7 +232,7 @@ public class Tracer {
      * Shows given matrix in the browser with D3-based visualization.
      *
      * @param mtx Matrix to show.
-     * @param cm  Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
      * @throws IOException Thrown in case of any errors.
      */
     public static void showHtml(Matrix mtx, ColorMapper cm) throws IOException {
@@ -263,7 +263,7 @@ public class Tracer {
     }
 
     /**
-     * @param d   Value of {@link Matrix} or {@link Vector} element.
+     * @param d Value of {@link Matrix} or {@link Vector} element.
      * @param clr {@link Color} to paint.
      * @return JSON representation for given value and color.
      */
@@ -280,7 +280,7 @@ public class Tracer {
      * Shows given vector in the browser with D3-based visualization.
      *
      * @param vec Vector to show.
-     * @param cm  Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
      * @throws IOException Thrown in case of any errors.
      */
     public static void showHtml(Vector vec, ColorMapper cm) throws IOException {
@@ -366,7 +366,7 @@ public class Tracer {
      * Gets JavaScript array presentation of this vector.
      *
      * @param vec Vector to JavaScript-ify.
-     * @param cm  Color mapper to user.
+     * @param cm Color mapper to user.
      */
     private static String mkJsArrayString(Vector vec, ColorMapper cm) {
         boolean first = true;
@@ -393,7 +393,7 @@ public class Tracer {
      * Gets JavaScript array presentation of this vector.
      *
      * @param mtx Matrix to JavaScript-ify.
-     * @param cm  Color mapper to user.
+     * @param cm Color mapper to user.
      */
     private static String mkJsArrayString(Matrix mtx, ColorMapper cm) {
         boolean first = true;

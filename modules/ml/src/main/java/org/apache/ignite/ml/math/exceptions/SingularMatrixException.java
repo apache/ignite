@@ -17,14 +17,17 @@
 
 package org.apache.ignite.ml.math.exceptions;
 
-import org.apache.ignite.IgniteException;
-
 /**
  * Exception to be thrown when a non-singular matrix is expected.
  */
-public class SingularMatrixException extends IgniteException {
+public class SingularMatrixException extends MathIllegalArgumentException {
     /** */
     public SingularMatrixException() {
         super("Regular (or non-singular) matrix expected.");
+    }
+
+    /** */
+    public SingularMatrixException(String format, Object... args) {
+        super(format, args);
     }
 }

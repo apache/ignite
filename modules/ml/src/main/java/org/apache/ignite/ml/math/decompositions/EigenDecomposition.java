@@ -17,9 +17,13 @@
 
 package org.apache.ignite.ml.math.decompositions;
 
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.Functions;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
+import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
 
 /**
  * This class provides EigenDecomposition of given matrix. The class is based on
@@ -27,7 +31,7 @@ import org.apache.ignite.ml.math.functions.Functions;
  *
  * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a>
  */
-public class EigenDecomposition extends DecompositionSupport {
+public class EigenDecomposition implements Destroyable {
     /** Row and column dimension (square matrix). */
     private final int n;
 
