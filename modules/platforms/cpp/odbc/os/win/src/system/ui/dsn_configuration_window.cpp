@@ -159,12 +159,6 @@ namespace ignite
                     enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
                         rowSize, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
-                    if (!config.GetProtocolVersion().IsDistributedJoinsSupported())
-                    {
-                        distributedJoinsCheckBox->SetEnabled(false);
-                        enforceJoinOrderCheckBox->SetEnabled(false);
-                    }
-
                     rowPos += interval * 2 + rowSize;
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
@@ -206,31 +200,6 @@ namespace ignite
                                     break;
                                 }
 
-                                case ChildId::PROTOCOL_VERSION_COMBO_BOX:
-                                {
-                                    if (HIWORD(wParam) == CBN_SELCHANGE)
-                                    {
-                                        std::string text;
-
-                                        protocolVersionComboBox->GetText(text);
-
-                                        ProtocolVersion version = ProtocolVersion::FromString(text);
-
-                                        if (!version.IsUnknown() && !version.IsDistributedJoinsSupported())
-                                        {
-                                            distributedJoinsCheckBox->SetEnabled(false);
-                                            enforceJoinOrderCheckBox->SetEnabled(false);
-                                        }
-                                        else
-                                        {
-                                            distributedJoinsCheckBox->SetEnabled(true);
-                                            enforceJoinOrderCheckBox->SetEnabled(true);
-                                        }
-                                    }
-
-                                    break;
-                                }
-
                                 case IDCANCEL:
                                 case ChildId::CANCEL_BUTTON:
                                 {
@@ -253,6 +222,7 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 default:
                                     return false;
                             }

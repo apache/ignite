@@ -276,8 +276,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidVersion)
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidVersion)
 {
-    CheckValidProtocolVersion("Protocol_Version=1.6.0;", ignite::odbc::ProtocolVersion::VERSION_1_6_0);
-    CheckValidProtocolVersion("Protocol_Version=1.8.0;", ignite::odbc::ProtocolVersion::VERSION_1_8_0);
+    CheckValidProtocolVersion("Protocol_Version=2.0.0;", ignite::odbc::ProtocolVersion::VERSION_2_0_0);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
