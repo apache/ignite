@@ -439,13 +439,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!userType)
                 return null;
 
-            if (requiresType)
+            if (requiresType && _ignite != null)
             {
                 // Check marshaller context for dynamically registered type.
-                var type = _ignite == null ? null : _ignite.BinaryProcessor.GetType(typeId);
+                var typeName = _ignite.BinaryProcessor.GetTypeName(typeId);
 
-                if (type != null)
-                    return AddUserType(type, typeId, GetTypeName(type), true, desc);
+                if (typeName != null)
+                {
+                    var type = new TypeResolver().ResolveType(typeName, nameMapper: GetDefaultNameMapper());
+
+                    if (type != null)
+                    {
+                        return AddUserType(type, typeId, GetTypeName(type), true, desc);
+                    }
+                }
             }
 
             var meta = GetBinaryType(typeId);
