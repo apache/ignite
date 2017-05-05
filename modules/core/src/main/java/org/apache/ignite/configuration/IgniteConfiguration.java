@@ -2125,6 +2125,13 @@ public class IgniteConfiguration {
     }
 
     /**
+     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     */
+    public boolean isPersistentEnable() {
+        return pstCfg != null;
+    }
+
+    /**
      * Sets persistence configuration.
      *
      * @param pstCfg Persistence configuration.

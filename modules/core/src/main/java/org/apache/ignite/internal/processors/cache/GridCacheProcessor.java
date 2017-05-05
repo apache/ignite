@@ -2146,7 +2146,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
 
-        if (ctx.config().getPersistenceConfiguration() != null) {
+        if (ctx.config().isPersistentEnable()) {
             ClassLoader clsLdr = U.gridClassLoader();
 
             try {
@@ -2173,9 +2173,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dbMgr = new IgniteCacheDatabaseSharedManager();
 
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
-
-        if (snpMgr == null)
-            snpMgr = new IgniteCacheSnapshotManager();
 
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
