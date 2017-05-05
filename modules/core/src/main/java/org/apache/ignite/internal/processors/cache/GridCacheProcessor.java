@@ -2174,6 +2174,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
+        if (snpMgr == null)
+            snpMgr = new IgniteCacheSnapshotManager();
+
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();

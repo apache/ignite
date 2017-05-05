@@ -417,8 +417,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             readCheckpointAndRestoreMemory();
         }
-
-        snapshotMgr.onKernalStart(reconnect);
     }
 
     /** {@inheritDoc} */
