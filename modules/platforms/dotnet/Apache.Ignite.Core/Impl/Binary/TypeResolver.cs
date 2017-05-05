@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var genArgs = typeName.Generics
                     .Select(x => ResolveType(assemblyName, x, assemblies, nameMapper)).ToArray();
 
-                return type.MakeGenericType(genArgs);
+                type = type.MakeGenericType(genArgs);
             }
 
             return MakeArrayType(type, typeName.GetArray());
