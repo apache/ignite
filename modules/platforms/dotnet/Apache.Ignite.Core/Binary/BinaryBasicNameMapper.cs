@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Binary
 
             var generics = typeName.Generics;
 
-            if (generics != null)
+            if (generics != null && generics.Count > 0)  // Generics are non-null but empty when unbound.
             {
                 sb.Append('[');
 
