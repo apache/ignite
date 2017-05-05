@@ -21,12 +21,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for local and distributed tests
+ * Test suite for local and distributed tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     MathImplLocalTestSuite.class,
-    MathImplDistributedTestSuite.class
+    MathImplDistributedTestSuite.class,
+    TracerTest.class
 })
 public class MathImplMainTestSuite {
     // No-op.

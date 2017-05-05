@@ -100,7 +100,7 @@ int main()
         std::cout << std::endl;
 
         // Get cache instance.
-        Cache<int, Organization> cache = grid.GetCache<int, Organization>(NULL);
+        Cache<int, Organization> cache = grid.GetCache<int, Organization>("atomic");
 
         // Clear cache.
         cache.Clear();
