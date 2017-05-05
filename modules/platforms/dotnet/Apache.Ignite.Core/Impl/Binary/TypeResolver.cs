@@ -89,9 +89,43 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return type.MakeGenericType(genArgs);
             }
 
-            if (typeName.ArrayStart >= 0)
+            return MakeArrayType(type, typeName.GetArray());
+        }
+
+        /// <summary>
+        /// Makes the array type according to spec, e.g. "[,][]".
+        /// </summary>
+        private static Type MakeArrayType(Type type, string arraySpec)
+        {
+            if (arraySpec == null)
             {
-                // TODO: Make array!
+                return type;
+            }
+
+            int? rank = null;
+
+            foreach (var c in arraySpec)
+            {
+                switch (c)
+                {
+                    case '[':
+                        rank = null;
+                        break;
+
+                    case ',':
+                        rank = rank == null ? 2 : rank + 1;
+                        break;
+
+                    case '*':
+                        rank = 1;
+                        break;
+
+                    case ']':
+                        type = rank == null
+                            ? type.MakeArrayType()
+                            : type.MakeArrayType(rank.Value);
+                        break;
+                }
             }
 
             return type;
