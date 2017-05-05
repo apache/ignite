@@ -419,9 +419,6 @@ public class FilePageStore implements PageStore {
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
-
-            int len = pageSize;
-
             assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
             int crc32 = skipCrc ? 0 : PureJavaCrc32.calcCrc32(pageBuf, pageSize);
@@ -429,6 +426,8 @@ public class FilePageStore implements PageStore {
             PageIO.setCrc(pageBuf, crc32);
 
             pageBuf.position(0);
+
+            int len = pageSize;
 
             do {
                 int n = ch.write(pageBuf, off);
@@ -509,12 +508,5 @@ public class FilePageStore implements PageStore {
             return 0;
 
         return (int)(allocated.get() / pageSize);
-    }
-
-    /**
-     * Visible for testing
-     */
-    FileChannel getCh() {
-        return ch;
     }
 }

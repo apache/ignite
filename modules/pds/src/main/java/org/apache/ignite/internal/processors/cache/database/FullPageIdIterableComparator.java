@@ -29,7 +29,7 @@ public class FullPageIdIterableComparator implements Comparator<T2<Integer, Inte
     private static final long serialVersionUID = 0L;
 
     /** */
-    static final FullPageIdIterableComparator INSTANCE = new FullPageIdIterableComparator();
+    public static final FullPageIdIterableComparator INSTANCE = new FullPageIdIterableComparator();
 
     /** {@inheritDoc} */
     @Override public int compare(T2<Integer, Integer> o1, T2<Integer, Integer> o2) {

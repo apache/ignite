@@ -1,9 +1,7 @@
-package org.apache.ignite.cache.database;
+package org.apache.ignite.cache.database.db;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -11,13 +9,13 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistenceConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -28,41 +26,39 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTest {
-    /** */
+public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
+    /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private File allocPath;
-
-    /** */
-    private static final int GRID_CNT = 3;
+    /** Test entry count. */
+    public static final int ENTRY_CNT = 1_000_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        MemoryConfiguration dbCfg = new MemoryConfiguration();
+
+        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+        dbCfg.setPageSize(1024);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(100 * 1024 * 1024);
+        memPlcCfg.setSize(50 * 1024 * 1024);
 
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-        memCfg.setMemoryPolicies(memPlcCfg);
+        dbCfg.setMemoryPolicies(memPlcCfg);
+        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setMemoryConfiguration(dbCfg);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        ccfg.setIndexedTypes(Integer.class, DbValue.class);
-
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        CacheConfiguration<DbKey, DbValue> ccfg = new CacheConfiguration<>();
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+        ccfg.setIndexedTypes(DbKey.class, DbValue.class);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -73,14 +69,7 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-
         cfg.setMarshaller(null);
-
-        BinaryConfiguration bCfg = new BinaryConfiguration();
-
-        bCfg.setCompactFooter(false);
-
-        cfg.setBinaryConfiguration(bCfg);
 
         return cfg;
     }
@@ -89,12 +78,16 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
 
-        super.beforeTest();
+        assertNull(System.getProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE));
+
+        stopAllGrids();
+
+        startGrids(1);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
+        stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
@@ -102,68 +95,70 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception if failed.
      */
-    public void testPutGetSimple() throws Exception {
-        String home = U.getIgniteHome();
+    public void testPageEvictionSql() throws Exception {
+        IgniteEx ig = grid(0);
 
-        allocPath = new File(home, "work/db/" + UUID.randomUUID());
+        try (IgniteDataStreamer<DbKey, DbValue> streamer = ig.dataStreamer(null)) {
+            for (int i = 0; i < ENTRY_CNT; i++) {
+                streamer.addData(new DbKey(i), new DbValue(i, "value-" + i, Long.MAX_VALUE - i));
 
-        allocPath.mkdirs();
-
-        info(">>> Will use path: " + allocPath);
-
-        startGrids(GRID_CNT);
-
-        try {
-            IgniteEx ig = grid(0);
-
-            checkPutGetSql(ig, true);
-        }
-        finally {
-            stopAllGrids();
-        }
-
-        info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-        info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-        info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-
-        startGrids(GRID_CNT);
-
-        try {
-            IgniteEx ig = grid(0);
-
-            checkPutGetSql(ig, false);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    private void checkPutGetSql(IgniteEx ig, boolean write) {
-        IgniteCache<Integer, DbValue> cache = ig.cache(null);
-
-        if (write) {
-            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(null)) {
-                for (int i = 0; i < 10_000; i++)
-                    streamer.addData(i, new DbValue(i, "value-" + i, i));
+                if (i > 0 && i % 10_000 == 0)
+                    info("Done put: " + i);
             }
         }
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("select ival from dbvalue where ival < ? order by ival asc")
-                .setArgs(10_000)).getAll();
+        IgniteCache<DbKey, DbValue> cache = ignite(0).cache(null);
 
-        assertEquals(10_000, res.size());
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            assertEquals(Long.MAX_VALUE - i, cache.get(new DbKey(i)).lVal);
 
-        for (int i = 0; i < 10_000; i++) {
-            assertEquals(1, res.get(i).size());
-            assertEquals(i, res.get(i).get(0));
+            if (i > 0 && i % 10_000 == 0)
+                info("Done get: " + i);
         }
 
-        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
-        assertEquals(5000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 10000"))
-                .getAll().size());
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            List<List<?>> rows = cache.query(new SqlFieldsQuery("select lVal from DbValue where iVal=?").setArgs(i))
+                .getAll();
 
-        for (int i = 0; i < 10_000; i++)
-            assertEquals(new DbValue(i, "value-" + i, i), cache.get(i));
+            assertEquals(1, rows.size());
+            assertEquals(Long.MAX_VALUE - i, rows.get(0).get(0));
+
+            if (i > 0 && i % 10_000 == 0)
+                info("Done SQL query: " + i);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class DbKey implements Serializable {
+        /** */
+        private int val;
+
+        /**
+         * @param val Value.
+         */
+        private DbKey(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || !(o instanceof DbKey))
+                return false;
+
+            DbKey key = (DbKey)o;
+
+            return val == key.val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
     }
 
     /**
@@ -187,7 +182,7 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
          * @param sVal String value.
          * @param lVal Long value.
          */
-        public DbValue(int iVal, String sVal, long lVal) {
+        private DbValue(int iVal, String sVal, long lVal) {
             this.iVal = iVal;
             this.sVal = sVal;
             this.lVal = lVal;
@@ -201,10 +196,10 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            DbValue dbValue = (DbValue)o;
+            DbValue dbVal = (DbValue)o;
 
-            return iVal == dbValue.iVal && lVal == dbValue.lVal &&
-                !(sVal != null ? !sVal.equals(dbValue.sVal) : dbValue.sVal != null);
+            return iVal == dbVal.iVal && lVal == dbVal.lVal &&
+                !(sVal != null ? !sVal.equals(dbVal.sVal) : dbVal.sVal != null);
         }
 
         /** {@inheritDoc} */
