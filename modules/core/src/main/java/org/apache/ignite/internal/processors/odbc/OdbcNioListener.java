@@ -19,6 +19,11 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -27,12 +32,20 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * ODBC message listener.
  */
 public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
+    /** Current version. */
+    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
+
+    /** Supported versions. */
+    private static final Set<SqlListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
+
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -50,6 +63,10 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    static {
+        SUPPORTED_VERS.add(CURRENT_VER);
+    }
 
     /**
      * Constructor.
@@ -70,11 +87,6 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
             log.debug("SQL client connected: " + ses.remoteAddress());
-
-        OdbcRequestHandler handler = new OdbcRequestHandler(ctx, busyLock, maxCursors);
-        OdbcMessageParser parser = new OdbcMessageParser(ctx);
-
-        ses.addMeta(CONN_CTX_META_KEY, new SqlListenerConnectionContext(handler, parser));
     }
 
     /** {@inheritDoc} */
@@ -91,11 +103,15 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     @Override public void onMessage(GridNioSession ses, byte[] msg) {
         assert msg != null;
 
-        SqlListenerConnectionContext connData = ses.meta(CONN_CTX_META_KEY);
+        SqlListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-        assert connData != null;
+        if (connCtx == null) {
+            onHandshake(ses, msg);
 
-        SqlListenerMessageParser parser = connData.parser();
+            return;
+        }
+
+        SqlListenerMessageParser parser = connCtx.parser();
 
         SqlListenerRequest req;
 
@@ -124,7 +140,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                     ", req=" + req + ']');
             }
 
-            SqlListenerRequestHandler handler = connData.handler();
+            SqlListenerRequestHandler handler = connCtx.handler();
 
             SqlListenerResponse resp = handler.handle(req);
 
@@ -144,5 +160,83 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
             ses.send(parser.encode(new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString())));
         }
+    }
+
+    /**
+     * Perform handshake.
+     *
+     * @param ses Session.
+     * @param msg Message bytes.
+     */
+    private void onHandshake(GridNioSession ses, byte[] msg) {
+        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
+
+        byte cmd = reader.readByte();
+
+        if (cmd != SqlListenerRequest.HANDSHAKE) {
+            log.error("Unexpected SQL client request (will close session): " + ses.remoteAddress());
+
+            ses.close();
+
+            return;
+        }
+
+        short verMajor = reader.readShort();
+        short verMinor = reader.readShort();
+        short verMaintenance = reader.readShort();
+
+        SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
+
+        String errMsg = null;
+
+        if (SUPPORTED_VERS.contains(ver)) {
+            // Prepare context.
+            SqlListenerConnectionContext connCtx = prepareContext(ver, reader);
+
+            ses.addMeta(CONN_CTX_META_KEY, connCtx);
+        }
+        else {
+            log.warning("Unsupported version: " + ver.toString());
+
+            errMsg = "Unsupported version.";
+        }
+
+        // Send response.
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
+
+        if (errMsg == null) {
+            writer.writeBoolean(true);
+        }
+        else {
+            writer.writeBoolean(false);
+            writer.writeShort(CURRENT_VER.major());
+            writer.writeShort(CURRENT_VER.minor());
+            writer.writeShort(CURRENT_VER.maintenance());
+            writer.doWriteString(errMsg);
+        }
+
+        ses.send(writer.array());
+    }
+
+    /**
+     * Prepare context.
+     *
+     * @param ver Version.
+     * @param reader Reader.
+     * @return Context.
+     */
+    private SqlListenerConnectionContext prepareContext(SqlListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+        // TODO: Switch between ODBC and JDBC.
+        boolean distributedJoins = reader.readBoolean();
+        boolean enforceJoinOrder = reader.readBoolean();
+
+        OdbcRequestHandler handler =
+            new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
+
+        OdbcMessageParser parser = new OdbcMessageParser(ctx);
+
+        return new SqlListenerConnectionContext(handler, parser);
     }
 }

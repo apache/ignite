@@ -17,75 +17,100 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
+
 /**
  * SQL listener protocol version.
  */
-public enum SqlListenerProtocolVersion {
-    /** Version 2.0.0. */
-    VER_2_0_0(makeVersion(2, 0, 0), "2.0.0"),
+public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtocolVersion> {
+    /** Major part. */
+    private final short major;
 
-    /** ODBC/JDBC version of the protocol. Released with Ignite 2.1 */
-    VERSION_2_1_0(makeVersion(2,1,0), "2.1.0"),
+    /** Minor part. */
+    private final short minor;
 
-    /** Unknown version. */
-    UNKNOWN(Long.MIN_VALUE, "UNKNOWN");
+    /** Maintenance part. */
+    private final short maintenance;
 
-    /** Mask to get 2 lowest bytes of the value and cast to long. */
-    private static final long LONG_MASK = 0x000000000000FFFFL;
-
-    /** Long value for version. */
-    private final long longVal;
-
-    /** Since string. */
-    private final String since;
+    /**
+     * Create version.
+     *
+     * @param major Major part.
+     * @param minor Minor part.
+     * @param maintenance Maintenance part.
+     * @return Version.
+     */
+    public static SqlListenerProtocolVersion create(int major, int minor, int maintenance) {
+        return new SqlListenerProtocolVersion((short)major, (short)minor, (short)maintenance);
+    }
 
     /**
      * Constructor.
      *
-     * @param longVal Long value.
-     * @param since Since string.
+     * @param major Major part.
+     * @param minor Minor part.
+     * @param maintenance Maintenance part.
      */
-    SqlListenerProtocolVersion(long longVal, String since) {
-        this.longVal = longVal;
-        this.since = since;
+    private SqlListenerProtocolVersion(short major, short minor, short maintenance) {
+        this.major = major;
+        this.minor = minor;
+        this.maintenance = maintenance;
     }
 
     /**
-     * Make long value for the version.
-     *
-     * @param major Major version.
-     * @param minor Minor version.
-     * @param maintenance Maintenance version.
-     * @return Long value for the version.
+     * @return Major part.
      */
-    private static long makeVersion(int major, int minor, int maintenance) {
-        return ((major & LONG_MASK) << 48) | ((minor & LONG_MASK) << 32) | ((maintenance & LONG_MASK) << 16);
+    public short major() {
+        return major;
     }
 
     /**
-     * @param longVal Long value.
-     * @return Protocol version.
+     * @return Minor part.
      */
-    public static SqlListenerProtocolVersion fromLong(long longVal) {
-        for (SqlListenerProtocolVersion ver : SqlListenerProtocolVersion.values()) {
-            if (ver.longValue() == longVal)
-                return ver;
+    public short minor() {
+        return minor;
+    }
+
+    /**
+     * @return Maintenance part.
+     */
+    public short maintenance() {
+        return maintenance;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull SqlListenerProtocolVersion other) {
+        int res = major - other.major;
+
+        if (res == 0)
+            res = minor - other.minor;
+
+        if (res == 0)
+            res = maintenance - other.maintenance;
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return 31 * (31 * major + minor) + maintenance;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (obj != null && obj instanceof SqlListenerProtocolVersion) {
+            SqlListenerProtocolVersion other = (SqlListenerProtocolVersion)obj;
+
+            return F.eq(major, other.major) && F.eq(minor, other.minor) && F.eq(maintenance, other.maintenance);
         }
 
-        return UNKNOWN;
+        return false;
     }
 
-    /**
-     * @return Long value.
-     */
-    public long longValue() {
-        return longVal;
-    }
-
-    /**
-     * @return Ignite version when introduced.
-     */
-    public String since() {
-        return since;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SqlListenerProtocolVersion.class, this);
     }
 }

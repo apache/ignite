@@ -138,14 +138,14 @@ namespace ignite
 
                     int id = 0;
 
-                    const ProtocolVersion::StringToVersionMap& versionMap = ProtocolVersion::GetMap();
+                    const ProtocolVersion::VersionSet& supported = ProtocolVersion::GetSupported();
 
-                    ProtocolVersion::StringToVersionMap::const_iterator it;
-                    for (it = versionMap.begin(); it != versionMap.end(); ++it)
+                    ProtocolVersion::VersionSet::const_iterator it;
+                    for (it = supported.begin(); it != supported.end(); ++it)
                     {
-                        protocolVersionComboBox->AddString(it->first);
+                        protocolVersionComboBox->AddString(it->ToString());
 
-                        if (it->second == config.GetProtocolVersion())
+                        if (*it == config.GetProtocolVersion())
                             protocolVersionComboBox->SetSelection(id);
 
                         ++id;
