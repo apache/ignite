@@ -411,7 +411,7 @@ public class BinaryClassDescriptor {
      * @return {@code True} if enum.
      */
     boolean isEnum() {
-        return mode == BinaryWriteMode.ENUM || mode == BinaryWriteMode.BINARY_ENUM;
+        return mode == BinaryWriteMode.ENUM;
     }
 
     /**

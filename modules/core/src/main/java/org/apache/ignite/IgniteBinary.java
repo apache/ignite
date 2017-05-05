@@ -381,7 +381,7 @@ public interface IgniteBinary {
      * @param ord Ordinal.
      * @return Enum object.
      */
-    public BinaryObject buildEnum(String typeName, int ord);
+    public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException;
 
     /**
      * Create enum object using name.
@@ -390,7 +390,7 @@ public interface IgniteBinary {
      * @param name Name.
      * @return Enum object.
      */
-    public BinaryObject buildEnum(String typeName, String name);
+    public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException;
 
     /**
      * Register enum type.
@@ -399,5 +399,5 @@ public interface IgniteBinary {
      * @param vals Mapping of enum constant names to ordinals.
      * @return Binary type for registered enum.
      */
-    public BinaryType registerEnum(String typeName, Map<String, Integer> vals);
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException;
 }

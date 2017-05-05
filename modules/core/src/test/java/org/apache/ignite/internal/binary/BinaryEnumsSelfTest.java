@@ -84,8 +84,13 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             BinaryConfiguration bCfg = new BinaryConfiguration();
 
             BinaryTypeConfiguration enumCfg = new BinaryTypeConfiguration(EnumType.class.getName());
+
             enumCfg.setEnum(true);
-            enumCfg.setEnumValues(EnumType.ONE.name(), EnumType.TWO.name());
+
+            enumCfg.setEnumValues(F.asMap(EnumType.ONE.name(),
+                    EnumType.ONE.ordinal(),
+                    EnumType.TWO.name(),
+                    EnumType.TWO.ordinal()));
 
             bCfg.setTypeConfigurations(Arrays.asList(enumCfg, new BinaryTypeConfiguration(EnumHolder.class.getName())));
 

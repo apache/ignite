@@ -561,31 +561,39 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
+    @Override public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException {
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);
+
+        updateMetadata(typeId, typeName, null, null, true, null);
 
         return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject buildEnum(String typeName, String name) throws IgniteException {
+    @Override public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException {
         int typeId = binaryCtx.typeId(typeName);
+
+        BinaryMetadata metadata = metadata0(typeId);
+
+        if (metadata == null)
+            throw new BinaryObjectException("Failed to get metadata for type [typeId=" +
+                    typeId + ", typeName='" + typeName + "']");
+
+        Integer ordinal = metadata.getEnumOrdinalByName(name);
 
         typeName = binaryCtx.userTypeName(typeName);
 
-        Integer ordinal = metadata0(typeId).getEnumOrdinalByName(name);
-
         if (ordinal == null)
-            throw new IgniteException("Failed to resolve enum ordinal by name [typeId=" +
+            throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
 
         return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ordinal);
     }
 
     /** {@inheritDoc} */
-    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws IgniteException {
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException {
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);
