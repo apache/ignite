@@ -47,6 +47,8 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
                 return;
             }
 
+            warnFirstEvict();
+
             boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false);
 
             if (evicted)

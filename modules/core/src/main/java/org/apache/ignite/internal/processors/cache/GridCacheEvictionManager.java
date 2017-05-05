@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -53,9 +52,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** Stopped flag. */
     private boolean stopped;
-
-    /** First eviction flag. */
-    private volatile boolean firstEvictWarn;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -213,23 +209,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         }
     }
 
-    /**
-     * Warns on first eviction.
-     */
-    private void warnFirstEvict() {
-        // Do not move warning output to synchronized block (it causes warning in IDE).
-        synchronized (this) {
-            if (firstEvictWarn)
-                return;
-
-            firstEvictWarn = true;
-        }
-
-        U.warn(log, "Evictions started (cache may have reached its capacity)." +
-                " You may wish to increase 'maxSize' on eviction policy being used for cache: " + cctx.name(),
-            "Evictions started (cache may have reached its capacity): " + cctx.name());
-    }
-
     /** {@inheritDoc} */
     @Override public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
         boolean explicit, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
@@ -240,7 +219,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (entry.key() instanceof GridCacheInternal)
             return false;
 
-        if (!cctx.isNear() && !explicit && !firstEvictWarn)
+        if (!cctx.isNear() && !explicit)
             warnFirstEvict();
 
         if (obsoleteVer == null)
