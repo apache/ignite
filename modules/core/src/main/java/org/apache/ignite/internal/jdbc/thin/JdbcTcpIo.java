@@ -42,7 +42,7 @@ public class JdbcTcpIo {
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity. */
-    private static final int HANDSHEKE_MSG_SIZE = 10;
+    private static final int HANDSHAKE_MSG_SIZE = 10;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -59,9 +59,6 @@ public class JdbcTcpIo {
     /** Input stream. */
     private BufferedInputStream in;
 
-    /** Stopping flag. */
-    private volatile boolean stopping;
-
     /** Distributed joins. */
     private boolean distributedJoins;
 
@@ -70,9 +67,11 @@ public class JdbcTcpIo {
 
     /**
      * @param endpointAddr Endpoint.
+     * @param distributedJoins Distributed joins flag.
+     * @param enforceJoinOrder Enforce join order flag.
      * @param log Logger to use.
      */
-    public JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
+    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;
@@ -100,10 +99,8 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        // Send response.
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHEKE_MSG_SIZE), null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE), null, null);
 
-        // Set offset to data array
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
         writer.writeShort(CURRENT_VER.major());
@@ -127,6 +124,7 @@ public class JdbcTcpIo {
         short maj = reader.readShort();
         short min = reader.readShort();
         short maintenance = reader.readShort();
+
         String err = reader.readString();
 
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
@@ -141,6 +139,7 @@ public class JdbcTcpIo {
      */
     private void send(byte[] req) throws IOException {
         int size = req.length;
+
         out.write(size & 0xFF);
         out.write((size >> 8) & 0xFF);
         out.write((size >> 16) & 0xFF);
@@ -171,21 +170,9 @@ public class JdbcTcpIo {
     }
 
     /**
-     *
+     * Close the client IO.
      */
     public void close() {
-        close0();
-    }
-
-    /**
-     * Closes client but does not wait.
-     */
-    private void close0() {
-        if (stopping)
-            return;
-
-        stopping = true;
-
         // Clean up resources.
         U.closeQuiet(out);
         U.closeQuiet(in);
@@ -193,4 +180,5 @@ public class JdbcTcpIo {
         if (endpoint != null)
             endpoint.close();
     }
+
 }
