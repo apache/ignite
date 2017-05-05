@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     bracket = false;
                 }
-                else if (Char == ',')
+                else if (Char == ',' || Char == '*')
                 {
                     if (!bracket)
                     {

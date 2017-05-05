@@ -141,6 +141,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             var resolver = new TypeResolver();
 
             Assert.AreEqual(typeof(int[]), resolver.ResolveType("System.Int32[]"));
+            Assert.AreEqual(typeof(int[][]), resolver.ResolveType("System.Int32[][]"));
+            Assert.AreEqual(typeof(int[,,][,]), resolver.ResolveType("System.Int32[,][,,]"));
+
+            Assert.AreEqual(typeof(int).MakeArrayType(1), resolver.ResolveType("System.Int32[*]"));
             
             Assert.AreEqual(typeof(TestGenericBinarizable<TypeResolverTest>[]), 
                 resolver.ResolveType("Apache.Ignite.Core.Tests.TestGenericBinarizable`1" +
@@ -157,7 +161,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             var mapper = BinaryBasicNameMapper.SimpleNameInstance;
 
             Assert.AreEqual(typeof(int[]), resolver.ResolveType("Int32[]", nameMapper: mapper));
-            
+            Assert.AreEqual(typeof(int[][]), resolver.ResolveType("Int32[][]", nameMapper: mapper));
+            Assert.AreEqual(typeof(int[,,][,]), resolver.ResolveType("Int32[,][,,]", nameMapper: mapper));
+
+            Assert.AreEqual(typeof(int).MakeArrayType(1), resolver.ResolveType("Int32[*]", nameMapper: mapper));
+
             Assert.AreEqual(typeof(TestGenericBinarizable<TypeResolverTest>[]),
                 resolver.ResolveType("TestGenericBinarizable`1[[TypeResolverTest]][]", nameMapper: mapper));
         }
