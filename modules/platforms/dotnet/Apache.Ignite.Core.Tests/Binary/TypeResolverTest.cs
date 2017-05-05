@@ -103,6 +103,27 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(typeof(TestGenericBinarizable<int>), 
                 resolver.ResolveType("TestGenericBinarizable`1[[Int32]]", nameMapper: mapper));
+
+            var testTypes = new[]
+            {
+                typeof (TestGenericBinarizable<int>),
+                typeof (TestGenericBinarizable<string>),
+                typeof (TestGenericBinarizable<TestGenericBinarizable<int>>),
+                typeof (TestGenericBinarizable<List<Tuple<int, string>>>),
+                typeof (TestGenericBinarizable<List<TestGenericBinarizable<List<Tuple<int, string>>>>>),
+                typeof (List<TestGenericBinarizable<List<TestGenericBinarizable<List<Tuple<int, string>>>>>>),
+                typeof (TestGenericBinarizable<int, string>),
+                typeof (TestGenericBinarizable<int, TestGenericBinarizable<string>>),
+                typeof (TestGenericBinarizable<int, string, Type>),
+                typeof (TestGenericBinarizable<int, string, TestGenericBinarizable<int, string, Type>>)
+            };
+
+            foreach (var type in testTypes)
+            {
+                var typeName = mapper.GetTypeName(type.AssemblyQualifiedName);
+                var resolvedType = resolver.ResolveType(typeName, nameMapper: mapper);
+                Assert.AreEqual(type, resolvedType);
+            }
         }
 
         /// <summary>
