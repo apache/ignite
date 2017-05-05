@@ -35,18 +35,18 @@ namespace ignite
         const ProtocolVersion::VersionSet ProtocolVersion::supported(supportedArray,
             supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
-        ProtocolVersion::ProtocolVersion(int16_t major, int16_t minor, int16_t maintenance) :
-            major(major),
-            minor(minor),
-            maintenance(maintenance)
+        ProtocolVersion::ProtocolVersion(int16_t vmajor, int16_t vminor, int16_t vmaintenance) :
+            vmajor(vmajor),
+            vminor(vminor),
+            vmaintenance(vmaintenance)
         {
             // No-op.
         }
 
         ProtocolVersion::ProtocolVersion() :
-            major(0),
-            minor(0),
-            maintenance(0)
+            vmajor(0),
+            vminor(0),
+            vmaintenance(0)
         {
             // No-op.
         }
@@ -74,7 +74,7 @@ namespace ignite
 
             std::stringstream buf(version);
 
-            buf >> res.major;
+            buf >> res.vmajor;
 
             if (!buf.good())
                 ThrowParseError();
@@ -82,7 +82,7 @@ namespace ignite
             if (buf.get() != '.' || !buf.good())
                 ThrowParseError();
 
-            buf >> res.minor;
+            buf >> res.vminor;
 
             if (!buf.good())
                 ThrowParseError();
@@ -90,7 +90,7 @@ namespace ignite
             if (buf.get() != '.' || !buf.good())
                 ThrowParseError();
 
-            buf >> res.maintenance;
+            buf >> res.vmaintenance;
 
             if (buf.bad())
                 ThrowParseError();
@@ -101,24 +101,24 @@ namespace ignite
         std::string ProtocolVersion::ToString() const
         {
             std::stringstream buf;
-            buf << major << '.' << minor << '.' << maintenance;
+            buf << vmajor << '.' << vminor << '.' << vmaintenance;
 
             return buf.str();
         }
 
         int16_t ProtocolVersion::GetMajor() const
         {
-            return major;
+            return vmajor;
         }
 
         int16_t ProtocolVersion::GetMinor() const
         {
-            return minor;
+            return vminor;
         }
 
         int16_t ProtocolVersion::GetMaintenance() const
         {
-            return maintenance;
+            return vmaintenance;
         }
 
         bool ProtocolVersion::IsSupported() const
@@ -128,13 +128,13 @@ namespace ignite
 
         int32_t ProtocolVersion::Compare(const ProtocolVersion& other) const
         {
-            int32_t res = major - other.major;
+            int32_t res = vmajor - other.vmajor;
 
             if (res == 0)
-                res = minor - other.minor;
+                res = vminor - other.vminor;
 
             if (res == 0)
-                res = maintenance - other.maintenance;
+                res = vmaintenance - other.vmaintenance;
 
             return res;
         }

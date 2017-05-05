@@ -74,11 +74,11 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param major Major version part.
-             * @param minor Minor version part.
-             * @param maintenance Maintenance version part.
+             * @param vmajor Major version part.
+             * @param vminor Minor version part.
+             * @param vmaintenance Maintenance version part.
              */
-            ProtocolVersion(int16_t major, int16_t minor, int16_t maintenance);
+            ProtocolVersion(int16_t vmajor, int16_t vminor, int16_t vmaintenance);
 
             /**
              * Get major part.
@@ -175,13 +175,13 @@ namespace ignite
             const static VersionSet supported;
 
             /** Major part. */
-            int16_t major;
+            int16_t vmajor;
 
             /** Minor part. */
-            int16_t minor;
+            int16_t vminor;
 
             /** Maintenance part. */
-            int16_t maintenance;
+            int16_t vmaintenance;
         };
     }
 }
