@@ -585,19 +585,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @param initiatorNodeId Snapshot message.
-     * @param snapshotOperation Snapshot operation.
-     * @return Snapshot creation init future or {@code null} if snapshot is not available.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
-        UUID initiatorNodeId,
-        SnapshotOperation snapshotOperation
-    ) throws IgniteCheckedException {
-        return snapshotMgr.startLocalSnapshotOperation(initiatorNodeId, snapshotOperation);
-    }
-
-    /**
      * @param pageMem Page memory.
      */
     private void markDirty(int cacheId, long pageId, PageMemory pageMem) {
@@ -605,7 +592,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (PageIdUtils.pageIndex(pageId) == 0)
             return;
 
-        long lastSuccessfulSnapshotTag = snapshotMgr.getLastSuccessfulSnapshotTagForCache(cacheId, (PageMemoryEx) pageMem);
+        long lastSuccessfulSnapshotTag = snapshotMgr.getLastSuccessfulSnapshotTagForCache(cacheId, pageMem);
 
         if (lastSuccessfulSnapshotTag < 0) //there is no full snapshot
             return;
