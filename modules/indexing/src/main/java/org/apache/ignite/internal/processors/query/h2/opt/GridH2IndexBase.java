@@ -482,11 +482,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 if (msg.bounds() != null) {
                     // This is the first request containing all the search rows.
-                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>[] snapshot0 = qctx.getSnapshot(idxId);
+                    Object[] snapshotObj = qctx.getSnapshot(idxId);
+
+                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = snapshotObj == null ? null :
+                        (ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>)snapshotObj[msg.segment()];
+
+                    if(snapshot0 != null)
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), snapshot0[msg.segment()], qctx.filter());
+                    src = new RangeSource(msg.bounds(), msg.segment(), snapshot0, qctx.filter());
                 }
                 else {
                     // This is request to fetch next portion of data.
