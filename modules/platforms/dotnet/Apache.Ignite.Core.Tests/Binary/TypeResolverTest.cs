@@ -41,6 +41,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(typeof(int), resolver.ResolveType("System.Int32"));
             Assert.AreEqual(GetType(), resolver.ResolveType(GetType().FullName));
+
+            Assert.IsNull(resolver.ResolveType("invalidType"));
         }
 
         /// <summary>
@@ -54,6 +56,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(typeof(int), resolver.ResolveType("Int32", nameMapper: mapper));
             Assert.AreEqual(GetType(), resolver.ResolveType("TypeResolverTest", nameMapper: mapper));
+
+            Assert.IsNull(resolver.ResolveType("invalidType", nameMapper: mapper));
         }
 
         /// <summary>
@@ -104,6 +108,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(typeof(TestGenericBinarizable<int>), 
                 resolver.ResolveType("TestGenericBinarizable`1[[Int32]]", nameMapper: mapper));
 
+            Assert.IsNull(resolver.ResolveType("TestGenericBinarizable`1[[Invalid-Type]]", nameMapper: mapper));
+
             var testTypes = new[]
             {
                 typeof (TestGenericBinarizable<int>),
@@ -135,9 +141,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             var resolver = new TypeResolver();
 
             Assert.AreEqual(typeof(int[]), resolver.ResolveType("System.Int32[]"));
+            
             Assert.AreEqual(typeof(TestGenericBinarizable<TypeResolverTest>[]), 
                 resolver.ResolveType("Apache.Ignite.Core.Tests.TestGenericBinarizable`1" +
-                                     "[[Apache.Ignite.Core.Tests.TypeResolverTest]][]"));
+                                     "[[Apache.Ignite.Core.Tests.Binary.TypeResolverTest]][]"));
         }
 
         /// <summary>
@@ -150,6 +157,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var mapper = BinaryBasicNameMapper.SimpleNameInstance;
 
             Assert.AreEqual(typeof(int[]), resolver.ResolveType("Int32[]", nameMapper: mapper));
+            
             Assert.AreEqual(typeof(TestGenericBinarizable<TypeResolverTest>[]),
                 resolver.ResolveType("TestGenericBinarizable`1[[TypeResolverTest]][]", nameMapper: mapper));
         }
