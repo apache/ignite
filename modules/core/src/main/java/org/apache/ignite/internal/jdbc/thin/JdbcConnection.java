@@ -44,6 +44,8 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_CACHE;
+import static org.apache.ignite.IgniteJdbcThinDriver.PROP_DISTRIBUTED_JOINS;
+import static org.apache.ignite.IgniteJdbcThinDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_HOST;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
 
@@ -86,7 +88,11 @@ public class JdbcConnection implements Connection {
         cacheName = props.getProperty(PROP_CACHE);
 
         try {
-            cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT), LOG);
+            boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
+            boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "true"));
+
+            cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
+                distributedJoins, enforceJoinOrder, LOG);
 
             cliIo.start();
         }

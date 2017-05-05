@@ -62,14 +62,22 @@ public class JdbcTcpIo {
     /** Stopping flag. */
     private volatile boolean stopping;
 
+    /** Distributed joins. */
+    private boolean distributedJoins;
+
+    /** Enforce join order. */
+    private boolean enforceJoinOrder;
+
     /**
      * @param endpointAddr Endpoint.
      * @param log Logger to use.
      */
-    public JdbcTcpIo(String endpointAddr, IgniteLogger log) {
+    public JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;
+        this.distributedJoins = distributedJoins;
+        this.enforceJoinOrder= enforceJoinOrder;
         this.log = log;
     }
 
@@ -93,8 +101,7 @@ public class JdbcTcpIo {
      */
     public void handshake() throws IOException, IgniteCheckedException {
         // Send response.
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHEKE_MSG_SIZE),
-            null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHEKE_MSG_SIZE), null, null);
 
         // Set offset to data array
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
@@ -105,8 +112,8 @@ public class JdbcTcpIo {
 
         writer.writeByte(OdbcNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(true);
-        writer.writeBoolean(true);
+        writer.writeBoolean(distributedJoins);
+        writer.writeBoolean(enforceJoinOrder);
 
         send(writer.array());
 

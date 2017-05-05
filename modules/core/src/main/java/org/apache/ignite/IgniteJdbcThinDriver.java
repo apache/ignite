@@ -227,8 +227,8 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
-    /** Transactions allowed parameter name. */
-    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
+    /** Enforce join order parameter name. */
+    private static final String ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
@@ -243,7 +243,7 @@ public class IgniteJdbcThinDriver implements Driver {
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** Transactions allowed property name. */
-    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
+    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + ENFORCE_JOIN_ORDER;
 
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin//";
@@ -295,7 +295,7 @@ public class IgniteJdbcThinDriver implements Driver {
             new PropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
             new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
             new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new PropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
+            new PropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
         );
 
         props.addAll(Arrays.<DriverPropertyInfo>asList(
