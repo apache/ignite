@@ -186,12 +186,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         final ConcurrentNavigableMap[] snapshot = threadLocalSnapshot();
 
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = snapshot[seg];
-
-        if (res == null)
+        if (snapshot == null)
             return segments[seg];
 
-        return res;
+        return snapshot[seg];
     }
 
     /** {@inheritDoc} */
