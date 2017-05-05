@@ -227,7 +227,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                         else if (cls == java.sql.Date.class)
                             writer.writeDate((java.util.Date)obj);
                         else
-                            writer.writeObjectDetached(obj);
+                            writeUserObject(writer, obj);
                     }
                 }
             }
@@ -269,11 +269,19 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
             byte[] typeIds = res.typeIds();
 
-            writer.writeObjectDetached(typeIds);
+            writeUserObject(writer, typeIds);
         }
         else
             assert false : "Should not reach here.";
 
         return writer.array();
+    }
+
+    /**
+     * @param writer Binary writer.
+     * @param obj Object to write.
+     */
+    protected void writeUserObject(BinaryWriterExImpl writer, Object obj) {
+        writer.writeObjectDetached(obj);
     }
 }

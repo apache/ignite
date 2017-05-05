@@ -22,25 +22,27 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeResult;
+import org.apache.ignite.internal.processors.odbc.OdbcNioListener;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion.VERSION_2_1_0;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
  */
 public class JdbcTcpIo {
+    /** Current version. */
+    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
+
     /** Initial output stream capacity. */
-    private static final int INIT_CAP = 1024;
+    private static final int HANDSHEKE_MSG_SIZE = 10;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -90,95 +92,64 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        sendRequest(new SqlListenerHandshakeRequest(VERSION_2_1_0.longValue()));
+        // Send response.
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHEKE_MSG_SIZE),
+            null, null);
 
-        SqlListenerResponse res = readResponse(ResponseType.HANDSHAKE);
+        // Set offset to data array
+        writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
-        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
-            throw new IgniteCheckedException("Handshake error: " + res.error());
+        writer.writeShort(CURRENT_VER.major());
+        writer.writeShort(CURRENT_VER.minor());
+        writer.writeShort(CURRENT_VER.maintenance());
 
-        if (res.response() instanceof SqlListenerHandshakeResult) {
-            SqlListenerHandshakeResult hsRes = (SqlListenerHandshakeResult)res.response();
+        writer.writeByte(OdbcNioListener.JDBC_CLIENT);
 
-            if (!hsRes.accepted()) {
-                throw new IgniteCheckedException("Handshake error: the protocol version is supported by Ignite since "
-                    + hsRes.protocolVersionSince() + " version.");
-            }
-        }
+        writer.writeBoolean(true);
+        writer.writeBoolean(true);
+
+        send(writer.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, false);
+
+        boolean accepted = reader.readBoolean();
+
+        if (accepted)
+            return;
+
+        short maj = reader.readShort();
+        short min = reader.readShort();
+        short maintenance = reader.readShort();
+        String err = reader.readString();
+
+        SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
+
+        throw new IgniteCheckedException("Handshake error: the protocol version is not supported by Ignite version:"
+                + ver + (F.isEmpty(err) ? "" : ". Error message: " + err));
     }
 
     /**
      * @param req ODBC request.
      * @throws IOException On error.
      */
-    public void sendRequest(SqlListenerRequest req) throws IOException {
-        BinaryHeapOutputStream os = new BinaryHeapOutputStream(INIT_CAP);
+    private void send(byte[] req) throws IOException {
+        int size = req.length;
+        out.write(size & 0xFF);
+        out.write((size >> 8) & 0xFF);
+        out.write((size >> 16) & 0xFF);
+        out.write((size >> 24) & 0xFF);
 
-        // Set offset to data array
-        os.position(4);
+        out.write(req);
 
-        if (req instanceof SqlListenerHandshakeRequest) {
-            SqlListenerHandshakeRequest handshakeReq = (SqlListenerHandshakeRequest)req;
-
-            os.writeByte((byte)handshakeReq.command());
-            os.writeLong(handshakeReq.version().longValue());
-            os.writeBoolean(handshakeReq.distributedJoins());
-            os.writeBoolean(handshakeReq.enforceJoinOrder());
-        }
-
-        int size = os.position() - 4;
-
-        // Fill data packet size.
-        os.position(0);
-        os.writeInt(size);
-
-        out.write(os.array(), 0, size + 4);
         out.flush();
     }
 
     /**
-     * @param bin Input stream.
-     * @param type Expected response type.
-     * @return Response object.
-     */
-    private SqlListenerResponse parseResponse(BinaryHeapInputStream bin, ResponseType type) {
-        switch (type) {
-            case HANDSHAKE: {
-                String protoVerSince = null;
-                String curVer = null;
-
-                boolean accepted = bin.readBoolean();
-
-                if (!accepted) {
-                    protoVerSince = BinaryUtils.doReadString(bin);
-
-                    curVer = BinaryUtils.doReadString(bin);
-                }
-
-                return new SqlListenerResponse(new SqlListenerHandshakeResult(accepted, protoVerSince, curVer));
-            }
-            case QUERY_CLOSE:
-                break;
-            case QUERY_FETCH:
-                break;
-            case QUERY_EXECUTE:
-                break;
-            case QUERY_GET_PARAMS_META:
-                break;
-            case GET_TABLES_META:
-                break;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param respType Expected response type.
-     * @return ODBC response.
+     * @return Bytes of a response from server.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public SqlListenerResponse readResponse(ResponseType respType) throws IOException, IgniteCheckedException {
+    private  byte[] read() throws IOException, IgniteCheckedException {
         byte[] sizeBytes = new byte[4];
 
         in.read(sizeBytes);
@@ -189,17 +160,7 @@ public class JdbcTcpIo {
 
         in.read(msgData);
 
-        BinaryHeapInputStream bin = new BinaryHeapInputStream(msgData);
-
-        int status = (int)bin.readByte();
-
-        if (status != SqlListenerResponse.STATUS_SUCCESS) {
-            String err = BinaryUtils.doReadString(bin);
-
-            return new SqlListenerResponse(status, err);
-        }
-
-        return parseResponse(bin, respType);
+        return msgData;
     }
 
     /**
@@ -224,28 +185,5 @@ public class JdbcTcpIo {
 
         if (endpoint != null)
             endpoint.close();
-    }
-
-    /**
-     * The response type is used to define expected response type.
-     */
-    public enum ResponseType {
-        /** Handshake. */
-        HANDSHAKE,
-
-        /** Query close. */
-        QUERY_CLOSE,
-
-        /** Query fetch. */
-        QUERY_FETCH,
-
-        /** Query execute. */
-        QUERY_EXECUTE,
-
-        /** Query get params meta. */
-        QUERY_GET_PARAMS_META,
-
-        /** Get tables meta. */
-        GET_TABLES_META,
     }
 }
