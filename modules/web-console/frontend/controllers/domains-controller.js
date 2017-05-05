@@ -596,7 +596,7 @@ export default ['domainsController', [
         };
 
         function isValidJavaIdentifier(s) {
-            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) &&
+            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
                 SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
         }
 

@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * ODBC handshake request.
  */
-public class OdbcHandshakeRequest extends OdbcRequest {
+public class SqlListenerHandshakeRequest extends SqlListenerRequest {
     /** Protocol version. */
-    private final OdbcProtocolVersion ver;
+    private final SqlListenerProtocolVersion ver;
 
     /** Distributed joins flag. */
     private boolean distributedJoins = false;
@@ -35,16 +35,16 @@ public class OdbcHandshakeRequest extends OdbcRequest {
     /**
      * @param ver Long value for protocol version.
      */
-    public OdbcHandshakeRequest(long ver) {
+    public SqlListenerHandshakeRequest(long ver) {
         super(HANDSHAKE);
 
-        this.ver = OdbcProtocolVersion.fromLong(ver);
+        this.ver = SqlListenerProtocolVersion.fromLong(ver);
     }
 
     /**
      * @return Protocol version.
      */
-    public OdbcProtocolVersion version() {
+    public SqlListenerProtocolVersion version() {
         return ver;
     }
 
@@ -78,6 +78,6 @@ public class OdbcHandshakeRequest extends OdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcHandshakeRequest.class, this);
+        return S.toString(SqlListenerHandshakeRequest.class, this);
     }
 }

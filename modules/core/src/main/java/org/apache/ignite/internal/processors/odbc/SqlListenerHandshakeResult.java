@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * ODBC handshake result.
  */
-public class OdbcHandshakeResult {
+public class SqlListenerHandshakeResult {
     /** Handshake accepted. */
     private final boolean accepted;
 
@@ -39,7 +39,7 @@ public class OdbcHandshakeResult {
      * @param protoVerSince Apache Ignite version when protocol version has been introduced.
      * @param curVer Current Apache Ignite version.
      */
-    public OdbcHandshakeResult(boolean accepted, String protoVerSince, String curVer) {
+    public SqlListenerHandshakeResult(boolean accepted, String protoVerSince, String curVer) {
         this.accepted = accepted;
         this.protoVerSince = protoVerSince;
         this.curVer = curVer;
@@ -68,6 +68,6 @@ public class OdbcHandshakeResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcHandshakeResult.class, this);
+        return S.toString(SqlListenerHandshakeResult.class, this);
     }
 }

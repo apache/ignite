@@ -22,9 +22,9 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
- * ODBC column-related metadata.
+ * SQL listener column metadata.
  */
-public class OdbcColumnMeta {
+public class SqlListenerColumnMeta {
     /** Cache name. */
     private final String schemaName;
 
@@ -43,7 +43,7 @@ public class OdbcColumnMeta {
      * @param columnName Column name.
      * @param dataType Data type.
      */
-    public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
+    public SqlListenerColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
         this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
@@ -53,7 +53,7 @@ public class OdbcColumnMeta {
     /**
      * @param info Field metadata.
      */
-    public OdbcColumnMeta(GridQueryFieldMetadata info) {
+    public SqlListenerColumnMeta(GridQueryFieldMetadata info) {
         this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
@@ -83,8 +83,8 @@ public class OdbcColumnMeta {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (o instanceof OdbcColumnMeta) {
-            OdbcColumnMeta other = (OdbcColumnMeta) o;
+        if (o instanceof SqlListenerColumnMeta) {
+            SqlListenerColumnMeta other = (SqlListenerColumnMeta) o;
 
             return this == other || schemaName.equals(other.schemaName) && tableName.equals(other.tableName) &&
                 columnName.equals(other.columnName) && dataType.equals(other.dataType);

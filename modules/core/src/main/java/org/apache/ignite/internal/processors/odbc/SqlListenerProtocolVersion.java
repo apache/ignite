@@ -14,55 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
- * ODBC protocol version.
+ * SQL listener protocol version.
  */
-public enum OdbcProtocolVersion {
-    /** First version of the ODBC. Released with Ignite 1.6 */
-    VERSION_1_6_0(1),
-
-    /** Second version of the ODBC. Released with Ignite 1.8 */
-    VERSION_1_8_0(makeVersion(1,8,0)),
+public enum SqlListenerProtocolVersion {
+    /** Version 2.0.0. */
+    VER_2_0_0(makeVersion(2, 0, 0), "2.0.0"),
 
     /** ODBC/JDBC version of the protocol. Released with Ignite 2.1 */
     VERSION_2_1_0(makeVersion(2,1,0)),
 
     /** Unknown version. */
-    VERSION_UNKNOWN(Long.MIN_VALUE);
+    UNKNOWN(Long.MIN_VALUE, "UNKNOWN");
 
     /** Mask to get 2 lowest bytes of the value and cast to long. */
     private static final long LONG_MASK = 0x000000000000FFFFL;
 
-    /** Long value to enum map. */
-    private static final Map<Long, OdbcProtocolVersion> versions = new HashMap<>();
-
-    /** Enum value to Ignite version map */
-    private static final Map<OdbcProtocolVersion, String> since = new HashMap<>();
-
-    /**
-     * Map long values to version.
-     */
-    static {
-        for (OdbcProtocolVersion version : values())
-            versions.put(version.longValue(), version);
-
-        since.put(VERSION_1_6_0, "1.6.0");
-        since.put(VERSION_1_8_0, "1.8.0");
-    }
-
     /** Long value for version. */
     private final long longVal;
 
+    /** Since string. */
+    private final String since;
+
     /**
+     * Constructor.
+     *
      * @param longVal Long value.
+     * @param since Since string.
      */
-    OdbcProtocolVersion(long longVal) {
+    SqlListenerProtocolVersion(long longVal, String since) {
         this.longVal = longVal;
+        this.since = since;
     }
 
     /**
@@ -81,17 +66,13 @@ public enum OdbcProtocolVersion {
      * @param longVal Long value.
      * @return Protocol version.
      */
-    public static OdbcProtocolVersion fromLong(long longVal) {
-        OdbcProtocolVersion res = versions.get(longVal);
+    public static SqlListenerProtocolVersion fromLong(long longVal) {
+        for (SqlListenerProtocolVersion ver : SqlListenerProtocolVersion.values()) {
+            if (ver.longValue() == longVal)
+                return ver;
+        }
 
-        return res == null ? VERSION_UNKNOWN : res;
-    }
-
-    /**
-     * @return Current version.
-     */
-    public static OdbcProtocolVersion current() {
-        return VERSION_1_8_0;
+        return UNKNOWN;
     }
 
     /**
@@ -102,27 +83,9 @@ public enum OdbcProtocolVersion {
     }
 
     /**
-     * @return {@code true} if this version is unknown.
-     */
-    public boolean isUnknown() {
-        return longVal == VERSION_UNKNOWN.longVal;
-    }
-
-    /**
-     * @return {@code true} if this version supports distributed joins.
-     */
-    public boolean isDistributedJoinsSupported() {
-        assert !isUnknown();
-
-        return longVal >= VERSION_1_8_0.longVal;
-    }
-
-    /**
      * @return Ignite version when introduced.
      */
     public String since() {
-        assert !isUnknown();
-
-        return since.get(this);
+        return since;
     }
 }
