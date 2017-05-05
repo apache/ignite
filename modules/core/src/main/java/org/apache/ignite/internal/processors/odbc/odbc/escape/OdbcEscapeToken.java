@@ -15,28 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc.escape;
 
-import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Query get columns meta result.
+ * ODBC escape sequence token.
  */
-public class OdbcQueryGetColumnsMetaResult {
-    /** Query result rows. */
-    private final Collection<SqlListenerColumnMeta> meta;
+public class OdbcEscapeToken {
+    /** Escape sequence type. */
+    private final OdbcEscapeType type;
+
+    /** Token length. */
+    private final int len;
 
     /**
-     * @param meta Column metadata.
+     * Constructor.
+     *
+     * @param type Escape sequence type.
+     * @param len Token length.
      */
-    public OdbcQueryGetColumnsMetaResult(Collection<SqlListenerColumnMeta> meta) {
-        this.meta = meta;
+    public OdbcEscapeToken(OdbcEscapeType type, int len) {
+        this.type = type;
+        this.len = len;
     }
 
     /**
-     * @return Query result rows.
+     * @return Escape sequence type.
      */
-    public Collection<SqlListenerColumnMeta> meta() {
-        return meta;
+    public OdbcEscapeType type() {
+        return type;
+    }
+
+    /**
+     * @return Token length.
+     */
+    public int length() {
+        return len;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcEscapeToken.class, this);
     }
 }

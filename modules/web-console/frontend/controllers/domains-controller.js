@@ -63,7 +63,8 @@ export default ['domainsController', [
         $scope.ui.generatePojo = true;
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
-        $scope.ui.generateAliases = true;
+        $scope.ui.generateTypeAliases = true;
+        $scope.ui.generateFieldAliases = true;
         $scope.ui.generatedCachesClusters = [];
 
         function _mapCaches(caches) {
@@ -596,7 +597,7 @@ export default ['domainsController', [
         };
 
         function isValidJavaIdentifier(s) {
-            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) &&
+            return JavaTypes.validIdentifier(s) && !JavaTypes.isKeyword(s) && JavaTypes.nonBuiltInClass(s) &&
                 SqlTypes.validIdentifier(s) && !SqlTypes.isKeyword(s);
         }
 
@@ -857,7 +858,15 @@ export default ['domainsController', [
                         containDup = true;
                     }
 
-                    const valType = generatePojo ? _toJavaPackage(packageName) + '.' + typeName : tableName;
+                    let valType = tableName;
+                    let typeAlias;
+
+                    if (generatePojo) {
+                        if ($scope.ui.generateTypeAliases && tableName.toLowerCase() !== typeName.toLowerCase())
+                            typeAlias = tableName;
+
+                        valType = _toJavaPackage(packageName) + '.' + typeName;
+                    }
 
                     let _containKey = false;
 
@@ -868,7 +877,7 @@ export default ['domainsController', [
 
                         const dbName = fld.databaseFieldName;
 
-                        if ($scope.ui.generateAliases &&
+                        if (generatePojo && $scope.ui.generateFieldAliases &&
                             SqlTypes.validIdentifier(dbName) && !SqlTypes.isKeyword(dbName) &&
                             !_.find(aliases, {field: fld.javaFieldName}) &&
                             fld.javaFieldName.toUpperCase() !== dbName.toUpperCase())
@@ -916,6 +925,7 @@ export default ['domainsController', [
                         newDomain.confirm = true;
                     }
 
+                    newDomain.tableName = typeAlias;
                     newDomain.keyType = valType + 'Key';
                     newDomain.valueType = valType;
                     newDomain.queryMetadata = 'Configuration';
@@ -1024,7 +1034,7 @@ export default ['domainsController', [
             function checkDuplicate() {
                 if (containDup) {
                     Confirm.confirm('Some tables have the same name.<br/>' +
-                            'Name of types for that tables will contain schema name too.')
+                        'Name of types for that tables will contain schema name too.')
                         .then(() => checkOverwrite());
                 }
                 else
@@ -1035,7 +1045,7 @@ export default ['domainsController', [
                 checkDuplicate();
             else {
                 Confirm.confirm('Some tables have no primary key.<br/>' +
-                        'You will need to configure key type and key fields for such tables after import complete.')
+                    'You will need to configure key type and key fields for such tables after import complete.')
                     .then(() => checkDuplicate());
             }
         }
@@ -1816,8 +1826,8 @@ export default ['domainsController', [
                 // Found duplicate.
                 if (idx >= 0 && idx !== curIdx) {
                     return !stopEdit && ErrorPopover.show(LegacyTable.tableFieldId(curIdx,
-                        'FieldName' + indexIdx + (curIdx >= 0 ? '-' : '')),
-                        'Field with such name already exists in index!', $scope.ui, 'query');
+                                'FieldName' + indexIdx + (curIdx >= 0 ? '-' : '')),
+                            'Field with such name already exists in index!', $scope.ui, 'query');
                 }
             }
 

@@ -153,6 +153,7 @@ mixin td-ellipses-lbl(w, lbl)
                             button.btn.btn-primary(ng-click='applyDefaults()') Apply
                 .import-domain-model-wizard-page(ng-show='importDomain.action == "options"')
                     -var form = 'optionsForm'
+                    -var generatePojo = 'ui.generatePojo'
 
                     form.form-horizontal(name=form novalidate)
                         .settings-row
@@ -160,10 +161,12 @@ mixin td-ellipses-lbl(w, lbl)
                         .settings-row
                             +checkbox('Use primitive types for NOT NULL table columns', 'ui.usePrimitives', '"domainUsePrimitives"', 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
                         .settings-row
-                            +checkbox('Generate aliases for query fields', 'ui.generateAliases', '"domainGenerateAliases"', 'Generate aliases for query fields with database field names when database field name differ from Java field name')
-                        .settings-row
-                            +checkbox('Generate POJO classes', 'ui.generatePojo', '"domainGeneratePojo"', 'If selected then POJO classes will be generated from database tables')
-                        .settings-row.settings-row_small-label(ng-show='ui.generatePojo')
+                            +checkbox('Generate POJO classes', generatePojo, '"domainGeneratePojo"', 'If selected then POJO classes will be generated from database tables')
+                        .settings-row(ng-show=generatePojo)
+                            +checkbox('Generate aliases for query entity', 'ui.generateTypeAliases', '"domainGenerateTypeAliases"', 'Generate aliases for query entity if table name is invalid Java identifier')
+                        .settings-row(ng-show=generatePojo)
+                            +checkbox('Generate aliases for query fields', 'ui.generateFieldAliases', '"domainGenerateFieldAliases"', 'Generate aliases for query fields with database field names when database field name differ from Java field name')
+                        .settings-row.settings-row_small-label(ng-show=generatePojo)
                             +java-package('Package:', 'ui.packageName', '"domainPackageName"', true, true, 'Package that will be used for POJOs generation')(data-container='.modal-domain-import')
                         .settings-row.settings-row_small-label
                             +ignite-form-field-dropdown('Clusters:', 'ui.generatedCachesClusters', '"generatedCachesClusters"', false, false, true,

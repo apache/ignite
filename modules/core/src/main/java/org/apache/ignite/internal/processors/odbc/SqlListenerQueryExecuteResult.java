@@ -20,23 +20,35 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.Collection;
 
 /**
- * Query get columns meta result.
+ * SQL listener query execute result.
  */
-public class OdbcQueryGetColumnsMetaResult {
-    /** Query result rows. */
-    private final Collection<SqlListenerColumnMeta> meta;
+public class SqlListenerQueryExecuteResult {
+    /** Query ID. */
+    private final long queryId;
+
+    /** Fields metadata. */
+    private final Collection<SqlListenerColumnMeta> columnsMeta;
 
     /**
-     * @param meta Column metadata.
+     * @param queryId Query ID.
+     * @param columnsMeta Columns metadata.
      */
-    public OdbcQueryGetColumnsMetaResult(Collection<SqlListenerColumnMeta> meta) {
-        this.meta = meta;
+    public SqlListenerQueryExecuteResult(long queryId, Collection<SqlListenerColumnMeta> columnsMeta) {
+        this.queryId = queryId;
+        this.columnsMeta = columnsMeta;
     }
 
     /**
-     * @return Query result rows.
+     * @return Query ID.
      */
-    public Collection<SqlListenerColumnMeta> meta() {
-        return meta;
+    public long getQueryId() {
+        return queryId;
+    }
+
+    /**
+     * @return Columns metadata.
+     */
+    public Collection<SqlListenerColumnMeta> getColumnsMetadata() {
+        return columnsMeta;
     }
 }

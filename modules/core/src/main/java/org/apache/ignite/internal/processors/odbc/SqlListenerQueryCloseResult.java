@@ -15,47 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.escape;
-
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * ODBC escape sequence token.
+ * SQL listener query close result.
  */
-public class OdbcEscapeToken {
-    /** Escape sequence type. */
-    private final OdbcEscapeType type;
-
-    /** Token length. */
-    private final int len;
+public class SqlListenerQueryCloseResult {
+    /** Query ID. */
+    private final long queryId;
 
     /**
-     * Constructor.
-     *
-     * @param type Escape sequence type.
-     * @param len Token length.
+     * @param queryId Query ID.
      */
-    public OdbcEscapeToken(OdbcEscapeType type, int len) {
-        this.type = type;
-        this.len = len;
+    public SqlListenerQueryCloseResult(long queryId){
+        this.queryId = queryId;
     }
 
     /**
-     * @return Escape sequence type.
+     * @return Query ID.
      */
-    public OdbcEscapeType type() {
-        return type;
-    }
-
-    /**
-     * @return Token length.
-     */
-    public int length() {
-        return len;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(OdbcEscapeToken.class, this);
+    public long getQueryId() {
+        return queryId;
     }
 }

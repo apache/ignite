@@ -17,26 +17,40 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Collection;
-
 /**
- * Query get columns meta result.
+ * SQL listener connection context.
  */
-public class OdbcQueryGetColumnsMetaResult {
-    /** Query result rows. */
-    private final Collection<SqlListenerColumnMeta> meta;
+public class SqlListenerConnectionContext {
+    /** Request handler. */
+    private final SqlListenerRequestHandler handler;
+
+    /** Message parser. */
+    private final SqlListenerMessageParser parser;
 
     /**
-     * @param meta Column metadata.
+     * Constructor.
+     *
+     * @param handler Handler.
+     * @param parser Parser.
      */
-    public OdbcQueryGetColumnsMetaResult(Collection<SqlListenerColumnMeta> meta) {
-        this.meta = meta;
+    public SqlListenerConnectionContext(SqlListenerRequestHandler handler, SqlListenerMessageParser parser) {
+        this.handler = handler;
+        this.parser = parser;
     }
 
     /**
-     * @return Query result rows.
+     * Handler getter.
+     * @return Request handler for the connection.
      */
-    public Collection<SqlListenerColumnMeta> meta() {
-        return meta;
+    public SqlListenerRequestHandler handler() {
+        return handler;
+    }
+
+    /**
+     * Parser getter
+     * @return Message parser for the connection.
+     */
+    public SqlListenerMessageParser parser() {
+        return parser;
     }
 }

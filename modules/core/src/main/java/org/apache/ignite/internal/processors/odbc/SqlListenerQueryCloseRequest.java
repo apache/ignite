@@ -17,30 +17,22 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Query fetch result.
+ * SQL listener query close request.
  */
-public class OdbcQueryFetchResult {
+public class SqlListenerQueryCloseRequest extends SqlListenerRequest {
     /** Query ID. */
     private final long queryId;
 
-    /** Query result rows. */
-    private final Collection<?> items;
-
-    /** Flag indicating the query has no unfetched results. */
-    private final boolean last;
-
     /**
      * @param queryId Query ID.
-     * @param items Query result rows.
-     * @param last Flag indicating the query has no unfetched results.
      */
-    public OdbcQueryFetchResult(long queryId, Collection<?> items, boolean last){
+    public SqlListenerQueryCloseRequest(long queryId) {
+        super(QRY_CLOSE);
+
         this.queryId = queryId;
-        this.items = items;
-        this.last = last;
     }
 
     /**
@@ -50,17 +42,8 @@ public class OdbcQueryFetchResult {
         return queryId;
     }
 
-    /**
-     * @return Query result rows.
-     */
-    public Collection<?> items() {
-        return items;
-    }
-
-    /**
-     * @return Flag indicating the query has no unfetched results.
-     */
-    public boolean last() {
-        return last;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SqlListenerQueryCloseRequest.class, this);
     }
 }
