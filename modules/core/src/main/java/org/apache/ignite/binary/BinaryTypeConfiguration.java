@@ -21,7 +21,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -70,7 +69,7 @@ public class BinaryTypeConfiguration {
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
-        enumValues = other.enumValues;
+        enumValues = other.enumValues; // TODO: Better to do a deep copy.
         typeName = other.typeName;
     }
 
@@ -192,6 +191,7 @@ public class BinaryTypeConfiguration {
      * @param values Array of enum constants names.
      * @return {@code this} for chaining.
      */
+    // TODO: Remove this method
     public BinaryTypeConfiguration setEnumValues(String... values) {
         if (values == null) {
             this.enumValues = null;
@@ -212,7 +212,7 @@ public class BinaryTypeConfiguration {
      * @return {@code this} for chaining.
      */
     public BinaryTypeConfiguration setEnumValues(Map<String, Integer> values) {
-        this.isEnum = true;
+        this.isEnum = true; // TODO: Remove, setter must mutate only one value.
         this.enumValues = values;
         return this;
     }

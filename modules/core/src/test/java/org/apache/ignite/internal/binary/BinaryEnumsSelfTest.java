@@ -520,7 +520,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
     /** Register enum */
     private void defineEnum() {
-        node1.binary().defineEnum(EnumType.class.getName(),
+        node1.binary().registerEnum(EnumType.class.getName(),
                 F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal(),
                         EnumType.TWO.name(), EnumType.TWO.ordinal()));
     }
