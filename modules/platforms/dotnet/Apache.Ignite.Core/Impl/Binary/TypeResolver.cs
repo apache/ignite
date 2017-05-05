@@ -122,14 +122,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return null;
             }
 
-            // Trim assembly qualification
-            var commaIdx = typeName.IndexOf(',');
-
-            if (commaIdx > 0)
-            {
-                typeName = typeName.Substring(0, commaIdx);
-            }
-
             return assemblies.Select(a => FindType(a, typeName, nameMapper)).FirstOrDefault(x => x != null);
         }
 
