@@ -19,28 +19,19 @@ package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Iterator;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.igfs.IgfsException;
-import org.apache.ignite.internal.igfs.common.IgfsControlResponse;
-import org.apache.ignite.internal.igfs.common.IgfsDataInputStream;
-import org.apache.ignite.internal.igfs.common.IgfsIpcCommand;
-import org.apache.ignite.internal.igfs.common.IgfsMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.OdbcHandshakeRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcHandshakeResult;
 import org.apache.ignite.internal.processors.odbc.OdbcRequest;
 import org.apache.ignite.internal.processors.odbc.OdbcResponse;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.OdbcProtocolVersion.VERSION_2_1_0;
 
@@ -48,20 +39,23 @@ import static org.apache.ignite.internal.processors.odbc.OdbcProtocolVersion.VER
  * JDBC IO layer implementation based on blocking IPC streams.
  */
 public class JdbcTcpIo {
+    /** Initial output stream capacity. */
+    private static final int INIT_CAP = 1024;
+
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Endpoint. */
-    private IpcEndpoint endpoint;
 
     /** Server endpoint address. */
     private final String endpointAddr;
 
-    /** Output stream. */
-    private DataOutputStream out;
+    /** Endpoint. */
+    private IpcEndpoint endpoint;
 
-    /** Client reader thread. */
-    private Thread reader;
+    /** Output stream. */
+    private BufferedOutputStream out;
+
+    /** Input stream. */
+    private BufferedInputStream in;
 
     /** Stopping flag. */
     private volatile boolean stopping;
@@ -79,204 +73,179 @@ public class JdbcTcpIo {
 
     /**
      * @throws IgniteCheckedException On error.
+     * @throws IOException On IO error in handshake.
      */
-    public void start() throws IgniteCheckedException {
+    public void start() throws IgniteCheckedException, IOException {
         endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, log);
 
-        out = new DataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
+        out = new BufferedOutputStream(endpoint.outputStream());
 
-        reader = new ReaderThread();
+        in = new BufferedInputStream(endpoint.inputStream());
+
+        handshake();
     }
 
     /**
      * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
      */
-    public void handshake() throws IOException {
-        OdbcHandshakeRequest handshakeReq = new OdbcHandshakeRequest(VERSION_2_1_0.longValue());
+    public void handshake() throws IOException, IgniteCheckedException {
+        sendRequest(new OdbcHandshakeRequest(VERSION_2_1_0.longValue()));
 
-        out.writeByte((byte)handshakeReq.command());
-        out.writeLong(handshakeReq.version().longValue());
-        out.writeBoolean(handshakeReq.distributedJoins());
-        out.writeBoolean(handshakeReq.enforceJoinOrder());
+        OdbcResponse res = readResponse(ResponseType.HANDSHAKE);
 
-        out.flush();
+        if (res.status() != OdbcResponse.STATUS_SUCCESS)
+            throw new IgniteCheckedException("Handshake error: " + res.error());
+
+        if (res.response() instanceof OdbcHandshakeResult) {
+            OdbcHandshakeResult hsRes = (OdbcHandshakeResult)res.response();
+
+            if (!hsRes.accepted()) {
+                throw new IgniteCheckedException("Handshake error: the protocol version is supported by Ignite since "
+                    + hsRes.protocolVersionSince() + " version.");
+            }
+        }
     }
 
     /**
      * @param req ODBC request.
-     * @return ODBC responce.
+     * @throws IOException On error.
      */
-    public OdbcResponse sendRequest(OdbcRequest req) {
+    public void sendRequest(OdbcRequest req) throws IOException {
+        BinaryHeapOutputStream bhos = new BinaryHeapOutputStream(INIT_CAP);
+
+        // Set offset to data array
+        bhos.position(4);
+
+        if (req instanceof OdbcHandshakeRequest) {
+            OdbcHandshakeRequest handshakeReq = (OdbcHandshakeRequest)req;
+
+            bhos.writeByte((byte)handshakeReq.command());
+            bhos.writeLong(handshakeReq.version().longValue());
+            bhos.writeBoolean(handshakeReq.distributedJoins());
+            bhos.writeBoolean(handshakeReq.enforceJoinOrder());
+        }
+
+        int size = bhos.position() - 4;
+
+        // Fill data packet size.
+        bhos.position(0);
+        bhos.writeInt(size);
+
+        out.write(bhos.array(), 0, size + 4);
+        out.flush();
+    }
+
+    /**
+     * @param bin Input stream.
+     * @param type Expected response type.
+     * @return Response object.
+     */
+    private OdbcResponse parseResponse(BinaryHeapInputStream bin, ResponseType type) {
+        switch (type) {
+            case HANDSHAKE: {
+                String protoVerSince = null;
+                String curVer = null;
+
+                boolean accepted = bin.readBoolean();
+
+                if (!accepted) {
+                    protoVerSince = BinaryUtils.doReadString(bin);
+
+                    curVer = BinaryUtils.doReadString(bin);
+                }
+
+                return new OdbcResponse(new OdbcHandshakeResult(accepted, protoVerSince, curVer));
+            }
+            case QUERY_CLOSE:
+                break;
+            case QUERY_FETCH:
+                break;
+            case QUERY_EXECUTE:
+                break;
+            case QUERY_GET_PARAMS_META:
+                break;
+            case GET_TABLES_META:
+                break;
+        }
 
         return null;
+    }
+
+    /**
+     * @param respType Expected response type.
+     * @return ODBC response.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public OdbcResponse readResponse(ResponseType respType) throws IOException, IgniteCheckedException {
+        byte[] sizeBytes = new byte[4];
+
+        in.read(sizeBytes);
+
+        int size = U.bytesToInt(sizeBytes, 0);
+
+        byte[] msgData = new byte[size];
+
+        in.read(msgData);
+
+        BinaryHeapInputStream bin = new BinaryHeapInputStream(msgData);
+
+        int status = (int)bin.readByte();
+
+        if (status != OdbcResponse.STATUS_SUCCESS) {
+            String err = BinaryUtils.doReadString(bin);
+
+            return new OdbcResponse(status, err);
+        }
+
+        return parseResponse(bin, respType);
     }
 
     /**
      *
      */
     public void close() {
-        close0(null);
-
+        close0();
     }
 
     /**
-     *
+     * Closes client but does not wait.
      */
-    private void close0(@Nullable Throwable err) {
+    private void close0() {
         if (stopping)
             return;
 
         stopping = true;
 
-        if (err == null)
-            err = new IgniteCheckedException("Failed to perform request (connection was concurrently closed before response " +
-                "is received).");
-
         // Clean up resources.
         U.closeQuiet(out);
+        U.closeQuiet(in);
 
         if (endpoint != null)
             endpoint.close();
     }
 
     /**
-     * Do not extend {@code GridThread} to minimize class dependencies.
+     * The response type is used to define expected response type.
      */
-    private class ReaderThread extends Thread {
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public void run() {
-            // Error to fail pending futures.
-            Throwable err = null;
+    public enum ResponseType {
+        /** Handshake. */
+        HANDSHAKE,
 
-            try {
-                InputStream in = endpoint.inputStream();
+        /** Query close. */
+        QUERY_CLOSE,
 
-                DataInputStream dis = new DataInputStream(in);
+        /** Query fetch. */
+        QUERY_FETCH,
 
-                byte[] hdr = new byte[IgfsMarshaller.HEADER_SIZE];
-                byte[] msgHdr = new byte[IgfsControlResponse.RES_HEADER_SIZE];
+        /** Query execute. */
+        QUERY_EXECUTE,
 
-                while (!Thread.currentThread().isInterrupted()) {
-                    dis.readFully(hdr);
+        /** Query get params meta. */
+        QUERY_GET_PARAMS_META,
 
-                    long reqId = U.bytesToLong(hdr, 0);
-
-                    // We don't wait for write responses, therefore reqId is -1.
-                    if (reqId == -1) {
-                        // We received a response which normally should not be sent. It must contain an error.
-                        dis.readFully(msgHdr);
-
-                        assert msgHdr[4] != 0;
-
-                        String errMsg = dis.readUTF();
-
-                        // Error code.
-                        dis.readInt();
-
-                        long streamId = dis.readLong();
-
-                        for (HadoopIgfsIpcIoListener lsnr : lsnrs)
-                            lsnr.onError(streamId, errMsg);
-                    }
-                    else {
-                        HadoopIgfsFuture<Object> fut = reqMap.remove(reqId);
-
-                        if (fut == null) {
-                            String msg = "Failed to read response from server: response closure is unavailable for " +
-                                "requestId (will close connection):" + reqId;
-
-                            log.warn(msg);
-
-                            err = new IgniteCheckedException(msg);
-
-                            break;
-                        }
-                        else {
-                            try {
-                                IgfsIpcCommand cmd = IgfsIpcCommand.valueOf(U.bytesToInt(hdr, 8));
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Received IGFS response [reqId=" + reqId + ", cmd=" + cmd + ']');
-
-                                Object res = null;
-
-                                if (fut.read()) {
-                                    dis.readFully(msgHdr);
-
-                                    boolean hasErr = msgHdr[4] != 0;
-
-                                    if (hasErr) {
-                                        String errMsg = dis.readUTF();
-
-                                        // Error code.
-                                        Integer errCode = dis.readInt();
-
-                                        IgfsControlResponse.throwError(errCode, errMsg);
-                                    }
-
-                                    int blockLen = U.bytesToInt(msgHdr, 5);
-
-                                    int readLen = Math.min(blockLen, fut.outputLength());
-
-                                    if (readLen > 0) {
-                                        assert fut.outputBuffer() != null;
-
-                                        dis.readFully(fut.outputBuffer(), fut.outputOffset(), readLen);
-                                    }
-
-                                    if (readLen != blockLen) {
-                                        byte[] buf = new byte[blockLen - readLen];
-
-                                        dis.readFully(buf);
-
-                                        res = buf;
-                                    }
-                                }
-                                else
-                                    res = marsh.unmarshall(cmd, hdr, dis);
-
-                                fut.onDone(res);
-                            }
-                            catch (IgfsException | IgniteCheckedException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to apply response closure (will fail request future): " +
-                                        e.getMessage());
-
-                                fut.onDone(e);
-
-                                err = e;
-                            }
-                            catch (Throwable t) {
-                                fut.onDone(t);
-
-                                throw t;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (EOFException ignored) {
-                err = new IgniteCheckedException("Failed to read response from server (connection was closed by remote peer).");
-            }
-            catch (IOException e) {
-                if (!stopping)
-                    log.error("Failed to read data (connection will be closed)", e);
-
-                err = new HadoopIgfsCommunicationException(e);
-            }
-            catch (Throwable e) {
-                if (!stopping)
-                    log.error("Failed to obtain endpoint input stream (connection will be closed)", e);
-
-                err = e;
-
-                if (e instanceof Error)
-                    throw (Error)e;
-            }
-            finally {
-                close();
-            }
-        }
+        /** Get tables meta. */
+        GET_TABLES_META,
     }
 }

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
 import org.apache.ignite.logger.java.JavaLogger;
 
@@ -76,7 +77,7 @@ import org.apache.ignite.logger.java.JavaLogger;
  * Note the following:
  * <ul>
  *     <li>Hostname is required.</li>
- *     <li>If port is not defined, {@code 11211} is used (default for Ignite client).</li>
+ *     <li>If port is not defined, {@code 10800} is used (default for Ignite thin client).</li>
  *     <li>Leave {@code <cache_name>} empty if you are connecting to default cache.</li>
  * </ul>
  * Other properties can be defined in {@link Properties} object passed to
@@ -238,19 +239,17 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Cache name property name. */
     public static final String PROP_CACHE = PROP_PREFIX + PARAM_CACHE;
 
-
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** Transactions allowed property name. */
     public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
-
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin//";
 
     /** Default port. */
-    public static final int DFLT_PORT = 11211;
+    public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
 
     /** Major version. */
     private static final int MAJOR_VER = 1;

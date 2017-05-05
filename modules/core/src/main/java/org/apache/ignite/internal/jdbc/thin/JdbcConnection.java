@@ -36,11 +36,8 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.jdbc.JdbcStatement;
-import org.apache.ignite.internal.util.ipc.IpcEndpoint;
-import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.logger.java.JavaLogger;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -90,6 +87,8 @@ public class JdbcConnection implements Connection {
 
         try {
             cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT), LOG);
+
+            cliIo.start();
         }
         catch (Exception e) {
             throw new SQLException("Failed to start Ignite client.", e);
@@ -405,7 +404,7 @@ public class JdbcConnection implements Connection {
         if (timeout < 0)
             throw new SQLException("Invalid timeout: " + timeout);
 
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
