@@ -135,15 +135,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache shared context. */
     private GridCacheSharedContext<K, V> sharedCtx;
 
-    /** Memory policy. */
-    private MemoryPolicy memPlc;
-
-    /** FreeList instance this cache is associated with. */
-    private FreeList freeList;
-
-    /** ReuseList instance this cache is associated with */
-    private ReuseList reuseList;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -176,9 +167,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
-
-    /** */
-    private IgniteCacheOffheapManager offheapMgr;
 
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
@@ -273,8 +261,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
-     * @param memPlc MemoryPolicy instance.
-     * @param freeList FreeList instance.
      * @param affNode {@code True} if local node is affinity node.
      * @param updatesAllowed Updates allowed flag.
      * @param evtMgr Cache event manager.
@@ -300,9 +286,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         AffinityTopologyVersion locStartTopVer,
         boolean affNode,
         boolean updatesAllowed,
-        MemoryPolicy memPlc,
-        FreeList freeList,
-        ReuseList reuseList,
 
         /*
          * Managers in starting order!
@@ -352,10 +335,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
 
-        this.memPlc = memPlc;
-        this.freeList = freeList;
-        this.reuseList = reuseList;
-
         /*
          * Managers in starting order!
          * ===========================
@@ -368,7 +347,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
-        this.offheapMgr = add(offheapMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
         this.affMgr = add(affMgr);
@@ -734,21 +712,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Memory policy.
      */
     public MemoryPolicy memoryPolicy() {
-        return memPlc;
-    }
-
-    /**
-     * @return Free List.
-     */
-    public FreeList freeList() {
-        return freeList;
-    }
-
-    /**
-     * @return Reuse List.
-     */
-    public ReuseList reuseList() {
-        return reuseList;
+        return grp.memoryPolicy();
     }
 
     /**
@@ -1106,7 +1070,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Offheap manager.
      */
     public IgniteCacheOffheapManager offheap() {
-        return offheapMgr;
+        return grp.offheap();
     }
 
     /**

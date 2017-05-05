@@ -33,7 +33,7 @@ public interface GridCacheConcurrentMap {
      * @param key Key.
      * @return Entry.
      */
-    @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key);
+    @Nullable public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key);
 
     /**
      * @param topVer Topology version.
@@ -45,6 +45,7 @@ public interface GridCacheConcurrentMap {
      * couldn't be created.
      */
     @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+        GridCacheContext ctx,
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,

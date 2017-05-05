@@ -49,14 +49,10 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     /** Map entry factory. */
     private final GridCacheMapEntryFactory factory;
 
-    /** Cache context. */
-    private final GridCacheContext ctx;
-
     /**
      * Creates a new, empty map with the specified initial
      * capacity.
      *
-     * @param ctx Cache context.
      * @param factory Entry factory.
      * @param initialCapacity the initial capacity. The implementation
      *      performs internal sizing to accommodate this many elements.
@@ -64,15 +60,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @throws IllegalArgumentException if the initial capacity is
      *      negative.
      */
-    public GridCacheConcurrentMapImpl(GridCacheContext ctx, GridCacheMapEntryFactory factory, int initialCapacity) {
-        this(ctx, factory, initialCapacity, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
+    public GridCacheConcurrentMapImpl(GridCacheMapEntryFactory factory, int initialCapacity) {
+        this(factory, initialCapacity, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
     }
 
     /**
      * Creates a new, empty map with the specified initial
      * capacity, load factor and concurrency level.
      *
-     * @param ctx Cache context.
      * @param factory Entry factory.
      * @param initialCapacity the initial capacity. The implementation
      *      performs internal sizing to accommodate this many elements.
@@ -87,25 +82,25 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      *      non-positive.
      */
     public GridCacheConcurrentMapImpl(
-        GridCacheContext ctx,
         GridCacheMapEntryFactory factory,
         int initialCapacity,
         float loadFactor,
         int concurrencyLevel
     ) {
-        this.ctx = ctx;
         this.factory = factory;
 
         map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
+    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         return map.get(key);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
+    @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+        GridCacheContext ctx,
+        final AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable final CacheObject val,
         final boolean create,
@@ -273,6 +268,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         boolean removed = map.remove(entry.key(), entry);
 
         if (removed) {
+            GridCacheContext ctx = entry.context();
+
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 // Event notification.
                 ctx.events().addEvent(entry.partition(), entry.key(), ctx.localNodeId(), (IgniteUuid)null, null,

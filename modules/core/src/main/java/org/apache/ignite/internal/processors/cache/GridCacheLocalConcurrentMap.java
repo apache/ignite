@@ -27,14 +27,15 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     /** */
     private final AtomicInteger pubSize = new AtomicInteger();
 
-    public GridCacheLocalConcurrentMap(GridCacheContext ctx,
-        GridCacheMapEntryFactory factory, int initialCapacity) {
-        super(ctx, factory, initialCapacity);
+    public GridCacheLocalConcurrentMap(GridCacheMapEntryFactory factory, int initialCapacity) {
+        super(factory, initialCapacity);
     }
 
-    public GridCacheLocalConcurrentMap(GridCacheContext ctx,
-        GridCacheMapEntryFactory factory, int initialCapacity, float loadFactor, int concurrencyLevel) {
-        super(ctx, factory, initialCapacity, loadFactor, concurrencyLevel);
+    public GridCacheLocalConcurrentMap(GridCacheMapEntryFactory factory,
+        int initialCapacity,
+        float loadFactor,
+        int concurrencyLevel) {
+        super(factory, initialCapacity, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */

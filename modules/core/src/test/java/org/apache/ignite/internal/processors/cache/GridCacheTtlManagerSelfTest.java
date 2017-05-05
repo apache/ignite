@@ -112,7 +112,8 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
                     assertNull(g.cache(DEFAULT_CACHE_NAME).get(key));
 
                     if (!g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete())
-                        assertNull(g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
+                        assertNull(g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(g.internalCache(DEFAULT_CACHE_NAME).context(),
+                            g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
                 }
             });
         }

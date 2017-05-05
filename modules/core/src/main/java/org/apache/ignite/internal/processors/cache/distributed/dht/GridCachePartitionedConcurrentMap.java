@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -39,14 +40,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
     /** Context. */
-    private final GridCacheContext ctx;
+    private final CacheGroupInfrastructure grp;
 
     /**
-     * Constructor.
-     * @param ctx Context.
+     * @param grp Cache group.
      */
-    public GridCachePartitionedConcurrentMap(GridCacheContext ctx) {
-        this.ctx = ctx;
+    GridCachePartitionedConcurrentMap(CacheGroupInfrastructure grp) {
+        this.grp = grp;
     }
 
     /**
@@ -56,6 +56,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
      * @return Local partition.
      */
     @Nullable private GridDhtLocalPartition localPartition(
+        GridCacheContext cctx,
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
         boolean create
@@ -63,31 +64,31 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         int p = key.partition();
 
         if (p == -1)
-            p = ctx.affinity().partition(key);
+            p = cctx.affinity().partition(key);
 
-        return ctx.topology().localPartition(p, topVer, create);
+        return grp.topology().localPartition(p, topVer, create);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
-        GridDhtLocalPartition part = localPartition(key, AffinityTopologyVersion.NONE, false);
+    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
+        GridDhtLocalPartition part = localPartition(ctx, key, AffinityTopologyVersion.NONE, false);
 
         if (part == null)
             return null;
 
-        return part.getEntry(key);
+        return part.getEntry(ctx, key);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(GridCacheContext ctx, AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         while (true) {
-            GridDhtLocalPartition part = localPartition(key, topVer, create);
+            GridDhtLocalPartition part = localPartition(ctx, key, topVer, create);
 
             if (part == null)
                 return null;
 
-            GridCacheMapEntry res = part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
+            GridCacheMapEntry res = part.putEntryIfObsoleteOrAbsent(ctx, topVer, key, val, create, touch);
 
             if (res != null || !create)
                 return res;
@@ -100,7 +101,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public int size() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
             size += part.size();
 
         return size;
@@ -110,7 +111,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public int publicSize() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
             size += part.publicSize();
 
         return size;
@@ -118,17 +119,17 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
 
     /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        localPartition(e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(e);
+        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(e);
     }
 
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        localPartition(e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(e);
+        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        GridDhtLocalPartition part = localPartition(entry.key(), AffinityTopologyVersion.NONE, false);
+        GridDhtLocalPartition part = localPartition(entry.context(), entry.key(), AffinityTopologyVersion.NONE, false);
 
         if (part == null)
             return false;
@@ -185,7 +186,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
      */
     private abstract class PartitionedIterator<T> implements Iterator<T> {
         /** Partitions iterator. */
-        private Iterator<GridDhtLocalPartition> partsIter = ctx.topology().currentLocalPartitions().iterator();
+        private Iterator<GridDhtLocalPartition> partsIter = grp.topology().currentLocalPartitions().iterator();
 
         /** Current partition iterator. */
         private Iterator<T> currIter = partsIter.hasNext() ? iterator(partsIter.next()) :
@@ -249,7 +250,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         @Override public int size() {
             int size = 0;
 
-            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
                 size += set(part).size();
 
             return size;
@@ -257,7 +258,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
 
         /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
-            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 if (set(part).contains(o))
                     return true;
             }

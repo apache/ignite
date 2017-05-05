@@ -39,14 +39,14 @@ import org.jetbrains.annotations.Nullable;
  * Adapter for preloading which always assumes that preloading finished.
  */
 public class GridCachePreloaderAdapter implements GridCachePreloader {
-    /** Cache context. */
-    protected final GridCacheContext<?, ?> cctx;
+    /** */
+    protected final CacheGroupInfrastructure grp;
+
+    /** */
+    protected final GridCacheSharedContext ctx;
 
     /** Logger. */
     protected final IgniteLogger log;
-
-    /** Affinity. */
-    protected final AffinityFunction aff;
 
     /** Start future (always completed by default). */
     private final IgniteInternalFuture finFut;
@@ -55,31 +55,22 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     protected IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
     /**
-     * @param cctx Cache context.
+     * @param grp Cache group.
      */
-    public GridCachePreloaderAdapter(GridCacheContext<?, ?> cctx) {
-        assert cctx != null;
+    public GridCachePreloaderAdapter(CacheGroupInfrastructure grp) {
+        assert grp != null;
 
-        this.cctx = cctx;
+        this.grp = grp;
 
-        log = cctx.logger(getClass());
-        aff = cctx.config().getAffinity();
+        ctx = grp.shared();
+
+        log = ctx.logger(getClass());
 
         finFut = new GridFinishedFuture();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -130,7 +121,8 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** {@inheritDoc} */
     @Override public void unwindUndeploys() {
-        cctx.deploy().unwind(cctx);
+        // TODO IGNITE-5075.
+        // cctx.deploy().unwind(cctx);
     }
 
     /** {@inheritDoc} */
@@ -144,13 +136,13 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys,
+    @Override public IgniteInternalFuture<Object> request(GridCacheContext ctx, Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer) {
         return new GridFinishedFuture<>();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+    @Override public IgniteInternalFuture<Object> request(GridCacheContext ctx, GridNearAtomicAbstractUpdateRequest req,
         AffinityTopologyVersion topVer) {
         return new GridFinishedFuture<>();
     }

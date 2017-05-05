@@ -560,9 +560,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException If start failed.
      */
     public void start() throws IgniteCheckedException {
-        if (map == null) {
-            map = new GridCacheLocalConcurrentMap(ctx, entryFactory(), DFLT_START_CACHE_SIZE);
-        }
+        // TODO: IGNITE-5075: make abstract?
+        if (map == null)
+            map = new GridCacheLocalConcurrentMap(entryFactory(), DFLT_START_CACHE_SIZE);
     }
 
     /**
@@ -717,7 +717,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                its.add(offheapMgr.<K, V>entriesIterator(modes.primary, modes.backup, topVer, ctx.keepBinary()));
+                its.add(offheapMgr.<K, V>entriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary()));
             }
         }
         else if (modes.heap) {
@@ -944,7 +944,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Entry (never {@code null}).
      */
     public GridCacheEntryEx entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
-        GridCacheEntryEx e = map.putEntryIfObsoleteOrAbsent(topVer, key, null, true, false);
+        GridCacheEntryEx e = map.putEntryIfObsoleteOrAbsent(ctx, topVer, key, null, true, false);
 
         assert e != null;
 
@@ -960,10 +960,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @Nullable private GridCacheEntryEx entry0(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create,
         boolean touch) {
-        GridCacheMapEntry cur = map.getEntry(key);
+        GridCacheMapEntry cur = map.getEntry(ctx, key);
 
         if (cur == null || cur.obsolete()) {
             cur = map.putEntryIfObsoleteOrAbsent(
+                ctx,
                 topVer,
                 key,
                 null,
@@ -1071,7 +1072,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public final void removeIfObsolete(KeyCacheObject key) {
         assert key != null;
 
-        GridCacheMapEntry entry = map.getEntry(key);
+        GridCacheMapEntry entry = map.getEntry(ctx, key);
 
         if (entry != null && entry.obsolete())
             removeEntry(entry);
@@ -6518,7 +6519,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
-            GridCacheMapEntry entry = map.getEntry(ctx.toCacheKeyObject(o));
+            GridCacheMapEntry entry = map.getEntry(ctx, ctx.toCacheKeyObject(o));
 
             return entry != null && internalSet.contains(entry);
         }
@@ -6608,7 +6609,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
-            GridCacheMapEntry entry = map.getEntry(ctx.toCacheKeyObject(o));
+            GridCacheMapEntry entry = map.getEntry(ctx, ctx.toCacheKeyObject(o));
 
             return entry != null && internalSet.contains(entry);
         }

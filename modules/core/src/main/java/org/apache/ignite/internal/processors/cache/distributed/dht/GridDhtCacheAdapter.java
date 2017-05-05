@@ -96,9 +96,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Preloader. */
-    protected GridCachePreloader preldr;
-
     /** Multi tx future holder. */
     private ThreadLocal<IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
 
@@ -157,7 +154,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param ctx Context.
      */
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
-        this(ctx, new GridCachePartitionedConcurrentMap(ctx));
+        this(ctx, new GridCachePartitionedConcurrentMap(ctx.group()));
     }
 
     /**
@@ -182,43 +179,16 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
-        super.stop();
-
-        if (preldr != null)
-            preldr.stop();
-
-        // Clean up to help GC.
-        preldr = null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onReconnected() {
         super.onReconnected();
 
         ctx.affinity().onReconnected();
 
         // TODO IGNITE-5075.
-        //top.onReconnected();
-
-        if (preldr != null)
-            preldr.onReconnected();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
-
-        if (preldr != null)
-            preldr.onKernalStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop() {
-        super.onKernalStop();
-
-        if (preldr != null)
-            preldr.onKernalStop();
+//        top.onReconnected();
+//
+//        if (preldr != null)
+//            preldr.onReconnected();
     }
 
     /** {@inheritDoc} */
@@ -259,16 +229,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public GridCachePreloader preloader() {
-        return preldr;
-    }
-
-    /**
-     * @return DHT preloader.
-     */
-    public GridDhtPreloader dhtPreloader() {
-        assert preldr instanceof GridDhtPreloader;
-
-        return (GridDhtPreloader)preldr;
+        return ctx.group().preloader();
     }
 
     /**

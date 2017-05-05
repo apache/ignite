@@ -29,23 +29,13 @@ import org.jetbrains.annotations.Nullable;
  * Empty cache map that will never store any entries.
  */
 public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
-    /** Context. */
-    private final GridCacheContext ctx;
-
-    /**
-     * @param ctx Cache context.
-     */
-    public GridNoStorageCacheMap(GridCacheContext ctx) {
-        this.ctx = ctx;
-    }
-
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
+    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(GridCacheContext ctx, AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         if (create)
             return new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), val);

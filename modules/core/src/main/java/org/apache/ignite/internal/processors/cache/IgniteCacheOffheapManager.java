@@ -38,7 +38,13 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 @SuppressWarnings("WeakerAccess")
-public interface IgniteCacheOffheapManager extends GridCacheManager {
+public interface IgniteCacheOffheapManager {
+    public void start(GridCacheSharedContext ctx, CacheGroupInfrastructure grp) throws IgniteCheckedException;;
+
+    public void onKernalStop();
+
+    public void stop(boolean destroy);
+
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
      *
@@ -119,7 +125,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param c Tree update closure.
      * @throws IgniteCheckedException If failed.
      */
-    public void invoke(KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
+    public void invoke(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
         throws IgniteCheckedException;
 
     /**
@@ -133,6 +139,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed.
      */
     public void update(
+        GridCacheContext cctx,
         KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
@@ -149,6 +156,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed.
      */
     public void remove(
+        GridCacheContext cctx,
         KeyCacheObject key,
         int partId,
         GridDhtLocalPartition part
@@ -194,7 +202,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(final boolean primary,
+    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(
+        GridCacheContext cctx,
+        final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary) throws IgniteCheckedException;
@@ -221,7 +231,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      * @param readers {@code True} to clear readers.
      */
-    public void clear(boolean readers);
+    public void clear(GridCacheContext cctx, boolean readers);
 
     /**
      * @param part Partition.
@@ -327,7 +337,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return New row.
          * @throws IgniteCheckedException If failed.
          */
-        CacheDataRow createRow(KeyCacheObject key,
+        CacheDataRow createRow(
+            GridCacheContext cctx,
+            KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
@@ -342,7 +354,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
-        void update(KeyCacheObject key,
+        void update(
+            GridCacheContext cctx,
+            KeyCacheObject key,
             int part,
             CacheObject val,
             GridCacheVersion ver,
@@ -354,21 +368,21 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param c Closure.
          * @throws IgniteCheckedException If failed.
          */
-        public void invoke(KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
+        public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
 
         /**
          * @param key Key.
          * @param partId Partition number.
          * @throws IgniteCheckedException If failed.
          */
-        public void remove(KeyCacheObject key, int partId) throws IgniteCheckedException;
+        public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
         /**
          * @param key Key.
          * @return Data row.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheDataRow find(KeyCacheObject key) throws IgniteCheckedException;
+        public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @return Data cursor.

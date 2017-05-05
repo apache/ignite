@@ -71,7 +71,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     private GridCacheSharedContext cctx;
 
     /** Cache ID. */
-    private int cacheId;
+    private int grpId;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -111,18 +111,18 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /**
      * @param cctx Context.
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param exchFut Exchange ID.
      * @param similarAffKey Key to find caches with similar affinity.
      */
     public GridClientPartitionTopology(
         GridCacheSharedContext cctx,
-        int cacheId,
+        int grpId,
         GridDhtPartitionsExchangeFuture exchFut,
         Object similarAffKey
     ) {
         this.cctx = cctx;
-        this.cacheId = cacheId;
+        this.grpId = grpId;
         this.similarAffKey = similarAffKey;
 
         topVer = exchFut.topologyVersion();
@@ -166,8 +166,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public int cacheId() {
-        return cacheId;
+    @Override public int groupId() {
+        return grpId;
     }
 
     /** {@inheritDoc} */
@@ -281,7 +281,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         long updateSeq = this.updateSeq.incrementAndGet();
 
         // If this is the oldest node.
-        if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cacheId, exchId.topologyVersion())) {
+        if (oldest.id().equals(loc.id())) {
             if (node2part == null) {
                 node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
@@ -353,8 +353,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
-        return localPartition(1, AffinityTopologyVersion.NONE, create);
+    @Override public GridDhtLocalPartition localPartition(int p) {
+        return localPartition(p, AffinityTopologyVersion.NONE, false);
     }
 
     /** {@inheritDoc} */
@@ -997,7 +997,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
         X.println(">>>  Cache partition topology stats [igniteInstanceName=" + cctx.igniteInstanceName() +
-            ", cacheId=" + cacheId + ']');
+            ", grpId=" + grpId + ']');
     }
 
     /**

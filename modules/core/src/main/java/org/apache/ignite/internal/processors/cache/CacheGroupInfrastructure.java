@@ -26,11 +26,16 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -64,10 +69,37 @@ public class CacheGroupInfrastructure {
     private GridDhtPartitionTopologyImpl top;
 
     /** */
-    private AffinityTopologyVersion grpStartVer;
+    private final AffinityTopologyVersion grpStartVer;
 
     /** */
-    private AffinityTopologyVersion locStartVer;
+    private final AffinityTopologyVersion locStartVer;
+
+    /** */
+    private IgniteCacheOffheapManager offheapMgr;
+
+    /** Preloader. */
+    private GridCachePreloader preldr;
+
+    /** */
+    private final boolean affNode;
+
+    /** Memory policy. */
+    private final MemoryPolicy memPlc;
+
+    /** */
+    private final CacheObjectContext cacheObjCtx;
+
+    /** FreeList instance this group is associated with. */
+    private final FreeList freeList;
+
+    /** ReuseList instance this group is associated with */
+    private final ReuseList reuseList;
+
+    /** */
+    private final CacheType cacheType;
+
+    /** IO policy. */
+    private final byte ioPlc;
 
     /**
      * @param grpId Group ID.
@@ -76,19 +108,131 @@ public class CacheGroupInfrastructure {
      */
     CacheGroupInfrastructure(GridCacheSharedContext ctx,
         int grpId,
+        CacheType cacheType,
         CacheConfiguration ccfg,
+        boolean affNode,
+        MemoryPolicy memPlc,
+        CacheObjectContext cacheObjCtx,
+        FreeList freeList,
+        ReuseList reuseList,
         AffinityTopologyVersion grpStartVer,
         AffinityTopologyVersion locStartVer) {
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
 
         this.grpId = grpId;
+        this.cacheType = cacheType;
         this.ctx = ctx;
         this.ccfg = ccfg;
+        this.affNode = affNode;
+        this.memPlc = memPlc;
+        this.cacheObjCtx = cacheObjCtx;
+        this.freeList = freeList;
+        this.reuseList = reuseList;
         this.grpStartVer = grpStartVer;
         this.locStartVer = locStartVer;
 
+        ioPlc = cacheType.ioPolicy();
+
         log = ctx.kernalContext().log(getClass());
+    }
+
+    public GridCachePreloader preloader() {
+        return preldr;
+    }
+
+    /**
+     * @return IO policy for the given cache group.
+     */
+    public byte ioPolicy() {
+        return ioPlc;
+    }
+
+    /** */
+    private GridCacheContext singleCacheCtx;
+
+    public void cacheContext(GridCacheContext singleCacheCtx) {
+        assert !sharedGroup();
+
+        this.singleCacheCtx = singleCacheCtx;
+    }
+
+    public GridCacheContext cacheContext() {
+        assert !sharedGroup();
+
+        return singleCacheCtx;
+    }
+
+    // TODO IGNITE-5075: need separate caches with/without queries?
+    public boolean queriesEnabled() {
+        return QueryUtils.isEnabled(ccfg);
+    }
+
+    public boolean started() {
+        return true; // TODO IGNITE-5075.
+    }
+
+    /**
+     * @return Free List.
+     */
+    public FreeList freeList() {
+        return freeList;
+    }
+
+    /**
+     * @return Reuse List.
+     */
+    public ReuseList reuseList() {
+        return reuseList;
+    }
+
+    /**
+     * TODO IGNITE-5075: get rid of CacheObjectContext?
+     */
+    public CacheObjectContext cacheObjectContext() {
+        return cacheObjCtx;
+    }
+
+    public GridCacheSharedContext shared() {
+        return ctx;
+    }
+
+    /**
+     * @return Memory policy.
+     */
+    public MemoryPolicy memoryPolicy() {
+        return memPlc;
+    }
+
+    public boolean affinityNode() {
+        return affNode;
+    }
+
+    public IgniteCacheOffheapManager offheap() {
+        return offheapMgr;
+    }
+
+    /** Flag indicating that this cache is in a recovery mode. */
+    // TODO IGNITE-5075 see GridCacheContext#needsRecovery
+    private boolean needsRecovery;
+
+    /**
+     * @return Current cache state. Must only be modified during exchange.
+     */
+    public boolean needsRecovery() {
+        return needsRecovery;
+    }
+
+    /**
+     * @param needsRecovery Needs recovery flag.
+     */
+    public void needsRecovery(boolean needsRecovery) {
+        this.needsRecovery = needsRecovery;
+    }
+
+    public boolean allowFastEviction() {
+        // TODO IGNITE-5075 see GridCacheContext#allowFastEviction
+        return true;
     }
 
     public AffinityTopologyVersion groupStartVersion() {
@@ -126,6 +270,16 @@ public class CacheGroupInfrastructure {
         return ccfg.getGroupName() != null;
     }
 
+    // TODO IGNITE-5075.
+    public boolean isDrEnabled() {
+        return false;
+    }
+
+    public void onKernalStop() {
+        if (preldr != null)
+            preldr.onKernalStop();
+    }
+
     public void start() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
             name(),
@@ -148,7 +302,7 @@ public class CacheGroupInfrastructure {
                 }
             };
 
-            top = new GridDhtPartitionTopologyImpl(ctx, entryFactory);
+            top = new GridDhtPartitionTopologyImpl(ctx, this, entryFactory);
 
             if (!ctx.kernalContext().clientNode()) {
                 ctx.io().addHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
@@ -158,7 +312,16 @@ public class CacheGroupInfrastructure {
                         }
                     });
             }
+
+            preldr = new GridDhtPreloader(this);
+
+            preldr.start();
         }
+
+        // TODO IGNITE-5075 get from plugin.
+        offheapMgr = new IgniteCacheOffheapManagerImpl();
+
+        offheapMgr.start(ctx, this);
 
         ctx.affinity().onCacheGroupCreated(this);
     }
@@ -244,11 +407,14 @@ public class CacheGroupInfrastructure {
 
         if (top != null)
             top.onReconnected();
+
+        if (preldr != null)
+            preldr.onReconnected();
     }
 
     public GridDhtPartitionTopology topology() {
         if (top == null)
-            throw new IllegalStateException("Topology is not initialized: " + groupName());
+            throw new IllegalStateException("Topology is not initialized: " + name());
 
         return top;
     }

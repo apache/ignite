@@ -87,10 +87,10 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @return Parition update counters.
      */
-    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId);
+    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int grpId);
 
     /**
      * @return Last used version among all nodes.

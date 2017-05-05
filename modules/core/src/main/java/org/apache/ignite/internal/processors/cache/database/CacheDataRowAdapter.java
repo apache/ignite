@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -94,25 +95,25 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /**
      * Read row from data pages.
      *
-     * @param cctx Cache context.
+     * @param grp Cache group.
      * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    public final void initFromLink(GridCacheContext<?, ?> cctx, RowData rowData) throws IgniteCheckedException {
-        initFromLink(cctx, cctx.shared(), cctx.memoryPolicy().pageMemory(), rowData);
+    public final void initFromLink(CacheGroupInfrastructure grp, RowData rowData) throws IgniteCheckedException {
+        initFromLink(grp, grp.shared(), grp.memoryPolicy().pageMemory(), rowData);
     }
 
     /**
      * Read row from data pages.
      * Can be called with cctx == null, if cache instance is unknown, but its ID is stored in the data row.
      *
-     * @param cctx Cctx.
+     * @param grp Cache group.
      * @param sharedCtx Shared context.
      * @param pageMem Page memory.
      * @param rowData Row data.
      */
     public final void initFromLink(
-        @Nullable GridCacheContext<?, ?> cctx,
+        @Nullable CacheGroupInfrastructure grp,
         GridCacheSharedContext<?, ?> sharedCtx,
         PageMemory pageMem,
         RowData rowData)
@@ -122,11 +123,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         CacheObjectContext coctx = null;
 
-        if (cctx != null) {
-            cacheId = cctx.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
-                cctx.cacheId() : 0; // Force cacheId reading for evictable memory policies.
+        if (grp != null) {
+            cacheId = grp.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
+                -1 : 0; // Force cacheId reading for evictable memory policies.
 
-            coctx = cctx.cacheObjectContext();
+            coctx = grp.cacheObjectContext();
         }
 
         long nextLink = link;
@@ -401,7 +402,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
-     * @throws IgniteCheckedException If failed.
      */
     private IncompleteObject<?> readIncompleteExpireTime(
         ByteBuffer buf,

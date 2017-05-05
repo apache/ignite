@@ -292,7 +292,7 @@ public class ExchangeActions {
         cacheGrpsToStart.add(grpDesc);
     }
 
-    List<CacheGroupDescriptor> cacheGroupsToStart() {
+    public List<CacheGroupDescriptor> cacheGroupsToStart() {
         return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupDescriptor>emptyList();
     }
 
@@ -303,11 +303,11 @@ public class ExchangeActions {
         cacheGrpsToStop.add(grpDesc);
     }
 
-    List<CacheGroupDescriptor> cacheGroupsToStop() {
+    public List<CacheGroupDescriptor> cacheGroupsToStop() {
         return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupDescriptor>emptyList();
     }
 
-    boolean cacheGroupStopping(int grpId) {
+    public boolean cacheGroupStopping(int grpId) {
         if (cacheGrpsToStop != null) {
             for (CacheGroupDescriptor grpToStop : cacheGrpsToStop) {
                 if (grpToStop.groupId() == grpId)

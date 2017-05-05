@@ -889,37 +889,35 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
-        cctx.forAllCaches(new IgniteInClosure<GridCacheContext>() {
-            @Override public void apply(GridCacheContext cacheCtx) {
-                if (!cacheCtx.isLocal()) {
-                    boolean ready;
+        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            if (!grp.isLocal()) {
+                boolean ready;
 
-                    if (exchId != null) {
-                        AffinityTopologyVersion startTopVer = cacheCtx.cacheStartTopologyVersion();
+                if (exchId != null) {
+                    AffinityTopologyVersion startTopVer = grp.groupStartVersion();
 
-                        ready = startTopVer.compareTo(exchId.topologyVersion()) <= 0;
-                    }
-                    else
-                        ready = cacheCtx.started();
+                    ready = startTopVer.compareTo(exchId.topologyVersion()) <= 0;
+                }
+                else
+                    ready = grp.started();
 
-                    if (ready) {
-                        GridAffinityAssignmentCache affCache = cacheCtx.affinity().affinityCache();
+                if (ready) {
+                    GridAffinityAssignmentCache affCache = grp.affinity();
 
-                        GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
+                    GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
 
-                        addFullPartitionsMap(m,
-                            dupData,
-                            compress,
-                            cacheCtx.cacheId(),
-                            locMap,
-                            affCache.similarAffinityKey());
+                    addFullPartitionsMap(m,
+                        dupData,
+                        compress,
+                        grp.groupId(),
+                        locMap,
+                        affCache.similarAffinityKey());
 
-                        if (exchId != null)
-                            m.addPartitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
-                    }
+                    if (exchId != null)
+                        m.addPartitionUpdateCounters(grp.groupId(), grp.topology().updateCounters(true));
                 }
             }
-        });
+        }
 
         // It is important that client topologies be added after contexts.
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
@@ -928,12 +926,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             addFullPartitionsMap(m,
                 dupData,
                 compress,
-                top.cacheId(),
+                top.groupId(),
                 map,
                 top.similarAffinityKey());
 
             if (exchId != null)
-                m.addPartitionUpdateCounters(top.cacheId(), top.updateCounters(true));
+                m.addPartitionUpdateCounters(top.groupId(), top.updateCounters(true));
         }
 
         return m;
@@ -943,19 +941,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param m Message.
      * @param dupData Duplicated data map.
      * @param compress {@code True} if need check for duplicated partition state data.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param map Map to add.
      * @param affKey Cache affinity key.
      */
     private void addFullPartitionsMap(GridDhtPartitionsFullMessage m,
         Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData,
         boolean compress,
-        Integer cacheId,
+        Integer grpId,
         GridDhtPartitionFullMap map,
         Object affKey) {
         Integer dupDataCache = null;
 
-        if (compress && affKey != null && !m.containsCache(cacheId)) {
+        if (compress && affKey != null && !m.containsGroup(grpId)) {
             T2<Integer, GridDhtPartitionFullMap> state0 = dupData.get(affKey);
 
             if (state0 != null && state0.get2().partitionStateEquals(map)) {
@@ -971,10 +969,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 dupDataCache = state0.get1();
             }
             else
-                dupData.put(affKey, new T2<>(cacheId, map));
+                dupData.put(affKey, new T2<>(grpId, map));
         }
 
-        m.addFullPartitionsMap(cacheId, map, dupDataCache);
+        m.addFullPartitionsMap(grpId, map, dupDataCache);
     }
 
     /**
@@ -1022,24 +1020,24 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Map<Object, T2<Integer,Map<Integer, GridDhtPartitionState>>> dupData = new HashMap<>();
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal()) {
-                GridDhtPartitionMap locMap = cacheCtx.topology().localPartitionMap();
+        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            if (!grp.isLocal()) {
+                GridDhtPartitionMap locMap = grp.topology().localPartitionMap();
 
                 addPartitionMap(m,
                     dupData,
                     true,
-                    cacheCtx.cacheId(),
+                    grp.groupId(),
                     locMap,
-                    cacheCtx.affinity().affinityCache().similarAffinityKey());
+                    grp.affinity().similarAffinityKey());
 
                 if (sndCounters)
-                    m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
+                    m.partitionUpdateCounters(grp.groupId(), grp.topology().updateCounters(true));
             }
         }
 
         for (GridClientPartitionTopology top : clientTops.values()) {
-            if (m.partitions() != null && m.partitions().containsKey(top.cacheId()))
+            if (m.partitions() != null && m.partitions().containsKey(top.groupId()))
                 continue;
 
             GridDhtPartitionMap locMap = top.localPartitionMap();
@@ -1047,12 +1045,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             addPartitionMap(m,
                 dupData,
                 true,
-                top.cacheId(),
+                top.groupId(),
                 locMap,
                 top.similarAffinityKey());
 
             if (sndCounters)
-                m.partitionUpdateCounters(top.cacheId(), top.updateCounters(true));
+                m.partitionUpdateCounters(top.groupId(), top.updateCounters(true));
         }
 
         return m;

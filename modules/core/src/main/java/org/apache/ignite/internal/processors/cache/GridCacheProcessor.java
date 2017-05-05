@@ -510,7 +510,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private List<GridCacheManager> dhtManagers(GridCacheContext ctx) {
         return F.asList(ctx.store(), ctx.events(), ctx.evicts(), ctx.queries(), ctx.continuousQueries(),
-            ctx.dr(), ctx.offheap());
+            ctx.dr());
     }
 
     /**
@@ -522,7 +522,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
-            return F.asList(ctx.queries(), ctx.continuousQueries(), ctx.store(), ctx.offheap());
+            return F.asList(ctx.queries(), ctx.continuousQueries(), ctx.store());
     }
 
     /**
@@ -1403,11 +1403,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         storeMgr.initialize(cfgStore, sesHolders);
 
-        String memPlcName = cfg.getMemoryPolicyName();
-
-        MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
-        FreeList freeList = sharedCtx.database().freeList(memPlcName);
-        ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
@@ -1419,9 +1414,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             locStartTopVer,
             affNode,
             updatesAllowed,
-            memPlc,
-            freeList,
-            reuseList,
 
             /*
              * Managers in starting order!
@@ -1491,14 +1483,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         case TRANSACTIONAL: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
-                                new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+                                new GridDhtColocatedCache(cacheCtx, new GridNoStorageCacheMap());
 
                             break;
                         }
                         case ATOMIC: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtAtomicCache(cacheCtx) :
-                                new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+                                new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap());
 
                             break;
                         }
@@ -1553,9 +1545,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 locStartTopVer,
                 affNode,
                 true,
-                memPlc,
-                freeList,
-                reuseList,
 
                 /*
                  * Managers in starting order!
@@ -1587,7 +1576,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridDhtCache dhtCache = cacheCtx.affinityNode() ?
                         new GridDhtCache(cacheCtx) :
-                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+                        new GridDhtCache(cacheCtx, new GridNoStorageCacheMap());
 
                     dhtCache.near(near);
 
@@ -1604,7 +1593,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridDhtAtomicCache dhtCache = cacheCtx.affinityNode() ?
                         new GridDhtAtomicCache(cacheCtx) :
-                        new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap(cacheCtx));
+                        new GridDhtAtomicCache(cacheCtx, new GridNoStorageCacheMap());
 
                     dhtCache.near(near);
 
@@ -1817,25 +1806,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
 
-        String grpName = startCfg.getGroupName();
-
-        CacheGroupInfrastructure grp = null;
-
-        if (grpName != null) {
-            for (CacheGroupInfrastructure grp0 : cacheGrps.values()) {
-                if (grp0.sharedGroup() && grpName.equals(grp0.groupName())) {
-                    grp = grp0;
-
-                    break;
-                }
-            }
-
-            if (grp == null)
-                grp = startCacheGroup(grpDesc, exchTopVer);
-        }
-        else
-            grp = startCacheGroup(grpDesc, exchTopVer);
-
         CacheConfiguration ccfg = new CacheConfiguration(startCfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
@@ -1855,6 +1825,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ccfg.setNearConfiguration(reqNearCfg);
         }
 
+        String grpName = startCfg.getGroupName();
+
+        CacheGroupInfrastructure grp = null;
+
+        if (grpName != null) {
+            for (CacheGroupInfrastructure grp0 : cacheGrps.values()) {
+                if (grp0.sharedGroup() && grpName.equals(grp0.name())) {
+                    grp = grp0;
+
+                    break;
+                }
+            }
+
+            if (grp == null)
+                grp = startCacheGroup(grpDesc, affNode, cacheObjCtx, exchTopVer);
+        }
+        else
+            grp = startCacheGroup(grpDesc, affNode, cacheObjCtx, exchTopVer);
+
         GridCacheContext cacheCtx = createCache(ccfg,
             grp,
             null,
@@ -1864,6 +1853,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheObjCtx,
             affNode,
             true);
+
+        if (!grp.sharedGroup())
+            grp.cacheContext(cacheCtx);
 
         cacheCtx.dynamicDeploymentId(deploymentId);
 
@@ -1878,13 +1870,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         onKernalStart(cache);
     }
 
-    private CacheGroupInfrastructure startCacheGroup(CacheGroupDescriptor desc, AffinityTopologyVersion exchTopVer)
+    private CacheGroupInfrastructure startCacheGroup(
+        CacheGroupDescriptor desc,
+        boolean affNode,
+        CacheObjectContext cacheObjCtx,
+        AffinityTopologyVersion exchTopVer)
         throws IgniteCheckedException {
-        CacheConfiguration ccfg = new CacheConfiguration(desc.config());
+        CacheConfiguration cfg = new CacheConfiguration(desc.config());
+
+        String memPlcName = cfg.getMemoryPolicyName();
+
+        MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
+        FreeList freeList = sharedCtx.database().freeList(memPlcName);
+        ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
         CacheGroupInfrastructure grp = new CacheGroupInfrastructure(sharedCtx,
             desc.groupId(),
-            ccfg,
+            cfg,
+            affNode,
+            memPlc,
+            cacheObjCtx,
+            freeList,
+            reuseList,
             desc.startTopologyVersion(),
             exchTopVer);
 

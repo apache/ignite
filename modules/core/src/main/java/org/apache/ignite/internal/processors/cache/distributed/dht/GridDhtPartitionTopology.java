@@ -140,7 +140,7 @@ public interface GridDhtPartitionTopology {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(Object key, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(int part)
         throws GridDhtInvalidPartitionException;
 
     /**
