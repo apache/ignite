@@ -75,14 +75,11 @@ namespace Apache.Ignite.Core.Tests
             // Start a node and make sure it works properly
             var exePath = Path.Combine(folder, "Apache.Ignite.exe");
 
-            // TODO: Either load all dependent assemblies, or do some trick to avoid error on Assembly.GetTypes()
-            var thisAsmPath = Path.GetFileName(GetType().Assembly.Location);
-
             var proc = IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "-springConfigUrl=" + springFile,
                 "-jvmClasspath=" + classpath,
-                "-assembly=" + thisAsmPath,
+                "-assembly=" + Path.GetFileName(GetType().Assembly.Location),
                 "-J-ea",
                 "-J-Xms512m",
                 "-J-Xmx512m"
@@ -134,7 +131,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "config\\compute\\compute-grid1.xml",
             }))
             {
-                Assert.IsTrue(ignite.WaitTopology(2, 200000));
+                Assert.IsTrue(ignite.WaitTopology(2));
 
                 var remoteProcPath = ignite.GetCluster().ForRemotes().GetCompute().Call(new ProcessPathFunc());
 

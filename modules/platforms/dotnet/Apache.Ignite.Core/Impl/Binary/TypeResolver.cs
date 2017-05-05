@@ -272,7 +272,23 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return asm.GetType(typeName);
             }
 
-            return asm.GetTypes().FirstOrDefault(x => mapper.GetTypeName(x.FullName) == typeName);
+            return GetAssemblyTypesSafe(asm).FirstOrDefault(x => mapper.GetTypeName(x.FullName) == typeName);
+        }
+
+        /// <summary>
+        /// Safely gets all assembly types.
+        /// </summary>
+        private static IEnumerable<Type> GetAssemblyTypesSafe(Assembly asm)
+        {
+            try
+            {
+                return asm.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                // Handle the situation where some assembly dependencies are not available.
+                return ex.Types.Where(x => x != null);
+            }
         }
     }
 }
