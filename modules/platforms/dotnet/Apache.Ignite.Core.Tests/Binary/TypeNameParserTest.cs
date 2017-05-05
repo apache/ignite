@@ -200,6 +200,18 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestArrays()
         {
+            var res = TypeNameParser.Parse("Int32[]");
+            Assert.AreEqual("Int32", res.GetName());
+            Assert.AreEqual("Int32", res.GetNameWithNamespace());
+            Assert.AreEqual("Int32[]", res.GetFullName());
+            Assert.AreEqual("[]", res.GetArray());
+
+            res = TypeNameParser.Parse("List[[Int32]][]");
+            Assert.AreEqual("List", res.GetName());
+            Assert.AreEqual("List", res.GetNameWithNamespace());
+            Assert.AreEqual("List[[Int32]][]", res.GetFullName());
+            Assert.AreEqual("[]", res.GetArray());
+
             CheckType(typeof(int[]));
             CheckType(typeof(int[,]));
             CheckType(typeof(int[][]));
