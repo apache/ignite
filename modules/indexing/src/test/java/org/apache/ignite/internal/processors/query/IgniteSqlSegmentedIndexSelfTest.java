@@ -143,10 +143,11 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentedIndexWithEvictionPolicy() throws Exception {
-        final IgniteCache<Object, Object> cache = ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class)
-            .setOffHeapMaxMemory(-1)
-            .setSwapEnabled(true)
-            .setEvictionPolicy(new FifoEvictionPolicy(10)));
+        final IgniteCache<Object, Object> cache = ignite(0).createCache(
+            cacheConfig("org", true, Integer.class, Organization.class)
+                .setOffHeapMaxMemory(-1)
+                .setSwapEnabled(true)
+                .setEvictionPolicy(new FifoEvictionPolicy(10)));
 
         for (int i = 0; i < 20; i++)
             cache.put(i, new Organization("org-" + i));

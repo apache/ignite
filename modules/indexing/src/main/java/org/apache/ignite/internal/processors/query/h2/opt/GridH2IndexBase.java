@@ -487,8 +487,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = snapshotObj == null ? null :
                         (ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>)snapshotObj[msg.segment()];
 
-                    if(snapshot0 != null)
-
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
                     src = new RangeSource(msg.bounds(), msg.segment(), snapshot0, qctx.filter());
