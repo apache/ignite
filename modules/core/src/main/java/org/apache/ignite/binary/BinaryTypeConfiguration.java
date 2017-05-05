@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class BinaryTypeConfiguration {
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
-        enumValues = other.enumValues; // TODO: Better to do a deep copy.
+        enumValues = other.enumValues != null ? new LinkedHashMap<>(other.enumValues) : null;
         typeName = other.typeName;
     }
 
@@ -191,7 +192,6 @@ public class BinaryTypeConfiguration {
      * @param values Array of enum constants names.
      * @return {@code this} for chaining.
      */
-    // TODO: Remove this method
     public BinaryTypeConfiguration setEnumValues(String... values) {
         if (values == null) {
             this.enumValues = null;
@@ -199,6 +199,7 @@ public class BinaryTypeConfiguration {
         }
 
         Map<String, Integer> enumValues = new LinkedHashMap<>(values.length);
+
         for (int idx = 0; idx < values.length; ++idx)
             enumValues.put(values[idx], idx);
 
@@ -211,8 +212,8 @@ public class BinaryTypeConfiguration {
      * @param values Map of enum name to ordinal.
      * @return {@code this} for chaining.
      */
-    public BinaryTypeConfiguration setEnumValues(Map<String, Integer> values) {
-        this.isEnum = true; // TODO: Remove, setter must mutate only one value.
+    public BinaryTypeConfiguration setEnumValues(@Nullable Map<String, Integer> values) {
+        this.isEnum = true;
         this.enumValues = values;
         return this;
     }
@@ -220,7 +221,7 @@ public class BinaryTypeConfiguration {
     /**
      * @return Enum name to ordinal mapping
      */
-    public Map<String, Integer> getEnumValues() {
+    @Nullable public Map<String, Integer> getEnumValues() {
         return enumValues;
     }
 

@@ -201,10 +201,12 @@ public class BinaryClassDescriptor {
         }
 
         if (cls.isEnum()) {
-            Object[] constants = cls.getEnumConstants();
-            enumMap = new LinkedHashMap<>(constants.length);
-            for (Object o: constants)
-                enumMap.put(((Enum)o).name(), ((Enum)o).ordinal());
+            Object[] enumVals = cls.getEnumConstants();
+
+            enumMap = new LinkedHashMap<>(enumVals.length);
+
+            for (Object enumVal : enumVals)
+                enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
         }
 
         switch (mode) {

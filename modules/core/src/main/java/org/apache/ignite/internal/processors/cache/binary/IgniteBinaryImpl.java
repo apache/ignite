@@ -174,7 +174,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return proc.defineEnum(typeName, vals);
+            return proc.registerEnum(typeName, vals);
         }
         finally {
             unguard();

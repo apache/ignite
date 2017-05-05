@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -401,8 +400,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap) throws BinaryObjectException {
-        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum, enumMap);
+        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap)
+        throws BinaryObjectException {
+        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum,
+            enumMap);
 
         binaryCtx.updateMetadata(typeId, meta);
     }
@@ -435,10 +436,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) {
-        BinaryMetadata metadata = metadata0(typeId);
-        if (metadata != null)
-            return metadata.wrap(binaryCtx);
-        return null;
+        BinaryMetadata meta = metadata0(typeId);
+
+        return meta != null ? meta.wrap(binaryCtx) : null;
     }
 
     /**
@@ -576,6 +576,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         typeName = binaryCtx.userTypeName(typeName);
 
         Integer ordinal = metadata0(typeId).getEnumOrdinalByName(name);
+
         if (ordinal == null)
             throw new IgniteException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
@@ -584,7 +585,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    public BinaryType defineEnum(String typeName, Map<String, Integer> vals) throws IgniteException {
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws IgniteException {
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);

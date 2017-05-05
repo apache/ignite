@@ -63,7 +63,8 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @throws IgniteException In case of error.
      */
     public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap) throws IgniteException;
+        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap)
+        throws IgniteException;
 
     /**
      * @param typeId Type ID.
@@ -117,7 +118,7 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @param vals Mapping of enum constant names to ordinals.
      * @return Binary Type for registered enum.
      */
-    public BinaryType defineEnum(String typeName, Map<String, Integer> vals) throws IgniteException;
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws IgniteException;
 
     /**
      * @return Binaries interface.

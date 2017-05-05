@@ -372,11 +372,15 @@ public class PlatformContextImpl implements PlatformContext {
                             }
                         });
 
-                    boolean isEnum = reader.readBoolean();
                     Map<String, Integer> enumMap = null;
+
+                    boolean isEnum = reader.readBoolean();
+
                     if (isEnum) {
                         int size = reader.readInt();
+
                         enumMap = new LinkedHashMap<>(size);
+
                         for (int idx = 0; idx < size; idx++)
                             enumMap.put(reader.readString(), reader.readInt());
                     }
@@ -482,15 +486,20 @@ public class PlatformContextImpl implements PlatformContext {
                 writer.writeInt(e.getValue().fieldId());
             }
 
-            writer.writeBoolean(meta.isEnum());
             if (meta.isEnum()) {
+                writer.writeBoolean(true);
+
                 Map<String, Integer> enumMap = meta0.enumMap();
+
                 writer.writeInt(enumMap.size());
+
                 for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
                     writer.writeString(e.getKey());
                     writer.writeInt(e.getValue());
                 }
             }
+            else
+                writer.writeBoolean(false);
         }
     }
 
