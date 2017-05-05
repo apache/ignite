@@ -1,9 +1,6 @@
 package org.apache.ignite.internal;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -78,7 +75,6 @@ public class IgniteKernalLogTest extends GridCommonAbstractTest implements Ignit
 
         }
         assertNotNull(includeSensitive);
-
         assertEquals(on, includeSensitive);
     }
 
