@@ -953,7 +953,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void startLocalSnasphotOperation(
         StartSnapshotOperationAckDiscoveryMessage snapOpMsg
     ) throws IgniteCheckedException {
-        IgniteInternalFuture fut = cctx.database().startLocalSnapshotOperation(
+        IgniteInternalFuture fut = cctx.snapshot().startLocalSnapshotOperation(
             snapOpMsg.initiatorNodeId(),
             snapOpMsg.snapshotOperation()
         );

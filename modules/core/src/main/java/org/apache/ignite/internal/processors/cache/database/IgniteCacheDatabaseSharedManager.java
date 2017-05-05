@@ -537,19 +537,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param initiatorNodeId Snapshot message.
-     * @param snapshotOperation Snapshot operation.
-     * @return Snapshot creation init future or {@code null} if snapshot is not available.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
-        UUID initiatorNodeId,
-        SnapshotOperation snapshotOperation
-    ) throws IgniteCheckedException {
-        return null;
-    }
-
-    /**
      * @return Future that will be completed when indexes for given cache are restored.
      */
     @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
