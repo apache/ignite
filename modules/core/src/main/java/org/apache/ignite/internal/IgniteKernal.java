@@ -259,6 +259,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Periodic starvation check interval. */
     private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
 
+    /** Default long running operations timeout*/
+    public static final long DFLT_LONG_OPERATIONS_DUMP_TIMEOUT = 60_000;
+
+    /** Default long running operations upper timeout limit*/
+    public static final long DFLT_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT = 30_000_000;
+
+    public static final long LONG_OPERATIONS_DUMP_TIMEOUT =
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
+                    DFLT_LONG_OPERATIONS_DUMP_TIMEOUT);
+
+    public static final long LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT = IgniteSystemProperties.getLong(IgniteSystemProperties
+            .IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT, DFLT_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT);
+
     /** Force complete reconnect future. */
     private static final Object STOP_RECONNECT = new Object();
 
@@ -1239,18 +1252,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        final long longOpDumpTimeout =
-            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
-
-        if (longOpDumpTimeout > 0) {
+        if (LONG_OPERATIONS_DUMP_TIMEOUT > 0) {
             longOpDumpTask = ctx.timeout().schedule(new Runnable() {
                 @Override public void run() {
                     GridKernalContext ctx = IgniteKernal.this.ctx;
 
                     if (ctx != null)
-                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
+                        ctx.cache().context().exchange().dumpLongRunningOperations(LONG_OPERATIONS_DUMP_TIMEOUT);
                 }
-            }, longOpDumpTimeout, longOpDumpTimeout);
+            }, LONG_OPERATIONS_DUMP_TIMEOUT, LONG_OPERATIONS_DUMP_TIMEOUT);
         }
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());

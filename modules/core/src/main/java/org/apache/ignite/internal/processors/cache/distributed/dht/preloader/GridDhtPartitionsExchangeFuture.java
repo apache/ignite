@@ -99,6 +99,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.IgniteKernal.LONG_OPERATIONS_DUMP_TIMEOUT;
+import static org.apache.ignite.internal.IgniteKernal.LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
 
 /**
  * Future for exchanging partition maps.
@@ -106,10 +108,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture, CachePartitionExchangeWorkerTask {
-    /** */
-    public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -891,7 +889,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (log.isDebugEnabled())
             log.debug("Before waiting for partition release future: " + this);
 
-        int dumpedObjects = 0;
+        int dumpCount = 0;
+
+        long nextDumpTime = U.currentTimeMillis();
 
         while (true) {
             try {
@@ -901,10 +901,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
                 // Print pending transactions and locks that might have led to hang.
-                if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
-                    dumpPendingObjects();
+                if (nextDumpTime <= U.currentTimeMillis()) {
 
-                    dumpedObjects++;
+                    nextDumpTime += GridDhtPartitionsExchangeFuture.nextDoubledDumpingTime(dumpCount++);
+
+                    dumpPendingObjects();
                 }
             }
         }
@@ -914,7 +915,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 
-        dumpedObjects = 0;
+        dumpCount = 0;
 
         while (true) {
             try {
@@ -923,7 +924,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 break;
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
-                if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
+                if (nextDumpTime <= U.currentTimeMillis()) {
                     U.warn(log, "Failed to wait for locks release future. " +
                         "Dumping pending objects that might be the cause: " + cctx.localNodeId());
 
@@ -941,7 +942,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
                         U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
 
-                    dumpedObjects++;
+                    nextDumpTime += GridDhtPartitionsExchangeFuture.nextDoubledDumpingTime(dumpCount++);
 
                     if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
                         U.dumpThreads(log);
@@ -2168,6 +2169,27 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CounterWithNodes.class, this);
+        }
+    }
+
+    /**
+     * Calculates timeout as base 2 and <code>step</code> exponent.
+     *
+     * @param step Exponent coefficient.
+     * @return Base 2 power of <code>step</code> or upper limit.
+     */
+    public static long nextDoubledDumpingTime(long step) {
+
+        assert step >= 0 : step;
+
+        final long upper = Math.round(Math.log(LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT / LONG_OPERATIONS_DUMP_TIMEOUT) /
+                Math.log(2));
+
+        if (step >= upper)
+            return LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
+        else {
+            long dumpFactor = Math.round(Math.pow(2, step));
+            return dumpFactor * LONG_OPERATIONS_DUMP_TIMEOUT;
         }
     }
 }
