@@ -219,8 +219,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("[]", res.GetArray());
 
             CheckType(typeof(int[]));
+            CheckType(typeof(int).MakeArrayType(1));
             CheckType(typeof(int[,]));
+            CheckType(typeof(int[,,]));
             CheckType(typeof(int[][]));
+            CheckType(typeof(int[,,,][,,]));
             
             CheckType(typeof(List<int>[]));
             CheckType(typeof(List<int>[,]));
