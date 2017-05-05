@@ -280,7 +280,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (!bracket)
                     {
-                        throw new IgniteException("Invalid array specification: " + _typeName);
+                        ArrayEnd = _pos - 1;
+                        return;
                     }
 
                     bracket = false;
@@ -288,7 +289,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else if (Char == ',')
                 {
                     if (!bracket)
+                    {
                         break;
+                    }
                 }
                 else
                 {

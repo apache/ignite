@@ -79,12 +79,36 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestGenericTypes()
         {
-            // Custom strings.
+            // Simple name.
             var res = TypeNameParser.Parse("List`1[[Int]]");
             Assert.AreEqual("List`1", res.GetName());
             Assert.AreEqual("List`1", res.GetFullName());
             Assert.AreEqual("Int", res.Generics.Single().GetName());
             Assert.AreEqual("Int", res.Generics.Single().GetFullName());
+            
+            // Simple name array.
+            res = TypeNameParser.Parse("List`1[[Byte[]]]");
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("List`1", res.GetFullName());
+            Assert.AreEqual("Byte", res.Generics.Single().GetName());
+            Assert.AreEqual("Byte", res.Generics.Single().GetFullName());
+            Assert.AreEqual("[]", res.Generics.Single().GetArray());
+
+            // Simple name two-dimension array.
+            res = TypeNameParser.Parse("List`1[[Byte[,]]]");
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("List`1", res.GetFullName());
+            Assert.AreEqual("Byte", res.Generics.Single().GetName());
+            Assert.AreEqual("Byte", res.Generics.Single().GetFullName());
+            Assert.AreEqual("[,]", res.Generics.Single().GetArray());
+
+            // Simple name jagged array.
+            res = TypeNameParser.Parse("List`1[[Byte[][]]]");
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("List`1", res.GetFullName());
+            Assert.AreEqual("Byte", res.Generics.Single().GetName());
+            Assert.AreEqual("Byte", res.Generics.Single().GetFullName());
+            Assert.AreEqual("[][]", res.Generics.Single().GetArray());
 
             // Open generic.
             res = TypeNameParser.Parse("List`1");
