@@ -112,27 +112,27 @@ public class JdbcTcpIo {
      * @throws IOException On error.
      */
     public void sendRequest(SqlListenerRequest req) throws IOException {
-        BinaryHeapOutputStream bhos = new BinaryHeapOutputStream(INIT_CAP);
+        BinaryHeapOutputStream os = new BinaryHeapOutputStream(INIT_CAP);
 
         // Set offset to data array
-        bhos.position(4);
+        os.position(4);
 
         if (req instanceof SqlListenerHandshakeRequest) {
             SqlListenerHandshakeRequest handshakeReq = (SqlListenerHandshakeRequest)req;
 
-            bhos.writeByte((byte)handshakeReq.command());
-            bhos.writeLong(handshakeReq.version().longValue());
-            bhos.writeBoolean(handshakeReq.distributedJoins());
-            bhos.writeBoolean(handshakeReq.enforceJoinOrder());
+            os.writeByte((byte)handshakeReq.command());
+            os.writeLong(handshakeReq.version().longValue());
+            os.writeBoolean(handshakeReq.distributedJoins());
+            os.writeBoolean(handshakeReq.enforceJoinOrder());
         }
 
-        int size = bhos.position() - 4;
+        int size = os.position() - 4;
 
         // Fill data packet size.
-        bhos.position(0);
-        bhos.writeInt(size);
+        os.position(0);
+        os.writeInt(size);
 
-        out.write(bhos.array(), 0, size + 4);
+        out.write(os.array(), 0, size + 4);
         out.flush();
     }
 
