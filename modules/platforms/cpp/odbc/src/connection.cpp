@@ -255,6 +255,8 @@ namespace ignite
 
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
             }
+
+            LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
         }
 
         size_t Connection::ReceiveAll(void* dst, size_t len)
@@ -357,17 +359,6 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            if (rsp.GetStatus() != ResponseStatus::SUCCESS)
-            {
-                LOG_MSG("Error: " << rsp.GetError().c_str());
-
-                AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, rsp.GetError());
-
-                InternalRelease();
-
-                return SqlResult::AI_ERROR;
-            }
-
             if (!rsp.IsAccepted())
             {
                 LOG_MSG("Hanshake message has been rejected.");
@@ -376,8 +367,8 @@ namespace ignite
 
                 constructor << "Node rejected handshake message. ";
 
-                if (!rsp.GetOptionalError().empty())
-                    constructor << "Additional info: " << rsp.GetOptionalError();
+                if (!rsp.GetError().empty())
+                    constructor << "Additional info: " << rsp.GetError();
 
                 constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
                             << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";

@@ -103,7 +103,7 @@ public class SqlListenerProtocolVersion implements Comparable<SqlListenerProtoco
         if (obj != null && obj instanceof SqlListenerProtocolVersion) {
             SqlListenerProtocolVersion other = (SqlListenerProtocolVersion)obj;
 
-            return F.eq(major, other.major) && F.eq(major, other.minor) && F.eq(maintenance, other.maintenance);
+            return F.eq(major, other.major) && F.eq(minor, other.minor) && F.eq(maintenance, other.maintenance);
         }
 
         return false;

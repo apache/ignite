@@ -92,7 +92,7 @@ namespace ignite
 
             buf >> res.maintenance;
 
-            if (!buf.good())
+            if (buf.bad())
                 ThrowParseError();
 
             return res;

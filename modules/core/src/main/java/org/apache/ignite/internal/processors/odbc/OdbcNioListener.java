@@ -198,7 +198,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.addMeta(CONN_CTX_META_KEY, connCtx);
         }
         else {
-            log.warning("");
+            log.warning("Unsupported version: " + ver.toString());
 
             errMsg = "Unsupported version.";
         }

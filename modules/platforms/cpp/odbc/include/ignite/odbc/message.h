@@ -510,7 +510,7 @@ namespace ignite
         /**
          * Handshake response.
          */
-        class HandshakeResponse : public Response
+        class HandshakeResponse
         {
         public:
             /**
@@ -545,7 +545,7 @@ namespace ignite
              * Get optional error.
              * @return Optional error message.
              */
-            const std::string& GetOptionalError() const
+            const std::string& GetError() const
             {
                 return error;
             }
@@ -559,27 +559,27 @@ namespace ignite
                 return currentVer;
             }
 
-        private:
             /**
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 accepted = reader.ReadBool();
 
-                int16_t major = reader.ReadInt16();
-                int16_t minor = reader.ReadInt16();
-                int16_t maintenance = reader.ReadInt16();
-
-                currentVer = ProtocolVersion(major, minor, maintenance);
-
                 if (!accepted)
                 {
+                    int16_t major = reader.ReadInt16();
+                    int16_t minor = reader.ReadInt16();
+                    int16_t maintenance = reader.ReadInt16();
+
+                    currentVer = ProtocolVersion(major, minor, maintenance);
+
                     utility::ReadString(reader, error);
                 }
             }
 
+        private:
             /** Handshake accepted. */
             bool accepted;
 
