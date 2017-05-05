@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies,
             IBinaryNameMapper nameMapper)
         {
-            var type = ResolveNonGenericType(assemblyName, typeName.GetFullName(), assemblies, nameMapper);
+            var type = ResolveNonGenericType(assemblyName, typeName.GetNameWithNamespace(), assemblies, nameMapper);
 
             if (type == null)
             {
@@ -87,6 +87,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     .Select(x => ResolveType(assemblyName, x, assemblies, nameMapper)).ToArray();
 
                 return type.MakeGenericType(genArgs);
+            }
+
+            if (typeName.ArrayStart >= 0)
+            {
+                // TODO: Make array!
             }
 
             return type;

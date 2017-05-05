@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Binary
             if (parsedName.Generics == null)
             {
                 // Generics are rare, use simpler logic for the common case.
-                var res = IsSimpleName ? parsedName.GetName() : parsedName.GetFullName();
+                var res = IsSimpleName ? parsedName.GetName() : parsedName.GetNameWithNamespace();
                 
                 var arr = parsedName.GetArray();
 
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Binary
 
             var nameFunc = IsSimpleName
                 ? (Func<TypeNameParser, string>) (x => x.GetName())
-                : (x => x.GetFullName());
+                : (x => x.GetNameWithNamespace());
 
             return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
         }
