@@ -25,7 +25,7 @@ public enum SqlListenerProtocolVersion {
     VER_2_0_0(makeVersion(2, 0, 0), "2.0.0"),
 
     /** ODBC/JDBC version of the protocol. Released with Ignite 2.1 */
-    VERSION_2_1_0(makeVersion(2,1,0)),
+    VERSION_2_1_0(makeVersion(2,1,0), "2.1.0"),
 
     /** Unknown version. */
     UNKNOWN(Long.MIN_VALUE, "UNKNOWN");

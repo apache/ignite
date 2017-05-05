@@ -25,15 +25,15 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.OdbcHandshakeRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcHandshakeResult;
-import org.apache.ignite.internal.processors.odbc.OdbcRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcResponse;
+import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerHandshakeResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.odbc.OdbcProtocolVersion.VERSION_2_1_0;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion.VERSION_2_1_0;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -90,15 +90,15 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        sendRequest(new OdbcHandshakeRequest(VERSION_2_1_0.longValue()));
+        sendRequest(new SqlListenerHandshakeRequest(VERSION_2_1_0.longValue()));
 
-        OdbcResponse res = readResponse(ResponseType.HANDSHAKE);
+        SqlListenerResponse res = readResponse(ResponseType.HANDSHAKE);
 
-        if (res.status() != OdbcResponse.STATUS_SUCCESS)
+        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
             throw new IgniteCheckedException("Handshake error: " + res.error());
 
-        if (res.response() instanceof OdbcHandshakeResult) {
-            OdbcHandshakeResult hsRes = (OdbcHandshakeResult)res.response();
+        if (res.response() instanceof SqlListenerHandshakeResult) {
+            SqlListenerHandshakeResult hsRes = (SqlListenerHandshakeResult)res.response();
 
             if (!hsRes.accepted()) {
                 throw new IgniteCheckedException("Handshake error: the protocol version is supported by Ignite since "
@@ -111,14 +111,14 @@ public class JdbcTcpIo {
      * @param req ODBC request.
      * @throws IOException On error.
      */
-    public void sendRequest(OdbcRequest req) throws IOException {
+    public void sendRequest(SqlListenerRequest req) throws IOException {
         BinaryHeapOutputStream bhos = new BinaryHeapOutputStream(INIT_CAP);
 
         // Set offset to data array
         bhos.position(4);
 
-        if (req instanceof OdbcHandshakeRequest) {
-            OdbcHandshakeRequest handshakeReq = (OdbcHandshakeRequest)req;
+        if (req instanceof SqlListenerHandshakeRequest) {
+            SqlListenerHandshakeRequest handshakeReq = (SqlListenerHandshakeRequest)req;
 
             bhos.writeByte((byte)handshakeReq.command());
             bhos.writeLong(handshakeReq.version().longValue());
@@ -141,7 +141,7 @@ public class JdbcTcpIo {
      * @param type Expected response type.
      * @return Response object.
      */
-    private OdbcResponse parseResponse(BinaryHeapInputStream bin, ResponseType type) {
+    private SqlListenerResponse parseResponse(BinaryHeapInputStream bin, ResponseType type) {
         switch (type) {
             case HANDSHAKE: {
                 String protoVerSince = null;
@@ -155,7 +155,7 @@ public class JdbcTcpIo {
                     curVer = BinaryUtils.doReadString(bin);
                 }
 
-                return new OdbcResponse(new OdbcHandshakeResult(accepted, protoVerSince, curVer));
+                return new SqlListenerResponse(new SqlListenerHandshakeResult(accepted, protoVerSince, curVer));
             }
             case QUERY_CLOSE:
                 break;
@@ -178,7 +178,7 @@ public class JdbcTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public OdbcResponse readResponse(ResponseType respType) throws IOException, IgniteCheckedException {
+    public SqlListenerResponse readResponse(ResponseType respType) throws IOException, IgniteCheckedException {
         byte[] sizeBytes = new byte[4];
 
         in.read(sizeBytes);
@@ -193,10 +193,10 @@ public class JdbcTcpIo {
 
         int status = (int)bin.readByte();
 
-        if (status != OdbcResponse.STATUS_SUCCESS) {
+        if (status != SqlListenerResponse.STATUS_SUCCESS) {
             String err = BinaryUtils.doReadString(bin);
 
-            return new OdbcResponse(status, err);
+            return new SqlListenerResponse(status, err);
         }
 
         return parseResponse(bin, respType);
