@@ -2522,6 +2522,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to process.
          */
         @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            spi.startMessageProcess(msg);
+
             sendHeartbeatMessage();
 
             DebugLogger log = messageLogger(msg);

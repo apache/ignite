@@ -1414,6 +1414,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         writeToSocket(sock, socketStream(sock), msg, timeout);
     }
 
+    protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+        // No-op.
+    }
+
     /**
      * Writes message to the socket.
      *
