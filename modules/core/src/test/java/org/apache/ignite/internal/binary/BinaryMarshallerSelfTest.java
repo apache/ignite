@@ -230,6 +230,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param ver2 v2 flag.
      * @throws Exception If failed
      */
     private void doTestString(boolean ver2) throws Exception {
@@ -480,6 +481,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param col Collection.
      * @throws Exception If failed.
      */
     private void testCollection(Collection<Integer> col) throws Exception {
@@ -502,6 +504,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param map Map.
      * @throws Exception If failed.
      */
     private void testMap(Map<Integer, String> map) throws Exception {
@@ -686,6 +689,49 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testSimpleObjectNull() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
+        ));
+
+        SimpleObject obj = new SimpleObject();
+
+        BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj.hashCode(), po.hashCode());
+
+        assertEquals(obj, po.deserialize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleObjectZero() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+            new BinaryTypeConfiguration(SimpleObject.class.getName())
+        ));
+
+        SimpleObject obj = simpleObjectZero();
+
+        BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj.hashCode(), po.hashCode());
+
+        assertEquals(obj, po.deserialize());
+
+        assertEquals(0, (byte)po.field("b"));
+        assertEquals(0, (short)po.field("s"));
+        assertEquals(0, (int)po.field("i"));
+        assertEquals(0, (long)po.field("l"));
+        assertEquals(0, (float)po.field("f"), 0);
+        assertEquals(0, (double)po.field("d"), 0);
+        assertEquals(0, (char)po.field("c"));
+        assertEquals(false, (boolean)po.field("bool"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSimpleObject() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
@@ -762,7 +808,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(new Integer(obj.inner.enumVal.ordinal()),
             new Integer(((BinaryObject)innerPo.field("enumVal")).enumOrdinal()));
         assertArrayEquals(ordinals(obj.inner.enumArr), ordinals((BinaryObject[])innerPo.field("enumArr")));
-        assertNull(innerPo.field("inner"));
+        assertNotNull(innerPo.field("inner"));
         assertNull(innerPo.field("unknown"));
     }
 
@@ -2570,6 +2616,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
     /**
      *
+     * @throws Exception If failed.
      */
     public void testReadResolve() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
@@ -2586,7 +2633,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testReadResolveOnBinaryAware() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Collections.singletonList(
@@ -2613,7 +2660,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testDecimalFields() throws Exception {
         Collection<BinaryTypeConfiguration> clsNames = new ArrayList<>();
@@ -3525,6 +3572,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @param obj Original object.
      * @return Result object.
+     * @throws IgniteCheckedException If failed.
      */
     private <T> T marshalUnmarshal(T obj) throws IgniteCheckedException {
         return marshalUnmarshal(obj, binaryMarshaller());
@@ -3534,6 +3582,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param obj Original object.
      * @param marsh Marshaller.
      * @return Result object.
+     * @throws IgniteCheckedException If failed.
      */
     private <T> T marshalUnmarshal(Object obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
@@ -3545,6 +3594,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param obj Object.
      * @param marsh Marshaller.
      * @return Binary object.
+     * @throws IgniteCheckedException If failed.
      */
     private <T> BinaryObjectImpl marshal(T obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
@@ -3571,14 +3621,17 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @return BinaryMarshaller
+     * @throws IgniteCheckedException If failed.
      */
     protected BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
         return binaryMarshaller(null, null, null, null, null);
     }
 
     /**
-     *
+     * @param cfgs Binary configurations.
+     * @return BinaryMarshaller.
+     * @throws IgniteCheckedException If failed.
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
@@ -3586,7 +3639,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param cfgs Binary configurations.
+     * @param excludedClasses Excluded classes.
+     * @return BinaryMarshaller.
+     * @throws IgniteCheckedException If failed.
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs,
         Collection<String> excludedClasses) throws IgniteCheckedException {
@@ -3594,7 +3650,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param nameMapper Name nammer.
+     * @param mapper ID mapper.
+     * @param cfgs Binary configurations.
+     * @return BinaryMarshaller.
+     * @throws IgniteCheckedException If failed.
      */
     protected BinaryMarshaller binaryMarshaller(BinaryNameMapper nameMapper, BinaryIdMapper mapper,
         Collection<BinaryTypeConfiguration> cfgs)
@@ -3603,7 +3663,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param serializer Serializer.
+     * @param cfgs Binary configurations.
+     * @return BinaryMarshaller
+     * @throws IgniteCheckedException If failed.
      */
     protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
@@ -3611,7 +3674,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Binary marshaller.
+     * @param nameMapper Name nammer.
+     * @param mapper ID mapper.
+     * @param serializer Serializer.
+     * @param cfgs Binary configurations.
+     * @param excludedClasses Excluded classes.
+     * @return BinaryMarshaller.
+     * @throws IgniteCheckedException If failed.
      */
     protected BinaryMarshaller binaryMarshaller(
         BinaryNameMapper nameMapper,
@@ -3677,6 +3746,44 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Simple object with zero fields.
+     */
+    private static SimpleObject simpleObjectZero() {
+        SimpleObject simpleObject = new SimpleObject();
+
+        simpleObject.b = 0;
+        simpleObject.s = 0;
+        simpleObject.i = 0;
+        simpleObject.l = 0;
+        simpleObject.f = 0f;
+        simpleObject.d = 0d;
+        simpleObject.c = 0;
+        simpleObject.bool = false;
+        simpleObject.str = "";
+        simpleObject.uuid = new UUID(0, 0);
+        simpleObject.date = new Date(0);
+        simpleObject.ts = new Timestamp(0);
+        simpleObject.bArr = new byte[] {};
+        simpleObject.sArr = new short[] {};
+        simpleObject.iArr = new int[] {};
+        simpleObject.lArr = new long[] {};
+        simpleObject.fArr = new float[] {};
+        simpleObject.dArr = new double[] {};
+        simpleObject.cArr = new char[] {};
+        simpleObject.boolArr = new boolean[] {};
+        simpleObject.strArr = new String[] {};
+        simpleObject.uuidArr = new UUID[] {};
+        simpleObject.dateArr = new Date[] {};
+        simpleObject.objArr = new Object[] {};
+        simpleObject.col = new ArrayList<>();
+        simpleObject.map = new HashMap<>();
+        simpleObject.enumVal = TestEnum.A;
+        simpleObject.enumArr = new TestEnum[] {};
+        simpleObject.bdArr = new BigDecimal[] {};
+
+        return simpleObject;
+    }
+    /**
      * @return Simple object.
      */
     private static SimpleObject simpleObject() {
@@ -3719,6 +3826,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         inner.map.put(1, "str1");
         inner.map.put(2, "str2");
         inner.map.put(3, "str3");
+
+        inner.inner = simpleObjectZero();
 
         SimpleObject outer = new SimpleObject();
 
@@ -4624,6 +4733,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         /**
+         * @param idx Index.
          * @param val1 Value 1.
          * @param val2 Value 2.
          * @param val3 Value 3.
@@ -4676,6 +4786,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         public List customList = new CustomArrayList();
     }
 
+    /**
+     *
+     */
     @SuppressWarnings("unchecked")
     private static class CustomCollectionsWithFactory implements Binarylizable {
         public List list = new CustomArrayList();
@@ -5032,12 +5145,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         /** */
         private String s;
 
-        /** Initializer. */ {
+            /* Initializer. */ {
             StringBuilder builder = new StringBuilder();
 
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 0; i < 10000; i++)
                 builder.append("+");
-            }
 
             s = builder.toString();
         }

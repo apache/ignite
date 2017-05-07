@@ -24,10 +24,10 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
  */
 public class BinaryWriterSchemaHolder {
     /** Maximum offset which fits in 1 byte. */
-    private static final int MAX_OFFSET_1 = 1 << 8;
+    private static final int MAX_OFFSET_1 = BinaryUtils.NULL_1;
 
     /** Maximum offset which fits in 2 bytes. */
-    private static final int MAX_OFFSET_2 = 1 << 16;
+    private static final int MAX_OFFSET_2 = BinaryUtils.NULL_2;
 
     /** Grow step. */
     private static final int GROW_STEP = 64;
@@ -38,6 +38,9 @@ public class BinaryWriterSchemaHolder {
     /** Index. */
     private int idx;
 
+    /** Max offset. */
+    private int maxOffset;
+
     /**
      * Push another frame.
      *
@@ -45,6 +48,8 @@ public class BinaryWriterSchemaHolder {
      * @param off Field offset.
      */
     public void push(int id, int off) {
+        maxOffset = Math.max(off, maxOffset);
+
         if (idx == data.length) {
             int[] data0 = new int[data.length + GROW_STEP];
 
@@ -85,18 +90,16 @@ public class BinaryWriterSchemaHolder {
         // Ensure there are at least 8 bytes for each field to allow for unsafe writes.
         out.unsafeEnsure(fieldCnt << 3);
 
-        int lastOffset = data[idx - 1];
-
         int res;
 
         if (compactFooter) {
-            if (lastOffset < MAX_OFFSET_1) {
+            if (maxOffset < MAX_OFFSET_1) {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteByte((byte)data[curIdx]);
 
                 res = BinaryUtils.OFFSET_1;
             }
-            else if (lastOffset < MAX_OFFSET_2) {
+            else if (maxOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteShort((short) data[curIdx]);
 
@@ -110,7 +113,7 @@ public class BinaryWriterSchemaHolder {
             }
         }
         else {
-            if (lastOffset < MAX_OFFSET_1) {
+            if (maxOffset < MAX_OFFSET_1) {
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteByte((byte) data[curIdx++]);
@@ -118,7 +121,7 @@ public class BinaryWriterSchemaHolder {
 
                 res = BinaryUtils.OFFSET_1;
             }
-            else if (lastOffset < MAX_OFFSET_2) {
+            else if (maxOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteShort((short) data[curIdx++]);
@@ -141,8 +144,9 @@ public class BinaryWriterSchemaHolder {
 
     /**
      * Pop current object's frame.
+     * @param fieldCnt Fields count to pop.
      */
     public void pop(int fieldCnt) {
-        idx = idx - fieldCnt * 2;
+        idx -= fieldCnt * 2;
     }
 }

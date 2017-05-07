@@ -41,11 +41,11 @@ class BinaryValueWithType implements BinaryLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (val instanceof BinaryBuilderSerializationAware)
-            ((BinaryBuilderSerializationAware)val).writeTo(writer, ctx);
+            return ((BinaryBuilderSerializationAware)val).writeTo(writer, ctx);
         else
-            ctx.writeValue(writer, val, type == GridBinaryMarshaller.COL, type == GridBinaryMarshaller.MAP);
+            return ctx.writeValue(writer, val, type == GridBinaryMarshaller.COL, type == GridBinaryMarshaller.MAP);
     }
 
     /**

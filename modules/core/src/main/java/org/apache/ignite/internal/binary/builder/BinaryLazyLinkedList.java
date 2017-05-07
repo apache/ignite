@@ -189,7 +189,9 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        int writeOff = writer.currentOffset();
+
         if (delegate == null) {
             int size = reader.readIntPositioned(off + 1);
 
@@ -214,5 +216,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
             for (Object o : delegate)
                 ctx.writeValue(writer, o);
         }
+
+        return writeOff;
     }
 }

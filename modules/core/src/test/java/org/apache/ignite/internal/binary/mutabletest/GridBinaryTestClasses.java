@@ -317,6 +317,54 @@ public class GridBinaryTestClasses {
 
             entry = new GridMapEntry<>(1, "a");
         }
+        /**
+         *
+         */
+        public void setZeroData() {
+            b_ = 0;
+            s_ = 0;
+            i_ = 0;
+            l_ = 0L;
+            f_ = 0.0f;
+            d_ = 0.0d;
+            c_ = 0;
+            z_ = false;
+
+            b = 0;
+            s = 0;
+            i = 0;
+            l = 0;
+            f = 0.0f;
+            d = 0.0;
+            c = 0;
+            z = false;
+
+            str = "";
+            uuid = new UUID(0, 0);
+            date = new Date(0);
+            ts = new Timestamp(0);
+
+            bArr = new byte[] {1, 2, 3};
+            sArr = new short[] {1, 2, 3};
+            iArr = new int[] {1, 2, 3};
+            lArr = new long[] {1, 2, 3};
+            fArr = new float[] {1, 2, 3};
+            dArr = new double[] {1, 2, 3};
+            cArr = new char[] {1, 2, 3};
+            zArr = new boolean[] {true, false};
+
+            strArr = new String[] {"abc", "ab", "a"};
+            uuidArr = new UUID[] {new UUID(1, 1), new UUID(2, 2)};
+            bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.TEN};
+            dateArr = new Date[] {new Date(1000000), new Date(200000)};
+            tsArr = new Timestamp[] {new Timestamp(100020003), new Timestamp(200030004)};
+
+            anEnum = TestObjectEnum.A;
+
+            enumArr = new TestObjectEnum[] {TestObjectEnum.B};
+
+            entry = new GridMapEntry<>(1, "a");
+        }
     }
 
     /**

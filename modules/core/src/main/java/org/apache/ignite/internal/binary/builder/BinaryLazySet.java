@@ -47,7 +47,9 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        int writeOff = writer.currentOffset();
+
         if (val == null) {
             int size = reader.readIntPositioned(off + 1);
 
@@ -74,6 +76,8 @@ class BinaryLazySet extends BinaryAbstractLazyValue {
             for (Object o : c)
                 ctx.writeValue(writer, o);
         }
+
+        return writeOff;
     }
 
     /** {@inheritDoc} */

@@ -81,10 +81,14 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        int writeOff = writer.currentOffset();
+
         if (clsName == null)
             ctx.writeArray(writer, GridBinaryMarshaller.OBJ_ARR, lazyValsArr, compTypeId);
         else
             ctx.writeArray(writer, GridBinaryMarshaller.OBJ_ARR, lazyValsArr, clsName);
+
+        return writeOff;
     }
 }

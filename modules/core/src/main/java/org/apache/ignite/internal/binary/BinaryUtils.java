@@ -130,6 +130,15 @@ public class BinaryUtils {
     public static final boolean WRAP_TREES =
         !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
 
+    /** Special offset for NULL value on 1-byte offset. */
+    public static final int NULL_1 = 0xFF;
+
+    /** Special offset for NULL value on 2-byte offset. */
+    public static final int NULL_2 = 0xFFFF;
+
+    /** Special offset for NULL value on 4-byte offset. */
+    public static final int NULL_4 = 0xFFFF_FFFF;
+
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static final boolean FIELDS_SORTED_ORDER =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
@@ -369,61 +378,40 @@ public class BinaryUtils {
      *
      * @param writer W
      * @param val Value.
+     * @return Filed offset.
      */
-    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
+    public static int writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
+
+        int off = writer.currentOffset();
 
         if (flag == null)
             throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
 
         switch (flag) {
             case GridBinaryMarshaller.BYTE:
-                writer.writeByte(flag);
-                writer.writeByte((Byte)val);
-
-                break;
+                return writer.writeByteField((Byte)val);
 
             case GridBinaryMarshaller.SHORT:
-                writer.writeByte(flag);
-                writer.writeShort((Short)val);
-
-                break;
+                return writer.writeShortField((Short)val);
 
             case GridBinaryMarshaller.INT:
-                writer.writeByte(flag);
-                writer.writeInt((Integer)val);
-
-                break;
+                return writer.writeIntField((Integer)val);
 
             case GridBinaryMarshaller.LONG:
-                writer.writeByte(flag);
-                writer.writeLong((Long)val);
-
-                break;
+                return writer.writeLongField((Long)val);
 
             case GridBinaryMarshaller.FLOAT:
-                writer.writeByte(flag);
-                writer.writeFloat((Float)val);
-
-                break;
+                return writer.writeFloatField((Float)val);
 
             case GridBinaryMarshaller.DOUBLE:
-                writer.writeByte(flag);
-                writer.writeDouble((Double)val);
-
-                break;
+                return writer.writeDoubleField((Double)val);
 
             case GridBinaryMarshaller.CHAR:
-                writer.writeByte(flag);
-                writer.writeChar((Character)val);
-
-                break;
+                return writer.writeCharField((Character)val);
 
             case GridBinaryMarshaller.BOOLEAN:
-                writer.writeByte(flag);
-                writer.writeBoolean((Boolean)val);
-
-                break;
+                return writer.writeBooleanField((Boolean)val);
 
             case GridBinaryMarshaller.DECIMAL:
                 writer.doWriteDecimal((BigDecimal)val);
@@ -528,6 +516,8 @@ public class BinaryUtils {
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
+
+        return off;
     }
 
     /**
@@ -562,6 +552,7 @@ public class BinaryUtils {
     }
 
     /**
+     * @param type Type ID.
      * @return {@code true} if content of serialized value cannot contain references to other object.
      */
     public static boolean isPlainType(int type) {
@@ -908,16 +899,57 @@ public class BinaryUtils {
      * @return Relative field offset.
      */
     public static int fieldOffsetRelative(BinaryPositionReadable stream, int pos, int fieldOffsetSize) {
-        int res;
-
         if (fieldOffsetSize == OFFSET_1)
-            res = (int)stream.readBytePositioned(pos) & 0xFF;
+            return (int)stream.readBytePositioned(pos) & 0xFF;
         else if (fieldOffsetSize == OFFSET_2)
-            res = (int)stream.readShortPositioned(pos) & 0xFFFF;
+            return (int)stream.readShortPositioned(pos) & 0xFFFF;
         else
-            res = stream.readIntPositioned(pos);
+            return stream.readIntPositioned(pos);
+    }
 
-        return res;
+    /**
+     * Get relative field offset.
+     *
+     * @param arr Byte array.
+     * @param pos Position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Relative field offset.
+     */
+    public static int fieldOffsetRelativeHeap(byte[] arr, int pos, int fieldOffsetSize) {
+        if (fieldOffsetSize == OFFSET_1)
+            return (int)BinaryPrimitives.readByte(arr, pos) & 0xFF;
+        else if (fieldOffsetSize == OFFSET_2)
+            return (int)BinaryPrimitives.readShort(arr, pos) & 0xFFFF;
+        else
+            return BinaryPrimitives.readInt(arr, pos);
+    }
+
+    /**
+     * Get relative field offset.
+     *
+     * @param ptr Offheap pointer.
+     * @param pos Position.
+     * @param fieldOffsetSize Field offset size.
+     * @return Relative field offset.
+     */
+    public static int fieldOffsetRelativeOffheap(long ptr, int pos, int fieldOffsetSize) {
+        if (fieldOffsetSize == OFFSET_1)
+            return (int)BinaryPrimitives.readByte(ptr, pos) & 0xFF;
+        else if (fieldOffsetSize == OFFSET_2)
+            return (int)BinaryPrimitives.readShort(ptr, pos) & 0xFFFF;
+        else
+            return BinaryPrimitives.readInt(ptr, pos);
+    }
+
+    /**
+     * @param off Field offset.
+     * @param fieldOffsetSize Field offset size.
+     * @return {@code True} if offset is special constant for null reference. {@code False} otherwise.
+     */
+    public static boolean isNullOffset(int off, int fieldOffsetSize) {
+        return (fieldOffsetSize == OFFSET_1 && off == NULL_1)
+            || (fieldOffsetSize == OFFSET_2 && off == NULL_2)
+            || off == NULL_4;
     }
 
     /**

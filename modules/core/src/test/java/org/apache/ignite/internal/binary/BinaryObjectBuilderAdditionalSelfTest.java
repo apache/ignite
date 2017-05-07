@@ -179,6 +179,21 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If any error occurs.
      */
+    public void testSimpleTypeFieldWithZeroes() throws Exception {
+        GridBinaryTestClasses.TestObjectAllTypes exp = new GridBinaryTestClasses.TestObjectAllTypes();
+
+        exp.setZeroData();
+
+        BinaryObjectBuilderImpl mutPo = wrap(exp);
+
+        GridBinaryTestClasses.TestObjectAllTypes res = mutPo.build().deserialize();
+
+        GridTestUtils.deepEquals(exp, res);
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
     public void testSimpleTypeFieldOverride() throws Exception {
         GridBinaryTestClasses.TestObjectAllTypes exp = new GridBinaryTestClasses.TestObjectAllTypes();
 

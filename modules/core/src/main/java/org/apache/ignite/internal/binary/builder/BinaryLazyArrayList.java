@@ -132,7 +132,9 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        int writeOff = writer.currentOffset();
+
         if (delegate == null) {
             int size = reader.readIntPositioned(off + 1);
 
@@ -163,5 +165,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
             // BinaryBuilderImpl might have been written. It could override reader's position.
             reader.position(oldPos);
         }
+
+        return writeOff;
     }
 }

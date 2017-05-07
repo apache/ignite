@@ -368,14 +368,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-        int fieldPos;
+        int fieldOff = BinaryUtils.fieldOffsetRelativeHeap(arr, fieldOffsetPos, fieldOffLen);
 
-        if (fieldOffLen == BinaryUtils.OFFSET_1)
-            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffLen == BinaryUtils.OFFSET_2)
-            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
-        else
-            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
+        if (BinaryUtils.isNullOffset(fieldOff, fieldOffLen))
+            return null;
+
+        int fieldPos = start + fieldOff;
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
@@ -624,7 +622,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null, false).findFieldByName(fieldName);
+        return reader(null, false).findFieldByName(fieldName)
+            != BinaryReaderExImpl.FieldState.NOT_FOUND;
     }
 
     /** {@inheritDoc} */

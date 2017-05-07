@@ -260,16 +260,14 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
         int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
+        int fieldOffPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-        int fieldPos;
+        int fieldOff = BinaryUtils.fieldOffsetRelativeOffheap(ptr, fieldOffPos, fieldOffLen);
 
-        if (fieldOffLen == BinaryUtils.OFFSET_1)
-            fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffLen == BinaryUtils.OFFSET_2)
-            fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
-        else
-            fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
+        if (BinaryUtils.isNullOffset(fieldOff, fieldOffLen))
+            return null;
+
+        int fieldPos = start + fieldOff;
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(ptr, fieldPos);
@@ -412,7 +410,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null, false).findFieldByName(fieldName);
+        return reader(null, false).findFieldByName(fieldName) != BinaryReaderExImpl.FieldState.NOT_FOUND;
     }
 
     /** {@inheritDoc} */

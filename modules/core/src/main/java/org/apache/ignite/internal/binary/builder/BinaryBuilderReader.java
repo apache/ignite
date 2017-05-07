@@ -580,7 +580,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos++] != 0;
 
             case GridBinaryMarshaller.DECIMAL:
-                plainLazyValLen = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                plainLazyValLen = /* scale */ 4  + /* mag len */ 4  + /* mag bytes count */ readInt(4);
 
                 break;
 
@@ -895,8 +895,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-            ctx.writeValue(writer, wrappedCollection());
+        @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+            return ctx.writeValue(writer, wrappedCollection());
         }
 
         /** {@inheritDoc} */
