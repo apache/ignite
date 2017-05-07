@@ -144,7 +144,7 @@ public final class IgfsImpl implements IgfsEx {
     private IgfsSecondaryFileSystem secondaryFs;
 
     /** Busy lock. */
-    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+    private final GridSpinBusyLock busyLock;
 
     /** Writers map. */
     private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
@@ -174,6 +174,9 @@ public final class IgfsImpl implements IgfsEx {
         log = igfsCtx.kernalContext().log(IgfsImpl.class);
         evts = igfsCtx.kernalContext().event();
         meta = igfsCtx.meta();
+
+        this.busyLock = meta.busyLock();
+
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 

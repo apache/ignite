@@ -3410,4 +3410,13 @@ public class IgfsMetaManager extends IgfsManager {
          */
         public T onFailure(Exception err) throws IgniteCheckedException;
     }
+
+    /**
+     * Gets the busy lock.
+     *
+     * @return The busy lock.
+     */
+    GridSpinBusyLock busyLock() {
+        return busyLock;
+    }
 }
