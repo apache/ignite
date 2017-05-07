@@ -2016,6 +2016,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals(2, personCache.query(qry).getAll().size());
     }
 
+
+    /**
+     * Organization class.
+     */
+    public static class Organization implements Serializable {
+        /** Organization ID (indexed). */
+        @QuerySqlField(index = true)
+        private Integer id;
+
+        /** First name (not-indexed). */
+        @QuerySqlField(index = true)
+        private String name;
+
+        /**
+         * @param id Id.
+         * @param name Name.
+         */
+        Organization(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /**
+         * @return Id.
+         */
+        public Integer getId() {
+            return id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+    }
+
     /**
      * Organization class.
      */
