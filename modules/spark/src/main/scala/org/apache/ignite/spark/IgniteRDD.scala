@@ -356,4 +356,10 @@ class IgniteRDD[K, V] (
             .map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
             .getOrElse(IgniteUuid.randomUuid())
     }
+
+    override def isEmpty(): Boolean = {
+        val cache = ensureCache()
+        return cache.size() == 0
+    }
+
 }
