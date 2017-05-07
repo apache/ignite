@@ -95,7 +95,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                         assert backupsCnt >= 1 : "Backups: " + backupsCnt;
 
-                        final boolean isDebug = ignite.log().isDebugEnabled();
+                        final boolean isDebug = true;
 
                         // Main logic.
                         while (!Thread.currentThread().isInterrupted()) {
