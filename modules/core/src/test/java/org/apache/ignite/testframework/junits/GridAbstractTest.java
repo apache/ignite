@@ -2057,6 +2057,35 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      *
+     * @throws IgniteInterruptedCheckedException
+     */
+    public void awaitTopologyChange() throws IgniteInterruptedCheckedException {
+        for (Ignite g : G.allGrids()) {
+            final GridKernalContext ctx = ((IgniteKernal)g).context();
+
+            if (ctx.isStopping())
+                continue;
+
+            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+            AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            if (! topVer.equals(exchVer)) {
+                info("topology version mismatch: node "  + g.name() + " " + exchVer + ", " + topVer);
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+                        AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+                        return exchVer.equals(topVer);
+                    }
+                }, DFLT_TOP_WAIT_TIMEOUT);
+            }
+        }
+    }
+
+    /**
+     *
      */
     private static interface WriteReplaceOwner {
         /**
