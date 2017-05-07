@@ -390,17 +390,13 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                                             log.debug("Skipping deployment (loaders on remote node are different) " +
                                                 "[dep=" + d + ", meta=" + meta + ']');
 
+                                        updateDepsToCheck(depsToCheck, d);
+
                                         continue;
                                     }
                                 }
 
-                                if (depsToCheck == null)
-                                    depsToCheck = new LinkedList<>();
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Adding deployment to check: " + d);
-
-                                depsToCheck.add(d);
+                                updateDepsToCheck(depsToCheck, d);
                             }
                         }
 
@@ -1058,6 +1054,19 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         }
 
         return dep;
+    }
+
+    private void updateDepsToCheck(@Nullable List<SharedDeployment> depsToCheck, SharedDeployment dep) {
+
+        assert dep != null;
+
+        if (depsToCheck == null)
+            depsToCheck = new LinkedList<>();
+
+        if (log.isDebugEnabled())
+            log.debug("Adding deployment to check: " + dep);
+
+        depsToCheck.add(dep);
     }
 
     /** {@inheritDoc} */
