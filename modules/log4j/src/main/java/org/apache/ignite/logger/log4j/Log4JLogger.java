@@ -35,10 +35,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.log4j.Appender;
+import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
@@ -78,6 +80,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * injection.
  */
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
+    /** */
+    public static final String CONSOLE_ERR_APPENDER_NAME = "CONSOLE_ERR";
+
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -308,7 +313,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                         Appender appender = (Appender)appenders.nextElement();
 
                         if (appender instanceof ConsoleAppender) {
-                            if ("CONSOLE_ERR".equals(appender.getName())) {
+                            if (CONSOLE_ERR_APPENDER_NAME.equals(appender.getName())) {
                                 // Treat CONSOLE_ERR appender as a system one and don't count it.
                                 errAppender = (ConsoleAppender)appender;
 
@@ -347,21 +352,49 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                     if (errAppender.getThreshold() == Level.ERROR)
                         errAppender.setThreshold(Level.WARN);
                 }
-                else
-                    // No error console appender => create console appender with no level limit.
-                    rootCategory.addAppender(createConsoleAppender(Level.OFF));
+                else {
+                    // No error console appender => create console appender with.
+                    final AppenderSkeleton consoleAppender = createConsoleAppender(Level.OFF);
 
-                if (logLevel != null)
+                    consoleAppender.setThreshold(Level.INFO);
+
+                    rootCategory.addAppender(consoleAppender);
+                }
+
+                // Won't raise LogLevel if there is other loggers configured. As LogLevel can be inherited.
+                if (logLevel != null && !logLevel.isGreaterOrEqual(impl.getEffectiveLevel())) {
                     impl.setLevel(logLevel);
-            }
 
-            // If still don't have appenders, disable logging.
-            if (!isConfigured())
+                    impl.warn("RootLogger log level has been dropped for auto-created console appender.\n"+
+                    "Set lower log level or configure ConsoleAppender manually or disable ConsoleAppender automatic creation.");
+                }
+            }
+            else if (!isConfigured() && !hasOtherLoggers()) {
+                // If still don't have appenders and other loggers configured, disable logging.
                 impl.setLevel(Level.OFF);
+            }
 
             quiet0 = quiet;
             inited = true;
         }
+    }
+
+    /**
+     * Checks if there is other loggers configured.
+     *
+     * @return {@code True} if other logger found.
+     */
+    private boolean hasOtherLoggers() {
+        final Enumeration loggers = LogManager.getCurrentLoggers();
+
+        while (loggers.hasMoreElements()) {
+            Logger c = (Logger)loggers.nextElement();
+
+            if (c != impl && c.getAllAppenders().hasMoreElements())
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -370,11 +403,11 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param maxLevel Max logging level.
      * @return New console appender.
      */
-    private Appender createConsoleAppender(Level maxLevel) {
+    private AppenderSkeleton createConsoleAppender(Level maxLevel) {
         String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
 
         // Configure output that should go to System.out
-        Appender app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
+        AppenderSkeleton app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();
 
@@ -531,5 +564,16 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                 a.activateOptions();
             }
         }
+    }
+
+    /**
+     * For test purposes only.
+     */
+    static void reset(){
+        inited = false;
+
+        quiet0 = false;
+
+        fileAppenders.clear();
     }
 }
