@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
 
+import com.google.common.collect.Sets;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.google.common.collect.Sets;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -112,6 +112,9 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** Whether to allow or not duplicate registrations. See setter doc. */
     private boolean allowDuplicateRegistrations = false;
+
+    /** Whether to use host names for registration. */
+    private boolean useHostname = false;
 
     /** The Service Discovery recipe. */
     private ServiceDiscovery<IgniteInstanceDetails> discovery;
@@ -225,10 +228,16 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
                 continue;
 
             try {
+                String host;
+                if (useHostname)
+                    host = addr.getAddress().getHostName();
+                else
+                    host = addr.getAddress().getHostAddress();
+
                 ServiceInstance<IgniteInstanceDetails> si = ServiceInstance.<IgniteInstanceDetails>builder()
                     .name(serviceName)
                     .uriSpec(URI_SPEC)
-                    .address(addr.getAddress().getHostAddress())
+                    .address(host)
                     .port(addr.getPort())
                     .build();
 
@@ -378,6 +387,22 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         super.setShared(shared);
 
         return this;
+    }
+
+    /**
+     * @return True if the host name is used for registration. Otherwise, false.
+     */
+    public boolean isUseHostname() {
+        return useHostname;
+    }
+
+    /**
+     * Enables using the host name for registration if true, otherwise ip address is used.
+     *
+     * @param useHostname True to use the host name, false otherwise.
+     */
+    public void setUseHostname(boolean useHostname) {
+        this.useHostname = useHostname;
     }
 
     /**

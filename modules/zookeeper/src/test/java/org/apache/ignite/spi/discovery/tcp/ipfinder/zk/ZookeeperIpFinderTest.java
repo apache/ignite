@@ -60,6 +60,9 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /** Whether to allow duplicate registrations for the current test method or not. */
     private boolean allowDuplicateRegistrations = false;
 
+    /** Whether to use the host name for the registration. */
+    private boolean useHostname = false;
+
     /** Constructor that does not start any grids. */
     public ZookeeperIpFinderTest() {
         super(false);
@@ -118,6 +121,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)configuration.getDiscoverySpi();
         TcpDiscoveryZookeeperIpFinder zkIpFinder = new TcpDiscoveryZookeeperIpFinder();
         zkIpFinder.setAllowDuplicateRegistrations(allowDuplicateRegistrations);
+        zkIpFinder.setUseHostname(useHostname);
 
         // first node => configure with zkUrl; second node => configure with CuratorFramework; third and subsequent
         // shall be configured through system property
@@ -290,6 +294,15 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // check that all nodes are gone in ZK
         assertEquals(0, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTwoNodesWithHostNameRegistrations() throws Exception {
+        useHostname = true;
+
+        testTwoIgniteNodesFindEachOther();
     }
 
     /**
