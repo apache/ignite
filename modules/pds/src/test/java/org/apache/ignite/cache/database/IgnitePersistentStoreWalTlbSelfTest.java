@@ -4,6 +4,8 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistenceConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
@@ -27,6 +29,18 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
 
         cfg.setCacheConfiguration(ccfg);
+
+        MemoryConfiguration memCfg = new MemoryConfiguration();
+
+        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+
+        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setSize(100 * 1024 * 1024);
+
+        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+
+        cfg.setMemoryConfiguration(memCfg);
 
         cfg.setPersistenceConfiguration(new PersistenceConfiguration());
 
@@ -77,25 +91,27 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     public void testWalDirectOutOfMemory() throws Exception {
-
         IgniteEx ig = grid(1);
+
         boolean locked = true;
 
         try {
-        IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(null);
+            IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(null);
             for (int i = 0; i < 100_000; i++) {
                 streamer.addData(i, 1);
 
                 if (i > 0 && i % 10_000 == 0)
                     info("Done put: " + i);
             }
-        } catch (CacheException ignore) {
+        }
+        catch (CacheException ignore) {
             // expected
             locked = false;
-        } finally {
+        }
+        finally {
             assertFalse(locked);
+
             stopAllGrids();
         }
     }
-
 }
