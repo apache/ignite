@@ -15,6 +15,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.configuration.PersistenceConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE;
+
 /**
  *
  */
@@ -42,7 +44,10 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
 
         cfg.setMemoryConfiguration(memCfg);
 
-        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
+        cfg.setPersistenceConfiguration(
+            new PersistenceConfiguration()
+                .setCheckpointPageBufferSize(DFLT_CHECKPOINT_PAGE_BUFFER_SIZE + 1)
+        );
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
