@@ -166,13 +166,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     *
-     */
-    public Object getSnapshotMgr() {
-        return null;
-    }
-
-    /**
      * @param dbCfg Database config.
      */
     protected void initPageMemoryPolicies(MemoryConfiguration dbCfg) {

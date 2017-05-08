@@ -292,13 +292,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
-     */
-    @Override public IgniteCacheSnapshotManager getSnapshotMgr() {
-        return snapshotMgr;
-    }
-
-    /**
      * For test use only.
      */
     public IgniteInternalFuture<Void> enableCheckpoints(boolean enable) {
