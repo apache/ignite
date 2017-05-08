@@ -10,6 +10,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,38 +34,6 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param cacheId Cache id.
-     * @param pageMem Page Memory.
-     */
-    public long getLastSuccessfulSnapshotTagForCache(int cacheId, PageMemory pageMem) {
-        return 0;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     * @param pageMem Page Memory.
-     * @return Next snapshot ID for given cache.
-     */
-    public long getNextSnapshotTagForCache(int cacheId, PageMemory pageMem) {
-       return 0;
-    }
-
-    /**
-     *
-     */
-    public void restoreState() throws IgniteCheckedException {
-
-    }
-
-    /**
-     * @param fullId Full id.
-     */
-    public void onPageEvict(FullPageId fullId) throws IgniteCheckedException {
-
-    }
-
-
-    /**
      * @param snapOp current snapshot operation.
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
@@ -71,8 +41,15 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
     public boolean onMarkCheckPointBegin(
         SnapshotOperation snapOp,
         NavigableMap<T2<Integer, Integer>, T2<Integer, Integer>> map
-    ){
+    ) throws IgniteCheckedException {
         return false;
+    }
+
+    /**
+     *
+     */
+    public void restoreState() throws IgniteCheckedException {
+
     }
 
     /**
@@ -115,5 +92,27 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     public void onCacheStop(GridCacheContext cctx) {
 
+    }
+
+    /**
+     *
+     */
+    public GridInClosure3X<Long, FullPageId, PageMemory> changeTrackerPageHandler(){
+        return new CIX3<Long, FullPageId, PageMemory>() {
+            @Override public void applyx(Long aLong, FullPageId id, PageMemory memory) {
+                // No-op.
+            }
+        };
+    }
+
+    /**
+     *
+     */
+    public GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPageHandler() {
+        return new CIX3<FullPageId, ByteBuffer, Integer>() {
+            @Override public void applyx(FullPageId fullId, ByteBuffer pageBuf, Integer tag) {
+
+            }
+        };
     }
 }

@@ -75,12 +75,10 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -91,8 +89,6 @@ import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryIm
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.database.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -235,14 +231,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private boolean stopping;
 
-    /** Tracking io. */
-    private final TrackingPageIO trackingIO = TrackingPageIO.VERSIONS.latest();
-
     /** Page meta io. */
     private final PageMetaIO pageMetaIO = PageMetaIO.VERSIONS.latest();
-
-    /** Meta io. */
-    private static final PageMetaIO metaIO = PageMetaIO.VERSIONS.latest();
 
     /** Checkpoint runner thread pool. */
     private ExecutorService asyncRunner;
@@ -559,16 +549,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         MemoryPolicyConfiguration cfg,
         MemoryMetricsImpl memMetrics
     ) {
+        final GridInClosure3X<Long, FullPageId, PageMemory> trackerPageHnd = snapshotMgr.changeTrackerPageHandler();
+
+        final GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPageHnd = snapshotMgr.flushDirtyPageHandler();
+
         return new PageMemoryImpl(memProvider, cctx, pageSize,
             new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(FullPageId fullId, ByteBuffer pageBuf, Integer tag)
-                    throws IgniteCheckedException {
-                    flushPageOnEvict(fullId, pageBuf, tag);
+                @Override public void applyx(
+                    FullPageId fullId,
+                    ByteBuffer pageBuf,
+                    Integer tag
+                ) throws IgniteCheckedException {
+                    storeMgr.write(fullId.cacheId(), fullId.pageId(), pageBuf, tag);
+
+                    flushDirtyPageHnd.applyx(fullId, pageBuf, tag);
                 }
             },
             new GridInClosure3X<Long,FullPageId, PageMemoryEx>() {
-                @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
-                    markDirty(fullId.cacheId(), fullId.pageId(), pageMem);
+                @Override public void applyx(
+                    Long page,
+                    FullPageId fullId,
+                    PageMemoryEx pageMem
+                ) throws IgniteCheckedException {
+                    trackerPageHnd.applyx(page, fullId, pageMem);
                 }
             },
             this
@@ -580,67 +583,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         throws IgniteCheckedException {
         if (plcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
             throw new IgniteCheckedException("Page eviction is not compatible with persistence: " + plcCfg.getName());
-    }
-
-    /**
-     * @param pageMem Page memory.
-     */
-    private void markDirty(int cacheId, long pageId, PageMemory pageMem) {
-        //skip super page
-        if (PageIdUtils.pageIndex(pageId) == 0)
-            return;
-
-        long lastSuccessfulSnapshotTag = snapshotMgr.getLastSuccessfulSnapshotTagForCache(cacheId, pageMem);
-
-        if (lastSuccessfulSnapshotTag < 0) //there is no full snapshot
-            return;
-
-        long trackingPageId = trackingIO.trackingPageFor(pageId, pageMem.pageSize());
-
-        //skip tracking page
-        if (pageId == trackingPageId)
-            return;
-
-        try {
-            long trackingPage = pageMem.acquirePage(cacheId, trackingPageId);
-            try {
-                long pageAddr = pageMem.writeLock(cacheId, trackingPageId, trackingPage);
-
-                try {
-                    //cooperative initialization
-                    if (PageIO.getType(pageAddr) == 0) {
-                        trackingIO.initNewPage(pageAddr, trackingPageId, pageMem.pageSize());
-
-                        if (isWalDeltaRecordNeeded(pageMem, cacheId, trackingPageId, trackingPage, cctx.wal(), null)) {
-                            cctx.wal().log(new InitNewPageRecord(cacheId, trackingPageId, trackingIO.getType(),
-                                trackingIO.getVersion(), trackingPageId));
-                        }
-                    }
-
-                    long nextSnapshotTag = snapshotMgr.getNextSnapshotTagForCache(cacheId, (PageMemoryEx) pageMem);
-
-                    trackingIO.markChanged(pageMem.pageBuffer(pageAddr),
-                        pageId,
-                        nextSnapshotTag,
-                        lastSuccessfulSnapshotTag,
-                        pageMem.pageSize());
-
-                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, cacheId, trackingPageId, trackingPage, cctx.wal(), null))
-                        cctx.wal().log(new TrackingPageDeltaRecord(
-                            cacheId, trackingPageId, pageId, nextSnapshotTag, lastSuccessfulSnapshotTag));
-                }
-                finally {
-                    pageMem.writeUnlock(cacheId, trackingPageId, trackingPage, null, true);
-                }
-            }
-            finally {
-                pageMem.releasePage(cacheId, trackingPageId, trackingPage);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            // TODO we should not allow next incremental snapshot since we've lost an updated page.
-            U.error(log, "There was an exception while updating tracking page: " + U.hexLong(trackingPageId), e);
-        }
     }
 
     /**
@@ -1630,16 +1572,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @param fullId Full page ID.
-     * @param pageBuf Page buffer.
-     */
-    private void flushPageOnEvict(FullPageId fullId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
-        storeMgr.write(fullId.cacheId(), fullId.pageId(), pageBuf, tag);
-
-        snapshotMgr.onPageEvict(fullId);
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     private void finalizeCheckpointOnRecovery(long cpTs, UUID cpId, WALPointer walPtr) throws IgniteCheckedException {
@@ -2420,7 +2352,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param cacheId Cache id.
      * @param part Partition.
      */
-    public static void completeSavingAllocatedIndex(
+    public void completeSavingAllocatedIndex(
         PageMemoryEx pageMem, IgniteWriteAheadLogManager wal, int cacheId, int part
     ) throws IgniteCheckedException {
         long pageId = getSuperPageId(pageMem, cacheId, part);
@@ -2433,14 +2365,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 assert PageIO.getPageId(pageAddr) != 0;
 
-                int lastAllocatedIdx = metaIO.getLastPageCount(pageAddr);
-                int candidateAllocatedIdx = metaIO.getCandidatePageCount(pageAddr);
+                int lastAllocatedIdx = pageMetaIO.getLastPageCount(pageAddr);
+                int candidateAllocatedIdx = pageMetaIO.getCandidatePageCount(pageAddr);
 
                 if (lastAllocatedIdx != candidateAllocatedIdx) {
                     if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, null))
                         wal.log(new MetaPageUpdateLastAllocatedIndex(cacheId, pageId, candidateAllocatedIdx));
 
-                    metaIO.setLastPageCount(pageAddr, candidateAllocatedIdx);
+                    pageMetaIO.setLastPageCount(pageAddr, candidateAllocatedIdx);
 
                     wasChanged = true;
                 }
