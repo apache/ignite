@@ -4,7 +4,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.cache.database.IgnitePersistentStoreAtomicCacheRebalancingTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreTxCacheRebalancingTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreContinuousRestartSelfTest;
-import org.apache.ignite.cache.database.IgnitePersistentStorePageSizesSelfTest;
+import org.apache.ignite.cache.database.IgnitePersistentStorePageSizesTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreWalTlbSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.cache.database.db.DbPageEvictionDuringPartitionClearSelfTest;
@@ -31,7 +31,7 @@ public class IgnitePersistentStoreTestSuit2 extends TestSuite {
         // Integrity test
         suite.addTestSuite(IgniteDataIntegrityTests.class);
         suite.addTestSuite(IgnitePersistentStoreRecoveryAfterFileCorruptionTest.class);
-        suite.addTestSuite(IgnitePersistentStorePageSizesSelfTest.class);
+        suite.addTestSuite(IgnitePersistentStorePageSizesTest.class);
         suite.addTestSuite(IgnitePersistentStoreWalTlbSelfTest.class);
 
         // WAL recovery test.

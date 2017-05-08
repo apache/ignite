@@ -41,6 +41,37 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
     private static final int totalPages = 1024;
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        CacheConfiguration ccfg = new CacheConfiguration("partitioned");
+
+        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        MemoryConfiguration dbCfg = new MemoryConfiguration();
+
+        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+
+        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setSize(1024 * 1024 * 1024);
+
+        dbCfg.setMemoryPolicies(memPlcCfg);
+        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+
+        cfg.setMemoryConfiguration(dbCfg);
+
+        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+
+        pCfg.setCheckpointFrequency(500);
+
+        cfg.setPersistenceConfiguration(pCfg);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_ALWAYS_WRITE_FULL_PAGES, "true");
 
@@ -160,37 +191,6 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
                 mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        CacheConfiguration ccfg = new CacheConfiguration("partitioned");
-
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(1024 * 1024 * 1024);
-
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
-
-        pCfg.setCheckpointFrequency(500);
-
-        cfg.setPersistenceConfiguration(pCfg);
-
-        return cfg;
     }
 
     /**

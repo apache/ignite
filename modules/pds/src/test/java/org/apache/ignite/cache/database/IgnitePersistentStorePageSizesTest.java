@@ -19,7 +19,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class IgnitePersistentStorePageSizesSelfTest extends GridCommonAbstractTest {
+public class IgnitePersistentStorePageSizesTest extends GridCommonAbstractTest {
     /** */
     private int pageSize;
 
@@ -41,11 +41,11 @@ public class IgnitePersistentStorePageSizesSelfTest extends GridCommonAbstractTe
 
         cfg.setMemoryConfiguration(memCfg);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
 
         cfg.setCacheConfiguration(
             new CacheConfiguration("partitioned")
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
         return cfg;

@@ -57,9 +57,8 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @return Ignite instance for testing.
      */
     private IgniteEx ig() {
-        if (withClientNearCache()) {
+        if (withClientNearCache())
             return grid(gridCount());
-        }
 
         return grid(0);
     }

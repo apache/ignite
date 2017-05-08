@@ -19,7 +19,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class IgnitePersistentStoreDynamicCacheWithPersistenceSelfTest extends IgniteDbDynamicCacheSelfTest {
+public class IgnitePersistentStoreDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE, "LOG_ONLY");

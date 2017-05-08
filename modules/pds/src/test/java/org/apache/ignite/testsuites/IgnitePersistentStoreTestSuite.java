@@ -2,7 +2,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.database.IgnitePersistentStoreClientNearCachePutGetWithPersistenceSelfTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreDynamicCacheWithPersistenceSelfTest;
+import org.apache.ignite.cache.database.IgnitePersistentStoreDynamicCacheTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreSingleNodePutGetPersistenceSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreSingleNodeWithIndexingPutGetPersistenceSelfTest;
 import org.apache.ignite.cache.database.db.IgniteDbMultiNodePutGetRestartSelfTest;
@@ -66,7 +66,7 @@ public class IgnitePersistentStoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePersistentStoreSingleNodePutGetPersistenceSelfTest.class);
         suite.addTestSuite(IgnitePersistentStoreSingleNodeWithIndexingPutGetPersistenceSelfTest.class);
         suite.addTestSuite(IgniteDbPageEvictionSelfTest.class);
-        suite.addTestSuite(IgnitePersistentStoreDynamicCacheWithPersistenceSelfTest.class);
+        suite.addTestSuite(IgnitePersistentStoreDynamicCacheTest.class);
         suite.addTestSuite(IgniteWalDirectoriesConfigurationTest.class);
         suite.addTestSuite(IgnitePersistentStoreClientNearCachePutGetWithPersistenceSelfTest.class);
 
