@@ -1,11 +1,16 @@
-package org.apache.ignite.cache.database.standbycluster;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateCacheTest;
+import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateDataStreamerTest;
+import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateDataStructureTest;
+import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateFailOverTest;
+import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateTest;
 
 /**
  *
  */
-public class GridChangeGlobalStateSuite extends TestSuite {
+public class IgniteChangeGlobalStateSuite extends TestSuite {
     /**
      *
      */

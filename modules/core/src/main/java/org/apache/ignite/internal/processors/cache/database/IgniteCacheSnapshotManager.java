@@ -111,7 +111,7 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
     public GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPageHandler() {
         return new CIX3<FullPageId, ByteBuffer, Integer>() {
             @Override public void applyx(FullPageId fullId, ByteBuffer pageBuf, Integer tag) {
-
+                // No-op.
             }
         };
     }

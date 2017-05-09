@@ -428,7 +428,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         onKernalStop0(true);
 
-        /*must be here, because after deactivate we can invoke activate and file lock must be already configured */
+        /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
 
         fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
@@ -1442,7 +1442,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed to restore.
      */
     private void restorePartitionState(
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates) throws IgniteCheckedException {
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
+    ) throws IgniteCheckedException {
         Collection<GridCacheContext> cacheContexts = cctx.cacheContexts();
 
         for (GridCacheContext context : cacheContexts) {

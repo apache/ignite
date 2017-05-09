@@ -53,7 +53,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg1 = cacheConfiguration(null);
+        CacheConfiguration ccfg1 = cacheConfiguration("cache");
         ccfg1.setBackups(1);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -381,7 +381,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache("cache");
 
         for (int i = 0; i < 100; i++)
             cache1.put(i, i);
@@ -395,7 +395,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        assert !cache1.lostPartitions().isEmpty();
+        assert !ignite1.cache("cache").lostPartitions().isEmpty();
 
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
@@ -404,9 +404,9 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         ignite1.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache("cache");
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache("cache");
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache("cache");
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
