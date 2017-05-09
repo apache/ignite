@@ -62,8 +62,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -77,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -1690,5 +1689,32 @@ public class GridCacheUtils {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
             : cfg.getTransactionConfiguration();
+    }
+
+    /**
+     * @param name Cache name.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheName(String name) throws IllegalArgumentException {
+        A.ensure(name != null && !name.isEmpty(), "Cache name must not be null or empty.");
+    }
+
+    /**
+     * @param cacheNames Cache names to validate.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheNames(Collection<String> cacheNames) throws IllegalArgumentException {
+        for (String name : cacheNames)
+            validateCacheName(name);
+    }
+
+    /**
+     * @param ccfgs Configurations to validate.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateConfigurationCacheNames(Collection<CacheConfiguration> ccfgs)
+        throws IllegalArgumentException {
+        for (CacheConfiguration ccfg : ccfgs)
+            validateCacheName(ccfg.getName());
     }
 }

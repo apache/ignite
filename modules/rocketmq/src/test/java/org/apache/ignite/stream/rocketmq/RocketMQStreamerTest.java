@@ -67,7 +67,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid().cache(null).clear();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
 
         Ignite ignite = grid();
 
-        try (IgniteDataStreamer<String, byte[]> dataStreamer = ignite.dataStreamer(null)) {
+        try (IgniteDataStreamer<String, byte[]> dataStreamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             dataStreamer.allowOverwrite(true);
             dataStreamer.autoFlushFrequency(10);
 
@@ -113,7 +113,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
 
             streamer.start();
 
-            IgniteCache<String, String> cache = ignite.cache(null);
+            IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
@@ -129,7 +129,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
                 }
             };
 
-            ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(putLsnr, null, EVT_CACHE_OBJECT_PUT);
+            ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(putLsnr, null, EVT_CACHE_OBJECT_PUT);
 
             produceData();
 

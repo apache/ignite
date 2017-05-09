@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var grid = client ? _clientGrid : _grid;
 
-            var cache = grid.GetCache<int, PlatformComputeBinarizable>(null);
+            var cache = grid.GetCache<int, PlatformComputeBinarizable>("default");
 
             // Populate cache in .NET
             for (var i = 0; i < 100; i++)

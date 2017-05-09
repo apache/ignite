@@ -122,9 +122,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
-    /** Initial default cache size. */
-    public static final int DFLT_START_SIZE = 1500000;
-
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
 
@@ -132,7 +129,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
 
     /** Initial default near cache size. */
-    public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
+    public static final int DFLT_NEAR_START_SIZE = 1500000 / 4;
 
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
@@ -231,9 +228,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
-
-    /** Default cache start size. */
-    private int startSize = DFLT_START_SIZE;
 
     /** Near cache configuration. */
     private NearCacheConfiguration<K, V> nearCfg;
@@ -445,7 +439,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
-        startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
@@ -473,12 +466,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache name.
      *
-     * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @param name Cache name. Can not be <tt>null</tt> or empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
-
         this.name = name;
 
         return this;
@@ -499,7 +490,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = memPlcName;
 
@@ -670,28 +661,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setEagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
-
-        return this;
-    }
-
-    /**
-     * Gets initial cache size which will be used to pre-create internal
-     * hash table after start. Default value is defined by {@link #DFLT_START_SIZE}.
-     *
-     * @return Initial cache size.
-     */
-    public int getStartSize() {
-        return startSize;
-    }
-
-    /**
-     * Initial size for internal hash map.
-     *
-     * @param startSize Cache start size.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setStartSize(int startSize) {
-        this.startSize = startSize;
 
         return this;
     }

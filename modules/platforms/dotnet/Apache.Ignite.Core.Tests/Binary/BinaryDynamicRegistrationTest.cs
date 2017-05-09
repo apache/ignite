@@ -18,6 +18,8 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    extern alias ExamplesDll;
+
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -31,7 +33,10 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Compute;
+    using Apache.Ignite.ExamplesDll.Binary;
     using NUnit.Framework;
+
+    using ExamplesAccount = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Account;
 
     /// <summary>
     /// Tests the dynamic type registration.
@@ -102,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration
+                    new CacheConfiguration("default")
                     {
                         CacheStoreFactory = new StoreFactory(),
                         ReadThrough = true,
@@ -138,14 +143,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             using (var ignite = Ignition.Start(cfg))
             {
                 // Put through statically started cache
-                var staticCache = ignite.GetCache<int, Foo>(null);
+                var staticCache = ignite.GetCache<int, Foo>("default");
                 staticCache[1] = new Foo {Str = "test", Int = 2};
             }
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var foo = ignite.GetCache<int, Foo>(null)[1];
-                var foo2 = ignite.GetCache<int, Foo>(null)[2];
+                var foo = ignite.GetCache<int, Foo>("default")[1];
+                var foo2 = ignite.GetCache<int, Foo>("default")[2];
 
                 Assert.AreEqual("test", foo.Str);
                 Assert.AreEqual(2, foo.Int);
@@ -160,8 +165,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     IgniteInstanceName = "grid2"
                 }))
                 {
-                    var fooClient = igniteClient.GetCache<int, Foo>(null)[1];
-                    var fooClient2 = igniteClient.GetCache<int, Foo>(null)[2];
+                    var fooClient = igniteClient.GetCache<int, Foo>("default")[1];
+                    var fooClient2 = igniteClient.GetCache<int, Foo>("default")[2];
 
                     Assert.AreEqual("test", fooClient.Str);
                     Assert.AreEqual(2, fooClient.Int);
@@ -176,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var ex = Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>(null).Get(1));
+                var ex = Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>("default").Get(1));
 
                 Assert.IsTrue(ex.Message.Contains("Unknown pair"));
             }
@@ -192,7 +197,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration
+                    new CacheConfiguration("default")
                     {
                         CacheStoreFactory = new StoreFactory {StringProp = "test", IntProp = 9},
                         ReadThrough = true,
@@ -303,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var cacheCfg = new CacheConfiguration(null, new QueryEntity(typeof(PlatformComputeBinarizable))
+                var cacheCfg = new CacheConfiguration("default", new QueryEntity(typeof(PlatformComputeBinarizable))
                 {
                     Fields = new[] {new QueryField("Field", typeof(int))}
                 });
@@ -325,6 +330,28 @@ namespace Apache.Ignite.Core.Tests.Binary
                     BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field < 10");
 
                 Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
+            }
+        }
+
+        /// <summary>
+        /// Tests that types with same FullName from different assemblies are mapped to each other.
+        /// </summary>
+        [Test]
+        public void TestSameTypeInDifferentAssemblies()
+        {
+            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache1 = ignite1.CreateCache<int, ExamplesAccount>("acc");
+                cache1[1] = new ExamplesAccount(1, 2.2m);
+
+                using (var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite2")))
+                {
+                    var cache2 = ignite2.GetCache<int, Account>("acc");
+                    cache2[2] = new Account {Id = 2, Balance = 3.3m};
+
+                    Assert.AreEqual(1, cache2[1].Id);  // Read ExamplesAccount as Account.
+                    Assert.AreEqual(2, cache1[2].Id);  // Read Account as ExamplesAccount.
+                }
             }
         }
 
@@ -490,5 +517,18 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return _func();
             }
         }
+    }
+}
+
+namespace Apache.Ignite.ExamplesDll.Binary
+{
+    /// <summary>
+    /// Copy of Account class in ExamplesDll. Same name and namespace, different assembly.
+    /// </summary>
+    public class Account
+    {
+        public int Id { get; set; }
+
+        public decimal Balance { get; set; }
     }
 }

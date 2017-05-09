@@ -74,7 +74,7 @@ public class CacheQueryFilterExpiredTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkFilterExpired(Ignite ignite, CacheAtomicityMode atomicityMode, boolean eagerTtl) throws Exception {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setEagerTtl(eagerTtl);
         ccfg.setIndexedTypes(Integer.class, Integer.class);

@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -90,6 +91,8 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
         {
             CacheConfiguration ccfg = configuration(ORG_CACHE);
 
+            ccfg.setCacheMode(PARTITIONED);
+
             QueryEntity entity = new QueryEntity();
             entity.setKeyType(Integer.class.getName());
             entity.setValueType(Organization.class.getName());
@@ -129,7 +132,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -155,6 +158,21 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
         stopAllGrids();
 
         super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        Ignite client = grid(2);
+
+        IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
+        IgniteCache<Object, Object> orgCache = client.cache(ORG_CACHE);
+        IgniteCache<Object, Object> orgCacheRepl = client.cache(ORG_CACHE_REPLICATED);
+
+        personCache.clear();
+        orgCache.clear();
+        orgCacheRepl.clear();
     }
 
     /**
@@ -209,24 +227,39 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
         checkQuery("select o.name, p._key, p.name " +
             "from \"orgRepl\".Organization o left join \"person\".Person p " +
             "on (p.orgId = o.id)", orgCacheRepl, 2);
+    }
 
-        // Left join from replicated to partitioned cache is not supported:
-        // returns duplicates in result and must fail.
-        checkQueryFails("select o.name, p._key, p.name " +
+    /**
+     */
+    public void testReplicatedToPartitionedLeftJoin() {
+        Ignite client = grid(2);
+
+        IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
+        IgniteCache<Object, Object> orgCache = client.cache(ORG_CACHE);
+        IgniteCache<Object, Object> orgCacheRepl = client.cache(ORG_CACHE_REPLICATED);
+
+        List<Integer> keys = primaryKeys(ignite(0).cache(PERSON_CACHE), 3, 200_000);
+
+        orgCache.put(keys.get(0), new Organization(0, "org1"));
+        orgCacheRepl.put(keys.get(0), new Organization(0, "org1"));
+        personCache.put(keys.get(1), new Person(0, "p1"));
+        personCache.put(keys.get(2), new Person(0, "p2"));
+
+        checkQuery("select o.name, p._key, p.name " +
             "from \"person\".Person p left join \"org\".Organization o " +
-            "on (p.orgId = o.id)", orgCache);
+            "on (p.orgId = o.id)", orgCache, 2);
 
-        checkQueryFails("select o.name, p._key, p.name " +
+        checkQuery("select o.name, p._key, p.name " +
             "from \"org\".Organization o right join \"person\".Person p " +
-            "on (p.orgId = o.id)", orgCache);
+            "on (p.orgId = o.id)", orgCache, 2);
 
-        checkQueryFails("select o.name, p._key, p.name " +
-                "from \"person\".Person p left join \"org\".Organization o " +
-                "on (p.orgId = o.id)", personCache);
+        checkQuery("select o.name, p._key, p.name " +
+            "from \"person\".Person p left join \"org\".Organization o " +
+            "on (p.orgId = o.id)", personCache, 2);
 
-        checkQueryFails("select o.name, p._key, p.name " +
-                "from \"org\".Organization o right join \"person\".Person p " +
-                "on (p.orgId = o.id)", personCache);
+        checkQuery("select o.name, p._key, p.name " +
+            "from \"org\".Organization o right join \"person\".Person p " +
+            "on (p.orgId = o.id)", personCache, 2);
     }
 
     /**

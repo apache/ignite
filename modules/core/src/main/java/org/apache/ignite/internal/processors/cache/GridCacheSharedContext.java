@@ -22,8 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
@@ -445,6 +443,22 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheContext<K, V> cacheContext(int cacheId) {
         return ctxMap.get(cacheId);
+    }
+
+    /**
+     * Returns cache object context if created or creates new and caches it until cache started.
+     *
+     * @param cacheId Cache id.
+     */
+    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+        GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
+
+        if (ctx != null)
+            return ctx.cacheObjectContext();
+
+        DynamicCacheDescriptor desc = cache().cacheDescriptor(cacheId);
+
+        return desc != null ? desc.cacheObjectContext(kernalContext().cacheObjects()) : null;
     }
 
     /**

@@ -106,7 +106,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      * @return Cache config.
      */
     protected CacheConfiguration getCacheConfiguration(final String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         QueryEntity person = new QueryEntity();
@@ -164,7 +164,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration getCacheConfiguration(final String cacheName, final Class<?> key, final Class<?> val) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName(cacheName);
 

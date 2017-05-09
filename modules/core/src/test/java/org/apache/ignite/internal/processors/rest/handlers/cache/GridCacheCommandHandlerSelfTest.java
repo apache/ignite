@@ -107,6 +107,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridRestCacheRequest req = new GridRestCacheRequest();
 
+        req.cacheName(DEFAULT_CACHE_NAME);
+
         req.command(GridRestCommand.CACHE_GET);
 
         req.key("k1");
@@ -184,6 +186,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         String key = UUID.randomUUID().toString();
 
         GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.cacheName(DEFAULT_CACHE_NAME);
 
         req.command(append ? GridRestCommand.CACHE_APPEND : GridRestCommand.CACHE_PREPEND);
 

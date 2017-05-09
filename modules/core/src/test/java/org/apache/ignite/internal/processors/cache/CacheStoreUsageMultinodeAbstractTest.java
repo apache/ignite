@@ -100,7 +100,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
@@ -147,9 +147,9 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache0 = ignite(0).cache(null);
-        IgniteCache<Object, Object> cache1 = ignite(1).cache(null);
-        IgniteCache<Object, Object> clientCache = client.cache(null);
+        IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = ignite(1).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(((IgniteCacheProxy)cache0).context().store().configured());
         assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());

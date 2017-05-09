@@ -435,7 +435,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration for {@link GeneralDataRegion}.
      */
     private CacheConfiguration generalRegionConfiguration(String regionName) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName(regionName);
 
@@ -457,7 +457,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration for {@link TransactionalDataRegion}.
      */
     protected CacheConfiguration transactionalRegionConfiguration(String regionName) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName(regionName);
 

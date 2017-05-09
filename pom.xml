@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -80,6 +80,7 @@
         <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/hibernate-core</module>
         <module>modules/camel</module>
         <module>modules/storm</module>
         <module>modules/osgi-paxlogging</module>
@@ -91,7 +92,6 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
-        <module>modules/hibernate-core</module>
         <module>modules/rocketmq</module>
     </modules>
 
@@ -524,7 +524,7 @@
                                         <mkdir dir="${basedir}/target/release-package/benchmarks" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/">
-                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
+                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/" />
                                         </copy>
 
                                         <!--todo: only required jars should be exported to /benchmarks/libs during compilation-->
@@ -541,47 +541,44 @@
                                         <delete>
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config/">
                                                 <include name="*.*" />
-                                                <exclude name="benchmark.properties"/>
-                                                <exclude name="benchmark-remote.properties"/>
-                                                <exclude name="benchmark-sample.properties"/>
-                                                <exclude name="benchmark-remote-sample.properties"/>
-                                                <exclude name="benchmark-multicast.properties"/>
-                                                <exclude name="ignite-base-config.xml"/>
-                                                <exclude name="ignite-localhost-config.xml"/>
-                                                <exclude name="ignite-remote-config.xml"/>
-                                                <exclude name="ignite-multicast-config.xml"/>
+                                                <exclude name="benchmark.properties" />
+                                                <exclude name="benchmark-remote.properties" />
+                                                <exclude name="benchmark-sample.properties" />
+                                                <exclude name="benchmark-remote-sample.properties" />
+                                                <exclude name="benchmark-multicast.properties" />
+                                                <exclude name="ignite-base-config.xml" />
+                                                <exclude name="ignite-localhost-config.xml" />
+                                                <exclude name="ignite-remote-config.xml" />
+                                                <exclude name="ignite-multicast-config.xml" />
                                             </fileset>
                                         </delete>
 
                                         <mkdir dir="${basedir}/target/release-package/benchmarks/sources/src" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/sources/src/">
-                                            <fileset dir="${basedir}/modules/yardstick/src"/>
+                                            <fileset dir="${basedir}/modules/yardstick/src" />
                                         </copy>
 
                                         <mkdir dir="${basedir}/target/release-package/benchmarks/sources/config" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/sources/config/">
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/config" />
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
+                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml" tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml" />
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
-                                            <substitution expression="${project.version}"/>
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
-                                                <include name="pom.xml"/>
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/">
+                                                <include name="pom.xml" />
                                             </fileset>
                                         </replaceregexp>
 
-                                        <copy file="${basedir}/modules/yardstick/README.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
+                                        <copy file="${basedir}/modules/yardstick/README.txt" tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt" tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt" />
                                     </target>
                                 </configuration>
                             </execution>

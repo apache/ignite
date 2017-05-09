@@ -138,7 +138,11 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         MemoryConfiguration memCfg = new MemoryConfiguration()
             .setDefaultMemoryPolicyName("default")
-            .setMemoryPolicies(new MemoryPolicyConfiguration().setName("default").setSize(32 * 1024 * 1024L)
+            .setMemoryPolicies(
+                new MemoryPolicyConfiguration()
+                    .setName("default")
+                    .setMaxSize(32 * 1024 * 1024L)
+                    .setInitialSize(32 * 1024 * 1024L)
         );
 
         cfg.setMemoryConfiguration(memCfg);

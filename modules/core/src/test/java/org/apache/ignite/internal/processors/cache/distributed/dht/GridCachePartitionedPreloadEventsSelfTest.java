@@ -117,7 +117,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Collection<Integer> keys = new HashSet<>();
 
-        IgniteCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
             keys.add(i);
@@ -126,7 +126,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Ignite g2 = startGrid("g2");
 
-        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(keys);
+        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(keys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
@@ -134,7 +134,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         for (Object key : g2Keys)
             // Need to force keys loading.
-            assertEquals("val", g2.cache(null).getAndPut(key, "changed val"));
+            assertEquals("val", g2.cache(DEFAULT_CACHE_NAME).getAndPut(key, "changed val"));
 
         Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_LOADED);
 

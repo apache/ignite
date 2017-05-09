@@ -276,7 +276,7 @@ export default [
                 }
 
                 _.forEach(cache.domains, (domain) => {
-                    if (!_.isEmpty(domain.keyFields)) {
+                    if (domain.generatePojo && _.nonEmpty(domain.keyFields)) {
                         if (JavaTypes.nonBuiltInClass(domain.keyType))
                             addClass(domain.keyType);
 

@@ -95,6 +95,11 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
                 ClusterNode srvNode = aliveSrvNodes.poll();
 
                 try {
+                    if (log.isDebugEnabled())
+                        log.debug("Requesting metadata for typeId " + typeId +
+                            " from node " + srvNode.id()
+                        );
+
                     ioMgr.sendToGridTopic(srvNode,
                             GridTopic.TOPIC_METADATA_REQ,
                             new MetadataRequestMessage(typeId),

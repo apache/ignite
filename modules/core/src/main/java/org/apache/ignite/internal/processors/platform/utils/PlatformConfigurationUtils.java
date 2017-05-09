@@ -162,7 +162,6 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
@@ -560,10 +559,10 @@ public class PlatformConfigurationUtils {
             cfg.setDaemon(in.readBoolean());
         if (in.readBoolean())
             cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean()) {
-            cfg.setClientFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
-        }
+        if (in.readBoolean())
+            cfg.setClientFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -650,7 +649,8 @@ public class PlatformConfigurationUtils {
                 break;
         }
 
-        cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+        if (in.readBoolean())
+            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -795,7 +795,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
@@ -977,8 +976,9 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeBoolean(cfg.isLateAffinityAssignment());
         w.writeBoolean(true);
-        w.writeLong(cfg.getClientFailureDetectionTimeout());
         w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -1328,12 +1328,10 @@ public class PlatformConfigurationUtils {
      * @return Config.
      */
     private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
-        if (!in.readBoolean())
-            return null;
-
         MemoryConfiguration res = new MemoryConfiguration();
 
-        res.setSystemCacheMemorySize(in.readLong())
+        res.setSystemCacheInitialSize(in.readLong())
+                .setSystemCacheMaxSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
                 .setDefaultMemoryPolicyName(in.readString());
@@ -1347,7 +1345,8 @@ public class PlatformConfigurationUtils {
                 MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
 
                 cfg.setName(in.readString())
-                        .setSize(in.readLong())
+                        .setInitialSize(in.readLong())
+                        .setMaxSize(in.readLong())
                         .setSwapFilePath(in.readString())
                         .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
                         .setEvictionThreshold(in.readDouble())
@@ -1376,7 +1375,8 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
 
-        w.writeLong(cfg.getSystemCacheMemorySize());
+        w.writeLong(cfg.getSystemCacheInitialSize());
+        w.writeLong(cfg.getSystemCacheMaxSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
         w.writeString(cfg.getDefaultMemoryPolicyName());
@@ -1388,7 +1388,8 @@ public class PlatformConfigurationUtils {
 
             for (MemoryPolicyConfiguration plc : plcs) {
                 w.writeString(plc.getName());
-                w.writeLong(plc.getSize());
+                w.writeLong(plc.getInitialSize());
+                w.writeLong(plc.getMaxSize());
                 w.writeString(plc.getSwapFilePath());
                 w.writeInt(plc.getPageEvictionMode().ordinal());
                 w.writeDouble(plc.getEvictionThreshold());

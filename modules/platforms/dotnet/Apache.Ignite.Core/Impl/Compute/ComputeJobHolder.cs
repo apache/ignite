@@ -83,7 +83,8 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             _jobRes = new ComputeJobResultImpl(
                 success ? res : null, 
-                success ? null : res as Exception, 
+                success ? null : new IgniteException("Compute job has failed on local node, " +
+                                                     "examine InnerException for details.", (Exception) res), 
                 _job, 
                 _ignite.GetLocalNode().Id, 
                 cancel

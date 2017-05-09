@@ -109,7 +109,6 @@ public interface CacheMetrics {
      */
     public float getAverageRemoveTime();
 
-
     /**
      * The mean time to execute tx commit.
      *
@@ -228,13 +227,6 @@ public interface CacheMetrics {
      * @return Memory size allocated in off-heap.
      */
     public long getOffHeapAllocatedSize();
-
-    /**
-     * Gets off-heap memory maximum size.
-     *
-     * @return Off-heap memory maximum size.
-     */
-    public long getOffHeapMaxSize();
 
     /**
      * Gets number of non-{@code null} values in the cache.

@@ -78,6 +78,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         public int NameEnd { get; private set; }
 
         /// <summary>
+        /// Gets the name end.
+        /// </summary>
+        public int FullNameEnd { get; private set; }
+
+        /// <summary>
         /// Gets the start of the assembly name.
         /// </summary>
         public int AssemblyStart { get; private set; }
@@ -116,12 +121,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the full type name (with namespace).
         /// </summary>
-        public string GetFullName()
+        public string GetNameWithNamespace()
         {
             if (NameEnd < 0)
                 return null;
 
             return _typeName.Substring(_start, NameEnd - _start + 1);
+        }
+
+        /// <summary>
+        /// Gets the full name (with namespace, generics and arrays).
+        /// </summary>
+        public string GetFullName()
+        {
+            return _typeName.Substring(_start, FullNameEnd - _start + 1);
         }
 
         /// <summary>
@@ -164,6 +177,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ParseTypeName();
             ParseGeneric();
             ParseArrayDefinition();
+            FullNameEnd = End ? _pos : _pos - 1;
             ParseAssemblyName();
         }
 
@@ -183,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (Char == '`')
                 {
-                    // Non-null ist indicates detected generic type.
+                    // Non-null list indicates detected generic type.
                     Generics = Generics ?? new List<TypeNameParser>();
                 }
 
@@ -204,6 +218,12 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (Generics == null)
             {
+                return;
+            }
+
+            if (End || Char == ',')
+            {
+                // Open (unbound) generic.
                 return;
             }
 
@@ -274,15 +294,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (!bracket)
                     {
-                        throw new IgniteException("Invalid array specification: " + _typeName);
+                        ArrayEnd = _pos - 1;
+                        return;
                     }
 
                     bracket = false;
                 }
-                else if (Char == ',')
+                else if (Char == ',' || Char == '*')
                 {
                     if (!bracket)
+                    {
                         break;
+                    }
                 }
                 else
                 {

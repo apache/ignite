@@ -99,7 +99,7 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
      * @return Cache configuration.
      */
     private CacheConfiguration<String, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(getClass().getSimpleName());
         ccfg.setAtomicityMode(atomicityMode);

@@ -32,31 +32,35 @@ namespace ignite
                 MemoryBarrier();
             }
 
-            CriticalSection::CriticalSection() : hnd(new CRITICAL_SECTION) {
-                InitializeCriticalSection(hnd);
+            CriticalSection::CriticalSection() :
+                hnd()
+            {
+                InitializeCriticalSection(&hnd);
 
                 Memory::Fence();
             }
 
-            CriticalSection::~CriticalSection() {
-                Memory::Fence();
-
-                delete hnd;
+            CriticalSection::~CriticalSection()
+            {
+                // No-op.
             }
 
-            void CriticalSection::Enter() {
+            void CriticalSection::Enter()
+            {
                 Memory::Fence();
 
-                EnterCriticalSection(hnd);
+                EnterCriticalSection(&hnd);
             }
 
-            void CriticalSection::Leave() {
+            void CriticalSection::Leave()
+            {
                 Memory::Fence();
 
-                LeaveCriticalSection(hnd);
+                LeaveCriticalSection(&hnd);
             }
 
-            SingleLatch::SingleLatch() : hnd(CreateEvent(NULL, TRUE, FALSE, NULL))
+            SingleLatch::SingleLatch() :
+                hnd(CreateEvent(NULL, TRUE, FALSE, NULL))
             {
                 Memory::Fence();
             }

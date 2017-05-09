@@ -118,7 +118,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     /**
      */
     private CacheConfiguration cacheACfg() {
-        CacheConfiguration<?,?> cfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setName("A");
 
@@ -146,7 +146,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      *
      */
     private CacheConfiguration cacheBCfg() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("B");
 

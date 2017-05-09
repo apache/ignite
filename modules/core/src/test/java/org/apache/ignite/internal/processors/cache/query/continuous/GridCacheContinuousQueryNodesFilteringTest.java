@@ -88,7 +88,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
     private Ignite startNodeWithCache() throws Exception {
         Ignite node1 = startGrid("node1", getConfiguration("node1", true, null));
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setName("attrsTestCache");
         ccfg.setNodeFilter(new IgnitePredicate<ClusterNode>() {
             /** {@inheritDoc} */

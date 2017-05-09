@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
-
 /**
  * Data transfer object for IGFS configuration properties.
  */
@@ -98,6 +96,15 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /** Amount of sequential block reads before prefetch is triggered. */
     private int seqReadsBeforePrefetch;
 
+    /** Metadata co-location flag. */
+    private boolean colocateMeta;
+
+    /** Relaxed consistency flag. */
+    private boolean relaxedConsistency;
+
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush;
+
     /**
      * Default constructor.
      */
@@ -134,6 +141,10 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
         mgmtPort = igfs.getManagementPort();
         seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
+
+        colocateMeta = igfs.isColocateMetadata();
+        relaxedConsistency = igfs.isRelaxedConsistency();
+        updateFileLenOnFlush = igfs.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -286,6 +297,27 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         return seqReadsBeforePrefetch;
     }
 
+    /**
+     * @return {@code True} if metadata co-location is enabled.
+     */
+    public boolean isColocateMetadata() {
+        return colocateMeta;
+    }
+
+    /**
+     * @return {@code True} if relaxed consistency is enabled.
+     */
+    public boolean isRelaxedConsistency() {
+        return relaxedConsistency;
+    }
+
+    /**
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
@@ -307,6 +339,9 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         out.writeBoolean(ipcEndpointEnabled);
         out.writeInt(mgmtPort);
         out.writeInt(seqReadsBeforePrefetch);
+        out.writeBoolean(colocateMeta);
+        out.writeBoolean(relaxedConsistency);
+        out.writeBoolean(updateFileLenOnFlush);
     }
 
     /** {@inheritDoc} */
@@ -330,6 +365,9 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         ipcEndpointEnabled = in.readBoolean();
         mgmtPort = in.readInt();
         seqReadsBeforePrefetch = in.readInt();
+        colocateMeta = in.readBoolean();
+        relaxedConsistency = in.readBoolean();
+        updateFileLenOnFlush = in.readBoolean();
     }
 
     /** {@inheritDoc} */

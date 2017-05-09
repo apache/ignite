@@ -128,7 +128,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                                     proceedSessionOpened(ses);
                                 }
                             },
-                            new GridNioCodecFilter(new OdbcBufferedParser(), log, false)
+                            new GridNioCodecFilter(new SqlListenerBufferedParser(), log, false)
                         };
 
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()

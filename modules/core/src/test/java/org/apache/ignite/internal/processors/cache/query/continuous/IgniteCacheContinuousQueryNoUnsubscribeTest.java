@@ -54,7 +54,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -111,9 +111,9 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
 
             qry.setAutoUnsubscribe(false);
 
-            ignite.cache(null).query(qry);
+            ignite.cache(DEFAULT_CACHE_NAME).query(qry);
 
-            ignite.cache(null).put(1, 1);
+            ignite.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             assertEquals(1, cntr.get());
         }
@@ -123,20 +123,20 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
         try (Ignite newSrv = startGrid(3)) {
             awaitPartitionMapExchange();
 
-            Integer key = primaryKey(newSrv.cache(null));
+            Integer key = primaryKey(newSrv.cache(DEFAULT_CACHE_NAME));
 
-            newSrv.cache(null).put(key, 1);
+            newSrv.cache(DEFAULT_CACHE_NAME).put(key, 1);
 
             assertEquals(2, cntr.get());
 
             for (int i = 0; i < 10; i++)
-                ignite(0).cache(null).put(i, 1);
+                ignite(0).cache(DEFAULT_CACHE_NAME).put(i, 1);
 
             assertEquals(12, cntr.get());
         }
 
         for (int i = 10; i < 20; i++)
-            ignite(0).cache(null).put(i, 1);
+            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, 1);
 
         assertEquals(22, cntr.get());
     }

@@ -115,15 +115,15 @@ module.exports.factory = (_, socketio, configure, errors) => {
                         acc.hasDemo |= _.get(agentSock, 'demo.enabled');
 
                         if (agentSock.cluster) {
-                            acc.clusters.add({
+                            acc.clusters.push({
                                 id: agentSock.cluster.id
                             });
                         }
 
                         return acc;
-                    }, {count: 0, hasDemo: false, clusters: new Set()});
+                    }, {count: 0, hasDemo: false, clusters: []});
 
-                    stat.clusters = Array.from(stat.clusters);
+                    stat.clusters = _.uniqWith(stat.clusters, _.isEqual);
 
                     return stat;
                 })
@@ -155,8 +155,8 @@ module.exports.factory = (_, socketio, configure, errors) => {
             });
 
             // Return tables from database to browser.
-            sock.on('schemaImport:tables', (...args) => {
-                this.executeOnAgent(token(), demo, 'schemaImport:tables', ...args);
+            sock.on('schemaImport:metadata', (...args) => {
+                this.executeOnAgent(token(), demo, 'schemaImport:metadata', ...args);
             });
         }
 
@@ -202,8 +202,7 @@ module.exports.factory = (_, socketio, configure, errors) => {
             this.registerVisorTask('querySql', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryTaskArg'));
             this.registerVisorTask('queryScan', internalVisor('query.VisorScanQueryTask'), internalVisor('query.VisorScanQueryTaskArg'));
             this.registerVisorTask('queryFetch', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
-            this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'),
-                'java.util.Map', 'java.util.UUID', 'java.util.Set');
+            this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'), internalVisor('query.VisorQueryCleanupTaskArg'));
 
             // Return command result from grid to browser.
             sock.on('node:visor', (clusterId, taskId, nids, ...args) => {

@@ -104,7 +104,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
      * Check CacheAffinityProxy methods.
      */
     private void checkAffinity() {
-        checkAffinity(grid(0).affinity(null), internalCache(1, null).affinity());
+        checkAffinity(grid(0).affinity(DEFAULT_CACHE_NAME), internalCache(1, DEFAULT_CACHE_NAME).affinity());
         checkAffinity(grid(0).affinity(CACHE2), internalCache(1, CACHE2).affinity());
     }
 

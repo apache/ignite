@@ -19,12 +19,16 @@ package org.apache.ignite.examples.ml.math.matrix;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * This example shows how to use {@link SparseDistributedMatrix} API.
+ * This example shows how to create and use {@link SparseDistributedMatrix} API.
+ *
+ * Unlike the {@link CacheMatrix} the {@link SparseDistributedMatrix} creates it's own cache.
  */
 public class SparseDistributedMatrixExample {
     /**
@@ -51,7 +55,7 @@ public class SparseDistributedMatrixExample {
 
                 distributedMatrix.assign(testValues);
 
-                assert distributedMatrix.sum() == 3.0;
+                System.out.println("Sum of all matrix elements is " + distributedMatrix.sum());
 
                 System.out.println(">>> Destroy SparseDistributedMatrix after using.");
                 // Destroy internal cache.

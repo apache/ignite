@@ -67,7 +67,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
         cfg.setWorkDirectory(workDir);
 
         if (cache) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setBackups(1);
@@ -106,7 +106,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
         cache = stopSrv;
 
-        IgniteCache<Integer, Object> cache0 = ignite(0).cache(null);
+        IgniteCache<Integer, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20; i++) {
             log.info("Iteration: " + i);
@@ -135,7 +135,7 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
         Ignite ignite = startGrid(2); // Check can start one more cache node.
 
-        assertNotNull(ignite.cache(null));
+        assertNotNull(ignite.cache(DEFAULT_CACHE_NAME));
     }
 
     /**

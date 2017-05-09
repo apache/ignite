@@ -20,12 +20,13 @@ package org.apache.ignite.internal.pagemem.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
@@ -98,6 +98,21 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      */
     public static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
 
+    /** Number of bits required to store segment index. */
+    private static final int SEG_BITS = 4;
+
+    /** Number of bits required to store segment index. */
+    private static final int SEG_CNT = (1 << SEG_BITS);
+
+    /** Number of bits left to store page index. */
+    private static final int IDX_BITS = PageIdUtils.PAGE_IDX_SIZE - SEG_BITS;
+
+    /** Segment mask. */
+    private static final int SEG_MASK = ~(-1 << SEG_BITS);
+
+    /** Index mask. */
+    private static final int IDX_MASK = ~(-1 << IDX_BITS);
+
     /** Page size. */
     private int sysPageSize;
 
@@ -113,26 +128,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Object to collect memory usage metrics. */
     private final MemoryMetricsImpl memMetrics;
 
+    /** */
+    private AtomicLong freePageListHead = new AtomicLong(INVALID_REL_PTR);
+
     /** Segments array. */
-    private Segment[] segments;
-
-    /** Number of bits required to store segment index. */
-    private int segBits;
-
-    /** Number of bits left to store page index. */
-    private int idxBits;
+    private volatile Segment[] segments;
 
     /** */
-    private int segMask;
-
-    /** */
-    private int idxMask;
+    private final AtomicInteger allocatedPages = new AtomicInteger();
 
     /** */
     private AtomicInteger selector = new AtomicInteger();
 
     /** */
     private OffheapReadWriteLock rwLock;
+
+    /** */
+    private final int totalPages;
 
     /** */
     private final boolean trackAcquiredPages;
@@ -168,35 +180,46 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         assert sysPageSize % 8 == 0 : sysPageSize;
 
+        totalPages = (int)(memPlcCfg.getMaxSize() / sysPageSize);
+
         // TODO configure concurrency level.
         rwLock = new OffheapReadWriteLock(128);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (directMemoryProvider instanceof LifecycleAware)
-            ((LifecycleAware)directMemoryProvider).start();
+        long startSize = memoryPolicyCfg.getInitialSize();
+        long maxSize = memoryPolicyCfg.getMaxSize();
 
-        DirectMemory memory = directMemoryProvider.memory();
+        long[] chunks = new long[SEG_CNT];
 
-        segments = new Segment[memory.regions().size()];
+        chunks[0] = startSize;
 
-        for (int i = 0; i < segments.length; i++) {
-            segments[i] = new Segment(i, memory.regions().get(i));
+        long total = startSize;
 
-            segments[i].init();
+        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256 * 1024 * 1024);
+
+        int lastIdx = 0;
+
+        for (int i = 1; i < SEG_CNT; i++) {
+            long allocSize = Math.min(allocChunkSize, maxSize - total);
+
+            if (allocSize <= 0)
+                break;
+
+            chunks[i] = allocSize;
+
+            total += allocSize;
+
+            lastIdx = i;
         }
 
-        segBits = Integer.SIZE - Integer.numberOfLeadingZeros(segments.length - 1);
+        if (lastIdx != SEG_CNT - 1)
+            chunks = Arrays.copyOf(chunks, lastIdx + 1);
 
-        // Reserve at least one bit for segment.
-        if (segBits == 0)
-            segBits = 1;
+        directMemoryProvider.initialize(chunks);
 
-        idxBits = PageIdUtils.PAGE_IDX_SIZE - segBits;
-
-        segMask = ~(-1 << segBits);
-        idxMask = ~(-1 << idxBits);
+        addSegment(null);
     }
 
     /** {@inheritDoc} */
@@ -205,8 +228,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
 
-        if (directMemoryProvider instanceof LifecycleAware)
-            ((LifecycleAware)directMemoryProvider).stop();
+        directMemoryProvider.shutdown();
 
         if (directMemoryProvider instanceof Closeable) {
             try {
@@ -227,35 +249,34 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public long allocatePage(int cacheId, int partId, byte flags) {
         memMetrics.incrementTotalAllocatedPages();
 
-        long relPtr = INVALID_REL_PTR;
+        long relPtr = borrowFreePage();
         long absPtr = 0;
 
-        for (Segment seg : segments) {
-            relPtr = seg.borrowFreePage();
+        if (relPtr != INVALID_REL_PTR) {
+            int pageIdx = PageIdUtils.pageIndex(relPtr);
 
-            if (relPtr != INVALID_REL_PTR) {
-                absPtr = seg.absolute(PageIdUtils.pageIndex(relPtr));
+            Segment seg = segment(pageIdx);
 
-                break;
-            }
+            absPtr = seg.absolute(pageIdx);
         }
 
         // No segments contained a free page.
         if (relPtr == INVALID_REL_PTR) {
-            int segAllocIdx = nextRoundRobinIndex();
+            Segment[] seg0 = segments;
+            Segment allocSeg = seg0[seg0.length - 1];
 
-            for (int i = 0; i < segments.length; i++) {
-                int idx = (segAllocIdx + i) % segments.length;
-
-                Segment seg = segments[idx];
-
-                relPtr = seg.allocateFreePage(flags);
+            while (allocSeg != null) {
+                relPtr = allocSeg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
-                    absPtr = seg.absolute(PageIdUtils.pageIndex(relPtr));
+                    if (relPtr != INVALID_REL_PTR) {
+                        absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
 
-                    break;
+                        break;
+                    }
                 }
+                else
+                    allocSeg = addSegment(seg0);
             }
         }
 
@@ -263,7 +284,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             throw new IgniteOutOfMemoryException("Not enough memory allocated " +
                 "(consider increasing memory policy size or enabling evictions) " +
                 "[policyName=" + memoryPolicyCfg.getName() +
-                ", size=" + U.readableSize(memoryPolicyCfg.getSize(), true) + "]"
+                ", size=" + U.readableSize(memoryPolicyCfg.getMaxSize(), true) + "]"
             );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0;
@@ -281,9 +302,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public boolean freePage(int cacheId, long pageId) {
-        Segment seg = segment(PageIdUtils.pageIndex(pageId));
-
-        seg.releaseFreePage(pageId);
+        releaseFreePage(pageId);
 
         return true;
     }
@@ -331,6 +350,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         return total;
+    }
+
+    /**
+     * @return Total number of pages may be allocated for this instance.
+     */
+    public int totalPages() {
+        return totalPages;
     }
 
     /**
@@ -382,7 +408,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @return Segment index.
      */
     private int segmentIndex(long pageIdx) {
-        return (int)((pageIdx >> idxBits) & segMask);
+        return (int)((pageIdx >> IDX_BITS) & SEG_MASK);
     }
 
     /**
@@ -393,8 +419,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private long fromSegmentIndex(int segIdx, long pageIdx) {
         long res = 0;
 
-        res = (res << segBits) | (segIdx & segMask);
-        res = (res << idxBits) | (pageIdx & idxMask);
+        res = (res << SEG_BITS) | (segIdx & SEG_MASK);
+        res = (res << IDX_BITS) | (pageIdx & IDX_MASK);
 
         return res;
     }
@@ -428,7 +454,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    public long readLockForce(int cacheId, long pageId, long page) {
+    @Override public long readLockForce(int cacheId, long pageId, long page) {
         if (rwLock.readLock(page + LOCK_OFFSET, -1))
             return page + PAGE_OVERHEAD;
 
@@ -457,16 +483,166 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUnlock(int cacheId, long pageId, long page,
+    @Override public void writeUnlock(
+        int cacheId,
+        long pageId,
+        long page,
         Boolean walPlc,
-        boolean dirtyFlag) {
+        boolean dirtyFlag
+    ) {
         long actualId = PageIO.getPageId(page + PAGE_OVERHEAD);
+
         rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDirty(int cacheId, long pageId, long page) {
         // always false for page no store.
         return false;
+    }
+
+    /**
+     * @param pageIdx Page index.
+     * @return Total page sequence number.
+     */
+    public int pageSequenceNumber(int pageIdx) {
+        Segment seg = segment(pageIdx);
+
+        return seg.sequenceNumber(pageIdx);
+    }
+
+    /**
+     * @param seqNo Page sequence number.
+     * @return Page index.
+     */
+    public int pageIndex(int seqNo) {
+        Segment[] segs = segments;
+
+        int low = 0, high = segs.length - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+
+            Segment seg = segs[mid];
+
+            int cmp = seg.containsPageBySequence(seqNo);
+
+            if (cmp < 0)
+                high = mid - 1;
+            else if (cmp > 0) {
+                low = mid + 1;
+            }
+            else
+                return seg.pageIndex(seqNo);
+        }
+
+        throw new IgniteException("Allocated page must always be present in one of the segments [seqNo=" + seqNo +
+            ", segments=" + Arrays.toString(segs) + ']');
+    }
+
+    /**
+     * @param pageId Page ID to release.
+     */
+    private void releaseFreePage(long pageId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        // Clear out flags and file ID.
+        long relPtr = PageIdUtils.pageId(0, (byte)0, pageIdx);
+
+        Segment seg = segment(pageIdx);
+
+        long absPtr = seg.absolute(pageIdx);
+
+        // Second, write clean relative pointer instead of page ID.
+        writePageId(absPtr, relPtr);
+
+        // Third, link the free page.
+        while (true) {
+            long freePageRelPtrMasked = freePageListHead.get();
+
+            long freePageRelPtr = freePageRelPtrMasked & RELATIVE_PTR_MASK;
+
+            GridUnsafe.putLong(absPtr, freePageRelPtr);
+
+            if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
+                allocatedPages.decrementAndGet();
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * @return Relative pointer to a free page that was borrowed from the allocated pool.
+     */
+    private long borrowFreePage() {
+        while (true) {
+            long freePageRelPtrMasked = freePageListHead.get();
+
+            long freePageRelPtr = freePageRelPtrMasked & ADDRESS_MASK;
+
+            if (freePageRelPtr != INVALID_REL_PTR) {
+                int pageIdx = PageIdUtils.pageIndex(freePageRelPtr);
+
+                Segment seg = segment(pageIdx);
+
+                long freePageAbsPtr = seg.absolute(pageIdx);
+                long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
+                long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
+
+                if (freePageListHead.compareAndSet(freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
+                    GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
+
+                    allocatedPages.incrementAndGet();
+
+                    return freePageRelPtr;
+                }
+            }
+            else
+                return INVALID_REL_PTR;
+        }
+    }
+
+    /**
+     * Attempts to add a new memory segment.
+     *
+     * @param oldRef Old segments array. If this method observes another segments array, it will allocate a new
+     *      segment (if possible). If the array has already been updated, it will return the last element in the
+     *      new array.
+     * @return Added segment, if successfull, {@code null} if failed to add.
+     */
+    private synchronized Segment addSegment(Segment[] oldRef) {
+        if (segments == oldRef) {
+            DirectMemoryRegion region = directMemoryProvider.nextRegion();
+
+            // No more memory is available.
+            if (region == null)
+                return null;
+
+            if (oldRef != null) {
+                if (log.isInfoEnabled())
+                    log.info("Allocated next memory segment [plcName=" + memoryPolicyCfg.getName() +
+                        ", chunkSize=" + U.readableSize(region.size(), true) + ']');
+            }
+
+            Segment[] newRef = new Segment[oldRef == null ? 1 : oldRef.length + 1];
+
+            if (oldRef != null)
+                System.arraycopy(oldRef, 0, newRef, 0, oldRef.length);
+
+            Segment lastSeg = oldRef == null ? null : oldRef[oldRef.length - 1];
+
+            Segment allocated = new Segment(newRef.length - 1, region, lastSeg == null ? 0 : lastSeg.sumPages());
+
+            allocated.init();
+
+            newRef[newRef.length - 1] = allocated;
+
+            segments = newRef;
+        }
+
+        // Only this synchronized method writes to segments, so it is safe to read twice.
+        return segments[segments.length - 1];
     }
 
     /**
@@ -482,9 +658,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         /** Direct memory chunk. */
         private DirectMemoryRegion region;
 
-        /** Pointer to the address of the free page list. */
-        private long freePageListPtr;
-
         /** Last allocated page index. */
         private long lastAllocatedIdxPtr;
 
@@ -492,7 +665,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         private long pagesBase;
 
         /** */
-        private final AtomicInteger allocatedPages;
+        private int pagesInPrevSegments;
+
+        /** */
+        private int maxPages;
 
         /** */
         private final AtomicInteger acquiredPages;
@@ -500,12 +676,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         /**
          * @param idx Index.
          * @param region Memory region to use.
+         * @param pagesInPrevSegments Number of pages in previously allocated segments.
          */
-        private Segment(int idx, DirectMemoryRegion region) {
+        private Segment(int idx, DirectMemoryRegion region, int pagesInPrevSegments) {
             this.idx = idx;
             this.region = region;
+            this.pagesInPrevSegments = pagesInPrevSegments;
 
-            allocatedPages = new AtomicInteger();
             acquiredPages = new AtomicInteger();
         }
 
@@ -515,10 +692,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         private void init() {
             long base = region.address();
 
-            freePageListPtr = base;
-
-            base += 8;
-
             lastAllocatedIdxPtr = base;
 
             base += 8;
@@ -526,8 +699,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             // Align by 8 bytes.
             pagesBase = (base + 7) & ~0x7;
 
-            GridUnsafe.putLong(freePageListPtr, INVALID_REL_PTR);
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
+
+            long limit = region.address() + region.size();
+
+            maxPages = (int)((limit - pagesBase) / sysPageSize);
         }
 
         /**
@@ -556,11 +732,28 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          * @return Absolute pointer.
          */
         private long absolute(int pageIdx) {
-            pageIdx &= idxMask;
+            pageIdx &= IDX_MASK;
 
             long off = ((long)pageIdx) * sysPageSize;
 
             return pagesBase + off;
+        }
+
+        /**
+         * @param pageIdx Page index with encoded segment.
+         * @return Absolute page sequence number.
+         */
+        private int sequenceNumber(int pageIdx) {
+            pageIdx &= IDX_MASK;
+
+            return pagesInPrevSegments + pageIdx;
+        }
+
+        /**
+         * @return Page sequence number upper bound.
+         */
+        private int sumPages() {
+            return pagesInPrevSegments + maxPages;
         }
 
         /**
@@ -578,64 +771,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         /**
-         * @param pageId Page ID to release.
-         */
-        private void releaseFreePage(long pageId) {
-            int pageIdx = PageIdUtils.pageIndex(pageId);
-
-            // Clear out flags and file ID.
-            long relPtr = PageIdUtils.pageId(0, (byte)0, pageIdx);
-
-            long absPtr = absolute(pageIdx);
-
-            // Second, write clean relative pointer instead of page ID.
-            writePageId(absPtr, relPtr);
-
-            // Third, link the free page.
-            while (true) {
-                long freePageRelPtrMasked = GridUnsafe.getLong(freePageListPtr);
-
-                long freePageRelPtr = freePageRelPtrMasked & RELATIVE_PTR_MASK;
-
-                GridUnsafe.putLong(absPtr, freePageRelPtr);
-
-                if (GridUnsafe.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, relPtr)) {
-                    allocatedPages.decrementAndGet();
-
-                    return;
-                }
-            }
-        }
-
-        /**
-         * @return Relative pointer to a free page that was borrowed from the allocated pool.
-         */
-        private long borrowFreePage() {
-            while (true) {
-                long freePageRelPtrMasked = GridUnsafe.getLong(freePageListPtr);
-
-                long freePageRelPtr = freePageRelPtrMasked & ADDRESS_MASK;
-                long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
-
-                if (freePageRelPtr != INVALID_REL_PTR) {
-                    long freePageAbsPtr = absolute(PageIdUtils.pageIndex(freePageRelPtr));
-
-                    long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
-
-                    if (GridUnsafe.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
-                        GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
-
-                        allocatedPages.incrementAndGet();
-
-                        return freePageRelPtr;
-                    }
-                }
-                else
-                    return INVALID_REL_PTR;
-            }
-        }
-
-        /**
          * @param tag Tag to initialize RW lock.
          * @return Relative pointer of the allocated page.
          * @throws GridOffHeapOutOfMemoryException If failed to allocate.
@@ -644,7 +779,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             long limit = region.address() + region.size();
 
             while (true) {
-                long lastIdx = GridUnsafe.getLong(lastAllocatedIdxPtr);
+                long lastIdx = GridUnsafe.getLongVolatile(null, lastAllocatedIdxPtr);
 
                 // Check if we have enough space to allocate a page.
                 if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
@@ -670,6 +805,29 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     return pageIdx;
                 }
             }
+        }
+
+        /**
+         * @param seqNo Page sequence number.
+         * @return {@code 0} if this segment contains the page with the given sequence number,
+         *      {@code -1} if one of the previous segments contains the page with the given sequence number,
+         *      {@code 1} if one of the next segments contains the page with the given sequence number.
+         */
+        public int containsPageBySequence(int seqNo) {
+            if (seqNo < pagesInPrevSegments)
+                return -1;
+            else if (seqNo < pagesInPrevSegments + maxPages)
+                return 0;
+            else
+                return 1;
+        }
+
+        /**
+         * @param seqNo Page sequence number.
+         * @return Page index
+         */
+        public int pageIndex(int seqNo) {
+            return PageIdUtils.pageIndex(fromSegmentIndex(idx, seqNo - pagesInPrevSegments));
         }
     }
 }

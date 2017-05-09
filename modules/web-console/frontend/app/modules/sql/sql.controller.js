@@ -887,7 +887,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .catch((err) => Messages.showError(err));
 
         const _startWatch = () =>
-            agentMgr.startWatch('Back to Configuration', 'base.configuration.clusters')
+            agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.clusters')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
                 .then(() => Loading.finish('sqlLoading'))
@@ -1303,7 +1303,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         const _closeOldQuery = (paragraph) => {
             const nid = paragraph.resNodeId;
 
-            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.includes(nodes, nid)))
+            if (paragraph.queryId && _.find($scope.caches, ({nodes}) => _.find(nodes, {nid: nid.toUpperCase()})))
                 return agentMgr.queryClose(nid, paragraph.queryId);
 
             return $q.when();
@@ -1336,12 +1336,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         const _executeRefresh = (paragraph) => {
             const args = paragraph.queryArgs;
 
-            agentMgr.awaitAgent()
+            agentMgr.awaitCluster()
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
                     args.enforceJoinOrder, false, !!args.localNid, args.pageSize))
-                .then(_processQueryResult.bind(this, paragraph, false))
+                .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
 
@@ -1467,7 +1467,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize);
                 })
-                .then(_processQueryResult.bind(this, paragraph, true))
+                .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
                     paragraph.setError(err);
 
@@ -1478,8 +1478,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         $scope.scan = (paragraph, local = false) => {
             const cacheName = paragraph.cacheName;
-            const filter = paragraph.filter;
             const caseSensitive = !!paragraph.caseSensitive;
+            const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
             $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)

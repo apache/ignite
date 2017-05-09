@@ -30,6 +30,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -94,7 +95,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);

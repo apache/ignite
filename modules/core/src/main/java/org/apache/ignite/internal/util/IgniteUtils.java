@@ -177,8 +177,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -5629,6 +5627,28 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets amount of RAM memory available on this machine.
+     *
+     * @return Total amount of memory in bytes or -1 if any exception happened.
+     */
+    public static long getTotalMemoryAvailable() {
+        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        Object attr;
+
+        try {
+            attr = mBeanSrv.getAttribute(
+                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                    "TotalPhysicalMemorySize");
+        }
+        catch (Exception e) {
+            return -1;
+        }
+
+        return (attr instanceof Long) ? (Long) attr : -1;
+    }
+
+    /**
      * Gets compilation MBean.
      *
      * @return Compilation MBean.
@@ -9554,7 +9574,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.arrayList(c, c.size(), p);
+        return arrayList(c, c.size(), p);
     }
 
     /**

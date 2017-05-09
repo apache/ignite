@@ -161,6 +161,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** Default cache start size. */
+    public static final int DFLT_START_CACHE_SIZE = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_CACHE_START_SIZE, 4096);
+
     /** Size of keys batch to removeAll. */
     // TODO GG-11231 (workaround for GG-11231).
     private static final int REMOVE_ALL_KEYS_BATCH = 10000;
@@ -291,6 +295,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected GridCacheAdapter() {
         // No-op.
+    }
+
+    /**
+     * @param ctx Cache context.
+     */
+    @SuppressWarnings("OverriddenMethodCallDuringObjectConstruction")
+    protected GridCacheAdapter(GridCacheContext<K, V> ctx) {
+        this(ctx, DFLT_START_CACHE_SIZE);
     }
 
     /**
@@ -549,12 +561,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public void start() throws IgniteCheckedException {
         if (map == null) {
-            int initSize = ctx.config().getStartSize();
-
-            if (!isLocal())
-                initSize /= ctx.affinity().partitions();
-
-            map = new GridCacheLocalConcurrentMap(ctx, entryFactory(), initSize);
+            map = new GridCacheLocalConcurrentMap(ctx, entryFactory(), DFLT_START_CACHE_SIZE);
         }
     }
 

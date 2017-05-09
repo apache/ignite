@@ -87,7 +87,7 @@ public abstract class IgniteNoClassOnServerAbstractTest extends GridCommonAbstra
         }
 
         try (Ignite ignite = Ignition.start(createConfiguration())) {
-            CacheConfiguration cfg = new CacheConfiguration();
+            CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cfg.setCopyOnRead(true); // To store only value bytes.
 

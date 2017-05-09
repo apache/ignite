@@ -29,32 +29,34 @@ import org.apache.ignite.marshaller.Marshaller;
  * Task that collects binary metadata.
  */
 @GridInternal
-public class VisorBinaryMetadataCollectorTask extends VisorOneNodeTask<Long, VisorBinaryMetadataCollectorTaskResult> {
+public class VisorBinaryMetadataCollectorTask
+    extends VisorOneNodeTask<VisorBinaryMetadataCollectorTaskArg, VisorBinaryMetadataCollectorTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorBinaryCollectMetadataJob job(Long lastUpdate) {
+    @Override protected VisorBinaryCollectMetadataJob job(VisorBinaryMetadataCollectorTaskArg lastUpdate) {
         return new VisorBinaryCollectMetadataJob(lastUpdate, debug);
     }
 
     /** Job that collect portables metadata on node. */
-    private static class VisorBinaryCollectMetadataJob extends VisorJob<Long, VisorBinaryMetadataCollectorTaskResult> {
+    private static class VisorBinaryCollectMetadataJob
+        extends VisorJob<VisorBinaryMetadataCollectorTaskArg, VisorBinaryMetadataCollectorTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * Create job with given argument.
          *
-         * @param lastUpdate Time data was collected last time.
+         * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorBinaryCollectMetadataJob(Long lastUpdate, boolean debug) {
-            super(lastUpdate, debug);
+        private VisorBinaryCollectMetadataJob(VisorBinaryMetadataCollectorTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorBinaryMetadataCollectorTaskResult run(Long lastUpdate) {
+        @Override protected VisorBinaryMetadataCollectorTaskResult run(VisorBinaryMetadataCollectorTaskArg arg) {
             Marshaller marsh =  ignite.configuration().getMarshaller();
 
             IgniteBinary binary = marsh == null || marsh instanceof BinaryMarshaller ? ignite.binary() : null;
