@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,11 +50,14 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
     /** */
     protected boolean explicitTx;
 
+    /** Cache name. */
+    private final String cacheName = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg1 = cacheConfiguration("cache");
+        CacheConfiguration ccfg1 = cacheConfiguration(cacheName);
         ccfg1.setBackups(1);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -153,7 +157,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite0.cache(cacheName);
 
         for (int i = 0; i < 5000; i++)
             cache1.put(i, i);
@@ -182,7 +186,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache3 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite2.cache(cacheName);
 
         for (int i = 0; i < 100; i++)
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache3.get(i));
@@ -201,10 +205,10 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         IgniteEx ignite2 = startGrid(2);
         IgniteEx ignite3 = startGrid(3);
 
-        ignite0.cache(null).rebalance().get();
-        ignite1.cache(null).rebalance().get();
-        ignite2.cache(null).rebalance().get();
-        ignite3.cache(null).rebalance().get();
+        ignite0.cache(cacheName).rebalance().get();
+        ignite1.cache(cacheName).rebalance().get();
+        ignite2.cache(cacheName).rebalance().get();
+        ignite3.cache(cacheName).rebalance().get();
 
         awaitPartitionMapExchange();
 
@@ -242,13 +246,13 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
 
-        ignite2.cache(null).rebalance().get();
-        ignite3.cache(null).rebalance().get();
+        ignite2.cache(cacheName).rebalance().get();
+        ignite3.cache(cacheName).rebalance().get();
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
 
         for (int i = 0; i < 100; i++) {
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache2.get(i));
@@ -270,13 +274,13 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
 
         final Collection<Integer> parts = new HashSet<>();
 
         for (int i = 0; i < 100; i++) {
             cache1.put(i, i);
-            parts.add(ignite1.affinity(null).partition(i));
+            parts.add(ignite1.affinity(cacheName).partition(i));
         }
 
         ignite1.active(false);
@@ -290,13 +294,13 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
 
-        cache1 = ignite1.cache(null);
+        cache1 = ignite1.cache(cacheName);
 
         ignite1.active(false);
 
         ignite1.events().remoteListen(new IgniteBiPredicate<UUID, CacheRebalancingEvent>() {
             @Override public boolean apply(UUID uuid, CacheRebalancingEvent evt) {
-                if (evt.cacheName() == null && parts.contains(evt.partition()))
+                if (Objects.equals(evt.cacheName(), cacheName) && parts.contains(evt.partition()))
                     evtCnt.incrementAndGet();
 
                 return true;
@@ -313,9 +317,9 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         assert evtCnt.get() == 0 : evtCnt.get();
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
@@ -338,7 +342,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
 
         for (int i = 0; i < 100; i++)
             cache1.put(i, i);
@@ -355,10 +359,10 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        cache1 = ignite1.cache(null);
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(null);
+        cache1 = ignite1.cache(cacheName);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
@@ -381,7 +385,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache("cache");
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
 
         for (int i = 0; i < 100; i++)
             cache1.put(i, i);
@@ -395,7 +399,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        assert !ignite1.cache("cache").lostPartitions().isEmpty();
+        assert !ignite1.cache(cacheName).lostPartitions().isEmpty();
 
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
@@ -404,9 +408,9 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         ignite1.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache("cache");
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache("cache");
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache("cache");
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
