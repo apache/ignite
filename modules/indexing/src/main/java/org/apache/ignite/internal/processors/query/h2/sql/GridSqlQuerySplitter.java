@@ -1743,7 +1743,7 @@ public class GridSqlQuerySplitter {
 
         // If in SELECT clause we have a subquery expression with aggregate,
         // we should not split it. Run the whole subquery on MAP stage.
-        if (el instanceof GridSqlQuery)
+        if (el instanceof GridSqlSubquery)
             return false;
 
         for (int i = 0; i < el.size(); i++) {
