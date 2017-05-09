@@ -84,7 +84,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
-import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.result.Row;
@@ -1359,12 +1358,10 @@ public class GridReduceQueryExecutor {
     private GridMergeTable createMergeTable(H2Connection conn, GridCacheSqlQuery qry, boolean explain)
         throws IgniteCheckedException {
         try {
-            Session ses = conn.session();
-
             CreateTableData data  = new CreateTableData();
 
             data.tableName = "T___";
-            data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
+            data.schema = conn.getCurrentSchema();
             data.create = true;
 
             if (!explain) {

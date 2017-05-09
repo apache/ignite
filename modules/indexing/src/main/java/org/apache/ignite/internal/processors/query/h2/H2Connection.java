@@ -33,8 +33,10 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.util.GridCancelable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.schema.Schema;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
@@ -87,10 +89,8 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
         this.conn = DriverManager.getConnection(dbUrl);
         stmt = conn.createStatement();
 
-        // Need to take session because on connection close
-        // we can loose it too early.
+        // Need to take session here because on connection close we can loose it too early.
         ses = (Session)((JdbcConnection)conn).getSession();
-        assert ses != null;
     }
 
     /**
@@ -201,6 +201,16 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
     }
 
     /**
+     * @param sql Sql command.
+     * @return Prepared.
+     */
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public <T extends Prepared> T prepare(String sql) {
+        return (T)ses.prepare(sql);
+    }
+
+    /**
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      */
@@ -209,8 +219,18 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
         ses.setJoinBatchEnabled(distributedJoins);
     }
 
+    /**
+     * @param timeout Timeout in milliseconds.
+     */
     public void queryTimeout(int timeout) {
-        session().setQueryTimeout(timeout);
+        ses.setQueryTimeout(timeout);
+    }
+
+    /**
+     * @return Current schema object.
+     */
+    public Schema getCurrentSchema() {
+        return ses.getDatabase().getSchema(ses.getCurrentSchemaName());
     }
 
     /**
@@ -252,13 +272,6 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
         synchronized (conn) { // Possible NPE in H2 with racy close.
             return !conn.isClosed();
         }
-    }
-
-    /**
-     * @return Session.
-     */
-    public Session session() {
-        return ses;
     }
 
     /**

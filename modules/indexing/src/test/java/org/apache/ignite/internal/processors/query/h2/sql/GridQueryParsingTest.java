@@ -39,6 +39,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,7 +49,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.engine.Session;
 import org.h2.message.DbException;
 import org.jetbrains.annotations.NotNull;
 
@@ -676,24 +676,19 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param sql Sql.
      */
-    private Session session() throws Exception {
+    @SuppressWarnings("unchecked")
+    private <T extends Prepared> T parse(String sql) throws Exception {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
         GridQueryProcessor qryProcessor = ctx.query();
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        return idx.takeConnectionForSpace(DEFAULT_CACHE_NAME).session();
-    }
+        H2Connection c = idx.takeConnectionForSpace(DEFAULT_CACHE_NAME);
 
-    /**
-     * @param sql Sql.
-     */
-    @SuppressWarnings("unchecked")
-    private <T extends Prepared> T parse(String sql) throws Exception {
-        return (T)session().prepare(sql);
+        return c.prepare(sql);
     }
 
     /**
