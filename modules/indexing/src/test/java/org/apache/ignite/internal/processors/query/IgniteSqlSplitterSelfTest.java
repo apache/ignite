@@ -198,7 +198,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(new AffinityKey<>(2, orgId), new Person2(orgId, "Another Vasya"));
 
             List<List<?>> rs = c1.query(new SqlFieldsQuery("select name, " +
-                "(select count(1) from Person2 q where q.orgId = p.orgId) " +
+                "select count(1) from Person2 q where q.orgId = p.orgId " +
                 "from Person2 p order by name desc")).getAll();
 
             assertEquals(2, rs.size());
