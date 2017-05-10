@@ -42,7 +42,7 @@ public class JdbcTcpIo {
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity. */
-    private static final int HANDSHEKE_MSG_SIZE = 10;
+    private static final int HANDSHAKE_MSG_SIZE = 10;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -59,17 +59,24 @@ public class JdbcTcpIo {
     /** Input stream. */
     private BufferedInputStream in;
 
-    /** Stopping flag. */
-    private volatile boolean stopping;
+    /** Distributed joins. */
+    private boolean distributedJoins;
+
+    /** Enforce join order. */
+    private boolean enforceJoinOrder;
 
     /**
      * @param endpointAddr Endpoint.
+     * @param distributedJoins Distributed joins flag.
+     * @param enforceJoinOrder Enforce join order flag.
      * @param log Logger to use.
      */
-    public JdbcTcpIo(String endpointAddr, IgniteLogger log) {
+    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;
+        this.distributedJoins = distributedJoins;
+        this.enforceJoinOrder= enforceJoinOrder;
         this.log = log;
     }
 
@@ -91,11 +98,8 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        // Send response.
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHEKE_MSG_SIZE),
-            null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE), null, null);
 
-        // Set offset to data array
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
         writer.writeShort(CURRENT_VER.major());
@@ -104,9 +108,8 @@ public class JdbcTcpIo {
 
         writer.writeByte(OdbcNioListener.JDBC_CLIENT);
 
-        // TODO: Pass as parameters.
-        writer.writeBoolean(true);
-        writer.writeBoolean(true);
+        writer.writeBoolean(distributedJoins);
+        writer.writeBoolean(enforceJoinOrder);
 
         send(writer.array());
 
@@ -120,6 +123,7 @@ public class JdbcTcpIo {
         short maj = reader.readShort();
         short min = reader.readShort();
         short maintenance = reader.readShort();
+
         String err = reader.readString();
 
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
@@ -166,14 +170,9 @@ public class JdbcTcpIo {
     }
 
     /**
-     * Close IO.
+     * Close the client IO.
      */
     public void close() {
-        if (stopping)
-            return;
-
-        stopping = true;
-
         // Clean up resources.
         U.closeQuiet(out);
         U.closeQuiet(in);
@@ -181,4 +180,5 @@ public class JdbcTcpIo {
         if (endpoint != null)
             endpoint.close();
     }
+
 }
