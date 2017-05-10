@@ -114,6 +114,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -839,21 +840,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.service().onUtilityCacheStarted();
 
-        AffinityTopologyVersion startTopVer =
+        final AffinityTopologyVersion startTopVer =
             new AffinityTopologyVersion(ctx.discovery().localJoinEvent().topologyVersion(), 0);
 
-        for (GridCacheAdapter cache : caches.values()) {
-            CacheConfiguration cfg = cache.configuration();
+        sharedCtx.forAllCaches(new CIX1<GridCacheContext>() {
+            @Override public void applyx(GridCacheContext cctx) throws IgniteCheckedException {
+                CacheConfiguration cfg = cctx.config();
 
-            if (cache.context().affinityNode() &&
-                cfg.getRebalanceMode() == SYNC &&
-                startTopVer.equals(cache.context().startTopologyVersion())) {
-                CacheMode cacheMode = cfg.getCacheMode();
+                if (cctx.affinityNode() &&
+                    cfg.getRebalanceMode() == SYNC &&
+                    startTopVer.equals(cctx.startTopologyVersion())) {
+                    CacheMode cacheMode = cfg.getCacheMode();
 
-                if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                    cache.preloader().syncFuture().get();
+                    if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                        cctx.preloader().syncFuture().get();
+                }
             }
-        }
+        });
 
         assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
 
