@@ -387,18 +387,26 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
 
                         try {
-                            GridCacheContext cacheCtx = cctx.cacheContext(m.cacheId);
+                            if (m instanceof GridCacheGroupIdMessage) {
+                                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(((GridCacheGroupIdMessage)m).groupId());
 
-                            if (cacheCtx != null) {
-                                if (m instanceof GridDhtPartitionSupplyMessage)
-                                    cacheCtx.preloader().handleSupplyMessage(
-                                        idx, id, (GridDhtPartitionSupplyMessage)m);
-                                else if (m instanceof GridDhtPartitionDemandMessage)
-                                    cacheCtx.preloader().handleDemandMessage(
-                                        idx, id, (GridDhtPartitionDemandMessage)m);
+                                if (grp != null) {
+                                    if (m instanceof GridDhtPartitionSupplyMessage) {
+                                        grp.preloader().handleSupplyMessage(idx, id, (GridDhtPartitionSupplyMessage) m);
+
+                                        return;
+                                    }
+                                    else if (m instanceof GridDhtPartitionDemandMessage) {
+                                        grp.preloader().handleDemandMessage(idx, id, (GridDhtPartitionDemandMessage) m);
+
+                                        return;
+                                    }
+                                }
                                 else
-                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
+                                    U.warn(log, "Failed to find cache group [msg=" + m + ']');
                             }
+
+                            U.error(log, "Unsupported message type: " + m.getClass().getName());
                         }
                         finally {
                             leaveBusy();

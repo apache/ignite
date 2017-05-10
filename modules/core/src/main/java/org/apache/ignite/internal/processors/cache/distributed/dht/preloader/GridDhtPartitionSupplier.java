@@ -199,7 +199,10 @@ class GridDhtPartitionSupplier {
                 ", from=" + id + ", idx=" + idx + "]");
 
         GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(
-            d.updateSequence(), cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
+            d.updateSequence(),
+            grp.groupId(),
+            d.topologyVersion(),
+            grp.deploymentEnabled());
 
         ClusterNode node = grp.shared().discovery().node(id);
 
@@ -339,9 +342,9 @@ class GridDhtPartitionSupplier {
                                         return;
 
                                     s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
-                                        cctx.cacheId(),
+                                        grp.groupId(),
                                         d.topologyVersion(),
-                                        cctx.deploymentEnabled());
+                                        grp.deploymentEnabled());
                                 }
                             }
 
@@ -355,7 +358,7 @@ class GridDhtPartitionSupplier {
                             info.value(row.value());
 
                             if (preloadPred == null || preloadPred.apply(info))
-                                s.addEntry0(part, info, cctx);
+                                s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
                             else {
                                 if (log.isDebugEnabled())
                                     log.debug("Rebalance predicate evaluated to false (will not send " +

@@ -1838,11 +1838,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            if (grp == null)
-                grp = startCacheGroup(grpDesc, affNode, cacheObjCtx, exchTopVer);
+            if (grp == null) {
+                grp = startCacheGroup(grpDesc,
+                    cacheType,
+                    affNode,
+                    cacheObjCtx,
+                    exchTopVer);
+            }
         }
-        else
-            grp = startCacheGroup(grpDesc, affNode, cacheObjCtx, exchTopVer);
+        else {
+            grp = startCacheGroup(grpDesc,
+                cacheType,
+                affNode,
+                cacheObjCtx,
+                exchTopVer);
+        }
 
         GridCacheContext cacheCtx = createCache(ccfg,
             grp,
@@ -1872,6 +1882,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     private CacheGroupInfrastructure startCacheGroup(
         CacheGroupDescriptor desc,
+        CacheType cacheType,
         boolean affNode,
         CacheObjectContext cacheObjCtx,
         AffinityTopologyVersion exchTopVer)
@@ -1886,6 +1897,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheGroupInfrastructure grp = new CacheGroupInfrastructure(sharedCtx,
             desc.groupId(),
+            cacheType,
             cfg,
             affNode,
             memPlc,

@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,7 +104,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
             testSpi(node).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     return (msg instanceof GridDhtPartitionSupplyMessage)
-                        && ((GridCacheMessage)msg).cacheId() == CU.cacheId(TEST_CACHE);
+                        && ((GridCacheIdMessage)msg).cacheId() == CU.cacheId(TEST_CACHE);
                 }
             });
         }

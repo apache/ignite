@@ -71,6 +71,11 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public final int partition() {
         return part;
     }
@@ -135,25 +140,25 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 2:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 3:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeMessage("txId", txId))
                     return false;
 
@@ -175,7 +180,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 2:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -183,7 +188,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -191,7 +196,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 part = reader.readInt("part");
 
                 if (!reader.isLastRead())
@@ -199,7 +204,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 txId = reader.readMessage("txId");
 
                 if (!reader.isLastRead())
@@ -219,7 +224,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
     }
 
     /** {@inheritDoc} */

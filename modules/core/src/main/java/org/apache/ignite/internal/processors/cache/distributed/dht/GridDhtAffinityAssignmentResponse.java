@@ -27,20 +27,18 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Affinity assignment response.
  */
-public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
+public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -69,14 +67,14 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment.
      */
-    public GridDhtAffinityAssignmentResponse(int cacheId,
+    public GridDhtAffinityAssignmentResponse(int grpId,
         @NotNull AffinityTopologyVersion topVer,
         List<List<ClusterNode>> affAssignment) {
-        this.cacheId = cacheId;
+        this.grpId = grpId;
         this.topVer = topVer;
 
         affAssignmentIds = ids(affAssignment);

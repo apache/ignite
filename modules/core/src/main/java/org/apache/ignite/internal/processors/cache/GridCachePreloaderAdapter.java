@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -136,15 +137,15 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(GridCacheContext ctx, Collection<KeyCacheObject> keys,
+    @Override public GridDhtFuture<Object> request(GridCacheContext ctx, Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer) {
-        return new GridFinishedFuture<>();
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(GridCacheContext ctx, GridNearAtomicAbstractUpdateRequest req,
+    @Override public GridDhtFuture<Object> request(GridCacheContext ctx, GridNearAtomicAbstractUpdateRequest req,
         AffinityTopologyVersion topVer) {
-        return new GridFinishedFuture<>();
+        return null;
     }
 
     /** {@inheritDoc} */

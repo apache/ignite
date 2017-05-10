@@ -239,10 +239,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         metrics = m;
 
-        preldr = new GridDhtPreloader(ctx);
-
-        preldr.start();
-
         ctx.io().addHandler(
             ctx.cacheId(),
             GridNearGetRequest.class,
@@ -1611,7 +1607,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicAbstractUpdateRequest req,
         final UpdateReplyClosure completionCb
     ) {
-        IgniteInternalFuture<Object> forceFut = preldr.request(req, req.topologyVersion());
+        IgniteInternalFuture<Object> forceFut = ctx.group().preloader().request(ctx, req, req.topologyVersion());
 
         if (forceFut == null || forceFut.isDone()) {
             try {

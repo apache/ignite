@@ -101,6 +101,9 @@ public class CacheGroupInfrastructure {
     /** IO policy. */
     private final byte ioPlc;
 
+    /** */
+    private boolean depEnabled;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -134,7 +137,16 @@ public class CacheGroupInfrastructure {
 
         ioPlc = cacheType.ioPolicy();
 
+        depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
+
         log = ctx.kernalContext().log(getClass());
+    }
+
+    /**
+     * @return {@code True} if deployment is enabled.
+     */
+    public boolean deploymentEnabled() {
+        return depEnabled;
     }
 
     public GridCachePreloader preloader() {

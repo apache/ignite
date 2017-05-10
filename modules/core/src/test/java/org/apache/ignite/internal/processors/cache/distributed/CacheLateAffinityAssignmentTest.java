@@ -2008,12 +2008,14 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      */
     private void blockSupplySend(TestRecordingCommunicationSpi spi, final String cacheName) {
+        final int grpId = groupIdForCache(spi.ignite(), cacheName);
+
         spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                     return false;
 
-                return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(cacheName);
+                return ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
             }
         });
     }

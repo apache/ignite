@@ -705,7 +705,9 @@ public class GridDhtPartitionDemander {
                 fut.partitionDone(id, miss);
 
             GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
-                supply.updateSequence(), supply.topologyVersion(), cctx.cacheId());
+                supply.updateSequence(),
+                supply.topologyVersion(),
+                grp.groupId());
 
             d.timeout(grp.config().getRebalanceTimeout());
 
@@ -993,7 +995,9 @@ public class GridDhtPartitionDemander {
                 return;
 
             GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
-                -1/* remove supply context signal */, this.topologyVersion(), cctx.cacheId());
+                -1/* remove supply context signal */,
+                this.topologyVersion(),
+                grp.groupId());
 
             d.timeout(grp.config().getRebalanceTimeout());
 

@@ -67,7 +67,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     public GridLocalCache(GridCacheContext<K, V> ctx) {
         super(ctx, DFLT_START_CACHE_SIZE);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
     }
 
     /** {@inheritDoc} */

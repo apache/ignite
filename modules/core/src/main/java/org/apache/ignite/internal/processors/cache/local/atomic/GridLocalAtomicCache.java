@@ -103,7 +103,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     public GridLocalAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
     }
 
     /** {@inheritDoc} */

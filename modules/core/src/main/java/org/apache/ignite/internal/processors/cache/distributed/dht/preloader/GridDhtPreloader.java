@@ -179,7 +179,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             });
 
         supplier = new GridDhtPartitionSupplier(grp);
-        demander = new GridDhtPartitionDemander(cctx);
+        demander = new GridDhtPartitionDemander(grp);
 
         demander.start();
 
@@ -324,7 +324,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         assigns.put(n, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
                             exchFut.exchangeId().topologyVersion(),
-                            cctx.cacheId()));
+                            grp.groupId()));
                     }
 
                     msg.addPartition(p);
@@ -622,7 +622,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(GridCacheContext cctx,
+    @Override public GridDhtFuture<Object> request(GridCacheContext cctx,
         GridNearAtomicAbstractUpdateRequest req,
         AffinityTopologyVersion topVer) {
         if (!needForceKeys())

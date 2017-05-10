@@ -15,66 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * One Phase Commit Near transaction ack request.
+ *
  */
-public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Lock or transaction versions. */
+public abstract class GridCacheIdMessage extends GridCacheMessage {
+    /** Cache ID. */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    protected Collection<GridCacheVersion> vers;
+    protected int cacheId;
 
     /**
-     * Default constructor.
+     * @return Cache ID.
      */
-    public GridDhtTxOnePhaseCommitAckRequest() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
+    public int cacheId() {
+        return cacheId;
     }
 
     /**
-     *
-     * @param vers Near Tx xid Versions.
+     * @param cacheId Cache ID.
      */
-    public GridDhtTxOnePhaseCommitAckRequest(Collection<GridCacheVersion> vers) {
-        this.vers = vers;
-    }
-
-    /**
-     * @return Version.
-     */
-    public Collection<GridCacheVersion> versions() {
-        return vers;
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridDhtTxOnePhaseCommitAckRequest.class, this, super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
+    @Override public byte fieldsCount() {
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -93,7 +66,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 2:
-                if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
+                if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
                 writer.incrementState();
@@ -115,7 +88,7 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 2:
-                vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
+                cacheId = reader.readInt("cacheId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,16 +97,16 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridDhtTxOnePhaseCommitAckRequest.class);
+        return reader.afterMessageRead(GridCacheIdMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return -27;
+    @Override public int handlerId() {
+        return cacheId;
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
+    @Override public String toString() {
+        return S.toString(GridCacheIdMessage.class, this);
     }
 }

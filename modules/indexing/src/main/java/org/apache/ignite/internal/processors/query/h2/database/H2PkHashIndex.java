@@ -126,7 +126,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
     @Override public GridH2Row findOne(GridH2Row row) {
         try {
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-                CacheDataRow found = store.find(row.key);
+                // TODO IGNITE-5075.
+                CacheDataRow found = store.find(cctx, row.key);
 
                 if (found != null)
                     tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);
