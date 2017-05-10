@@ -10,7 +10,7 @@ import org.apache.ignite.cache.database.standbycluster.GridChangeGlobalStateTest
 /**
  *
  */
-public class IgniteChangeGlobalStateSuite extends TestSuite {
+public class IgniteStandByClusterSuite extends TestSuite {
     /**
      *
      */

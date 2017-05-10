@@ -10,8 +10,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
-import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,14 +74,14 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      * @param fullId Full id.
      */
-    public void checkPointCopyPage(FullPageId fullId) {
+    public void beforePageWrite(FullPageId fullId) {
 
     }
 
     /**
      * @param fullId Full id.
      */
-    public void checkPointBufferCopyPage(FullPageId fullId, ByteBuffer tmpWriteBuf) {
+    public void onPageWrite(FullPageId fullId, ByteBuffer tmpWriteBuf) {
 
     }
 
@@ -97,22 +95,22 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    public GridInClosure3X<Long, FullPageId, PageMemory> changeTrackerPageHandler(){
-        return new CIX3<Long, FullPageId, PageMemory>() {
-            @Override public void applyx(Long aLong, FullPageId id, PageMemory memory) {
-                // No-op.
-            }
-        };
+    public void onChangeTrackerPage(
+        Long page,
+        FullPageId fullId,
+        PageMemory pageMem
+    ) throws IgniteCheckedException {
+
     }
 
     /**
      *
      */
-    public GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPageHandler() {
-        return new CIX3<FullPageId, ByteBuffer, Integer>() {
-            @Override public void applyx(FullPageId fullId, ByteBuffer pageBuf, Integer tag) {
-                // No-op.
-            }
-        };
+    public void flushDirtyPageHandler(
+        FullPageId fullId,
+        ByteBuffer pageBuf,
+        Integer tag
+    ) throws IgniteCheckedException {
+
     }
 }
