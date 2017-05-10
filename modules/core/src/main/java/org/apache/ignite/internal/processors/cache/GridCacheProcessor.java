@@ -43,6 +43,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -164,6 +165,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** */
+    private final boolean START_CLIENT_CACHES =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
+
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
 
@@ -873,7 +878,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 boolean loc = desc.locallyConfigured();
 
-                if (loc || (desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter))) {
+                if (loc || (desc.receivedOnDiscovery() &&
+                    (startAllCachesOnClientStart() || CU.affinityNode(locNode, filter)))) {
                     boolean started = desc.onStart();
 
                     assert started : "Failed to change started flag for locally configured cache: " + desc;
@@ -2166,6 +2172,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         batch.clientReconnect(reconnect);
 
+        if (ctx.localNodeId().equals(joiningNodeId))
+            batch.startCaches(startAllCachesOnClientStart());
+
         // Reset random batch ID so that serialized batches with the same descriptors will be exactly the same.
         batch.id(null);
 
@@ -2242,6 +2251,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             clientNodesMap.put(cache.name(), map);
         }
+    }
+
+    /**
+     * @return {@code True} if need locally start all existing caches on client node start.
+     */
+    private boolean startAllCachesOnClientStart() {
+        return START_CLIENT_CACHES && ctx.clientNode();
     }
 
     /** {@inheritDoc} */
@@ -2381,6 +2397,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
                         ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
                 }
+            }
+
+            if (batch.startCaches()) {
+                for (Map.Entry<String, DynamicCacheDescriptor> entry : registeredCaches.entrySet())
+                    ctx.discovery().addClientNode(entry.getKey(), joiningNodeId, false);
             }
         }
     }
