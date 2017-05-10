@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -774,8 +773,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(),
                     opCtxCall != null && opCtxCall.isKeepBinary());
 
-            if (qry instanceof SqlQuery)
-                return (QueryCursor<R>)querySql((SqlQuery)qry, opCtxCall != null && opCtxCall.isKeepBinary());
+            if (qry instanceof SqlQuery) {
+                boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+
+                return (QueryCursor<R>)ctx.kernalContext().query().querySql(ctx, (SqlQuery)qry, keepBinary);
+            }
 
             if (qry instanceof SqlFieldsQuery)
                 return (QueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry);
@@ -794,29 +796,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             onLeave(gate, prev);
         }
-    }
-
-    /**
-     * Execute SQL query.
-     *
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
-     */
-    private QueryCursor<Cache.Entry<K, V>> querySql(SqlQuery qry, boolean keepBinary) {
-        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
-            throw new CacheException("Partitions are not supported in replicated only mode.");
-
-        if (qry.isDistributedJoins() && qry.getPartitions() != null)
-            throw new CacheException(
-                "Using both partitions and distributed JOINs is not supported for the same query");
-
-        GridQueryProcessor qryProc = ctx.kernalContext().query();
-
-        if ((qry.isReplicatedOnly() && ctx.isReplicatedAffinityNode()) || ctx.isLocal() || qry.isLocal())
-            return qryProc.queryLocalSql(ctx, qry, keepBinary);
-
-        return qryProc.queryDistributedSql(ctx, qry);
     }
 
     /** {@inheritDoc} */

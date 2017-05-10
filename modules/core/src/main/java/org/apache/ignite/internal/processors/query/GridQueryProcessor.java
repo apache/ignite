@@ -1720,11 +1720,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Execute distributed SQL query.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     */
+    public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
+        boolean keepBinary) {
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException(
+                "Using both partitions and distributed JOINs is not supported for the same query");
+
+        if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
+            return queryLocalSql(cctx, qry, keepBinary);
+
+        return queryDistributedSql(cctx, qry);
+    }
+
+    /**
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx, final SqlQuery qry) {
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
+        final SqlQuery qry) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
