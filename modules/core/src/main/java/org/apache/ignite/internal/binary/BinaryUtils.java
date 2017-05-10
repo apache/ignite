@@ -978,15 +978,8 @@ public class BinaryUtils {
 
             Map<String, Integer> mergedEnumMap = null;
             if (!F.isEmpty(newMeta.enumMap())) {
-                if (F.isEmpty(oldMeta.enumMap()))
-                    mergedEnumMap = newMeta.enumMap();
-                else {
-                    mergedEnumMap = new LinkedHashMap<>(oldMeta.enumMap());
-                    for (Map.Entry<String, Integer> e: newMeta.enumMap().entrySet())
-                        mergedEnumMap.put(e.getKey(), e.getValue());
+                mergedEnumMap = mergeEnumValues(oldMeta.typeName(), oldMeta.enumMap(), newMeta.enumMap());
 
-                    validateEnumValues(oldMeta.typeName(), mergedEnumMap);
-                }
                 changed = true;
             }
 
@@ -2403,11 +2396,64 @@ public class BinaryUtils {
             String prevName = tmpMap.put(e.getValue(), e.getKey());
 
             if (prevName != null)
-                throw new BinaryObjectException("Invalid enum values. Name '" + e.getKey() +
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
                         "' uses ordinal value (" + e.getValue() +
                         ") that is also used for name '" + prevName +
                         "' [typeName='" + typeName + "']");
         }
+    }
+
+    /**
+     * Merges enum value mappings and checks for conflicts.
+     *
+     * Possible conflicts:
+     * - same name is used for different ordinal values.
+     * - ordinal value is used more than once.
+     *
+     * @param typeName Name of the type.
+     * @param oldValues Old enum value mapping.
+     * @param newValues New enum value mapping.
+     * @throws BinaryObjectException in case of name or value conflict.
+     */
+    public static Map<String, Integer> mergeEnumValues(String typeName,
+            @Nullable Map<String, Integer> oldValues,
+            Map<String, Integer> newValues)
+            throws BinaryObjectException {
+
+        assert newValues != null;
+
+        int size = (oldValues != null) ? oldValues.size() + newValues.size() : newValues.size();
+
+        Map<Integer, String> revMap = new LinkedHashMap<>(size);
+        Map<String, Integer> mergedMap = new LinkedHashMap<>(size);
+
+        if (oldValues != null) {
+            //assuming that old values were validated earlier once.
+            for (Map.Entry<String, Integer> e : oldValues.entrySet()) {
+                revMap.put(e.getValue(), e.getKey());
+                mergedMap.put(e.getKey(), e.getValue());
+            }
+        }
+
+        for (Map.Entry<String, Integer> e: newValues.entrySet()) {
+            String prevName = revMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null && !prevName.equals(e.getKey()))
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+
+            Integer prevVal = mergedMap.put(e.getKey(), e.getValue());
+
+            if (prevVal != null && !prevVal.equals(e.getValue()))
+                throw new BinaryObjectException("Conflicting enum values. Value (" + e.getValue() +
+                        ") has name '" + e.getKey() +
+                        "' that is also used for value '" + prevVal +
+                        "' [typeName='" + typeName + "']");
+        }
+
+        return mergedMap;
     }
 
     /**
