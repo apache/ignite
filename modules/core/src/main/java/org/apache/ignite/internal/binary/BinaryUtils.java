@@ -984,6 +984,8 @@ public class BinaryUtils {
                     mergedEnumMap = new LinkedHashMap<>(oldMeta.enumMap());
                     for (Map.Entry<String, Integer> e: newMeta.enumMap().entrySet())
                         mergedEnumMap.put(e.getKey(), e.getValue());
+
+                    validateEnumValues(oldMeta.typeName(), mergedEnumMap);
                 }
                 changed = true;
             }
@@ -2380,6 +2382,32 @@ public class BinaryUtils {
      */
     public static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
+    }
+
+    /**
+     * Checks enum values mapping.
+     *
+     * @param typeName Name of the type.
+     * @param enumValues Enum name to ordinal mapping.
+     * @throws BinaryObjectException
+     */
+    public static void validateEnumValues(String typeName, @Nullable Map<String, Integer> enumValues)
+            throws BinaryObjectException {
+
+        if (enumValues == null)
+            return;
+
+        Map<Integer, String> tmpMap = new LinkedHashMap<>(enumValues.size());
+        for (Map.Entry<String, Integer> e: enumValues.entrySet()) {
+
+            String prevName = tmpMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null)
+                throw new BinaryObjectException("Invalid enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+        }
     }
 
     /**

@@ -210,7 +210,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                             );
 
                             if (c.isEnum())
-                                validateEnumValues(c.getTypeName(), c.getEnumValues());
+                                BinaryUtils.validateEnumValues(c.getTypeName(), c.getEnumValues());
                         }
 
                         map.put("typeCfgs", typeCfgsMap);
@@ -601,7 +601,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         typeName = binaryCtx.userTypeName(typeName);
 
-        validateEnumValues(typeName, vals);
+        BinaryUtils.validateEnumValues(typeName, vals);
 
         updateMetadata(typeId, typeName, null, null, true, vals);
 
@@ -902,32 +902,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 metadataLocCache.put(e.getKey(), localHolder);
             }
-        }
-    }
-
-    /**
-     * Checks enum values mapping.
-     *
-     * @param typeName Name of the type.
-     * @param enumValues Enum name to ordinal mapping.
-     * @throws BinaryObjectException
-     */
-    private void validateEnumValues(String typeName, @Nullable Map<String, Integer> enumValues)
-            throws BinaryObjectException {
-
-        if (enumValues == null)
-            return;
-
-        Map<Integer, String> tmpMap = new LinkedHashMap<>(enumValues.size());
-        for (Map.Entry<String, Integer> e: enumValues.entrySet()) {
-
-            String prevName = tmpMap.put(e.getValue(), e.getKey());
-
-            if (prevName != null)
-                throw new BinaryObjectException("Invalid enum values. Name '" + e.getKey() +
-                        "' uses ordinal value (" + e.getValue() +
-                        ") that is also used for name '" + prevName +
-                        "' [typeName='" + typeName + "']");
         }
     }
 }
