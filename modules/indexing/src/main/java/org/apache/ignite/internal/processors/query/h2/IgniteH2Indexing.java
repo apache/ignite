@@ -469,11 +469,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to execute statement: " + sql, e);
         }
         finally {
-            U.close(c, log);
+            returnToPool(c);
         }
     }
 
+    /**
+     * @param c H2 Connection.
+     */
+    public void returnToPool(H2Connection c) {
+        if (c == null)
+            return;
 
+        try {
+            c.returnToPool();
+        }
+        catch (SQLException e) {
+            U.error(log, "Failed to release pooled connection.", e);
+        }
+    }
 
     /**
      * Handles SQL exception.
@@ -594,7 +607,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);
         }
         finally {
-            U.close(c, log);
+            returnToPool(c);
         }
 
         tbl.onDrop();
@@ -903,7 +916,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     return new FieldsIterator(rs);
                 }
                 finally {
-                    U.close(conn, log); // TODO lazy
+                    returnToPool(conn); // TODO lazy
 
                     runs.remove(run.id());
                 }
@@ -929,7 +942,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return dmlProc.streamUpdateQuery(streamer, stmt, params);
         }
         finally {
-            U.close(conn, log);
+            returnToPool(conn);
         }
     }
 
@@ -1261,7 +1274,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
         finally {
-            U.close(conn, log); // TODO lazy
+            returnToPool(conn); // TODO lazy
         }
     }
 
@@ -1397,8 +1410,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     while (true) {
                         try {
-                            // Do not cache this statement because the whole two step query object will be cached later on.
                             stmt = c.prepare(sqlQry, qry.getArgs());
+
+                            // Do not cache this statement because the whole two step query object will be cached later on.
+                            c.dropCachedStatement(sqlQry);
 
                             break;
                         }
@@ -1429,7 +1444,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
                     if (prepared.isQuery()) {
-                        twoStepQry = GridSqlQuerySplitter.split(c, (JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
+                        twoStepQry = GridSqlQuerySplitter.split(c, stmt, qry.getArgs(), grpByCollocated,
                             distributedJoins, enforceJoinOrder);
 
                         assert twoStepQry != null;
@@ -1517,7 +1532,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             finally {
                 U.close(stmt, log);
 
-                U.close(c, log); // This connection was not use to run query.
+                returnToPool(c); // This connection was not used to run query.
             }
         }
 
@@ -1659,7 +1674,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to register query type: " + type, e);
         }
         finally {
-            U.close(conn, log);
+            returnToPool(conn);
         }
 
         return true;
@@ -2008,7 +2023,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException(e);
         }
         finally {
-            U.close(conn, log);
+            returnToPool(conn);
         }
     }
 
@@ -2291,11 +2306,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemas.clear();
         space2schema.clear();
 
-        try (H2Connection c = new H2Connection(null, dbUrl)) {
+        H2Connection c = null;
+
+        try {
+            c = new H2Connection(null, dbUrl);
+
             c.executeUpdate("SHUTDOWN");
         }
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
+        }
+        finally {
+            if (c != null)
+                c.destroy();
         }
 
         GridH2QueryContext.clearLocalNodeStop(nodeId);

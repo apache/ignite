@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
@@ -161,7 +161,7 @@ public class GridSqlQuerySplitter {
      */
     public static GridCacheTwoStepQuery split(
         H2Connection conn,
-        JdbcPreparedStatement stmt,
+        PreparedStatement stmt,
         Object[] params,
         boolean collocatedGrpBy,
         boolean distributedJoins,

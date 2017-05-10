@@ -24,7 +24,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEM
 /**
  * Pooled H2 connection with statement cache inside.
  */
-public final class H2Connection implements AutoCloseable, GridCancelable {
+public final class H2Connection implements GridCancelable {
     /** The period of clean up the connection from pool. */
     private static final long CLEANUP_PERIOD = IgniteSystemProperties.getLong(
         IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 30_000);
@@ -78,6 +77,9 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
 
     /** */
     private final Session ses;
+
+    /** */
+    private boolean destroyed;
 
     /**
      * @param dbUrl Database URL.
@@ -234,6 +236,11 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
      * Destroy the connection.
      */
     public void destroy() {
+        if (destroyed)
+            return;
+
+        destroyed = true;
+
         clearSessionLocalQueryContext();
 
         U.closeQuiet(conn);
@@ -250,12 +257,16 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
         sesLocQctx.remove(ses);
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() throws SQLException {
+    /**
+     * Return to the pool.
+     *
+     * @throws SQLException If failed.
+     */
+    public void returnToPool() throws SQLException {
         if (pool == null)
-            destroy();
-        else
-            pool.put(this);
+            throw new IllegalStateException("Connection is not pooled.");
+
+        pool.put(this);
     }
 
     /**
@@ -263,7 +274,7 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
      * @throws SQLException If failed.
      */
     public boolean isValid() throws SQLException {
-        if (U.currentTimeMillis() - createTime > CLEANUP_PERIOD)
+        if (destroyed || U.currentTimeMillis() - createTime > CLEANUP_PERIOD)
             return false;
 
         synchronized (conn) { // Possible NPE in H2 with racy close.
@@ -272,23 +283,10 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
     }
 
     /**
-     * Drops and returns the last cached (or used) statement.
-     *
-     * @return SQL.
+     * Drops cached statement.
      */
-    public String dropLastCachedStatement() {
-        Iterator<Map.Entry<String,PreparedStatement>> it = stmtCache.entrySet().iterator();
-
-        if (!it.hasNext())
-            throw new IllegalStateException("Statement cache is empty.");
-
-        Map.Entry<String,PreparedStatement> e = it.next();
-
-        it.remove();
-
-        U.closeQuiet(e.getValue());
-
-        return e.getKey();
+    public void dropCachedStatement(String sql) {
+        stmtCache.remove(sql);
     }
 
     /**

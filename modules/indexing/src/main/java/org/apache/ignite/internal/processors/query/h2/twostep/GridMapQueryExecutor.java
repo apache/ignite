@@ -645,7 +645,7 @@ public class GridMapQueryExecutor {
                 }
             }
             finally {
-                U.close(conn, log); // TODO lazy
+                h2.returnToPool(conn); // TODO lazy
 
                 if (distributedJoinMode == OFF)
                     qctx.clearContext(false);

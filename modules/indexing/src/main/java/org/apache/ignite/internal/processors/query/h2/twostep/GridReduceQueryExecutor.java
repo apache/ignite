@@ -821,9 +821,7 @@ public class GridReduceQueryExecutor {
                             resIter = new IgniteH2Indexing.FieldsIterator(res);
 
                             // The statement will cache some extra thread local objects.
-                            String dropped = conn.dropLastCachedStatement();
-
-                            assert rdc.query().equals(dropped);
+                            conn.dropCachedStatement(rdc.query());
                         }
                         finally {
                             conn.clearSessionLocalQueryContext(); // TODO lazy
@@ -864,7 +862,7 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
-                U.close(conn, log); // TODO lazy
+                h2.returnToPool(conn); // TODO lazy
 
                 // Make sure any activity related to current attempt is cancelled.
                 cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
@@ -1415,8 +1413,6 @@ public class GridReduceQueryExecutor {
             return tbl;
         }
         catch (Exception e) {
-            U.closeQuiet(conn);
-
             throw new IgniteCheckedException(e);
         }
     }

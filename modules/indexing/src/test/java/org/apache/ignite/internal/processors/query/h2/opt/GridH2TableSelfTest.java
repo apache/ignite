@@ -115,7 +115,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        conn.close();
+        conn.destroy();
 
         conn = null;
         tbl = null;
