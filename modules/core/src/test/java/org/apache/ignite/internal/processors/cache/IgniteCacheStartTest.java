@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -33,6 +36,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteCacheStartTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String CACHE_NAME = "c1";
 
     /** */
     private boolean client;
@@ -64,33 +70,34 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testStartAndNodeJoin() throws Exception {
         Ignite node0 = startGrid(0);
 
-        checkCache(0, "c1", false);
+        checkCache(0, CACHE_NAME, false);
 
-        node0.createCache(cacheConfiguration("c1"));
+        node0.createCache(cacheConfiguration(CACHE_NAME));
 
-        checkCache(0, "c1", true);
+        checkCache(0, CACHE_NAME, true);
 
         startGrid(1);
 
-        checkCache(0, "c1", true);
-        checkCache(1, "c1", true);
+        checkCache(0, CACHE_NAME, true);
+        checkCache(1, CACHE_NAME, true);
 
         client = true;
 
         startGrid(2);
 
-        checkCache(0, "c1", true);
-        checkCache(1, "c1", true);
-        checkCache(2, "c1", false);
+        checkCache(0, CACHE_NAME, true);
+        checkCache(1, CACHE_NAME, true);
+        checkCache(2, CACHE_NAME, false);
 
-        ignite(2).destroyCache("c1");
+        ignite(2).destroyCache(CACHE_NAME);
 
-        checkCache(0, "c1", false);
-        checkCache(1, "c1", false);
-        checkCache(2, "c1", false);
+        checkCache(0, CACHE_NAME, false);
+        checkCache(1, CACHE_NAME, false);
+        checkCache(2, CACHE_NAME, false);
     }
 
     /**
@@ -119,42 +126,42 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        ccfg = cacheConfiguration("c1");
+        ccfg = cacheConfiguration(CACHE_NAME);
         client = joinClient;
 
         startGrid(3);
 
-        checkCache(0, "c1", true);
-        checkCache(1, "c1", true);
-        checkCache(2, "c1", false);
-        checkCache(3, "c1", true);
+        checkCache(0, CACHE_NAME, true);
+        checkCache(1, CACHE_NAME, true);
+        checkCache(2, CACHE_NAME, false);
+        checkCache(3, CACHE_NAME, true);
 
         client = false;
         ccfg = null;
 
         startGrid(4);
 
-        checkCache(0, "c1", true);
-        checkCache(1, "c1", true);
-        checkCache(2, "c1", false);
-        checkCache(3, "c1", true);
-        checkCache(4, "c1", true);
+        checkCache(0, CACHE_NAME, true);
+        checkCache(1, CACHE_NAME, true);
+        checkCache(2, CACHE_NAME, false);
+        checkCache(3, CACHE_NAME, true);
+        checkCache(4, CACHE_NAME, true);
 
         client = true;
 
         startGrid(5);
 
-        checkCache(0, "c1", true);
-        checkCache(1, "c1", true);
-        checkCache(2, "c1", false);
-        checkCache(3, "c1", true);
-        checkCache(4, "c1", true);
-        checkCache(5, "c1", false);
+        checkCache(0, CACHE_NAME, true);
+        checkCache(1, CACHE_NAME, true);
+        checkCache(2, CACHE_NAME, false);
+        checkCache(3, CACHE_NAME, true);
+        checkCache(4, CACHE_NAME, true);
+        checkCache(5, CACHE_NAME, false);
 
-        ignite(5).destroyCache("c1");
+        ignite(5).destroyCache(CACHE_NAME);
 
         for (int i = 0; i < 5; i++)
-            checkCache(i, "c1", false);
+            checkCache(i, CACHE_NAME, false);
     }
 
     /**
@@ -170,13 +177,14 @@ public class IgniteCacheStartTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @param expCache {@code True} if cache should be created.
      */
-    private void checkCache(int idx, String cacheName, boolean expCache) {
-        IgniteKernal node = (IgniteKernal)ignite(idx);
+    private void checkCache(int idx, final String cacheName, final boolean expCache) throws IgniteInterruptedCheckedException {
+        final IgniteKernal node = (IgniteKernal)ignite(idx);
 
-        if (expCache)
-            assertNotNull(node.context().cache().cache(cacheName));
-        else
-            assertNull(node.context().cache().cache(cacheName));
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return expCache == (node.context().cache().cache(cacheName) != null);
+            }
+        }, 1000));
 
         assertNotNull(node.context().cache().cache(CU.UTILITY_CACHE_NAME));
     }
