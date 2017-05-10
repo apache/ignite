@@ -259,9 +259,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private IgniteCacheSnapshotManager snapshotMgr;
 
     /**
-     * @param cfg Ignite configuration.
+     * @param ctx Kernal context.
      */
-    public GridCacheDatabaseSharedManager(IgniteConfiguration cfg) {
+    public GridCacheDatabaseSharedManager(GridKernalContext ctx) {
+        IgniteConfiguration cfg = ctx.config();
+
         dbCfg = cfg.getPersistenceConfiguration();
 
         assert dbCfg != null : "PageStore should not be created if persistence is disabled.";

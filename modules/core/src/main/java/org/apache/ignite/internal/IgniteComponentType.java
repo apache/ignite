@@ -89,7 +89,22 @@ public enum IgniteComponentType {
         "org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor",
         "org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessor",
         "ignite-schedule"
-    );
+    ),
+
+    /** Database manager used when persistence is enabled. */
+    DATABASE_MANAGER(null,
+        "org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager",
+        "ignite-pds"),
+
+    /** Page store manager used when persistence is enabled. */
+    PAGE_STORE_MANAGER(null,
+        "org.apache.ignite.internal.processors.cache.database.file.FilePageStoreManager",
+        "ignite-pds"),
+
+    /** Write-Ahead Log manager used when persistence is enabled. */
+    WAL_MANAGER(null,
+        "org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager",
+        "ignite-pds");
 
     /** No-op class name. */
     private final String noOpClsName;

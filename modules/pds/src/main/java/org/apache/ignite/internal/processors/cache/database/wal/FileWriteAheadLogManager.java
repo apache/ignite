@@ -157,9 +157,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private ThreadLocal<WALPointer> lastWALPtr = new ThreadLocal<>();
 
     /**
-     * @param igCfg Ignite Configuration.
+     * @param ctx Kernal context.
      */
-    public FileWriteAheadLogManager(IgniteConfiguration igCfg) {
+    public FileWriteAheadLogManager(GridKernalContext ctx) {
+        igCfg = ctx.config();
+
         PersistenceConfiguration dbCfg = igCfg.getPersistenceConfiguration();
 
         assert dbCfg != null : "WAL should not be created if persistence is disabled.";

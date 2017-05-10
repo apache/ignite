@@ -2147,27 +2147,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteWriteAheadLogManager walMgr = null;
 
         if (ctx.config().isPersistentEnable()) {
-            ClassLoader clsLdr = U.gridClassLoader();
+            dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
 
-            try {
-                dbMgr = (IgniteCacheDatabaseSharedManager) clsLdr
-                    .loadClass("org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager")
-                    .getConstructor(IgniteConfiguration.class)
-                    .newInstance(ctx.config());
+            pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
 
-                pageStoreMgr = (IgnitePageStoreManager) clsLdr
-                    .loadClass("org.apache.ignite.internal.processors.cache.database.file.FilePageStoreManager")
-                    .getConstructor(IgniteConfiguration.class)
-                    .newInstance(ctx.config());
-
-                walMgr = (IgniteWriteAheadLogManager) clsLdr
-                    .loadClass("org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager")
-                    .getConstructor(IgniteConfiguration.class)
-                    .newInstance(ctx.config());
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to initialize persistent store", e);
-            }
+            walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();

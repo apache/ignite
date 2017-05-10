@@ -79,15 +79,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final Set<Integer> cachesWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /**
-     * @param igniteCfg Ignite configuration.
+     * @param ctx Kernal context.
      */
-    public FilePageStoreManager(IgniteConfiguration igniteCfg) {
+    public FilePageStoreManager(GridKernalContext ctx) {
+        igniteCfg = ctx.config();
+
         PersistenceConfiguration pstCfg = igniteCfg.getPersistenceConfiguration();
 
         assert pstCfg != null : "WAL should not be created if persistence is disabled.";
 
         this.pstCfg = pstCfg;
-        this.igniteCfg = igniteCfg;
     }
 
     /** {@inheritDoc} */
