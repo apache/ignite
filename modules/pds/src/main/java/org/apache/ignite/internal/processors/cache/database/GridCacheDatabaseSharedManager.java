@@ -542,10 +542,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         MemoryPolicyConfiguration cfg,
         MemoryMetricsImpl memMetrics
     ) {
-        final GridInClosure3X<Long, FullPageId, PageMemory> trackerPageHnd = snapshotMgr.changeTrackerPageHandler();
-
-        final GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPageHnd = snapshotMgr.flushDirtyPageHandler();
-
         return new PageMemoryImpl(memProvider, cctx, pageSize,
             new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
                 @Override public void applyx(
@@ -555,7 +551,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ) throws IgniteCheckedException {
                     storeMgr.write(fullId.cacheId(), fullId.pageId(), pageBuf, tag);
 
-                    flushDirtyPageHnd.applyx(fullId, pageBuf, tag);
+                    snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
                 }
             },
             new GridInClosure3X<Long,FullPageId, PageMemoryEx>() {
@@ -564,7 +560,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     FullPageId fullId,
                     PageMemoryEx pageMem
                 ) throws IgniteCheckedException {
-                    trackerPageHnd.applyx(page, fullId, pageMem);
+                  snapshotMgr.onChangeTrackerPage(page,fullId,pageMem);
                 }
             },
             this
@@ -2299,7 +2295,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     tmpWriteBuf.rewind();
 
-                    snapshotMgr.checkPointCopyPage(fullId);
+                    snapshotMgr.beforePageWrite(fullId);
 
                     int cacheId = fullId.cacheId();
 
@@ -2321,7 +2317,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tmpWriteBuf.rewind();
                         }
 
-                        snapshotMgr.checkPointBufferCopyPage(fullId, tmpWriteBuf);
+                        snapshotMgr.onPageWrite(fullId, tmpWriteBuf);
 
                         tmpWriteBuf.rewind();
 
