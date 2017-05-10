@@ -136,6 +136,9 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
 
+    /** */
+    private final List<DiscoveryDataPacket> delayDiscoData = new ArrayList<>();
+
     /** Topology history. */
     private final NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
 
@@ -1751,6 +1754,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             nodeAdded = false;
 
+            delayDiscoData.clear();
+
             IgniteClientDisconnectedCheckedException err =
                 new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
                     "client node disconnected.");
@@ -1774,6 +1779,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             joinCnt++;
 
             T2<SocketStream, Boolean> joinRes;
+
             try {
                 joinRes = joinTopology(false, spi.joinTimeout);
             }
@@ -1919,8 +1925,12 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                        if (dataPacket != null && dataPacket.hasJoiningNodeData())
-                            spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                        if (dataPacket != null && dataPacket.hasJoiningNodeData()) {
+                            if (joining())
+                                delayDiscoData.add(dataPacket);
+                            else
+                                spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                        }
                     }
                 }
                 else {
@@ -1943,6 +1953,13 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (dataContainer != null)
                         spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
+
+                    if (!delayDiscoData.isEmpty()) {
+                        for (DiscoveryDataPacket data : delayDiscoData)
+                            spi.onExchange(data, U.resolveClassLoader(spi.ignite().configuration()));
+
+                        delayDiscoData.clear();
+                    }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
                     locNode.visible(true);
