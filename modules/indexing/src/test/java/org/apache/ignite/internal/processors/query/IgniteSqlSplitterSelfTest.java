@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -287,6 +288,35 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         finally {
             p.destroy();
             r.destroy();
+        }
+    }
+
+    /**
+     */
+    public void testSubQueryWithAggregate() {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            AffinityKey.class, Person2.class);
+
+        IgniteCache<AffinityKey<Integer>, Person2> c1 = ignite(0).getOrCreateCache(ccfg1);
+
+        try {
+            int orgId = 100500;
+
+            c1.put(new AffinityKey<>(1, orgId), new Person2(orgId, "Vasya"));
+            c1.put(new AffinityKey<>(2, orgId), new Person2(orgId, "Another Vasya"));
+
+            List<List<?>> rs = c1.query(new SqlFieldsQuery("select name, " +
+                "select count(1) from Person2 q where q.orgId = p.orgId " +
+                "from Person2 p order by name desc")).getAll();
+
+            assertEquals(2, rs.size());
+            assertEquals("Vasya", rs.get(0).get(0));
+            assertEquals(2L, rs.get(0).get(1));
+            assertEquals("Another Vasya", rs.get(1).get(0));
+            assertEquals(2L, rs.get(1).get(1));
+        }
+        finally {
+            c1.destroy();
         }
     }
 
