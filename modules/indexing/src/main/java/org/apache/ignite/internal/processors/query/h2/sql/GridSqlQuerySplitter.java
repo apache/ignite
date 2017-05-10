@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -156,7 +155,6 @@ public class GridSqlQuerySplitter {
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
-     * @param h2 Indexing.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
@@ -167,8 +165,7 @@ public class GridSqlQuerySplitter {
         Object[] params,
         boolean collocatedGrpBy,
         boolean distributedJoins,
-        boolean enforceJoinOrder,
-        IgniteH2Indexing h2
+        boolean enforceJoinOrder
     ) throws SQLException, IgniteCheckedException {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
@@ -1396,7 +1393,6 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param h2 Indexing.
      * @param c Connection.
      * @param qry Parsed query.
      * @param params Query parameters.

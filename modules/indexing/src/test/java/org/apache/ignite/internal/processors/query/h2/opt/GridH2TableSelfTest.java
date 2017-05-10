@@ -244,6 +244,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         assertEquals(MAX_X + 2, i);
 
+        rs.close();
+
         // -----
 
         rs = conn.executeQuery("select id from t where t is not null");
@@ -253,6 +255,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             i++;
 
         assertEquals(MAX_X + 2, i);
+
+        rs.close();
 
         // ----
 
@@ -277,6 +281,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(cnt, i);
+
+        rs.close();
     }
 
     /**
@@ -384,11 +390,11 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             assertEquals(1, rs.getInt(1));
         }
 
-        ResultSet rs = conn.executeQuery("select count(*) from t");
+        try (ResultSet rs = conn.executeQuery("select count(*) from t")) {
+            assertTrue(rs.next());
 
-        assertTrue(rs.next());
-
-        assertEquals(ids.length - deleted.get(), rs.getInt(1));
+            assertEquals(ids.length - deleted.get(), rs.getInt(1));
+        }
     }
 
 

@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.util.GridCancelable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.schema.Schema;
@@ -120,10 +120,15 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
     public PreparedStatement prepare(String sql, Object[] params) throws SQLException {
         PreparedStatement ps = stmtCache.get(sql);
 
-        if (ps == null || ps.isClosed()) {
+        if (ps == null) {
             ps = conn.prepareStatement(sql);
 
             stmtCache.put(sql, ps);
+        }
+        else if (ps.isClosed()) {
+            stmtCache.remove(sql);
+
+            throw new IllegalStateException("Cached prepared statements must never be closed: \n" + sql);
         }
 
         bindParameters(ps, params);
@@ -192,22 +197,14 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
     }
 
     /**
+     * Allows to execute simple queries and fetching result set right away.
+     *
      * @param sql SQL query.
      * @return Result set.
      * @throws SQLException If failed.
      */
     public ResultSet executeQuery(String sql) throws SQLException {
         return stmt.executeQuery(sql);
-    }
-
-    /**
-     * @param sql Sql command.
-     * @return Prepared.
-     */
-    @Deprecated
-    @SuppressWarnings("unchecked")
-    public <T extends Prepared> T prepare(String sql) {
-        return (T)ses.prepare(sql);
     }
 
     /**
@@ -272,6 +269,26 @@ public final class H2Connection implements AutoCloseable, GridCancelable {
         synchronized (conn) { // Possible NPE in H2 with racy close.
             return !conn.isClosed();
         }
+    }
+
+    /**
+     * Drops and returns the last cached (or used) statement.
+     *
+     * @return SQL.
+     */
+    public String dropLastCachedStatement() {
+        Iterator<Map.Entry<String,PreparedStatement>> it = stmtCache.entrySet().iterator();
+
+        if (!it.hasNext())
+            throw new IllegalStateException("Statement cache is empty.");
+
+        Map.Entry<String,PreparedStatement> e = it.next();
+
+        it.remove();
+
+        U.closeQuiet(e.getValue());
+
+        return e.getKey();
     }
 
     /**

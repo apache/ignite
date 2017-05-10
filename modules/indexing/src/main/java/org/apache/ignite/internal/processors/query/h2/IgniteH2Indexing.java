@@ -857,7 +857,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         conn.setupConnection(false, enforceJoinOrder);
 
-        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params);
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
@@ -978,12 +978,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection.
      * @param sql Sql.
      * @param params Params.
-     * @param useStmtCache If {@code true} use stmt cache.
      * @return Prepared statement with set parameters.
      * @throws IgniteCheckedException If failed.
      */
-    private PreparedStatement preparedStatementWithParams(H2Connection conn, String sql, Object[] params,
-        boolean useStmtCache) throws IgniteCheckedException {
+    private PreparedStatement preparedStatementWithParams(H2Connection conn, String sql, Object[] params)
+        throws IgniteCheckedException {
         final PreparedStatement stmt;
 
         try {
@@ -1048,7 +1047,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param conn Connection,.
      * @param sql Sql query.
      * @param params Parameters.
-     * @param useStmtCache If {@code true} uses stmt cache.
      * @param cancel Query cancel.
      * @return Result.
      * @throws IgniteCheckedException If failed.
@@ -1057,19 +1055,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Connection conn,
         String sql,
         @Nullable Object[] params,
-        boolean useStmtCache,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        PreparedStatement s = preparedStatementWithParams(conn, sql, params, useStmtCache);
+        PreparedStatement s = preparedStatementWithParams(conn, sql, params);
 
         try {
             return executeSqlQueryWithTimer(space, s,
                 conn, sql, params, timeoutMillis, cancel);
         }
         finally {
-            if (!useStmtCache) {
-                // TODO lazy
-            }
+            // TODO lazy
         }
     }
 
@@ -1085,12 +1080,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQueryWithTimer(String space, PreparedStatement stmt,
+    private ResultSet executeSqlQueryWithTimer(
+        String space,
+        PreparedStatement stmt,
         H2Connection conn,
         String sql,
         @Nullable Object[] params,
         int timeoutMillis,
-        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        @Nullable GridQueryCancel cancel
+    ) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {
@@ -1105,14 +1103,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 String plan;
 
-                try (PreparedStatement s = preparedStatementWithParams(conn, "EXPLAIN " + sql,
-                    params, false)) {
+                try (ResultSet planRs = conn.executeQuery("EXPLAIN " + sql)) {
+                    planRs.next();
 
-                    try (ResultSet planRs = executeSqlQuery(conn, s, 0, null)) {
-                        planRs.next();
-
-                        plan = planRs.getString(1);
-                    }
+                    plan = planRs.getString(1);
                 }
 
                 // Add SQL explain result message into log.
@@ -1258,7 +1252,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             runs.put(run.id(), run);
 
             try {
-                ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, cancel);
+                ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, 0, cancel);
 
                 return new KeyValIterator(rs);
             }
@@ -1436,7 +1430,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     if (prepared.isQuery()) {
                         twoStepQry = GridSqlQuerySplitter.split(c, (JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
-                            distributedJoins, enforceJoinOrder, this);
+                            distributedJoins, enforceJoinOrder);
 
                         assert twoStepQry != null;
                     }
@@ -2001,13 +1995,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             conn.setupConnection(false, false);
 
-            try (PreparedStatement ps = conn.prepare("SELECT COUNT(*) FROM " + tbl.fullTableName(), null)) {
-                try (ResultSet rs = executeSqlQuery(conn, ps, 0, null)) {
-                    if (!rs.next())
-                        throw new IllegalStateException();
+            try (ResultSet rs = conn.executeQuery("SELECT COUNT(*) FROM " + tbl.fullTableName())) {
+                if (!rs.next())
+                    throw new IllegalStateException();
 
-                    return rs.getLong(1);
-                }
+                return rs.getLong(1);
             }
         }
         catch (SQLException e) {

@@ -807,7 +807,7 @@ public class GridReduceQueryExecutor {
 
                         try {
                             if (qry.explain())
-                                return explainPlan(conn, space, qry, params);
+                                return explainPlan(conn, qry);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
@@ -815,11 +815,15 @@ public class GridReduceQueryExecutor {
                                 conn,
                                 rdc.query(),
                                 rdc.parameters(params),
-                                false, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
 
                             resIter = new IgniteH2Indexing.FieldsIterator(res);
+
+                            // The statement will cache some extra thread local objects.
+                            String dropped = conn.dropLastCachedStatement();
+
+                            assert rdc.query().equals(dropped);
                         }
                         finally {
                             conn.clearSessionLocalQueryContext(); // TODO lazy
@@ -1236,21 +1240,21 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param c Connection.
-     * @param space Space.
      * @param qry Query.
-     * @param params Query parameters.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(H2Connection c, String space, GridCacheTwoStepQuery qry, Object[] params)
+    private Iterator<List<?>> explainPlan(H2Connection c, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(space, c,
-                "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
-
-            lists.add(F.asList(getPlan(rs)));
+            try (ResultSet rs = c.executeQuery("SELECT PLAN FROM " + mergeTableIdentifier(i))) {
+                lists.add(F.asList(getPlan(rs)));
+            }
+            catch (SQLException e) {
+                throw new IgniteCheckedException(e);
+            }
         }
 
         int tblIdx = 0;
@@ -1263,15 +1267,12 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(space,
-            c,
-            "EXPLAIN " + rdc.query(),
-            rdc.parameters(params),
-            false,
-            0,
-            null);
-
-        lists.add(F.asList(getPlan(rs)));
+        try (ResultSet rs = c.executeQuery("EXPLAIN " + rdc.query())) {
+            lists.add(F.asList(getPlan(rs)));
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
+        }
 
         return lists.iterator();
     }

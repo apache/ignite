@@ -607,7 +607,7 @@ public class GridMapQueryExecutor {
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                            qry.parameters(params), true,
+                            qry.parameters(params),
                             timeout,
                             qr.cancels[qryIdx]);
 

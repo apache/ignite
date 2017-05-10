@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
@@ -49,7 +50,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.message.DbException;
+import org.h2.jdbc.JdbcSQLException;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -506,7 +507,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Schemas for index and table must match
         assertParseThrows("create index if not exists sch2.idx on sch1.Person (name)",
-            DbException.class, "Schema name must match");
+            JdbcSQLException.class, "Schema name must match");
 
         assertParseThrows("create hash index if not exists idx on Person (name)",
             IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
@@ -538,10 +539,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index sch1.idx");
 
         // Message is null as long as it may differ from system to system, so we just check for exceptions
-        assertParseThrows("drop index schema2.", DbException.class, null);
-        assertParseThrows("drop index", DbException.class, null);
-        assertParseThrows("drop index if exists", DbException.class, null);
-        assertParseThrows("drop index if exists schema2.", DbException.class, null);
+        assertParseThrows("drop index schema2.", JdbcSQLException.class, null);
+        assertParseThrows("drop index", JdbcSQLException.class, null);
+        assertParseThrows("drop index if exists", JdbcSQLException.class, null);
+        assertParseThrows("drop index if exists schema2.", JdbcSQLException.class, null);
     }
 
     /**
@@ -688,7 +689,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         H2Connection c = idx.takeConnectionForSpace(DEFAULT_CACHE_NAME);
 
-        return c.prepare(sql);
+        PreparedStatement ps = c.prepare(sql, null);
+
+        return (T)GridSqlQueryParser.prepared(ps);
     }
 
     /**
