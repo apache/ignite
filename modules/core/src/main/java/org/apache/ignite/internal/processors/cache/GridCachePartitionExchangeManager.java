@@ -1256,19 +1256,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean updated = false;
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
-                    Integer cacheId = entry.getKey();
+                    Integer grpId = entry.getKey();
 
-                    GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
-
-                    if (cacheCtx != null && !cacheCtx.started())
-                        continue; // Can safely ignore background exchange.
+                    CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
                     GridDhtPartitionTopology top = null;
 
-                    if (cacheCtx == null)
-                        top = clientTops.get(cacheId);
-                    else if (!cacheCtx.isLocal())
-                        top = cacheCtx.topology();
+                    if (grp == null)
+                        top = clientTops.get(grpId);
+                    else if (!grp.isLocal())
+                        top = grp.topology();
 
                     if (top != null)
                         updated |= top.update(null, entry.getValue(), null) != null;
@@ -1302,25 +1299,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean updated = false;
 
                 for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
-                    Integer cacheId = entry.getKey();
+                    Integer grpId = entry.getKey();
 
-                    GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+                    CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
-                    if (cacheCtx != null &&
-                        cacheCtx.cacheStartTopologyVersion().compareTo(entry.getValue().topologyVersion()) > 0)
+                    if (grp != null &&
+                        grp.groupStartVersion().compareTo(entry.getValue().topologyVersion()) > 0)
                         continue;
 
                     GridDhtPartitionTopology top = null;
 
-                    if (cacheCtx == null)
-                        top = clientTops.get(cacheId);
-                    else if (!cacheCtx.isLocal())
-                        top = cacheCtx.topology();
+                    if (grp == null)
+                        top = clientTops.get(grpId);
+                    else if (!grp.isLocal())
+                        top = grp.topology();
 
                     if (top != null) {
                         updated |= top.update(null, entry.getValue(), null) != null;
 
-                        cctx.affinity().checkRebalanceState(top, cacheId);
+                        cctx.affinity().checkRebalanceState(top, grpId);
                     }
                 }
 
