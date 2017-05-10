@@ -1643,11 +1643,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Query SQL fields.
+     *
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryDistributedFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+    public QueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException(
+                "Using both partitions and distributed JOINs is not supported for the same query");
+
+        if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
+            return queryLocalSqlFields(cctx, qry);
+
+        return queryDistributedSqlFields(cctx, qry);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @return Cursor.
+     */
+    public QueryCursor<List<?>> queryDistributedSqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
@@ -1703,7 +1724,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributed(final GridCacheContext<?,?> cctx, final SqlQuery qry) {
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx, final SqlQuery qry) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
@@ -1731,7 +1752,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocal(
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(
         final GridCacheContext<?, ?> cctx,
         final SqlQuery qry,
         final boolean keepBinary
@@ -1928,7 +1949,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Iterator.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
+    public QueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
