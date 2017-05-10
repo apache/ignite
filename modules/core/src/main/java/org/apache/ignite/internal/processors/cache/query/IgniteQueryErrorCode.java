@@ -36,15 +36,6 @@ public final class IgniteQueryErrorCode {
     /** Requested operation is not supported. */
     public final static int UNSUPPORTED_OPERATION = 1002;
 
-    /** Command param requires value but none is given. */
-    public final static int EMPTY_PARAM_VALUE = 1003;
-
-    /** Unknown param specified. */
-    public final static int UNKNOWN_PARAM_NAME = 1004;
-
-    /** Invalid syntax of param key-value pair. */
-    public final static int INVALID_PARAM_SYNTAX = 1004;
-
     /* 2xxx - analysis errors */
 
     /** Code encountered SQL statement of some type that it did not expect in current analysis context. */
@@ -104,6 +95,9 @@ public final class IgniteQueryErrorCode {
 
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
+
+    /** Cache already contains query entities. */
+    public final static int QUERY_ENTITIES_PRESENT = 4007;
 
     /** */
     private IgniteQueryErrorCode() {

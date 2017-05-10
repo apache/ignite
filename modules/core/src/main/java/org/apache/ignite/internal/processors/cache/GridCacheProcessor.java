@@ -2072,8 +2072,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert fut == null || fut.deploymentId != null || req.globalStateChange() || req.resetLostPartitions();
 
         if (fut != null && F.eq(fut.deploymentId(), req.deploymentId()) &&
-            F.eq(req.initiatingNodeId(), ctx.localNodeId()))
+            F.eq(req.initiatingNodeId(), ctx.localNodeId())) {
+            /*
+            GridCacheContext cctx = ctx.cache().context().cacheContext(CU.cacheId(req.cacheName()));
+
+            assert cctx != null;
+
+            fut.onDone(cctx.dynamicDeploymentId());
+            */
+
             fut.onDone();
+        }
     }
 
     /**
@@ -2563,7 +2572,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is deployed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public IgniteInternalFuture<?> dynamicStartCache(
+    public IgniteInternalFuture<IgniteUuid> dynamicStartCache(
         @Nullable CacheConfiguration ccfg,
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
@@ -2593,7 +2602,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is deployed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public IgniteInternalFuture<?> dynamicStartCache(
+    public IgniteInternalFuture<IgniteUuid> dynamicStartCache(
         @Nullable CacheConfiguration ccfg,
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
@@ -4170,7 +4179,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
+    private class DynamicCacheStartFuture extends GridFutureAdapter<IgniteUuid> {
         /** Start ID. */
         @GridToStringInclude
         private IgniteUuid deploymentId;
@@ -4208,7 +4217,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable IgniteUuid res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(req.requestId(), this);
 

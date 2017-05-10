@@ -53,12 +53,17 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private final static int CLIENT = 2;
 
+    /** */
+    private final static String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
+
+        client().getOrCreateCache(cacheConfigurationForIndexing());
 
         client().getOrCreateCache(cacheConfiguration());
     }
@@ -228,29 +233,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @return Client node.
      */
     private IgniteCache<?, ?> cache() {
-        return client().cache(CACHE_NAME);
-    }
-
-    /**
-     *
-     */
-    private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = client().context();
-
-        GridQueryProcessor qryProcessor = ctx.query();
-
-        IgniteH2Indexing idx = U.field(qryProcessor, "idx");
-
-        return (JdbcConnection)idx.connectionForSpace(CACHE_NAME);
-    }
-
-    /**
-     * @param sql Sql.
-     */
-    private GridSqlCreateTable parse(String sql) throws Exception {
-        Session ses = (Session)connection().getSession();
-
-        return (GridSqlCreateTable)new GridSqlQueryParser(false).parse(ses.prepare(sql));
+        return client().cache(INDEXED_CACHE_NAME);
     }
 
     /**
@@ -263,6 +246,17 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         ccfg.setSqlEscapeAll(true);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
+
+        return ccfg;
+    }
+
+    /**
+     * @return Cache configuration with query entities - unfortunately, we need this to enable indexing at all.
+     */
+    private CacheConfiguration cacheConfigurationForIndexing() {
+        CacheConfiguration<?, ?> ccfg = cacheConfiguration();
+
+        ccfg.setName(INDEXED_CACHE_NAME);
 
         ccfg.setQueryEntities(Collections.singletonList(
             new QueryEntity()

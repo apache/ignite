@@ -55,10 +55,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -101,6 +104,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
@@ -854,6 +858,86 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql = indexDropSql(schemaName, idxName, ifExists, schema.escapeAll());
 
         executeSql(spaceName, sql);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
+        throws IgniteCheckedException {
+        IgniteInternalCache<?, ?> tplCache = ctx.cache().cache(tplCacheName);
+
+        if (tplCache == null)
+            throw new IgniteSQLException("", IgniteQueryErrorCode.CACHE_NOT_FOUND);
+
+        CacheConfiguration<?, ?> tplCfg = tplCache.configuration();
+
+        if (!F.isEmpty(tplCfg.getQueryEntities()))
+            throw new IgniteSQLException("Template cache already contains query entities which it should not " +
+                "[cacheName=" + tplCacheName + ']', IgniteQueryErrorCode.QUERY_ENTITIES_PRESENT);
+
+        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(tplCfg);
+
+        newCfg.setName(entity.getTableName());
+
+        newCfg.setQueryEntities(Collections.singleton(entity));
+
+        // We want to preserve user specified names as they are
+        newCfg.setSqlEscapeAll(true);
+
+        IgniteCache<?, ?> res = ctx.grid().getOrCreateCache(newCfg);
+
+        // Instead of interpreting error message, let's just check that configuration of new cache matches
+        // what we've just tried to create.
+        if (!ifNotExists) {
+            boolean chkRes;
+
+            CacheConfiguration<?, ?> resCfg = res.getConfiguration(CacheConfiguration.class);
+
+            if (resCfg.getQueryEntities().size() != 1)
+                chkRes = false;
+            else {
+                QueryEntity resEntity = resCfg.getQueryEntities().iterator().next();
+
+                chkRes =
+                    F.eq(resEntity.getTableName(), entity.getTableName()) &&
+                        F.eq(resEntity.getFields(), entity.getFields()) &&
+                        F.eq(resEntity.getKeyType(), entity.getKeyType()) &&
+                        F.eq(resEntity.getFields(), entity.getFields()) &&
+                        F.eq(resEntity.getKeyFields(), entity.getKeyFields()) &&
+                        F.isEmpty(resEntity.getIndexes()) &&
+                        F.isEmpty(resEntity.getAliases());
+            }
+
+            if (!chkRes)
+                throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
+                    IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
+        String spaceName = space(schemaName);
+
+        QueryTypeDescriptorImpl type = ctx.query().type(spaceName, tblName);
+
+        if (type == null || !F.eq(schemaName, spaceName)) {
+            if (!ifExists)
+                throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
+                    ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+            return;
+        }
+
+        if (!F.eq(schemaName, tblName))
+            throw new IgniteSQLException("Only dynamically created table can be dropped [schemaName=" + schemaName +
+                ",tblName=" + tblName +']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        IgniteCache cache = ctx.grid().cache(spaceName);
+
+        assert cache != null;
+
+        cache.destroy();
     }
 
     /**

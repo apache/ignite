@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -1262,54 +1261,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
-            throws IgniteCheckedException {
-        IgniteInternalCache<?, ?> tplCache = ctx.cache().cache(tplCacheName);
-
-        if (tplCache == null)
-            throw new IgniteSQLException("", IgniteQueryErrorCode.CACHE_NOT_FOUND);
-
-        CacheConfiguration<?, ?> tplCfg = tplCache.configuration();
-
-        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(tplCfg);
-
-        newCfg.setName(entity.getTableName());
-
-        // setQueryEntities actually and sadly does Collection.add, so we have to clear first
-        newCfg.getQueryEntities().clear();
-
-        newCfg.setQueryEntities(Collections.singleton(entity));
-
-        // We want to preserve user specified names as they are
-        newCfg.setSqlEscapeAll(true);
-
-        IgniteCache<?, ?> res = ctx.grid().getOrCreateCache(newCfg);
-
-        // Instead of interpreting error message, let's just check that configuration of new cache matches
-        // what we've just tried to create.
-        if (!ifNotExists) {
-            boolean chkRes;
-
-            CacheConfiguration<?, ?> resCfg = res.getConfiguration(CacheConfiguration.class);
-
-            if (resCfg.getQueryEntities().size() != 1)
-                chkRes = false;
-            else {
-                QueryEntity resEntity = resCfg.getQueryEntities().iterator().next();
-
-                chkRes =
-                    F.eq(resEntity.getTableName(), entity.getTableName()) &&
-                        F.eq(resEntity.getFields(), entity.getFields()) &&
-                        F.eq(resEntity.getKeyType(), entity.getKeyType()) &&
-                        F.eq(resEntity.getFields(), entity.getFields()) &&
-                        F.eq(resEntity.getKeyFields(), entity.getKeyFields()) &&
-                        F.isEmpty(resEntity.getIndexes()) &&
-                        F.isEmpty(resEntity.getAliases());
-            }
-
-            if (!chkRes)
-                throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
-                    IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
-        }
+        throws IgniteCheckedException {
+        getIndexing().dynamicTableCreate(entity, tplCacheName, ifNotExists);
     }
 
     /**
@@ -1318,31 +1271,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param ifExists Quietly ignore this command if table does not exist.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
-        String spaceName = idx.space(schemaName);
-
-        QueryTypeDescriptorImpl type = type(spaceName, tblName);
-
-        if (type == null || !F.eq(schemaName, spaceName)) {
-            if (!ifExists)
-                throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
-                    ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-            return;
-        }
-
-        if (!F.eq(schemaName, tblName))
-            throw new IgniteSQLException("Only dynamically created table can be dropped [schemaName=" + schemaName +
-                ",tblName=" + tblName +']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        IgniteCache cache = ctx.grid().cache(spaceName);
-
-        assert cache != null;
-
-        cache.destroy();
+        getIndexing().dynamicTableDrop(schemaName, tblName, ifExists);
     }
 
     /**
@@ -2141,7 +2073,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param tblName Table name.
      * @return Type (if any).
      */
-    @Nullable private QueryTypeDescriptorImpl type(@Nullable String space, String tblName) {
+    @Nullable public QueryTypeDescriptorImpl type(@Nullable String space, String tblName) {
         for (QueryTypeDescriptorImpl type : types.values()) {
             if (F.eq(space, type.space()) && F.eq(tblName, type.tableName()))
                 return type;

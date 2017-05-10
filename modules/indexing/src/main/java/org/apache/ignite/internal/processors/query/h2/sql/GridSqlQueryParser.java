@@ -893,7 +893,7 @@ public class GridSqlQueryParser {
 
             if (parts.length > 2)
                 throw new IgniteSQLException("Invalid param syntax: key[=value] expected [paramStr=" + p + ']',
-                    IgniteQueryErrorCode.INVALID_PARAM_SYNTAX);
+                    IgniteQueryErrorCode.PARSING);
 
             String name = parts[0];
 
@@ -901,7 +901,7 @@ public class GridSqlQueryParser {
 
             if (F.isEmpty(name))
                 throw new IgniteSQLException("Invalid param syntax: no name given [paramStr=" + p + ']',
-                    IgniteQueryErrorCode.INVALID_PARAM_SYNTAX);
+                    IgniteQueryErrorCode.PARSING);
 
             params.put(name, val);
         }
@@ -955,7 +955,7 @@ public class GridSqlQueryParser {
 
             default:
                 throw new IgniteSQLException("Unknown CREATE TABLE param [paramName=" + name + ']',
-                    IgniteQueryErrorCode.UNKNOWN_PARAM_NAME);
+                    IgniteQueryErrorCode.PARSING);
         }
     }
 
@@ -967,7 +967,7 @@ public class GridSqlQueryParser {
     private static void ensureParamValueNotEmpty(String name, String val) {
         if (F.isEmpty(val))
             throw new IgniteSQLException("No value has been given for a CREATE TABLE param [paramName=" + name + ']',
-                IgniteQueryErrorCode.EMPTY_PARAM_VALUE);
+                IgniteQueryErrorCode.PARSING);
     }
 
     /**
