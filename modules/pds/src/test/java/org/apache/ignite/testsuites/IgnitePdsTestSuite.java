@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithInde
 /**
  *
  */
-public class IgnitePersistentStoreTestSuite extends TestSuite {
+public class IgnitePdsTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.

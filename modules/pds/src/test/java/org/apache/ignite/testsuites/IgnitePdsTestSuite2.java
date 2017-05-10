@@ -20,7 +20,7 @@ import org.apache.ignite.cache.database.db.wal.crc.IgniteDataIntegrityTests;
 /**
  *
  */
-public class IgnitePersistentStoreTestSuit2 extends TestSuite {
+public class IgnitePdsTestSuite2 extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.
