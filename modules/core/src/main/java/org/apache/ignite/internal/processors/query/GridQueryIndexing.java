@@ -67,11 +67,10 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param qry Query.
-     * @param cancel Query cancel.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry, GridQueryCancel cancel)
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?,?> cctx, SqlQuery qry)
         throws IgniteCheckedException;
 
     /**
@@ -79,23 +78,12 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param cancel Query cancel.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry)
-        throws IgniteCheckedException;
-
-    /**
-     * Queries individual fields (generally used by JDBC drivers).
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @param filter Space name and key filter.
-     * @param cancel Query cancel.
-     * @return Cursor.
-     */
-    public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
-        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
+    public QueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.
@@ -107,8 +95,8 @@ public interface GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public long streamUpdateQuery(final String spaceName, final String qry,
-         @Nullable final Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+    public long streamUpdateQuery(final String spaceName, final String qry, @Nullable final Object[] params,
+        IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -121,6 +109,18 @@ public interface GridQueryIndexing {
      */
     public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
         IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
+
+    /**
+     * Queries individual fields (generally used by JDBC drivers).
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param filter Space name and key filter.
+     * @param cancel Query cancel.
+     * @return Cursor.
+     */
+    public QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Executes text query.
