@@ -65,18 +65,59 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateCache1() throws Exception {
-        Ignite ignite = ignite(0);
+        Ignite srv0 = ignite(0);
 
-        IgniteCache<Object, Object> cache1 = ignite.createCache(cacheConfiguration("grp1", "cache1", ATOMIC));
-        //IgniteCache<Object, Object> cache2 = ignite.createCache(cacheConfiguration("grp1", "cache2", ATOMIC));
+        {
+            IgniteCache<Object, Object> cache1 = srv0.createCache(cacheConfiguration("grp1", "cache1", ATOMIC, 2));
+            IgniteCache<Object, Object> cache2 = srv0.createCache(cacheConfiguration("grp1", "cache2", ATOMIC, 2));
 
-        cache1.put(new Key1(1), 1);
-        assertEquals(1, cache1.get(new Key1(1)));
+            cache1.put(new Key1(1), 1);
+            assertEquals(1, cache1.get(new Key1(1)));
 
-        //assertFalse(cache2.iterator().hasNext());
+            assertEquals(1, cache1.size());
+            assertEquals(0, cache2.size());
+            //assertFalse(cache2.iterator().hasNext());
 
-//        cache2.put(new Key2(1), 2);
-//        assertEquals(2, cache2.get(new Key2(1)));
+            cache2.put(new Key2(1), 2);
+            assertEquals(2, cache2.get(new Key2(1)));
+
+            assertEquals(1, cache1.size());
+            assertEquals(1, cache2.size());
+        }
+
+        Ignite srv1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache1 = srv1.cache("cache1");
+        IgniteCache<Object, Object> cache2 = srv1.cache("cache2");
+
+        assertEquals(1, cache1.localPeek(new Key1(1)));
+        assertEquals(2, cache2.localPeek(new Key2(1)));
+
+        assertEquals(1, cache1.localSize());
+        assertEquals(1, cache2.localSize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCache2() throws Exception {
+        Ignite srv0 = ignite(0);
+
+        {
+            IgniteCache<Object, Object> cache1 = srv0.createCache(cacheConfiguration("grp1", "cache1", ATOMIC, 0));
+            IgniteCache<Object, Object> cache2 = srv0.createCache(cacheConfiguration("grp1", "cache2", ATOMIC, 0));
+
+            for (int i = 0; i < 10; i++) {
+                cache1.put(new Key1(i), 1);
+                cache2.put(new Key2(i), 2);
+            }
+        }
+
+        Ignite srv1 = startGrid(1);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -145,12 +186,16 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         }
     }
 
-    private CacheConfiguration cacheConfiguration(String grpName, String name, CacheAtomicityMode atomicityMode) {
+    private CacheConfiguration cacheConfiguration(String grpName,
+        String name,
+        CacheAtomicityMode atomicityMode,
+        int backups) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
         ccfg.setGroupName(grpName);
         ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setBackups(backups);
 
         return ccfg;
     }

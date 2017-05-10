@@ -124,8 +124,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx = null;
 
         if (grp != null) {
-            cacheId = grp.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
-                -1 : 0; // Force cacheId reading for evictable memory policies.
+            cacheId = !grp.storeCacheId() ? -1 : 0; // Skip cacheId reading if it is not needed.
 
             coctx = grp.cacheObjectContext();
         }

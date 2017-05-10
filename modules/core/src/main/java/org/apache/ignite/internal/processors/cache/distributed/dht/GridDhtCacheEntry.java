@@ -719,8 +719,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * @return Cache name.
      */
-    protected String cacheName() {
-        return cctx.dht().near().name();
+    protected final String cacheName() {
+        return cctx.name();
     }
 
     /** {@inheritDoc} */

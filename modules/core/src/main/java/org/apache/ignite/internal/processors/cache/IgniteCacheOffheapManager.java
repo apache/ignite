@@ -223,7 +223,7 @@ public interface IgniteCacheOffheapManager {
      * @return Entries count.
      * @throws IgniteCheckedException If failed.
      */
-    public long entriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer)
+    public long cacheEntriesCount(int cacheId, boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
     /**
@@ -237,7 +237,7 @@ public interface IgniteCacheOffheapManager {
      * @param part Partition.
      * @return Number of entries in given partition.
      */
-    public long entriesCount(int part);
+    public long cacheEntriesCount(int cacheId, int part);
 
     /**
      * @return Offheap allocated size.
@@ -271,7 +271,7 @@ public interface IgniteCacheOffheapManager {
      *
      * @return Number of entries.
      */
-    public long entriesCount();
+    public long cacheEntriesCount(int cacheId);
 
     /**
      *
@@ -304,9 +304,12 @@ public interface IgniteCacheOffheapManager {
         void init(long size, long updCntr);
 
         /**
+         * @param cacheId Cache ID.
          * @return Size.
          */
-        int size();
+        int cacheSize(int cacheId);
+
+        int fullSize();
 
         /**
          * @return Update counter.

@@ -217,7 +217,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         modes.backup = true;
 
         if (modes.offheap)
-            return ctx.offheap().entriesCount();
+            return ctx.offheap().cacheEntriesCount(ctx.cacheId());
         else if (modes.heap)
             return size();
         else

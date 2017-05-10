@@ -46,11 +46,6 @@ public class GridDhtColocatedCacheEntry extends GridDhtCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected String cacheName() {
-        return cctx.colocated().name();
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized String toString() {
         return S.toString(GridDhtColocatedCacheEntry.class, this, super.toString());
     }

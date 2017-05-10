@@ -531,7 +531,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         long sum = 0;
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions())
-            sum += p.dataStore().size();
+            sum += p.dataStore().cacheSize(ctx.cacheId());
 
         return sum;
     }
@@ -549,7 +549,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
-                sum += p.dataStore().size();
+                sum += p.dataStore().cacheSize(ctx.cacheId());
         }
 
         return sum;

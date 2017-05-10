@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -44,11 +43,6 @@ public class GridDhtAtomicCacheEntry extends GridDhtCacheEntry {
         CacheObject val
     ) {
         super(ctx, topVer, key, hash, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String cacheName() {
-        return CU.isNearEnabled(cctx) ? super.cacheName() : cctx.dht().name();
     }
 
     /** {@inheritDoc} */

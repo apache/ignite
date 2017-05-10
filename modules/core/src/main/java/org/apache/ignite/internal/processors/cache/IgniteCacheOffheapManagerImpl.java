@@ -214,14 +214,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public long entriesCount() {
+    @Override public long cacheEntriesCount(int cacheId) {
         if (grp.isLocal())
-            return locCacheDataStore.size();
+            return locCacheDataStore.cacheSize(cacheId);
 
         long size = 0;
 
         for (CacheDataStore store : partDataStores.values())
-            size += store.size();
+            size += store.cacheSize(cacheId);
 
         return size;
     }
@@ -241,13 +241,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public long entriesCount(
+    @Override public long cacheEntriesCount(
+        int cacheId,
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         if (grp.isLocal())
-            return entriesCount(0);
+            return cacheEntriesCount(cacheId, 0);
         else {
             ClusterNode locNode = ctx.localNode();
 
@@ -259,7 +260,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (primary) {
                     if (primaryParts.contains(locPart.id())) {
-                        cnt += locPart.dataStore().size();
+                        cnt += locPart.dataStore().cacheSize(cacheId);
 
                         continue;
                     }
@@ -267,7 +268,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (backup) {
                     if (backupParts.contains(locPart.id()))
-                        cnt += locPart.dataStore().size();
+                        cnt += locPart.dataStore().cacheSize(cacheId);
                 }
             }
 
@@ -276,16 +277,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public long entriesCount(int part) {
+    @Override public long cacheEntriesCount(int cacheId, int part) {
         if (grp.isLocal()) {
             assert part == 0;
 
-            return locCacheDataStore.size();
+            return locCacheDataStore.cacheSize(cacheId);
         }
         else {
             GridDhtLocalPartition locPart = grp.topology().localPartition(part, AffinityTopologyVersion.NONE, false);
 
-            return locPart == null ? 0 : locPart.dataStore().size();
+            return locPart == null ? 0 : locPart.dataStore().cacheSize(cacheId);
         }
     }
 
@@ -847,7 +848,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         protected final AtomicLong cntr = new AtomicLong();
 
         /** Partition size. */
-        protected final AtomicLong storageSize = new AtomicLong();
+        private final AtomicLong storageSize = new AtomicLong();
+
+        /** */
+        private final ConcurrentMap<Integer, AtomicLong> cacheSizes = new ConcurrentHashMap<>();
 
         /** Initialized update counter. */
         protected Long initCntr = 0L;
@@ -870,13 +874,65 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.dataTree = dataTree;
         }
 
+        /**
+         * @param cacheId Cache ID.
+         */
+        void incrementSize(int cacheId) {
+            storageSize.incrementAndGet();
+
+            if (grp.sharedGroup()) {
+                AtomicLong size = cacheSizes.get(cacheId);
+
+                if (size == null) {
+                    AtomicLong old = cacheSizes.put(cacheId, size = new AtomicLong());
+
+                    if (old != null)
+                        size = old;
+                }
+
+                size.incrementAndGet();
+            }
+        }
+
+        /**
+         * @param cacheId Cache ID.
+         */
+        void decrementSize(int cacheId) {
+            storageSize.decrementAndGet();
+
+            if (grp.sharedGroup()) {
+                AtomicLong size = cacheSizes.get(cacheId);
+
+                if (size == null)
+                    return;
+
+                AtomicLong old = cacheSizes.put(cacheId, size = new AtomicLong());
+
+                if (old != null)
+                    size = old;
+
+                size.decrementAndGet();
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public int partId() {
             return partId;
         }
 
         /** {@inheritDoc} */
-        @Override public int size() {
+        @Override public int cacheSize(int cacheId) {
+            if (grp.sharedGroup()) {
+                AtomicLong size = cacheSizes.get(cacheId);
+
+                return size != null ? (int)size.get() : 0;
+            }
+
+            return (int)storageSize.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fullSize() {
             return (int)storageSize.get();
         }
 
@@ -980,8 +1036,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException
         {
-            int cacheId = grp.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
-                0 : cctx.cacheId();
+            int cacheId = grp.storeCacheId() ? cctx.cacheId() : 0;
 
             DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
@@ -1016,8 +1071,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED ?
-                    cctx.cacheId() : 0;
+                int cacheId = grp.storeCacheId() ? cctx.cacheId() : 0;
 
                 DataRow dataRow = new DataRow(key, val, ver, p, expireTime, cacheId);
 
@@ -1063,7 +1117,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
             throws IgniteCheckedException {
             if (oldRow == null)
-                storageSize.incrementAndGet();
+                incrementSize(cctx.cacheId());
 
             KeyCacheObject key = newRow.key();
 
@@ -1139,7 +1193,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (pendingEntries != null && oldRow.expireTime() != 0)
                     pendingEntries.removex(new PendingRow(oldRow.expireTime(), oldRow.link()));
 
-                storageSize.decrementAndGet();
+                decrementSize(cctx.cacheId());
 
                 val = oldRow.value();
 
@@ -1500,7 +1554,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     if (data.nextLink() == 0) {
                         long addr = pageAddr + data.offset();
 
-                        if (grp.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED)
+                        if (grp.storeCacheId())
                             addr += 4; // Skip cache id.
 
                         final int len = PageUtils.getInt(addr, 0);

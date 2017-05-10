@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -104,6 +105,9 @@ public class CacheGroupInfrastructure {
     /** */
     private boolean depEnabled;
 
+    /** */
+    private boolean storeCacheId;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -139,7 +143,13 @@ public class CacheGroupInfrastructure {
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
 
+        storeCacheId = sharedGroup() || memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+
         log = ctx.kernalContext().log(getClass());
+    }
+
+    public boolean storeCacheId() {
+        return storeCacheId;
     }
 
     /**
@@ -244,7 +254,7 @@ public class CacheGroupInfrastructure {
 
     public boolean allowFastEviction() {
         // TODO IGNITE-5075 see GridCacheContext#allowFastEviction
-        return true;
+        return false;
     }
 
     public AffinityTopologyVersion groupStartVersion() {
