@@ -83,6 +83,8 @@ public class JdbcConnection implements Connection {
         assert props != null;
 
         this.url = url;
+
+        // TODO: Read distributed joins flags.
         cacheName = props.getProperty(PROP_CACHE);
 
         try {
@@ -94,6 +96,7 @@ public class JdbcConnection implements Connection {
             throw new SQLException("Failed to start Ignite client.", e);
         }
 
+        // TODO: Remove
         if (!isValid(2))
             throw new SQLException("Client is invalid. Probably cache name is wrong.");
     }

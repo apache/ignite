@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
 import org.apache.ignite.logger.java.JavaLogger;
 
+// TODO: Docs
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
  * <p>
@@ -65,9 +66,7 @@ import org.apache.ignite.logger.java.JavaLogger;
  * <p>
  * Note that cache name is case sensitive and you have to always specify it in quotes.
  * <h1 class="header">Dependencies</h1>
- * JDBC driver is located in main Ignite JAR and depends on all libraries located in
- * {@code IGNITE_HOME/libs} folder. So if you are using JDBC driver in any external tool,
- * you have to add main Ignite JAR will all dependencies to its classpath.
+ * JDBC driver is located in main Ignite JAR in {@code IGNITE_HOME/libs} folder.
  * <h1 class="header">Configuration</h1>
  *
  * All Ignite Java client configuration properties can be applied to JDBC connection of this type.
@@ -243,6 +242,7 @@ public class IgniteJdbcThinDriver implements Driver {
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
     /** Transactions allowed property name. */
+    // TODO: Remove
     public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
     /** URL prefix. */
@@ -252,12 +252,15 @@ public class IgniteJdbcThinDriver implements Driver {
     public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
 
     /** Major version. */
+    // TODO: Use Ignite ver?
     private static final int MAJOR_VER = 1;
 
     /** Minor version. */
+    // TODO: Use Ignite ver?
     private static final int MINOR_VER = 0;
 
     /** Logger. */
+    // TODO: Remove
     private static final IgniteLogger LOG = new JavaLogger();
 
     /*
@@ -295,9 +298,12 @@ public class IgniteJdbcThinDriver implements Driver {
             new PropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
             new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
             new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
+
+            // TODO: Remove
             new PropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
         );
 
+        // TODO: What is this?
         props.addAll(Arrays.<DriverPropertyInfo>asList(
             new PropertyInfo("ignite.client.protocol",
                 info.getProperty("ignite.client.protocol", "TCP"),
@@ -458,6 +464,7 @@ public class IgniteJdbcThinDriver implements Driver {
      * Extension of {@link DriverPropertyInfo} that adds
      * convenient constructors.
      */
+    // TODO: To top-level class (or try reuse existing)
     private static class PropertyInfo extends DriverPropertyInfo {
         /**
          * @param name Name.

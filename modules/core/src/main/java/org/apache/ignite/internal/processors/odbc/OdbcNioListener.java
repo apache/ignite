@@ -248,9 +248,11 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         switch (clientType) {
             case ODBC_CLIENT:
                 parser = new OdbcMessageParser(ctx);
+
                 break;
             case JDBC_CLIENT:
                 parser = new JdbcMessageParser(ctx);
+
                 break;
         }
 

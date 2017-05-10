@@ -81,7 +81,6 @@ public class JdbcTcpIo {
         endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, log);
 
         out = new BufferedOutputStream(endpoint.outputStream());
-
         in = new BufferedInputStream(endpoint.inputStream());
 
         handshake();
@@ -105,6 +104,7 @@ public class JdbcTcpIo {
 
         writer.writeByte(OdbcNioListener.JDBC_CLIENT);
 
+        // TODO: Pass as parameters.
         writer.writeBoolean(true);
         writer.writeBoolean(true);
 
@@ -125,7 +125,7 @@ public class JdbcTcpIo {
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
         throw new IgniteCheckedException("Handshake error: the protocol version is not supported by Ignite version:"
-                + ver + (F.isEmpty(err) ? "" : ". Error message: " + err));
+            + ver + (F.isEmpty(err) ? "" : ". Error message: " + err));
     }
 
     /**
@@ -134,6 +134,7 @@ public class JdbcTcpIo {
      */
     private void send(byte[] req) throws IOException {
         int size = req.length;
+
         out.write(size & 0xFF);
         out.write((size >> 8) & 0xFF);
         out.write((size >> 16) & 0xFF);
@@ -152,6 +153,7 @@ public class JdbcTcpIo {
     private  byte[] read() throws IOException, IgniteCheckedException {
         byte[] sizeBytes = new byte[4];
 
+        // TODO: Make sure that we read everything and that socket is not closed.
         in.read(sizeBytes);
 
         int size = U.bytesToInt(sizeBytes, 0);
@@ -164,16 +166,9 @@ public class JdbcTcpIo {
     }
 
     /**
-     *
+     * Close IO.
      */
     public void close() {
-        close0();
-    }
-
-    /**
-     * Closes client but does not wait.
-     */
-    private void close0() {
         if (stopping)
             return;
 

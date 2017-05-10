@@ -50,11 +50,13 @@ import java.util.Collection;
 /**
  * ODBC message parser.
  */
+// TODO: Split into abstract, jdbc and odbc parts
 public class OdbcMessageParser implements SqlListenerMessageParser {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
     /** Marshaller. */
+    // TODO: DO not use it in JDBC
     private final GridBinaryMarshaller marsh;
 
     /** Logger. */
@@ -218,6 +220,10 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                             continue;
                         }
 
+                        // TODO: Primitive and simple classes are missed here:
+                        // - 8 primitives
+                        // - 8 arrays of primitives
+                        // - String, Date, Time, Timestamp, Decimal, UUID
                         Class<?> cls = obj.getClass();
 
                         if (cls == java.sql.Time.class)
