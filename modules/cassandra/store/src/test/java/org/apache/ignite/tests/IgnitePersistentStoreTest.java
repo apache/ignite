@@ -25,9 +25,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.tests.pojos.Person;
@@ -42,9 +45,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Assert;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -243,6 +246,51 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("BLOB strategy delete tests passed");
         }
+    }
+
+    /** */
+    @Test
+    public void blobBinaryLoadCacheTest() {
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
+            IgniteCache<Long, BinaryObject> personCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache2")).withKeepBinary();
+
+            assert ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
+
+            personCache.put(1L, createBinPerson(ignite, 1, "name", "second"));
+        }
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
+            IgniteCache<Long, BinaryObject> personCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache2")).withKeepBinary();
+
+            personCache.loadCache(null, null);
+
+            LOGGER.info("loadCache tests passed");
+
+            BinaryObject bPerson = personCache.get(1L);
+        }
+    }
+
+    /**
+     * Create binary person.
+     *
+     * @param ignite Ignite.
+     * @param id ID.
+     * @param name Name.
+     * @param secondName Second name.
+     * @return Person.
+     */
+    private BinaryObject createBinPerson(Ignite ignite, int id, String name, String secondName) {
+        BinaryObjectBuilder bldr = ignite.binary().builder("Person");
+
+        bldr.setField("id", id);
+        bldr.setField("firstName", name);
+        bldr.setField("secondName", secondName);
+
+        return bldr.build();
     }
 
     /** */
