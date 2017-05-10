@@ -1656,7 +1656,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    return idx.queryTwoStep(cctx, qry, null);
+                    return idx.queryDistributedSqlFields(cctx, qry, null);
                 }
             }, true);
         }
@@ -1713,7 +1713,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return idx.queryTwoStep(cctx, qry);
+                        return idx.queryDistributedSql(cctx, qry);
                     }
                 }, true);
         }
