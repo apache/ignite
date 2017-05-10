@@ -630,17 +630,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = new HashMap<>();
+
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
+
         if (activeOnStart && !ctx.config().isDaemon()) {
-            Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = new HashMap<>();
-
-            Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
-
             registerCacheFromConfig(caches, templates);
-
             registerCacheFromPersistentStore(caches, templates);
-
-            cachesInfo.onStart(new CacheJoinNodeDiscoveryData(IgniteUuid.randomUuid(), caches, templates));
         }
+
+        cachesInfo.onStart(new CacheJoinNodeDiscoveryData(IgniteUuid.randomUuid(), caches, templates));
 
         if (log.isDebugEnabled())
             log.debug("Started cache processor.");
