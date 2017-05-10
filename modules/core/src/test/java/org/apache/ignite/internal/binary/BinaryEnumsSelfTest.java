@@ -20,11 +20,13 @@ package org.apache.ignite.internal.binary;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -454,6 +457,27 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         Collection<BinaryObject> vals = binaryOne.type().enumValues();
 
         assertEqualsCollections(F.asList(binaryOne, binaryTwo), vals);
+    }
+
+    /**
+     * Checks the enum validation during type registration
+     *
+     * @throws Exception
+     */
+    public void testEnumValidation() throws Exception {
+        startUp(false);
+
+        GridTestUtils.assertThrows(log, new Callable<Object> (){
+
+            @Override public Object call() throws Exception {
+
+                node1.binary().registerEnum("invalidEnumType",
+                    F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal(),
+                    EnumType.TWO.name(), EnumType.ONE.ordinal()));
+
+                return null;
+            }
+        }, BinaryObjectException.class, "Invalid enum values");
     }
 
     /**
