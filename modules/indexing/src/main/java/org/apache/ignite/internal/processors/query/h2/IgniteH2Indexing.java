@@ -393,7 +393,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     protected volatile GridKernalContext ctx;
 
     /** */
-    private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor();
+    private DmlStatementsProcessor dmlProc;
 
     /** */
     private DdlStatementsProcessor ddlProc;
@@ -1737,7 +1737,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, 
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel,
                     qry.getArgs(), qry.getPartitions()),
             cancel);
 
@@ -2320,6 +2320,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
 
+            dmlProc = new DmlStatementsProcessor();
             ddlProc = new DdlStatementsProcessor();
 
             dmlProc.start(ctx, this);
@@ -2538,6 +2539,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (rmv != null) {
             space2schema.remove(emptyIfNull(rmv.spaceName));
             mapQryExec.onCacheStop(spaceName);
+            dmlProc.onCacheStop(spaceName);
 
             rmv.onDrop();
 
