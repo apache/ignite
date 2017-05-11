@@ -15,35 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.security;
+package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
- * Supported security subject types. Subject type can be retrieved from {@link SecuritySubject#type()} method.
+ * Security utilities.
  */
-public enum SecuritySubjectType {
-    /**
-     * Subject type for a remote {@link ClusterNode}.
-     */
-    REMOTE_NODE,
+public class SecurityUtils {
+    /** Version since service security supported. */
+    public static final IgniteProductVersion SERVICE_PERMISSIONS_SINCE = IgniteProductVersion.fromString("1.7.11");
 
     /**
-     * Subject type for remote client.
+     * Private constructor.
      */
-    REMOTE_CLIENT;
-
-    /** Enumerated values. */
-    private static final SecuritySubjectType[] VALS = values();
+    private SecurityUtils() {
+    }
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @return Security compatibility mode flag.
      */
-    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public static boolean isSecurityCompatibilityMode() {
+        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE, false);
     }
 }

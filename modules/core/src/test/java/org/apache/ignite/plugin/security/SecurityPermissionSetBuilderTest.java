@@ -45,7 +45,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ThrowableNotThrown", "ArraysAsListWithZeroOrOneArgument"})
     public void testPermissionBuilder() {
-        SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
+        SecurityBasicPermissionSetV2 exp = new SecurityBasicPermissionSetV2();
 
         Map<String, Collection<SecurityPermission>> permCache = new HashMap<>();
         permCache.put("cache1", permissions(CACHE_PUT, CACHE_REMOVE));
@@ -118,7 +118,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
             .appendSystemPermissions(ADMIN_VIEW)
             .appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE);
 
-        SecurityPermissionSet actual = permsBuilder.build();
+        SecurityPermissionSetV2 actual = (SecurityPermissionSetV2)permsBuilder.build();
 
         assertEquals(exp.cachePermissions(), actual.cachePermissions());
         assertEquals(exp.taskPermissions(), actual.taskPermissions());

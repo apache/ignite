@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.apache.ignite.plugin.security.SecurityPermissionSetV2;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -111,7 +112,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return Allow all permission security set.
      */
-    private static SecurityPermissionSet getAllPermissionSet() {
+    private static SecurityPermissionSetV2 getAllPermissionSet() {
         return new SecurityPermissionSetImpl();
     }
 
@@ -698,13 +699,21 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
     }
 
-    private static class SecurityPermissionSetImpl implements SecurityPermissionSet {
+    /**
+     *
+     */
+    private static class SecurityPermissionSetImpl implements SecurityPermissionSetV2 {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public boolean defaultAllowAll() {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet permissionsV1() {
+            return this;
         }
 
         /** {@inheritDoc} */

@@ -17,33 +17,26 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.jetbrains.annotations.Nullable;
+import java.util.Collection;
+import java.util.Map;
 
 /**
- * Supported security subject types. Subject type can be retrieved from {@link SecuritySubject#type()} method.
+ *
  */
-public enum SecuritySubjectType {
+public interface SecurityPermissionSetV2 extends SecurityPermissionSet {
     /**
-     * Subject type for a remote {@link ClusterNode}.
-     */
-    REMOTE_NODE,
-
-    /**
-     * Subject type for remote client.
-     */
-    REMOTE_CLIENT;
-
-    /** Enumerated values. */
-    private static final SecuritySubjectType[] VALS = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Map of service names to service permissions. Wildcards are allowed at the
+     * end of service names.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @return Map of service names to service permissions.
      */
-    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    public Map<String, Collection<SecurityPermission>> servicePermissions();
+
+    /**
+     * Creates old version {@link SecurityPermissionSet} without service permissions
+     * for compatibility reasons.
+     *
+     * @return Old {@link SecurityPermissionSet} implementation without service permissions.
+     */
+    public SecurityPermissionSet permissionsV1();
 }

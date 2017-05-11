@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 
 /**
  * Provides a convenient way to create a permission set.
@@ -229,13 +230,17 @@ public class SecurityPermissionSetBuilder {
      * @return {@link SecurityPermissionSet} instance.
      */
     public SecurityPermissionSet build() {
-        SecurityBasicPermissionSet permSet = new SecurityBasicPermissionSet();
+        boolean compatibilityMode = isSecurityCompatibilityMode();
+
+        SecurityBasicPermissionSet permSet = compatibilityMode ? new SecurityBasicPermissionSet() : new SecurityBasicPermissionSetV2();
 
         permSet.setDefaultAllowAll(dfltAllowAll);
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
-        permSet.setServicePermissions(unmodifiableMap(srvcPerms));
         permSet.setSystemPermissions(unmodifiableSet(sysPerms));
+
+        if (!compatibilityMode)
+            ((SecurityBasicPermissionSetV2)permSet).setServicePermissions(unmodifiableMap(srvcPerms));
 
         return permSet;
     }

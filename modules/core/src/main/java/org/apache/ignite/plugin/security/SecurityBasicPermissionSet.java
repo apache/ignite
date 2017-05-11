@@ -36,19 +36,15 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
     /** Cache permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
+    private Map<String, Collection<SecurityPermission>> cachePerms = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
-
-    /** Service permissions. */
-    @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> servicePermissions = new HashMap<>();
+    private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
-    private Collection<SecurityPermission> systemPermissions;
+    private Collection<SecurityPermission> sysPerms;
 
     /** Default allow all. */
     private boolean dfltAllowAll;
@@ -56,43 +52,32 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /**
      * Setter for set cache permission map.
      *
-     * @param cachePermissions Cache permissions.
+     * @param cachePerms Cache permissions.
      */
-    public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePermissions) {
-        A.notNull(cachePermissions, "cachePermissions");
+    public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePerms) {
+        A.notNull(cachePerms, "cachePerms");
 
-        this.cachePermissions = cachePermissions;
+        this.cachePerms = cachePerms;
     }
 
     /**
      * Setter for set task permission map.
      *
-     * @param taskPermissions Task permissions.
+     * @param taskPerms Task permissions.
      */
-    public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPermissions) {
-        A.notNull(taskPermissions, "taskPermissions");
+    public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPerms) {
+        A.notNull(taskPerms, "taskPerms");
 
-        this.taskPermissions = taskPermissions;
-    }
-
-    /**
-     * Setter for set service permission map.
-     *
-     * @param servicePermissions Service permissions.
-     */
-    public void setServicePermissions(Map<String, Collection<SecurityPermission>> servicePermissions) {
-        A.notNull(taskPermissions, "servicePermissions");
-
-        this.servicePermissions = servicePermissions;
+        this.taskPerms = taskPerms;
     }
 
     /**
      * Setter for set collection system permission.
      *
-     * @param systemPermissions System permissions.
+     * @param sysPerms System permissions.
      */
-    public void setSystemPermissions(Collection<SecurityPermission> systemPermissions) {
-        this.systemPermissions = systemPermissions;
+    public void setSystemPermissions(Collection<SecurityPermission> sysPerms) {
+        this.sysPerms = sysPerms;
     }
 
     /**
@@ -106,22 +91,17 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
     /** {@inheritDoc} */
     @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
-        return cachePermissions;
+        return cachePerms;
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
-        return taskPermissions;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
-        return servicePermissions;
+        return taskPerms;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-        return systemPermissions;
+        return sysPerms;
     }
 
     /** {@inheritDoc} */
@@ -140,20 +120,18 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         SecurityBasicPermissionSet other = (SecurityBasicPermissionSet)o;
 
         return dfltAllowAll == other.dfltAllowAll &&
-            F.eq(cachePermissions, other.cachePermissions) &&
-            F.eq(taskPermissions, other.taskPermissions) &&
-            F.eq(servicePermissions, other.servicePermissions) &&
-            F.eq(systemPermissions, other.systemPermissions);
+            F.eq(cachePerms, other.cachePerms) &&
+            F.eq(taskPerms, other.taskPerms) &&
+            F.eq(sysPerms, other.sysPerms);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = (dfltAllowAll ? 1 : 0);
 
-        res = 31 * res + (cachePermissions != null ? cachePermissions.hashCode() : 0);
-        res = 31 * res + (taskPermissions != null ? taskPermissions.hashCode() : 0);
-        res = 31 * res + (servicePermissions != null ? servicePermissions.hashCode() : 0);
-        res = 31 * res + (systemPermissions != null ? systemPermissions.hashCode() : 0);
+        res = 31 * res + (cachePerms != null ? cachePerms.hashCode() : 0);
+        res = 31 * res + (taskPerms != null ? taskPerms.hashCode() : 0);
+        res = 31 * res + (sysPerms != null ? sysPerms.hashCode() : 0);
 
         return res;
     }
