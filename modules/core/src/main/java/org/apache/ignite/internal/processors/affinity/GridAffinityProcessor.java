@@ -186,7 +186,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
 
             if (aff == null)
-                throw new IgniteCheckedException("Failed to get cache affinity.");
+                throw new IgniteCheckedException("Failed to get cache affinity (cache was not started " +
+                        "yet or cache was already stopped): " + cacheName);
         }
 
         return aff.affFunc.partition(aff.affinityKey(key));

@@ -45,6 +45,9 @@ public class SqlListenerRequest {
     /** Command. */
     private final int cmd;
 
+    /** Request ID. */
+    private long reqId;
+
     /**
      * @param cmd Command type.
      */
@@ -57,5 +60,19 @@ public class SqlListenerRequest {
      */
     public int command() {
         return cmd;
+    }
+
+    /**
+     * @return Request ID.
+     */
+    public long requestId() {
+        return reqId;
+    }
+
+    /**
+     * @param reqId Request ID.
+     */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
     }
 }

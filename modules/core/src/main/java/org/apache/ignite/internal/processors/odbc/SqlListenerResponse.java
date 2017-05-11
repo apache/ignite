@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC protocol response.
+ * SQL listener response.
  */
-public class OdbcResponse {
+public class SqlListenerResponse {
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
 
@@ -46,7 +46,7 @@ public class OdbcResponse {
      *
      * @param obj Response object.
      */
-    public OdbcResponse(Object obj) {
+    public SqlListenerResponse(Object obj) {
         this.status = STATUS_SUCCESS;
 
         this.obj = obj;
@@ -59,7 +59,7 @@ public class OdbcResponse {
      * @param status Response status.
      * @param err Error, {@code null} if success is {@code true}.
      */
-    public OdbcResponse(int status, @Nullable String err) {
+    public SqlListenerResponse(int status, @Nullable String err) {
         assert status != STATUS_SUCCESS;
 
         this.status = status;
@@ -91,6 +91,6 @@ public class OdbcResponse {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcResponse.class, this);
+        return S.toString(SqlListenerResponse.class, this);
     }
 }

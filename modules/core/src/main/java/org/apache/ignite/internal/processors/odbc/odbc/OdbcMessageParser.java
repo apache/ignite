@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -27,13 +27,30 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaResult;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaResult;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaResult;
+import org.apache.ignite.internal.processors.odbc.OdbcTableMeta;
+import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 
 import java.util.Collection;
 
 /**
  * ODBC message parser.
  */
-public class OdbcMessageParser {
+public class OdbcMessageParser implements SqlListenerMessageParser {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
@@ -42,9 +59,6 @@ public class OdbcMessageParser {
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /** Protocol version confirmation flag. */
-    private boolean verConfirmed = false;
 
     /**
      * @param ctx Context.
@@ -57,13 +71,8 @@ public class OdbcMessageParser {
         this.log = ctx.log(getClass());
     }
 
-    /**
-     * Decode OdbcRequest from byte array.
-     *
-     * @param msg Message.
-     * @return Assembled ODBC request.
-     */
-    public SqlListenerRequest decode(byte[] msg) {
+    /** {@inheritDoc} */
+    @Override public SqlListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -71,25 +80,6 @@ public class OdbcMessageParser {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
 
         byte cmd = reader.readByte();
-
-        // This is a special case because we can not decode protocol messages until
-        // we has not confirmed that the remote client uses the same protocol version.
-        if (!verConfirmed) {
-            if (cmd == SqlListenerRequest.HANDSHAKE)
-            {
-                long longVersion = reader.readLong();
-
-                OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
-
-                res.distributedJoins(reader.readBoolean());
-                res.enforceJoinOrder(reader.readBoolean());
-
-                return res;
-            }
-            else
-                throw new IgniteException("Unexpected ODBC command " +
-                        "(first message is not a handshake request): [cmd=" + cmd + ']');
-        }
 
         SqlListenerRequest res;
 
@@ -163,13 +153,8 @@ public class OdbcMessageParser {
         return res;
     }
 
-    /**
-     * Encode OdbcResponse to byte array.
-     *
-     * @param msg Message.
-     * @return Byte array.
-     */
-    public byte[] encode(OdbcResponse msg) {
+    /** {@inheritDoc} */
+    @Override public byte[] encode(SqlListenerResponse msg) {
         assert msg != null;
 
         // Creating new binary writer
@@ -178,7 +163,7 @@ public class OdbcMessageParser {
         // Writing status.
         writer.writeByte((byte) msg.status());
 
-        if (msg.status() != OdbcResponse.STATUS_SUCCESS) {
+        if (msg.status() != SqlListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
             return writer.array();
@@ -188,25 +173,6 @@ public class OdbcMessageParser {
 
         if (res0 == null)
             return writer.array();
-        if (res0 instanceof OdbcHandshakeResult) {
-            OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
-
-            if (log.isDebugEnabled())
-                log.debug("Handshake result: " + (res.accepted() ? "accepted" : "rejected"));
-
-            verConfirmed = res.accepted();
-
-            if (res.accepted()) {
-                verConfirmed = true;
-
-                writer.writeBoolean(true);
-            }
-            else {
-                writer.writeBoolean(false);
-                writer.writeString(res.protocolVersionSince());
-                writer.writeString(res.currentVersion());
-            }
-        }
         else if (res0 instanceof SqlListenerQueryExecuteResult) {
             SqlListenerQueryExecuteResult res = (SqlListenerQueryExecuteResult) res0;
 

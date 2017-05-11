@@ -17,36 +17,32 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
-
 /**
- * Connection-related data.
+ * SQL listener connection context.
  */
-class OdbcConnectionData {
+public class SqlListenerConnectionContext {
     /** Request handler. */
-    private final OdbcRequestHandler handler;
+    private final SqlListenerRequestHandler handler;
 
     /** Message parser. */
-    private final OdbcMessageParser parser;
+    private final SqlListenerMessageParser parser;
 
     /**
      * Constructor.
      *
-     * @param ctx Context.
-     * @param busyLock Shutdown busy lock.
-     * @param maxCursors Maximum cursors.
+     * @param handler Handler.
+     * @param parser Parser.
      */
-    public OdbcConnectionData(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        handler = new OdbcRequestHandler(ctx, busyLock, maxCursors);
-        parser = new OdbcMessageParser(ctx);
+    public SqlListenerConnectionContext(SqlListenerRequestHandler handler, SqlListenerMessageParser parser) {
+        this.handler = handler;
+        this.parser = parser;
     }
 
     /**
      * Handler getter.
      * @return Request handler for the connection.
      */
-    public OdbcRequestHandler getHandler() {
+    public SqlListenerRequestHandler handler() {
         return handler;
     }
 
@@ -54,7 +50,7 @@ class OdbcConnectionData {
      * Parser getter
      * @return Message parser for the connection.
      */
-    public OdbcMessageParser getParser() {
+    public SqlListenerMessageParser parser() {
         return parser;
     }
 }
