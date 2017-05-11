@@ -185,9 +185,11 @@ namespace Apache.Ignite.Core.Tests
 
             Ignition.Start(cfg);
             Assert.IsNotNull(Ignition.GetIgnite());
+            Assert.IsNotNull(Ignition.TryGetIgnite());
 
             Ignition.Start(cfg);
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
+            Assert.IsNull(Ignition.TryGetIgnite());
             Assert.AreEqual(2, Ignition.GetAll().Count);
         }
 
