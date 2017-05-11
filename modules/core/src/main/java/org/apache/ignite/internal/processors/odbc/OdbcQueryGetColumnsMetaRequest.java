@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * ODBC query get columns meta request.
  */
-public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
+public class OdbcQueryGetColumnsMetaRequest extends SqlListenerRequest {
     /** Cache name. */
     private final String cacheName;
 
@@ -39,7 +39,7 @@ public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
      * @param columnName Column name.
      */
     public OdbcQueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
-        super(GET_COLUMNS_META);
+        super(META_COLS);
 
         this.cacheName = cacheName;
         this.tableName = tableName;
