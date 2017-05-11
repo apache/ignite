@@ -1989,36 +1989,96 @@ public class GridSqlQuerySplitter {
     /**
      * Checks if given query contains expressions over key or affinity key
      * that make it possible to run it only on a small isolated
-     * set of partitions (currently single partition).
+     * set of partitions.
      *
      * @param qry Query.
      * @param params Query Parameters.
      * @param ctx Kernal context.
      * @return Array of partitions, or {@code null} if none identified
      */
-    private int[] deduceQryPartition(GridSqlQuery qry, Object[] params, GridKernalContext ctx) {
+    private static int[] deduceQryPartition(GridSqlQuery qry, Object[] params, GridKernalContext ctx) {
         if (!(qry instanceof GridSqlSelect))
             return null;
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        //no joins allowed yet
+        //no joins support yet
         if (select.from() == null || select.from().size() != 1)
             return null;
 
-        if (!(select.where() instanceof GridSqlOperation))
+        return extractPartition(select.where(), params, ctx);
+    }
+
+    /**
+     * @param el AST element to start with.
+     * @param params Query parameters.
+     * @param ctx Kernal context.
+     * @return Array of partitions, or {@code null} if none identified
+     */
+    private static int[] extractPartition(GridSqlAst el, Object[] params, GridKernalContext ctx) {
+        if (!(el instanceof GridSqlOperation))
             return null;
 
-        GridSqlOperation where = (GridSqlOperation)select.where();
+        GridSqlOperation op = (GridSqlOperation)el;
 
-        if (where.operationType() != GridSqlOperationType.EQUAL)
-            return null;
+        switch (op.operationType()) {
+            case EQUAL:
+                return extractPartitionFromEquality(op, params, ctx);
 
-        if (where.size() != 2)
-            return null;
+            case AND: {
+                assert op.size() == 2;
 
-        GridSqlElement left = where.child(0);
-        GridSqlElement right = where.child(1);
+                int[] partsLeft = extractPartition(op.child(0), params, ctx);
+                int[] partsRight = extractPartition(op.child(1), params, ctx);
+
+                if (partsLeft != null && partsRight != null)
+                    return null; //kind of conflict (_key = 1) and (_key = 2)
+
+                if (partsLeft != null)
+                    return partsLeft;
+
+                if (partsRight != null)
+                    return partsRight;
+
+                return null;
+            }
+
+            case OR: {
+                assert op.size() == 2;
+
+                int[] partsLeft = extractPartition(op.child(0), params, ctx);
+                int[] partsRight = extractPartition(op.child(1), params, ctx);
+
+                if (partsLeft != null && partsRight != null)
+                    return mergeParts(partsLeft, partsRight);
+
+                if (partsLeft != null)
+                    return partsLeft;
+
+                if (partsRight != null)
+                    return partsRight;
+
+                return null;
+            }
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Analyses the equality operation and extracts the partition if possible
+     *
+     * @param op AST equality operation.
+     * @param params Query parameters.
+     * @param ctx Kernal Context.
+     * @return Array of partitions, or {@code null} if none identified
+     */
+    private static int[] extractPartitionFromEquality(GridSqlOperation op, Object[] params, GridKernalContext ctx) {
+        assert op.operationType() == GridSqlOperationType.EQUAL;
+
+        GridSqlElement left = op.child(0);
+        GridSqlElement right = op.child(1);
 
         if (!(left instanceof GridSqlColumn))
             return null;
@@ -2036,7 +2096,7 @@ public class GridSqlQuerySplitter {
         IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
 
         int colId = column.column().getColumnId();
-        if ((affKeyCol==null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+        if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
         try {
@@ -2056,6 +2116,47 @@ public class GridSqlQuerySplitter {
         catch (IgniteCheckedException ex) {
             return null;
         }
+    }
+
+    /**
+     * Merges two sorted partitions arrays
+     */
+    private static int[] mergeParts(int[] a, int[] b) {
+        assert a != null;
+        assert b != null;
+
+        if (a.length == 1 && b.length == 1) {
+            if (a[0] < b[0])
+                return new int[] { a[0], b[0] };
+
+            if (a[0] > b[0])
+                return new int[] { b[0], a[0] };
+
+            return a; //no duplicates
+        }
+
+        ArrayList<Integer> list = new ArrayList<>(a.length + b.length);
+        for (int part: a)
+            list.add(part);
+
+        for (int part: b) {
+            int i = 0;
+            while (i < list.size() && list.get(i) < part) i++;
+
+            // maintain order, skip duplicates
+            if (i < list.size()) {
+                if (list.get(i) > part)
+                    list.add(i, part);
+            }
+            else
+                list.add(part);
+        }
+
+        int[] result = new int[list.size()];
+        for (int i = 0; i < list.size(); i++)
+            result[i] = list.get(i);
+
+        return result;
     }
 
     /**
