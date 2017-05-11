@@ -105,6 +105,9 @@ public class CacheGroupInfrastructure {
     /** */
     private boolean storeCacheId;
 
+    /** */
+    private UUID rcvdFrom;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -112,6 +115,7 @@ public class CacheGroupInfrastructure {
      */
     CacheGroupInfrastructure(GridCacheSharedContext ctx,
         int grpId,
+        UUID rcvdFrom,
         CacheType cacheType,
         CacheConfiguration ccfg,
         boolean affNode,
@@ -124,6 +128,7 @@ public class CacheGroupInfrastructure {
         assert ccfg != null;
 
         this.grpId = grpId;
+        this.rcvdFrom = rcvdFrom;
         this.cacheType = cacheType;
         this.ctx = ctx;
         this.ccfg = ccfg;
@@ -141,6 +146,10 @@ public class CacheGroupInfrastructure {
         storeCacheId = sharedGroup() || memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
         log = ctx.kernalContext().log(getClass());
+    }
+
+    public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     public boolean storeCacheId() {

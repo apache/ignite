@@ -1915,6 +1915,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheGroupInfrastructure grp = new CacheGroupInfrastructure(sharedCtx,
             desc.groupId(),
+            desc.receivedFrom(),
             cacheType,
             cfg,
             affNode,

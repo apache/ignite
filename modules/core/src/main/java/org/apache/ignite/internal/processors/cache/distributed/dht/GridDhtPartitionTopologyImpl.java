@@ -401,9 +401,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         int num = grp.affinity().partitions();
 
         if (grp.rebalanceEnabled()) {
-            boolean added = exchId.topologyVersion().equals(grp.localStartVersion());
+            boolean added = exchFut.cacheGroupStarting(grp.groupId()) ||
+                (exchId.isJoined() && exchId.nodeId().equals(grp.receivedFrom()));
 
-            boolean first = (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined()) || added;
+            boolean first = added || (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined());
 
             if (first) {
                 assert exchId.isJoined() || added;

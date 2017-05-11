@@ -952,7 +952,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (grp.isLocal())
                 continue;
 
-            if (canCalculateAffinity(grp.affinity(), fut)) {
+            if (fut.cacheGroupStarting(grp.groupId()) || cctx.localNodeId().equals(grp.receivedFrom())) {
                 List<List<ClusterNode>> assignment = grp.affinity().calculate(fut.topologyVersion(),
                     fut.discoveryEvent(),
                     fut.discoCache());
