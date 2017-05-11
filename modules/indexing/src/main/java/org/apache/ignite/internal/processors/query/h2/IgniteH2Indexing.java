@@ -1738,7 +1738,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel,
-                    qry.getArgs(), qry.getPartitions()),
+                    qry.getArgs(), qry.getPartitions() == null ? twoStepQry.getPartitions() : qry.getPartitions()),
             cancel);
 
         cursor.fieldsMeta(meta);

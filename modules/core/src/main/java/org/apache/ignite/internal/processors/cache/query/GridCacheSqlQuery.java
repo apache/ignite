@@ -70,6 +70,8 @@ public class GridCacheSqlQuery implements Message {
     private UUID node;
 
     /** */
+    @GridToStringInclude
+    @GridDirectTransient
     private transient int[] partitions;
 
     /**

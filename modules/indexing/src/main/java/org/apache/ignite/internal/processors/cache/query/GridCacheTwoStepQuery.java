@@ -21,8 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Two step map-reduce style query.
@@ -288,5 +291,47 @@ public class GridCacheTwoStepQuery {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
+    }
+
+    /**
+     * Get partitions for map queries, if the former were identified.
+     *
+     * @return Partitions.
+     */
+    @Nullable public int[] getPartitions() {
+        ArrayList<Integer> list = null;
+
+        for (GridCacheSqlQuery mapQry : mapQrys) {
+            if (!F.isEmpty(mapQry.partitions())) {
+                if (list == null)
+                    list = new ArrayList<>(mapQry.partitions().length);
+
+                for (int part : mapQry.partitions()) {
+                    // assuming that partition arrays are small
+                    // we can use linear search here
+                    int i = 0;
+                    while (i < list.size() && list.get(i) < part) i++;
+
+                    // maintain order, skip duplicates
+                    if (i < list.size()) {
+                        if (list.get(i) > part)
+                            list.add(i, part);
+                    }
+                    else
+                        list.add(part);
+                }
+            }
+        }
+
+        if (list != null) {
+            int[] result = new int[list.size()];
+
+            for (int i = 0; i < list.size(); i++)
+                result[i] = list.get(i);
+
+            return result;
+        }
+
+        return null;
     }
 }

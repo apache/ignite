@@ -47,6 +47,7 @@ import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
 import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
@@ -120,13 +121,17 @@ public class GridSqlQuerySplitter {
     /** */
     private IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
 
+    /** */
+    private GridKernalContext ctx;
+
     /**
      * @param params Query parameters.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
      */
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy) {
+    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, GridKernalContext ctx) {
         this.params = params;
         this.collocatedGrpBy = collocatedGrpBy;
+        this.ctx = ctx;
     }
 
     /**
@@ -186,7 +191,7 @@ public class GridSqlQuerySplitter {
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy);
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, h2.kernalContext());
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -200,9 +205,8 @@ public class GridSqlQuerySplitter {
         qry = parse(optimize(h2, conn, qry.getSQL(), params, false, enforceJoinOrder),
             true);
 
-        if (!splitter.checkAffinityKeyEquality(qry, params, h2.kernalContext()))
-            // Do the actual query split. We will update the original query AST, need to be careful.
-            splitter.splitQuery(qry);
+        // Do the actual query split. We will update the original query AST, need to be careful.
+        splitter.splitQuery(qry);
 
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
@@ -1322,6 +1326,9 @@ public class GridSqlQuerySplitter {
         map.sortColumns(mapQry.sort());
         map.partitioned(hasPartitionedTables(mapQry));
 
+        if (map.isPartitioned())
+            map.partitions(deduceQryPartition(mapQry, params, ctx));
+
         mapSqlQrys.add(map);
     }
 
@@ -1979,37 +1986,45 @@ public class GridSqlQuerySplitter {
         return new GridSqlFunction(type);
     }
 
-    /** */
-    private boolean checkAffinityKeyEquality(GridSqlQuery qry, Object[] params, GridKernalContext ctx) {
+    /**
+     * Checks if given query contains expressions over key or affinity key
+     * that make it possible to run it only on a small isolated
+     * set of partitions (currently single partition).
+     *
+     * @param qry Query.
+     * @param params Query Parameters.
+     * @param ctx Kernal context.
+     * @return Array of partitions, or {@code null} if none identified
+     */
+    private int[] deduceQryPartition(GridSqlQuery qry, Object[] params, GridKernalContext ctx) {
         if (!(qry instanceof GridSqlSelect))
-            return false;
+            return null;
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
         //no joins allowed yet
         if (select.from() == null || select.from().size() != 1)
-            return false;
+            return null;
 
         if (!(select.where() instanceof GridSqlOperation))
-            return false;
+            return null;
 
         GridSqlOperation where = (GridSqlOperation)select.where();
 
         if (where.operationType() != GridSqlOperationType.EQUAL)
-            return false;
+            return null;
 
         if (where.size() != 2)
-            return false;
+            return null;
 
         GridSqlElement left = where.child(0);
         GridSqlElement right = where.child(1);
 
         if (!(left instanceof GridSqlColumn))
-            return false;
+            return null;
 
         if (!(right instanceof GridSqlConst) && !(right instanceof GridSqlParameter))
-            return false;
-
+            return null;
 
         GridSqlColumn column = (GridSqlColumn)left;
 
@@ -2018,15 +2033,13 @@ public class GridSqlQuerySplitter {
         GridH2Table tbl = (GridH2Table) column.column().getTable();
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
-        int affKeyColId = tbl.getAffinityKeyColumn().column.getColumnId();
+        IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
 
-        if (column.column().getColumnId() != affKeyColId &&
-                !desc.isKeyColumn(column.column().getColumnId()))
-            return false;
+        int colId = column.column().getColumnId();
+        if ((affKeyCol==null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
+            return null;
 
-        int[] parts = null;
         try {
-
             Object val;
             if (right instanceof GridSqlConst) {
                 GridSqlConst constant = (GridSqlConst)right;
@@ -2038,29 +2051,11 @@ public class GridSqlQuerySplitter {
                 val = params[param.index()];
             }
 
-            int part = ctx.affinity().partition(tbl.spaceName(), val);
-            parts = new int[] {part};
+            return new int[] { ctx.affinity().partition(tbl.spaceName(), val) };
         }
         catch (IgniteCheckedException ex) {
-            return false;
+            return null;
         }
-
-        GridCacheSqlQuery map = new GridCacheSqlQuery(qry.getSQL()).partitions(parts);
-        map.partitioned(true);
-
-        setupParameters(map, qry, params);
-
-        List<GridSqlAst> mapExps = new ArrayList<>(((GridSqlSelect) qry).allColumns());
-        mapExps.addAll(((GridSqlSelect) qry).columns(false));
-
-        map.columns(collectColumns(mapExps));
-        map.sortColumns(qry.sort());
-
-        this.mapSqlQrys.add(map);
-        this.rdcSqlQry = map;
-        this.rdcQrySimple = true;
-
-        return true;
     }
 
     /**
