@@ -921,16 +921,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         if (!grp.allowFastEviction()) {
-            GridCacheContext cctx = grp.cacheContext();
+            GridCacheContext cctx = grp.sharedGroup() ? null : grp.cacheContext();
 
             try {
-                GridIterator<CacheDataRow> it0 = grp.offheap().iterator(id);
+                GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
                 while (it0.hasNext()) {
                     ctx.database().checkpointReadLock();
 
                     try {
                         CacheDataRow row = it0.next();
+
+                        if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != row.cacheId()))
+                            cctx = ctx.cacheContext(row.cacheId());
 
                         GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
                             grp.affinity().lastVersion(),

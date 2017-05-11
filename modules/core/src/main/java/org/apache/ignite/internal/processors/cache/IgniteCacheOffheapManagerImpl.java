@@ -536,9 +536,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> iterator(boolean primary, boolean backups,
+    @Override public GridIterator<CacheDataRow> iteratorForCache(
+        int cacheId,
+        boolean primary,
+        boolean backups,
         final AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
+        // TODO IGNITE-5075.
         return rowsIterator(primary, backups, topVer);
     }
 
@@ -601,7 +605,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> iterator(int part) throws IgniteCheckedException {
+    @Override public GridIterator<CacheDataRow> iteratorForCache(int cacheId, int part) throws IgniteCheckedException {
+        // TODO IGNITE-5075.
+        return partitionIterator(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridIterator<CacheDataRow> partitionIterator(int part) throws IgniteCheckedException {
         CacheDataStore data = partitionData(part);
 
         if (data == null)
@@ -668,7 +678,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
         throws IgniteCheckedException {
-        final GridIterator<CacheDataRow> it = iterator(part);
+        final GridIterator<CacheDataRow> it = partitionIterator(part);
 
         return new IgniteRebalanceIterator() {
             @Override public boolean historical() {

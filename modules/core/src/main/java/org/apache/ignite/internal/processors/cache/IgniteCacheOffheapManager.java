@@ -175,7 +175,10 @@ public interface IgniteCacheOffheapManager {
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> iterator(boolean primary, boolean backup, final AffinityTopologyVersion topVer)
+    public GridIterator<CacheDataRow> iteratorForCache(int cacheId,
+        boolean primary,
+        boolean backup,
+        final AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
     /**
@@ -183,7 +186,9 @@ public interface IgniteCacheOffheapManager {
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException;
+    public GridIterator<CacheDataRow> iteratorForCache(int cacheId, final int part) throws IgniteCheckedException;
+
+    public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
 
     /**
      * @param part Partition.
