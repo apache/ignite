@@ -394,13 +394,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
     }
 
+    public boolean cacheGroupStarting(int grpId) {
+        return exchActions != null && exchActions.cacheGroupStarting(grpId);
+    }
+
     /**
      * @param cacheId Cache ID.
      * @return {@code True} if non-client cache was added during this exchange.
      */
     public boolean cacheStarted(int cacheId) {
         return exchActions != null && exchActions.cacheStarted(cacheId);
-
     }
 
     /**
@@ -943,20 +946,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void warnNoAffinityNodes() {
         List<String> cachesWithoutNodes = null;
 
-        for (DynamicCacheDescriptor cacheDesc : cctx.cache().cacheDescriptors()) {
-            if (cacheDesc.startTopologyVersion().compareTo(topologyVersion()) <= 0 &&
-                discoCache.cacheGroupAffinityNodes(cacheDesc.groupDescriptor().groupId()).isEmpty()) {
+        for (GridCacheContext ctx : cctx.cacheContexts()) {
+            if (discoCache.cacheGroupAffinityNodes(ctx.groupId()).isEmpty()) {
                 if (cachesWithoutNodes == null)
                     cachesWithoutNodes = new ArrayList<>();
 
-                cachesWithoutNodes.add(cacheDesc.cacheName());
+                cachesWithoutNodes.add(ctx.name());
 
                 // Fire event even if there is no client cache started.
-                if (cctx.gridEvents().isRecordable(EventType.EVT_CACHE_NODES_LEFT)) {
+                if (ctx.gridEvents().isRecordable(EventType.EVT_CACHE_NODES_LEFT)) {
                     Event evt = new CacheEvent(
-                        cacheDesc.cacheName(),
-                        cctx.localNode(),
-                        cctx.localNode(),
+                        ctx.name(),
+                        ctx.localNode(),
+                        ctx.localNode(),
                         "All server nodes have left the cluster.",
                         EventType.EVT_CACHE_NODES_LEFT,
                         0,
@@ -973,7 +975,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         null
                     );
 
-                    cctx.gridEvents().record(evt);
+                    ctx.gridEvents().record(evt);
                 }
             }
         }

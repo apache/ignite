@@ -290,8 +290,8 @@ class ClusterCachesInfo {
                         CacheGroupDescriptor grpDesc = registerCacheGroup(exchangeActions,
                             ccfg,
                             cacheId,
-                            req.deploymentId(),
-                            topVer.nextMinorVersion());
+                            req.initiatingNodeId(),
+                            req.deploymentId());
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
                             ccfg,
@@ -651,8 +651,8 @@ class ClusterCachesInfo {
             CacheGroupData grpData = new CacheGroupData(grpDesc.config(),
                 grpDesc.groupName(),
                 grpDesc.groupId(),
+                grpDesc.receivedFrom(),
                 grpDesc.deploymentId(),
-                grpDesc.startTopologyVersion(),
                 grpDesc.caches());
 
             cacheGrps.put(grpDesc.groupName(), grpData);
@@ -699,9 +699,9 @@ class ClusterCachesInfo {
         for (CacheGroupData grpData : cachesData.cacheGroups().values()) {
             CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(grpData.groupName(),
                 grpData.groupId(),
+                grpData.receivedFrom(),
                 grpData.deploymentId(),
                 grpData.config(),
-                grpData.startTopologyVersion(),
                 grpData.caches());
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupName(), grpDesc);
@@ -857,8 +857,8 @@ class ClusterCachesInfo {
                 CacheGroupDescriptor grpDesc = registerCacheGroup(null,
                     cfg,
                     cacheId,
-                    joinData.cacheDeploymentId(),
-                    topVer);
+                    nodeId,
+                    joinData.cacheDeploymentId());
 
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
                     cfg,
@@ -897,8 +897,8 @@ class ClusterCachesInfo {
         ExchangeActions exchActions,
         CacheConfiguration startedCacheCfg,
         Integer cacheId,
-        IgniteUuid deploymentId,
-        AffinityTopologyVersion topVer) {
+        UUID rcvdFrom,
+        IgniteUuid deploymentId) {
         if (startedCacheCfg.getGroupName() != null) {
             CacheGroupDescriptor desc = registeredCacheGrps.get(startedCacheCfg.getGroupName());
 
@@ -919,9 +919,9 @@ class ClusterCachesInfo {
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             grpName,
             grpId,
+            rcvdFrom,
             deploymentId,
             startedCacheCfg,
-            topVer,
             caches);
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpName, grpDesc);

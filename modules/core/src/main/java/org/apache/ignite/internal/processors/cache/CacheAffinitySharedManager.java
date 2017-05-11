@@ -118,16 +118,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @return Cache start topology version.
-     */
-    public AffinityTopologyVersion localStartVersion(int cacheId) {
-        DynamicCacheDescriptor desc = registeredCaches.get(cacheId);
-
-        return desc != null ? desc.localStartVersion() : null;
-    }
-
-    /**
      * Callback invoked from discovery thread when discovery message is received.
      *
      * @param type Event type.
@@ -403,21 +393,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
-            if (grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE)) {
-                if (grp.groupStartVersion().equals(fut.topologyVersion())) {
-                    GridAffinityAssignmentCache aff = grp.affinity();
-
-                    List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
-                        fut.discoveryEvent(), fut.discoCache());
-
-                    aff.initialize(fut.topologyVersion(), assignment);
-                }
-                else {
-                    assert grp.localStartVersion().equals(fut.topologyVersion());
-
-                    initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut, lateAffAssign);
-                }
-            }
+            if (grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE))
+                initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut, lateAffAssign);
         }
 
         if (crd) {
@@ -881,7 +858,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert grpDesc != null : aff.groupName();
 
-        return grpDesc.startTopologyVersion().equals(fut.topologyVersion()) ||
+        return fut.cacheGroupStarting(aff.groupId()) ||
+            cctx.localNodeId().equals(grpDesc.receivedFrom()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
@@ -974,7 +952,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (grp.isLocal())
                 continue;
 
-            if (grp.groupStartVersion().equals(fut.topologyVersion())) {
+            if (canCalculateAffinity(grp.affinity(), fut)) {
                 List<List<ClusterNode>> assignment = grp.affinity().calculate(fut.topologyVersion(),
                     fut.discoveryEvent(),
                     fut.discoCache());
@@ -998,7 +976,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (int i = 0; i < fetchFuts.size(); i++) {
             GridDhtAssignmentFetchFuture fetchFut = fetchFuts.get(i);
 
-            Integer grpId = fetchFut.cacheId();
+            Integer grpId = fetchFut.groupId();
 
             fetchAffinity(fut, cctx.cache().cacheGroup(grpId).affinity(), fetchFut);
         }

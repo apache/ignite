@@ -70,9 +70,6 @@ public class CacheGroupInfrastructure {
     private GridDhtPartitionTopologyImpl top;
 
     /** */
-    private final AffinityTopologyVersion grpStartVer;
-
-    /** */
     private final AffinityTopologyVersion locStartVer;
 
     /** */
@@ -122,7 +119,6 @@ public class CacheGroupInfrastructure {
         CacheObjectContext cacheObjCtx,
         FreeList freeList,
         ReuseList reuseList,
-        AffinityTopologyVersion grpStartVer,
         AffinityTopologyVersion locStartVer) {
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
@@ -136,7 +132,6 @@ public class CacheGroupInfrastructure {
         this.cacheObjCtx = cacheObjCtx;
         this.freeList = freeList;
         this.reuseList = reuseList;
-        this.grpStartVer = grpStartVer;
         this.locStartVer = locStartVer;
 
         ioPlc = cacheType.ioPolicy();
@@ -255,10 +250,6 @@ public class CacheGroupInfrastructure {
     public boolean allowFastEviction() {
         // TODO IGNITE-5075 see GridCacheContext#allowFastEviction
         return false;
-    }
-
-    public AffinityTopologyVersion groupStartVersion() {
-        return grpStartVer;
     }
 
     public AffinityTopologyVersion localStartVersion() {
@@ -383,7 +374,9 @@ public class CacheGroupInfrastructure {
 
         AffinityAssignment assignment = aff.cachedAffinity(topVer);
 
-        GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(grpId,
+        GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(
+            req.futureId(),
+            grpId,
             topVer,
             assignment.assignment());
 

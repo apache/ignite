@@ -296,6 +296,17 @@ public class ExchangeActions {
         return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupDescriptor>emptyList();
     }
 
+    public boolean cacheGroupStarting(int grpId) {
+        if (cacheGrpsToStart != null) {
+            for (CacheGroupDescriptor grpToStop : cacheGrpsToStart) {
+                if (grpToStop.groupId() == grpId)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
         if (cacheGrpsToStop == null)
             cacheGrpsToStop = new ArrayList<>();

@@ -1922,7 +1922,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheObjCtx,
             freeList,
             reuseList,
-            desc.startTopologyVersion(),
             exchTopVer);
 
         grp.start();

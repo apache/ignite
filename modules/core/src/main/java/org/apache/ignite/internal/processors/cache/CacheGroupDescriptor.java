@@ -19,13 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -44,29 +42,32 @@ public class CacheGroupDescriptor {
     private final CacheConfiguration cacheCfg;
 
     /** */
-    private final AffinityTopologyVersion startTopVer;
-
-    /** */
     @GridToStringInclude
     private Map<String, Integer> caches;
 
+    /** */
+    private final UUID rcvdFrom;
+
     CacheGroupDescriptor(String grpName,
         int grpId,
+        UUID rcvdFrom,
         IgniteUuid deploymentId,
         CacheConfiguration cacheCfg,
-        AffinityTopologyVersion startTopVer,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
         assert grpName != null;
         assert grpId != 0;
-        assert startTopVer != null;
 
         this.grpName = grpName;
         this.grpId = grpId;
+        this.rcvdFrom = rcvdFrom;
         this.deploymentId = deploymentId;
         this.cacheCfg = cacheCfg;
-        this.startTopVer = startTopVer;
         this.caches = caches;
+    }
+
+    public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     public IgniteUuid deploymentId() {
@@ -111,10 +112,6 @@ public class CacheGroupDescriptor {
 
     public CacheConfiguration config() {
         return cacheCfg;
-    }
-
-    public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
     }
 
     Map<String, Integer> caches() {

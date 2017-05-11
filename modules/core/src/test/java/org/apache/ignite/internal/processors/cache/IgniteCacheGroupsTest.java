@@ -44,6 +44,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
+        //cfg.setLateAffinityAssignment(false);
+
         return cfg;
     }
 

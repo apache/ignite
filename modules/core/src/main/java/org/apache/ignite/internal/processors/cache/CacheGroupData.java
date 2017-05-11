@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -40,13 +39,13 @@ public class CacheGroupData implements Serializable {
     private final int grpId;
 
     /** */
+    private final UUID rcvdFrom;
+
+    /** */
     private final IgniteUuid deploymentId;
 
     /** */
     private final CacheConfiguration cacheCfg;
-
-    /** */
-    private final AffinityTopologyVersion startTopVer;
 
     /** */
     @GridToStringInclude
@@ -55,26 +54,28 @@ public class CacheGroupData implements Serializable {
     /**
      * @param cacheCfg Cache configuration.
      * @param grpId
-     * @param startTopVer
      */
     public CacheGroupData(CacheConfiguration cacheCfg,
         String grpName,
         int grpId,
+        UUID rcvdFrom,
         IgniteUuid deploymentId,
-        AffinityTopologyVersion startTopVer,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
         assert grpName != null;
         assert grpId != 0;
         assert deploymentId != null;
-        assert startTopVer != null;
 
         this.cacheCfg = cacheCfg;
         this.grpName = grpName;
         this.grpId = grpId;
+        this.rcvdFrom = rcvdFrom;
         this.deploymentId = deploymentId;
-        this.startTopVer = startTopVer;
         this.caches = caches;
+    }
+
+    public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     public String groupName() {
@@ -91,10 +92,6 @@ public class CacheGroupData implements Serializable {
 
     public CacheConfiguration config() {
         return cacheCfg;
-    }
-
-    public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
     }
 
     Map<String, Integer> caches() {
