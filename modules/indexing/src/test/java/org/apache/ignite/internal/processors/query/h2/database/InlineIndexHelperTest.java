@@ -140,6 +140,7 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 
@@ -186,6 +187,7 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 
@@ -308,6 +310,7 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 

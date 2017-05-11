@@ -29,6 +29,11 @@ import java.util.Collection;
  */
 public interface GridQueryIndexDescriptor {
     /**
+     * @return Name.
+     */
+    public String name();
+
+    /**
      * Gets all fields to be indexed.
      *
      * @return Fields to be indexed.

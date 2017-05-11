@@ -35,8 +35,6 @@ const DFLT_IGFS = {
     fragmentizerConcurrentFiles: 0,
     fragmentizerThrottlingBlockLength: 16777216,
     fragmentizerThrottlingDelay: 200,
-    dualModeMaxPendingPutsSize: 0,
-    dualModePutExecutorServiceShutdown: false,
     blockSize: 65536,
     bufferSize: 65536,
     maxSpaceSize: 0,
@@ -46,7 +44,6 @@ const DFLT_IGFS = {
     perNodeParallelBatchCount: 8,
     prefetchBlocks: 0,
     sequentialReadsBeforePrefetch: 0,
-    trashPurgeTimeout: 1000,
     colocateMetadata: true,
     relaxedConsistency: true,
     pathModes: {

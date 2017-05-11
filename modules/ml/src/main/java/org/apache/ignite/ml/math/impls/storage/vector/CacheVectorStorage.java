@@ -47,10 +47,10 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /**
-     * @param size
-     * @param cache
-     * @param keyMapper
-     * @param valMapper
+     * @param size Vector size.
+     * @param cache Ignite cache.
+     * @param keyMapper {@link VectorKeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
     public CacheVectorStorage(int size, IgniteCache<K, V> cache, VectorKeyMapper<K> keyMapper,
         ValueMapper<V> valMapper) {

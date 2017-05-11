@@ -418,8 +418,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());

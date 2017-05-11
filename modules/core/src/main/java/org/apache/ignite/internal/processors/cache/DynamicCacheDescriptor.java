@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -84,6 +86,12 @@ public class DynamicCacheDescriptor {
     /** */
     private transient AffinityTopologyVersion clientCacheStartVer;
 
+    /** Mutex to control schema. */
+    private final Object schemaMux = new Object();
+
+    /** Current schema. */
+    private QuerySchema schema;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -91,12 +99,15 @@ public class DynamicCacheDescriptor {
      * @param template {@code True} if this is template configuration.
      * @param deploymentId Deployment ID.
      */
+    @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         boolean template,
-        IgniteUuid deploymentId) {
+        IgniteUuid deploymentId,
+        QuerySchema schema) {
         assert cacheCfg != null;
+        assert schema != null;
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
@@ -106,6 +117,10 @@ public class DynamicCacheDescriptor {
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
+
+        synchronized (schemaMux) {
+            this.schema = schema.copy();
+        }
     }
 
     /**
@@ -317,6 +332,39 @@ public class DynamicCacheDescriptor {
      */
     public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
         this.clientCacheStartVer = clientCacheStartVer;
+    }
+
+    /**
+     * @return Schema.
+     */
+    public QuerySchema schema() {
+        synchronized (schemaMux) {
+            return schema.copy();
+        }
+    }
+
+    /**
+     * Set schema
+     *
+     * @param schema Schema.
+     */
+    public void schema(QuerySchema schema) {
+        assert schema != null;
+
+        synchronized (schemaMux) {
+            this.schema = schema.copy();
+        }
+    }
+
+    /**
+     * Try applying finish message.
+     *
+     * @param msg Message.
+     */
+    public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
+        synchronized (schemaMux) {
+            schema.finish(msg);
+        }
     }
 
     /** {@inheritDoc} */

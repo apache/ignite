@@ -293,6 +293,8 @@ public class GridCacheSharedContext<K, V> {
                 mgr.start(this);
         }
 
+        kernalCtx.query().onCacheReconnect();
+
         for (GridCacheSharedManager<?, ?> mgr : mgrs)
             mgr.onKernalStart(true);
     }

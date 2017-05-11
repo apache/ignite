@@ -213,6 +213,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 

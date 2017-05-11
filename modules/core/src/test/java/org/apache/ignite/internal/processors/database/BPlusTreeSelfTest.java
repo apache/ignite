@@ -1704,7 +1704,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE, new MemoryMetricsImpl(null), true);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(sizes),
+            null,
+            PAGE_SIZE,
+            null,
+            new MemoryMetricsImpl(null), true);
 
         pageMem.start();
 

@@ -1101,12 +1101,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 U.sleep(5000);
 
                 for (int i = 0; i < NODES; i++)
-                    stopGrid(i);
+                    stopGrid(getTestIgniteInstanceName(i), false, false);
 
                 return null;
             }
         }, "stop-thread");
-
 
         latch.countDown();
 

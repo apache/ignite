@@ -46,11 +46,11 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param parent
-     * @param row
-     * @param col
-     * @param rowStride
-     * @param colStride
+     * @param parent Parent matrix.
+     * @param row Starting row in the view.
+     * @param col Starting column in the view.
+     * @param rowStride Rows stride in the view.
+     * @param colStride Columns stride in the view.
      */
     public MatrixVectorStorage(Matrix parent, int row, int col, int rowStride, int colStride) {
         assert parent != null;
@@ -75,41 +75,34 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Starting row in the view.
      */
     int row() {
         return row;
     }
 
     /**
-     *
-     *
+     * @return Starting column in the view.
      */
     int column() {
         return col;
     }
 
     /**
-     *
-     *
+     * @return Rows stride in the view.
      */
     int rowStride() {
         return rowStride;
     }
 
     /**
-     *
-     *
+     * @return Columns stride in the view.
      */
     int columnStride() {
         return colStride;
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private int getSize() {
         if (rowStride != 0 && colStride != 0) {
             int n1 = (parent.rowSize() - row) / rowStride;

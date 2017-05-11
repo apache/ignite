@@ -226,6 +226,8 @@ class GridDhtPartitionSupplier {
 
             IgniteRebalanceIterator iter;
 
+            // TODO: compute estimated keys count (s.estimatedKeysCount(...)).
+
             Set<Integer> remainingParts;
 
             if (sctx == null || sctx.entryIt == null) {

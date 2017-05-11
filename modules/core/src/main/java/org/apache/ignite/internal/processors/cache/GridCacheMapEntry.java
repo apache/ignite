@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -3426,6 +3427,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         catch (GridCacheFilterFailedException ignored) {
             throw new IgniteException("Should never happen.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+        GridCacheEntryRemovedException {
+        synchronized (this) {
+            if (isInternal())
+                return;
+
+            checkObsolete();
+
+            unswap(false);
+
+            if (val != null)
+                clo.apply(key, partition(), val, ver, expireTimeUnlocked(), link);
         }
     }
 

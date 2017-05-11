@@ -43,9 +43,9 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx
-     * @param rowPivot
-     * @param colPivot
+     * @param mtx Parent matrix.
+     * @param rowPivot Pivot array for rows.
+     * @param colPivot Pivot array for columns.
      */
     public PivotedMatrixView(Matrix mtx, int[] rowPivot, int[] colPivot) {
         super(new PivotedMatrixStorage(mtx == null ? null : mtx.getStorage(), rowPivot, colPivot));
@@ -54,7 +54,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx
+     * @param mtx Parent matrix.
      */
     public PivotedMatrixView(Matrix mtx) {
         super(new PivotedMatrixStorage(mtx == null ? null : mtx.getStorage()));
@@ -63,8 +63,8 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx
-     * @param pivot
+     * @param mtx  Parent matrix.
+     * @param pivot Pivot array for rows and columns.
      */
     public PivotedMatrixView(Matrix mtx, int[] pivot) {
         super(new PivotedMatrixStorage(mtx == null ? null : mtx.getStorage(), pivot));
@@ -128,52 +128,53 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     *
-     *
+     * @return Parent matrix.
      */
     public Matrix getBaseMatrix() {
         return mtx;
     }
 
     /**
-     *
-     *
+     * @return Pivot array for rows.
      */
     public int[] rowPivot() {
         return storage().rowPivot();
     }
 
     /**
-     *
-     *
+     * @return Pivot array for columns.
      */
     public int[] columnPivot() {
         return storage().columnPivot();
     }
 
     /**
-     * @param i
+     * @param i Index for row pivot.
+     * @return Row pivot for given index.
      */
     public int rowPivot(int i) {
         return storage().rowPivot()[i];
     }
 
     /**
-     * @param i
+     * @param i Index for column pivot.
+     * @return Column pivot for given index.
      */
     public int columnPivot(int i) {
         return storage().columnPivot()[i];
     }
 
     /**
-     * @param i
+     * @param i Index for row unpivot.
+     * @return Row unpivot for given index.
      */
     public int rowUnpivot(int i) {
         return storage().rowUnpivot()[i];
     }
 
     /**
-     * @param i
+     * @param i Index for column unpivot.
+     * @return Column unpivot for given index.
      */
     public int columnUnpivot(int i) {
         return storage().columnUnpivot()[i];
@@ -193,10 +194,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         mtx = (Matrix)in.readObject();
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private PivotedMatrixStorage storage() {
         return (PivotedMatrixStorage)getStorage();
     }

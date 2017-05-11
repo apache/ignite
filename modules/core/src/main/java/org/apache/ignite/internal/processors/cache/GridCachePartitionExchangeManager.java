@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -313,6 +314,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (log.isDebugEnabled())
                         log.debug("Do not start exchange for discovery event: " + evt);
                 }
+
+                // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
+                if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+                    exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
             }
             finally {
                 leaveBusy();
@@ -753,17 +758,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public boolean hasPendingExchange() {
         return exchWorker.hasPendingExchange();
-    }
-
-    /**
-     * Add custom task.
-     *
-     * @param task Task.
-     */
-    public void addCustomTask(CachePartitionExchangeWorkerTask task) {
-        assert !task.isExchange();
-
-        exchWorker.addCustomTask(task);
     }
 
     /**
@@ -1559,6 +1553,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Check if provided task from exchange queue is exchange task.
+     *
+     * @param task Task.
+     * @return {@code True} if this is exchange task.
+     */
+    private static boolean isExchangeTask(CachePartitionExchangeWorkerTask task) {
+        return task instanceof GridDhtPartitionsExchangeFuture;
+    }
+
+    /**
      * @param exchTopVer Exchange topology version.
      */
     private void dumpPendingObjects(@Nullable AffinityTopologyVersion exchTopVer) {
@@ -1705,7 +1709,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         void addCustomTask(CachePartitionExchangeWorkerTask task) {
             assert task != null;
 
-            assert !task.isExchange();
+            assert !isExchangeTask(task);
 
             futQ.offer(task);
         }
@@ -1716,6 +1720,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param task Task.
          */
         void processCustomTask(CachePartitionExchangeWorkerTask task) {
+            assert !isExchangeTask(task);
+
             try {
                 cctx.cache().processCustomExchangeTask(task);
             }
@@ -1730,7 +1736,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean hasPendingExchange() {
             if (!futQ.isEmpty()) {
                 for (CachePartitionExchangeWorkerTask task : futQ) {
-                    if (task.isExchange())
+                    if (isExchangeTask(task))
                         return true;
                 }
             }
@@ -1745,7 +1751,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             U.warn(log, "Pending exchange futures:");
 
             for (CachePartitionExchangeWorkerTask task: futQ) {
-                if (task.isExchange())
+                if (isExchangeTask(task))
                     U.warn(log, ">>> " + task);
             }
         }
@@ -1796,7 +1802,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    if (!task.isExchange()) {
+                    if (!isExchangeTask(task)) {
                         processCustomTask(task);
 
                         continue;

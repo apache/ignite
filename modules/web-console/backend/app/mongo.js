@@ -338,9 +338,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         dataCacheName: String,
         metaCacheName: String,
         defaultMode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']},
-        dualModeMaxPendingPutsSize: Number,
-        dualModePutExecutorService: String,
-        dualModePutExecutorServiceShutdown: Boolean,
         fragmentizerConcurrentFiles: Number,
         fragmentizerEnabled: Boolean,
         fragmentizerThrottlingBlockLength: Number,
@@ -362,7 +359,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         perNodeParallelBatchCount: Number,
         prefetchBlocks: Number,
         sequentialReadsBeforePrefetch: Number,
-        trashPurgeTimeout: Number,
         secondaryFileSystemEnabled: Boolean,
         secondaryFileSystem: {
             uri: String,

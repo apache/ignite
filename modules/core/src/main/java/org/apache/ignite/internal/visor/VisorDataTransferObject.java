@@ -30,6 +30,9 @@ import org.jetbrains.annotations.Nullable;
  * Base class for data transfer objects.
  */
 public abstract class VisorDataTransferObject implements Externalizable {
+    /** Magic number to detect correct transfer objects. */
+    private static final int MAGIC = 0x42BEEF00;
+
     /**
      * @param col Source collection.
      * @param <T> Collection type.
@@ -59,7 +62,9 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeByte(getProtocolVersion());
+        int hdr = MAGIC  + getProtocolVersion();
+
+        out.writeInt(hdr);
 
         try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
             writeExternalData(dtout);
@@ -78,7 +83,13 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        byte ver = in.readByte();
+        int hdr = in.readInt();
+
+        if ((hdr & MAGIC) != MAGIC)
+            throw new IOException("Unexpected VisorDataTransferObject header " +
+                "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
+
+        byte ver = (byte)(hdr & 0xFF);
 
         try (VisorDataTransferObjectInput dtin = new VisorDataTransferObjectInput(in)) {
             readExternalData(ver, dtin);

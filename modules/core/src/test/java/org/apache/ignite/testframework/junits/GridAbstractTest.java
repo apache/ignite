@@ -1665,7 +1665,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
      */
     protected boolean isFirstGrid(String igniteInstanceName) {
-        return "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
+        return igniteInstanceName != null && igniteInstanceName.startsWith(getTestIgniteInstanceName()) &&
+            "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
     }
 
     /**

@@ -250,8 +250,8 @@ public class Algebra extends Constants {
      * <li>else: {@code (n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k)}.</li>
      * </ul>
      *
-     * @param n
-     * @param k
+     * @param n Size of set.
+     * @param k Size of subset.
      * @return Binomial coefficient.
      */
     public static double binomial(double n, long k) {
@@ -281,8 +281,8 @@ public class Algebra extends Constants {
      * <ul> <li>{@code k&lt;0}: {@code 0}. <li>{@code k==0 || k==n}: {@code 1}. <li>{@code k==1 || k==n-1}:
      * {@code n}. <li>else: {@code (n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k )}. </ul>
      *
-     * @param n
-     * @param k
+     * @param n Size of set.
+     * @param k Size of subset.
      * @return Binomial coefficient.
      */
     public static double binomial(long n, long k) {
@@ -328,7 +328,8 @@ public class Algebra extends Constants {
      * <dl><dt>Examples: {@code 1.0 -> 1, 1.2 -> 2, 1.9 -> 2}. This
      * method is safer than using (long) Math.ceil(value), because of possible rounding error.</dt></dl>
      *
-     * @param val
+     * @param val Value for ceil.
+     * @return Ceil of the given value.
      */
     public static long ceil(double val) {
         return Math.round(Math.ceil(val));
@@ -428,7 +429,7 @@ public class Algebra extends Constants {
 
     /**
      * Returns {@code log(k!)}. Tries to avoid overflows. For {@code k&lt;30} simply looks up a table in O(1).
-     * For {@code k&gt;=30} uses stirlings approximation.
+     * For {@code k&gt;=30} uses Stirling's approximation.
      *
      * @param k must hold {@code k &gt;= 0}.
      */
@@ -549,8 +550,9 @@ public class Algebra extends Constants {
     /**
      * Gets <code>sqrt(a^2 + b^2)</code> without under/overflow.
      *
-     * @param a
-     * @param b
+     * @param a First side value.
+     * @param b Second side value.
+     * @return Hypotenuse value.
      */
     public static double hypot(double a, double b) {
         double r;

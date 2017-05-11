@@ -313,6 +313,18 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
+            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+            if (statsEnabled) {
+                cctx.cache().metrics0().clearRebalanceCounters();
+
+                rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        cctx.cache().metrics0().clearRebalanceCounters();
+                    }
+                });
+            }
+
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
@@ -611,6 +623,15 @@ public class GridDhtPartitionDemander {
 
         final GridDhtPartitionTopology top = cctx.dht().topology();
 
+        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        if (statsEnabled) {
+            if (supply.estimatedKeysCount() != -1)
+                cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
+
+            cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
+        }
+
         try {
             // Preload.
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
@@ -650,6 +671,9 @@ public class GridDhtPartitionDemander {
 
                                     break;
                                 }
+
+                                if (statsEnabled)
+                                    cctx.cache().metrics0().onRebalanceKeyReceived();
                             }
 
                             // If message was last for this partition,

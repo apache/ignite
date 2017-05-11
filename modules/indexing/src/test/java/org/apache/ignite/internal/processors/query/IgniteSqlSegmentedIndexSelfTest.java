@@ -90,7 +90,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(nodesCount(), false);
+        startGrids(nodesCount());
     }
 
     /** {@inheritDoc} */

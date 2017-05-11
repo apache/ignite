@@ -357,4 +357,29 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public boolean isWriteThrough() {
         return cache.metrics0().isWriteThrough();
     }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return cache.metrics0().getTotalPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRebalancingPartitionsCount() {
+        return cache.metrics0().getRebalancingPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKeysToRebalanceLeft() {
+        return cache.metrics0().getKeysToRebalanceLeft();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingKeysRate() {
+        return cache.metrics0().getRebalancingKeysRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingBytesRate() {
+        return cache.metrics0().getRebalancingBytesRate();
+    }
 }

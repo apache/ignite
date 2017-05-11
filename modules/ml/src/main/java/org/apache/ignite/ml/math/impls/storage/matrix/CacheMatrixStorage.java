@@ -44,11 +44,11 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /**
-     * @param rows
-     * @param cols
-     * @param cache
-     * @param keyMapper
-     * @param valMapper
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
+     * @param cache Ignite cache.
+     * @param keyMapper {@link MatrixKeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
     public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, MatrixKeyMapper<K> keyMapper,
         ValueMapper<V> valMapper) {

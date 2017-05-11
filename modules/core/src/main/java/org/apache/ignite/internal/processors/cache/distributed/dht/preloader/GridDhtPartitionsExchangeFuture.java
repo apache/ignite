@@ -240,6 +240,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private volatile IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
 
+    private final AtomicBoolean done = new AtomicBoolean();
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -630,6 +632,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 default:
                     assert false;
             }
+
+            if (cctx.localNode().isClient()) {
+                StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = getSnapshotOperationMessage();
+
+                // If it's a snapshot operation request, synchronously wait for backup start.
+                if (snapshotOperationMsg != null)
+                    startLocalSnasphotOperation(snapshotOperationMsg);
+            }
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -671,7 +681,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, locNodeId);
 
             t.stop(true);
-            t.destroy(true);
+            t.destroy(false);
 
             t.deploymentId(desc.deploymentId());
 
@@ -921,12 +931,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         // If it's a snapshot operation request, synchronously wait for backup start.
         if (snapshotOperationMsg != null) {
-            if (!cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
+            SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
 
-                if (op.type() != SnapshotOperationType.RESTORE)
-                    startLocalSnasphotOperation(snapshotOperationMsg);
-            }
+            if (op.type() != SnapshotOperationType.RESTORE)
+                startLocalSnasphotOperation(snapshotOperationMsg);
         }
 
         if (crd.isLocal()) {
@@ -1238,6 +1246,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
         boolean realExchange = !dummy && !forcePreload;
 
+        if (!done.compareAndSet(false, true))
+            return dummy;
+
         if (err == null && realExchange) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.isLocal())
@@ -1296,7 +1307,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = getSnapshotOperationMessage();
 
-        if (snapshotOperationMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
+        if (snapshotOperationMsg != null) {
             SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
 
             if (op.type() == SnapshotOperationType.RESTORE)
@@ -1357,7 +1368,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private StartSnapshotOperationAckDiscoveryMessage getSnapshotOperationMessage() {
         // If it's a snapshot operation request, synchronously wait for backup start.
-        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+        if (discoEvt != null && discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
             if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
@@ -2274,11 +2285,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public boolean reconnectOnError(Throwable e) {
         return X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class) &&
             cctx.discovery().reconnectSupported();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isExchange() {
-        return true;
     }
 
     /** {@inheritDoc} */

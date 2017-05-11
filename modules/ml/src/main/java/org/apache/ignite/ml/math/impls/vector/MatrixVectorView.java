@@ -33,7 +33,7 @@ public class MatrixVectorView extends AbstractVector {
 
     /** */ private int row;
     /** */ private int col;
-    
+
     /** */ private int rowStride;
     /** */ private int colStride;
 
@@ -45,11 +45,11 @@ public class MatrixVectorView extends AbstractVector {
     }
 
     /**
-     * @param parent
-     * @param row
-     * @param col
-     * @param rowStride
-     * @param colStride
+     * @param parent Parent matrix.
+     * @param row Starting row in the view.
+     * @param col Starting column in the view.
+     * @param rowStride Rows stride in the view.
+     * @param colStride Columns stride in the view.
      */
     public MatrixVectorView(Matrix parent, int row, int col, int rowStride, int colStride) {
         assert parent != null;

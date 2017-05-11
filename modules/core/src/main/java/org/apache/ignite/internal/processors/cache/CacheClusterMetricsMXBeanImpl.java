@@ -357,4 +357,29 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public boolean isWriteThrough() {
         return cache.clusterMetrics().isWriteThrough();
     }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return cache.clusterMetrics().getTotalPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRebalancingPartitionsCount() {
+        return cache.clusterMetrics().getRebalancingPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKeysToRebalanceLeft() {
+        return cache.clusterMetrics().getKeysToRebalanceLeft();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingKeysRate() {
+        return cache.clusterMetrics().getRebalancingKeysRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingBytesRate() {
+        return cache.clusterMetrics().getRebalancingBytesRate();
+    }
 }

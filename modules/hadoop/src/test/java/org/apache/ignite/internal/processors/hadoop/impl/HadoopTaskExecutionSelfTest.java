@@ -137,8 +137,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -181,8 +181,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -220,8 +220,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -282,8 +282,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(InFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 

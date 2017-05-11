@@ -16,8 +16,7 @@
  */
 
 import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
-
-const maskNull = (val) => _.isNil(val) ? 'null' : val;
+import maskNull from 'app/core/utils/maskNull';
 
 const State = {
     INIT: 'INIT',

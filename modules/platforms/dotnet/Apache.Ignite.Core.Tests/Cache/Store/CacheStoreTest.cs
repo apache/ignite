@@ -50,16 +50,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public virtual void BeforeTests()
         {
-            var cfg = new IgniteConfiguration
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = GridName,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-store.xml",
-                BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof (Value))
-            };
-
-            Ignition.Start(cfg);
+            });
         }
 
         /// <summary>
@@ -694,13 +689,5 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             throw new Exception("Expected exception in ExceptionalEntryFilter");
         }
-    }
-
-    /// <summary>
-    /// Filter that can't be serialized.
-    /// </summary>
-    public class InvalidCacheEntryFilter : CacheEntryFilter
-    {
-        // No-op.
     }
 }

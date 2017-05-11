@@ -35,8 +35,8 @@ public class SingleElementVectorView extends AbstractVector {
     }
 
     /**
-     * @param vec
-     * @param idx
+     * @param vec Parent vector.
+     * @param idx Index of the parent vector element.
      */
     public SingleElementVectorView(Vector vec, int idx) {
         super(new SingleElementVectorDelegateStorage(vec, idx));

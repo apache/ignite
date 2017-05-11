@@ -481,6 +481,31 @@ public interface CacheMetrics {
     public boolean isStoreByValue();
 
     /**
+     * @return Total number of partitions on current node.
+     */
+    public int getTotalPartitionsCount();
+
+    /**
+     * @return Number of currently rebalancing partitions on current node.
+     */
+    public int getRebalancingPartitionsCount();
+
+    /**
+     * @return Estimated number of keys to be rebalanced on current node.
+     */
+    public long getKeysToRebalanceLeft();
+
+    /**
+     * @return Estimated rebalancing speed in keys.
+     */
+    public long getRebalancingKeysRate();
+
+    /**
+     * @return Estimated rebalancing speed in bytes.
+     */
+    public long getRebalancingBytesRate();
+
+    /**
      * Checks whether statistics collection is enabled in this cache.
      * <p>
      * The default value is {@code false}.

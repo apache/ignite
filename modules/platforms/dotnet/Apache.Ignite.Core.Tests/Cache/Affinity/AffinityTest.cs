@@ -28,19 +28,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     public sealed class AffinityTest
     {
         /// <summary>
-        ///
+        /// Test set up.
         /// </summary>
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.KillProcesses();
-
             for (int i = 0; i < 3; i++)
             {
-                var cfg = new IgniteConfiguration
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    JvmClasspath = TestUtils.CreateTestClasspath(),
-                    JvmOptions = TestUtils.TestJavaOptions(),
                     SpringConfigUrl = "config\\native-client-test-cache-affinity.xml",
                     IgniteInstanceName = "grid-" + i
                 };
@@ -100,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <summary>
         /// Affinity key.
         /// </summary>
-        public class AffinityTestKey
+        private class AffinityTestKey
         {
             /** ID. */
             private readonly int _id;

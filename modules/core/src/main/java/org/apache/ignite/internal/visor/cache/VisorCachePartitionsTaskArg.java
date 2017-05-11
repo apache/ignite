@@ -21,67 +21,52 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Data transfer object for information about keys in cache partition.
+ * Arguments for {@link VisorCachePartitionsTask}.
  */
-public class VisorCachePartition extends VisorDataTransferObject {
+public class VisorCachePartitionsTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private int partId;
-
-    /** */
-    private long cnt;
+    private String cacheName;
 
     /**
      * Default constructor.
      */
-    public VisorCachePartition() {
+    public VisorCachePartitionsTaskArg() {
         // No-op.
     }
 
     /**
-     * Full constructor.
-     *
-     * @param partId Partition id.
-     * @param cnt Number of keys in partition.
+     * @param cacheName Cache name.
      */
-    public VisorCachePartition(int partId, long cnt) {
-        this.partId = partId;
-        this.cnt = cnt;
+    public VisorCachePartitionsTaskArg(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
-     * @return Partition id.
+     * @return Cache name.
      */
-    public int getPartitionId() {
-        return partId;
-    }
-
-    /**
-     * @return Number of keys in partition.
-     */
-    public long getCount() {
-        return cnt;
+    public String getCacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(partId);
-        out.writeLong(cnt);
+        U.writeString(out, cacheName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        partId = in.readInt();
-        cnt = in.readLong();
+        cacheName = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCachePartition.class, this);
+        return S.toString(VisorCachePartitionsTaskArg.class, this);
     }
 }

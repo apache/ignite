@@ -38,7 +38,10 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     */
     public DenseOffHeapMatrixStorage(int rows, int cols) {
         assert rows > 0;
         assert cols > 0;
@@ -49,7 +52,9 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         allocateMemory(rows, cols);
     }
 
-    /** */
+    /**
+     * @param data Backing data array.
+     */
     public DenseOffHeapMatrixStorage(double[][] data) {
         assert data != null;
         assert data[0] != null;

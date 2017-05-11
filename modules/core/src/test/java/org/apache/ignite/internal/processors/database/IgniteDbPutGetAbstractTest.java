@@ -444,7 +444,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-            assertTrue(plan, plan.contains("iVal_idx"));
+            assertTrue(plan, plan.contains("IVAL_IDX"));
         }
 
         assertTrue(cache.localSize(CachePeekMode.BACKUP) >= 0);
@@ -604,7 +604,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-            assertTrue(plan, plan.contains("iVal_idx"));
+            assertTrue(plan, plan.contains("IVAL_IDX"));
         }
     }
 

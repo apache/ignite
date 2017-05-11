@@ -24,8 +24,8 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -164,7 +164,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
 
         assertNotNull(reason);
 
-        assertEquals(IgniteException.class, reason.getClass());
+        assertEquals(IgniteSQLException.class, reason.getClass());
 
         assertEquals("Failed to INSERT some keys because they are already in cache [keys=[p2]]", reason.getMessage());
 

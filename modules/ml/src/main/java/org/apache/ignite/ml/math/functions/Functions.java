@@ -86,7 +86,7 @@ public final class Functions {
     /**
      * Function that returns {@code a + b}. {@code a} is a variable, {@code b} is fixed.
      *
-     * @param b
+     * @param b Value to add.
      */
     public static IgniteDoubleFunction<Double> plus(final double b) {
         return (a) -> a + b;
@@ -95,7 +95,7 @@ public final class Functions {
     /**
      * Function that returns {@code a * b}. {@code a} is a variable, {@code b} is fixed.
      *
-     * @param b
+     * @param b Value to multiply to.
      */
     public static IgniteDoubleFunction<Double> mult(final double b) {
         return (a) -> a * b;
@@ -123,7 +123,8 @@ public final class Functions {
     }
 
     /**
-     * @param b
+     * @param b Power value.
+     * @return Function for given power.
      */
     public static IgniteDoubleFunction<Double> pow(final double b) {
         return (a) -> {

@@ -43,7 +43,9 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
         //No-op.
     }
 
-    /** */
+    /**
+     * @param cap Initial capacity.
+     */
     public SparseLocalOffHeapVectorStorage(int cap) {
         assert cap > 0;
 

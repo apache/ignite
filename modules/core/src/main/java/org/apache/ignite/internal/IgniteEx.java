@@ -108,7 +108,7 @@ public interface IgniteEx extends Ignite {
      * @param name IGFS name.
      * @return IGFS.
      */
-    @Nullable public IgniteFileSystem igfsx(@Nullable String name);
+    @Nullable public IgniteFileSystem igfsx(String name);
 
     /**
      * Get Hadoop facade.

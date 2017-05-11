@@ -24,9 +24,9 @@ import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 
 /**
  * Calculates the LU-decomposition of a square matrix.
- *
- * This class inspired by class from Apache Common Math with similar name.
- *
+ * <p>
+ * This class is inspired by class from Apache Common Math with similar name.
+ * </p>
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
  */
@@ -274,7 +274,10 @@ public class LUDecomposition extends DecompositionSupport {
         return determinant;
     }
 
-    /** */
+    /**
+     * @param b Vector to solve using this decomposition.
+     * @return Solution vector.
+     */
     public Vector solve(Vector b) {
         final int m = pivot.size();
 
@@ -310,7 +313,10 @@ public class LUDecomposition extends DecompositionSupport {
         return b.like(m).assign(bp);
     }
 
-    /** */
+    /**
+     * @param b Matrix to solve using this decomposition.
+     * @return Solution matrix.
+     */
     public Matrix solve(Matrix b) {
         final int m = pivot.size();
 

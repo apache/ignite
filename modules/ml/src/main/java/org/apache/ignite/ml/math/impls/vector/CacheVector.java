@@ -43,10 +43,10 @@ public class CacheVector<K, V> extends AbstractVector {
     /**
      * Creates new vector over existing cache.
      *
-     * @param size
-     * @param cache
-     * @param keyFunc
-     * @param valMapper
+     * @param size Vector size.
+     * @param cache Ignite cache.
+     * @param keyFunc {@link VectorKeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
     public CacheVector(
         int size,
@@ -57,7 +57,7 @@ public class CacheVector<K, V> extends AbstractVector {
     }
 
     /**
-     * @param mapper
+     * @param mapper Mapping function.
      */
     private Vector mapOverCache(IgniteFunction<Double, Double> mapper) {
         CacheVectorStorage<K, V> sto = storage();

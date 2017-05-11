@@ -116,15 +116,7 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        GridQueryIndexDescriptor idx = null;
-
-        for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.type() == QueryIndexType.FULLTEXT) {
-                idx = descriptor;
-
-                break;
-            }
-        }
+        GridQueryIndexDescriptor idx = type.textIndex();
 
         if (idx != null) {
             Collection<String> fields = idx.fields();

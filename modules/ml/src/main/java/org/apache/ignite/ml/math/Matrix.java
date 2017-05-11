@@ -474,10 +474,10 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
      *
-     * @param rowOff
-     * @param rows
-     * @param colOff
-     * @param cols
+     * @param rowOff View offset in rows.
+     * @param rows Amount of rows in the view.
+     * @param colOff View offset in columns.
+     * @param cols Amount of columns in the view.
      * @return New view.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      * @throws IndexException Thrown in case of offset is out of bound.

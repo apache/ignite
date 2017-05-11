@@ -176,6 +176,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
+    /** Default write coalescing for write-behind cache store. */
+    public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
+
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
@@ -309,6 +312,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
+
+    /** Write coalescing flag for write-behind cache store */
+    private boolean writeBehindCoalescing = DFLT_WRITE_BEHIND_COALESCING;
 
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
@@ -454,6 +460,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
@@ -1287,6 +1294,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Write coalescing flag for write-behind cache store operations. Store operations (get or remove)
+     * with the same key are combined or coalesced to single, resulting operation
+     * to reduce pressure to underlying cache store.
+     * <p/>
+     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
+     *
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
+    }
+
+    /**
+     * Sets write coalescing flag for write-behind cache.
+     *
+     * @param writeBehindCoalescing Write coalescing flag.
+     * @see #getWriteBehindCoalescing()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setWriteBehindCoalescing(boolean writeBehindCoalescing) {
+        this.writeBehindCoalescing = writeBehindCoalescing;
+
+        return this;
+    }
+
+    /**
      * Use {@link IgniteConfiguration#getRebalanceThreadPoolSize()} instead.
      *
      * @return Size of rebalancing thread pool.
@@ -2063,7 +2096,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         @Nullable ClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = QueryUtils._VAL + "_idx";
+                String idxName = cls.getSimpleName() + "_" + QueryUtils._VAL + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
@@ -2112,7 +2145,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }
             }
 
@@ -2138,7 +2171,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
 
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, mtd.getReturnType(), prop, type);
                 }
             }
         }
@@ -2150,20 +2183,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param key If given class relates to key.
      * @param sqlAnn SQL annotation, can be {@code null}.
      * @param txtAnn H2 text annotation, can be {@code null}.
-     * @param cls Class of field or return type for method.
+     * @param cls Entity class.
+     * @param curCls Current entity class.
+     * @param fldCls Class of field or return type for method.
      * @param prop Current property.
      * @param desc Class description.
      */
     private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, ClassProperty prop, TypeDescriptor desc) {
+        Class<?> cls, Class<?> curCls, Class<?> fldCls, ClassProperty prop, TypeDescriptor desc) {
         if (sqlAnn != null) {
-            processAnnotationsInClass(key, cls, desc, prop);
+            processAnnotationsInClass(key, fldCls, desc, prop);
 
             if (!sqlAnn.name().isEmpty())
                 prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
-                String idxName = prop.alias() + "_idx";
+                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
+
+                if (cls != curCls)
+                    idxName = cls.getSimpleName() + "_" + idxName;
 
                 desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
@@ -2491,6 +2529,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         private IndexDescriptor(QueryIndexType type) {
             this(type, -1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
         }
 
         /** {@inheritDoc} */

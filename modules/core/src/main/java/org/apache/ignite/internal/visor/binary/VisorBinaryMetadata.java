@@ -124,8 +124,7 @@ public class VisorBinaryMetadata extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         typeName = U.readString(in);
         typeId = (Integer)in.readObject();
         affinityKeyFieldName = U.readString(in);

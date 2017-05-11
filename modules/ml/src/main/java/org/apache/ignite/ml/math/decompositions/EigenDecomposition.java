@@ -24,8 +24,8 @@ import org.apache.ignite.ml.math.functions.Functions;
 /**
  * This class provides EigenDecomposition of given matrix. The class is based on
  * class with similar name from <a href="http://mahout.apache.org/">Apache Mahout</a> library.
- *
- * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a>
+ * <p>
+ * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a></p>
  */
 public class EigenDecomposition extends DecompositionSupport {
     /** Row and column dimension (square matrix). */
@@ -39,12 +39,17 @@ public class EigenDecomposition extends DecompositionSupport {
     /** Array for internal storage of eigenvalues. */
     private final Vector e;
 
-    /** */
+    /**
+     * @param matrix Matrix to decompose.
+     */
     public EigenDecomposition(Matrix matrix) {
         this(matrix, isSymmetric(matrix));
     }
 
-    /** */
+    /**
+     * @param matrix Matrix to decompose.
+     * @param isSymmetric {@code true} if matrix passes symmetry check, {@code false otherwise}.
+     */
     public EigenDecomposition(Matrix matrix, boolean isSymmetric) {
         n = matrix.columnSize();
 
@@ -69,7 +74,7 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Return the eigen vector matrix
+     * Return the eigen vector matrix.
      *
      * @return V
      */
@@ -85,7 +90,9 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Return the imaginary parts of the eigenvalues
+     * Return the imaginary parts of the eigenvalues.
+     *
+     * @return Vector of imaginary parts.
      */
     public Vector getImagEigenvalues() {
         return e;
@@ -285,7 +292,9 @@ public class EigenDecomposition extends DecompositionSupport {
         return hessenBerg;
     }
 
-    /** Symmetric tridiagonal QL algorithm. */
+    /**
+     * Symmetric tridiagonal QL algorithm.
+     */
     private void tql2() {
         //  This is derived from the Algol procedures tql2, by
         //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
