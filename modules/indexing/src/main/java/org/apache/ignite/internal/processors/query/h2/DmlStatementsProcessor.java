@@ -120,6 +120,15 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Handle cache stop.
+     *
+     * @param spaceName Cache name.
+     */
+    public void onCacheStop(String spaceName) {
+        planCache.remove(spaceName);
+    }
+
+    /**
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
      * @param spaceName Space name.
@@ -341,7 +350,7 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) idx.queryTwoStep(cctx, newFieldsQry, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.queryDistributedSqlFields(cctx, newFieldsQry, cancel);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,

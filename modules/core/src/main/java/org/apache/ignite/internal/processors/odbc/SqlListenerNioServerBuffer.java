@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 /**
  * NIO server buffer.
  */
-public class OdbcNioServerBuffer {
+public class SqlListenerNioServerBuffer {
     /** Current message data. */
     private byte[] data;
 

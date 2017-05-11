@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -442,7 +441,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQuery<BinaryObject>(loc, true);
+            CheckScanQuery<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -460,7 +459,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<BinaryObject>(loc, true);
+            CheckScanQueryPartitions<IBinaryObject>(loc, true);
         }
 
         /// <summary>

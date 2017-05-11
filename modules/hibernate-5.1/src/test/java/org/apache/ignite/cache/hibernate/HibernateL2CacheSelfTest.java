@@ -1906,7 +1906,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         }
 
         for (org.hibernate.mapping.Collection collectionBinding : metadata.getCollectionBindings())
-            collectionBinding.setCacheConcurrencyStrategy( accessType.getExternalName() );
+            collectionBinding.setCacheConcurrencyStrategy(accessType.getExternalName() );
 
         return metadata.buildSessionFactory();
     }
