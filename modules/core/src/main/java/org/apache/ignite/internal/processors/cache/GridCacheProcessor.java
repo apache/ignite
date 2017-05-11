@@ -728,6 +728,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
+            cfgs[i] = cfg; // Replace original configuration value.
+
             registerCache(cfg, caches, templates);
         }
     }
