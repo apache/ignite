@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.OdbcNioListener;
+import org.apache.ignite.internal.processors.odbc.SqlNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
@@ -106,7 +106,7 @@ public class JdbcTcpIo {
         writer.writeShort(CURRENT_VER.minor());
         writer.writeShort(CURRENT_VER.maintenance());
 
-        writer.writeByte(OdbcNioListener.JDBC_CLIENT);
+        writer.writeByte(SqlNioListener.JDBC_CLIENT);
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
@@ -157,14 +157,27 @@ public class JdbcTcpIo {
     private  byte[] read() throws IOException, IgniteCheckedException {
         byte[] sizeBytes = new byte[4];
 
-        // TODO: Make sure that we read everything and that socket is not closed.
-        in.read(sizeBytes);
+        int readLen = in.read(sizeBytes);
 
-        int size = U.bytesToInt(sizeBytes, 0);
+        if (readLen != 4) {
+            close();
+
+            throw new IgniteCheckedException("IO error. Cannot receive message len. lenSize = " + readLen);
+        }
+
+        int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+            | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
         byte[] msgData = new byte[size];
 
-        in.read(msgData);
+        readLen = in.read(msgData);
+
+        if (readLen != size) {
+            close();
+
+            throw new IgniteCheckedException("IO error. Cannot receive massage. [received=" + readLen + ", size="
+                + size + ']');
+        }
 
         return msgData;
     }

@@ -29,10 +29,10 @@ import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
 import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
-import org.apache.ignite.logger.java.JavaLogger;
 
-// TODO: Docs
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
  * <p>
@@ -69,7 +69,6 @@ import org.apache.ignite.logger.java.JavaLogger;
  * JDBC driver is located in main Ignite JAR in {@code IGNITE_HOME/libs} folder.
  * <h1 class="header">Configuration</h1>
  *
- * All Ignite Java client configuration properties can be applied to JDBC connection of this type.
  * <p>
  * JDBC connection URL has the following pattern:
  * {@code jdbc:ignite://<hostname>:<port>/<cache_name>}<br>
@@ -89,97 +88,15 @@ import org.apache.ignite.logger.java.JavaLogger;
  *         <th>Optional</th>
  *     </tr>
  *     <tr>
- *         <td><b>ignite.client.connectTimeout</b></td>
- *         <td>Socket connection timeout.</td>
- *         <td>{@code 0} (infinite timeout)</td>
+ *         <td><b>ignite.jdbc.distributedJoins</b></td>
+ *         <td>Flag to enable distributed joins.</td>
+ *         <td>{@code true} (distributed joins are enabled)</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
- *         <td><b>ignite.client.tcp.noDelay</b></td>
- *         <td>Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections.</td>
- *         <td>{@code true}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.enabled</b></td>
- *         <td>Flag indicating that {@code SSL} is needed for connection.</td>
- *         <td>{@code false}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.protocol</b></td>
- *         <td>SSL protocol ({@code SSL} or {@code TLS}).</td>
- *         <td>{@code TLS}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.key.algorithm</b></td>
- *         <td>Key manager algorithm.</td>
- *         <td>{@code SunX509}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.keystore.location</b></td>
- *         <td>Key store to be used by client to connect with Ignite topology.</td>
- *         <td>&nbsp;</td>
- *         <td>No (if {@code SSL} is enabled)</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.keystore.password</b></td>
- *         <td>Key store password.</td>
- *         <td>&nbsp;</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.keystore.type</b></td>
- *         <td>Key store type.</td>
- *         <td>{@code jks}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.truststore.location</b></td>
- *         <td>Trust store to be used by client to connect with Ignite topology.</td>
- *         <td>&nbsp;</td>
- *         <td>No (if {@code SSL} is enabled)</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.truststore.password</b></td>
- *         <td>Trust store password.</td>
- *         <td>&nbsp;</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.truststore.type</b></td>
- *         <td>Trust store type.</td>
- *         <td>{@code jks}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.credentials</b></td>
- *         <td>Client credentials used in authentication process.</td>
- *         <td>&nbsp;</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.cache.top</b></td>
- *         <td>
- *             Flag indicating that topology is cached internally. Cache will be refreshed in
- *             the background with interval defined by {@code ignite.client.topology.refresh}
- *             property (see below).
- *         </td>
- *         <td>{@code false}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.topology.refresh</b></td>
- *         <td>Topology cache refresh frequency (ms).</td>
- *         <td>{@code 2000}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.idleTimeout</b></td>
- *         <td>Maximum amount of time that connection can be idle before it is closed (ms).</td>
- *         <td>{@code 30000}</td>
+ *         <td><b>ignite.jdbc.enforceJoinOrder</b></td>
+ *         <td>Flag to enforce join order of tables in the query.</td>
+ *         <td>{@code false} (enforcing join order is disabled)</td>
  *         <td>Yes</td>
  *     </tr>
  * </table>
@@ -218,7 +135,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
     /** Prefix for property names. */
-    private static final String PROP_PREFIX = "ignite.jdbc.";
+    private static final String PROP_PREFIX = "ignite.jdbc";
 
     /** Cache parameter name. */
     private static final String PARAM_CACHE = "cache";
@@ -251,16 +168,10 @@ public class IgniteJdbcThinDriver implements Driver {
     public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
 
     /** Major version. */
-    // TODO: Use Ignite ver?
-    private static final int MAJOR_VER = 1;
+    private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 
     /** Minor version. */
-    // TODO: Use Ignite ver?
-    private static final int MINOR_VER = 0;
-
-    /** Logger. */
-    // TODO: Remove
-    private static final IgniteLogger LOG = new JavaLogger();
+    private static final int MINOR_VER = IgniteVersionUtils.VER.minor();
 
     /*
      * Register driver.
@@ -293,58 +204,12 @@ public class IgniteJdbcThinDriver implements Driver {
             throw new SQLException("URL is invalid: " + url);
 
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
-            new PropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
-            new PropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
-            new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
-            new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new PropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
+            new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
+            new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
+            new JdbcDriverPropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
+            new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
         );
-
-        // TODO: What is this?
-        props.addAll(Arrays.<DriverPropertyInfo>asList(
-            new PropertyInfo("ignite.client.protocol",
-                info.getProperty("ignite.client.protocol", "TCP"),
-                "Communication protocol (TCP or HTTP)."),
-            new PropertyInfo("ignite.client.connectTimeout",
-                info.getProperty("ignite.client.connectTimeout", "0"),
-                "Socket connection timeout."),
-            new PropertyInfo("ignite.client.tcp.noDelay",
-                info.getProperty("ignite.client.tcp.noDelay", "true"),
-                "Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections."),
-            new PropertyInfo("ignite.client.ssl.enabled",
-                info.getProperty("ignite.client.ssl.enabled", "false"),
-                "Flag indicating that SSL is needed for connection."),
-            new PropertyInfo("ignite.client.ssl.protocol",
-                info.getProperty("ignite.client.ssl.protocol", "TLS"),
-                "SSL protocol."),
-            new PropertyInfo("ignite.client.ssl.key.algorithm",
-                info.getProperty("ignite.client.ssl.key.algorithm", "SunX509"),
-                "Key manager algorithm."),
-            new PropertyInfo("ignite.client.ssl.keystore.location",
-                info.getProperty("ignite.client.ssl.keystore.location", ""),
-                "Key store to be used by client to connect with Ignite topology."),
-            new PropertyInfo("ignite.client.ssl.keystore.password",
-                info.getProperty("ignite.client.ssl.keystore.password", ""),
-                "Key store password."),
-            new PropertyInfo("ignite.client.ssl.keystore.type",
-                info.getProperty("ignite.client.ssl.keystore.type", "jks"),
-                "Key store type."),
-            new PropertyInfo("ignite.client.ssl.truststore.location",
-                info.getProperty("ignite.client.ssl.truststore.location", ""),
-                "Trust store to be used by client to connect with Ignite topology."),
-            new PropertyInfo("ignite.client.ssl.keystore.password",
-                info.getProperty("ignite.client.ssl.truststore.password", ""),
-                "Trust store password."),
-            new PropertyInfo("ignite.client.ssl.truststore.type",
-                info.getProperty("ignite.client.ssl.truststore.type", "jks"),
-                "Trust store type."),
-            new PropertyInfo("ignite.client.credentials",
-                info.getProperty("ignite.client.credentials", ""),
-                "Client credentials used in authentication process."),
-            new PropertyInfo("ignite.client.idleTimeout",
-                info.getProperty("ignite.client.idleTimeout", "30000"),
-                "Maximum amount of time that connection can be idle before it is closed (ms).")
-            ));
 
         return props.toArray(new DriverPropertyInfo[0]);
     }
@@ -455,23 +320,5 @@ public class IgniteJdbcThinDriver implements Driver {
         }
 
         return true;
-    }
-
-    /**
-     * Extension of {@link DriverPropertyInfo} that adds
-     * convenient constructors.
-     */
-    // TODO: To top-level class (or try reuse existing)
-    private static class PropertyInfo extends DriverPropertyInfo {
-        /**
-         * @param name Name.
-         * @param val Value.
-         * @param desc Description.
-         */
-        private PropertyInfo(String name, String val, String desc) {
-            super(name, val);
-
-            description = desc;
-        }
     }
 }

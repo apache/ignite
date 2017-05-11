@@ -15,25 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 
 /**
  * JDBC message parser.
  */
-public class JdbcMessageParser extends OdbcMessageParser {
+public class OdbcMessageParserImpl extends SqlListenerMessageParserImpl {
+    /** Marshaller. */
+    private final GridBinaryMarshaller marsh;
+
     /**
      * @param ctx Context.
      */
-    public JdbcMessageParser(GridKernalContext ctx) {
+    public OdbcMessageParserImpl(GridKernalContext ctx) {
         super(ctx);
+
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+        marsh = cacheObjProc.marshaller();
     }
 
     /** {@inheritDoc} */
     @Override protected void writeUserObject(BinaryWriterExImpl writer, Object obj) {
-        // TODO: JDK marshaller based write object for thin JDBC driver.
+        writer.writeObjectDetached(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected BinaryWriterExImpl createBinaryWriter() {
+        return marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
     }
 }

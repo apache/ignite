@@ -948,11 +948,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeByteField(@Nullable Byte val) {
+    public void doWriteByte(@Nullable Byte val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeByteFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeByteField(@Nullable Byte val) {
+        doWriteByte(val);
     }
 
     /**
@@ -975,11 +982,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeShortField(@Nullable Short val) {
+    public void doWriteShort(@Nullable Short val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeShortFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeShortField(@Nullable Short val) {
+        doWriteShort(val);
     }
 
     /**
@@ -995,11 +1009,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeIntField(@Nullable Integer val) {
+    public void doWriteInt(@Nullable Integer val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeIntFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeIntField(@Nullable Integer val) {
+        doWriteInt(val);
     }
 
     /**
@@ -1015,11 +1036,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeLongField(@Nullable Long val) {
+    public void doWriteLong(@Nullable Long val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeLongFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeLongField(@Nullable Long val) {
+        doWriteLong(val);
     }
 
     /**
@@ -1035,11 +1063,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeFloatField(@Nullable Float val) {
+    public void doWriteFloat(@Nullable Float val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeFloatFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeFloatField(@Nullable Float val) {
+        doWriteFloat(val);
     }
 
     /**
@@ -1055,11 +1090,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeDoubleField(@Nullable Double val) {
+    public void doWriteDouble(@Nullable Double val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeDoubleFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeDoubleField(@Nullable Double val) {
+        doWriteDouble(val);
     }
 
     /**
@@ -1075,11 +1117,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeCharField(@Nullable Character val) {
+    public void doWriteChar(@Nullable Character val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeCharFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeCharField(@Nullable Character val) {
+        doWriteChar(val);
     }
 
     /**
@@ -1095,11 +1144,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeBooleanField(@Nullable Boolean val) {
+    public void doWriteBoolean(@Nullable Boolean val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeBooleanFieldPrimitive(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeBooleanField(@Nullable Boolean val) {
+        doWriteBoolean(val);
     }
 
     /**

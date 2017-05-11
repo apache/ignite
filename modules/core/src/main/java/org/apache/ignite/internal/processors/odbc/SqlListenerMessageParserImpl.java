@@ -15,49 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.odbc;
+package org.apache.ignite.internal.processors.odbc;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcQueryGetColumnsMetaResult;
-import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcQueryGetParamsMetaResult;
-import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaRequest;
-import org.apache.ignite.internal.processors.odbc.OdbcQueryGetTablesMetaResult;
-import org.apache.ignite.internal.processors.odbc.OdbcTableMeta;
-import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseResult;
-import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-
-import java.util.Collection;
 
 /**
  * ODBC message parser.
  */
-// TODO: Split into abstract, jdbc and odbc parts
-public class OdbcMessageParser implements SqlListenerMessageParser {
+public abstract class SqlListenerMessageParserImpl implements SqlListenerMessageParser {
     /** Initial output stream capacity. */
-    private static final int INIT_CAP = 1024;
-
-    /** Marshaller. */
-    // TODO: DO not use it in JDBC
-    private final GridBinaryMarshaller marsh;
+    protected static final int INIT_CAP = 1024;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -65,12 +44,8 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
     /**
      * @param ctx Context.
      */
-    public OdbcMessageParser(final GridKernalContext ctx) {
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
-
-        this.marsh = cacheObjProc.marshaller();
-
-        this.log = ctx.log(getClass());
+    protected SqlListenerMessageParserImpl(final GridKernalContext ctx) {
+        log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -160,7 +135,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
         assert msg != null;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
+        BinaryWriterExImpl writer = createBinaryWriter();
 
         // Writing status.
         writer.writeByte((byte) msg.status());
@@ -220,18 +195,62 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                             continue;
                         }
 
-                        // TODO: Primitive and simple classes are missed here:
-                        // - 8 primitives
-                        // - 8 arrays of primitives
-                        // - String, Date, Time, Timestamp, Decimal, UUID
                         Class<?> cls = obj.getClass();
 
-                        if (cls == java.sql.Time.class)
-                            writer.writeTime((java.sql.Time)obj);
-                        else if (cls == java.sql.Timestamp.class)
-                            writer.writeTimestamp((java.sql.Timestamp)obj);
-                        else if (cls == java.sql.Date.class)
-                            writer.writeDate((java.util.Date)obj);
+                        if (cls == Boolean.class)
+                            writer.doWriteBoolean((Boolean)obj);
+                        else if (cls == Byte.class)
+                            writer.doWriteByte((Byte)obj);
+                        else if (cls == Character.class)
+                            writer.doWriteChar((Character)obj);
+                        else if (cls == Short.class)
+                            writer.doWriteShort((Short)obj);
+                        else if (cls == Integer.class)
+                            writer.doWriteInt((Integer)obj);
+                        else if (cls == Long.class)
+                            writer.doWriteLong((Long)obj);
+                        else if (cls == Float.class)
+                            writer.doWriteFloat((Float)obj);
+                        else if (cls == Double.class)
+                            writer.doWriteDouble((Double)obj);
+                        else if (cls == String.class)
+                            writer.doWriteString((String)obj);
+                        else if (cls == BigDecimal.class)
+                            writer.doWriteDecimal((BigDecimal)obj);
+                        else if (cls == UUID.class)
+                            writer.writeUuid((UUID)obj);
+                        else if (cls == Time.class)
+                            writer.writeTime((Time)obj);
+                        else if (cls == Timestamp.class)
+                            writer.writeTimestamp((Timestamp)obj);
+                        else if (cls == Date.class)
+                            writer.writeDate((Date)obj);
+                        else if (cls == boolean[].class)
+                            writer.writeBooleanArray((boolean[])obj);
+                        else if (cls == byte[].class)
+                            writer.writeByteArray((byte[])obj);
+                        else if (cls == char[].class)
+                            writer.writeCharArray((char[])obj);
+                        else if (cls == short[].class)
+                            writer.writeShortArray((short[])obj);
+                        else if (cls == int[].class)
+                            writer.writeIntArray((int[])obj);
+                        else if (cls == float[].class)
+                            writer.writeFloatArray((float[])obj);
+                        else if (cls == double[].class)
+                            writer.writeDoubleArray((double[])obj);
+                        else if (cls == String[].class)
+                            writer.writeStringArray((String[])obj);
+                        else if (cls == BigDecimal[].class)
+                            writer.writeDecimalArray((BigDecimal[])obj);
+                        else if (cls == UUID[].class)
+                            writer.writeUuidArray((UUID[])obj);
+                        else if (cls == Time[].class)
+                            writer.writeTimeArray((Time[])obj);
+                        else if (cls == Timestamp[].class)
+                            writer.writeTimestampArray((Timestamp[])obj);
+                        else if (cls == Date[].class)
+                            writer.writeDateArray((Date[])obj);
                         else
                             writeUserObject(writer, obj);
                     }
@@ -287,7 +306,10 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
      * @param writer Binary writer.
      * @param obj Object to write.
      */
-    protected void writeUserObject(BinaryWriterExImpl writer, Object obj) {
-        writer.writeObjectDetached(obj);
-    }
+    protected abstract void writeUserObject(BinaryWriterExImpl writer, Object obj);
+
+    /**
+     * @return Binary writer instance.
+     */
+    protected abstract BinaryWriterExImpl createBinaryWriter();
 }

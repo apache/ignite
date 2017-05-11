@@ -43,7 +43,7 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 /**
  * ODBC processor.
  */
-public class OdbcProcessor extends GridProcessorAdapter {
+public class SqlListenerProcessor extends GridProcessorAdapter {
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
@@ -65,7 +65,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public OdbcProcessor(GridKernalContext ctx) {
+    public SqlListenerProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -134,7 +134,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(host)
                             .port(port)
-                            .listener(new OdbcNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
+                            .listener(new SqlNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -25,8 +28,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParserImpl;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParserImpl;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
@@ -34,14 +37,10 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  * ODBC message listener.
  */
-public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
+public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** The value  corresponds to ODBC driver of the parser field of the handshake request. */
     public static final byte ODBC_CLIENT = 0;
 
@@ -83,7 +82,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public SqlNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -247,11 +246,11 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         switch (clientType) {
             case ODBC_CLIENT:
-                parser = new OdbcMessageParser(ctx);
+                parser = new OdbcMessageParserImpl(ctx);
 
                 break;
             case JDBC_CLIENT:
-                parser = new JdbcMessageParser(ctx);
+                parser = new JdbcMessageParserImpl(ctx);
 
                 break;
         }

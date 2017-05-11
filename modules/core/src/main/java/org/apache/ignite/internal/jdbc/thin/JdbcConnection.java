@@ -86,13 +86,12 @@ public class JdbcConnection implements Connection {
 
         this.url = url;
 
-        // TODO: Read distributed joins flags.
         cacheName = props.getProperty(PROP_CACHE);
 
-        try {
-            boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
-            boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "true"));
+        boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
+        boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
 
+        try {
             cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
                 distributedJoins, enforceJoinOrder, LOG);
 
@@ -101,10 +100,6 @@ public class JdbcConnection implements Connection {
         catch (Exception e) {
             throw new SQLException("Failed to start Ignite client.", e);
         }
-
-        // TODO: Remove
-        if (!isValid(2))
-            throw new SQLException("Client is invalid. Probably cache name is wrong.");
     }
 
     /** {@inheritDoc} */
