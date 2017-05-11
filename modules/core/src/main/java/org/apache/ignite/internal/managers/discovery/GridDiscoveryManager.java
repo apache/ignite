@@ -1182,8 +1182,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) < 0 &&
-                (locSecurityCompatibilityEnabled == null || !locSecurityCompatibilityEnabled)) {
+            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) < 0
+                && ctx.security().enabled() // Matters only if security enabled.
+                && (locSecurityCompatibilityEnabled == null || !locSecurityCompatibilityEnabled)) {
                 throw new IgniteCheckedException("Remote node does not support service permissions. " +
                     "To be able to join to it, local node must be started with " + IGNITE_SECURITY_COMPATIBILITY_MODE +
                     " system property set to \"true\". " +
