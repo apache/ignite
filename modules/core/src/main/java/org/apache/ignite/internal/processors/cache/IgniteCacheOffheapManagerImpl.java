@@ -84,10 +84,10 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /** */
-    private GridCacheSharedContext ctx;
+    protected GridCacheSharedContext ctx;
 
     /** */
-    private CacheGroupInfrastructure grp;
+    protected CacheGroupInfrastructure grp;
 
     /** */
     private IgniteLogger log;
