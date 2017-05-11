@@ -414,6 +414,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code true} If this is a replicated cache and we are on a data node.
+     */
+    public boolean isReplicatedAffinityNode() {
+        return isReplicated() && affinityNode();
+    }
+
+    /**
      * @throws IgniteCheckedException If failed to wait.
      */
     public void awaitStarted() throws IgniteCheckedException {

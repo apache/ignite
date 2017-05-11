@@ -1643,25 +1643,70 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Query SQL fields.
+     *
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+    @SuppressWarnings("unchecked")
+    public QueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
         checkxEnabled();
+
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException(
+                "Using both partitions and distributed JOINs is not supported for the same query");
+
+        boolean loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    return idx.queryTwoStep(cctx, qry, null);
-                }
-            }, true);
+            IgniteOutClosureX<QueryCursor<List<?>>> clo;
+
+            if (loc) {
+                clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
+                    @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        GridQueryCancel cancel = new GridQueryCancel();
+
+                        final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
+                            idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
+
+                        Iterable<List<?>> iterExec = new Iterable<List<?>>() {
+                            @Override public Iterator<List<?>> iterator() {
+                                sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
+
+                                return cursor.iterator();
+                            }
+                        };
+
+                        return new QueryCursorImpl<List<?>>(iterExec, cancel) {
+                            @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                                if (cursor instanceof QueryCursorImpl)
+                                    return ((QueryCursorEx)cursor).fieldsMeta();
+
+                                return super.fieldsMeta();
+                            }
+                        };
+                    }
+                };
+            }
+            else {
+                clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
+                    @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        return idx.queryDistributedSqlFields(cctx, qry, null);
+                    }
+                };
+            }
+
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();
@@ -1699,11 +1744,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Execute distributed SQL query.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     */
+    public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
+        boolean keepBinary) {
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException(
+                "Using both partitions and distributed JOINs is not supported for the same query");
+
+        if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
+            return queryLocalSql(cctx, qry, keepBinary);
+
+        return queryDistributedSql(cctx, qry);
+    }
+
+    /**
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(final GridCacheContext<?,?> cctx, final SqlQuery qry) {
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
+        final SqlQuery qry) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
@@ -1713,7 +1782,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return idx.queryTwoStep(cctx, qry);
+                        return idx.queryDistributedSql(cctx, qry);
                     }
                 }, true);
         }
@@ -1731,7 +1800,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocal(
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(
         final GridCacheContext<?, ?> cctx,
         final SqlQuery qry,
         final boolean keepBinary
@@ -1920,49 +1989,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
         int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
         return idx.createStreamer(spaceName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @return Iterator.
-     */
-    @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
-
-                    final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
-                        idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
-
-                    return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
-                        @Override public Iterator<List<?>> iterator() {
-                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
-
-                            return cursor.iterator();
-                        }
-                    }, cancel) {
-                        @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                            if (cursor instanceof QueryCursorImpl)
-                                return ((QueryCursorEx)cursor).fieldsMeta();
-
-                            return super.fieldsMeta();
-                        }
-                    };
-                }
-            }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
     }
 
     /**
