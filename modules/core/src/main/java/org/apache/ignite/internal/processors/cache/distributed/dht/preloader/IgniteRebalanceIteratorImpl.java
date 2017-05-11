@@ -100,6 +100,9 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         if (historical(partId))
             return historicalIterator.isDone(partId);
 
+        if (current == null && missingParts.contains(partId))
+            return false;
+
         return current == null || current.getKey() > partId;
     }
 

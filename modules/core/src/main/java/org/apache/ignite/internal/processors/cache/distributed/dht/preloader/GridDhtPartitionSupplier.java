@@ -200,7 +200,8 @@ class GridDhtPartitionSupplier {
             synchronized (scMap) {
                 sctx = scMap.remove(scId);
 
-                assert sctx == null || d.updateSequence() == sctx.updateSeq;
+                assert sctx == null || d.updateSequence() == sctx.updateSeq :
+                    "d.updateSequence() == " + d.updateSequence() + ", sctx.updateSeq == " + sctx.updateSeq;
             }
 
             // Initial demand request should contain partitions list.
@@ -326,6 +327,12 @@ class GridDhtPartitionSupplier {
 
                 if (iter.isPartitionDone(p)) {
                     s.last(p);
+
+                    remainingIter.remove();
+                }
+
+                if (iter.isPartitionMissing(p)) {
+                    s.missed(p);
 
                     remainingIter.remove();
                 }
