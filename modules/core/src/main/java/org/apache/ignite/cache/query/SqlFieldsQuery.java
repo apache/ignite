@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -66,6 +66,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** */
     private boolean distributedJoins;
+
+    /** */
+    private boolean replicatedOnly;
 
     /**
      * Constructs SQL fields query.
@@ -147,7 +150,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return {@code this} For chaining.
      */
     public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
-        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+        this.timeout = QueryUtils.validateTimeout(timeout, timeUnit);
 
         return this;
     }
@@ -234,6 +237,28 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setLocal(boolean loc) {
         return (SqlFieldsQuery)super.setLocal(loc);
+    }
+
+    /**
+     * Specify if the query contains only replicated tables.
+     * This is a hint for potentially more effective execution.
+     *
+     * @param replicatedOnly The query contains only replicated tables.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
+        this.replicatedOnly = replicatedOnly;
+
+        return this;
+    }
+
+    /**
+     * Check is the query contains only replicated tables.
+     *
+     * @return {@code true} If the query contains only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
     }
 
     /** {@inheritDoc} */

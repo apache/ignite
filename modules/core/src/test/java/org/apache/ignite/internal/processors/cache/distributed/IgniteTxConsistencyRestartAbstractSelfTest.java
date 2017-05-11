@@ -59,8 +59,8 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     private static final int RANGE = 100_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -68,16 +68,16 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(TRANSACTIONAL);

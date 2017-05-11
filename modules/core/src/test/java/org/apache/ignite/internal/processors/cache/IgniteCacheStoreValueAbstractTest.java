@@ -56,8 +56,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     private boolean cpyOnRead;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -65,8 +65,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         if (ccfg.getCacheMode() != CacheMode.LOCAL)
             assertEquals(1, ccfg.getBackups());
@@ -98,11 +98,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         ccfg.setInterceptor(new TestInterceptor());
 
         return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean swapEnabled() {
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -180,8 +175,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkNoValue(aff, key);
 
             cache.remove(key);
-
-            atomicClockModeDelay(cache);
 
             try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
                 streamer.allowOverwrite(true);
@@ -349,8 +342,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkHasValue(aff, key);
 
             cache.remove(key);
-
-            atomicClockModeDelay(cache);
 
             try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
                 streamer.allowOverwrite(true);

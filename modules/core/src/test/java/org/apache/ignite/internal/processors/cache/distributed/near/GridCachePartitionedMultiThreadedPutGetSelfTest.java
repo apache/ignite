@@ -62,8 +62,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -77,8 +77,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         plc.setMaxMemorySize(1000);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setEvictSynchronized(false);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 

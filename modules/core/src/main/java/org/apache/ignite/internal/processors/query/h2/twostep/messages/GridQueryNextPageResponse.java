@@ -42,6 +42,9 @@ public class GridQueryNextPageResponse implements Message {
     private long qryReqId;
 
     /** */
+    private int segmentId;
+
+    /** */
     private int qry;
 
     /** */
@@ -73,6 +76,7 @@ public class GridQueryNextPageResponse implements Message {
 
     /**
      * @param qryReqId Query request ID.
+     * @param segmentId Index segment ID.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
@@ -80,12 +84,13 @@ public class GridQueryNextPageResponse implements Message {
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
      */
-    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, int cols,
+    public GridQueryNextPageResponse(long qryReqId, int segmentId, int qry, int page, int allRows, int cols,
         Collection<Message> vals, Collection<?> plainRows) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
         this.qryReqId = qryReqId;
+        this.segmentId = segmentId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
@@ -99,6 +104,13 @@ public class GridQueryNextPageResponse implements Message {
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @return Index segment ID.
+     */
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
@@ -202,6 +214,12 @@ public class GridQueryNextPageResponse implements Message {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeInt("segmentId", segmentId))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -271,19 +289,26 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                segmentId = reader.readInt("segmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 109;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**

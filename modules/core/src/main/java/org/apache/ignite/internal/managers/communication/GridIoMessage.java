@@ -313,7 +313,7 @@ public class GridIoMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 8;
     }
 

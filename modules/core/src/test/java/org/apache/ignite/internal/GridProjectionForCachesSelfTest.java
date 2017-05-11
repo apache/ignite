@@ -51,17 +51,19 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
-        if (gridName.equals(getTestGridName(0)))
-            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false));
-        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
-            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
+            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestIgniteInstanceName(0)), false));
+        else if (igniteInstanceName.equals(getTestIgniteInstanceName(2)) ||
+            igniteInstanceName.equals(getTestIgniteInstanceName(3)))
+            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestIgniteInstanceName(2),
+                getTestIgniteInstanceName(3)), true));
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
@@ -296,10 +298,10 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String gridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+            String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, gridName))
+                if (F.eq(attr, igniteInstanceName))
                     return true;
             }
 

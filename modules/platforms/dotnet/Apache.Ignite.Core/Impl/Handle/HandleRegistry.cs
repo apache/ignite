@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Handle
     public class HandleRegistry
     {
         /** Default critical resources capacity. */
-        internal const int DfltFastCap = 1024;
+        private const int DfltFastCap = 1024;
 
         /** Array for fast-path. */
         private readonly object[] _fast;

@@ -122,6 +122,7 @@ class GridDhtPartitionSupplier {
      *
      * @param topVer Topology version.
      */
+    @SuppressWarnings("ConstantConditions")
     public void onTopologyChanged(AffinityTopologyVersion topVer) {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
@@ -155,6 +156,7 @@ class GridDhtPartitionSupplier {
      * @param idx Index.
      * @param id Node uuid.
      */
+    @SuppressWarnings("unchecked")
     public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         assert d != null;
         assert id != null;
@@ -184,7 +186,7 @@ class GridDhtPartitionSupplier {
             log.debug("Demand request accepted [current=" + cutTop + ", demanded=" + demTop +
                 ", from=" + id + ", idx=" + idx + "]");
 
-        GridDhtPartitionSupplyMessageV2 s = new GridDhtPartitionSupplyMessageV2(
+        GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(
             d.updateSequence(), cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
 
         ClusterNode node = cctx.discovery().node(id);
@@ -256,7 +258,7 @@ class GridDhtPartitionSupplier {
                         if (!reply(node, d, s, scId))
                             return;
 
-                        s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                        s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
                             cctx.cacheId(),
                             d.topologyVersion(),
                             cctx.deploymentEnabled());
@@ -266,8 +268,6 @@ class GridDhtPartitionSupplier {
                 CacheDataRow row = iter.next();
 
                 int part = row.partition();
-
-                assert d.partitions().hasPartition(part);
 
                 if (!iter.isPartitionMissing(part) && !cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                     // Demander no longer needs this partition,
@@ -360,7 +360,7 @@ class GridDhtPartitionSupplier {
      */
     private boolean reply(ClusterNode n,
         GridDhtPartitionDemandMessage d,
-        GridDhtPartitionSupplyMessageV2 s,
+        GridDhtPartitionSupplyMessage s,
         T3<UUID, Integer, AffinityTopologyVersion> scId)
         throws IgniteCheckedException {
 

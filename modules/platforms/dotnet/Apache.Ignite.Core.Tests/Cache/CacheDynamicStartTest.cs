@@ -21,13 +21,13 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Tests.Query;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for dynamic a cache start.
+    /// Tests for dynamic cache start.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class CacheDynamicStartTest
     {
         /** Grid name: data. */
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.GridName = name;
+            cfg.IgniteInstanceName = name;
             cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();

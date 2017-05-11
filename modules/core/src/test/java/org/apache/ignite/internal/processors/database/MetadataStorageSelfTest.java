@@ -21,6 +21,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -160,6 +161,6 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
 
-        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE, true);
+        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE, new MemoryMetricsImpl(null), true);
     }
 }

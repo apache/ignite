@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 ClientMode = true,
-                GridName = "clientGrid"
+                IgniteInstanceName = "clientGrid"
             };
 
             using (var clientGrid = Ignition.Start(cfg))
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 ClientMode = true,
-                GridName = "clientGrid",
+                IgniteInstanceName = "clientGrid",
                 IncludedEventTypes = new[] {EventType.CacheEntryCreated}
             };
 

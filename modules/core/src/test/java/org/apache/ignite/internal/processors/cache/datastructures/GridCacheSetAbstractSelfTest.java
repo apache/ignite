@@ -28,11 +28,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.AssertionFailedError;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -47,9 +49,12 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Cache set tests.
@@ -944,6 +949,54 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             });
 
             assertEquals(100, res.intValue());
+        }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            IgniteSet<Integer> set0 = ignite.set(SET_NAME, colCfg);
+
+            assertNotNull(set0);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                Collection<Integer> items = new ArrayList<>(100);
+
+                for (int i = 0; i < 100; i++)
+                    items.add(i);
+
+                set0.addAll(items);
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals(100, set0.size());
+
+            set0.close();
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
         }
     }
 

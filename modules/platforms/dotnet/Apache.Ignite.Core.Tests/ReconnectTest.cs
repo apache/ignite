@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests
 
             var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "client",
+                IgniteInstanceName = "client",
                 ClientMode = true
             };
 

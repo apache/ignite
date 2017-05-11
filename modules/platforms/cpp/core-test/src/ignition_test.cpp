@@ -16,13 +16,14 @@
  */
 
 #ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
+#   define BOOST_TEST_DYN_LINK
 #endif
 
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -33,35 +34,23 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmOpts.push_back("-Xdebug");
-    cfg.jvmOpts.push_back("-Xnoagent");
-    cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-    cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-    cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
 #ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
+    ignite_test::InitConfig(cfg, "cache-test-32.xml");
 #else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
+    ignite_test::InitConfig(cfg, "cache-test.xml");
 #endif
-
-    char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-    cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
 
     IgniteError err;
 
     // Start two Ignite instances.
-    Ignite grid1 = Ignition::Start(cfg, "ignitionTest-1", &err);
+    Ignite grid1 = Ignition::Start(cfg, "ignitionTest-1", err);
     
     if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
     
     BOOST_REQUIRE(strcmp(grid1.GetName(), "ignitionTest-1") == 0);
 
-    Ignite grid2 = Ignition::Start(cfg, "ignitionTest-2", &err);
+    Ignite grid2 = Ignition::Start(cfg, "ignitionTest-2", err);
 
     if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
@@ -69,7 +58,7 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     BOOST_REQUIRE(strcmp(grid2.GetName(), "ignitionTest-2") == 0);
 
     // Test get
-    Ignite grid0 = Ignition::Get("ignitionTest-1", &err);
+    Ignite grid0 = Ignition::Get("ignitionTest-1", err);
     
     if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
@@ -79,16 +68,16 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     // Stop one grid
     Ignition::Stop(grid1.GetName(), true);
     
-    Ignition::Get("ignitionTest-1", &err);
+    Ignition::Get("ignitionTest-1", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);
     
-    Ignition::Get("ignitionTest-2", &err);
+    Ignition::Get("ignitionTest-2", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
 
     // Stop all
     Ignition::StopAll(true);
     
-    Ignition::Get("ignitionTest-2", &err);
+    Ignition::Get("ignitionTest-2", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);    
 }
 

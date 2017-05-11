@@ -153,7 +153,7 @@ public class HadoopChildProcessRunner {
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
                     req.totalReducerCount(), req.localReducers(), 0, false);
 
-                initializeExecutors(req);
+                initializeExecutors();
 
                 if (log.isDebugEnabled())
                     log.debug("External process initialized [initWaitTime=" +
@@ -233,13 +233,9 @@ public class HadoopChildProcessRunner {
     /**
      * Creates executor services.
      *
-     * @param req Init child process request.
      */
-    private void initializeExecutors(HadoopPrepareForJobRequest req) {
+    private void initializeExecutors() {
         int cpus = Runtime.getRuntime().availableProcessors();
-//
-//        concMappers = get(req.jobInfo(), EXTERNAL_CONCURRENT_MAPPERS, cpus);
-//        concReducers = get(req.jobInfo(), EXTERNAL_CONCURRENT_REDUCERS, cpus);
 
         execSvc = new HadoopExecutorService(log, "", cpus * 2, 1024);
     }

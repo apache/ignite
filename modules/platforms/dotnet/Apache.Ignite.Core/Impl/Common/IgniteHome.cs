@@ -108,13 +108,20 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Value indicating whether specified dir looks like a Ignite home.</returns>
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
-            return dir.Exists &&
-                   (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
-                    dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
-                   || // NuGet home
-                   (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
-                    (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
-                     dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any()));
+            try
+            {
+                return dir.Exists &&
+                       (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
+                        dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
+                       || // NuGet home
+                       (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
+                        (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
+                         dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any()));
+            }
+            catch (IOException)
+            {
+                return false;
+            }
         }
     }
 }

@@ -21,6 +21,8 @@ package org.apache.ignite.internal.pagemem.snapshot;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -33,14 +35,20 @@ public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMe
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Id. */
+    private IgniteUuid id = IgniteUuid.randomUuid();
+
     /** Custom message ID. */
-    private IgniteUuid id;
+    private IgniteUuid operationId;
 
     /** Snapshot operation. */
     private SnapshotOperation snapshotOperation;
 
     /** */
     private UUID initiatorId;
+
+    /** Validated by coordinator. */
+    private boolean validatedByCoordinator = false;
 
     /** Error. */
     private Exception err;
@@ -56,11 +64,11 @@ public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMe
      * @param initiatorId initiator node id
      */
     public StartSnapshotOperationDiscoveryMessage(
-        IgniteUuid id,
+        IgniteUuid operationId,
         SnapshotOperation snapshotOperation,
         UUID initiatorId
     ) {
-        this.id = id;
+        this.operationId = operationId;
         this.snapshotOperation = snapshotOperation;
         this.initiatorId = initiatorId;
     }
@@ -98,13 +106,18 @@ public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMe
     /**
      * @return Initiator node id.
      */
-    public UUID initiatorId() {
+    public UUID initiatorNodeId() {
         return initiatorId;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
+    }
+
+    /** {@inheritDoc} */
+    public IgniteUuid operationId() {
+        return operationId;
     }
 
     /**
@@ -129,6 +142,16 @@ public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMe
         return lastSnapshotIdForCache.get(cacheId);
     }
 
+    /** @return Validated by coordinator. */
+    public boolean validatedByCoordinator() {
+        return validatedByCoordinator;
+    }
+
+    /** Validated by coordinator. */
+    public void validatedByCoordinator(boolean validatedByCoordinator) {
+        this.validatedByCoordinator = validatedByCoordinator;
+    }
+
     /**
      * @param cacheId Cache id.
      * @param id Id.
@@ -140,11 +163,11 @@ public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMe
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return new StartSnapshotOperationAckDiscoveryMessage(
-            id,
+            operationId,
             snapshotOperation,
             lastFullSnapshotIdForCache,
             lastSnapshotIdForCache,
-            err,
+            err != null ? err : (validatedByCoordinator? null : new IgniteException("Coordinator didn't validate operation!")),
             initiatorId);
     }
 

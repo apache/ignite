@@ -53,8 +53,8 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
     protected static final long TEST_TIME = 90_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -201,7 +201,7 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
                 try {
                     barrier.await(10, SECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     err = "Operations hang or fail with unexpected error.";
 
                     break;

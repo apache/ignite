@@ -18,7 +18,6 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
@@ -139,12 +138,12 @@ class VisorCacheScanCommand {
         val firstPage =
             try
                 executeRandom(groupForDataNode(node, cacheName),
-                    classOf[VisorQueryTask], new VisorQueryArg(cacheName, null, false, false, false, pageSize)) match {
-                    case x if x.get1() != null =>
-                        error(x.get1())
+                    classOf[VisorScanQueryTask], new VisorScanQueryTaskArg(cacheName, null, false, false, false, false, pageSize)) match {
+                    case x if x.getError != null =>
+                        error(x.getError)
 
                         return
-                    case x => x.get2()
+                    case x => x.getResult
                 }
             catch {
                 case e: ClusterGroupEmptyException =>
@@ -157,7 +156,7 @@ class VisorCacheScanCommand {
                     return
             }
 
-        if (firstPage.rows.isEmpty) {
+        if (firstPage.getRows.isEmpty) {
             println(s"Cache: ${escapeName(cacheName)} is empty")
 
             return
@@ -172,19 +171,19 @@ class VisorCacheScanCommand {
 
             t #= ("Key Class", "Key", "Value Class", "Value")
 
-            nextPage.rows.foreach(r => t += (r(0), r(1), r(2), r(3)))
+            nextPage.getRows.foreach(r => t += (r(0), r(1), r(2), r(3)))
 
             t.render()
         }
 
         render()
 
-        while (nextPage.hasMore) {
+        while (nextPage.isHasMore) {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        nextPage = executeOne(firstPage.responseNodeId(), classOf[VisorQueryNextPageTask],
-                            new IgniteBiTuple[String, Integer](firstPage.queryId(), pageSize))
+                        nextPage = executeOne(firstPage.getResponseNodeId, classOf[VisorQueryNextPageTask],
+                            new VisorQueryNextPageTaskArg(firstPage.getQueryId, pageSize))
 
                         render()
                     }

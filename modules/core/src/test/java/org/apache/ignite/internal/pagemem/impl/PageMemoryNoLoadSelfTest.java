@@ -26,11 +26,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -59,30 +59,31 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             FullPageId fullId1 = allocatePage(mem);
             FullPageId fullId2 = allocatePage(mem);
 
-            Page page1 = mem.page(fullId1.cacheId(), fullId1.pageId());
+            long page1 = mem.acquirePage(fullId1.cacheId(), fullId1.pageId());
 
             try {
-                Page page2 = mem.page(fullId2.cacheId(), fullId2.pageId());
+                long page2 = mem.acquirePage(fullId2.cacheId(), fullId2.pageId());
 
-                info("Allocated pages [page1=" + page1 + ", page2=" + page2 + ']');
+                info("Allocated pages [page1Id=" + fullId1.pageId() + ", page1=" + page1 +
+                    ", page2Id=" + fullId2.pageId() + ", page2=" + page2 + ']');
 
                 try {
-                    writePage(page1, 1);
-                    writePage(page2, 2);
+                    writePage(mem, fullId1.pageId(), page1, 1);
+                    writePage(mem, fullId2.pageId(), page2, 2);
 
-                    readPage(page1, 1);
-                    readPage(page2, 2);
+                    readPage(mem, fullId1.pageId(), page1, 1);
+                    readPage(mem, fullId2.pageId(), page2, 2);
 
                     // Check read after read.
-                    readPage(page1, 1);
-                    readPage(page2, 2);
+                    readPage(mem, fullId1.pageId(), page1, 1);
+                    readPage(mem, fullId2.pageId(), page2, 2);
                 }
                 finally {
-                    mem.releasePage(page2);
+                    mem.releasePage(fullId2.cacheId(), fullId2.pageId(), page2);
                 }
             }
             finally {
-                mem.releasePage(page1);
+                mem.releasePage(fullId1.cacheId(), fullId1.pageId(), page1);
             }
         }
         finally {
@@ -108,32 +109,32 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
                 pages.add(fullId);
 
-                Page page = mem.page(fullId.cacheId(), fullId.pageId());
+                long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
 
                 try {
                     if (i % 64 == 0)
-                        info("Writing page [idx=" + i + ", page=" + page + ']');
+                        info("Writing page [idx=" + i + ", pageId=" + fullId.pageId() + ", page=" + page + ']');
 
-                    writePage(page, i + 1);
+                    writePage(mem, fullId.pageId(), page, i + 1);
                 }
                 finally {
-                    mem.releasePage(page);
+                    mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
                 }
             }
 
             for (int i = 0; i < pagesCnt; i++) {
                 FullPageId fullId = pages.get(i);
 
-                Page page = mem.page(fullId.cacheId(), fullId.pageId());
+                long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
 
                 try {
                     if (i % 64 == 0)
-                        info("Reading page [idx=" + i + ", page=" + page + ']');
+                        info("Reading page [idx=" + i + ", pageId=" + fullId.pageId() + ", page=" + page + ']');
 
-                    readPage(page, i + 1);
+                    readPage(mem, fullId.pageId(), page, i + 1);
                 }
                 finally {
-                    mem.releasePage(page);
+                    mem.releasePage(fullId.cacheId(), fullId.pageId(), page);
                 }
             }
         }
@@ -188,69 +189,81 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
             // Check that initial pages are accessible.
             for (FullPageId id : old) {
-                try (Page page = mem.page(id.cacheId(), id.pageId())) {
-                    long buf = page.getForWritePointer();
+                long pageApsPtr = mem.acquirePage(id.cacheId(), id.pageId());
+                try {
+                    long pageAddr = mem.writeLock(id.cacheId(), id.pageId(), pageApsPtr);
 
-                    assertNotNull(buf);
+                    assertNotNull(pageAddr);
 
                     try {
                         long updId = PageIdUtils.rotatePageId(id.pageId());
 
-                        PageIO.setPageId(buf, updId);
+                        PageIO.setPageId(pageAddr, updId);
 
                         updated.add(new FullPageId(updId, id.cacheId()));
                     }
                     finally {
-                        page.releaseWrite(true);
+                        mem.writeUnlock(id.cacheId(), id.pageId(), pageApsPtr, null, true);
                     }
+                }
+                finally {
+                    mem.releasePage(id.cacheId(), id.pageId(), pageApsPtr);
                 }
             }
 
             // Check that updated pages are inaccessible using old IDs.
             for (FullPageId id : old) {
-                try (Page page = mem.page(id.cacheId(), id.pageId())) {
-                    long pageAddr = page.getForWritePointer();
+                long pageApsPtr = mem.acquirePage(id.cacheId(), id.pageId());
+                try {
+                    long pageAddr = mem.writeLock(id.cacheId(), id.pageId(), pageApsPtr);
 
                     if (pageAddr != 0L) {
-                        page.releaseWrite(false);
+                        mem.writeUnlock(id.cacheId(), id.pageId(), pageApsPtr, null, false);
 
                         fail("Was able to acquire page write lock.");
                     }
 
-                    pageAddr = page.getForReadPointer();
+                    mem.readLock(id.cacheId(), id.pageId(), pageApsPtr);
 
                     if (pageAddr != 0) {
-                        page.releaseRead();
+                        mem.readUnlock(id.cacheId(), id.pageId(), pageApsPtr);
 
                         fail("Was able to acquire page read lock.");
                     }
+                }
+                finally {
+                    mem.releasePage(id.cacheId(), id.pageId(), pageApsPtr);
                 }
             }
 
             // Check that updated pages are accessible using new IDs.
             for (FullPageId id : updated) {
-                try (Page page = mem.page(id.cacheId(), id.pageId())) {
-                    long buf = page.getForWritePointer();
+                long pageApsPtr = mem.acquirePage(id.cacheId(), id.pageId());
+                try {
+                    long pageAddr = mem.writeLock(id.cacheId(), id.pageId(), pageApsPtr);
 
-                    assertNotNull(buf);
-
-                    try {
-                        assertEquals(id.pageId(), PageIO.getPageId(buf));
-                    }
-                    finally {
-                        page.releaseWrite(false);
-                    }
-
-                    buf = page.getForReadPointer();
-
-                    assertNotNull(buf);
+                    assertNotSame(0L, pageAddr);
 
                     try {
-                        assertEquals(id.pageId(), PageIO.getPageId(buf));
+                        assertEquals(id.pageId(), PageIO.getPageId(pageAddr));
                     }
                     finally {
-                        page.releaseRead();
+                        mem.writeUnlock(id.cacheId(), id.pageId(), pageApsPtr, null, false);
                     }
+
+                    pageAddr = mem.readLock(id.cacheId(), id.pageId(), pageApsPtr);
+
+                    assertNotSame(0L, pageAddr);
+
+                    try {
+                        assertEquals(id.pageId(), PageIO.getPageId(pageAddr));
+                    }
+                    finally {
+                        mem.readUnlock(id.cacheId(), id.pageId(), pageApsPtr);
+                    }
+                }
+                finally {
+                    mem.releasePage(id.cacheId(), id.pageId(), pageApsPtr);
                 }
             }
         }
@@ -261,6 +274,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return Page memory implementation.
+     * @throws Exception If failed.
      */
     protected PageMemory memory() throws Exception {
         File memDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false);
@@ -273,35 +287,39 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir, true,
             sizes);
 
-        return new PageMemoryNoStoreImpl(log(), provider, null, PAGE_SIZE, true);
+        return new PageMemoryNoStoreImpl(log(), provider, null, PAGE_SIZE, new MemoryMetricsImpl(null), true);
     }
 
     /**
-     * @param page Page to write.
+     * @param mem Page memory.
+     * @param pageId Page ID.
+     * @param page Page pointer.
      * @param val Value to write.
      */
-    private void writePage(Page page, int val) {
-        long bytes = page.getForWritePointer();
+    private void writePage(PageMemory mem, long pageId, long page, int val) {
+        long pageAddr = mem.writeLock(-1, pageId, page);
 
         try {
-            PageIO.setPageId(bytes, page.id());
+            PageIO.setPageId(pageAddr, pageId);
 
             for (int i = PageIO.COMMON_HEADER_END; i < PAGE_SIZE; i++)
-                PageUtils.putByte(bytes, i, (byte)val);
+                PageUtils.putByte(pageAddr, i, (byte)val);
         }
         finally {
-            page.releaseWrite(true);
+            mem.writeUnlock(-1, pageId, page, null, true);
         }
     }
 
     /**
-     * @param page Page to read.
+     * @param mem Page memory.
+     * @param pageId Page ID.
+     * @param page Page pointer.
      * @param expVal Expected value.
      */
-    private void readPage(Page page, int expVal) {
+    private void readPage(PageMemory mem, long pageId, long page, int expVal) {
         expVal &= 0xFF;
 
-        long pageAddr = page.getForReadPointer();
+        long pageAddr = mem.readLock(-1, pageId, page);
 
         assert(pageAddr != 0);
 
@@ -313,13 +331,14 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            page.releaseRead();
+            mem.readUnlock(-1, pageId, page);
         }
     }
 
     /**
      * @param mem Memory.
      * @return Page.
+     * @throws IgniteCheckedException If failed.
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
         return new FullPageId(mem.allocatePage(-1, 1, PageIdAllocator.FLAG_DATA), -1);

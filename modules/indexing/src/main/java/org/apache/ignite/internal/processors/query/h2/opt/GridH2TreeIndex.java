@@ -17,22 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -42,18 +46,18 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for snapshotable tree indexes.
+ * Base class for snapshotable segmented tree indexes.
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
     /** */
-    private final IgniteNavigableMapTree tree;
+    private final IgniteNavigableMapTree[] segments;
 
     /** */
     private final boolean snapshotEnabled;
 
     /**
-     * Constructor with index initialization.
+     * Constructor with index initialization. Creates index with single segment.
      *
      * @param name Index name.
      * @param tbl Table.
@@ -62,6 +66,22 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      */
     @SuppressWarnings("unchecked")
     public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, List<IndexColumn> colsList) {
+        this(name, tbl, pk, colsList, 1);
+    }
+
+    /**
+     * Constructor with index initialization.
+     *
+     * @param name Index name.
+     * @param tbl Table.
+     * @param pk If this index is primary key.
+     * @param colsList Index columns list.
+     * @param segmentsCnt Number of segments.
+     */
+    @SuppressWarnings("unchecked")
+    public GridH2TreeIndex(String name, GridH2Table tbl, boolean pk, List<IndexColumn> colsList, int segmentsCnt) {
+        assert segmentsCnt > 0 : segmentsCnt;
+
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
         IndexColumn.mapColumns(cols, tbl);
@@ -69,28 +89,33 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
+        segments = new IgniteNavigableMapTree[segmentsCnt];
+
         final GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         if (desc == null || desc.memory() == null) {
             snapshotEnabled = desc == null || desc.snapshotableIndex();
 
             if (snapshotEnabled) {
-                tree = new IgniteNavigableMapTree(new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
-                    @Override protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
-                        if (val != null)
-                            node.key = (GridSearchRowPointer)val;
-                    }
+                for (int i = 0; i < segmentsCnt; i++) {
+                    segments[i] = new IgniteNavigableMapTree(new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
+                        @Override protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
+                            if (val != null)
+                                node.key = (GridSearchRowPointer)val;
+                        }
 
-                    @Override protected Comparable<? super GridSearchRowPointer> comparable(Object key) {
-                        if (key instanceof ComparableRow)
-                            return (Comparable<? super SearchRow>)key;
+                        @Override protected Comparable<? super GridSearchRowPointer> comparable(Object key) {
+                            if (key instanceof ComparableRow)
+                                return (Comparable<? super SearchRow>)key;
 
-                        return super.comparable(key);
-                    }
-                });
+                            return super.comparable(key);
+                        }
+                    });
+                }
             }
             else {
-                tree = new IgniteNavigableMapTree(
+                for (int i = 0; i < segmentsCnt; i++) {
+                    segments[i] = new IgniteNavigableMapTree(
                     new ConcurrentSkipListMap<GridSearchRowPointer, GridH2Row>(
                         new Comparator<GridSearchRowPointer>() {
                             @Override public int compare(GridSearchRowPointer o1, GridSearchRowPointer o2) {
@@ -103,7 +128,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                                 return compareRows(o1, o2);
                             }
                         }
-                ));
+                    ));
+                }
             }
         }
         else {
@@ -111,28 +137,30 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             snapshotEnabled = true;
 
-            tree = new IgniteNavigableMapTree(new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, desc.memory(), desc.guard(), this) {
-                @Override protected void afterNodeUpdate_nl(long node, GridH2Row val) {
-                    final long oldKey = keyPtr(node);
+            for (int i = 0; i < segmentsCnt; i++) {
+                segments[i] = new IgniteNavigableMapTree(new GridOffHeapSnapTreeMap<GridSearchRowPointer, GridH2Row>(desc, desc, desc.memory(), desc.guard(), this) {
+                    @Override protected void afterNodeUpdate_nl(long node, GridH2Row val) {
+                        final long oldKey = keyPtr(node);
 
-                    if (val != null) {
-                        key(node, val);
+                        if (val != null) {
+                            key(node, val);
 
-                        guard.finalizeLater(new Runnable() {
-                            @Override public void run() {
-                                desc.createPointer(oldKey).decrementRefCount();
-                            }
-                        });
+                            guard.finalizeLater(new Runnable() {
+                                @Override public void run() {
+                                    desc.createPointer(oldKey).decrementRefCount();
+                                }
+                            });
+                        }
                     }
-                }
 
-                @Override protected Comparable<? super GridSearchRowPointer> comparable(Object key) {
-                    if (key instanceof ComparableRow)
-                        return (Comparable<? super SearchRow>)key;
+                    @Override protected Comparable<? super GridSearchRowPointer> comparable(Object key) {
+                        if (key instanceof ComparableRow)
+                            return (Comparable<? super SearchRow>)key;
 
-                    return super.comparable(key);
-                }
-            });
+                        return super.comparable(key);
+                    }
+                });
+            }
         }
 
         initDistributedJoinMessaging(tbl);
@@ -142,18 +170,22 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override protected IgniteTree doTakeSnapshot() {
         assert snapshotEnabled;
 
+        int seg = threadLocalSegment();
+
+        IgniteNavigableMapTree tree = segments[seg];
+
         return tree.clone();
     }
 
     /** {@inheritDoc} */
-    @Override protected final IgniteTree treeForRead() {
+    @Override protected final IgniteTree treeForRead(int seg) {
         if (!snapshotEnabled)
-            return tree;
+            return segments[seg];
 
         IgniteTree res = threadLocalSnapshot();
 
         if (res == null)
-            res = tree;
+            return segments[seg];
 
         return res;
     }
@@ -169,10 +201,12 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public long getRowCount(@Nullable Session ses) {
         IndexingQueryFilter f = threadLocalFilter();
 
+        int seg = threadLocalSegment();
+
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
             try {
-                return treeForRead().size();
+                return treeForRead(seg).size();
             } catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
             }
@@ -256,7 +290,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Row.
      */
     @Override public GridH2Row findOne(GridH2Row row) {
-        return tree.findOne(row);
+        int seg = segmentForRow(row);
+
+        return segments[seg].findOne(row);
     }
 
     /**
@@ -269,7 +305,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      */
     @SuppressWarnings("unchecked")
     private GridCursor<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
-        IgniteTree t = treeForRead();
+        int seg = threadLocalSegment();
+
+        IgniteTree t = treeForRead(seg);
 
         return doFind0(t, first, includeFirst, last, threadLocalFilter());
     }
@@ -344,22 +382,44 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        throw DbException.throwInternalError();
+        try {
+            int seg = threadLocalSegment();
+
+            IgniteTree t = treeForRead(seg);
+
+            GridH2Row row = (GridH2Row)(first ? t.findFirst() : t.findLast());
+
+            return new SingleRowCursor(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
-        return tree.put(row);
+        int seg = segmentForRow(row);
+
+        return segments[seg].put(row);
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
-        return tree.remove(comparable(row, 0));
+        GridSearchRowPointer comparable = comparable(row, 0);
+
+        int seg = segmentForRow(row);
+
+        return segments[seg].remove(comparable);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int segmentsCount() {
+        return segments.length;
     }
 
     /**
@@ -453,37 +513,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public GridH2TreeIndex rebuild() throws InterruptedException {
-        IndexColumn[] cols = getIndexColumns();
-
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), getTable(),
-            getIndexType().isUnique(), F.asList(cols));
-
-        Thread thread = Thread.currentThread();
-
-        long i = 0;
-
-        try {
-            GridCursor<GridH2Row> cursor = tree.find(null, null);
-
-            while(cursor.next()) {
-                GridH2Row row = cursor.get();
-
-                // Check for interruptions every 1000 iterations.
-                if (++i % 1000 == 0 && thread.isInterrupted())
-                    throw new InterruptedException();
-
-                idx.tree.put(row);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-
-        return idx;
-    }
-
     /**
      * Adapter from {@link NavigableMap} to {@link IgniteTree}.
      */
@@ -496,6 +525,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
          */
         private IgniteNavigableMapTree(NavigableMap<GridSearchRowPointer, GridH2Row> tree) {
             this.tree = tree;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void invoke(GridSearchRowPointer key, Object x, InvokeClosure<GridH2Row> c) {
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
@@ -524,6 +558,18 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 rows = tree.subMap(lower, false, upper, false).values();
 
             return new GridCursorIteratorWrapper<>(rows.iterator());
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row findFirst() throws IgniteCheckedException {
+            Map.Entry<GridSearchRowPointer, GridH2Row> first = tree.firstEntry();
+            return (first == null) ? null : first.getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row findLast() throws IgniteCheckedException {
+            Map.Entry<GridSearchRowPointer, GridH2Row> last = tree.lastEntry();
+            return (last == null) ? null : last.getValue();
         }
 
         /** {@inheritDoc} */

@@ -55,11 +55,12 @@ public class StripedExecutor implements ExecutorService {
     private final IgniteLogger log;
 
     /**
-     * Constructor.
-     *
      * @param cnt Count.
+     * @param igniteInstanceName Node name.
+     * @param poolName Pool name.
+     * @param log Logger.
      */
-    public StripedExecutor(int cnt, String gridName, String poolName, final IgniteLogger log) {
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log) {
         A.ensure(cnt > 0, "cnt > 0");
 
         boolean success = false;
@@ -75,7 +76,7 @@ public class StripedExecutor implements ExecutorService {
         try {
             for (int i = 0; i < cnt; i++) {
                 stripes[i] = new StripeConcurrentQueue(
-                    gridName,
+                    igniteInstanceName,
                     poolName,
                     i,
                     log);
@@ -124,11 +125,11 @@ public class StripedExecutor implements ExecutorService {
 
                 GridStringBuilder sb = new GridStringBuilder();
 
-                sb.a(">>> Possible starvation in striped pool: ")
-                    .a(stripe.thread.getName()).a(U.nl())
-                    .a(stripe.queueToString()).a(U.nl())
-                    .a("deadlock: ").a(deadlockPresent).a(U.nl())
-                    .a("completed: ").a(completedCnt).a(U.nl());
+                sb.a(">>> Possible starvation in striped pool.").a(U.nl())
+                    .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
+                    .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
+                    .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
+                    .a("    Completed: ").a(completedCnt).a(U.nl());
 
                 U.printStackTrace(
                     stripe.thread.getId(),
@@ -268,6 +269,56 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
+     * @return Completed tasks per stripe count.
+     */
+    public long[] stripesCompletedTasks() {
+        long[] res = new long[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].completedCnt;
+
+        return res;
+    }
+
+    /**
+     * @return Number of active tasks per stripe.
+     */
+    public boolean[] stripesActiveStatuses() {
+        boolean[] res = new boolean[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].active;
+
+        return res;
+    }
+
+    /**
+     * @return Number of active tasks.
+     */
+    public int activeStripesCount() {
+        int res = 0;
+
+        for (boolean status : stripesActiveStatuses()) {
+            if (status)
+                res++;
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Size of queue per stripe.
+     */
+    public int[] stripesQueueSizes() {
+        int[] res = new int[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].queueSize();
+
+        return res;
+    }
+
+    /**
      * Operation not supported.
      */
     @NotNull @Override public <T> Future<T> submit(
@@ -339,7 +390,7 @@ public class StripedExecutor implements ExecutorService {
      */
     private static abstract class Stripe implements Runnable {
         /** */
-        private final String gridName;
+        private final String igniteInstanceName;
 
         /** */
         private final String poolName;
@@ -363,18 +414,18 @@ public class StripedExecutor implements ExecutorService {
         protected Thread thread;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public Stripe(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            this.gridName = gridName;
+            this.igniteInstanceName = igniteInstanceName;
             this.poolName = poolName;
             this.idx = idx;
             this.log = log;
@@ -384,7 +435,11 @@ public class StripedExecutor implements ExecutorService {
          * Starts the stripe.
          */
         void start() {
-            thread = new IgniteThread(gridName, poolName + "-stripe-" + idx, this);
+            thread = new IgniteThread(igniteInstanceName,
+                poolName + "-stripe-" + idx,
+                this,
+                IgniteThread.GRP_IDX_UNASSIGNED,
+                idx);
 
             thread.start();
         }
@@ -433,7 +488,7 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     stopping = true;
 
                     Thread.currentThread().interrupt();
@@ -486,18 +541,18 @@ public class StripedExecutor implements ExecutorService {
         private volatile boolean parked;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public StripeConcurrentQueue(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(gridName,
+            super(igniteInstanceName,
                 poolName,
                 idx,
                 log);
@@ -566,18 +621,18 @@ public class StripedExecutor implements ExecutorService {
         private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public StripeConcurrentQueueNoPark(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(gridName,
+            super(igniteInstanceName,
                 poolName,
                 idx,
                 log);
@@ -622,18 +677,18 @@ public class StripedExecutor implements ExecutorService {
         private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public StripeConcurrentBlockingQueue(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(gridName,
+            super(igniteInstanceName,
                 poolName,
                 idx,
                 log);

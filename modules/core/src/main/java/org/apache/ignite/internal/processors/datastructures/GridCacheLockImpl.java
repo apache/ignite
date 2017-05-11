@@ -50,7 +50,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -106,6 +106,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
 
     /** Flag indicating that every operation on this lock should be interrupted. */
     private volatile boolean interruptAll;
+
+    /** Re-create flag. */
+    private volatile boolean reCreate;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -519,12 +522,18 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
-
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
-                                    throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
+                                    if (reCreate) {
+                                        val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
+
+                                        lockView.put(key, val);
+                                    }
+                                    else
+                                        throw new IgniteCheckedException("Failed to find reentrant lock with " +
+                                            "the given name: " + name);
 
                                 final long newThreadID = newThread.getId();
 
@@ -606,7 +615,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
@@ -703,7 +712,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
@@ -1050,12 +1059,14 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      * @param ctx Cache context.
+     * @param reCreate If {@code true} reentrant lock will be re-created in case it is not in cache.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
-        GridCacheContext ctx) {
+        GridCacheContext ctx,
+        boolean reCreate) {
         assert name != null;
         assert key != null;
         assert ctx != null;
@@ -1065,6 +1076,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         this.key = key;
         this.lockView = lockView;
         this.ctx = ctx;
+        this.reCreate = reCreate;
 
         log = ctx.logger(getClass());
     }
@@ -1078,7 +1090,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                 sync = CU.outTx(
                     retryTopologySafe(new Callable<Sync>() {
                         @Override public Sync call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null) {

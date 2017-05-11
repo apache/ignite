@@ -59,6 +59,7 @@ namespace Apache.Ignite.Examples.Datagrid
                     Name = CacheName,
                     ReadThrough = true,
                     WriteThrough = true,
+                    KeepBinaryInStore = false,  // Cache store works with deserialized data.
                     CacheStoreFactory = new EmployeeStoreFactory()
                 });
 

@@ -41,8 +41,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** Grid cnt. */
     private static AtomicInteger gridCnt;
 
-    /** Near-only cache grid name. */
-    private static String nearOnlyGridName;
+    /** Near-only cache Ignite instance name. */
+    private static String nearOnlyIgniteInstanceName;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -56,19 +56,19 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         super.beforeTestsStarted();
 
         if (nearEnabled())
-            grid(nearOnlyGridName).createNearCache(null, nearConfiguration());
+            grid(nearOnlyIgniteInstanceName).createNearCache(null, nearConfiguration());
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         int cnt = gridCnt.incrementAndGet();
 
         if ((cnt == gridCount() && isClientStartedLast()) || (cnt == 1 && !isClientStartedLast())) {
             cfg.setClientMode(true);
 
-            nearOnlyGridName = gridName;
+            nearOnlyIgniteInstanceName = igniteInstanceName;
         }
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -78,8 +78,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
@@ -194,7 +194,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            if (F.eq(g.name(), nearOnlyGridName)) {
+            if (F.eq(g.name(), nearOnlyIgniteInstanceName)) {
                 for (int k = 0; k < 10000; k++) {
                     IgniteCache<Object, Object> cache = g.cache(null);
 
@@ -230,9 +230,9 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @return Near only cache for this test.
      */
     protected IgniteCache<Object, Object> nearOnlyCache() {
-        assert nearOnlyGridName != null;
+        assert nearOnlyIgniteInstanceName != null;
 
-        return G.ignite(nearOnlyGridName).cache(null);
+        return G.ignite(nearOnlyIgniteInstanceName).cache(null);
     }
 
     /**
@@ -240,7 +240,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      */
     protected IgniteCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
-            if (!nearOnlyGridName.equals(grid(i).name()))
+            if (!nearOnlyIgniteInstanceName.equals(grid(i).name()))
                 return grid(i).cache(null);
         }
 

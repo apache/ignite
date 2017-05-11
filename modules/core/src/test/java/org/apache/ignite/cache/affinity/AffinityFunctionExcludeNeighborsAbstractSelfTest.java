@@ -55,8 +55,8 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         // Override node attributes in discovery spi.
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {

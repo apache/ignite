@@ -220,8 +220,8 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(ASYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);

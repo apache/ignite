@@ -115,7 +115,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -133,7 +133,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);

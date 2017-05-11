@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -166,7 +166,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.processor().unmarshal(ctx, bytes, null), bytes);
+                return new KeyCacheObjectImpl(ctx.processor().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
@@ -185,22 +185,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         buf.get(data);
 
         return toCacheObject(ctx, type, data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException {
-        int len = buf.getInt();
-
-        if (len == 0)
-            return null;
-
-        byte type = buf.get();
-
-        byte[] data = new byte[len];
-
-        buf.get(data);
-
-        return toKeyCacheObject(ctx, type, data);
     }
 
     /** {@inheritDoc} */
@@ -289,7 +273,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get partition");
+            U.error(log, "Failed to get partition", e);
 
             return  -1;
         }
@@ -300,7 +284,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         assert ccfg != null;
 
         boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
-            (GridQueryProcessor.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
+            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getName(),
@@ -382,13 +366,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         /**
          * @param key Key.
-         */
-        UserKeyCacheObjectImpl(Object key) {
-            this(key, -1);
-        }
-
-        /**
-         * @param key Key.
+         * @param part Partition.
          */
         UserKeyCacheObjectImpl(Object key, int part) {
             super(key, null, part);
@@ -396,6 +374,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         /**
          * @param key Key.
+         * @param valBytes Marshalled key.
+         * @param part Partition.
          */
         UserKeyCacheObjectImpl(Object key, byte[] valBytes, int part) {
             super(key, valBytes, part);
@@ -421,14 +401,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
                     Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
 
-                    KeyCacheObjectImpl key = new KeyCacheObjectImpl(val, valBytes);
+                    KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
 
                     key.partition(partition());
 
                     return key;
                 }
 
-                KeyCacheObjectImpl key = new KeyCacheObjectImpl(val, valBytes);
+                KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
 
                 key.partition(partition());
 

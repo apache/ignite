@@ -68,48 +68,46 @@ namespace ignite
         template<>
         struct BinaryType<ignite::examples::Organization>
         {
-            int32_t GetTypeId()
+            static int32_t GetTypeId()
             {
                 return GetBinaryStringHashCode("Organization");
             }
 
-            std::string GetTypeName()
+            static void GetTypeName(std::string& dst)
             {
-                return "Organization";
+                dst = "Organization";
             }
 
-            int32_t GetFieldId(const char* name)
+            static int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
             }
 
-            int32_t GetHashCode(ignite::examples::Organization obj)
+            static int32_t GetHashCode(ignite::examples::Organization obj)
             {
                 return 0;
             }
 
-            bool IsNull(ignite::examples::Organization obj)
+            static bool IsNull(ignite::examples::Organization obj)
             {
                 return false;
             }
 
-            ignite::examples::Organization GetNull()
+            static void GetNull(ignite::examples::Organization& dst)
             {
-                return ignite::examples::Organization("", ignite::examples::Address());
+                dst = ignite::examples::Organization("", ignite::examples::Address());
             }
 
-            void Write(BinaryWriter& writer, ignite::examples::Organization obj)
+            static void Write(BinaryWriter& writer, const ignite::examples::Organization& obj)
             {
                 writer.WriteString("name", obj.name);
                 writer.WriteObject<ignite::examples::Address>("addr", obj.addr);
             }
 
-            ignite::examples::Organization Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, ignite::examples::Organization& dst)
             {
-                std::string name = reader.ReadString("name");
-                ignite::examples::Address addr = reader.ReadObject<ignite::examples::Address>("addr");
-
-                return ignite::examples::Organization(name, addr);
+                dst.name = reader.ReadString("name");
+                dst.addr = reader.ReadObject<ignite::examples::Address>("addr");
             }
         };
     }

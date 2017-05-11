@@ -42,7 +42,7 @@
             Configure optimized marshaller.
         -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
+            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
                 <!--
                     For better performance set this property to true in case
                     all marshalled classes implement java.io.Serializable.

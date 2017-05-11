@@ -177,7 +177,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task session processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task session processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  sesMapSize: " + sesMap.size());
     }
 }

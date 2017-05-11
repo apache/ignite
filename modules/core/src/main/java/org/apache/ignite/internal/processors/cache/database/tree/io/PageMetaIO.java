@@ -44,13 +44,13 @@ public class PageMetaIO extends PageIO {
     private static final int LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF = NEXT_SNAPSHOT_TAG_OFF + 8;
 
     /** Last allocated index offset. */
-    private static final int LAST_ALLOCATED_INDEX_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF + 8;
+    private static final int LAST_PAGE_COUNT_OFF = LAST_SUCCESSFUL_FULL_SNAPSHOT_TAG_OFF + 8;
 
     /** Candidate allocated index offset. */
-    private static final int CANDIDATE_ALLOCATED_INDEX_OFF = LAST_ALLOCATED_INDEX_OFF + 4;
+    private static final int CANDIDATE_PAGE_COUNT_OFF = LAST_PAGE_COUNT_OFF + 4;
 
     /** End of page meta. */
-    static final int END_OF_PAGE_META = CANDIDATE_ALLOCATED_INDEX_OFF + 4;
+    static final int END_OF_PAGE_META = CANDIDATE_PAGE_COUNT_OFF + 4;
 
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
@@ -82,8 +82,8 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulSnapshotId(pageAddr, 0);
         setNextSnapshotTag(pageAddr, 1);
         setLastSuccessfulSnapshotTag(pageAddr, 0);
-        setLastAllocatedIndex(pageAddr, 0);
-        setCandidateAllocatedIndex(pageAddr, 0);
+        setLastPageCount(pageAddr, 0);
+        setCandidatePageCount(pageAddr, 0);
     }
 
     /**
@@ -180,38 +180,38 @@ public class PageMetaIO extends PageIO {
 
     /**
      * @param pageAddr Page address.
-     * @param lastAllocatedIdx Last allocated index.
+     * @param pageCnt Last allocated index.
      */
-    public void setLastAllocatedIndex(long pageAddr, int lastAllocatedIdx) {
-        PageUtils.putInt(pageAddr, LAST_ALLOCATED_INDEX_OFF, lastAllocatedIdx);
+    public void setLastPageCount(long pageAddr, int pageCnt) {
+        PageUtils.putInt(pageAddr, LAST_PAGE_COUNT_OFF, pageCnt);
     }
 
     /**
      * @param buf Buffer.
      */
-    public int getLastAllocatedIndex(@NotNull ByteBuffer buf) {
-        return buf.getInt(LAST_ALLOCATED_INDEX_OFF);
+    public int getLastPageCount(@NotNull ByteBuffer buf) {
+        return buf.getInt(LAST_PAGE_COUNT_OFF);
     }
 
     /**
      * @param pageAddr Page address.
      */
-    public int getLastAllocatedIndex(long pageAddr) {
-        return PageUtils.getInt(pageAddr, LAST_ALLOCATED_INDEX_OFF);
+    public int getLastPageCount(long pageAddr) {
+        return PageUtils.getInt(pageAddr, LAST_PAGE_COUNT_OFF);
     }
 
     /**
      * @param pageAddr Page address.
-     * @param previousAllocatedIdx Last allocated index.
+     * @param pageCnt Last page count.
      */
-    public void setCandidateAllocatedIndex(long pageAddr, int previousAllocatedIdx) {
-        PageUtils.putInt(pageAddr, CANDIDATE_ALLOCATED_INDEX_OFF, previousAllocatedIdx);
+    public void setCandidatePageCount(long pageAddr, int pageCnt) {
+        PageUtils.putInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF, pageCnt);
     }
 
     /**
      * @param pageAddr Page address.
      */
-    public int getCandidateAllocatedIndex(long pageAddr) {
-        return PageUtils.getInt(pageAddr, CANDIDATE_ALLOCATED_INDEX_OFF);
+    public int getCandidatePageCount(long pageAddr) {
+        return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
     }
 }

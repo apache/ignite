@@ -20,9 +20,8 @@ IgniteTargetInStreamOutLong @18
 IgniteTargetOutStream @19 
 IgniteTargetInStreamOutStream @20 
 IgniteTargetInObjectStreamOutObjectStream @21
-IgniteTargetListenFuture @22 
-IgniteTargetListenFutureForOperation @23 
 IgniteTargetInLongOutLong @24
+IgniteTargetInStreamAsync @25
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 
 IgniteProcessorEvents @66 
@@ -34,6 +33,7 @@ IgniteCreateContext @84
 IgniteDeleteContext @85 
 IgniteDestroyJvm @86 
 IgniteTargetOutObject @91 
+IgniteProcessorExtension @96
 IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
 IgniteProcessorCreateCacheFromConfig @114

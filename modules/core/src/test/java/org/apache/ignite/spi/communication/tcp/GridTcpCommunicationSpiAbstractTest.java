@@ -111,8 +111,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
                 if (client0 == null)
                     return;
 
-                info("Check failed for SPI [grid=" +
-                    GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "gridName") +
+                info("Check failed for SPI [igniteInstanceName=" +
+                    GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName") +
                     ", client=" + client0 +
                     ", spi=" + spi + ']');
 

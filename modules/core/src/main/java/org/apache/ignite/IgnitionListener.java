@@ -29,7 +29,7 @@ public interface IgnitionListener extends EventListener {
     /**
      * Listener for grid factory state change notifications.
      *
-     * @param name Grid name ({@code null} for default un-named grid).
+     * @param name Ignite instance name ({@code null} for default un-named Ignite instance).
      * @param state New state.
      */
     public void onStateChange(@Nullable String name, IgniteState state);

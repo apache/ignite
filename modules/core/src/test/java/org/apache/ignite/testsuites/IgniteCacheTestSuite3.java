@@ -21,9 +21,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheStartupInDeploymentModesTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymentSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheDeploymentOffHeapSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheDeploymentOffHeapValuesSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReferenceCleanupSelfTest;
@@ -46,8 +43,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedTransformWriteThroughBatchUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteTxReentryColocatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicNearEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheValueConsistencyAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PDisabledByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearPartitionedP2PEnabledByteArrayValuesSelfTest;
@@ -80,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheSyncReplicatedPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadLifecycleSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadStartStopEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheDaemonNodeLocalSelfTest;
@@ -99,9 +93,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         // Value consistency tests.
         suite.addTestSuite(GridCacheValueConsistencyAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicNearEnabledSelfTest.class);
-        suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyTransactionalSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyTransactionalNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueBytesPreloadingSelfTest.class);
@@ -122,7 +114,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxSingleThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedPreloadOffHeapSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
 
@@ -138,8 +129,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
-        // TODO TODO GG-11140.
-        // suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadEventsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadStartStopEventsSelfTest.class);
@@ -184,8 +174,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         // Memory leak tests.
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
-        // TODO GG-11140.
-        // suite.addTestSuite(GridCacheReloadSelfTest.class);
+        suite.addTestSuite(GridCacheReloadSelfTest.class);
 
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
 
@@ -196,8 +185,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTest(IgniteTopologyValidatorTestSuit.suite());
 
         // Eviction.
-        // TODO GG-11140.
-        // suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
+        suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
 
         // Iterators.
         suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());

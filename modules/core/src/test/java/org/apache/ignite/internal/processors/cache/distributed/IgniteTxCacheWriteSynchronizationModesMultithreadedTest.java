@@ -84,8 +84,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private static final int MULTITHREADED_TEST_KEYS = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -263,8 +263,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                             tx.commit();
                         }
                     }
-                    catch (CacheException | IgniteException e) {
-                        // Ignore.
+                    catch (CacheException | IgniteException ignored) {
+                        // No-op.
                     }
                 }
             });
@@ -290,10 +290,10 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                             break;
                         }
-                        catch (TransactionOptimisticException e) {
+                        catch (TransactionOptimisticException ignored) {
                            // Retry.
                         }
-                        catch (CacheException | IgniteException e) {
+                        catch (CacheException | IgniteException ignored) {
                             break;
                         }
                     }

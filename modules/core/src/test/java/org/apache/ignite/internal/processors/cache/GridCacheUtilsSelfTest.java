@@ -75,7 +75,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
          * @return {@code False}.
          */
         @SuppressWarnings("CovariantEquals")
-        public boolean equals(String obj) {
+        @Override public boolean equals(Object obj) {
             return false;
         }
     }
@@ -142,10 +142,6 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectBuilderImpl binBuilder = new BinaryObjectBuilderImpl(binaryContext(),
             EqualsAndHashCode.class.getName());
-
-        assertThrowsForInvalidKey(binBuilder.build());
-
-        binBuilder.hashCode(0xFE12);
 
         BinaryObject binObj = binBuilder.build();
 

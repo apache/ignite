@@ -40,7 +40,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,8 +56,8 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(client);
 
@@ -75,7 +74,6 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
 
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(atomicityMode);
-        cc.setAtomicWriteOrderMode(PRIMARY);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setReadThrough(true);

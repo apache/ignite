@@ -54,7 +54,7 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
         /** {@inheritDoc} */
         @Override protected Void run(String igfsName) {
             try {
-                ignite.fileSystem(igfsName).format();
+                ignite.fileSystem(igfsName).clear();
             }
             catch (IllegalArgumentException iae) {
                 throw new IgniteException("Failed to format IGFS: " + igfsName, iae);

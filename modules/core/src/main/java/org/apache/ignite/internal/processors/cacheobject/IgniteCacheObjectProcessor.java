@@ -142,7 +142,10 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      *        before stored in cache.
      * @return Cache key object.
      */
-    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, @Nullable GridCacheContext cctx, Object obj, boolean userObj);
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx,
+        @Nullable GridCacheContext cctx,
+        Object obj,
+        boolean userObj);
 
     /**
      * @param ctx Cache context.
@@ -175,13 +178,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Cache object.
      */
     public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf);
-
-    /**
-     * @param ctx Cache context.
-     * @param buf Buffer to read from.
-     * @return Cache object.
-     */
-    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.

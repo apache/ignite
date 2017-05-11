@@ -171,20 +171,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetAndRemoveAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
 
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
-
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
         assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
 
-        for (int i = 0; i < KEY_CNT; i++) {
-            cacheAsync.getAndRemove(i);
-
-            IgniteFuture<Object> fut = cacheAsync.future();
-
-            fut.get();
-        }
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.getAndRemoveAsync(i).get();
 
         assert cache.localMetrics().getAverageRemoveTime() > 0;
     }
@@ -194,7 +187,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testRemoveAsyncValAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         Integer key = 0;
 
@@ -210,9 +202,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.put(key, key);
 
-        cacheAsync.remove(key, key);
-
-        IgniteFuture<Boolean> fut = cacheAsync.future();
+        IgniteFuture<Boolean> fut = cache.removeAsync(key, key);
 
         assertTrue(fut.get());
 
@@ -265,7 +255,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testRemoveAllAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         Set<Integer> keys = new LinkedHashSet<>();
 
@@ -282,9 +271,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
 
-        cacheAsync.removeAll(keys);
-
-        IgniteFuture<?> fut = cacheAsync.future();
+        IgniteFuture<?> fut = cache.removeAllAsync(keys);
 
         fut.get();
 
@@ -342,7 +329,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testGetAllAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
@@ -357,9 +343,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         keys.add(2);
         keys.add(3);
 
-        cacheAsync.getAll(keys);
-
-        IgniteFuture<Map<Object, Object>> fut = cacheAsync.future();
+        IgniteFuture<Map<Object, Object>> fut = cache.getAllAsync(keys);
 
         fut.get();
 
@@ -390,14 +374,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testPutAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
         assertEquals(0, cache.localMetrics().getCachePuts());
 
-        cacheAsync.put(1, 1);
-
-        cacheAsync.future().get();
+        cache.putAsync(1, 1).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -409,7 +390,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testGetAndPutAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         Integer key = null;
 
@@ -424,11 +404,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
         assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
-        cacheAsync.getAndPut(key, key);
-
-        IgniteFuture<?> fut = cacheAsync.future();
-
-        fut.get();
+        cache.getAndPutAsync(key, key).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -441,7 +417,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testPutIfAbsentAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         Integer key = null;
 
@@ -455,11 +430,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
 
-        cacheAsync.putIfAbsent(key, key);
-
-        IgniteFuture<Boolean> fut = cacheAsync.future();
-
-        fut.get();
+        cache.putIfAbsentAsync(key, key).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -471,7 +442,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      */
     public void testGetAndPutIfAbsentAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         Integer key = null;
 
@@ -485,11 +455,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
 
-        cacheAsync.getAndPutIfAbsent(key, key);
-
-        IgniteFuture<?> fut = cacheAsync.future();
-
-        fut.get();
+        cache.getAndPutIfAbsentAsync(key, key).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 

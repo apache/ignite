@@ -71,8 +71,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -90,6 +90,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(EVICT_CACHE_SIZE);
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         FifoEvictionPolicy nearPlc = new FifoEvictionPolicy();
         nearPlc.setMaxSize(EVICT_CACHE_SIZE);

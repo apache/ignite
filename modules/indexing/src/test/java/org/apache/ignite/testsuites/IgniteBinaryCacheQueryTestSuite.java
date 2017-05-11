@@ -22,8 +22,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**

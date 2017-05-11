@@ -33,11 +33,13 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
+import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -48,7 +50,6 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 /**
  * Tests H2 Table.
@@ -105,8 +106,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
+                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
-                idxs.add(new GridH2TreeIndex(HASH, tbl, true, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
                 idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
 
@@ -284,23 +285,13 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Dumps all table rows for index.
-     *
-     * @param idx Index.
-     */
-    private void dumpRows(GridH2TreeIndex idx) throws IgniteCheckedException {
-        GridCursor<GridH2Row> cursor = idx.rows();
-
-        while (cursor.next())
-            System.out.println(cursor.get().toString());
-    }
-
-    /**
      * Multithreaded indexes consistency test.
      *
      * @throws Exception If failed.
      */
     public void testIndexesMultiThreadedConsistency() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-3484");
+
         final int threads = 19;
         final int iterations = 1500;
 
@@ -521,45 +512,53 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         assertEquals(ids.length - deleted.get(), rs.getInt(1));
     }
 
+
     /**
      * @throws Exception If failed.
      */
-    public void testRebuildIndexes() throws Exception {
-        ArrayList<GridH2IndexBase> idxsBefore = tbl.indexes();
+    public void testIndexFindFirstOrLast() throws Exception {
+        Index index = tbl.getIndexes().get(2);
+        assertTrue(index instanceof GridH2TreeIndex);
+        assertTrue(index.canGetFirstOrLast());
 
-        assertEquals(3, idxsBefore.size());
+        //find first on empty data
+        Cursor cursor = index.findFirstOrLast(null, true);
+        assertFalse(cursor.next());
+        assertNull(cursor.get());
 
+        //find last on empty data
+        cursor = index.findFirstOrLast(null, false);
+        assertFalse(cursor.next());
+        assertNull(cursor.get());
+
+        //fill with data
+        int rows = 100;
+        long t = System.currentTimeMillis();
         Random rnd = new Random();
+        UUID min = null;
+        UUID max = null;
 
-        for (int i = 0; i < MAX_X; i++) {
+        for (int i = 0 ; i < rows; i++) {
             UUID id = UUID.randomUUID();
-
-            GridH2Row row = row(id, System.currentTimeMillis(), rnd.nextBoolean() ? id.toString() :
-                    UUID.randomUUID().toString(), rnd.nextInt(100));
-
-            tbl.doUpdate(row, false);
+            if (min == null || id.compareTo(min) < 0)
+                min = id;
+            if (max == null || id.compareTo(max) > 0)
+                max = id;
+            GridH2Row row = row(id, t++, id.toString(), rnd.nextInt(100));
+            ((GridH2TreeIndex)index).put(row);
         }
 
-        for (GridH2IndexBase idx : idxsBefore)
-            assertEquals(MAX_X, idx.getRowCountApproximation());
+        //find first
+        cursor = index.findFirstOrLast(null, true);
+        assertTrue(cursor.next());
+        assertEquals(min, cursor.get().getValue(0).getObject());
+        assertFalse(cursor.next());
 
-        tbl.rebuildIndexes();
-
-        ArrayList<GridH2IndexBase> idxsAfter = tbl.indexes();
-
-        assertEquals(3, idxsAfter.size());
-
-        for (int i = 0; i < 3; i++) {
-            GridH2IndexBase idxBefore = idxsBefore.get(i);
-            GridH2IndexBase idxAfter = idxsAfter.get(i);
-
-            assertNotSame(idxBefore, idxAfter);
-            assertEquals(idxBefore.getName(), idxAfter.getName());
-            assertSame(idxBefore.getTable(), idxAfter.getTable());
-            assertEquals(idxBefore.getRowCountApproximation(), idxAfter.getRowCountApproximation());
-            assertEquals(idxBefore.getIndexType().isUnique(), idxAfter.getIndexType().isUnique());
-            Assert.assertArrayEquals(idxBefore.getColumns(), idxAfter.getColumns());
-        }
+        //find last
+        cursor = index.findFirstOrLast(null, false);
+        assertTrue(cursor.next());
+        assertEquals(max, cursor.get().getValue(0).getObject());
+        assertFalse(cursor.next());
     }
 
     /**

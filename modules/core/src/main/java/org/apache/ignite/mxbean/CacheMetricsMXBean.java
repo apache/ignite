@@ -96,10 +96,6 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public String name();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Number of entries that was swapped to disk.")
-    public long getOverflowSize();
-
-    /** {@inheritDoc} */
     @MXBeanDescription("Number of gets from off-heap memory.")
     public long getOffHeapGets();
 
@@ -150,42 +146,6 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     /** {@inheritDoc} */
     @MXBeanDescription("Off-heap memory maximum size.")
     public long getOffHeapMaxSize();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of gets from swap.")
-    public long getSwapGets();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of puts to swap.")
-    public long getSwapPuts();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of removed entries from swap.")
-    public long getSwapRemovals();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of hits on swap.")
-    public long getSwapHits();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of misses on swap.")
-    public long getSwapMisses();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Percentage of hits on swap.")
-    public float getSwapHitPercentage();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Percentage of misses on swap.")
-    public float getSwapMissPercentage();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of entries stored in swap.")
-    public long getSwapEntriesCount();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Size of swap.")
-    public long getSwapSize();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Number of non-null values in the cache.")

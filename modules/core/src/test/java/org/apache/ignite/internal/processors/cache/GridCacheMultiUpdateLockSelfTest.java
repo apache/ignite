@@ -52,8 +52,8 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(name);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

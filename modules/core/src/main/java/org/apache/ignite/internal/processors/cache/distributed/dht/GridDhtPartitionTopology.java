@@ -26,10 +26,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -168,7 +169,7 @@ public interface GridDhtPartitionTopology {
     /**
      * @return Local IDs.
      */
-    public GridDhtPartitionMap2 localPartitionMap();
+    public GridDhtPartitionMap localPartitionMap();
 
     /**
      * @param nodeId Node ID.
@@ -188,6 +189,14 @@ public interface GridDhtPartitionTopology {
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
     public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
+
+    /**
+     * @param p Partition ID.
+     * @param affAssignment Assignments.
+     * @param affNodes Node assigned for given partition by affinity.
+     * @return Collection of all nodes responsible for this partition with primary node being first.
+     */
+    @Nullable public List<ClusterNode> nodes(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes);
 
     /**
      * @param p Partition ID.
@@ -230,7 +239,7 @@ public interface GridDhtPartitionTopology {
      * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
+    public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionFullMap partMap,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap,
         Set<Integer> partsToReload);
@@ -241,8 +250,8 @@ public interface GridDhtPartitionTopology {
      * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap2 parts,
+    @Nullable public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionMap parts,
         @Nullable Map<Integer, T2<Long, Long>> cntrMap);
 
     /**
@@ -295,7 +304,7 @@ public interface GridDhtPartitionTopology {
      * @param nodeId Node to get partitions for.
      * @return Partitions for node.
      */
-    @Nullable public GridDhtPartitionMap2 partitions(UUID nodeId);
+    @Nullable public GridDhtPartitionMap partitions(UUID nodeId);
 
     /**
      * Prints memory stats.

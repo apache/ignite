@@ -1,6 +1,26 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.9
+---------------------------------------
+Ignite:
+* Added Data streamer mode for DML
+* Added Discovery SPI Implementation for Ignite Kubernetes Pods
+* SQL: Query can utilize multiple threads
+* SQL: Improved distributed SQL support
+* Benchmarking simplified and automated
+* Fixed licenses generation during build
+* ignite-spark module upgraded to Spark 2.0
+
+Ignite.NET:
+* DML support
+* TransactionScope API for Ignite transactions support
+
+Ignite CPP:
+* DML support
+* Implemented LoadCache
+* ContinuousQuery support
+
 Apache Ignite In-Memory Data Fabric 1.8
 ---------------------------------------
 Ignite:

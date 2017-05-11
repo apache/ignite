@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]

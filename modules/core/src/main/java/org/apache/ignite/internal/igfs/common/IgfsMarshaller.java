@@ -131,7 +131,7 @@ public class IgfsMarshaller {
                     writePath(out, req.destinationPath());
                     out.writeBoolean(req.flag());
                     out.writeBoolean(req.colocate());
-                    U.writeStringMap(out, req.properties());
+                    IgfsUtils.writeStringMap(out, req.properties());
 
                     // Minor optimization.
                     if (msg.command() == AFFINITY) {
@@ -178,6 +178,12 @@ public class IgfsMarshaller {
                     IgfsControlResponse res = (IgfsControlResponse)msg;
 
                     res.writeExternal(out);
+
+                    break;
+                }
+
+                case MODE_RESOLVER: {
+                    out.write(hdr);
 
                     break;
                 }
@@ -248,7 +254,7 @@ public class IgfsMarshaller {
                     req.destinationPath(readPath(in));
                     req.flag(in.readBoolean());
                     req.colocate(in.readBoolean());
-                    req.properties(U.readStringMap(in));
+                    req.properties(IgfsUtils.readStringMap(in));
 
                     // Minor optimization.
                     if (cmd == AFFINITY) {
@@ -295,6 +301,12 @@ public class IgfsMarshaller {
                     res.readExternal(in);
 
                     msg = res;
+
+                    break;
+                }
+
+                case MODE_RESOLVER: {
+                    msg = new IgfsModeResolverRequest();
 
                     break;
                 }

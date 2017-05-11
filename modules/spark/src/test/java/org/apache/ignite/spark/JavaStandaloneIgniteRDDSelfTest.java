@@ -35,11 +35,10 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.List;
@@ -221,12 +220,12 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             cache.savePairs(sc.parallelize(F.range(0, 1001), 2).mapToPair(INT_TO_ENTITY_F));
 
-            DataFrame df =
+            Dataset<Row> df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
 
             df.printSchema();
 
-            Row[] res = df.collect();
+            Row[] res = (Row[])df.collect();
 
             assertEquals("Invalid result length", 1, res.length);
             assertEquals("Invalid result", 50, res[0].get(0));
@@ -235,11 +234,11 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             Column exp = new Column("NAME").equalTo("name50").and(new Column("SALARY").equalTo(5000));
 
-            DataFrame df0 = cache.sql("select id, name, salary from Entity").where(exp);
+            Dataset<Row> df0 = cache.sql("select id, name, salary from Entity").where(exp);
 
             df.printSchema();
 
-            Row[] res0 = df0.collect();
+            Row[] res0 = (Row[])df0.collect();
 
             assertEquals("Invalid result length", 1, res0.length);
             assertEquals("Invalid result", 50, res0[0].get(0));
@@ -274,25 +273,25 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
                 Object val = GridTestUtils.getFieldValue(e, fieldName);
 
-                DataFrame df = cache.sql(
+                Dataset<Row> df = cache.sql(
                     String.format("select %s from EntityTestAllTypeFields where %s = ?", fieldName, fieldName),
                     val);
 
                 if (val instanceof BigDecimal) {
-                    Object res = df.collect()[0].get(0);
+                    Object res = ((Row[])df.collect())[0].get(0);
 
                     assertTrue(String.format("+++ Fail on %s field", fieldName),
                         ((Comparable<BigDecimal>)val).compareTo((BigDecimal)res) == 0);
                 }
                 else if (val instanceof java.sql.Date)
                     assertEquals(String.format("+++ Fail on %s field", fieldName),
-                        val.toString(), df.collect()[0].get(0).toString());
+                        val.toString(), ((Row[])df.collect())[0].get(0).toString());
                 else if (val.getClass().isArray())
                     assertTrue(String.format("+++ Fail on %s field", fieldName), 1 <= df.count());
                 else {
-                    assertTrue(String.format("+++ Fail on %s field", fieldName), df.collect().length > 0);
-                    assertTrue(String.format("+++ Fail on %s field", fieldName), df.collect()[0].size() > 0);
-                    assertEquals(String.format("+++ Fail on %s field", fieldName), val, df.collect()[0].get(0));
+                    assertTrue(String.format("+++ Fail on %s field", fieldName), ((Row[])df.collect()).length > 0);
+                    assertTrue(String.format("+++ Fail on %s field", fieldName), ((Row[])df.collect())[0].size() > 0);
+                    assertEquals(String.format("+++ Fail on %s field", fieldName), val, ((Row[])df.collect())[0].get(0));
                 }
 
                 info(String.format("+++ Query on the filed: %s : %s passed", fieldName, f.getType().getSimpleName()));
@@ -304,11 +303,11 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param client Client.
      * @return Cache configuration.
      */
-    private static IgniteConfiguration getConfiguration(String gridName, boolean client) throws Exception {
+    private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -323,7 +322,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
     }

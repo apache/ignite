@@ -32,7 +32,16 @@
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
     type hnd = hnds->field; \
     if (hnd) \
-        hnd(hnds->target); \
+    { \
+        try \
+        { \
+            hnd(hnds->target); \
+        } \
+        catch (std::exception& err) \
+        { \
+            ThrowToJava(jniEnv, err.what()); \
+        } \
+    } \
     else \
         ThrowOnMissingHandler(jniEnv); \
 }
@@ -41,7 +50,16 @@
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
     type hnd = hnds->field; \
     if (hnd) \
-        hnd(hnds->target, __VA_ARGS__); \
+    { \
+        try \
+        { \
+            hnd(hnds->target, __VA_ARGS__); \
+        } \
+        catch (std::exception& err) \
+        { \
+            ThrowToJava(jniEnv, err.what()); \
+        } \
+    } \
     else \
         ThrowOnMissingHandler(jniEnv); \
 }
@@ -50,7 +68,17 @@
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
     type hnd = hnds->field; \
     if (hnd) \
-        return hnd(hnds->target, __VA_ARGS__); \
+    { \
+        try \
+        { \
+            return hnd(hnds->target, __VA_ARGS__); \
+        } \
+        catch (std::exception& err) \
+        { \
+            ThrowToJava(jniEnv, err.what()); \
+            return 0; \
+        } \
+    } \
     else \
     { \
         ThrowOnMissingHandler(jniEnv); \
@@ -212,6 +240,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_EVENTS = JniMethod("events", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_EXTENSION = JniMethod("extension", "(I)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
@@ -229,8 +258,7 @@ namespace ignite
             JniMethod M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_OBJECT_STREAM = JniMethod("inObjectStreamOutObjectStream", "(ILjava/lang/Object;JJ)Ljava/lang/Object;", false);
             JniMethod M_PLATFORM_TARGET_OUT_STREAM = JniMethod("outStream", "(IJ)V", false);
             JniMethod M_PLATFORM_TARGET_OUT_OBJECT = JniMethod("outObject", "(I)Ljava/lang/Object;", false);
-            JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE = JniMethod("listenFuture", "(JI)V", false);
-            JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION = JniMethod("listenFutureForOperation", "(JII)V", false);
+            JniMethod M_PLATFORM_TARGET_IN_STREAM_ASYNC = JniMethod("inStreamAsync", "(IJ)V", false);
 
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
@@ -355,6 +383,21 @@ namespace ignite
                 env->ThrowNew(cls, "Callback handler is not set in native platform.");
 
                 return 0;
+            }
+
+            /**
+             * Throw generic exception to Java in case of native exception. As JniContext is not available at
+             * this point, we have to obtain exception details from scratch. This is not critical from performance
+             * perspective because such exception is usually denotes fatal condition.
+             *
+             * @param env JNI environment.
+             * @param msg Message.
+             */
+            void ThrowToJava(JNIEnv* env, const char* msg)
+            {
+                jclass cls = env->FindClass(C_IGNITE_EXCEPTION);
+
+                env->ThrowNew(cls, msg);
             }
 
             char* StringToChars(JNIEnv* env, jstring str, int* len) {
@@ -528,6 +571,7 @@ namespace ignite
                 m_PlatformProcessor_events = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EVENTS);
                 m_PlatformProcessor_services = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_SERVICES);
                 m_PlatformProcessor_extensions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSIONS);
+                m_PlatformProcessor_extension = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSION);
                 m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
                 m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
                 m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
@@ -545,8 +589,7 @@ namespace ignite
                 m_PlatformTarget_outObject = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_OUT_OBJECT);
                 m_PlatformTarget_inStreamOutStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_STREAM);
                 m_PlatformTarget_inObjectStreamOutObjectStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_OBJECT_STREAM);
-                m_PlatformTarget_listenFuture = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE);
-                m_PlatformTarget_listenFutureForOperation = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION);
+                m_PlatformTarget_inStreamAsync = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_ASYNC);
 
                 c_PlatformUtils = FindClass(env, C_PLATFORM_UTILS);
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
@@ -935,12 +978,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            jobject JniContext::ProcessorProjection(jobject obj) {
+            jobject JniContext::ProcessorProjection(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject prj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_projection);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, prj);
             }
@@ -1152,6 +1195,17 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
+            jobject JniContext::ProcessorExtension(jobject obj, int id)
+            {
+                JNIEnv* env = Attach();
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_extension, id);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
             jobject JniContext::ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create)
             {
                 JNIEnv* env = Attach();
@@ -1330,20 +1384,12 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::TargetListenFuture(jobject obj, long long futId, int typ) {
+            void JniContext::TargetInStreamAsync(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamAsync, opType, memPtr);
 
-                ExceptionCheck(env);
-            }
-
-            void JniContext::TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
-
-                ExceptionCheck(env);
+                ExceptionCheck(env, err);
             }
 
             jobject JniContext::CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* err) {

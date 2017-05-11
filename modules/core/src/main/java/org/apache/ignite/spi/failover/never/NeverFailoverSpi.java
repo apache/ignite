@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.FailoverSpi;
@@ -32,7 +33,8 @@ import org.apache.ignite.spi.failover.FailoverSpi;
 /**
  * This class provides failover SPI implementation that never fails over. This implementation
  * never fails over a failed job by always returning {@code null} out of
- * {@link org.apache.ignite.spi.failover.FailoverSpi#failover(org.apache.ignite.spi.failover.FailoverContext, List)} method.
+ * {@link org.apache.ignite.spi.failover.FailoverSpi#failover(org.apache.ignite.spi.failover.FailoverContext, List)}
+ * method.
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -54,27 +56,28 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  * Here is an example on how to configure grid with {@link NeverFailoverSpi} from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.failover.never.NeverFailoverSpi"/&gt;
+ * &lt;bean class="org.apache.ignite.spi.failover.never.NeverFailoverSpi"/&gt;
  * &lt;/property&gt;
  * </pre>
  * <p>
  * <img src="http://ignite.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ *
  * @see org.apache.ignite.spi.failover.FailoverSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, NeverFailoverSpiMBean {
+public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     /** Injected grid logger. */
     @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(gridName, this, NeverFailoverSpiMBean.class);
+        registerMBean(igniteInstanceName, new NeverFailoverSpiMBeanImpl(this), NeverFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -93,14 +96,31 @@ public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, N
     /** {@inheritDoc} */
     @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> top) {
         U.warn(log, "Returning 'null' node for failed job (failover will not happen) [job=" +
-            ctx.getJobResult().getJob() + ", task=" +  ctx.getTaskSession().getTaskName() +
+            ctx.getJobResult().getJob() + ", task=" + ctx.getTaskSession().getTaskName() +
             ", sessionId=" + ctx.getTaskSession().getId() + ']');
 
         return null;
     }
 
     /** {@inheritDoc} */
+    @Override public NeverFailoverSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NeverFailoverSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for NeverFailoverSpi.
+     */
+    private class NeverFailoverSpiMBeanImpl extends IgniteSpiMBeanAdapter implements NeverFailoverSpiMBean {
+        /** {@inheritDoc} */
+        NeverFailoverSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
     }
 }

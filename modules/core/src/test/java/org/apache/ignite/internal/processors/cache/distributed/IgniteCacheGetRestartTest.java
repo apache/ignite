@@ -68,8 +68,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -83,7 +83,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
             client.remove();
         }
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }

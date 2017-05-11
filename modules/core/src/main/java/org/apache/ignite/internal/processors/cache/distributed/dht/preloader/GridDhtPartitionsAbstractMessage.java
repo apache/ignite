@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -33,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  * Request for single partition info.
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
-    /** */
-    public static final IgniteProductVersion PART_MAP_COMPRESS_SINCE = IgniteProductVersion.fromString("1.6.11");
-
     /** */
     protected static final byte COMPRESSED_FLAG_MASK = 1;
 

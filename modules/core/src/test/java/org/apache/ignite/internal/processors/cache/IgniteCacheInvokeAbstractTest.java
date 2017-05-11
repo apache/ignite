@@ -178,13 +178,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             checkValue(key, 63);
 
-            IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
-
-            assertTrue(asyncCache.isAsync());
-
-            assertNull(asyncCache.invoke(key, incProcessor));
-
-            IgniteFuture<Integer> fut = asyncCache.future();
+            IgniteFuture<Integer> fut = cache.invokeAsync(key, incProcessor);
 
             assertNotNull(fut);
 
@@ -484,13 +478,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 checkValue(key, null);
         }
 
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
-
-        assertTrue(asyncCache.isAsync());
-
-        assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
-
-        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
+        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = cache.invokeAllAsync(keys, new IncrementProcessor());
 
         Map<Integer, EntryProcessorResult<Integer>> resMap = fut.get();
 
@@ -509,9 +497,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             invokeMap.put(key, incProcessor);
 
-        assertNull(asyncCache.invokeAll(invokeMap));
-
-        fut = asyncCache.future();
+        fut = cache.invokeAllAsync(invokeMap);
 
         resMap = fut.get();
 

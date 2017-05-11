@@ -377,11 +377,11 @@ object IgniteRDDSpec {
     /**
      * Gets ignite configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param client Client mode flag.
      * @return Ignite configuration.
      */
-    def configuration(gridName: String, client: Boolean): IgniteConfiguration = {
+    def configuration(igniteInstanceName: String, client: Boolean): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
         val discoSpi = new TcpDiscoverySpi
@@ -399,7 +399,7 @@ object IgniteRDDSpec {
 
         cfg.setClientMode(client)
 
-        cfg.setGridName(gridName)
+        cfg.setIgniteInstanceName(igniteInstanceName)
 
         cfg
     }

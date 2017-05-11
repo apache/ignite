@@ -32,8 +32,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
@@ -158,9 +159,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Binarizable job.
         /// </summary>
-        public class InjectionJobBinarizable : InjectionJob
+        public class InjectionJobBinarizable : InjectionJob, IBinarizable
         {
-            // No-op.
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                // No-op.
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                // No-op.
+            }
         }
 
         /// <summary>

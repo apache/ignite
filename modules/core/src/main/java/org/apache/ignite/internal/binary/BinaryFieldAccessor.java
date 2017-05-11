@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -91,6 +92,7 @@ public abstract class BinaryFieldAccessor {
             case UUID:
             case DATE:
             case TIMESTAMP:
+            case TIME:
             case BYTE_ARR:
             case SHORT_ARR:
             case INT_ARR:
@@ -104,6 +106,7 @@ public abstract class BinaryFieldAccessor {
             case UUID_ARR:
             case DATE_ARR:
             case TIMESTAMP_ARR:
+            case TIME_ARR:
             case ENUM_ARR:
             case OBJECT_ARR:
             case BINARY_OBJ:
@@ -544,6 +547,11 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
+                case TIME:
+                    writer.writeTimeField((Time)val);
+
+                    break;
+
                 case BYTE_ARR:
                     writer.writeByteArrayField((byte[])val);
 
@@ -606,6 +614,11 @@ public abstract class BinaryFieldAccessor {
 
                 case TIMESTAMP_ARR:
                     writer.writeTimestampArrayField((Timestamp[])val);
+
+                    break;
+
+                case TIME_ARR:
+                    writer.writeTimeArrayField((Time[])val);
 
                     break;
 
@@ -745,6 +758,11 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
+                case TIME:
+                    val = reader.readTime(id);
+
+                    break;
+
                 case BYTE_ARR:
                     val = reader.readByteArray(id);
 
@@ -807,6 +825,11 @@ public abstract class BinaryFieldAccessor {
 
                 case TIMESTAMP_ARR:
                     val = reader.readTimestampArray(id);
+
+                    break;
+
+                case TIME_ARR:
+                    val = reader.readTimeArray(id);
 
                     break;
 

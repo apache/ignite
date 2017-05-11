@@ -35,7 +35,8 @@ public final class GridSqlKeyword extends GridSqlElement {
 
     /** */
     private GridSqlKeyword(String keyword) {
-        super(Collections.<GridSqlElement>emptyList());
+        super(Collections.<GridSqlAst>emptyList());
+
         this.keyword = keyword;
     }
 

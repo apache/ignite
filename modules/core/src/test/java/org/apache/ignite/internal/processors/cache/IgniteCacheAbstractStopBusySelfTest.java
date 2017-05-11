@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -95,8 +96,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = cacheConfiguration(CACHE_NAME);
 
@@ -106,7 +107,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         commSpi.setTcpNoDelay(true);
 
-        if (gridName.endsWith(String.valueOf(CLN_GRD)))
+        if (igniteInstanceName.endsWith(String.valueOf(CLN_GRD)))
             cfg.setClientMode(true);
 
         cacheCfg.setRebalanceMode(SYNC);
@@ -206,13 +207,11 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
             @Override public Object call() throws Exception {
                 info("Start operation.");
 
-                IgniteCache<Object, Object> cache = clientCache().withAsync();
-
-                cache.getAndPut(1, 1);
+                IgniteFuture f = clientCache().getAndPutAsync(1, 1);
 
                 info("Stop operation.");
 
-                return cache.future().get();
+                return f.get();
             }
         });
     }

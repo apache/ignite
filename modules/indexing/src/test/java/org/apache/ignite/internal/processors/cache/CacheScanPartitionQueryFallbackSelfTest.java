@@ -94,8 +94,8 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private boolean syncRebalance;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
 
@@ -216,7 +216,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
                             Thread.sleep(3000);
 
-                            info("Will stop grid: " + getTestGridName(id));
+                            info("Will stop grid: " + getTestIgniteInstanceName(id));
 
                             stopGrid(id);
 
@@ -248,7 +248,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                                 info("Running query [node=" + nodeId + ", part=" + part + ']');
 
                             try (QueryCursor<Cache.Entry<Integer, Integer>> cur0 =
-                                     cache.query(new ScanQuery<Integer, Integer>(part).setPageSize(5))) {
+                                     cache.query(new ScanQuery<Integer, Integer>(part))) {
 
                                 if (cur)
                                     doTestScanQueryCursor(cur0, part);

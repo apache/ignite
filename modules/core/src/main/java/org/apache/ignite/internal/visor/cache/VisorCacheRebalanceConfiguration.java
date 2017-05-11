@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for cache rebalance configuration properties.
  */
-public class VisorCacheRebalanceConfiguration implements Serializable, LessNamingBean {
+public class VisorCacheRebalanceConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache rebalance mode. */
     private CacheRebalanceMode mode;
-
-    /** Rebalance thread pool size. */
-    private int threadPoolSize;
 
     /** Cache rebalance batch size. */
     private int batchSize;
@@ -49,62 +49,75 @@ public class VisorCacheRebalanceConfiguration implements Serializable, LessNamin
     private long timeout;
 
     /**
-     * @param ccfg Cache configuration.
-     * @return Data transfer object for rebalance configuration properties.
+     * Default constructor.
      */
-    public static VisorCacheRebalanceConfiguration from(CacheConfiguration ccfg) {
-        VisorCacheRebalanceConfiguration cfg = new VisorCacheRebalanceConfiguration();
+    public VisorCacheRebalanceConfiguration() {
+        // No-op.
+    }
 
-        cfg.mode = ccfg.getRebalanceMode();
-        cfg.batchSize = ccfg.getRebalanceBatchSize();
-        cfg.threadPoolSize = ccfg.getRebalanceThreadPoolSize();
-        cfg.partitionedDelay = ccfg.getRebalanceDelay();
-        cfg.throttle = ccfg.getRebalanceThrottle();
-        cfg.timeout = ccfg.getRebalanceTimeout();
-
-        return cfg;
+    /**
+     * Create data transfer object for rebalance configuration properties.
+     * @param ccfg Cache configuration.
+     */
+    public VisorCacheRebalanceConfiguration(CacheConfiguration ccfg) {
+        mode = ccfg.getRebalanceMode();
+        batchSize = ccfg.getRebalanceBatchSize();
+        partitionedDelay = ccfg.getRebalanceDelay();
+        throttle = ccfg.getRebalanceThrottle();
+        timeout = ccfg.getRebalanceTimeout();
     }
 
     /**
      * @return Cache rebalance mode.
      */
-    public CacheRebalanceMode mode() {
+    public CacheRebalanceMode getMode() {
         return mode;
-    }
-
-    /**
-     * @return Rebalance thread pool size.
-     */
-    public int threadPoolSize() {
-        return threadPoolSize;
     }
 
     /**
      * @return Cache rebalance batch size.
      */
-    public int batchSize() {
+    public int getBatchSize() {
         return batchSize;
     }
 
     /**
      * @return Rebalance partitioned delay.
      */
-    public long partitionedDelay() {
+    public long getPartitionedDelay() {
         return partitionedDelay;
     }
 
     /**
      * @return Time in milliseconds to wait between rebalance messages.
      */
-    public long throttle() {
+    public long getThrottle() {
         return throttle;
     }
 
     /**
      * @return Rebalance timeout.
      */
-    public long timeout() {
+    public long getTimeout() {
         return timeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeEnum(out, mode);
+        out.writeInt(batchSize);
+        out.writeLong(partitionedDelay);
+        out.writeLong(throttle);
+        out.writeLong(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        mode = CacheRebalanceMode.fromOrdinal(in.readByte());
+        batchSize = in.readInt();
+        partitionedDelay = in.readLong();
+        throttle = in.readLong();
+        timeout = in.readLong();
     }
 
     /** {@inheritDoc} */

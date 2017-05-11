@@ -37,14 +37,17 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -70,8 +73,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     private GridCacheModuloAffinityFunction aff = new GridCacheModuloAffinityFunction();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -80,7 +83,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(NONE);
 
         cacheCfg.setAffinity(aff);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(aff.backups());
 
@@ -146,7 +148,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         ClusterNode n1 = F.first(aff.nodes(aff.partition(1), grid(0).cluster().nodes()));
-        ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).cluster().nodes()));
+        final ClusterNode n2 = F.first(aff.nodes(aff.partition(2), grid(0).cluster().nodes()));
 
         assertNotNull(n1);
         assertNotNull(n2);
@@ -210,7 +212,24 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(cache1.getAndPut(1, "z1"));
 
-        assertTrue(e1.obsolete());
+        final GridDhtCacheEntry e1f = e1;
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return !e1f.readers().contains(n2.id());
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    return true;
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 5000);
+
+        // Node 1 still has node2 in readers map.
+        assertFalse(((GridDhtCacheEntry)dht(cache1).entryEx(1)).readers().contains(n2.id()));
     }
 
     /** @throws Exception If failed. */

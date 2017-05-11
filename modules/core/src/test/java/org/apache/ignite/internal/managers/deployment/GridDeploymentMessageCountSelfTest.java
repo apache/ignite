@@ -65,8 +65,8 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -85,7 +85,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
 
         MessageCountingCommunicationSpi commSpi = new MessageCountingCommunicationSpi();
 
-        commSpis.put(gridName, commSpi);
+        commSpis.put(igniteInstanceName, commSpi);
 
         cfg.setCommunicationSpi(commSpi);
 

@@ -35,14 +35,14 @@
                     <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="types">
                             <list>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Type]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64]]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Collections.Generic.List[System.Tuple[System.Int64,System.String]]]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64,System.String]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64,Apache.Ignite.Core.Tests.TestGenericBinarizable[System.String]]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64,System.String,System.Type]</value>
-                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64,System.String,Apache.Ignite.Core.Tests.TestGenericBinarizable[System.Int64,System.String,System.Type]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`1[[System.Int64]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`1[[System.Type]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`1[[Apache.Ignite.Core.Tests.TestGenericBinarizable`1[[System.Int64]]]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`1[[System.Collections.Generic.List`1[[System.Tuple`2[[System.Int64],[System.String]]]]]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`2[[System.Int64],[System.String]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`2[[System.Int64],[Apache.Ignite.Core.Tests.TestGenericBinarizable`1[[System.String]]]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`3[[System.Int64],[System.String],[System.Type]]</value>
+                                <value>Apache.Ignite.Core.Tests.TestGenericBinarizable`3[[System.Int64],[System.String],[Apache.Ignite.Core.Tests.TestGenericBinarizable`2[[System.Int64,System.String],[System.Type]]]]</value>
                             </list>
                         </property>
                     </bean>

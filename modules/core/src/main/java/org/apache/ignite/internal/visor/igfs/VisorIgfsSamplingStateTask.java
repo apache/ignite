@@ -25,20 +25,19 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Task to set IGFS instance sampling state.
  */
 @GridInternal
-public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<String, Boolean>, Void> {
+public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<VisorIgfsSamplingStateTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Job that perform parsing of IGFS profiler logs.
      */
-    private static class VisorIgfsSamplingStateJob extends VisorJob<IgniteBiTuple<String, Boolean>, Void> {
+    private static class VisorIgfsSamplingStateJob extends VisorJob<VisorIgfsSamplingStateTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -48,19 +47,19 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorIgfsSamplingStateJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+        private VisorIgfsSamplingStateJob(VisorIgfsSamplingStateTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) {
+        @Override protected Void run(VisorIgfsSamplingStateTaskArg arg) {
             try {
-                ((IgfsEx)ignite.fileSystem(arg.get1())).globalSampling(arg.get2());
+                ((IgfsEx)ignite.fileSystem(arg.getName())).globalSampling(arg.isEnabled());
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to set sampling state for IGFS: " + arg.get1(), iae);
+                throw new IgniteException("Failed to set sampling state for IGFS: " + arg.getName(), iae);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -74,7 +73,7 @@ public class VisorIgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorIgfsSamplingStateJob job(IgniteBiTuple<String, Boolean> arg) {
+    @Override protected VisorIgfsSamplingStateJob job(VisorIgfsSamplingStateTaskArg arg) {
         return new VisorIgfsSamplingStateJob(arg, debug);
     }
 }

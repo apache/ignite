@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.cache.QueryIndexType;
+
 import java.util.Collection;
 
 /**
@@ -46,7 +48,7 @@ public interface GridQueryIndexDescriptor {
      *
      * @return Type.
      */
-    public GridQueryIndexType type();
+    public QueryIndexType type();
 
     /**
      * Gets inline size for SORTED index.

@@ -113,6 +113,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Type: affinity key. */
         public const int EchoTypeAffinityKey = 19;
 
+        /** Type: enum from cache. */
+        private const int EchoTypeEnumFromCache = 20;
+
+        /** Type: enum array from cache. */
+        private const int EchoTypeEnumArrayFromCache = 21;
+                
+        /** Echo type: IgniteUuid. */
+        private const int EchoTypeIgniteUuid = 22;
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -536,7 +545,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     SpringConfigUrl = GetConfigs().Item1,
-                    GridName = "daemonGrid",
+                    IgniteInstanceName = "daemonGrid",
                     IsDaemon = true
                 })
             )
@@ -817,16 +826,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(val = decimal.Parse("-11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
 
             // Test echo with overflow.
-            try
-            {
-                _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { null, decimal.MaxValue.ToString() + 1 });
+            var ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, decimal.MaxValue.ToString() + 1}));
 
-                Assert.Fail();
-            }
-            catch (IgniteException)
-            {
-                // No-op.
-            }
+            Assert.AreEqual("Decimal magnitude overflow (must be less than 96 bits): 104", ex.Message);
+
+            // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
+            ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
+                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, "1E+1"}));
+
+            Assert.AreEqual("Decimal value scale overflow (must be between 0 and 28): -1", ex.Message);
         }
 
         /// <summary>
@@ -902,10 +911,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepBinary" flag is reset.
-            Assert.Catch(typeof(BinaryObjectException), () =>
+            var ex = Assert.Throws<BinaryObjectException>(() =>
             {
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
+
+            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
@@ -948,6 +959,24 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Tests the echo task returning enum.
         /// </summary>
         [Test]
+        public void TestEchoTaskEnumFromCache()
+        {
+            var cache = _grid1.GetCache<int, PlatformComputeEnum>(null);
+
+            foreach (PlatformComputeEnum val in Enum.GetValues(typeof(PlatformComputeEnum)))
+            {
+                cache[EchoTypeEnumFromCache] = val;
+
+                var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumFromCache);
+
+                Assert.AreEqual(val, res);
+            }
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
         public void TestEchoTaskEnumArray()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
@@ -958,6 +987,30 @@ namespace Apache.Ignite.Core.Tests.Compute
                 PlatformComputeEnum.Baz,
                 PlatformComputeEnum.Foo
             }, res);
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskEnumArrayFromCache()
+        {
+            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(null);
+
+            foreach (var val in new[]
+            {
+                new[] {PlatformComputeEnum.Bar, PlatformComputeEnum.Baz, PlatformComputeEnum.Foo },
+                new[] {PlatformComputeEnum.Foo, PlatformComputeEnum.Baz},
+                new[] {PlatformComputeEnum.Bar}
+            })
+            {
+                cache[EchoTypeEnumArrayFromCache] = val;
+
+                var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(
+                    EchoTask, EchoTypeEnumArrayFromCache);
+
+                Assert.AreEqual(val, res);
+            }
         }
 
         /// <summary>
@@ -981,6 +1034,22 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(0, enumMeta.Fields.Count);
 
             Assert.AreEqual(enumVal, res);
+        }
+
+        /// <summary>
+        /// Tests that IgniteGuid in .NET maps to IgniteUuid in Java.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskIgniteUuid()
+        {
+            var guid = Guid.NewGuid();
+
+            _grid1.GetCache<int, object>(null)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
+
+            Assert.AreEqual(guid, res.GlobalId);
+            Assert.AreEqual(25, res.LocalId);
         }
 
         /// <summary>
@@ -1108,9 +1177,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
@@ -1135,9 +1204,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
 
@@ -1246,7 +1315,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(JavaBinaryCls),
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
-                    }
+                    },
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 SpringConfigUrl = path
             };
@@ -1319,9 +1389,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidNetSimpleJob : NetSimpleJob
+    class InvalidNetSimpleJob : NetSimpleJob, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     [Serializable]
@@ -1393,9 +1471,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidComputeAction : ComputeAction
+    class InvalidComputeAction : ComputeAction, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     interface IUserInterface<out T>

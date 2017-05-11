@@ -47,7 +47,7 @@ public class IgniteCachePutRetryAtomicSelfTest extends IgniteCachePutRetryAbstra
      * @throws Exception If failed.
      */
     public void testPutInsideTransaction() throws Exception {
-        ignite(0).createCache(cacheConfiguration(GridTestUtils.TestMemoryMode.HEAP, false));
+        ignite(0).createCache(cacheConfiguration(false, false));
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
 

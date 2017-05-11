@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -62,8 +61,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         FifoQueueCollisionSpi collision = new FifoQueueCollisionSpi();
 
@@ -126,9 +125,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final ClusterNode node = grid(1).localNode();
 
-        IgniteCompute comp = grid(1).compute().withAsync();
-
-        comp.execute(new ComputeTaskAdapter<Void, Void>() {
+        ComputeTaskFuture<?> fut = grid(1).compute().executeAsync(new ComputeTaskAdapter<Void, Void>() {
             @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                 @Nullable Void arg) {
                 return F.asMap(new SleepJob(), node, new SleepJob(), node);
@@ -139,8 +136,6 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, null);
-
-        ComputeTaskFuture<?> fut = comp.future();
 
         assert startedLatch.await(2, SECONDS);
 

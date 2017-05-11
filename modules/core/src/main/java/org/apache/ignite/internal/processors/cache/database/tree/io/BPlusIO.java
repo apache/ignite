@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Abstract IO routines for B+Tree pages.
@@ -390,5 +391,13 @@ public abstract class BPlusIO<L> extends PageIO {
      */
     private static void putBytes(long pageAddr, int pos, byte[] bytes) {
         PageUtils.putBytes(pageAddr, pos, bytes);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param c Closure.
+     */
+    public void visit(long pageAddr, IgniteInClosure<L> c) {
+        // No-op.
     }
 }

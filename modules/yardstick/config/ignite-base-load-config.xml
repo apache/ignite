@@ -48,55 +48,12 @@
         <property name="atomicityMode" value="ATOMIC"/>
     </bean>
 
-    <bean name="atomic-offheap" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="atomic-offheap"/>
-
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="memoryMode" value="OFFHEAP_TIERED"/>
-    </bean>
-
-    <bean name="atomic-offheap-values" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="atomic-offheap-values"/>
-
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="memoryMode" value="OFFHEAP_VALUES"/>
-
-    </bean>
-
     <bean name="tx" class="org.apache.ignite.configuration.CacheConfiguration">
         <property name="name" value="tx-fat-values"/>
 
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-    </bean>
-
-    <bean name="tx-offheap" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="tx-offheap"/>
-
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <property name="memoryMode" value="OFFHEAP_TIERED"/>
-
-    </bean>
-
-    <bean name="tx-offheap-values" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="tx-offheap-values"/>
-
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
     </bean>
 
@@ -193,26 +150,6 @@
                         </list>
                     </property>
                 </bean>
-            </list>
-        </property>
-    </bean>
-
-    <bean name="query-offheap" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="query-offheap"/>
-
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="memoryMode" value="OFFHEAP_TIERED"/>
-
-        <property name="indexedTypes">
-            <list>
-                <value>java.lang.Integer</value>
-                <value>org.apache.ignite.yardstick.cache.model.Organization</value>
-
-                <value>java.lang.Integer</value>
-                <value>org.apache.ignite.yardstick.cache.model.Person</value>
             </list>
         </property>
     </bean>

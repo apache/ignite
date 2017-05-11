@@ -63,16 +63,27 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new Marshaller(GetBinaryConfiguration());
+            _marsh = new Marshaller(new BinaryConfiguration
+            {
+                CompactFooter = GetCompactFooter(),
+                NameMapper = GetNameMapper()
+            });
         }
 
         /// <summary>
         /// Gets the binary configuration.
         /// </summary>
-        /// <returns></returns>
-        protected virtual BinaryConfiguration GetBinaryConfiguration()
+        protected virtual bool GetCompactFooter()
         {
-            return new BinaryConfiguration { CompactFooter = true };
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
         
         /**
@@ -691,7 +702,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     new BinaryTypeConfiguration(typeof (PrimitiveFieldType)),
                     new BinaryTypeConfiguration(typeof (GenericCollectionsType<PrimitiveFieldType, SerializableObject>))
-                }
+                },
+                CompactFooter = GetCompactFooter()
             });
 
             var obj = new GenericCollectionsType<PrimitiveFieldType, SerializableObject>
@@ -719,6 +731,52 @@ namespace Apache.Ignite.Core.Tests.Binary
             CollectionAssert.AreEquivalent(obj.Values, result.Values);
             CollectionAssert.AreEquivalent(obj.Pairs, result.Pairs);
             CollectionAssert.AreEquivalent(obj.Objects, result.Objects);
+        }
+
+        /// <summary>
+        /// Tests the circular reference handling with List.
+        /// </summary>
+        [Test]
+        public void TestListCircularReference()
+        {
+            var list1 = new List<object> {1};
+            var list2 = new List<object> {2};
+
+            list1.Add(list2);
+            list2.Add(list1);
+
+            var data = _marsh.Marshal(list1);
+
+            var resList1 = _marsh.Unmarshal<List<object>>(data);
+            Assert.AreEqual(1, resList1[0]);
+
+            var resList2 = (List<object>) resList1[1];
+            Assert.AreEqual(2, resList2[0]);
+            Assert.AreEqual(resList1, resList2[1]);
+        }
+
+        /// <summary>
+        /// Tests the circular reference handling with Dictionary.
+        /// This test checks proper handle support in combination with OnDeserialization callback,
+        /// which has to be called after entire graph is deserialized.
+        /// </summary>
+        [Test]
+        public void TestDictionaryCircularReference()
+        {
+            var dict1 = new Dictionary<object, object> {{0, 1}};
+            var dict2 = new Dictionary<object, object> {{0, 2}};
+
+            dict1[1] = dict2;
+            dict2[1] = dict1;
+
+            var data = _marsh.Marshal(dict1);
+
+            var resDict1 = _marsh.Unmarshal<Dictionary<object, object>>(data);
+            Assert.AreEqual(1, resDict1[0]);
+
+            var resDict2 = (Dictionary<object, object>) resDict1[1];
+            Assert.AreEqual(2, resDict2[0]);
+            Assert.AreEqual(resDict1, resDict2[1]);
         }
 
         /**
@@ -778,7 +836,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         Serializer = serializer
                     }
-                }
+                },
+                CompactFooter = GetCompactFooter()
             });
 
             // Use utc date fields because reflective serializer writes [QuerySqlField] fields as timestamp
@@ -791,20 +850,17 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckPrimitiveFields(marsh, obj);
         }
 
-        /**
-         * <summary>Check write of primitive fields through binary interface.</summary>
-         */
+        /// <summary>
+        /// Check write of primitive fields through binary interface.
+        /// </summary>
         [Test]
         public void TestPrimitiveFieldsBinary()
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
-
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldBinaryType)));
-
-            BinaryConfiguration cfg = new BinaryConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
+            var cfg = new BinaryConfiguration
+            {
+                TypeConfigurations = new[] { new BinaryTypeConfiguration(typeof(PrimitiveFieldBinaryType)) },
+                CompactFooter = GetCompactFooter()
+            };
 
             Marshaller marsh = new Marshaller(cfg);
 
@@ -813,43 +869,40 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckPrimitiveFields(marsh, obj);
         }
 
-        /**
-         * <summary>Check write of primitive fields through binary interface.</summary>
-         */
+        /// <summary>
+        /// Check write of primitive fields through binary interface.
+        /// </summary>
         [Test]
         public void TestPrimitiveFieldsRawBinary()
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[] { new BinaryTypeConfiguration(typeof(PrimitiveFieldRawBinaryType)) },
+                CompactFooter = GetCompactFooter()
+            });
 
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldRawBinaryType)));
-
-            BinaryConfiguration cfg = new BinaryConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            Marshaller marsh = new Marshaller(cfg);
-
-            PrimitiveFieldRawBinaryType obj = new PrimitiveFieldRawBinaryType();
+            var obj = new PrimitiveFieldRawBinaryType();
 
             CheckPrimitiveFields(marsh, obj);
         }
 
-        /**
-         * <summary>Check write of primitive fields through binary interface.</summary>
-         */
+        /// <summary>
+        /// Check write of primitive fields through binary interface.
+        /// </summary>
         [Test]
         public void TestPrimitiveFieldsSerializer()
         {
-            var typeCfgs = new List<BinaryTypeConfiguration>
+            var cfg = new BinaryConfiguration
             {
-                new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
+                TypeConfigurations = new[]
                 {
-                    Serializer = new PrimitiveFieldsSerializer()
-                }
+                    new BinaryTypeConfiguration(typeof(PrimitiveFieldType))
+                    {
+                        Serializer = new PrimitiveFieldsSerializer(),
+                    }
+                },
+                CompactFooter = GetCompactFooter()
             };
-
-            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
 
             Marshaller marsh = new Marshaller(cfg);
 
@@ -909,31 +962,25 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj2.RawValArr, portObj.Deserialize<DecimalMarshalAware>().RawValArr);
         }
 
-        /**
-         * <summary>Check write of primitive fields through raw serializer.</summary>
-         */
+        /// <summary>
+        /// Check write of primitive fields through raw serializer.
+        /// </summary>
         [Test]
         public void TestPrimitiveFieldsRawSerializer()
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
+            Marshaller marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof(PrimitiveFieldType))
+                    {
+                        Serializer = new PrimitiveFieldsRawSerializer()
+                    }
+                },
+                CompactFooter = GetCompactFooter()
+            });
 
-            BinaryTypeConfiguration typeCfg =
-                new BinaryTypeConfiguration(typeof(PrimitiveFieldType));
-
-            typeCfg.Serializer = new PrimitiveFieldsRawSerializer();
-
-            typeCfgs.Add(typeCfg);
-
-            BinaryConfiguration cfg = new BinaryConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            Marshaller marsh = new Marshaller(cfg);
-
-            PrimitiveFieldType obj = new PrimitiveFieldType();
-
-            CheckPrimitiveFields(marsh, obj);
+            CheckPrimitiveFields(marsh, new PrimitiveFieldType());
         }
 
         private void CheckPrimitiveFields(Marshaller marsh, PrimitiveFieldType obj)
@@ -941,13 +988,11 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckPrimitiveFieldsSerialization(marsh, obj);
         }
 
-        private void CheckPrimitiveFieldsSerialization(Marshaller marsh, PrimitiveFieldType obj)
+        private static void CheckPrimitiveFieldsSerialization(Marshaller marsh, PrimitiveFieldType obj)
         {
             byte[] bytes = marsh.Marshal(obj);
 
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
             PrimitiveFieldType newObj = portObj.Deserialize<PrimitiveFieldType>();
 
@@ -985,8 +1030,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             byte[] bytes = marsh.Marshal(obj);
 
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
             if (!raw)
             {
@@ -1033,7 +1076,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                     }
-                }
+                },
+                CompactFooter = GetCompactFooter()
             });
             
             var obj = new CollectionsType
@@ -1069,8 +1113,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             byte[] bytes = marsh.Marshal(obj);
 
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
             CollectionsType newObj = portObj.Deserialize<CollectionsType>();
 
@@ -1245,9 +1287,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 var reader = new BinaryReader(marsh, new BinaryHeapStream(bytes), BinaryMode.ForceBinary, null);
 
-                reader.DetachNext();
-
-                outerObj = reader.Deserialize<IBinaryObject>();
+                outerObj = reader.DetachNext().Deserialize<IBinaryObject>();
             }
             else
                 outerObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
@@ -1278,7 +1318,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 TypeConfigurations = new[]
                 {
                     new BinaryTypeConfiguration(typeof (HandleCollection))
-                }
+                },
+                CompactFooter = GetCompactFooter()
             });
 
             // Collection in collection dependency loop
@@ -1368,7 +1409,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             BinaryConfiguration cfg = new BinaryConfiguration();
 
-            cfg.DefaultKeepDeserialized = false;
+            cfg.KeepDeserialized = false;
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1400,7 +1441,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             typeCfg.KeepDeserialized = true;
 
             BinaryConfiguration cfg = new BinaryConfiguration();
-            cfg.DefaultKeepDeserialized = false;
+            cfg.KeepDeserialized = false;
 
             cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
@@ -1447,8 +1488,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("guidArr"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("nGuidArr"));
-            Assert.AreEqual(dateArr, portObj.GetField<DateTime[]>("dateArr"));
-            Assert.AreEqual(nDateArr, portObj.GetField<DateTime?[]>("nDateArr"));
+            Assert.AreEqual(dateArr, portObj.GetField<IBinaryObject[]>("dateArr")
+                .Select(x => x.Deserialize<DateTime>()));
+            Assert.AreEqual(nDateArr, portObj.GetField<IBinaryObject[]>("nDateArr")
+                .Select(x => x.Deserialize<DateTime?>()));
 
             obj1 = portObj.Deserialize<SpecialArray>();
 
@@ -1458,12 +1501,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(nDateArr, obj1.NDateArr);
 
             // Use special with IGridbinaryMarshalAware.
-            SpecialArrayMarshalAware obj2 = new SpecialArrayMarshalAware();
-
-            obj2.GuidArr = guidArr;
-            obj2.NGuidArr = nGuidArr;
-            obj2.DateArr = dateArr;
-            obj2.NDateArr = nDateArr;
+            SpecialArrayMarshalAware obj2 = new SpecialArrayMarshalAware
+            {
+                GuidArr = guidArr,
+                NGuidArr = nGuidArr,
+                DateArr = dateArr,
+                NDateArr = nDateArr
+            };
 
             bytes = marsh.Marshal(obj2);
 
@@ -1471,8 +1515,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(guidArr, portObj.GetField<Guid[]>("a"));
             Assert.AreEqual(nGuidArr, portObj.GetField<Guid?[]>("b"));
-            Assert.AreEqual(dateArr, portObj.GetField<DateTime[]>("c"));
-            Assert.AreEqual(nDateArr, portObj.GetField<DateTime?[]>("d"));
+            Assert.AreEqual(dateArr, portObj.GetField<IBinaryObject[]>("c").Select(x => x.Deserialize<DateTime>()));
+            Assert.AreEqual(nDateArr, portObj.GetField<IBinaryObject[]>("d").Select(x => x.Deserialize<DateTime?>()));
 
             obj2 = portObj.Deserialize<SpecialArrayMarshalAware>();
 
@@ -1517,7 +1561,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestBinaryConfigurationValidation()
         {
-            var cfg = new BinaryConfiguration(typeof (PropertyType)) {Types = new[] {"PropertyType"}};
+            var cfg = new BinaryConfiguration(typeof (PropertyType))
+            {
+                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
+            };
 
             // ReSharper disable once ObjectCreationAsStatement
             Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
@@ -1529,7 +1576,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestCompactFooterSetting()
         {
-            Assert.AreEqual(GetBinaryConfiguration().CompactFooter, _marsh.CompactFooter);
+            Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
@@ -1586,8 +1633,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             byte[] bytes = marsh.Marshal(outObj);
 
             IBinaryObject portOutObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(outObj.GetHashCode(), portOutObj.GetHashCode());
 
             OuterObjectType newOutObj = portOutObj.Deserialize<OuterObjectType>();
 
@@ -1850,8 +1895,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 PString = "abc";
                 PGuid = Guid.NewGuid();
                 PnGuid = Guid.NewGuid();
-                PDate = DateTime.Now;
-                PnDate = DateTime.Now;
+                PDate = DateTime.UtcNow;
+                PnDate = DateTime.UtcNow;
                 IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
             }
 
@@ -2361,21 +2406,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteCollection("col", Collection);
-                writer.WriteDictionary("dict", Dictionary);
-                writer.WriteObject("dictEntry", DictionaryEntry);
-                writer.WriteObject("obj", Object);
-                writer.WriteArray("arr", Array);
+                writer.WriteCollection("1col", Collection);
+                writer.WriteDictionary("2dict", Dictionary);
+                writer.WriteObject("3dictEntry", DictionaryEntry);
+                writer.WriteObject("4obj", Object);
+                writer.WriteArray("5arr", Array);
                 writer.GetRawWriter().WriteCollection(CollectionRaw);
             }
 
             public void ReadBinary(IBinaryReader reader)
             {
-                Collection = reader.ReadCollection("col");
-                Dictionary = reader.ReadDictionary("dict");
-                DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
-                Object = reader.ReadObject<object>("obj");
-                Array = reader.ReadArray<object>("arr");
+                Collection = reader.ReadCollection("1col");
+                Dictionary = reader.ReadDictionary("2dict");
+                DictionaryEntry = reader.ReadObject<DictionaryEntry>("3dictEntry");
+                Object = reader.ReadObject<object>("4obj");
+                Array = reader.ReadArray<object>("5arr");
                 CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }

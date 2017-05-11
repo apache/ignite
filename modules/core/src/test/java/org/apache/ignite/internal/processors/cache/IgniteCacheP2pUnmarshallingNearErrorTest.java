@@ -31,14 +31,12 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cfg.isClientMode() == null || !cfg.isClientMode()) {
-            cfg.getCacheConfiguration()[0].setEvictMaxOverflowRatio(0);
-            cfg.getCacheConfiguration()[0].setEvictSynchronized(true);
-            cfg.getCacheConfiguration()[0].setEvictSynchronizedKeyBufferSize(1);
             cfg.getCacheConfiguration()[0].setEvictionPolicy(new FifoEvictionPolicy(1));
+            cfg.getCacheConfiguration()[0].setOnheapCacheEnabled(true);
         }
 
         return cfg;

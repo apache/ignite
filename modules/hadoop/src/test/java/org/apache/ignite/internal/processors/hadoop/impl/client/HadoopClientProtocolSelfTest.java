@@ -129,7 +129,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).format();
+        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).clear();
 
         setupLockFile.delete();
         mapLockFile.delete();

@@ -17,7 +17,13 @@
 
 package org.apache.ignite.internal.visor.debug;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.management.MonitorInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorDataTransferObjectInput;
+import org.apache.ignite.internal.visor.VisorDataTransferObjectOutput;
 
 /**
  * Data transfer object for {@link MonitorInfo}.
@@ -27,46 +33,72 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
     private static final long serialVersionUID = 0L;
 
     /** Stack depth. */
-    private final Integer stackDepth;
+    private Integer stackDepth;
 
     /** Stack frame. */
-    private final StackTraceElement stackFrame;
+    private StackTraceElement stackFrame;
 
     /**
-     * Create thread monitor info with given parameters.
-     *
-     * @param clsName Fully qualified name of the class of the lock object.
-     * @param identityHashCode Identity hash code of the lock object.
-     * @param stackDepth Depth in the stack trace where the object monitor was locked.
-     * @param stackFrame Stack frame that locked the object monitor.
+     * Default constructor.
      */
-    public VisorThreadMonitorInfo(String clsName, Integer identityHashCode, Integer stackDepth,
-        StackTraceElement stackFrame) {
-        super(clsName, identityHashCode);
-
-        this.stackDepth = stackDepth;
-        this.stackFrame = stackFrame;
+    public VisorThreadMonitorInfo() {
+        // No-op.
     }
 
-    /** Create data transfer object for given monitor info. */
-    public static VisorThreadMonitorInfo from(MonitorInfo mi) {
-        assert mi != null;
+    /**
+     * Create data transfer object for given monitor info.
+     *
+     * @param mi Monitoring info.
+     */
+    public VisorThreadMonitorInfo(MonitorInfo mi) {
+        super(mi);
 
-        return new VisorThreadMonitorInfo(mi.getClassName(), mi.getIdentityHashCode(), mi.getLockedStackDepth(),
-            mi.getLockedStackFrame());
+        stackDepth = mi.getLockedStackDepth();
+        stackFrame = mi.getLockedStackFrame();
     }
 
     /**
      * @return Stack depth.
      */
-    public Integer stackDepth() {
+    public Integer getStackDepth() {
         return stackDepth;
     }
 
     /**
      * @return Stack frame.
      */
-    public StackTraceElement stackFrame() {
+    public StackTraceElement getStackFrame() {
         return stackFrame;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
+            dtout.writeByte(super.getProtocolVersion());
+            super.writeExternalData(dtout);
+        }
+
+        out.writeObject(stackDepth);
+        out.writeObject(stackFrame);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        try (VisorDataTransferObjectInput dtin = new VisorDataTransferObjectInput(in)) {
+            super.readExternalData(dtin.readByte(), dtin);
+        }
+
+        stackDepth = (Integer)in.readObject();
+        stackFrame = (StackTraceElement)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorThreadMonitorInfo.class, this);
     }
 }

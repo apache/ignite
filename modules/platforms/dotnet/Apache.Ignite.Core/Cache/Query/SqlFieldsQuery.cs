@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Cache.Query
     public class SqlFieldsQuery
     {
         /// <summary> Default page size. </summary>
-        public const int DfltPageSize = 1024;
+        public const int DefaultPageSize = 1024;
 
         /// <summary>
         /// Constructor.
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Cache.Query
             Local = loc;
             Arguments = args;
 
-            PageSize = DfltPageSize;
+            PageSize = DefaultPageSize;
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Optional page size.
         /// <para />
-        /// Defaults to <see cref="DfltPageSize"/>.
+        /// Defaults to <see cref="DefaultPageSize"/>.
         /// </summary>
         public int PageSize { get; set; }
 

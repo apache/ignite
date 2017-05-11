@@ -86,9 +86,9 @@ class SpringCache implements Cache {
         Object old;
 
         if (val == null)
-            old = cache.withSkipStore().putIfAbsent(key, NULL);
+            old = cache.withSkipStore().getAndPutIfAbsent(key, NULL);
         else
-            old = cache.putIfAbsent(key, val);
+            old = cache.getAndPutIfAbsent(key, val);
 
         return old != null ? fromValue(old) : null;
     }

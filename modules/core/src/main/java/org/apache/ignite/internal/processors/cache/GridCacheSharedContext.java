@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -445,10 +446,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName() {
-        return kernalCtx.gridName();
+    public String igniteInstanceName() {
+        return kernalCtx.igniteInstanceName();
     }
 
     /**
@@ -804,7 +805,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to close.
      * @throws IgniteCheckedException If failed.
      */
-    public void endTx(IgniteInternalTx tx) throws IgniteCheckedException {
+    public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
         tx.txState().awaitLastFut(this);
 
         tx.close();
@@ -815,13 +816,13 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
         GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
         if (ctx == null) {
             tx.txState().awaitLastFut(this);
 
-            return tx.commitAsync();
+            return tx.commitNearTxLocalAsync();
         }
         else
             return ctx.cache().commitTxAsync(tx);
@@ -832,10 +833,10 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      * @return Rollback future.
      */
-    public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
+    public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
         tx.txState().awaitLastFut(this);
 
-        return tx.rollbackAsync();
+        return tx.rollbackNearTxLocalAsync();
     }
 
     /**

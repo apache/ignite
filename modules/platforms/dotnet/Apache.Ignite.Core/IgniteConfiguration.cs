@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
- namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
@@ -30,6 +30,7 @@
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -39,12 +40,10 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.SwapSpace;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Transactions;
-    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -159,7 +158,7 @@
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var marsh = new Marshaller(configuration.BinaryConfiguration);
+                var marsh = BinaryUtils.Marshaller;
 
                 configuration.Write(marsh.StartMarshal(stream));
 
@@ -174,11 +173,16 @@
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
+        /// Initializes a new instance of the <see cref="IgniteConfiguration" /> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader)
+        /// <param name="baseConfig">The base configuration.</param>
+        internal IgniteConfiguration(IBinaryRawReader binaryReader, IgniteConfiguration baseConfig)
         {
+            Debug.Assert(binaryReader != null);
+            Debug.Assert(baseConfig != null);
+
+            CopyLocalProperties(baseConfig);
             Read(binaryReader);
         }
 
@@ -269,18 +273,9 @@
                     writer.WriteBoolean(false);
                 }
 
-                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
-                // remote nodes can have no BinaryConfiguration.
-                var types = writer.Marshaller.GetUserTypeDescriptors().Where(x => x.EqualityComparer != null).ToList();
-
-                writer.WriteInt(types.Count);
-
-                foreach (var type in types)
-                {
-                    writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
-                    writer.WriteBoolean(type.IsEnum);
-                    BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
-                }
+                // Name mapper.
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
             }
             else
             {
@@ -329,8 +324,59 @@
             else
                 writer.WriteBoolean(false);
 
-            // Swap space
-            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
+            // Event storage
+            if (EventStorageSpi == null)
+            {
+                writer.WriteByte(0);
+            }
+            else if (EventStorageSpi is NoopEventStorageSpi)
+            {
+                writer.WriteByte(1);
+            }
+            else
+            {
+                var memEventStorage = EventStorageSpi as MemoryEventStorageSpi;
+
+                if (memEventStorage == null)
+                {
+                    throw new IgniteException(string.Format(
+                        "Unsupported IgniteConfiguration.EventStorageSpi: '{0}'. " +
+                        "Supported implementations: '{1}', '{2}'.",
+                        EventStorageSpi.GetType(), typeof(NoopEventStorageSpi), typeof(MemoryEventStorageSpi)));
+                }
+
+                writer.WriteByte(2);
+
+                memEventStorage.Write(writer);
+            }
+
+            // Plugins (should be last)
+            if (PluginConfigurations != null)
+            {
+                var pos = writer.Stream.Position;
+
+                writer.WriteInt(0); // reserve count
+
+                var cnt = 0;
+
+                foreach (var cfg in PluginConfigurations)
+                {
+                    if (cfg.PluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteInt(cfg.PluginConfigurationClosureFactoryId.Value);
+
+                        cfg.WriteBinary(writer);
+
+                        cnt++;
+                    }
+                }
+
+                writer.Stream.WriteInt(pos, cnt);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /// <summary>
@@ -352,7 +398,7 @@
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(BinaryReader r)
+        private void ReadCore(IBinaryRawReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -388,25 +434,13 @@
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
-                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
-
-                var typeCount = r.ReadInt();
-
-                if (typeCount > 0)
                 {
-                    var types = new List<BinaryTypeConfiguration>(typeCount);
+                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
 
-                    for (var i = 0; i < typeCount; i++)
-                    {
-                        types.Add(new BinaryTypeConfiguration
-                        {
-                            TypeName = r.ReadString(),
-                            IsEnum = r.ReadBoolean(),
-                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
-                        });
-                    }
-
-                    BinaryConfiguration.TypeConfigurations = types;
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
                 }
             }
 
@@ -438,19 +472,25 @@
                 };
             }
 
-            // Swap
-            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
+            // Event storage
+            switch (r.ReadByte())
+            {
+                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                    break;
+
+                case 2:
+                    EventStorageSpi = MemoryEventStorageSpi.Read(r);
+                    break;
+            }
         }
 
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        private void Read(IBinaryRawReader binaryReader)
         {
             ReadCore(binaryReader);
-
-            CopyLocalProperties(binaryReader.Marshaller.Ignite.Configuration);
 
             // Misc
             IgniteHome = binaryReader.ReadString();
@@ -469,7 +509,7 @@
         /// </summary>
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
-            GridName = cfg.GridName;
+            IgniteInstanceName = cfg.IgniteInstanceName;
 
             if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
             {
@@ -479,21 +519,53 @@
             {
                 BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
             }
-            
+
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
-            LifecycleBeans = cfg.LifecycleBeans;
+            LifecycleHandlers = cfg.LifecycleHandlers;
             Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
+            PluginConfigurations = cfg.PluginConfigurations;
+            AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
         }
 
         /// <summary>
-        /// Grid name which is used if not provided in configuration file.
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
-        public string GridName { get; set; }
+        public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether unique <see cref="IgniteInstanceName"/> should be generated.
+        /// <para />
+        /// Set this to true in scenarios where new node should be started regardless of other nodes present within
+        /// current process. In particular, this setting is useful is ASP.NET and IIS environments, where AppDomains
+        /// are loaded and unloaded within a single process during application restarts. Ignite stops all nodes
+        /// on <see cref="AppDomain"/> unload, however, IIS does not wait for previous AppDomain to unload before
+        /// starting up a new one, which may cause "Ignite instance with this name has already been started" errors.
+        /// This setting solves the issue.
+        /// </summary>
+        public bool AutoGenerateIgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
+        /// </summary>
+        [Obsolete("Use IgniteInstanceName instead.")]
+        public string GridName
+        {
+            get { return IgniteInstanceName; }
+            set { IgniteInstanceName = value; }
+        }
 
         /// <summary>
         /// Gets or sets the binary configuration.
@@ -563,10 +635,10 @@
         public bool SuppressWarnings { get; set; }
 
         /// <summary>
-        /// Lifecycle beans.
+        /// Lifecycle handlers.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<ILifecycleBean> LifecycleBeans { get; set; }
+        public ICollection<ILifecycleHandler> LifecycleHandlers { get; set; }
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
@@ -853,8 +925,17 @@
         }
 
         /// <summary>
-        /// Gets or sets the swap space SPI.
+        /// Gets or sets the configurations for plugins to be started.
         /// </summary>
-        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the event storage interface.
+        /// <para />
+        /// Only predefined implementations are supported:
+        /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
+        /// </summary>
+        public IEventStorageSpi EventStorageSpi { get; set; }
     }
 }

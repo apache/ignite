@@ -48,6 +48,10 @@ public final class GridSqlType {
     public static final GridSqlType BOOLEAN = new GridSqlType(Value.BOOLEAN, 0, ValueBoolean.PRECISION,
         ValueBoolean.DISPLAY_SIZE, "BOOLEAN");
 
+    /** */
+    public static final GridSqlType RESULT_SET = new GridSqlType(Value.RESULT_SET, 0,
+        Integer.MAX_VALUE, Integer.MAX_VALUE, "");
+
     /** H2 type. */
     private final int type;
 
@@ -71,7 +75,7 @@ public final class GridSqlType {
      * @param sql SQL definition of the type.
      */
     private GridSqlType(int type, int scale, long precision, int displaySize, String sql) {
-        assert !F.isEmpty(sql) || type == Value.UNKNOWN;
+        assert !F.isEmpty(sql) || type == Value.UNKNOWN || type == Value.RESULT_SET;
 
         this.type = type;
         this.scale = scale;

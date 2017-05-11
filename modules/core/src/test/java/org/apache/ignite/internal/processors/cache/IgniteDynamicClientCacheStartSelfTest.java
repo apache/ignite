@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  * Tests that cache specified in configuration start on client nodes.
@@ -53,8 +53,8 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -365,7 +365,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            String name = clusterNode.attribute(ATTR_GRID_NAME).toString();
+            String name = clusterNode.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
 
             return !excludeNodes.contains(name);
         }

@@ -17,43 +17,53 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.util;
 
-import org.apache.ignite.internal.pagemem.Page;
-
 /**
  * Page lock listener.
  */
 public interface PageLockListener {
     /**
-     * @param page Page.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
      */
-    public void onBeforeWriteLock(Page page);
+    public void onBeforeWriteLock(int cacheId, long pageId, long page);
 
     /**
-     * @param page Page.
-     * @param pageAddr Page address or {@code 0} if attempt to lock failed.
-     */
-    public void onWriteLock(Page page, long pageAddr);
-
-    /**
-     * @param page Page.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
      * @param pageAddr Page address.
      */
-    public void onWriteUnlock(Page page, long pageAddr);
+    public void onWriteLock(int cacheId, long pageId, long page, long pageAddr);
 
     /**
-     * @param page Page.
-     */
-    public void onBeforeReadLock(Page page);
-
-    /**
-     * @param page Page.
-     * @param pageAddr Page address or {@code 0} if attempt to lock failed.
-     */
-    public void onReadLock(Page page, long pageAddr);
-
-    /**
-     * @param page Page.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
      * @param pageAddr Page address.
      */
-    public void onReadUnlock(Page page, long pageAddr);
+    public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr);
+
+    /**
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     */
+    public void onBeforeReadLock(int cacheId, long pageId, long page);
+
+    /**
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param pageAddr Page address.
+     */
+    public void onReadLock(int cacheId, long pageId, long page, long pageAddr);
+
+    /**
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param pageAddr Page address.
+     */
+    public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr);
 }

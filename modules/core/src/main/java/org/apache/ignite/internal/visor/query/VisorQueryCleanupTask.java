@@ -65,10 +65,10 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
                     map.put(new VisorQueryCleanupJob(taskArg.get(node.id()), debug), node);
 
             if (map.isEmpty()) {
-                String notFoundNodes = "";
+                StringBuilder notFoundNodes = new StringBuilder();
 
                 for (UUID nid : nodeIds)
-                    notFoundNodes = notFoundNodes + (notFoundNodes.isEmpty() ? "" : ",")  + U.id8(nid);
+                    notFoundNodes.append((notFoundNodes.length() == 0) ? "" : ",").append(U.id8(nid));
 
                 throw new VisorClusterGroupEmptyException("Failed to clear query results. Nodes are not available: [" +
                     notFoundNodes + "]");

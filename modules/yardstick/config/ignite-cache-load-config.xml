@@ -32,15 +32,10 @@
         <property name="cacheConfiguration">
             <list>
                 <ref bean="atomic" />
-                <ref bean="atomic-offheap" />
-                <ref bean="atomic-offheap-values" />
                 <ref bean="tx" />
-                <ref bean="tx-offheap" />
-                <ref bean="tx-offheap-values" />
                 <ref bean="atomic-index" />
                 <ref bean="query" />
                 <ref bean="orgCache" />
-                <!--<ref bean="query-offheap" />-->
                 <ref bean="compute" />
             </list>
         </property>

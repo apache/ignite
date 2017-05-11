@@ -74,7 +74,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
 
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -235,7 +234,7 @@ public class GridNioServer<T> {
      * @param port Port.
      * @param log Log.
      * @param selectorCnt Count of selectors and selecting threads.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param srvName Logical server name for threads identification.
      * @param selectorSpins Defines how many non-blocking {@code selector.selectNow()} should be made before
      *      falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
@@ -262,7 +261,7 @@ public class GridNioServer<T> {
         int port,
         IgniteLogger log,
         int selectorCnt,
-        @Nullable String gridName,
+        @Nullable String igniteInstanceName,
         @Nullable String srvName,
         long selectorSpins,
         boolean tcpNoDelay,
@@ -324,7 +323,7 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(gridName, "nio-acceptor", log, acceptSelector));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log, acceptSelector));
         }
         else {
             locAddr = null;
@@ -343,8 +342,8 @@ public class GridNioServer<T> {
                 threadName = "grid-nio-worker-" + srvName + "-" + i;
 
             AbstractNioClientWorker worker = directMode ?
-                new DirectNioClientWorker(i, gridName, threadName, log) :
-                new ByteBufferNioClientWorker(i, gridName, threadName, log);
+                new DirectNioClientWorker(i, igniteInstanceName, threadName, log) :
+                new ByteBufferNioClientWorker(i, igniteInstanceName, threadName, log);
 
             clientWorkers.add(worker);
 
@@ -481,22 +480,26 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      * @param createFut {@code True} if future should be created.
+     * @param ackC Closure invoked when message ACK is received.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, ByteBuffer msg, boolean createFut) throws IgniteCheckedException {
+    GridNioFuture<?> send(GridNioSession ses,
+        ByteBuffer msg,
+        boolean createFut,
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert ses instanceof GridSelectorNioSessionImpl : ses;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (createFut) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg);
+            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg, ackC);
 
             send0(impl, fut, false);
 
             return fut;
         }
         else {
-            SessionWriteRequest req = new WriteRequestImpl(ses, msg, true);
+            SessionWriteRequest req = new WriteRequestImpl(ses, msg, true, ackC);
 
             send0(impl, req, false);
 
@@ -508,23 +511,27 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      * @param createFut {@code True} if future should be created.
+     * @param ackC Closure invoked when message ACK is received.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, Message msg, boolean createFut) throws IgniteCheckedException {
+    GridNioFuture<?> send(GridNioSession ses,
+        Message msg,
+        boolean createFut,
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (createFut) {
             NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-                skipRecoveryPred.apply(msg));
+                skipRecoveryPred.apply(msg), ackC);
 
             send0(impl, fut, false);
 
             return fut;
         }
         else {
-            SessionWriteRequest req = new WriteRequestImpl(ses, msg, skipRecoveryPred.apply(msg));
+            SessionWriteRequest req = new WriteRequestImpl(ses, msg, skipRecoveryPred.apply(msg), ackC);
 
             send0(impl, req, false);
 
@@ -543,11 +550,6 @@ public class GridNioServer<T> {
         assert req != null;
 
         int msgCnt = sys ? ses.offerSystemFuture(req) : ses.offerFuture(req);
-
-        IgniteInClosure<IgniteException> ackC;
-
-        if (!sys && (ackC = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
-            req.ackClosure(ackC);
 
         if (ses.closed()) {
             if (ses.removeFuture(req)) {
@@ -597,8 +599,11 @@ public class GridNioServer<T> {
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (lsnr != null) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-                skipRecoveryPred.apply(msg));
+            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl,
+                NioOperation.REQUIRE_WRITE,
+                msg,
+                skipRecoveryPred.apply(msg),
+                null);
 
             fut.listen(lsnr);
 
@@ -880,14 +885,14 @@ public class GridNioServer<T> {
 
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected ByteBufferNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected ByteBufferNioClientWorker(int idx, @Nullable String igniteInstanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(idx, gridName, name, log);
+            super(idx, igniteInstanceName, name, log);
 
             readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
 
@@ -1050,14 +1055,14 @@ public class GridNioServer<T> {
     private class DirectNioClientWorker extends AbstractNioClientWorker {
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected DirectNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected DirectNioClientWorker(int idx, @Nullable String igniteInstanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(idx, gridName, name, log);
+            super(idx, igniteInstanceName, name, log);
         }
 
         /**
@@ -1541,14 +1546,14 @@ public class GridNioServer<T> {
 
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected AbstractNioClientWorker(int idx, @Nullable String igniteInstanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(gridName, name, log);
+            super(igniteInstanceName, name, log);
 
             createSelector();
 
@@ -2386,13 +2391,15 @@ public class GridNioServer<T> {
         private Selector selector;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Thread name.
          * @param log Log.
          * @param selector Which will accept incoming connections.
          */
-        protected GridNioAcceptWorker(@Nullable String gridName, String name, IgniteLogger log, Selector selector) {
-            super(gridName, name, log);
+        protected GridNioAcceptWorker(
+            @Nullable String igniteInstanceName, String name, IgniteLogger log, Selector selector
+        ) {
+            super(igniteInstanceName, name, log);
 
             this.selector = selector;
         }
@@ -2595,11 +2602,6 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void ackClosure(IgniteInClosure<IgniteException> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Override public void onAckReceived() {
             throw new UnsupportedOperationException();
         }
@@ -2662,17 +2664,22 @@ public class GridNioServer<T> {
         private final boolean skipRecovery;
 
         /** */
-        private IgniteInClosure<IgniteException> ackC;
+        private final IgniteInClosure<IgniteException> ackC;
 
         /**
          * @param ses Session.
          * @param msg Message.
          * @param skipRecovery Skip recovery flag.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        WriteRequestImpl(GridNioSession ses, Object msg, boolean skipRecovery) {
+        WriteRequestImpl(GridNioSession ses,
+            Object msg,
+            boolean skipRecovery,
+            IgniteInClosure<IgniteException> ackC) {
             this.ses = ses;
             this.msg = msg;
             this.skipRecovery = skipRecovery;
+            this.ackC = ackC;
         }
 
         /** {@inheritDoc} */
@@ -2688,11 +2695,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return skipRecovery;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void ackClosure(IgniteInClosure<IgniteException> c) {
-            ackC = c;
         }
 
         /** {@inheritDoc} */
@@ -2796,6 +2798,8 @@ public class GridNioServer<T> {
             boolean accepted,
             @Nullable Map<Integer, ?> meta
         ) {
+            super(null);
+
             op = NioOperation.REGISTER;
 
             this.sockCh = sockCh;
@@ -2810,6 +2814,8 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
+            super(null);
+
             assert ses != null || op == NioOperation.DUMP_STATS : "Invalid params [ses=" + ses + ", op=" + op + ']';
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -2824,8 +2830,14 @@ public class GridNioServer<T> {
          * @param ses Session to change.
          * @param op Requested operation.
          * @param msg Message.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op, Object msg) {
+        NioOperationFuture(GridSelectorNioSessionImpl ses,
+            NioOperation op,
+            Object msg,
+            IgniteInClosure<IgniteException> ackC) {
+            super(ackC);
+
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -2843,9 +2855,15 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          * @param commMsg Direct message.
          * @param skipRecovery Skip recovery flag.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
-            Message commMsg, boolean skipRecovery) {
+        NioOperationFuture(GridSelectorNioSessionImpl ses,
+            NioOperation op,
+            Message commMsg,
+            boolean skipRecovery,
+            IgniteInClosure<IgniteException> ackC) {
+            super(ackC);
+
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -3011,7 +3029,10 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+            Object msg,
+            boolean fut,
+            IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
             if (directMode) {
                 boolean sslSys = sslFilter != null && msg instanceof ByteBuffer;
 
@@ -3030,10 +3051,10 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    return send(ses, (Message)msg, fut);
+                    return send(ses, (Message)msg, fut, ackC);
             }
             else
-                return send(ses, (ByteBuffer)msg, fut);
+                return send(ses, (ByteBuffer)msg, fut, ackC);
         }
 
         /** {@inheritDoc} */
@@ -3087,8 +3108,8 @@ public class GridNioServer<T> {
         /** Selector count. */
         private int selectorCnt;
 
-        /** Grid name. */
-        private String gridName;
+        /** Ignite instance name. */
+        private String igniteInstanceName;
 
         /** TCP_NO_DELAY flag. */
         private boolean tcpNoDelay;
@@ -3159,7 +3180,7 @@ public class GridNioServer<T> {
                 port,
                 log,
                 selectorCnt,
-                gridName,
+                igniteInstanceName,
                 srvName,
                 selectorSpins,
                 tcpNoDelay,
@@ -3240,11 +3261,11 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @return This for chaining.
          */
-        public Builder<T> gridName(@Nullable String gridName) {
-            this.gridName = gridName;
+        public Builder<T> igniteInstanceName(@Nullable String igniteInstanceName) {
+            this.igniteInstanceName = igniteInstanceName;
 
             return this;
         }

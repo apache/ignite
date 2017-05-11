@@ -54,14 +54,14 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         int connections = rnd.nextInt(10) + 1;
 
-        log.info("Node connections [name=" + gridName + ", connections=" + connections + ']');
+        log.info("Node connections [name=" + igniteInstanceName + ", connections=" + connections + ']');
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connections);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(rnd.nextBoolean());

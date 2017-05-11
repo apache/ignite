@@ -28,6 +28,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,6 +37,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ExceptionsTest
     {
+        /** */
+        private const string ExceptionTask = "org.apache.ignite.platform.PlatformExceptionTask";
+
         /// <summary>
         /// Before test.
         /// </summary>
@@ -70,9 +75,70 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(e.InnerException.Message.StartsWith(
                 "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
+            // Check all exceptions mapping.
+            var comp = grid.GetCompute();
+
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<IgniteException>(comp, "IgniteException");
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<ClusterTopologyException>(comp, "ClusterTopologyException");
+            CheckException<ComputeExecutionRejectedException>(comp, "ComputeExecutionRejectedException");
+            CheckException<ComputeJobFailoverException>(comp, "ComputeJobFailoverException");
+            CheckException<ComputeTaskCancelledException>(comp, "ComputeTaskCancelledException");
+            CheckException<ComputeTaskTimeoutException>(comp, "ComputeTaskTimeoutException");
+            CheckException<ComputeUserUndeclaredException>(comp, "ComputeUserUndeclaredException");
+            CheckException<TransactionOptimisticException>(comp, "TransactionOptimisticException");
+            CheckException<TransactionTimeoutException>(comp, "TransactionTimeoutException");
+            CheckException<TransactionRollbackException>(comp, "TransactionRollbackException");
+            CheckException<TransactionHeuristicException>(comp, "TransactionHeuristicException");
+            CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
+            CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
+
+            // Check stopped grid.
             grid.Dispose();
 
             Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
+        }
+
+        /// <summary>
+        /// Checks the exception.
+        /// </summary>
+        private static void CheckException<T>(ICompute comp, string name) where T : Exception
+        {
+            var ex = Assert.Throws<T>(() => comp.ExecuteJavaTask<string>(ExceptionTask, name));
+
+            var javaEx = ex.InnerException as JavaException;
+
+            Assert.IsNotNull(javaEx);
+            Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
+            Assert.AreEqual(name, javaEx.JavaMessage);
+            Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
+
+            // Check serialization.
+            var formatter = new BinaryFormatter();
+            using (var ms = new MemoryStream())
+            {
+                formatter.Serialize(ms, ex);
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var res = (T) formatter.Deserialize(ms);
+
+                Assert.AreEqual(ex.Message, res.Message);
+                Assert.AreEqual(ex.Source, res.Source);
+                Assert.AreEqual(ex.StackTrace, res.StackTrace);
+                Assert.AreEqual(ex.HelpLink, res.HelpLink);
+
+                var resJavaEx = res.InnerException as JavaException;
+
+                Assert.IsNotNull(resJavaEx);
+                Assert.AreEqual(javaEx.Message, resJavaEx.Message);
+                Assert.AreEqual(javaEx.JavaClassName, resJavaEx.JavaClassName);
+                Assert.AreEqual(javaEx.JavaMessage, resJavaEx.JavaMessage);
+                Assert.AreEqual(javaEx.StackTrace, resJavaEx.StackTrace);
+                Assert.AreEqual(javaEx.Source, resJavaEx.Source);
+                Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
+            }
         }
 
         /// <summary>
@@ -355,7 +421,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]

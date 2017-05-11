@@ -32,6 +32,7 @@ globals:
     $generatorOptional: true
     saveAs: true
     process: true
+    require: true
 
 rules:
     arrow-parens: [1, "always"]
@@ -142,7 +143,7 @@ rules:
     no-script-url: 0
     no-self-compare: 2
     no-sequences: 2
-    no-shadow: 2
+    no-shadow: 0
     no-shadow-restricted-names: 2
     no-spaced-func: 2
     no-sparse-arrays: 1

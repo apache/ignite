@@ -292,6 +292,24 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
+    /** Transactions allowed parameter name. */
+    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
+
+    /** DML streaming parameter name. */
+    private static final String PARAM_STREAMING = "streaming";
+
+    /** DML streaming auto flush frequency. */
+    private static final String PARAM_STREAMING_FLUSH_FREQ = "streamingFlushFrequency";
+
+    /** DML streaming node buffer size. */
+    private static final String PARAM_STREAMING_PER_NODE_BUF_SIZE = "streamingPerNodeBufferSize";
+
+    /** DML streaming parallel operations per node. */
+    private static final String PARAM_STREAMING_PER_NODE_PAR_OPS = "streamingPerNodeParallelOperations";
+
+    /** Whether DML streaming will overwrite existing cache entries. */
+    private static final String PARAM_STREAMING_ALLOW_OVERWRITE = "streamingAllowOverwrite";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -312,6 +330,24 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
+
+    /** DML streaming property name. */
+    public static final String PROP_STREAMING = PROP_PREFIX + PARAM_STREAMING;
+
+    /** DML stream auto flush frequency property name. */
+    public static final String PROP_STREAMING_FLUSH_FREQ = PROP_PREFIX + PARAM_STREAMING_FLUSH_FREQ;
+
+    /** DML stream node buffer size property name. */
+    public static final String PROP_STREAMING_PER_NODE_BUF_SIZE = PROP_PREFIX + PARAM_STREAMING_PER_NODE_BUF_SIZE;
+
+    /** DML stream parallel operations per node property name. */
+    public static final String PROP_STREAMING_PER_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
+
+    /** Whether DML streaming will overwrite existing cache entries. */
+    public static final String PROP_STREAMING_ALLOW_OVERWRITE = PROP_PREFIX + PARAM_STREAMING_ALLOW_OVERWRITE;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -378,7 +414,8 @@ public class IgniteJdbcDriver implements Driver {
             new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), ""),
             new PropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
             new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
-            new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), "")
+            new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
+            new PropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

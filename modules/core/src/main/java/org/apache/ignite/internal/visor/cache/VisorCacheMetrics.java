@@ -17,25 +17,29 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.internal.visor.query.VisorQueryMetrics;
 
 /**
  * Data transfer object for {@link CacheMetrics}.
  */
-public class VisorCacheMetrics implements Serializable, LessNamingBean {
-    /** */
-    private static final float MICROSECONDS_IN_SECOND = 1_000_000;
-
+public class VisorCacheMetrics extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final float MICROSECONDS_IN_SECOND = 1_000_000;
 
     /** Cache name. */
     private String name;
@@ -110,7 +114,7 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
     private int rollbacksPerSec;
 
     /** Gets query metrics for cache. */
-    private VisorCacheQueryMetrics qryMetrics;
+    private VisorQueryMetrics qryMetrics;
 
     /** Current size of evict queue used to batch up evictions. */
     private int dhtEvictQueueCurrSize;
@@ -174,11 +178,19 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
     }
 
     /**
+     * Default constructor.
+     */
+    public VisorCacheMetrics() {
+        // No-op.
+    }
+
+    /**
+     * Create data transfer object for given cache metrics.
+     *
      * @param ignite Ignite.
      * @param cacheName Cache name.
-     * @return Data transfer object for given cache metrics.
      */
-    public VisorCacheMetrics from(IgniteEx ignite, String cacheName) {
+    public VisorCacheMetrics(IgniteEx ignite, String cacheName) {
         GridCacheProcessor cacheProcessor = ignite.context().cache();
 
         IgniteCache<Object, Object> c = cacheProcessor.jcache(cacheName);
@@ -217,7 +229,7 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
         commitsPerSec = perSecond(m.getAverageTxCommitTime());
         rollbacksPerSec = perSecond(m.getAverageTxRollbackTime());
 
-        qryMetrics = VisorCacheQueryMetrics.from(c.queryMetrics());
+        qryMetrics = new VisorQueryMetrics(c.queryMetrics());
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();
@@ -239,14 +251,12 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
 
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
         offHeapEntriesCnt = ca.offHeapEntriesCount();
-
-        return this;
     }
 
     /**
      * @return Cache name.
      */
-    public String name() {
+    public String getName() {
         return name;
     }
 
@@ -255,287 +265,287 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
      *
      * @param name New value for cache name.
      */
-    public void name(String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
     /**
      * @return Cache mode.
      */
-    public CacheMode mode() {
+    public CacheMode getMode() {
         return mode;
     }
 
     /**
      * @return Cache system state.
      */
-    public boolean system() {
+    public boolean isSystem() {
         return sys;
     }
 
     /**
      * @return Total number of reads of the owning entity (either cache or entry).
      */
-    public long reads() {
+    public long getReads() {
         return reads;
     }
 
     /**
      * @return The mean time to execute gets
      */
-    public float avgReadTime() {
+    public float getAvgReadTime() {
         return avgReadTime;
     }
 
     /**
      * @return Total number of writes of the owning entity (either cache or entry).
      */
-    public long writes() {
+    public long getWrites() {
         return writes;
     }
 
     /**
      * @return Total number of hits for the owning entity (either cache or entry).
      */
-    public long hits() {
+    public long getHits() {
         return hits;
     }
 
     /**
      * @return Total number of misses for the owning entity (either cache or entry).
      */
-    public long misses() {
+    public long getMisses() {
         return misses;
     }
 
     /**
      * @return Total number of transaction commits.
      */
-    public long txCommits() {
+    public long getTxCommits() {
         return txCommits;
     }
 
     /**
      * @return avgTxCommitTime
      */
-    public float avgTxCommitTime() {
+    public float getAvgTxCommitTime() {
         return avgTxCommitTime;
     }
 
     /**
      * @return The mean time to execute tx rollbacks.
      */
-    public float avgTxRollbackTime() {
+    public float getAvgTxRollbackTime() {
         return avgTxRollbackTime;
     }
 
     /**
      * @return The total number of puts to the cache.
      */
-    public long puts() {
+    public long getPuts() {
         return puts;
     }
 
     /**
      * @return The mean time to execute puts.
      */
-    public float avgPutTime() {
+    public float getAvgPutTime() {
         return avgPutTime;
     }
 
     /**
      * @return The total number of removals from the cache.
      */
-    public long removals() {
+    public long getRemovals() {
         return removals;
     }
 
     /**
      * @return The mean time to execute removes.
      */
-    public float avgRemovalTime() {
+    public float getAvgRemovalTime() {
         return avgRemovalTime;
     }
 
     /**
      * @return The total number of evictions from the cache.
      */
-    public long evictions() {
+    public long getEvictions() {
         return evictions;
     }
 
     /**
      * @return Total number of transaction rollbacks.
      */
-    public long txRollbacks() {
+    public long getTxRollbacks() {
         return txRollbacks;
     }
 
     /**
      * @return Reads per second.
      */
-    public int readsPerSecond() {
+    public int getReadsPerSecond() {
         return readsPerSec;
     }
 
     /**
      * @return Puts per second.
      */
-    public int putsPerSecond() {
+    public int getPutsPerSecond() {
         return putsPerSec;
     }
 
     /**
      * @return Removes per second.
      */
-    public int removalsPerSecond() {
+    public int getRemovalsPerSecond() {
         return removalsPerSec;
     }
 
     /**
      * @return Commits per second.
      */
-    public int commitsPerSecond() {
+    public int getCommitsPerSecond() {
         return commitsPerSec;
     }
 
     /**
      * @return Rollbacks per second.
      */
-    public int rollbacksPerSecond() {
+    public int getRollbacksPerSecond() {
         return rollbacksPerSec;
     }
 
     /**
      * @return Number of non-{@code null} values in the cache.
      */
-    public int size() {
+    public int getSize() {
         return size;
     }
 
     /**
      * @return Gets number of keys in the cache, possibly with {@code null} values.
      */
-    public int keySize() {
+    public int getKeySize() {
         return keySize;
     }
 
     /**
      * @return Gets query metrics for cache.
      */
-    public VisorCacheQueryMetrics queryMetrics() {
+    public VisorQueryMetrics getQueryMetrics() {
         return qryMetrics;
     }
 
     /**
      * @return Current size of evict queue used to batch up evictions.
      */
-    public int dhtEvictQueueCurrentSize() {
+    public int getDhtEvictQueueCurrentSize() {
         return dhtEvictQueueCurrSize;
     }
 
     /**
      * @return Gets transaction per-thread map size.
      */
-    public int txThreadMapSize() {
+    public int getTxThreadMapSize() {
         return txThreadMapSize;
     }
 
     /**
      * @return Transaction per-Xid map size.
      */
-    public int txXidMapSize() {
+    public int getTxXidMapSize() {
         return txXidMapSize;
     }
 
     /**
      * @return Committed transaction queue size.
      */
-    public int txCommitQueueSize() {
+    public int getTxCommitQueueSize() {
         return txCommitQueueSize;
     }
 
     /**
      * @return Prepared transaction queue size.
      */
-    public int txPrepareQueueSize() {
+    public int getTxPrepareQueueSize() {
         return txPrepareQueueSize;
     }
 
     /**
      * @return Start version counts map size.
      */
-    public int txStartVersionCountsSize() {
+    public int getTxStartVersionCountsSize() {
         return txStartVerCountsSize;
     }
 
     /**
      * @return Number of cached committed transaction IDs.
      */
-    public int txCommittedVersionsSize() {
+    public int getTxCommittedVersionsSize() {
         return txCommittedVersionsSize;
     }
 
     /**
      * @return Number of cached rolled back transaction IDs.
      */
-    public int txRolledbackVersionsSize() {
+    public int getTxRolledbackVersionsSize() {
         return txRolledbackVersionsSize;
     }
 
     /**
      * @return DHT thread map size
      */
-    public int txDhtThreadMapSize() {
+    public int getTxDhtThreadMapSize() {
         return txDhtThreadMapSize;
     }
 
     /**
      * @return Transaction DHT per-Xid map size.
      */
-    public int txDhtXidMapSize() {
+    public int getTxDhtXidMapSize() {
         return txDhtXidMapSize;
     }
 
     /**
      * @return Committed DHT transaction queue size.
      */
-    public int txDhtCommitQueueSize() {
+    public int getTxDhtCommitQueueSize() {
         return txDhtCommitQueueSize;
     }
 
     /**
      * @return Prepared DHT transaction queue size.
      */
-    public int txDhtPrepareQueueSize() {
+    public int getTxDhtPrepareQueueSize() {
         return txDhtPrepareQueueSize;
     }
 
     /**
      * @return DHT start version counts map size.
      */
-    public int txDhtStartVersionCountsSize() {
+    public int getTxDhtStartVersionCountsSize() {
         return txDhtStartVerCountsSize;
     }
 
     /**
      * @return Number of cached committed DHT transaction IDs.
      */
-    public int txDhtCommittedVersionsSize() {
+    public int getTxDhtCommittedVersionsSize() {
         return txDhtCommittedVersionsSize;
     }
 
     /**
      * @return Number of cached rolled back DHT transaction IDs.
      */
-    public int txDhtRolledbackVersionsSize() {
+    public int getTxDhtRolledbackVersionsSize() {
         return txDhtRolledbackVersionsSize;
     }
 
     /**
      * @return Memory size allocated in off-heap.
      */
-    public long offHeapAllocatedSize() {
+    public long getOffHeapAllocatedSize() {
         return offHeapAllocatedSize;
     }
 
@@ -544,6 +554,98 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
      */
     public long offHeapEntriesCount() {
         return offHeapEntriesCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, name);
+        U.writeEnum(out, mode);
+        out.writeBoolean(sys);
+        out.writeInt(size);
+        out.writeInt(keySize);
+        out.writeLong(reads);
+        out.writeFloat(avgReadTime);
+        out.writeLong(writes);
+        out.writeLong(hits);
+        out.writeLong(misses);
+        out.writeLong(txCommits);
+        out.writeFloat(avgTxCommitTime);
+        out.writeLong(txRollbacks);
+        out.writeFloat(avgTxRollbackTime);
+        out.writeLong(puts);
+        out.writeFloat(avgPutTime);
+        out.writeLong(removals);
+        out.writeFloat(avgRemovalTime);
+        out.writeLong(evictions);
+        out.writeInt(readsPerSec);
+        out.writeInt(putsPerSec);
+        out.writeInt(removalsPerSec);
+        out.writeInt(commitsPerSec);
+        out.writeInt(rollbacksPerSec);
+        out.writeInt(dhtEvictQueueCurrSize);
+        out.writeInt(txThreadMapSize);
+        out.writeInt(txXidMapSize);
+        out.writeInt(txCommitQueueSize);
+        out.writeInt(txPrepareQueueSize);
+        out.writeInt(txStartVerCountsSize);
+        out.writeInt(txCommittedVersionsSize);
+        out.writeInt(txRolledbackVersionsSize);
+        out.writeInt(txDhtThreadMapSize);
+        out.writeInt(txDhtXidMapSize);
+        out.writeInt(txDhtCommitQueueSize);
+        out.writeInt(txDhtPrepareQueueSize);
+        out.writeInt(txDhtStartVerCountsSize);
+        out.writeInt(txDhtCommittedVersionsSize);
+        out.writeInt(txDhtRolledbackVersionsSize);
+        out.writeLong(offHeapAllocatedSize);
+        out.writeLong(offHeapEntriesCnt);
+        out.writeObject(qryMetrics);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        name = U.readString(in);
+        mode = CacheMode.fromOrdinal(in.readByte());
+        sys = in.readBoolean();
+        size = in.readInt();
+        keySize = in.readInt();
+        reads = in.readLong();
+        avgReadTime = in.readFloat();
+        writes = in.readLong();
+        hits = in.readLong();
+        misses = in.readLong();
+        txCommits = in.readLong();
+        avgTxCommitTime = in.readFloat();
+        txRollbacks = in.readLong();
+        avgTxRollbackTime = in.readFloat();
+        puts = in.readLong();
+        avgPutTime = in.readFloat();
+        removals = in.readLong();
+        avgRemovalTime = in.readFloat();
+        evictions = in.readLong();
+        readsPerSec = in.readInt();
+        putsPerSec = in.readInt();
+        removalsPerSec = in.readInt();
+        commitsPerSec = in.readInt();
+        rollbacksPerSec = in.readInt();
+        dhtEvictQueueCurrSize = in.readInt();
+        txThreadMapSize = in.readInt();
+        txXidMapSize = in.readInt();
+        txCommitQueueSize = in.readInt();
+        txPrepareQueueSize = in.readInt();
+        txStartVerCountsSize = in.readInt();
+        txCommittedVersionsSize = in.readInt();
+        txRolledbackVersionsSize = in.readInt();
+        txDhtThreadMapSize = in.readInt();
+        txDhtXidMapSize = in.readInt();
+        txDhtCommitQueueSize = in.readInt();
+        txDhtPrepareQueueSize = in.readInt();
+        txDhtStartVerCountsSize = in.readInt();
+        txDhtCommittedVersionsSize = in.readInt();
+        txDhtRolledbackVersionsSize = in.readInt();
+        offHeapAllocatedSize = in.readLong();
+        offHeapEntriesCnt = in.readLong();
+        qryMetrics = (VisorQueryMetrics)in.readObject();
     }
 
     /** {@inheritDoc} */

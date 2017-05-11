@@ -43,8 +43,8 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -83,15 +83,11 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
             final String svcName = "myService";
 
-            String key = "key";
-
-            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
-
-            final Ignite ig2 = primaryNode(key, cacheName);
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, primaryKey(ig.cache(cacheName)));
 
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    return ig2.services().service(svcName) != null;
+                    return svcs.service(svcName) != null;
                 }
             }, 10 * 1000);
 
@@ -129,7 +125,13 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         final String svcName = "myService";
 
-        String key = "key";
+        ig.createCache(ccfg);
+
+        Object key = primaryKey(ig.cache(cacheName));
+
+        ig.destroyCache(cacheName);
+
+        awaitPartitionMapExchange();
 
         svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
@@ -137,16 +139,10 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         ig.createCache(ccfg);
 
-        final Ignite ig2 = primaryNode(key, cacheName);
-
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
-                    boolean res = ig2.services().service(svcName) != null;
-
-                    info("try get service " + svcName + " res: " + res);
-
-                    return res;
+                    return svcs.service(svcName) != null;
                 }
             }, 10 * 1000);
 

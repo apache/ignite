@@ -105,7 +105,7 @@ class VisorCacheClearCommand {
 
             val res = executeOne(nid, classOf[VisorCacheClearTask], cacheName)
 
-            t += (nodeId8(nid), res.get1(), res.get2())
+            t += (nodeId8(nid), res.getSizeBefore, res.getSizeAfter)
 
             println("Cleared cache with name: " + escapeName(cacheName))
 

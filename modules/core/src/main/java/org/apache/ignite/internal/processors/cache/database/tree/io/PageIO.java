@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -62,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockLi
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(PageMemory, Page, PageLockListener, PageIO, IgniteWriteAheadLogManager)}
+ *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {
@@ -160,10 +159,14 @@ public abstract class PageIO {
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
+
+    /** */
     public static final short T_H2_EX_REF_LEAF_END = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
     public static final short T_H2_EX_REF_INNER_START = 20000;
+
+    /** */
     public static final short T_H2_EX_REF_INNER_END = T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
@@ -310,19 +313,19 @@ public abstract class PageIO {
 
     /**
      * Registers extra inner IO versions.
+     *
+     * @param innerExtIOs Extra versions.
      */
-    public static void registerH2ExtraInner(
-        IOVersions<? extends BPlusInnerIO<?>> innerExtIOs
-    ) {
+    public static void registerH2ExtraInner(IOVersions<? extends BPlusInnerIO<?>> innerExtIOs) {
         h2ExtraInnerIOs.add(innerExtIOs);
     }
 
     /**
      * Registers extra inner IO versions.
+     *
+     * @param leafExtIOs Extra versions.
      */
-    public static void registerH2ExtraLeaf(
-        IOVersions<? extends BPlusLeafIO<?>> leafExtIOs
-    ) {
+    public static void registerH2ExtraLeaf(IOVersions<? extends BPlusLeafIO<?>> leafExtIOs) {
         h2ExtraLeafIOs.add(leafExtIOs);
     }
 

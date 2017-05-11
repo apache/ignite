@@ -89,7 +89,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static Marshaller marsh;
 
     /** */
-    private static String gridName;
+    private static String igniteInstanceName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -129,8 +129,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration namedCache = new CacheConfiguration();
 
@@ -151,7 +151,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
-        gridName = grid().configuration().getGridName();
+        igniteInstanceName = grid().configuration().getIgniteInstanceName();
     }
 
     /**
@@ -846,16 +846,15 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             }
         });
 
-        // Any deserialization has to be executed under a thread, that contains the grid name.
-        new IgniteThread(gridName, "unmarshal-thread", f).start();
+        // Any deserialization has to be executed under a thread, that contains the Ignite instance name.
+        new IgniteThread(igniteInstanceName, "unmarshal-thread", f).start();
 
         try {
             return f.get();
         }
         catch (Exception e) {
-            if (e.getCause() instanceof IgniteCheckedException) {
+            if (e.getCause() instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e.getCause();
-            }
 
             fail(e.getCause().getMessage());
         }

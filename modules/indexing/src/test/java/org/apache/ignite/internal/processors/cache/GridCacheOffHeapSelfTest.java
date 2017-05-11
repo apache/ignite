@@ -72,8 +72,8 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     private boolean excluded;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -87,7 +87,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setOffHeapMaxMemory(1024L * 1024L * 1024L);
         cacheCfg.setIndexedTypes(Integer.class, CacheValue.class);
 
         cfg.setCacheConfiguration(cacheCfg);

@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -45,12 +43,10 @@ public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
-
-    /** {@inheritDoc} */
     @Override public void testLocalPeek() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1839");
+        // TODO: uncomment and re-open ticket if fails.
+//        fail("https://issues.apache.org/jira/browse/IGNITE-1824");
+
+        super.testLocalPeek();
     }
 }

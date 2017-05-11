@@ -66,28 +66,26 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_NAME);
         igfsCfg.setDefaultMode(IgfsMode.DUAL_SYNC);
         igfsCfg.setSecondaryFileSystem(secondary);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
         cfg.setFileSystemConfiguration(igfsCfg);
-        cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
 
         return cfg;
     }

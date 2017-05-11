@@ -233,7 +233,7 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 87;
     }
 

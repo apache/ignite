@@ -213,7 +213,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
             return new SB().a(val).toString();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 
@@ -223,7 +223,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         try {
             type = rawType();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             type = null;
         }
 
@@ -323,7 +323,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 119;
     }
 

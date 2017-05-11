@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -38,14 +37,13 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -76,13 +74,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /**
-     * @return Cache write order mode.
-     */
-    private CacheAtomicWriteOrderMode cacheAtomicWriteOrderMode() {
-        return PRIMARY;
-    }
-
-    /**
      * @return Cache synchronization mode.
      */
     private CacheWriteSynchronizationMode cacheWriteSynchronizationMode() {
@@ -91,10 +82,10 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (gridName != null && gridName.toLowerCase().startsWith("binary"))
+        if (igniteInstanceName != null && igniteInstanceName.toLowerCase().startsWith("binary"))
             c.setMarshaller(new BinaryMarshaller());
         else
             c.setMarshaller(new OptimizedMarshaller());
@@ -126,7 +117,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         cc.setStoreKeepBinary(true);
 
         cc.setCacheMode(cacheMode());
-        cc.setAtomicWriteOrderMode(cacheAtomicWriteOrderMode());
         cc.setWriteSynchronizationMode(cacheWriteSynchronizationMode());
 
         cc.setBackups(0);
@@ -280,7 +270,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         for (int i = 0; i < 1; i++) {
             builder.setField("id", i);
-            builder.hashCode(i);
 
             entity = builder.build();
 

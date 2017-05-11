@@ -46,12 +46,12 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
     private static final int CLIENT = NODES - 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (getTestGridName(CLIENT).equals(gridName))
+        if (getTestIgniteInstanceName(CLIENT).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;

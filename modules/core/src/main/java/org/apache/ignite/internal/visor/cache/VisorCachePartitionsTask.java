@@ -45,7 +45,8 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.escapeName;
  * Task that collect keys distribution in partitions.
  */
 @GridInternal
-public class VisorCachePartitionsTask extends VisorMultiNodeTask<String, Map<UUID, VisorCachePartitions>, VisorCachePartitions> {
+public class VisorCachePartitionsTask extends VisorMultiNodeTask<String,
+    Map<UUID, VisorCachePartitions>, VisorCachePartitions> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -125,9 +126,9 @@ public class VisorCachePartitionsTask extends VisorMultiNodeTask<String, Map<UUI
 
                         // Pass -1 as topology version in order not to wait for topology version.
                         if (part.primary(AffinityTopologyVersion.NONE))
-                            parts.addPrimary(p, sz, 0);
+                            parts.addPrimary(p, sz);
                         else if (part.state() == GridDhtPartitionState.OWNING && part.backup(AffinityTopologyVersion.NONE))
-                            parts.addBackup(p, sz, 0);
+                            parts.addBackup(p, sz);
                     }
                 }
             }

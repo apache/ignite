@@ -18,6 +18,7 @@
 package org.apache.ignite.binary;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -130,6 +131,13 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @return Time.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Time readTime(String fieldName) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
@@ -225,6 +233,13 @@ public interface BinaryReader {
      * @throws BinaryObjectException In case of error.
      */
     public Timestamp[] readTimestampArray(String fieldName) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Time array.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Time[] readTimeArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.

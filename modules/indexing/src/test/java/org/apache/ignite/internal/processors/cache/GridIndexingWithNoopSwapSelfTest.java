@@ -47,8 +47,8 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
     protected Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -67,6 +67,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(1000);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setIndexedTypes(
@@ -108,6 +109,6 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         SqlQuery<Integer, ObjectValue> qry =
             new SqlQuery(ObjectValue.class, "intVal >= ? order by intVal");
 
-        assertEquals(0, cache.query(qry.setArgs(0)).getAll().size());
+        assertEquals(10, cache.query(qry.setArgs(0)).getAll().size());
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,8 +45,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -66,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -197,7 +197,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         ctx.event().removeLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         IgniteCheckedException stopErr = new IgniteInterruptedCheckedException(
-            "Node is stopping: " + ctx.gridName());
+            "Node is stopping: " + ctx.igniteInstanceName());
 
         GridChangeGlobalStateFuture f = cgsLocFut.get();
 
@@ -213,14 +213,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        return globalState;
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addGridCommonData(DiscoveryDataExchangeType.STATE_PROC.ordinal(), globalState);
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
-        if (ctx.localNodeId().equals(joiningNodeId))
-            globalState = (ClusterState)data;
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        ClusterState state = (ClusterState)data.commonData();
+
+        if (state != null)
+            globalState = state;
     }
 
     /**
@@ -230,7 +232,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
             throw new IgniteException("Cannot " + prettyStr(activate) + " cluster, because cache locked on transaction.");
 
-        if ((this.globalState == ACTIVE && activate) || (this.globalState == INACTIVE && !activate))
+        if ((globalState == ACTIVE && activate) || (this.globalState == INACTIVE && !activate))
             return new GridFinishedFuture<>();
 
         final UUID requestId = UUID.randomUUID();
@@ -528,8 +530,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 Exception e = null;
 
                 try {
-                    ctx.marshallerContext().onMarshallerCacheStarted(ctx);
-
                     if (!ctx.config().isDaemon())
                         ctx.cacheObjects().onUtilityCacheStarted();
 

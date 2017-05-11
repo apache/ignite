@@ -722,7 +722,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Assign field value
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
+            var targetParamConverted = Expression.Convert(targetParam, typeof(object));
             var assignExpr = Expression.Call(DelegateConverter.GetWriteFieldMethod(field), targetParamConverted, 
                 readExpr);
 

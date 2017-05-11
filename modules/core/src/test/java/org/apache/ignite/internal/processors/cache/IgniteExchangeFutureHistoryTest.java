@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -44,11 +43,6 @@ public class IgniteExchangeFutureHistoryTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
     }
 
     /** {@inheritDoc} */

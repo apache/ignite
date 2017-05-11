@@ -31,8 +31,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
  */
 public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRestartSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 

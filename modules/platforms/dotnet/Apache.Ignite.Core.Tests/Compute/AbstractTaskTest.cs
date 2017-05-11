@@ -129,32 +129,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (Grid1 != null)
-                Ignition.Stop(Grid1.Name, true);
-
-            if (_fork)
-            {
-                if (_proc2 != null) {
-                    _proc2.Kill();
-
-                    _proc2.Join();
-                }
-
-                if (_proc3 != null)
-                {
-                    _proc3.Kill();
-
-                    _proc3.Join();
-                }
-            }
-            else
-            {
-                if (_grid2 != null)
-                    Ignition.Stop(_grid2.Name, true);
-
-                if (_grid3 != null)
-                    Ignition.Stop(_grid3.Name, true);
-            }
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
         }
 
         /// <summary>

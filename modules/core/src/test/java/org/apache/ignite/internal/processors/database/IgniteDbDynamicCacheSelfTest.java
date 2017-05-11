@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -40,7 +41,13 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
 
-        dbCfg.setPageCacheSize(200 * 1024 * 1024);
+        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+        plc.setName("dfltPlc");
+        plc.setSize(200 * 1024 * 1024);
+
+        dbCfg.setDefaultMemoryPolicyName("dfltPlc");
+        dbCfg.setMemoryPolicies(plc);
 
         cfg.setMemoryConfiguration(dbCfg);
 

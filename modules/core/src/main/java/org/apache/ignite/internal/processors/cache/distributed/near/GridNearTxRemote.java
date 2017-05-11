@@ -115,7 +115,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             ctx, 
             nodeId, 
             xidVer,
-            commitVer, 
+            commitVer,
             sys, 
             plc, 
             concurrency, 
@@ -289,7 +289,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param key Evicted key.
      */
-    public void addEvicted(IgniteTxKey key) {
+    void addEvicted(IgniteTxKey key) {
         evicted.add(key);
     }
 
@@ -334,7 +334,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
                 CacheObject val = cached.peek(null);
 
-                if (val == null && cached.evictInternal(xidVer, null)) {
+                if (val == null && cached.evictInternal(xidVer, null, false)) {
                     evicted.add(entry.txKey());
 
                     return false;
@@ -395,7 +395,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
                 CacheObject peek = cached.peek(null);
 
-                if (peek == null && cached.evictInternal(xidVer, null)) {
+                if (peek == null && cached.evictInternal(xidVer, null, false)) {
                     cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);

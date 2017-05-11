@@ -19,10 +19,12 @@ package org.apache.ignite.internal.util.nio;
 
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerPool;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Enables multithreaded notification of session opened, message received and session closed events.
@@ -34,20 +36,20 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     /** Worker pool. */
     private GridWorkerPool workerPool;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /**
      * Assigns filter name to a filter.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param exec Executor.
      * @param log Logger.
      */
-    public GridNioAsyncNotifyFilter(String gridName, Executor exec, IgniteLogger log) {
+    public GridNioAsyncNotifyFilter(String igniteInstanceName, Executor exec, IgniteLogger log) {
         super(GridNioAsyncNotifyFilter.class.getSimpleName());
 
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.log = log;
 
         workerPool = new GridWorkerPool(exec, log);
@@ -60,7 +62,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionOpened(final GridNioSession ses) throws IgniteCheckedException {
-        workerPool.execute(new GridWorker(gridName, "session-opened-notify", log) {
+        workerPool.execute(new GridWorker(igniteInstanceName, "session-opened-notify", log) {
             @Override protected void body() {
                 try {
                     proceedSessionOpened(ses);
@@ -74,7 +76,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(final GridNioSession ses) throws IgniteCheckedException {
-        workerPool.execute(new GridWorker(gridName, "session-closed-notify", log) {
+        workerPool.execute(new GridWorker(igniteInstanceName, "session-closed-notify", log) {
             @Override protected void body() {
                 try {
                     proceedSessionClosed(ses);
@@ -89,7 +91,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(final GridNioSession ses, final Object msg) throws IgniteCheckedException {
-        workerPool.execute(new GridWorker(gridName, "message-received-notify", log) {
+        workerPool.execute(new GridWorker(igniteInstanceName, "message-received-notify", log) {
             @Override protected void body() {
                 try {
                     proceedMessageReceived(ses, msg);
@@ -110,9 +112,10 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     @Override public GridNioFuture<?> onSessionWrite(
         GridNioSession ses,
         Object msg,
-        boolean fut
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
-        return proceedSessionWrite(ses, msg, fut);
+        return proceedSessionWrite(ses, msg, fut, ackC);
     }
 
     /** {@inheritDoc} */

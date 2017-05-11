@@ -41,11 +41,6 @@ public interface CacheEvictionManager extends GridCacheManager {
     public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer);
 
     /**
-     * Notifications.
-     */
-    public void unwind();
-
-    /**
      * @param entry Entry to attempt to evict.
      * @param obsoleteVer Obsolete version.
      * @param filter Optional entry filter.
@@ -60,19 +55,9 @@ public interface CacheEvictionManager extends GridCacheManager {
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
 
     /**
-     * @return Current size of evict queue.
-     */
-    public int evictQueueSize();
-
-    /**
      * @param keys Keys to evict.
      * @param obsoleteVer Obsolete version.
      * @throws IgniteCheckedException In case of error.
      */
     public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException;
-
-    /**
-     * @return {@code True} if either evicts or near evicts are synchronized, {@code false} otherwise.
-     */
-    public boolean evictSyncOrNearSync();
 }

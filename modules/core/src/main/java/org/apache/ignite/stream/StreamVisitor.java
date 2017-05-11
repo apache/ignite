@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
  * does not update the cache. If the tuple needs to be stored in the cache,
  * then {@code cache.put(...)} should be called explicitly.
  */
-public abstract class StreamVisitor<K, V> implements StreamReceiver<K, V>, IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> {
+public abstract class  StreamVisitor<K, V> implements StreamReceiver<K, V>, IgniteBiInClosure<IgniteCache<K, V>, Map.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -201,10 +201,9 @@
             install -s mvn:xom/xom/1.2.5]]>
         </details>
         <feature dependency="true">http</feature>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-beanutils/${commons.beanutils.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.oro/${oro.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ezmorph/${ezmorph.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.json-lib/${jsonlib.bundle.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson2.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson2.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson2.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>

@@ -25,6 +25,7 @@
 #include "test_utils.h"
 
 using namespace ignite;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -76,14 +77,14 @@ BOOST_AUTO_TEST_CASE(TestByteArraySelect)
 BOOST_AUTO_TEST_CASE(TestByteArrayParam)
 {
     SQLRETURN ret;
-    
+
     TestType in;
     in.i8Field = 101;
 
     const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     in.i8ArrayField.assign(data, data + sizeof(data) / sizeof(data[0]));
 
-    testCache.Put(1, in);   
+    testCache.Put(1, in);
 
     SQLLEN colLen = 0;
     SQLCHAR colData = 0;
@@ -139,7 +140,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-    
+
     SQLLEN paramLen = paramData.size();
 
     ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_BINARY, SQL_VARBINARY, paramData.size(), 0, &paramData[0], paramData.size(), &paramLen);
@@ -186,6 +187,122 @@ BOOST_AUTO_TEST_CASE(TestByteParamInsert)
 
     TestType out = testCache.Get(key);
     BOOST_REQUIRE_EQUAL(out.i8Field, data);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimestampSelect)
+{
+    TestType in1;
+    in1.i32Field = 1;
+    in1.timestampField = common::MakeTimestampGmt(2017, 1, 13, 19, 54, 01, 987654321);
+
+    testCache.Put(1, in1);
+
+    CheckSingleResult<int32_t>(
+        "SELECT i32Field FROM TestType WHERE timestampField = '2017-01-13 19:54:01.987654321'", in1.i32Field);
+
+    CheckSingleResult<Timestamp>(
+        "SELECT timestampField FROM TestType WHERE i32Field = 1", in1.timestampField);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimestampInsert)
+{
+    SQLRETURN ret;
+
+    SQLCHAR request[] = "INSERT INTO TestType(_key, timestampField) VALUES(?, ?)";
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 1;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQL_TIMESTAMP_STRUCT data;
+    data.year = 2017;
+    data.month = 1;
+    data.day = 13;
+    data.hour = 19;
+    data.minute = 54;
+    data.second = 1;
+    data.fraction = 987654321;
+
+    using ignite::impl::binary::BinaryUtils;
+    Timestamp expected = common::MakeTimestampGmt(data.year, data.month, data.day, data.hour,
+        data.minute, data.second, data.fraction);
+
+    SQLLEN lenInd = sizeof(data);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIMESTAMP, SQL_TIMESTAMP, sizeof(data), 0, &data, sizeof(data), &lenInd);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    TestType out = testCache.Get(key);
+
+    BOOST_REQUIRE_EQUAL(out.timestampField.GetSeconds(), expected.GetSeconds());
+    BOOST_REQUIRE_EQUAL(out.timestampField.GetSecondFraction(), expected.GetSecondFraction());
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeSelect)
+{
+    TestType in1;
+    in1.i32Field = 1;
+    in1.timeField = common::MakeTimeGmt(19, 54, 01);
+
+    testCache.Put(1, in1);
+
+    CheckSingleResult<int32_t>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
+
+    CheckSingleResult<Time>("SELECT timeField FROM TestType WHERE i32Field = 1", in1.timeField);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeInsert)
+{
+    SQLRETURN ret;
+
+    SQLCHAR request[] = "INSERT INTO TestType(_key, timeField) VALUES(?, ?)";
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    int64_t key = 1;
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQL_TIME_STRUCT data = { 0 };
+    data.hour = 19;
+    data.minute = 54;
+    data.second = 1;
+
+    using ignite::impl::binary::BinaryUtils;
+    Time expected = common::MakeTimeGmt(data.hour, data.minute, data.second);
+
+    SQLLEN lenInd = sizeof(data);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, sizeof(data), 0, &data, sizeof(data), &lenInd);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    TestType out = testCache.Get(key);
+
+    BOOST_REQUIRE_EQUAL(out.timeField.GetSeconds(), expected.GetSeconds());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

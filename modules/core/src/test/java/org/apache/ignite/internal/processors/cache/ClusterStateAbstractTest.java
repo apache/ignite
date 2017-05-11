@@ -33,7 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -114,7 +114,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     public void testDynamicCacheStart() throws Exception {
         activeOnStart = false;
 
-        forbidden.add(GridDhtPartitionSupplyMessageV2.class);
+        forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
         startGrids(GRID_CNT);
@@ -143,7 +143,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     public void testNoRebalancing() throws Exception {
         activeOnStart = false;
 
-        forbidden.add(GridDhtPartitionSupplyMessageV2.class);
+        forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
         startGrids(GRID_CNT);
@@ -211,7 +211,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         checkInactive(GRID_CNT);
 
-        forbidden.add(GridDhtPartitionSupplyMessageV2.class);
+        forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
         // Should stop without exchange.
@@ -222,7 +222,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testActivationFromClient() throws Exception {
-        forbidden.add(GridDhtPartitionSupplyMessageV2.class);
+        forbidden.add(GridDhtPartitionSupplyMessage.class);
         forbidden.add(GridDhtPartitionDemandMessage.class);
 
         activeOnStart = false;
@@ -280,8 +280,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingLock() throws Exception {
-        //TODO GG-11851
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
 
         startGrids(GRID_CNT);
 
@@ -338,7 +337,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingTransaction() throws Exception {
-        fail("Safe way for deactivate cluster must be implemented.");
+        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
 
         startGrids(GRID_CNT);
 

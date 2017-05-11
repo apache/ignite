@@ -162,7 +162,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 95;
     }
 

@@ -103,7 +103,7 @@ import org.springframework.context.ApplicationContextAware;
  * and results in {@link IllegalArgumentException}.
  * <p>
  * If you already have Ignite node running within your application,
- * simply provide correct Grid name, like below (if there is no Grid
+ * simply provide correct Ignite instance name, like below (if there is no Grid
  * instance with such name, exception will be thrown):
  * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
@@ -112,9 +112,9 @@ import org.springframework.context.ApplicationContextAware;
  *        xsi:schemaLocation="
  *         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
- *     &lt;-- Provide Grid name. --&gt;
+ *     &lt;-- Provide Ignite instance name. --&gt;
  *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="igniteInstanceName" value="myGrid"/&gt;
  *     &lt;/bean>
  *
  *     &lt;-- Use annotation-driven caching configuration. --&gt;
@@ -127,7 +127,7 @@ import org.springframework.context.ApplicationContextAware;
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},
  * {@link #setConfiguration(IgniteConfiguration) configuration}, nor
- * {@link #setGridName(String) gridName} are provided, cache manager
+ * {@link #setIgniteInstanceName(String) igniteInstanceName} are provided, cache manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
  * <h1>Starting Remote Nodes</h1>
@@ -147,8 +147,8 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     /** Ignite configuration. */
     private IgniteConfiguration cfg;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Dynamic cache configuration template. */
     private CacheConfiguration<Object, Object> dynamicCacheCfg;
@@ -207,18 +207,40 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
      * Gets grid name.
      *
      * @return Grid name.
+     * @deprecated Use {@link #getIgniteInstanceName()}.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return getIgniteInstanceName();
     }
 
     /**
      * Sets grid name.
      *
      * @param gridName Grid name.
+     * @deprecated Use {@link #setIgniteInstanceName(String)}.
      */
+    @Deprecated
     public void setGridName(String gridName) {
-        this.gridName = gridName;
+        setIgniteInstanceName(gridName);
+    }
+
+    /**
+     * Gets Ignite instance name.
+     *
+     * @return Ignite instance name.
+     */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
+    }
+
+    /**
+     * Sets Ignite instance name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     */
+    public void setIgniteInstanceName(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
     }
 
     /**
@@ -265,7 +287,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                 "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                 "SpringCacheManager. If you already have a node running, omit both of them and set" +
-                "'gridName' property.");
+                "'igniteInstanceName' property.");
         }
 
         if (cfgPath != null)
@@ -273,7 +295,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
         else if (cfg != null)
             ignite = IgniteSpring.start(cfg, springCtx);
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(igniteInstanceName);
     }
 
     /** {@inheritDoc} */

@@ -39,27 +39,12 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicLocalExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicWithStoreExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicReplicatedExpiryPolicyTest.class);
 
         suite.addTestSuite(IgniteCacheTxLocalExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheTxExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheTxWithStoreExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedExpiryPolicyTest.class);
-
-        // Offheap tests.
-        suite.addTestSuite(IgniteCacheAtomicLocalOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicWithStoreOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedOffheapExpiryPolicyTest.class);
-
-        suite.addTestSuite(IgniteCacheTxLocalOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheTxOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheTxWithStoreOffheapExpiryPolicyTest.class);
-        suite.addTestSuite(IgniteCacheTxReplicatedOffheapExpiryPolicyTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyWithStoreTest.class);
         suite.addTestSuite(IgniteCacheTxExpiryPolicyWithStoreTest.class);

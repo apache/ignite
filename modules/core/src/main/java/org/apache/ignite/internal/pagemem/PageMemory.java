@@ -18,29 +18,11 @@
 package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  */
-public interface PageMemory extends LifecycleAware, PageIdAllocator {
-    /**
-     * Gets the page associated with the given page ID. Each page obtained with this method must be released by
-     * calling {@link #releasePage(Page)}. This method will allocate page with given ID if it doesn't exist.
-     *
-     * @param cacheId Cache ID.
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Page page(int cacheId, long pageId) throws IgniteCheckedException;
-
-    /**
-     * @param page Page to release.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void releasePage(Page page) throws IgniteCheckedException;
-
+public interface PageMemory extends LifecycleAware, PageIdAllocator, PageSupport {
     /**
      * @return Page size in bytes.
      */

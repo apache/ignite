@@ -67,8 +67,8 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -80,7 +80,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
         plc.setMaxSize(MAX_SIZE);
 
         ccfg.setEvictionPolicy(plc);
-        ccfg.setEvictSynchronized(false);
+        ccfg.setOnheapCacheEnabled(true);
 
         cfg.setPeerClassLoadingEnabled(false);
 

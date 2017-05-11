@@ -57,8 +57,8 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(ipFinder);
@@ -68,6 +68,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(evictionPlc);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 

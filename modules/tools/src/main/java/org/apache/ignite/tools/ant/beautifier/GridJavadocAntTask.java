@@ -117,6 +117,8 @@ public class GridJavadocAntTask extends MatchingTask {
 
         boolean fail = false;
 
+        ArrayList<String> errMsgs = new ArrayList<>();
+
         for (String fileName : scanner.getIncludedFiles()) {
             String file = dir.getAbsolutePath() + '/' + fileName;
 
@@ -129,12 +131,26 @@ public class GridJavadocAntTask extends MatchingTask {
             catch (IllegalArgumentException e) {
                 System.err.println("JavaDoc error: " + e.getMessage());
 
+                errMsgs.add(e.getMessage());
+
                 fail = true;
             }
         }
 
         if (fail)
-            throw new BuildException("Execution failed due to previous errors.");
+            throw new BuildException("Execution failed due to: " + prepareErrorSummary(errMsgs));
+    }
+
+    /**
+     * @param errMsgs Err msgs.
+     */
+    private String prepareErrorSummary(ArrayList<String> errMsgs) {
+        StringBuilder strBdr = new StringBuilder();
+
+        for (String errMsg : errMsgs)
+            strBdr.append(errMsg).append(System.lineSeparator());
+
+        return strBdr.toString();
     }
 
     /**
@@ -282,6 +298,7 @@ public class GridJavadocAntTask extends MatchingTask {
                             "<script type='text/javascript'>" +
                                 "SyntaxHighlighter.all();" +
                                 "dp.SyntaxHighlighter.HighlightAll('code');" +
+                                "!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');" +
                             "</script>\n" +
                             "</body>\n");
 

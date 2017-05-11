@@ -116,7 +116,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
                         for (GridDhtLocalPartition p : top.currentLocalPartitions()) {
                             Collection<Object> rmvQueue = GridTestUtils.getFieldValue(p, "rmvQueue");
 
-                            if (!rmvQueue.isEmpty() || p.size() != 0)
+                            if (!rmvQueue.isEmpty() || p.dataStore().size() != 0)
                                 return false;
                         }
                     }

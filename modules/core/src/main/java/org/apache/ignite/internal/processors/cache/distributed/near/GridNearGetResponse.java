@@ -348,7 +348,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 50;
     }
 

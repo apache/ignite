@@ -27,7 +27,7 @@ namespace Apache.Ignite.Linq
     public class QueryOptions
     {
         /// <summary> Default page size. </summary>
-        public const int DefaultPageSize = SqlFieldsQuery.DfltPageSize;
+        public const int DefaultPageSize = SqlFieldsQuery.DefaultPageSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryOptions"/> class.

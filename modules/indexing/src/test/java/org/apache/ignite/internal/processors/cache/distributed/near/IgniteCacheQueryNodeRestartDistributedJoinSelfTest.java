@@ -36,6 +36,21 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
  * Test for distributed queries with node restarts.
  */
 public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
+    /** Total nodes. */
+    private int totalNodes = 6;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        if (totalNodes > GRID_CNT) {
+            for (int i = GRID_CNT; i < totalNodes; i++)
+                startGrid(i);
+        }
+        else
+            totalNodes = GRID_CNT;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -61,7 +76,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
         final int nodeLifeTime = 4000;
         final int logFreq = 100;
 
-        final AtomicIntegerArray locks = new AtomicIntegerArray(GRID_CNT);
+        final AtomicIntegerArray locks = new AtomicIntegerArray(totalNodes);
 
         SqlFieldsQuery qry0 ;
 
@@ -175,7 +190,8 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                         if (c % logFreq == 0)
                             info("Executed queries: " + c);
                     }
-                }catch (Throwable e){
+                }
+                catch (Throwable e){
                     e.printStackTrace();
 
                     error("Got exception: " + e.getMessage());
@@ -193,40 +209,47 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
-                GridRandom rnd = new GridRandom();
+                try {
+                    GridRandom rnd = new GridRandom();
 
-                while (!restartsDone.get()) {
-                    int g;
+                    while (!restartsDone.get()) {
+                        int g;
 
-                    do {
-                        g = rnd.nextInt(locks.length());
+                        do {
+                            g = rnd.nextInt(locks.length());
 
-                        if (fail.get())
-                            return null;
+                            if (fail.get())
+                                return null;
+                        }
+                        while (!locks.compareAndSet(g, 0, -1));
+
+                        log.info("Stop node: " + g);
+
+                        stopGrid(g);
+
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                        log.info("Start node: " + g);
+
+                        startGrid(g);
+
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                        locks.set(g, 0);
+
+                        int c = restartCnt.incrementAndGet();
+
+                        if (c % logFreq == 0)
+                            info("Node restarts: " + c);
                     }
-                    while (!locks.compareAndSet(g, 0, -1));
 
-                    log.info("Stop node: " + g);
-
-                    stopGrid(g);
-
-                    Thread.sleep(rnd.nextInt(nodeLifeTime));
-
-                    log.info("Start node: " + g);
-
-                    startGrid(g);
-
-                    Thread.sleep(rnd.nextInt(nodeLifeTime));
-
-                    locks.set(g, 0);
-
-                    int c = restartCnt.incrementAndGet();
-
-                    if (c % logFreq == 0)
-                        info("Node restarts: " + c);
+                    return true;
                 }
+                catch (Throwable e) {
+                    e.printStackTrace();
 
-                return true;
+                    return true;
+                }
             }
         }, restartThreadsNum, "restart-thread");
 

@@ -33,8 +33,8 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
     private static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -76,7 +76,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
             cache = grid(g).cache(null);
 
             for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
-                int size = p.size();
+                int size = p.dataStore().size();
 
                 assertTrue("Unexpected size: " + size, size <= 32);
             }

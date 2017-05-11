@@ -34,12 +34,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -50,17 +50,22 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.GridStripedLock;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.rnd;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
+import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
 
 /**
  */
@@ -116,7 +121,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     protected void assertNoLocks() {
         assertTrue(TestTree.checkNoLocks());
     }
-    
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
@@ -147,27 +152,30 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         rnd = null;
 
-        if (reuseList != null) {
-            long size = reuseList.recycledPagesCount();
+        try {
+            if (reuseList != null) {
+                long size = reuseList.recycledPagesCount();
 
-            assertTrue("Reuse size: " + size, size < 7000);
-        }
-
-        for (int i = 0; i < 10; i++) {
-            if (acquiredPages() != 0) {
-                System.out.println("!!!");
-                U.sleep(10);
+                assertTrue("Reuse size: " + size, size < 7000);
             }
+
+            for (int i = 0; i < 10; i++) {
+                if (acquiredPages() != 0) {
+                    System.out.println("!!!");
+                    U.sleep(10);
+                }
+            }
+
+            assertEquals(0, acquiredPages());
         }
+        finally {
+            pageMem.stop();
 
-        assertEquals(0, acquiredPages());
-
-        pageMem.stop();
-
-        MAX_PER_PAGE = 0;
-        PUT_INC = 1;
-        RMV_INC = -1;
-        CNT = 10;
+            MAX_PER_PAGE = 0;
+            PUT_INC = 1;
+            RMV_INC = -1;
+            CNT = 10;
+        }
     }
 
     /**
@@ -186,6 +194,40 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         checkCursor(tree.find(null, null), map.values().iterator());
         checkCursor(tree.find(10L, 70L), map.subMap(10L, true, 70L, true).values().iterator());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void _testBenchInvoke() throws IgniteCheckedException {
+        MAX_PER_PAGE = 10;
+
+        TestTree tree = createTestTree(true);
+
+        long start = System.nanoTime();
+
+        for (int i = 0; i < 10_000_000; i++) {
+            final long key = BPlusTree.randomInt(1000);
+
+//            tree.findOne(key); // 39
+//            tree.putx(key); // 22
+
+            tree.invoke(key, null, new IgniteTree.InvokeClosure<Long>() { // 25
+                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                    // No-op.
+                }
+
+                @Override public Long newRow() {
+                    return key;
+                }
+
+                @Override public IgniteTree.OperationType operationType() {
+                    return PUT;
+                }
+            });
+        }
+
+        X.println("   __ time: " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
     /**
@@ -561,6 +603,127 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public void testRandomInvoke_1_30_1() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
+        doTestRandomInvoke(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testRandomInvoke_1_30_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
+        doTestRandomInvoke(false);
+    }
+
+    /**
+     * @param canGetRow Can get row from inner page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestRandomInvoke(boolean canGetRow) throws IgniteCheckedException {
+        TestTree tree = createTestTree(canGetRow);
+
+        Map<Long,Long> map = new HashMap<>();
+
+        int loops = reuseList == null ? 100_000 : 300_000;
+
+        for (int i = 0 ; i < loops; i++) {
+            final Long x = (long)BPlusTree.randomInt(CNT);
+            final int rnd = BPlusTree.randomInt(11);
+
+            if (i % 10_000 == 0) {
+//                X.println(tree.printTree());
+                X.println(" --> " + i + "  ++> " + x);
+            }
+
+            // Update map.
+            if (!map.containsKey(x)) {
+                if (rnd % 2 == 0) {
+                    map.put(x, x);
+
+//                    X.println("put0: " + x);
+                }
+                else {
+//                    X.println("noop0: " + x);
+                }
+            }
+            else {
+                if (rnd % 2 == 0) {
+//                    X.println("put1: " + x);
+                }
+                else if (rnd % 3 == 0) {
+                    map.remove(x);
+
+//                    X.println("rmv1: " + x);
+                }
+                else {
+//                    X.println("noop1: " + x);
+                }
+            }
+
+            // Consistently update tree.
+            tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
+
+                IgniteTree.OperationType op;
+
+                Long newRow;
+
+                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                    if (row == null) {
+                        if (rnd % 2 == 0) {
+                            op = PUT;
+                            newRow = x;
+                        }
+                        else {
+                            op = NOOP;
+                            newRow = null;
+                        }
+                    }
+                    else {
+                        assertEquals(x, row);
+
+                        if (rnd % 2 == 0) {
+                            op = PUT;
+                            newRow = x; // We can not replace x with y here, because keys must be equal.
+                        }
+                        else if (rnd % 3 == 0) {
+                            op = REMOVE;
+                            newRow = null;
+                        }
+                        else {
+                            op = NOOP;
+                            newRow = null;
+                        }
+                    }
+                }
+
+                @Override public Long newRow() {
+                    return newRow;
+                }
+
+                @Override public IgniteTree.OperationType operationType() {
+                    return op;
+                }
+            });
+
+            assertNoLocks();
+
+//            X.println(tree.printTree());
+
+            tree.validateTree();
+
+            if (i % 100 == 0)
+                assertEqualContents(tree, map);
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void testRandomPutRemove_1_30_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
@@ -840,24 +1003,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 //            X.println(tree.printTree());
             tree.validateTree();
 
-            if (i % 100 == 0) {
-                GridCursor<Long> cursor = tree.find(null, null);
-
-                while (cursor.next()) {
-                    x = cursor.get();
-
-                    assert x != null;
-
-                    assertEquals(map.get(x), x);
-
-                    assertNoLocks();
-                }
-
-                assertEquals(map.size(), tree.size());
-
-                assertNoLocks();
-            }
+            if (i % 100 == 0)
+                assertEqualContents(tree, map);
         }
+    }
+
+    /**
+     * @param tree Tree.
+     * @param map Map.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void assertEqualContents(IgniteTree<Long, Long> tree, Map<Long,Long> map) throws IgniteCheckedException {
+        GridCursor<Long> cursor = tree.find(null, null);
+
+        while (cursor.next()) {
+            Long x = cursor.get();
+
+            assert x != null;
+
+            assertEquals(map.get(x), x);
+
+            assertNoLocks();
+        }
+
+        assertEquals(map.size(), tree.size());
+
+        assertNoLocks();
     }
 
     /**
@@ -1027,6 +1198,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testFindFirstAndLast() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        TestTree tree = createTestTree(true);
+
+        Long first = tree.findFirst();
+        assertNull(first);
+
+        Long last = tree.findLast();
+        assertNull(last);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            tree.put(idx);
+
+        first = tree.findFirst();
+        assertEquals((Long)1L, first);
+
+        last = tree.findLast();
+        assertEquals((Long)10L, last);
+
+        assertNoLocks();
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws Exception If failed.
      */
@@ -1035,31 +1232,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final Map<Long,Long> map = new ConcurrentHashMap8<>();
 
-        final int loops = reuseList == null ? 200_000 : 400_000;
+        final int loops = reuseList == null ? 100_000 : 200_000;
 
         final GridStripedLock lock = new GridStripedLock(256);
+
+        final String[] ops = {"put", "rmv", "inv_put", "inv_rmv"};
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < loops; i++) {
-                    Long x = (long)DataStructure.randomInt(CNT);
-
-                    boolean put = DataStructure.randomInt(2) == 0;
+                    final Long x = (long)DataStructure.randomInt(CNT);
+                    final int op = DataStructure.randomInt(4);
 
                     if (i % 10000 == 0)
-                        X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
+                        X.println(" --> " + ops[op] + "_" + i + "  " + x);
 
                     Lock l = lock.getLock(x.longValue());
 
                     l.lock();
 
                     try {
-                        if (put) {
+                        if (op == 0) { // Put.
                             assertEquals(map.put(x, x), tree.put(x));
 
                             assertNoLocks();
                         }
-                        else {
+                        else if (op == 1) { // Remove.
                             if (map.remove(x) != null) {
                                 assertEquals(x, tree.remove(x));
 
@@ -1070,6 +1268,54 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                             assertNoLocks();
                         }
+                        else if (op == 2) {
+                            tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
+                                IgniteTree.OperationType opType;
+
+                                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                                    opType = PUT;
+
+                                    if (row != null)
+                                        assertEquals(x, row);
+                                }
+
+                                @Override public Long newRow() {
+                                    return x;
+                                }
+
+                                @Override public IgniteTree.OperationType operationType() {
+                                    return opType;
+                                }
+                            });
+
+                            map.put(x,x);
+                        }
+                        else if (op == 3) {
+                            tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
+                                IgniteTree.OperationType opType;
+
+                                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                                    if (row != null) {
+                                        assertEquals(x, row);
+                                        opType = REMOVE;
+                                    }
+                                    else
+                                        opType = NOOP;
+                                }
+
+                                @Override public Long newRow() {
+                                    return null;
+                                }
+
+                                @Override public IgniteTree.OperationType operationType() {
+                                    return opType;
+                                }
+                            });
+
+                            map.remove(x);
+                        }
+                        else
+                            fail();
                     }
                     finally {
                         l.unlock();
@@ -1078,7 +1324,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 16, "put-remove");
+        }, Runtime.getRuntime().availableProcessors(), "put-remove");
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -1164,15 +1410,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param page Page.
+     * @param pageId Page ID.
      * @param pageAddr Page address.
      */
-    public static void checkPageId(Page page, long pageAddr) {
-        long pageId = PageIO.getPageId(pageAddr);
+    public static void checkPageId(long pageId, long pageAddr) {
+        long actual = PageIO.getPageId(pageAddr);
 
         // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
-        if (pageId != 0L && page.id() != pageId)
-            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
+        if (actual != 0L && pageId != actual)
+            throw new IllegalStateException("Page ID: " + U.hexLong(actual));
     }
 
     /**
@@ -1240,7 +1486,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Long getRow(BPlusIO<Long> io, long pageAddr, int idx) throws IgniteCheckedException {
+        @Override protected Long getRow(BPlusIO<Long> io, long pageAddr, int idx, Object ignore)
+            throws IgniteCheckedException {
             assert io.canGetRow() : io;
 
             return io.getLookupRow(this, pageAddr, idx);
@@ -1275,58 +1522,74 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeReadLock(Page page) {
-            assertNull(beforeReadLock.put(threadId(), page.id()));
+        @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
+//            X.println("  onBeforeReadLock: " + U.hexLong(page.id()));
+//
+//            U.dumpStack();
+
+            assertNull(beforeReadLock.put(threadId(), pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadLock(Page page, long pageAddr) {
+        @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
+//            X.println("  onReadLock: " + U.hexLong(page.id()));
+
             if (pageAddr != 0L) {
-                long pageId = PageIO.getPageId(pageAddr);
+                long actual = PageIO.getPageId(pageAddr);
 
-                checkPageId(page, pageAddr);
+                checkPageId(pageId, pageAddr);
 
-                assertNull(locks(true).put(page.id(), pageId));
+                assertNull(locks(true).put(pageId, actual));
             }
 
-            assertEquals(Long.valueOf(page.id()), beforeReadLock.remove(threadId()));
+            assertEquals(Long.valueOf(pageId), beforeReadLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadUnlock(Page page, long pageAddr) {
-            checkPageId(page, pageAddr);
+        @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
+//            X.println("  onReadUnlock: " + U.hexLong(page.id()));
 
-            long pageId = PageIO.getPageId(pageAddr);
+            checkPageId(pageId, pageAddr);
 
-            assertEquals(Long.valueOf(pageId), locks(true).remove(page.id()));
+            long actual = PageIO.getPageId(pageAddr);
+
+            assertEquals(Long.valueOf(actual), locks(true).remove(pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeWriteLock(Page page) {
-            assertNull(beforeWriteLock.put(threadId(), page.id()));
+        @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
+//            X.println("  onBeforeWriteLock: " + U.hexLong(page.id()));
+
+            assertNull(beforeWriteLock.put(threadId(), pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteLock(Page page, long pageAddr) {
+        @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
+//            X.println("  onWriteLock: " + U.hexLong(page.id()));
+//
+//            U.dumpStack();
+
             if (pageAddr != 0L) {
-                checkPageId(page, pageAddr);
+                checkPageId(pageId, pageAddr);
 
-                long pageId = PageIO.getPageId(pageAddr);
+                long actual = PageIO.getPageId(pageAddr);
 
-                if (pageId == 0L)
-                    pageId = page.id(); // It is a newly allocated page.
+                if (actual == 0L)
+                    actual = pageId; // It is a newly allocated page.
 
-                assertNull(locks(false).put(page.id(), pageId));
+                assertNull(locks(false).put(pageId, actual));
             }
 
-            assertEquals(Long.valueOf(page.id()), beforeWriteLock.remove(threadId()));
+            assertEquals(Long.valueOf(pageId), beforeWriteLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteUnlock(Page page, long pageAddr) {
-            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(pageAddr)));
+        @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
+//            X.println("  onWriteUnlock: " + U.hexLong(page.id()));
 
-            assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
+            assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
+
+            assertEquals(Long.valueOf(pageId), locks(false).remove(pageId));
         }
 
         /**
@@ -1441,7 +1704,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE, true);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE, new MemoryMetricsImpl(null), true);
 
         pageMem.start();
 

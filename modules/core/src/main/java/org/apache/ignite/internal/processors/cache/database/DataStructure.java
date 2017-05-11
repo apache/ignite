@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.database;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -118,56 +119,236 @@ public abstract class DataStructure implements PageLockListener {
 
     /**
      * @param pageId Page ID.
-     * @return Page.
+     * @return Page absolute pointer.
      * @throws IgniteCheckedException If failed.
      */
-    protected final Page page(long pageId) throws IgniteCheckedException {
+    protected final long acquirePage(long pageId) throws IgniteCheckedException {
         assert PageIdUtils.flag(pageId) == FLAG_IDX && PageIdUtils.partId(pageId) == INDEX_PARTITION ||
             PageIdUtils.flag(pageId) == FLAG_DATA && PageIdUtils.partId(pageId) <= MAX_PARTITION_ID : U.hexLong(pageId);
 
-        return pageMem.page(cacheId, pageId);
+        return pageMem.acquirePage(cacheId, pageId);
     }
 
     /**
-     * @param page Page.
+     * @param pageId Page ID.
+     * @param page  Page pointer.
+     */
+    protected final void releasePage(long pageId, long page) {
+        pageMem.releasePage(cacheId, pageId, page);
+    }
+
+    /**
+     * @param pageId Page ID
+     * @param page Page pointer.
+     * @return Page address or {@code 0} if failed to lock due to recycling.
+     */
+    protected final long tryWriteLock(long pageId, long page) {
+        return PageHandler.writeLock(pageMem, cacheId, pageId, page, this, true);
+    }
+
+    /**
+     * @param pageId Page ID
+     * @param page Page pointer.
      * @return Page address.
      */
-    protected final long tryWriteLock(Page page) {
-        return PageHandler.writeLock(page, this, true);
-    }
-
-
-    /**
-     * @param page Page.
-     * @return Page address.
-     */
-    protected final long writeLock(Page page) {
-        return PageHandler.writeLock(page, this, false);
+    protected final long writeLock(long pageId, long page) {
+        return PageHandler.writeLock(pageMem, cacheId, pageId, page, this, false);
     }
 
     /**
-     * @param page Page.
+     * <p>
+     * Note: Default WAL record policy will be used.
+     * </p>
+     * @param pageId Page ID
+     * @param page Page pointer.
      * @param pageAddr Page address.
-     * @param dirty Dirty page.
+     * @param dirty Dirty flag.
      */
-    protected final void writeUnlock(Page page, long pageAddr, boolean dirty) {
-        PageHandler.writeUnlock(page, pageAddr, this, dirty);
+    protected final void writeUnlock(long pageId, long page, long pageAddr, boolean dirty) {
+        writeUnlock(pageId, page, pageAddr, null, dirty);
     }
 
     /**
-     * @param page Page.
+     * @param pageId Page ID
+     * @param page Page pointer.
      * @return Page address.
      */
-    protected final long readLock(Page page) {
-        return PageHandler.readLock(page, this);
+    protected final long readLock(long pageId, long page) {
+        return PageHandler.readLock(pageMem, cacheId, pageId, page, this);
     }
 
     /**
-     * @param page Page.
-     * @param buf Buffer.
+     * @param pageId Page ID
+     * @param page Page pointer.
+     * @param pageAddr  Page address.
      */
-    protected final void readUnlock(Page page, long buf) {
-        PageHandler.readUnlock(page, buf, this);
+    protected final void readUnlock(long pageId, long page, long pageAddr) {
+        PageHandler.readUnlock(pageMem, cacheId, pageId, page, pageAddr, this);
+    }
+
+    /**
+     * @param pageId Page ID
+     * @param page Page pointer.
+     * @param pageAddr  Page address.
+     * @param walPlc Full page WAL record policy.
+     * @param dirty Dirty flag.
+     */
+    protected final void writeUnlock(long pageId, long page, long pageAddr, Boolean walPlc, boolean dirty) {
+        PageHandler.writeUnlock(pageMem, cacheId, pageId, page, pageAddr, this, walPlc, dirty);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param walPlc Full page WAL record policy.
+     * @return {@code true} If we need to make a delta WAL record for the change in this page.
+     */
+    protected final boolean needWalDeltaRecord(long pageId, long page, Boolean walPlc) {
+        return PageHandler.isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, walPlc);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param h Handler.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <R> R write(
+        long pageId,
+        PageHandler<?, R> h,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return PageHandler.writePage(pageMem, cacheId, pageId, this, h, null, null, null, null, intArg, lockFailed);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R write(
+        long pageId,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return PageHandler.writePage(pageMem, cacheId, pageId, this, h, null, null, null, arg, intArg, lockFailed);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R write(
+        long pageId,
+        long page,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return PageHandler.writePage(pageMem, cacheId, pageId, page, this, h, null, null, null, arg, intArg, lockFailed);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param h Handler.
+     * @param init IO for new page initialization or {@code null} if it is an existing page.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R write(
+        long pageId,
+        PageHandler<X, R> h,
+        PageIO init,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return PageHandler.writePage(pageMem, cacheId, pageId, this, h, init, wal, null, arg, intArg, lockFailed);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R read(
+        long pageId,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return PageHandler.readPage(pageMem, cacheId, pageId, this, h, arg, intArg, lockFailed);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R read(
+        long pageId,
+        long page,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return PageHandler.readPage(pageMem, cacheId, pageId, page, this, h, arg, intArg, lockFailed);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param init IO for new page initialization.
+     * @throws IgniteCheckedException if failed.
+     */
+    protected final void init(long pageId, PageIO init) throws IgniteCheckedException {
+        PageHandler.initPage(pageMem, cacheId, pageId, init, wal, this);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param pageAddr Page address.
+     * @param walPlc Full page WAL record policy.
+     * @return Rotated page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long recyclePage(
+        long pageId,
+        long page,
+        long pageAddr,
+        Boolean walPlc) throws IgniteCheckedException {
+        long rotated = PageIdUtils.rotatePageId(pageId);
+
+        PageIO.setPageId(pageAddr, rotated);
+
+        if (needWalDeltaRecord(pageId, page, walPlc))
+            wal.log(new RecycleRecord(cacheId, pageId, rotated));
+
+        return rotated;
     }
 
     /**
@@ -177,33 +358,27 @@ public abstract class DataStructure implements PageLockListener {
         return pageMem.pageSize();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onBeforeWriteLock(Page page) {
+    @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void onWriteLock(Page page, long pageAddr) {
+    @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void onWriteUnlock(Page page, long pageAddr) {
+    @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void onBeforeReadLock(Page page) {
+    @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void onReadLock(Page page, long pageAddr) {
+    @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void onReadUnlock(Page page, long pageAddr) {
+    @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
         // No-op.
     }
 }

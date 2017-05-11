@@ -133,7 +133,7 @@ public class TestKafkaBroker {
             try {
                 zkServer.stop();
             }
-            catch (IOException e) {
+            catch (IOException ignored) {
                 // No-op.
             }
         }

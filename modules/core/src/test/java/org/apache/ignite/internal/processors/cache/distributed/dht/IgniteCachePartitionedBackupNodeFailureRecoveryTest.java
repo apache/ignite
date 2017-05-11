@@ -24,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.PA;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -62,18 +60,13 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
     }
 
     /** {@inheritDoc}*/
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
-
-    /** {@inheritDoc}*/
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc}*/
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
@@ -157,17 +150,15 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
                         try {
                             boolean res = waitForCondition(new PA() {
                                 @Override public boolean apply() {
-                                    return cache3.localPeek(finalKey) != null;
+                                    Integer actl = cache3.localPeek(finalKey);
+
+                                    Integer exp = cntr.get();
+
+                                    return exp.equals(actl);
                                 }
                             }, 1000);
 
                             assertTrue(res);
-
-                            Integer backUpVal = cache3.localPeek(finalKey);
-
-                            Integer exp = cntr.get();
-
-                            assertEquals(exp, backUpVal);
                         }
                         finally {
                             lock.unlock();

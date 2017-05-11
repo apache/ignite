@@ -239,7 +239,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                             ClusterNode node = ctx.discovery().node(ses.getTaskNodeId());
 
                             if (node != null)
-                                ctx.io().send(
+                                ctx.io().sendToGridTopic(
                                     node,
                                     TOPIC_CHECKPOINT,
                                     new GridCheckpointRequest(ses.getId(), key, ses.getCheckpointSpi()),
@@ -405,7 +405,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Checkpoint manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Checkpoint manager memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  keyMap: " + (keyMap != null ? keyMap.size() : 0));
     }
 

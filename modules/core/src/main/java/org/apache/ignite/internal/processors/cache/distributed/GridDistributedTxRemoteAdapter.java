@@ -87,7 +87,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction created by system implicitly on remote nodes.
  */
-public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
+public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     implements IgniteTxRemoteEx {
     /** */
     private static final long serialVersionUID = 0L;
@@ -181,11 +181,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public UUID eventNodeId() {
         return nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<UUID> masterNodeIds() {
-        return Collections.singleton(nodeId);
     }
 
     /** {@inheritDoc} */
@@ -351,12 +346,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
-        assert false;
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<IgniteTxKey> readSet() {
         return txState.readSet();
     }
@@ -382,11 +371,9 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /**
-     * Prepare phase.
-     *
-     * @throws IgniteCheckedException If prepare failed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Override public void prepare() throws IgniteCheckedException {
+    public final void prepareRemoteTx() throws IgniteCheckedException {
         // If another thread is doing prepare or rollback.
         if (!state(PREPARING)) {
             // In optimistic mode prepare may be called multiple times.
@@ -758,7 +745,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void commit() throws IgniteCheckedException {
+    @Override public final void commitRemoteTx() throws IgniteCheckedException {
         if (optimistic())
             state(PREPARED);
 
@@ -777,7 +764,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (!isSystemInvalidate())
                 throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
 
-            rollback();
+            rollbackRemoteTx();
         }
 
         commitIfLocked();
@@ -795,7 +782,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         try {
-            commit();
+            commitRemoteTx();
 
             return new GridFinishedFuture<IgniteInternalTx>(this);
         }
@@ -805,8 +792,36 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"CatchGenericClass"})
-    @Override public void rollback() {
+    @Override public final IgniteInternalFuture<?> salvageTx() {
+        try {
+            systemInvalidate(true);
+
+            prepareRemoteTx();
+
+            if (state() == PREPARING) {
+                if (log.isDebugEnabled())
+                    log.debug("Ignoring transaction in PREPARING state as it is currently handled " +
+                        "by another thread: " + this);
+
+                return null;
+            }
+
+            doneRemote(xidVersion(),
+                Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList());
+
+            commitRemoteTx();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to invalidate transaction: " + xidVersion(), e);
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final void rollbackRemoteTx() {
         try {
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
@@ -825,7 +840,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-        rollback();
+        rollbackRemoteTx();
 
         return new GridFinishedFuture<IgniteInternalTx>(this);
     }

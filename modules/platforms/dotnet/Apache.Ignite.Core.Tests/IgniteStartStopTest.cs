@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
@@ -104,12 +105,15 @@ namespace Apache.Ignite.Core.Tests
             var grid1 = Ignition.Start(cfg);
 
             Assert.AreEqual("grid1", grid1.Name);
+            Assert.AreSame(grid1, Ignition.GetIgnite());
+            Assert.AreSame(grid1, Ignition.GetAll().Single());
 
             cfg.SpringConfigUrl = cfgs[1];
 
             var grid2 = Ignition.Start(cfg);
 
             Assert.AreEqual("grid2", grid2.Name);
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
 
             cfg.SpringConfigUrl = cfgs[2];
 
@@ -124,8 +128,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreSame(grid2, Ignition.TryGetIgnite("grid2"));
 
             Assert.AreSame(grid3, Ignition.GetIgnite(null));
+            Assert.AreSame(grid3, Ignition.GetIgnite());
             Assert.AreSame(grid3, Ignition.TryGetIgnite(null));
             Assert.AreSame(grid3, Ignition.TryGetIgnite());
+
+            Assert.AreEqual(new[] {grid3, grid1, grid2}, Ignition.GetAll().OrderBy(x => x.Name).ToArray());
 
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite("invalid_name"));
             Assert.IsNull(Ignition.TryGetIgnite("invalid_name"));
@@ -184,6 +191,23 @@ namespace Apache.Ignite.Core.Tests
             {
                 Console.WriteLine("Expected exception: " + e);
             }
+        }
+
+        /// <summary>
+        /// Tests automatic grid name generation.
+        /// </summary>
+        [Test]
+        public void TestStartUniqueName()
+        {
+            var cfg = TestUtils.GetTestConfiguration();
+            cfg.AutoGenerateIgniteInstanceName = true;
+
+            Ignition.Start(cfg);
+            Assert.IsNotNull(Ignition.GetIgnite());
+
+            Ignition.Start(cfg);
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
+            Assert.AreEqual(2, Ignition.GetAll().Count);
         }
 
         /// <summary>

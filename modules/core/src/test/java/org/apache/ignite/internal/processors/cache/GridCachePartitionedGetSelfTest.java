@@ -60,8 +60,8 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     private static final AtomicBoolean received = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -90,7 +90,6 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictSynchronized(false);
         cc.setNearConfiguration(null);
 
         return cc;

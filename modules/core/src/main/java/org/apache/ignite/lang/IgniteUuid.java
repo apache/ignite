@@ -24,6 +24,12 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -34,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * 10x time faster for ID creation. It uses extra memory for 8-byte counter additionally to
  * internal UUID.
  */
-public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable {
+public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -200,6 +206,23 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
         IgniteUuid that = (IgniteUuid)obj;
 
         return that.locId == locId && that.gid.equals(gid);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        out.writeLong(locId);
+        out.writeLong(gid.getMostSignificantBits());
+        out.writeLong(gid.getLeastSignificantBits());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        locId = in.readLong();
+        gid = new UUID(in.readLong(), in.readLong());
     }
 
     /** {@inheritDoc} */

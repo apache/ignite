@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -36,8 +39,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -170,36 +173,33 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
-    public void testFieldsListIdentity() {
-        if (!isBinaryMarshaller())
-            return;
+    public void testUuidHandling() {
+        IgniteCache<UUID, Integer> p = ignite(0).cache("U2I");
 
-        IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
+        UUID id = UUID.randomUUID();
 
-        p.query(new SqlFieldsQuery(
-            "insert into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')")
-            .setArgs(1, "Sergi"));
+        p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(id, 1));
 
-        assertEquals(createPerson(1, "Sergi"), p.get(new Key3(1)));
-
-        assertEquals(createPerson(2, "Alex"), p.get(new Key3(2)));
+        assertEquals(1, (int)p.get(id));
     }
 
     /**
      *
      */
-    public void testCustomIdentity() {
-        if (!isBinaryMarshaller())
-            return;
+    public void testNestedFieldsHandling() {
+        IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p = ignite(0).cache("I2AT");
 
-        IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
+        p.query(new SqlFieldsQuery("insert into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) " +
+            "values (1, ?, ?, ?, 'sss')") .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType(50L),
+            new ArrayList<>(Arrays.asList(3L, 2L, 1L)), new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
 
-        p.query(new SqlFieldsQuery(
-            "insert into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')")
-            .setArgs(1, "Sergi"));
+        IgniteCacheUpdateSqlQuerySelfTest.AllTypes res = p.get(1);
 
-        assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
+        IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType resInner = new IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType(50L);
 
-        assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
+        resInner.innerStrCol = "sss";
+        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+
+        assertEquals(resInner, res.innerTypeCol);
     }
 }

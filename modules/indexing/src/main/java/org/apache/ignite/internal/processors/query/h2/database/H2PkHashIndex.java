@@ -59,14 +59,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
      * @param tbl Table.
      * @param name Index name.
      * @param colsList Index columns.
-     * @throws IgniteCheckedException If failed.
      */
     public H2PkHashIndex(
         GridCacheContext<?, ?> cctx,
         GridH2Table tbl,
         String name,
         List<IndexColumn> colsList
-    ) throws IgniteCheckedException {
+    ) {
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
@@ -76,6 +75,11 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
         this.tbl = tbl;
         this.cctx = cctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int segmentsCount() {
+        return 1;
     }
 
     /** {@inheritDoc} */

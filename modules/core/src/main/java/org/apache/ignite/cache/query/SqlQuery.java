@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,6 +37,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private String type;
 
+    /** Table alias */
+    private String alias;
+
     /** SQL clause. */
     private String sql;
 
@@ -49,6 +52,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** */
     private boolean distributedJoins;
+
+    /** */
+    private boolean replicatedOnly;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -138,6 +144,27 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
+     * Sets table alias for type.
+     *
+     * @return Table alias.
+     */
+    public String getAlias() {
+        return alias;
+    }
+
+    /**
+     * Gets table alias for type.
+     *
+     * @param alias table alias for type that is used in query.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery<K, V> setAlias(String alias) {
+        this.alias = alias;
+
+        return this;
+    }
+
+    /**
      * Gets the query execution timeout in milliseconds.
      *
      * @return Timeout value.
@@ -148,12 +175,13 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /**
      * Sets the query execution timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+     *
      * @param timeout Timeout value. Zero value disables timeout.
      * @param timeUnit Time granularity.
      * @return {@code this} For chaining.
      */
     public SqlQuery<K, V> setTimeout(int timeout, TimeUnit timeUnit) {
-        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+        this.timeout = QueryUtils.validateTimeout(timeout, timeUnit);
 
         return this;
     }
@@ -172,8 +200,8 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public SqlQuery setType(Class<?> type) {
-        return setType(GridQueryProcessor.typeName(type));
+    public SqlQuery<K, V> setType(Class<?> type) {
+        return setType(QueryUtils.typeName(type));
     }
 
     /**
@@ -185,7 +213,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param distributedJoins Distributed joins enabled.
      * @return {@code this} For chaining.
      */
-    public SqlQuery setDistributedJoins(boolean distributedJoins) {
+    public SqlQuery<K, V> setDistributedJoins(boolean distributedJoins) {
         this.distributedJoins = distributedJoins;
 
         return this;
@@ -194,10 +222,32 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * Specify if the query contains only replicated tables.
+     * This is a hint for potentially more effective execution.
+     *
+     * @param replicatedOnly The query contains only replicated tables.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery<K, V> setReplicatedOnly(boolean replicatedOnly) {
+        this.replicatedOnly = replicatedOnly;
+
+        return this;
+    }
+
+    /**
+     * Check is the query contains only replicated tables.
+     *
+     * @return {@code true} If the query contains only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
     }
 
     /** {@inheritDoc} */

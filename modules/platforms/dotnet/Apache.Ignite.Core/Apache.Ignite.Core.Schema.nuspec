@@ -42,7 +42,7 @@ XSD file describes the structure of IgniteConfigurationSection and enables Intel
 More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
         </description>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2016</copyright>
+        <copyright>Copyright 2017</copyright>
         <tags>Apache Ignite XSD Intellisense</tags>
     </metadata>
     <files>

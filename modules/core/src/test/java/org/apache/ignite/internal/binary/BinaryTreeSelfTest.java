@@ -260,7 +260,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
     private static IgniteConfiguration configuration(String name, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(name);
+        cfg.setIgniteInstanceName(name);
 
         cfg.setClientMode(client);
 

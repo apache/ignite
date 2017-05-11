@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     JvmClasspath = TestUtils.CreateTestClasspath(),
                     JvmOptions = TestUtils.TestJavaOptions(),
                     SpringConfigUrl = "config\\native-client-test-cache-affinity.xml",
-                    GridName = "grid-" + i
+                    IgniteInstanceName = "grid-" + i
                 };
 
                 Ignition.Start(cfg);

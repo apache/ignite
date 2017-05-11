@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -45,8 +44,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -103,8 +102,6 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             IgniteCache cache = ignite(0).cache(null).withKeepBinary();
 
-            IgniteCache asyncCache = cache.withAsync();
-
             cache.put(new TestKey(1), new TestValue(10));
 
             cache.put(new TestKey(1), new TestValue(10));
@@ -112,16 +109,14 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             BinaryObject obj = (BinaryObject)cache.get(new TestKey(1));
             assertEquals(10, (int)obj.field("val"));
 
-            asyncCache.get(new TestKey(1));
-            obj = (BinaryObject)asyncCache.future().get();
+            obj = (BinaryObject)cache.getAsync(new TestKey(1)).get();
             assertEquals(10, (int)obj.field("val"));
 
             Cache.Entry<BinaryObject, BinaryObject> e = (Cache.Entry)cache.getEntry(new TestKey(1));
             assertEquals(1, (int)e.getKey().field("key"));
             assertEquals(10, (int)e.getValue().field("val"));
 
-            asyncCache.getEntry(new TestKey(1));
-            e = (Cache.Entry)asyncCache.future().get();
+            e = (Cache.Entry)cache.getEntryAsync(new TestKey(1)).get();
             assertEquals(1, (int)e.getKey().field("key"));
             assertEquals(10, (int)e.getValue().field("val"));
 
@@ -158,8 +153,6 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             IgniteCache cache = ignite(0).cache(null).withKeepBinary();
 
-            IgniteCache asyncCache = cache.withAsync();
-
             cache.put(1, 10);
 
             cache.put(1, 10);
@@ -167,16 +160,14 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             Integer obj = (Integer)cache.get(1);
             assertEquals((Integer)10, obj);
 
-            asyncCache.get(1);
-            obj = (Integer)asyncCache.future().get();
+            obj = (Integer)cache.getAsync(1).get();
             assertEquals((Integer)10, obj);
 
             Cache.Entry<Integer, Integer> e = (Cache.Entry)cache.getEntry(1);
             assertEquals((Integer)1, e.getKey());
             assertEquals((Integer)10, e.getValue());
 
-            asyncCache.getEntry(1);
-            e = (Cache.Entry)asyncCache.future().get();
+            e = (Cache.Entry)cache.getEntryAsync(1).get();
             assertEquals((Integer)1, e.getKey());
             assertEquals((Integer)10, e.getValue());
 

@@ -107,7 +107,7 @@ public class CacheManager implements javax.cache.CacheManager {
                     cfg.setDiscoverySpi(discoSpi);
                 }
 
-                cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
+                cfg.setIgniteInstanceName("CacheManager_" + igniteCnt.getAndIncrement());
 
                 cfg.setClassLoader(clsLdr);
 

@@ -39,22 +39,22 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     private static final String NON_DFLT_CACHE_NAME = "non-dflt-cache";
 
     /** */
-    private static final String WRONG_PRELOAD_MODE_GRID_NAME = "preloadModeCheckFails";
+    private static final String WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME = "preloadModeCheckFails";
 
     /** */
-    private static final String WRONG_CACHE_MODE_GRID_NAME = "cacheModeCheckFails";
+    private static final String WRONG_CACHE_MODE_IGNITE_INSTANCE_NAME = "cacheModeCheckFails";
 
     /** */
-    private static final String WRONG_AFFINITY_GRID_NAME = "cacheAffinityCheckFails";
+    private static final String WRONG_AFFINITY_IGNITE_INSTANCE_NAME = "cacheAffinityCheckFails";
 
     /** */
-    private static final String WRONG_AFFINITY_MAPPER_GRID_NAME = "cacheAffinityMapperCheckFails";
+    private static final String WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME = "cacheAffinityMapperCheckFails";
 
     /** */
-    private static final String DUP_CACHES_GRID_NAME = "duplicateCachesCheckFails";
+    private static final String DUP_CACHES_IGNITE_INSTANCE_NAME = "duplicateCachesCheckFails";
 
     /** */
-    private static final String DUP_DFLT_CACHES_GRID_NAME = "duplicateDefaultCachesCheckFails";
+    private static final String DUP_DFLT_CACHES_IGNITE_INSTANCE_NAME = "duplicateDefaultCachesCheckFails";
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -67,8 +67,8 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -97,18 +97,18 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
-        if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
+        if (igniteInstanceName.contains(WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME))
             dfltCacheCfg.setRebalanceMode(SYNC);
-        else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
+        else if (igniteInstanceName.contains(WRONG_CACHE_MODE_IGNITE_INSTANCE_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
-        else if (gridName.contains(WRONG_AFFINITY_GRID_NAME))
+        else if (igniteInstanceName.contains(WRONG_AFFINITY_IGNITE_INSTANCE_NAME))
             dfltCacheCfg.setAffinity(new TestRendezvousAffinityFunction());
-        else if (gridName.contains(WRONG_AFFINITY_MAPPER_GRID_NAME))
+        else if (igniteInstanceName.contains(WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME))
             dfltCacheCfg.setAffinityMapper(new TestCacheDefaultAffinityKeyMapper());
 
-        if (gridName.contains(DUP_CACHES_GRID_NAME))
+        if (igniteInstanceName.contains(DUP_CACHES_IGNITE_INSTANCE_NAME))
             cfg.setCacheConfiguration(namedCacheCfg, namedCacheCfg);
-        else if (gridName.contains(DUP_DFLT_CACHES_GRID_NAME))
+        else if (igniteInstanceName.contains(DUP_DFLT_CACHES_IGNITE_INSTANCE_NAME))
             cfg.setCacheConfiguration(dfltCacheCfg, dfltCacheCfg);
         else
             // Normal configuration.
@@ -131,10 +131,10 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
      */
     public void testDuplicateCacheConfigurations() throws Exception {
         // This grid should not start.
-        startInvalidGrid(DUP_CACHES_GRID_NAME);
+        startInvalidGrid(DUP_CACHES_IGNITE_INSTANCE_NAME);
 
         // This grid should not start.
-        startInvalidGrid(DUP_DFLT_CACHES_GRID_NAME);
+        startInvalidGrid(DUP_DFLT_CACHES_IGNITE_INSTANCE_NAME);
     }
 
     /**
@@ -145,16 +145,16 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             startGrid(0);
 
             // This grid should not start.
-            startInvalidGrid(WRONG_PRELOAD_MODE_GRID_NAME);
+            startInvalidGrid(WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME);
 
             // This grid should not start.
-            startInvalidGrid(WRONG_CACHE_MODE_GRID_NAME);
+            startInvalidGrid(WRONG_CACHE_MODE_IGNITE_INSTANCE_NAME);
 
             // This grid should not start.
-            startInvalidGrid(WRONG_AFFINITY_GRID_NAME);
+            startInvalidGrid(WRONG_AFFINITY_IGNITE_INSTANCE_NAME);
 
             // This grid should not start.
-            startInvalidGrid(WRONG_AFFINITY_MAPPER_GRID_NAME);
+            startInvalidGrid(WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME);
 
             // This grid will start normally.
             startGrid(1);

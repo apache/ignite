@@ -120,6 +120,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
+        long createTtl,
         long accessTtl) {
         return lockAllAsync(keys, timeout, tx, CU.empty0());
     }

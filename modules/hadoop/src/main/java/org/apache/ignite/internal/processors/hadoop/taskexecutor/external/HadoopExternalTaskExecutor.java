@@ -118,7 +118,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             ctx.kernalContext().config().getMarshaller(),
             log,
             ctx.kernalContext().getSystemExecutorService(),
-            ctx.kernalContext().gridName(),
+            ctx.kernalContext().igniteInstanceName(),
             ctx.kernalContext().config().getWorkDirectory());
 
         comm.setListener(new MessageListener());
@@ -964,7 +964,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 if (err == null) {
                     if (log.isDebugEnabled())
                         log.debug("Initialized child process for external task execution [jobId=" + jobId +
-                            ", desc=" + desc + ", initTime=" + duration() + ']');
+                            ", desc=" + desc + ']');
                 }
                 else
                     U.error(log, "Failed to initialize child process for external task execution [jobId=" + jobId +

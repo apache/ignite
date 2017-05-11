@@ -35,9 +35,9 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests default grid
+     * Tests default Ignite instance
      */
-    public void testDefaultGridGetOrStart() throws Exception {
+    public void testDefaultIgniteInstanceGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration(null);
         try(Ignite ignite = Ignition.getOrStart(cfg)) {
             try {
@@ -52,9 +52,9 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests named grid
+     * Tests named Ignite instance
      */
-    public void testNamedGridGetOrStart() throws Exception {
+    public void testNamedIgniteInstanceGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration("test");
         try(Ignite ignite = Ignition.getOrStart(cfg)) {
             try {

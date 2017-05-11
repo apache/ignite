@@ -59,7 +59,7 @@ public class DefaultIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryF
 
     /** {@inheritDoc} */
     @Override public void format() throws IOException {
-        igfsEx.format();
+        igfsEx.clear();
     }
 
     /** {@inheritDoc} */

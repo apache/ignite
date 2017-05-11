@@ -20,8 +20,6 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.Collections;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -54,23 +52,23 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     static final String BASE_URL_BIN = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /** SQL SELECT query for verification. */
-    private static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
 
     /** Connection. */
     protected Connection conn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration0(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration0(igniteInstanceName);
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration used for starting the grid.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration getConfiguration0(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    private IgniteConfiguration getConfiguration0(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -95,12 +93,12 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration used for starting the grid ready for manipulating binary objects.
      * @throws Exception If failed.
      */
-    IgniteConfiguration getBinaryConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration0(gridName);
+    IgniteConfiguration getBinaryConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = getConfiguration0(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -149,54 +147,12 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        try (Statement selStmt = conn.createStatement()) {
-            assert selStmt.execute(SQL_SELECT);
-
-            ResultSet rs = selStmt.getResultSet();
-
-            assert rs != null;
-
-            while (rs.next()) {
-                int id = rs.getInt("id");
-
-                switch (id) {
-                    case 1:
-                        assertEquals("p1", rs.getString("_key"));
-                        assertEquals("John", rs.getString("firstName"));
-                        assertEquals("White", rs.getString("lastName"));
-                        assertEquals(25, rs.getInt("age"));
-                        break;
-
-                    case 2:
-                        assertEquals("p2", rs.getString("_key"));
-                        assertEquals("Joe", rs.getString("firstName"));
-                        assertEquals("Black", rs.getString("lastName"));
-                        assertEquals(35, rs.getInt("age"));
-                        break;
-
-                    case 3:
-                        assertEquals("p3", rs.getString("_key"));
-                        assertEquals("Mike", rs.getString("firstName"));
-                        assertEquals("Green", rs.getString("lastName"));
-                        assertEquals(40, rs.getInt("age"));
-                        break;
-
-                    case 4:
-                        assertEquals("p4", rs.getString("_key"));
-                        assertEquals("Leah", rs.getString("firstName"));
-                        assertEquals("Grey", rs.getString("lastName"));
-                        assertEquals(22, rs.getInt("age"));
-                        break;
-
-                    default:
-                        assert false : "Invalid ID: " + id;
-                }
-            }
-        }
-
         grid(0).cache(null).clear();
 
         assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+
+        conn.close();
+        assertTrue(conn.isClosed());
     }
 
     /**

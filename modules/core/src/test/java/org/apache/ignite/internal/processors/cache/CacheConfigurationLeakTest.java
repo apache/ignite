@@ -23,6 +23,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -44,7 +45,13 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
 
-        memCfg.setPageCacheSize(MemoryConfiguration.DFLT_PAGE_CACHE_SIZE * 10);
+        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+        plc.setName("dfltPlc");
+        plc.setSize(MemoryConfiguration.DFLT_MEMORY_POLICY_SIZE * 10);
+
+        memCfg.setDefaultMemoryPolicyName("dfltPlc");
+        memCfg.setMemoryPolicies(plc);
 
         cfg.setMemoryConfiguration(memCfg);
 
@@ -63,6 +70,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
                     CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
                     ccfg.setName("cache-" + idx + "-" + i);
                     ccfg.setEvictionPolicy(new LruEvictionPolicy(1000));
+                    ccfg.setOnheapCacheEnabled(true);
 
                     IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 

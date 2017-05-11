@@ -209,12 +209,12 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public IDictionary<int, int> GetAll(IEnumerable<int> keys)
+            public ICollection<ICacheEntry<int, int>> GetAll(IEnumerable<int> keys)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<IDictionary<int, int>> GetAllAsync(IEnumerable<int> keys)
+            public Task<ICollection<ICacheEntry<int, int>>> GetAllAsync(IEnumerable<int> keys)
             {
                 throw new NotImplementedException();
             }
@@ -299,12 +299,12 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public void PutAll(IDictionary<int, int> vals)
+            public void PutAll(IEnumerable<KeyValuePair<int, int>> vals)
             {
                 throw new NotImplementedException();
             }
 
-            public Task PutAllAsync(IDictionary<int, int> vals)
+            public Task PutAllAsync(IEnumerable<KeyValuePair<int, int>> vals)
             {
                 throw new NotImplementedException();
             }
@@ -449,12 +449,12 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public IDictionary<int, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
+            public ICollection<ICacheEntryProcessorResult<int, TRes>> InvokeAll<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<IDictionary<int, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
+            public Task<ICollection<ICacheEntryProcessorResult<int, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
             {
                 throw new NotImplementedException();
             }

@@ -41,7 +41,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -140,13 +139,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
     }
 
     /**
-     * @return Atomic write order mode.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return null;
-    }
-
-    /**
      * @return Number of data nodes.
      */
     protected int dataNodes() {
@@ -225,14 +217,8 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         if (cacheMode() == PARTITIONED)
             ccfg.setBackups(backups());
 
-        if (atomicityMode() == ATOMIC) {
-            assert atomicWriteOrderMode() != null;
-
-            ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
-        }
-        else {
-            if (cacheMode() == PARTITIONED)
-                ccfg.setNearConfiguration(new NearCacheConfiguration());
+        if (atomicityMode() != ATOMIC && cacheMode() == PARTITIONED) {
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
         }
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));
@@ -380,21 +366,21 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                         try {
                             int idx = ThreadLocalRandom.current().nextInt(1, dataNodes());
 
-                            String gridName = nodeName(idx);
+                            String igniteInstanceName = nodeName(idx);
 
                             if (stop.get())
                                 return null;
 
-                            log.info("Killing node [gridName=" + gridName + ']');
+                            log.info("Killing node [igniteInstanceName=" + igniteInstanceName + ']');
 
-                            stopGrid(gridName);
+                            stopGrid(igniteInstanceName);
 
                             U.sleep(ThreadLocalRandom.current().nextLong(restartDelay().get1(), restartDelay().get2()));
 
                             if (stop.get())
                                 return null;
 
-                            log.info("Restarting node [gridName=" + gridName + ']');
+                            log.info("Restarting node [igniteInstanceName=" + igniteInstanceName + ']');
 
                             G.start(configuration(idx));
                         }

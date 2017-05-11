@@ -57,7 +57,6 @@ void Main()
 /// <summary>
 /// Closure counting characters in a string.
 /// </summary>
-[Serializable]
 public class CharacterCountClosure : IComputeFunc<string, int>
 {
 	/// <summary>

@@ -132,13 +132,13 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     /**
      * Create Ignite configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Configuration.
      */
-    protected IgniteConfiguration configuration(String gridName) {
+    protected IgniteConfiguration configuration(String igniteInstanceName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
 

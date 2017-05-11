@@ -75,7 +75,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClockSyncFrequency(300000);
         cfg.setFailureDetectionTimeout(1000);
         cfg.setClientMode(clientMode);
 
@@ -245,7 +244,8 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
+        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx)
+            throws IgniteCheckedException {
             if (PRED.apply(node)) {
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
 
