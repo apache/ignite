@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -26,16 +27,23 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
  */
 public class SqlListenerColumnMeta {
     /** Cache name. */
-    private final String schemaName;
+    private String schemaName;
 
     /** Table name. */
-    private final String tableName;
+    private String tableName;
 
     /** Column name. */
-    private final String columnName;
+    private String columnName;
 
     /** Data type. */
-    private final Class<?> dataType;
+    private Class<?> dataType;
+
+    /**
+     * Default constructor is used for binary serialization.
+     */
+    public SqlListenerColumnMeta() {
+        // No-op.
+    }
 
     /**
      * @param schemaName Cache name.
@@ -68,6 +76,34 @@ public class SqlListenerColumnMeta {
         }
 
         this.dataType = type;
+    }
+
+    /**
+     * @return Schema name.
+     */
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    /**
+     * @return Table name.
+     */
+    public String getTableName() {
+        return tableName;
+    }
+
+    /**
+     * @return Column name.
+     */
+    public String getColumnName() {
+        return columnName;
+    }
+
+    /**
+     * @return Column's data type.
+     */
+    public Class<?> getDataType() {
+        return dataType;
     }
 
     /** {@inheritDoc} */
@@ -106,5 +142,20 @@ public class SqlListenerColumnMeta {
         byte typeId = BinaryUtils.typeByClass(dataType);
 
         writer.writeByte(typeId);
+    }
+
+    /**
+     * Read from binary format.
+     *
+     * @param reader Binary input.
+     */
+    public void read(BinaryRawReader reader) {
+        schemaName = reader.readString();
+        tableName = reader.readString();
+        columnName = reader.readString();
+
+        byte typeId = reader.readByte();
+
+        dataType = null;
     }
 }

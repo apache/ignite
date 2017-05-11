@@ -20,12 +20,18 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
@@ -43,6 +49,9 @@ public class JdbcTcpIo {
 
     /** Initial output stream capacity. */
     private static final int HANDSHAKE_MSG_SIZE = 10;
+
+    /** Initial output for query msg. */
+    private static final int QUERY_MSG_INIT_CAP = 1024;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -98,7 +107,8 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE), null, null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null,
+            new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),null, null);
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -130,6 +140,74 @@ public class JdbcTcpIo {
 
         throw new IgniteCheckedException("Handshake error: the protocol version is not supported by Ignite version:"
             + ver + (F.isEmpty(err) ? "" : ". Error message: " + err));
+    }
+
+    /**
+     * @param cache Cache name.
+     * @param sql SQL statement.
+     * @param args Query parameters.
+     * @return Execute query results.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public SqlListenerQueryExecuteResult queryExecute(String cache, String sql, Object[] args)
+        throws IOException, IgniteCheckedException {
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null,
+            new BinaryHeapOutputStream(QUERY_MSG_INIT_CAP),null, null);
+
+        writer.writeByte((byte)SqlListenerRequest.QRY_EXEC);
+
+        writer.writeString(cache);
+        writer.writeString(sql);
+        writer.writeInt(args == null ? 0 : args.length);
+
+        if (args != null) {
+            for (Object arg : args)
+                writer.writeObject(arg);
+        }
+
+        send(writer.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, false);
+
+        byte status = reader.readByte();
+
+        if (status != SqlListenerResponse.STATUS_SUCCESS) {
+            String err = reader.readString();
+
+            throw new IgniteCheckedException("Query execute error: " + err);
+        }
+
+        long qryId = reader.readLong();
+        int metaSize = reader.readInt();
+
+        List<SqlListenerColumnMeta> meta = null;
+
+        if (metaSize > 0) {
+            meta = new ArrayList<>(metaSize);
+
+            for (int i = 0; i < metaSize; ++i) {
+                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
+
+                m.read(reader);
+
+                meta.add(m);
+            }
+        }
+
+        return new SqlListenerQueryExecuteResult(qryId, meta);
+    }
+
+    /**
+     * @param qryId Query ID.
+     * @param fetchSize Fetch page size.
+     * @return Fetch results.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public SqlListenerQueryFetchResult queryFetch(Long qryId, int fetchSize)
+        throws IOException, IgniteCheckedException {
+        return null;
     }
 
     /**
@@ -193,5 +271,4 @@ public class JdbcTcpIo {
         if (endpoint != null)
             endpoint.close();
     }
-
 }

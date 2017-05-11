@@ -521,4 +521,11 @@ public class JdbcConnection implements Connection {
     JdbcStatement createStatement0() throws SQLException {
         return (JdbcStatement)createStatement();
     }
+
+    /**
+     * @return Ignite endpoint and I/O protocol.
+     */
+    JdbcTcpIo cliIo() {
+        return cliIo;
+    }
 }
