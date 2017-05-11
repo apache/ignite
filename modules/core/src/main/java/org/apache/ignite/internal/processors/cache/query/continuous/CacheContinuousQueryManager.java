@@ -345,7 +345,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             assert jcache != null : "Failed to get cache proxy [name=" + cctx.name() +
                 ", locStart=" + cctx.startTopologyVersion() +
-                ", cacheStart=" + cctx.cacheStartTopologyVersion() +
                 ", locNode=" + cctx.localNode() +
                 ", stopping=" + cctx.kernalContext().isStopping();
 

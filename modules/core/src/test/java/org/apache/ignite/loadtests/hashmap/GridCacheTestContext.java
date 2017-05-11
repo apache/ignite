@@ -80,7 +80,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             defaultCacheConfiguration(),
             CacheType.USER,
             AffinityTopologyVersion.ZERO,
-            AffinityTopologyVersion.ZERO,
             true,
             true,
             null,

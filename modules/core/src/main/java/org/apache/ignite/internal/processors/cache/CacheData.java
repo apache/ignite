@@ -42,9 +42,6 @@ public class CacheData implements Serializable {
     private final CacheType cacheType;
 
     /** */
-    private final AffinityTopologyVersion startTopVer;
-
-    /** */
     private final IgniteUuid deploymentId;
 
     /** */
@@ -66,7 +63,6 @@ public class CacheData implements Serializable {
      * @param cacheCfg Cache configuration.
      * @param cacheId Cache ID.
      * @param cacheType Cache ID.
-     * @param startTopVer Topology version when cache was started.
      * @param deploymentId Cache deployment ID.
      * @param schema Query schema.
      * @param rcvdFrom Node ID cache was started from.
@@ -77,7 +73,6 @@ public class CacheData implements Serializable {
     CacheData(CacheConfiguration cacheCfg,
         int cacheId,
         CacheType cacheType,
-        AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         QuerySchema schema,
         UUID rcvdFrom,
@@ -86,14 +81,12 @@ public class CacheData implements Serializable {
         byte flags) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
-        assert startTopVer != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
         assert template || cacheId != 0 : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
         this.cacheId = cacheId;
         this.cacheType = cacheType;
-        this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
         this.schema = schema;
         this.rcvdFrom = rcvdFrom;
@@ -107,13 +100,6 @@ public class CacheData implements Serializable {
      */
     public Integer cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @return Start topology version.
-     */
-    public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
     }
 
     /**
