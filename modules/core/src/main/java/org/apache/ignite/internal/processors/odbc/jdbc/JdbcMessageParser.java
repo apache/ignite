@@ -25,11 +25,11 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 /**
  * JDBC message parser.
  */
-public class JdbcMessageParserImpl extends SqlListenerMessageParserImpl {
+public class JdbcMessageParser extends SqlListenerMessageParserImpl {
     /**
      * @param ctx Context.
      */
-    public JdbcMessageParserImpl(GridKernalContext ctx) {
+    public JdbcMessageParser(GridKernalContext ctx) {
         super(ctx);
     }
 

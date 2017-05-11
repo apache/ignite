@@ -28,8 +28,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParserImpl;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParserImpl;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
@@ -246,11 +246,11 @@ public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         switch (clientType) {
             case ODBC_CLIENT:
-                parser = new OdbcMessageParserImpl(ctx);
+                parser = new OdbcMessageParser(ctx);
 
                 break;
             case JDBC_CLIENT:
-                parser = new JdbcMessageParserImpl(ctx);
+                parser = new JdbcMessageParser(ctx);
 
                 break;
         }

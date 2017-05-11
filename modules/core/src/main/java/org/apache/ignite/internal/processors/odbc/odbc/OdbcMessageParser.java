@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 /**
  * JDBC message parser.
  */
-public class OdbcMessageParserImpl extends SqlListenerMessageParserImpl {
+public class OdbcMessageParser extends SqlListenerMessageParserImpl {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
     /**
      * @param ctx Context.
      */
-    public OdbcMessageParserImpl(GridKernalContext ctx) {
+    public OdbcMessageParser(GridKernalContext ctx) {
         super(ctx);
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
