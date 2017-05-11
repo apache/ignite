@@ -250,6 +250,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
          *
          */
         private void goNext() {
+            if (off == streams.length)
+                return; // All streams are done.
+
             if (streams[off].next())
                 bubbleUp(streams, off, streamCmp);
             else
