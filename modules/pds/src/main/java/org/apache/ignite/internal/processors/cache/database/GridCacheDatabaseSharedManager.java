@@ -231,9 +231,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private boolean stopping;
 
-    /** Page meta io. */
-    private final PageMetaIO pageMetaIO = PageMetaIO.VERSIONS.latest();
-
     /** Checkpoint runner thread pool. */
     private ExecutorService asyncRunner;
 
@@ -2337,56 +2334,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 doneFut.onDone(e);
             }
         }
-    }
-
-    /**
-     * @param pageMem Page mem.
-     * @param cacheId Cache id.
-     * @param part Partition.
-     */
-    public void completeSavingAllocatedIndex(
-        PageMemoryEx pageMem, IgniteWriteAheadLogManager wal, int cacheId, int part
-    ) throws IgniteCheckedException {
-        long pageId = getSuperPageId(pageMem, cacheId, part);
-        long page = pageMem.acquirePage(cacheId, pageId);
-        try {
-            long pageAddr = pageMem.writeLock(cacheId, pageId, page);
-
-            boolean wasChanged = false;
-
-            try {
-                assert PageIO.getPageId(pageAddr) != 0;
-
-                int lastAllocatedIdx = pageMetaIO.getLastPageCount(pageAddr);
-                int candidateAllocatedIdx = pageMetaIO.getCandidatePageCount(pageAddr);
-
-                if (lastAllocatedIdx != candidateAllocatedIdx) {
-                    if (isWalDeltaRecordNeeded(pageMem, cacheId, pageId, page, wal, null))
-                        wal.log(new MetaPageUpdateLastAllocatedIndex(cacheId, pageId, candidateAllocatedIdx));
-
-                    pageMetaIO.setLastPageCount(pageAddr, candidateAllocatedIdx);
-
-                    wasChanged = true;
-                }
-            }
-            finally {
-                pageMem.writeUnlock(cacheId, pageId, page, null, wasChanged);
-            }
-        }
-        finally {
-            pageMem.releasePage(cacheId, pageId, page);
-        }
-    }
-
-    /**
-     * @param pageMem Page mem.
-     * @param cacheId Cache id.
-     * @param part Partition.
-     */
-    private static long getSuperPageId(PageMemoryEx pageMem, int cacheId, int part) throws IgniteCheckedException {
-        return part == PageIdAllocator.INDEX_PARTITION ?
-            pageMem.metaPageId(cacheId) :
-            pageMem.partitionMetaPageId(cacheId, part);
     }
 
     /**

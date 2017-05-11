@@ -423,7 +423,7 @@ public class FullPageIdTable {
      * @param tag Tag.
      * @return Distance scanned if the entry is found or negative distance scanned, if entry was not found.
      */
-    int distanceFromIdeal(int cacheId, long pageId, int tag) {
+    public int distanceFromIdeal(int cacheId, long pageId, int tag) {
         int step = 1;
 
         int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
@@ -461,7 +461,7 @@ public class FullPageIdTable {
      *
      * @param visitor Visitor.
      */
-    void visitAll(IgniteBiInClosure<FullPageId, Long> visitor) {
+    public void visitAll(IgniteBiInClosure<FullPageId, Long> visitor) {
         for (int i = 0; i < capacity; i++) {
             if (isValuePresentAt(i)) {
                 long base = entryBase(i);
