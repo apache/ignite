@@ -228,9 +228,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Topology version when cache was started on local node. */
     private AffinityTopologyVersion locStartTopVer;
 
-    /** Global cache start topology version. */
-    private AffinityTopologyVersion cacheStartTopVer;
-
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
@@ -282,7 +279,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheConfiguration cacheCfg,
         CacheGroupInfrastructure grp,
         CacheType cacheType,
-        AffinityTopologyVersion cacheStartTopVer,
         AffinityTopologyVersion locStartTopVer,
         boolean affNode,
         boolean updatesAllowed,
@@ -308,7 +304,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
-        assert cacheStartTopVer != null : cacheCfg.getName();
         assert locStartTopVer != null : cacheCfg.getName();
 
         assert grp != null;
@@ -330,7 +325,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.grp = grp;
         this.cacheType = cacheType;
         this.locStartTopVer = locStartTopVer;
-        this.cacheStartTopVer = cacheStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
@@ -462,15 +456,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert locStartTopVer != null : name();
 
         return locStartTopVer;
-    }
-
-    /**
-     * @return Cache start topology version.
-     */
-    public AffinityTopologyVersion cacheStartTopologyVersion() {
-        assert cacheStartTopVer != null : name();
-
-        return cacheStartTopVer;
     }
 
     /**

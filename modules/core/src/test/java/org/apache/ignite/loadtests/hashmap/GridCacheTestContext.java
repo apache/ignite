@@ -81,7 +81,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             null,
             CacheType.USER,
             AffinityTopologyVersion.ZERO,
-            AffinityTopologyVersion.ZERO,
             true,
             true,
             new GridCacheEventManager(),

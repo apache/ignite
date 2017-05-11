@@ -401,7 +401,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         int num = grp.affinity().partitions();
 
         if (grp.rebalanceEnabled()) {
-            boolean added = exchId.topologyVersion().equals(grp.groupStartVersion());
+            boolean added = exchId.topologyVersion().equals(grp.localStartVersion());
 
             boolean first = (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined()) || added;
 
@@ -1173,7 +1173,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     // then we keep the newer value.
                     if (newPart != null &&
                         (newPart.updateSequence() < part.updateSequence() ||
-                        (grp.groupStartVersion().compareTo(newPart.topologyVersion()) > 0))
+                        (grp.localStartVersion().compareTo(newPart.topologyVersion()) > 0))
                         ) {
                         if (log.isDebugEnabled())
                             log.debug("Overriding partition map in full update map [exchId=" + exchId + ", curPart=" +

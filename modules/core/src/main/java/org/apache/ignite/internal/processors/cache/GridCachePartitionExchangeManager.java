@@ -902,7 +902,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean ready;
 
                 if (exchId != null) {
-                    AffinityTopologyVersion startTopVer = grp.groupStartVersion();
+                    AffinityTopologyVersion startTopVer = grp.localStartVersion();
 
                     ready = startTopVer.compareTo(exchId.topologyVersion()) <= 0;
                 }
@@ -1304,7 +1304,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null &&
-                        grp.groupStartVersion().compareTo(entry.getValue().topologyVersion()) > 0)
+                        grp.localStartVersion().compareTo(entry.getValue().topologyVersion()) > 0)
                         continue;
 
                     GridDhtPartitionTopology top = null;

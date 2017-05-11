@@ -63,9 +63,6 @@ public class DynamicCacheDescriptor {
     private boolean updatesAllowed = true;
 
     /** */
-    private AffinityTopologyVersion startTopVer;
-
-    /** */
     private Integer cacheId;
 
     /** */
@@ -78,7 +75,7 @@ public class DynamicCacheDescriptor {
     private volatile CacheObjectContext objCtx;
 
     /** */
-    private transient AffinityTopologyVersion clientCacheStartVer;
+    private volatile transient AffinityTopologyVersion locStartVer;
 
     /** Mutex to control schema. */
     private final Object schemaMux = new Object();
@@ -143,22 +140,6 @@ public class DynamicCacheDescriptor {
      */
     public Integer cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @return Start topology version.
-     */
-    @Nullable public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
-    }
-
-    /**
-     * @param startTopVer Start topology version.
-     */
-    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
-        assert startTopVer != null;
-
-        this.startTopVer = startTopVer;
     }
 
     /**
@@ -268,15 +249,15 @@ public class DynamicCacheDescriptor {
     /**
      * @return Version when client cache on local node was started.
      */
-    @Nullable AffinityTopologyVersion clientCacheStartVersion() {
-        return clientCacheStartVer;
+    @Nullable AffinityTopologyVersion localStartVersion() {
+        return locStartVer;
     }
 
     /**
-     * @param clientCacheStartVer Version when client cache on local node was started.
+     * @param locStartVer Version when cache on local node was started.
      */
-    public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
-        this.clientCacheStartVer = clientCacheStartVer;
+    public void localStartVersion(AffinityTopologyVersion locStartVer) {
+        this.locStartVer = locStartVer;
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -56,6 +56,9 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     private static IgniteLogger log;
 
     /** */
+    private static final AtomicLong idGen = new AtomicLong();
+
+    /** */
     private final GridCacheSharedContext ctx;
 
     /** List of available nodes this future can fetch data from. */
@@ -66,11 +69,13 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     private ClusterNode pendingNode;
 
     /** */
-    @GridToStringInclude
-    private final T2<Integer, AffinityTopologyVersion> key;
+    private final long id;
 
     /** */
-    private final CacheGroupDescriptor grpDesc;
+    private final AffinityTopologyVersion topVer;
+
+    /** */
+    private final int grpId;
 
     /**
      * @param ctx Context.
@@ -84,9 +89,11 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         AffinityTopologyVersion topVer,
         DiscoCache discoCache
     ) {
+        this.topVer = topVer;
+        this.grpId = grpDesc.groupId();
         this.ctx = ctx;
-        this.grpDesc = grpDesc;
-        this.key = new T2<>(grpDesc.groupId(), topVer);
+
+        id = idGen.getAndIncrement();
 
         Collection<ClusterNode> availableNodes = discoCache.cacheGroupAffinityNodes(grpDesc.groupId());
 
@@ -106,6 +113,20 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     }
 
     /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long id() {
+        return id;
+    }
+
+    /**
      * Initializes fetch future.
      */
     public void init() {
@@ -115,25 +136,10 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     }
 
     /**
-     * @return Future key.
-     */
-    public T2<Integer, AffinityTopologyVersion> key() {
-        return key;
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param res Response.
      */
     public void onResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-        if (!res.topologyVersion().equals(key.get2())) {
-            if (log.isDebugEnabled())
-                log.debug("Received affinity assignment for wrong topology version (will ignore) " +
-                    "[node=" + nodeId + ", res=" + res + ", topVer=" + key.get2() + ']');
-
-            return;
-        }
-
         GridDhtAffinityAssignmentResponse res0 = null;
 
         synchronized (this) {
@@ -190,7 +196,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                             ", node=" + node + ']');
 
                     ctx.io().send(node,
-                        new GridDhtAffinityAssignmentRequest(key.get1(), key.get2(), grpDesc.startTopologyVersion()),
+                        new GridDhtAffinityAssignmentRequest(id, grpId, topVer),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.

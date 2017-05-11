@@ -31,11 +31,11 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private long futId;
+
     /** Topology version being queried. */
     private AffinityTopologyVersion topVer;
-
-    /** */
-    private AffinityTopologyVersion waitTopVer;
 
     /**
      * Empty constructor.
@@ -45,26 +45,26 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     }
 
     /**
+     * @param futId Future ID.
      * @param grpId Cache group ID.
      * @param topVer Topology version.
-     * @param waitTopVer Topology version to wait for before message processing.
      */
-    public GridDhtAffinityAssignmentRequest(int grpId,
-        AffinityTopologyVersion topVer,
-        AffinityTopologyVersion waitTopVer) {
+    public GridDhtAffinityAssignmentRequest(
+        long futId,
+        int grpId,
+        AffinityTopologyVersion topVer) {
         assert topVer != null;
-        assert waitTopVer != null;
 
+        this.futId = futId;
         this.grpId = grpId;
         this.topVer = topVer;
-        this.waitTopVer = waitTopVer;
     }
 
     /**
-     * @return Topology version to wait for before message processing.
+     * @return Future ID.
      */
-    public AffinityTopologyVersion waitTopologyVersion() {
-        return waitTopVer;
+    public long futureId() {
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -110,13 +110,13 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("waitTopVer", waitTopVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -138,7 +138,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
 
         switch (reader.state()) {
             case 3:
-                topVer = reader.readMessage("topVer");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,7 +146,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 4:
-                waitTopVer = reader.readMessage("waitTopVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

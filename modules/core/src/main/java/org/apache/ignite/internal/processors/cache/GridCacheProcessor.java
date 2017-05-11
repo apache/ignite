@@ -1366,7 +1366,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheGroupInfrastructure grp,
         @Nullable CachePluginManager pluginMgr,
         CacheType cacheType,
-        AffinityTopologyVersion cacheStartTopVer,
         AffinityTopologyVersion locStartTopVer,
         CacheObjectContext cacheObjCtx,
         boolean affNode,
@@ -1437,7 +1436,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfg,
             grp,
             cacheType,
-            cacheStartTopVer,
             locStartTopVer,
             affNode,
             updatesAllowed,
@@ -1568,7 +1566,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cfg,
                 grp,
                 cacheType,
-                cacheStartTopVer,
                 locStartTopVer,
                 affNode,
                 true,
@@ -1746,7 +1743,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             nearCfg,
             cacheDesc.cacheType(),
             cacheDesc.deploymentId(),
-            cacheDesc.startTopologyVersion(),
             exchTopVer,
             cacheDesc.schema()
         );
@@ -1769,7 +1765,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     t.get2(),
                     desc.cacheType(),
                     desc.deploymentId(),
-                    desc.startTopologyVersion(),
                     exchTopVer,
                     desc.schema()
                 );
@@ -1800,7 +1795,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         null,
                         desc.cacheType(),
                         desc.deploymentId(),
-                        desc.startTopologyVersion(),
                         exchTopVer,
                         desc.schema()
                     );
@@ -1816,7 +1810,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param cacheType Cache type.
      * @param deploymentId Deployment ID.
-     * @param cacheStartTopVer Cache start topology version.
      * @param exchTopVer Current exchange version.
      * @param schema Query schema.
      * @throws IgniteCheckedException If failed.
@@ -1827,7 +1820,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable NearCacheConfiguration reqNearCfg,
         CacheType cacheType,
         IgniteUuid deploymentId,
-        AffinityTopologyVersion cacheStartTopVer,
         AffinityTopologyVersion exchTopVer,
         @Nullable QuerySchema schema
     ) throws IgniteCheckedException {
@@ -1885,7 +1877,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             grp,
             null,
             cacheType,
-            cacheStartTopVer,
             exchTopVer,
             cacheObjCtx,
             affNode,

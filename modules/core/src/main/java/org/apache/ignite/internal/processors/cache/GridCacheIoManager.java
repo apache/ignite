@@ -146,8 +146,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
                     assert cacheMsg.topologyVersion() != null : cacheMsg;
 
-                    AffinityTopologyVersion waitVer =
-                        ((GridDhtAffinityAssignmentRequest)cacheMsg).waitTopologyVersion();
+                    AffinityTopologyVersion waitVer = cctx.affinity().localStartVersion(cacheMsg.cacheId());
+
+                    if (waitVer == null)
+                        waitVer = new AffinityTopologyVersion(cctx.localNode().order());
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
                     fut = cctx.exchange().affinityReadyFuture(waitVer);

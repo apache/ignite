@@ -353,19 +353,15 @@ class ClusterCachesInfo {
                     if (needExchange) {
                         req.clientStartOnly(true);
 
-                        desc.clientCacheStartVersion(topVer.nextMinorVersion());
+                        desc.localStartVersion(topVer.nextMinorVersion());
 
                         exchangeActions.addClientCacheToStart(req, desc);
                     }
                 }
 
                 if (!needExchange) {
-                    if (desc != null) {
-                        if (desc.clientCacheStartVersion() != null)
-                            waitTopVer = desc.clientCacheStartVersion();
-                        else
-                            waitTopVer = desc.startTopologyVersion();
-                    }
+                    if (desc != null)
+                        waitTopVer = desc.localStartVersion();
                 }
             }
             else if (req.globalStateChange())
@@ -429,7 +425,7 @@ class ClusterCachesInfo {
             for (DynamicCacheDescriptor desc : addedDescs) {
                 assert desc.template() || incMinorTopVer;
 
-                desc.startTopologyVersion(startTopVer);
+                desc.localStartVersion(startTopVer);
             }
         }
 
@@ -570,9 +566,11 @@ class ClusterCachesInfo {
                 locJoinStartCaches = new ArrayList<>();
 
                 if (!disconnectedState() && joinDiscoData != null) {
-                    processJoiningNode(joinDiscoData, node.id(), topVer);
+                    processJoiningNode(joinDiscoData, node.id());
 
                     for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                        desc.localStartVersion(topVer);
+
                         CacheConfiguration cfg = desc.cacheConfiguration();
 
                         CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
@@ -590,8 +588,7 @@ class ClusterCachesInfo {
                                 desc.deploymentId(),
                                 desc.schema());
 
-                            desc0.startTopologyVersion(desc.startTopologyVersion());
-                            desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
+                            desc0.localStartVersion(desc.localStartVersion());
                             desc0.receivedFrom(desc.receivedFrom());
                             desc0.staticallyConfigured(desc.staticallyConfigured());
 
@@ -603,16 +600,15 @@ class ClusterCachesInfo {
                     }
                 }
             }
-            else {
-                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                    if (desc.startTopologyVersion() == null && node.id().equals(desc.receivedFrom()))
-                        desc.startTopologyVersion(topVer);
-                }
 
-                for (DynamicCacheDescriptor desc : registeredTemplates().values()) {
-                    if (desc.startTopologyVersion() == null && node.id().equals(desc.receivedFrom()))
-                        desc.startTopologyVersion(topVer);
-                }
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                if (node.id().equals(desc.receivedFrom()))
+                    desc.localStartVersion(topVer);
+            }
+
+            for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
+                if (node.id().equals(desc.receivedFrom()))
+                    desc.localStartVersion(topVer);
             }
         }
     }
@@ -639,7 +635,6 @@ class ClusterCachesInfo {
                 desc.cacheId(),
                 desc.groupDescriptor().groupId(),
                 desc.cacheType(),
-                desc.startTopologyVersion(),
                 desc.deploymentId(),
                 desc.schema(),
                 desc.receivedFrom(),
@@ -670,7 +665,6 @@ class ClusterCachesInfo {
                 0,
                 0,
                 desc.cacheType(),
-                desc.startTopologyVersion(),
                 desc.deploymentId(),
                 desc.schema(),
                 desc.receivedFrom(),
@@ -729,7 +723,6 @@ class ClusterCachesInfo {
                 cacheData.deploymentId(),
                 cacheData.schema());
 
-            desc.startTopologyVersion(cacheData.startTopologyVersion());
             desc.receivedFrom(cacheData.receivedFrom());
             desc.staticallyConfigured(cacheData.staticallyConfigured());
 
@@ -754,7 +747,6 @@ class ClusterCachesInfo {
                 cacheData.deploymentId(),
                 cacheData.schema());
 
-            desc.startTopologyVersion(cacheData.startTopologyVersion());
             desc.receivedFrom(cacheData.receivedFrom());
             desc.staticallyConfigured(cacheData.staticallyConfigured());
 
@@ -798,7 +790,7 @@ class ClusterCachesInfo {
                     processClientReconnectData((CacheClientReconnectDiscoveryData) joiningNodeData, data.joiningNodeId());
             }
             else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData)
-                processJoiningNode((CacheJoinNodeDiscoveryData)joiningNodeData, data.joiningNodeId(), null);
+                processJoiningNode((CacheJoinNodeDiscoveryData)joiningNodeData, data.joiningNodeId());
         }
     }
 
@@ -833,9 +825,8 @@ class ClusterCachesInfo {
     /**
      * @param joinData Joined node discovery data.
      * @param nodeId Joined node ID.
-     * @param topVer Topology version.
      */
-    private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, AffinityTopologyVersion topVer) {
+    private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId) {
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
             CacheConfiguration cfg = cacheInfo.config();
 
@@ -850,7 +841,6 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
-                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);
 
@@ -880,7 +870,6 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
-                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
