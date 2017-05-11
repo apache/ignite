@@ -271,6 +271,10 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         Call call = cache.get(callKey1);
 
         checkResultsRow(result, 0, call.name, call.duration);
+
+        call = cache.get(callKey2);
+
+        checkResultsRow(result, 1, call.name, call.duration);
     }
 
     /** */
