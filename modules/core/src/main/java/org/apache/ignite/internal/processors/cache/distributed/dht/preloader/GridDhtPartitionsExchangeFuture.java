@@ -399,7 +399,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     public boolean cacheStarted(int cacheId) {
         return exchActions != null && exchActions.cacheStarted(cacheId);
-
     }
 
     /**
