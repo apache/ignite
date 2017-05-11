@@ -82,9 +82,6 @@ class ClusterCachesInfo {
     private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches;
 
     /** */
-    private Map<UUID, CacheJoinNodeDiscoveryData> joiningNodesDiscoData = new HashMap<>();
-
-    /** */
     private Map<UUID, CacheClientReconnectDiscoveryData> clientReconnectReqs;
 
     /**
@@ -104,6 +101,7 @@ class ClusterCachesInfo {
     }
 
     /**
+     * @param checkConsistency {@code True} if need check cache configurations consistency.
      * @throws IgniteCheckedException If failed.
      */
     void onKernalStart(boolean checkConsistency) throws IgniteCheckedException {
@@ -571,16 +569,21 @@ class ClusterCachesInfo {
                             desc = desc0;
                         }
 
-                        if (locCfg != null || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
+                        if (locCfg != null || joinDiscoData.startCaches() || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
                             locJoinStartCaches.add(new T2<>(desc, nearCfg));
                     }
                 }
             }
             else {
-                CacheJoinNodeDiscoveryData discoData = joiningNodesDiscoData.remove(node.id());
+                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                    if (desc.startTopologyVersion() == null && node.id().equals(desc.receivedFrom()))
+                        desc.startTopologyVersion(topVer);
+                }
 
-                if (discoData != null)
-                    processJoiningNode(discoData, node.id(), topVer);
+                for (DynamicCacheDescriptor desc : registeredTemplates().values()) {
+                    if (desc.startTopologyVersion() == null && node.id().equals(desc.receivedFrom()))
+                        desc.startTopologyVersion(topVer);
+                }
             }
         }
     }
@@ -722,12 +725,8 @@ class ClusterCachesInfo {
                 else
                     processClientReconnectData((CacheClientReconnectDiscoveryData) joiningNodeData, data.joiningNodeId());
             }
-            else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData) {
-                CacheJoinNodeDiscoveryData old =
-                    joiningNodesDiscoData.put(data.joiningNodeId(), (CacheJoinNodeDiscoveryData)joiningNodeData);
-
-                assert old == null : old;
-            }
+            else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData)
+                processJoiningNode((CacheJoinNodeDiscoveryData)joiningNodeData, data.joiningNodeId(), null);
         }
     }
 
@@ -753,6 +752,7 @@ class ClusterCachesInfo {
     /**
      * @param joinData Joined node discovery data.
      * @param nodeId Joined node ID.
+     * @param topVer Topology version.
      */
     private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, AffinityTopologyVersion topVer) {
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
@@ -803,6 +803,14 @@ class ClusterCachesInfo {
             }
 
             ctx.discovery().addClientNode(cfg.getName(), nodeId, cfg.getNearConfiguration() != null);
+        }
+
+        if (joinData.startCaches()) {
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                ctx.discovery().addClientNode(desc.cacheName(),
+                    nodeId,
+                    desc.cacheConfiguration().getNearConfiguration() != null);
+            }
         }
     }
 

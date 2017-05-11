@@ -42,9 +42,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** Cache updates to be executed on exchange. */
     private transient ExchangeActions exchangeActions;
 
-    /** */
-    private boolean startCaches;
-
     /**
      * @param reqs Requests.
      */
@@ -74,20 +71,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      */
     public Collection<DynamicCacheChangeRequest> requests() {
         return reqs;
-    }
-
-    /**
-     * @return {@code True} if required to start all caches on client node.
-     */
-    public boolean startCaches() {
-        return startCaches;
-    }
-
-    /**
-     * @param startCaches {@code True} if required to start all caches on client node.
-     */
-    public void startCaches(boolean startCaches) {
-        this.startCaches = startCaches;
     }
 
     /**
