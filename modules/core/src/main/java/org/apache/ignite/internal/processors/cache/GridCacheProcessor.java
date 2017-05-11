@@ -41,6 +41,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -114,6 +115,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -162,6 +164,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** */
+    private final boolean START_CLIENT_CACHES =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
+
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
 
@@ -642,7 +648,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             registerCacheFromPersistentStore(caches, templates);
 
-            cachesInfo.onStart(new CacheJoinNodeDiscoveryData(IgniteUuid.randomUuid(), caches, templates));
+            CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(IgniteUuid.randomUuid(),
+                caches,
+                templates,
+                startAllCachesOnClientStart());
+
+            cachesInfo.onStart(discoData);
+        }
+        else {
+            cachesInfo.onStart(new CacheJoinNodeDiscoveryData(IgniteUuid.randomUuid(),
+                Collections.<String, CacheJoinNodeDiscoveryData.CacheInfo>emptyMap(),
+                Collections.<String, CacheJoinNodeDiscoveryData.CacheInfo>emptyMap(),
+                false));
         }
 
         if (log.isDebugEnabled())
@@ -713,6 +730,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
+
+            cfgs[i] = cfg; // Replace original configuration value.
 
             registerCache(cfg, caches, templates);
         }
@@ -858,21 +877,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.service().onUtilityCacheStarted();
 
-        AffinityTopologyVersion startTopVer =
+        final AffinityTopologyVersion startTopVer =
             new AffinityTopologyVersion(ctx.discovery().localJoinEvent().topologyVersion(), 0);
 
-        for (GridCacheAdapter cache : caches.values()) {
-            CacheConfiguration cfg = cache.configuration();
+        final List<IgniteInternalFuture> syncFuts = new ArrayList<>(caches.size());
 
-            if (cache.context().affinityNode() &&
-                cfg.getRebalanceMode() == SYNC &&
-                startTopVer.equals(cache.context().startTopologyVersion())) {
-                CacheMode cacheMode = cfg.getCacheMode();
+        sharedCtx.forAllCaches(new CIX1<GridCacheContext>() {
+            @Override public void applyx(GridCacheContext cctx) throws IgniteCheckedException {
+                CacheConfiguration cfg = cctx.config();
 
-                if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                    cache.preloader().syncFuture().get();
+                if (cctx.affinityNode() &&
+                    cfg.getRebalanceMode() == SYNC &&
+                    startTopVer.equals(cctx.startTopologyVersion())) {
+                    CacheMode cacheMode = cfg.getCacheMode();
+
+                    if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                        // Need to wait outside to avoid a deadlock
+                        syncFuts.add(cctx.preloader().syncFuture());
+                }
             }
-        }
+        });
+
+        for (int i = 0, size = syncFuts.size(); i < size; i++)
+            syncFuts.get(i).get();
 
         // TODO IGNITE-5075.
         // assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
@@ -2113,6 +2140,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         cachesInfo.collectGridNodeData(dataBag);
+    }
+
+    /**
+     * @return {@code True} if need locally start all existing caches on client node start.
+     */
+    private boolean startAllCachesOnClientStart() {
+        return START_CLIENT_CACHES && ctx.clientNode();
     }
 
     /** {@inheritDoc} */

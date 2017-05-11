@@ -23,9 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC query execute request.
+ * SQL listener query execute request.
  */
-public class OdbcQueryExecuteRequest extends OdbcRequest {
+public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
     /** Cache name. */
     private final String cacheName;
 
@@ -42,8 +42,8 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
-        super(EXECUTE_SQL_QUERY);
+    public SqlListenerQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+        super(QRY_EXEC);
 
         this.cacheName = cacheName.isEmpty() ? null : cacheName;
         this.sqlQry = sqlQry;
@@ -73,6 +73,6 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OdbcQueryExecuteRequest.class, this, "args", args, true);
+        return S.toString(SqlListenerQueryExecuteRequest.class, this, "args", args, true);
     }
 }

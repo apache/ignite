@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.odbc;
  * Data type names usable in SQL queries
  * after escape sequence transformation
  */
-public class IgniteTypes {
+public class SqlListenerDataTypes {
     /** Type name for 64-bit integer */
     static final String BIGINT = "BIGINT";
 

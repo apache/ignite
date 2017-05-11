@@ -1734,12 +1734,17 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param el Expression.
+     * @param el Expression part in SELECT clause.
      * @return {@code true} If expression contains aggregates.
      */
     private static boolean hasAggregates(GridSqlAst el) {
         if (el instanceof GridSqlAggregateFunction)
             return true;
+
+        // If in SELECT clause we have a subquery expression with aggregate,
+        // we should not split it. Run the whole subquery on MAP stage.
+        if (el instanceof GridSqlSubquery)
+            return false;
 
         for (int i = 0; i < el.size(); i++) {
             if (hasAggregates(el.child(i)))

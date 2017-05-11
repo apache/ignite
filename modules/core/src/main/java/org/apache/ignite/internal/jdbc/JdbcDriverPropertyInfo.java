@@ -15,35 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.jdbc;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.sql.DriverPropertyInfo;
 
 /**
- * ODBC query close request.
+ * Extension of {@link DriverPropertyInfo} that adds
+ * convenient constructors.
  */
-public class OdbcQueryCloseRequest extends OdbcRequest {
-    /** Query ID. */
-    private final long queryId;
-
+public class JdbcDriverPropertyInfo extends DriverPropertyInfo {
     /**
-     * @param queryId Query ID.
+     * @param name Name.
+     * @param val Value.
+     * @param desc Description.
      */
-    public OdbcQueryCloseRequest(long queryId) {
-        super(CLOSE_SQL_QUERY);
+    public JdbcDriverPropertyInfo(String name, String val, String desc) {
+        super(name, val);
 
-        this.queryId = queryId;
-    }
-
-    /**
-     * @return Query ID.
-     */
-    public long queryId() {
-        return queryId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(OdbcQueryCloseRequest.class, this);
+        description = desc;
     }
 }

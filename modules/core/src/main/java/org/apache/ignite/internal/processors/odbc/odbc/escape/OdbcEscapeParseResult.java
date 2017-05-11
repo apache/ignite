@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.escape;
+package org.apache.ignite.internal.processors.odbc.odbc.escape;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 

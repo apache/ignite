@@ -2057,6 +2057,18 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param millis Time to sleep.
+     */
+    public static void doSleep(long millis) {
+        try {
+            U.sleep(millis);
+        }
+        catch (Exception e) {
+            throw new IgniteException();
+        }
+    }
+
+    /**
      * @param node Node.
      * @param cacheName Cache name.
      * @return Cache group ID for given cache name.

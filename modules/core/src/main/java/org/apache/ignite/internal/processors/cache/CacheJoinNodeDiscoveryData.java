@@ -43,18 +43,31 @@ class CacheJoinNodeDiscoveryData implements Serializable {
     @GridToStringInclude
     private final IgniteUuid cacheDeploymentId;
 
+    /** */
+    private final boolean startCaches;
+
     /**
      * @param cacheDeploymentId Deployment ID for started caches.
      * @param caches Caches.
      * @param templates Templates.
+     * @param startCaches {@code True} if required to start all caches on joining node.
      */
     CacheJoinNodeDiscoveryData(
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates) {
+        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
+        boolean startCaches) {
         this.cacheDeploymentId = cacheDeploymentId;
         this.caches = caches;
         this.templates = templates;
+        this.startCaches = startCaches;
+    }
+
+    /**
+     * @return {@code True} if required to start all caches on joining node.
+     */
+    boolean startCaches() {
+        return startCaches;
     }
 
     /**
