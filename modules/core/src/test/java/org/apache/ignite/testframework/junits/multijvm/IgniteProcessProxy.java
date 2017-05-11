@@ -73,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -529,6 +530,11 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
         NearCacheConfiguration<K, V> nearCfg) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

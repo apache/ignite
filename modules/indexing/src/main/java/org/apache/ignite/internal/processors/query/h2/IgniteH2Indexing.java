@@ -884,34 +884,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // We want to preserve user specified names as they are
         newCfg.setSqlEscapeAll(true);
 
-        IgniteCache<?, ?> res = ctx.grid().getOrCreateCache(newCfg);
+        IgniteBiTuple<? extends IgniteCache<?, ?>, Boolean> res = ctx.grid().getOrCreateCache0(newCfg);
 
-        // Instead of interpreting error message, let's just check that configuration of new cache matches
-        // what we've just tried to create.
-        if (!ifNotExists) {
-            boolean chkRes;
-
-            CacheConfiguration<?, ?> resCfg = res.getConfiguration(CacheConfiguration.class);
-
-            if (resCfg.getQueryEntities().size() != 1)
-                chkRes = false;
-            else {
-                QueryEntity resEntity = resCfg.getQueryEntities().iterator().next();
-
-                chkRes =
-                    F.eq(resEntity.getTableName(), entity.getTableName()) &&
-                        F.eq(resEntity.getFields(), entity.getFields()) &&
-                        F.eq(resEntity.getKeyType(), entity.getKeyType()) &&
-                        F.eq(resEntity.getFields(), entity.getFields()) &&
-                        F.eq(resEntity.getKeyFields(), entity.getKeyFields()) &&
-                        F.isEmpty(resEntity.getIndexes()) &&
-                        F.isEmpty(resEntity.getAliases());
-            }
-
-            if (!chkRes)
-                throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
-                    IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
-        }
+        if (!ifNotExists && F.eq(res.get2(), false))
+            throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
+                IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
     }
 
     /** {@inheritDoc} */
