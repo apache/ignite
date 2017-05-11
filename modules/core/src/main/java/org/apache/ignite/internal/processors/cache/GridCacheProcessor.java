@@ -843,6 +843,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         final AffinityTopologyVersion startTopVer =
             new AffinityTopologyVersion(ctx.discovery().localJoinEvent().topologyVersion(), 0);
 
+        final List<IgniteInternalFuture> syncFuts = new ArrayList<>(caches.size());
+
         sharedCtx.forAllCaches(new CIX1<GridCacheContext>() {
             @Override public void applyx(GridCacheContext cctx) throws IgniteCheckedException {
                 CacheConfiguration cfg = cctx.config();
@@ -853,10 +855,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CacheMode cacheMode = cfg.getCacheMode();
 
                     if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                        cctx.preloader().syncFuture().get();
+                        // Need to wait outside to avoid a deadlock
+                        syncFuts.add(cctx.preloader().syncFuture());
                 }
             }
         });
+
+        for (int i = 0, size = syncFuts.size(); i < size; i++)
+            syncFuts.get(i).get();
 
         assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
 
