@@ -52,10 +52,19 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  */
 public class CacheGroupInfrastructure {
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private GridAffinityAssignmentCache aff;
 
     /** */
     private final int grpId;
+
+    /** */
+    private UUID rcvdFrom;
+
+    /** */
+    private final AffinityTopologyVersion locStartVer;
 
     /** */
     private final CacheConfiguration ccfg;
@@ -64,13 +73,7 @@ public class CacheGroupInfrastructure {
     private final GridCacheSharedContext ctx;
 
     /** */
-    private final IgniteLogger log;
-
-    /** */
     private GridDhtPartitionTopologyImpl top;
-
-    /** */
-    private final AffinityTopologyVersion locStartVer;
 
     /** */
     private IgniteCacheOffheapManager offheapMgr;
@@ -93,9 +96,6 @@ public class CacheGroupInfrastructure {
     /** ReuseList instance this group is associated with */
     private final ReuseList reuseList;
 
-    /** */
-    private final CacheType cacheType;
-
     /** IO policy. */
     private final byte ioPlc;
 
@@ -105,8 +105,13 @@ public class CacheGroupInfrastructure {
     /** */
     private boolean storeCacheId;
 
+    /** Flag indicating that this cache is in a recovery mode. */
+    // TODO IGNITE-5075 see GridCacheContext#needsRecovery
+    private boolean needsRecovery;
+
     /** */
-    private UUID rcvdFrom;
+    private GridCacheContext singleCacheCtx;
+
 
     /**
      * @param grpId Group ID.
@@ -129,7 +134,6 @@ public class CacheGroupInfrastructure {
 
         this.grpId = grpId;
         this.rcvdFrom = rcvdFrom;
-        this.cacheType = cacheType;
         this.ctx = ctx;
         this.ccfg = ccfg;
         this.affNode = affNode;
@@ -148,6 +152,9 @@ public class CacheGroupInfrastructure {
         log = ctx.kernalContext().log(getClass());
     }
 
+    /**
+     * @return Node ID initiated cache group start.
+     */
     public UUID receivedFrom() {
         return rcvdFrom;
     }
@@ -163,6 +170,9 @@ public class CacheGroupInfrastructure {
         return depEnabled;
     }
 
+    /**
+     * @return Preloader.
+     */
     public GridCachePreloader preloader() {
         return preldr;
     }
@@ -174,15 +184,18 @@ public class CacheGroupInfrastructure {
         return ioPlc;
     }
 
-    /** */
-    private GridCacheContext singleCacheCtx;
-
+    /**
+     * @param singleCacheCtx Cache context if group contains single cache.
+     */
     public void cacheContext(GridCacheContext singleCacheCtx) {
         assert !sharedGroup();
 
         this.singleCacheCtx = singleCacheCtx;
     }
 
+    /**
+     * @return Cache context if group contains single cache.
+     */
     public GridCacheContext cacheContext() {
         assert !sharedGroup();
 
@@ -214,11 +227,15 @@ public class CacheGroupInfrastructure {
 
     /**
      * TODO IGNITE-5075: get rid of CacheObjectContext?
+     * @return Cache object context.
      */
     public CacheObjectContext cacheObjectContext() {
         return cacheObjCtx;
     }
 
+    /**
+     * @return Cache shared context.
+     */
     public GridCacheSharedContext shared() {
         return ctx;
     }
@@ -230,17 +247,29 @@ public class CacheGroupInfrastructure {
         return memPlc;
     }
 
+    /**
+     * @return {@code True} if local node is affinity node.
+     */
     public boolean affinityNode() {
         return affNode;
     }
 
+    /**
+     * @return Topology.
+     */
+    public GridDhtPartitionTopology topology() {
+        if (top == null)
+            throw new IllegalStateException("Topology is not initialized: " + name());
+
+        return top;
+    }
+
+    /**
+     * @return Offheap manager.
+     */
     public IgniteCacheOffheapManager offheap() {
         return offheapMgr;
     }
-
-    /** Flag indicating that this cache is in a recovery mode. */
-    // TODO IGNITE-5075 see GridCacheContext#needsRecovery
-    private boolean needsRecovery;
 
     /**
      * @return Current cache state. Must only be modified during exchange.
@@ -261,6 +290,9 @@ public class CacheGroupInfrastructure {
         return false;
     }
 
+    /**
+     * @return Topology version when group was started on local node.
+     */
     public AffinityTopologyVersion localStartVersion() {
         return locStartVer;
     }
@@ -272,22 +304,37 @@ public class CacheGroupInfrastructure {
         return ccfg.getCacheMode() == LOCAL;
     }
 
+    /**
+     * @return Cache configuration.
+     */
     public CacheConfiguration config() {
         return ccfg;
     }
 
+    /**
+     * @return Affinity.
+     */
     public GridAffinityAssignmentCache affinity() {
         return aff;
     }
 
+    /**
+     * @return Group name.
+     */
     @Nullable public String name() {
         return ccfg.getGroupName();
     }
 
+    /**
+     * @return Group ID.
+     */
     public int groupId() {
         return grpId;
     }
 
+    /**
+     * @return {@code True} if group can contain multiple caches.
+     */
     public boolean sharedGroup() {
         return ccfg.getGroupName() != null;
     }
@@ -297,11 +344,33 @@ public class CacheGroupInfrastructure {
         return false;
     }
 
+    /**
+     *
+     */
     public void onKernalStop() {
-        if (preldr != null)
-            preldr.onKernalStop();
+        preldr.onKernalStop();
+
+        offheapMgr.onKernalStop();
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @param destroy Destroy flag.
+     */
+    void stopCache(int cacheId, boolean destroy) {
+        offheapMgr.stopCache(cacheId, destroy);
+    }
+
+    /**
+     *
+     */
+    void stopGroup() {
+        offheapMgr.stop();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void start() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
             name(),
@@ -404,10 +473,9 @@ public class CacheGroupInfrastructure {
     }
 
     /**
-     * @param reconnectFut
+     * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture reconnectFut) {
-        // TODO IGNITE-5075.
         IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
             "Failed to wait for topology update, client disconnected.");
 
@@ -426,7 +494,6 @@ public class CacheGroupInfrastructure {
      *
      */
     public void onReconnected() {
-        // TODO IGNITE-5075.
         aff.onReconnected();
 
         if (top != null)
@@ -434,12 +501,5 @@ public class CacheGroupInfrastructure {
 
         if (preldr != null)
             preldr.onReconnected();
-    }
-
-    public GridDhtPartitionTopology topology() {
-        if (top == null)
-            throw new IllegalStateException("Topology is not initialized: " + name());
-
-        return top;
     }
 }

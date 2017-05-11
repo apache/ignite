@@ -168,9 +168,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(final boolean destroy) {
+    @Override public void stopCache(int cacheId, final boolean destroy) {
         if (destroy && grp.affinityNode())
-            destroyCacheDataStructures(destroy);
+            destroyCacheDataStructures(cacheId, destroy);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // TODO IGNITE-5075.
     }
 
     /** {@inheritDoc} */
@@ -181,7 +186,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      *
      */
-    protected void destroyCacheDataStructures(boolean destroy) {
+    protected void destroyCacheDataStructures(int cacheId, boolean destroy) {
+        // TODO IGNITE-5075.
         assert grp.affinityNode();
 
         try {

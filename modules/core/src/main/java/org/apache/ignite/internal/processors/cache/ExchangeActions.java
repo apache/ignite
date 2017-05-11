@@ -71,8 +71,8 @@ public class ExchangeActions {
      * @param nodeId Local node ID.
      * @return Close cache requests.
      */
-    public List<DynamicCacheChangeRequest> closeRequests(UUID nodeId) {
-        List<DynamicCacheChangeRequest> res = null;
+    public List<ActionData> closeRequests(UUID nodeId) {
+        List<ActionData> res = null;
 
         if (cachesToClose != null) {
             for (ActionData req : cachesToClose.values()) {
@@ -80,12 +80,12 @@ public class ExchangeActions {
                     if (res == null)
                         res = new ArrayList<>(cachesToClose.size());
 
-                    res.add(req.req);
+                    res.add(req);
                 }
             }
         }
 
-        return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
+        return res != null ? res : Collections.<ActionData>emptyList();
     }
 
     /**

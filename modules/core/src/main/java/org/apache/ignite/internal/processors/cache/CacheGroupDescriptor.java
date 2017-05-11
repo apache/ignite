@@ -102,6 +102,10 @@ public class CacheGroupDescriptor {
         return caches != null;
     }
 
+    public boolean sharedGroup() {
+        return grpName != null;
+    }
+
     public String groupName() {
         return grpName;
     }

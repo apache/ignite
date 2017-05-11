@@ -374,8 +374,6 @@ class ClusterCachesInfo {
                 }
             }
             else if (req.stop()) {
-                assert req.stop() ^ req.close() : req;
-
                 if (desc != null) {
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 

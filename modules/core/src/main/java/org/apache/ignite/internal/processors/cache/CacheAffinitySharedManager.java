@@ -189,7 +189,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param topVer Expected topology version.
      */
-    private void onCacheStopped(AffinityTopologyVersion topVer) {
+    private void onCacheGroupStopped(AffinityTopologyVersion topVer) {
         CacheAffinityChangeMessage msg = null;
 
         synchronized (mux) {
@@ -402,26 +402,52 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 initStartedGroupOnCoordinator(fut, grpDesc);
         }
 
-        for (DynamicCacheChangeRequest req : exchActions.closeRequests(cctx.localNodeId())) {
-            cctx.cache().blockGateway(req);
-// TODO IGNITE-5075.
-//            if (crd) {
-//                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-//
-//                // Client cache was stopped, need create 'client' CacheHolder.
-//                if (cacheCtx != null && !cacheCtx.affinityNode()) {
-//                    CacheHolder cache = caches.remove(cacheId);
-//
-//                    assert !cache.client() : cache;
-//
-//                    cache = CacheHolder2.create(cctx,
-//                        cctx.cache().cacheDescriptor(cacheId),
-//                        fut,
-//                        cache.affinity());
-//
-//                    caches.put(cacheId, cache);
-//                }
-//            }
+        List<ExchangeActions.ActionData> closeReqs = exchActions.closeRequests(cctx.localNodeId());
+
+        for (ExchangeActions.ActionData req : closeReqs) {
+            cctx.cache().blockGateway(req.request());
+
+            if (crd) {
+                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(req.descriptor().groupDescriptor().groupId());
+
+                assert grp != null;
+
+                if (grp.affinityNode())
+                    continue;
+
+                boolean grpClosed = false;
+
+                if (grp.sharedGroup()) {
+                    boolean cacheRemaining = false;
+
+                    for (GridCacheContext ctx : cctx.cacheContexts()) {
+                        if (ctx.group() == grp && !cacheClosed(ctx.cacheId(), closeReqs)) {
+                            cacheRemaining = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!cacheRemaining)
+                        grpClosed = true;
+                }
+                else
+                    grpClosed = true;
+
+                // All client caches were stopped, need create 'client' CacheGroupHolder.
+                if (grpClosed) {
+                    CacheGroupHolder grpHolder = grpHolders.remove(grp.groupId());
+
+                    assert !grpHolder.client() : grpHolder;
+
+                    grpHolder = CacheGroupHolder2.create(cctx,
+                        registeredGrps.get(grp.groupId()),
+                        fut,
+                        grp.affinity());
+
+                    grpHolders.put(grp.groupId(), grpHolder);
+                }
+            }
         }
 
         for (ExchangeActions.ActionData action : exchActions.stopRequests())
@@ -429,18 +455,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> stoppedGrps = null;
 
-        for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()) {
-            if (crd && grpDesc.config().getCacheMode() != LOCAL) {
-                CacheGroupHolder cacheGrp = grpHolders.remove(grpDesc.groupId());
+        if (crd) {
+            for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()) {
+                if (grpDesc.config().getCacheMode() != LOCAL) {
+                    CacheGroupHolder cacheGrp = grpHolders.remove(grpDesc.groupId());
 
-                assert cacheGrp != null : grpDesc;
+                    assert cacheGrp != null : grpDesc;
 
-                if (stoppedGrps == null)
-                    stoppedGrps = new HashSet<>();
+                    if (stoppedGrps == null)
+                        stoppedGrps = new HashSet<>();
 
-                stoppedGrps.add(cacheGrp.groupId());
+                    stoppedGrps.add(cacheGrp.groupId());
 
-                cctx.io().removeHandler(cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
+                    cctx.io().removeHandler(cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
+                }
             }
         }
 
@@ -466,13 +494,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
-                        onCacheStopped(topVer);
+                        onCacheGroupStopped(topVer);
                     }
                 });
             }
         }
 
         return exchActions.clientOnlyExchange();
+    }
+
+    private boolean cacheClosed(int cacheId, List<ExchangeActions.ActionData> closeReqs) {
+        for (ExchangeActions.ActionData req : closeReqs) {
+            if (req.descriptor().cacheId() == cacheId)
+                return true;
+        }
+
+        return false;
     }
 
     /**

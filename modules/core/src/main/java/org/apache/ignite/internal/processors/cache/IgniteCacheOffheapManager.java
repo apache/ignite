@@ -39,11 +39,28 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("WeakerAccess")
 public interface IgniteCacheOffheapManager {
+    /**
+     * @param ctx Context.
+     * @param grp Cache group.
+     * @throws IgniteCheckedException If failed.
+     */
     public void start(GridCacheSharedContext ctx, CacheGroupInfrastructure grp) throws IgniteCheckedException;;
 
+    /**
+     *
+     */
     public void onKernalStop();
 
-    public void stop(boolean destroy);
+    /**
+     * @param cacheId Cache ID.
+     * @param destroy Destroy data flag.
+     */
+    public void stopCache(int cacheId, boolean destroy);
+
+    /**
+     *
+     */
+    public void stop();
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.

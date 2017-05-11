@@ -971,6 +971,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 stopCache(cache, cancel, false);
         }
 
+        for (CacheGroupInfrastructure grp :cacheGrps.values())
+            stopCacheGroup(grp.groupId());
+
         cachesInfo.clearCaches();
     }
 
@@ -992,6 +995,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Stop exchange manager first so that we call onKernalStop on all caches.
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
+
+        for (CacheGroupInfrastructure grp : cacheGrps.values())
+            grp.onKernalStop();
 
         onKernalStopCaches(cancel);
 
@@ -1052,6 +1058,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
 
+        for (CacheGroupInfrastructure grp : cacheGrps.values())
+            grp.onDisconnected(reconnectFut);
+
         for (GridCacheAdapter cache : caches.values()) {
             GridCacheContext cctx = cache.context();
 
@@ -1078,6 +1087,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCompoundFuture<?, ?> stopFut = null;
 
         Set<String> stoppedCaches = cachesInfo.onReconnected();
+
+        // TODO IGNITE-5075.
+        for (CacheGroupInfrastructure grp : cacheGrps.values())
+            grp.onReconnected();
 
         for (final GridCacheAdapter cache : caches.values()) {
             boolean stopped = stoppedCaches.contains(cache.name());
@@ -1120,13 +1133,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
         }
-// TODO
-//        if (clientReconnectReqs != null) {
-//            for (Map.Entry<UUID, DynamicCacheChangeBatch> e : clientReconnectReqs.entrySet())
-//                processClientReconnectData(e.getKey(), e.getValue());
-//
-//            clientReconnectReqs = null;
-//        }
 
         sharedCtx.onReconnected();
 
@@ -1247,6 +1253,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!excludes.contains(mgr))
                 mgr.stop(cancel, destroy);
         }
+
+        ctx.group().stopCache(ctx.cacheId(), destroy);
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
@@ -1979,9 +1987,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.removeCacheContext(ctx);
 
-//            assert req.deploymentId().equals(ctx.dynamicDeploymentId()) : "Different deployment IDs [req=" + req +
-//                ", ctxDepId=" + ctx.dynamicDeploymentId() + ']';
-
             onKernalStop(cache, req.destroy());
 
             stopCache(cache, true, req.destroy());
@@ -2019,8 +2024,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 prepareCacheStop(action.request());
             }
 
-            for (DynamicCacheChangeRequest req : exchActions.closeRequests(ctx.localNodeId())) {
-                String cacheName = req.cacheName();
+            for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop())
+                stopCacheGroup(grpDesc.groupId());
+
+            for (ExchangeActions.ActionData req : exchActions.closeRequests(ctx.localNodeId())) {
+                String cacheName = req.request().cacheName();
 
                 IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(cacheName);
 
@@ -2037,11 +2045,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         proxy.context().gate().onStopped();
 
-                        prepareCacheStop(req);
+                        prepareCacheStop(req.request());
                     }
                 }
             }
         }
+    }
+
+    /**
+     * @param grpId Group ID.
+     */
+    private void stopCacheGroup(int grpId) {
+        CacheGroupInfrastructure grp = cacheGrps.remove(grpId);
+
+        if (grp != null)
+            grp.stopGroup();
     }
 
     /**
