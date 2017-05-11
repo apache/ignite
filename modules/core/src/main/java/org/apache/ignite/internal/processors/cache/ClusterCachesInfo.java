@@ -82,6 +82,9 @@ class ClusterCachesInfo {
     private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches;
 
     /** */
+    private Map<UUID, CacheJoinNodeDiscoveryData> joiningNodesDiscoData = new HashMap<>();
+
+    /** */
     private Map<UUID, CacheClientReconnectDiscoveryData> clientReconnectReqs;
 
     /**
@@ -575,15 +578,10 @@ class ClusterCachesInfo {
                 }
             }
             else {
-                for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                    if (desc.startTopologyVersion() == null && node.id().equals(desc.receivedFrom()))
-                        desc.startTopologyVersion(topVer);
-                }
+                CacheJoinNodeDiscoveryData discoData = joiningNodesDiscoData.remove(node.id());
 
-                for (DynamicCacheDescriptor desc : registeredTemplates().values()) {
-                    if (desc.startTopologyVersion() == null && node.id().equals(desc.receivedFrom()))
-                        desc.startTopologyVersion(topVer);
-                }
+                if (discoData != null)
+                    processJoiningNode(discoData, node.id(), topVer);
             }
         }
     }
@@ -725,8 +723,12 @@ class ClusterCachesInfo {
                 else
                     processClientReconnectData((CacheClientReconnectDiscoveryData) joiningNodeData, data.joiningNodeId());
             }
-            else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData)
-                processJoiningNode((CacheJoinNodeDiscoveryData)joiningNodeData, data.joiningNodeId(), null);
+            else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData) {
+                CacheJoinNodeDiscoveryData old =
+                    joiningNodesDiscoData.put(data.joiningNodeId(), (CacheJoinNodeDiscoveryData)joiningNodeData);
+
+                assert old == null : old;
+            }
         }
     }
 
@@ -768,6 +770,7 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
+                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);
 
@@ -788,6 +791,7 @@ class ClusterCachesInfo {
 
                 desc.staticallyConfigured(true);
                 desc.receivedFrom(nodeId);
+                desc.startTopologyVersion(topVer);
 
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
