@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -254,43 +253,24 @@ public class IgnitePersistentStoreTest {
         Ignition.stopAll(true);
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
-            IgniteCache<Long, BinaryObject> personCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache2")).withKeepBinary();
+            IgniteCache<Long, PojoPerson> personCache = ignite.getOrCreateCache("cache2");
 
             assert ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
 
-            personCache.put(1L, createBinPerson(ignite, 1, "name", "second"));
+            personCache.put(1L, new PojoPerson(1, "name"));
+
+            assert personCache.withKeepBinary().get(1L) instanceof BinaryObject;
         }
 
         Ignition.stopAll(true);
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
-            IgniteCache<Long, BinaryObject> personCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache2")).withKeepBinary();
+            IgniteCache<Long, Object> personCache = ignite.getOrCreateCache("cache2");
 
             personCache.loadCache(null, null);
 
             LOGGER.info("loadCache tests passed");
-
-            BinaryObject bPerson = personCache.get(1L);
         }
-    }
-
-    /**
-     * Create binary person.
-     *
-     * @param ignite Ignite.
-     * @param id ID.
-     * @param name Name.
-     * @param secondName Second name.
-     * @return Person.
-     */
-    private BinaryObject createBinPerson(Ignite ignite, int id, String name, String secondName) {
-        BinaryObjectBuilder bldr = ignite.binary().builder("Person");
-
-        bldr.setField("id", id);
-        bldr.setField("firstName", name);
-        bldr.setField("secondName", secondName);
-
-        return bldr.build();
     }
 
     /** */
@@ -720,5 +700,35 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Passed POJO transaction tests for " + concurrency +
                 " concurrency and " + isolation + " isolation level");
         LOGGER.info("-----------------------------------------------------------------------------------");
+    }
+
+    /** */
+    public static class PojoPerson {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /** */
+        public PojoPerson() {
+            // No-op.
+        }
+
+        /** */
+        public PojoPerson(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /** */
+        public int getId() {
+            return id;
+        }
+
+        /** */
+        public String getName() {
+            return name;
+        }
     }
 }
