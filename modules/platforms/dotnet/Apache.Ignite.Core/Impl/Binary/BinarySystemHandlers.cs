@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinary;
             if (type == typeof (BinaryEnum))
                 return WriteBinaryEnum;
-            if (IsIntEnum(type))  // TODO: Handle smaller types too.
+            if (IsIntEnum(type))
                 return WriteEnum;
             if (type == typeof(Ignite))
                 return WriteIgnite;
@@ -833,7 +833,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="obj">The object.</param>
-        public void Write(BinaryWriter writer, object obj)
+        public void Write<T>(BinaryWriter writer, T obj)
         {
             _writeAction(writer, obj);
         }
