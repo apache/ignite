@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -69,6 +70,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(val, res);
             Assert.AreEqual(val, binRes.Deserialize<T>());
+
+            if (binRes is BinaryEnum)
+            {
+                
+            }
+            else
+            {
+                Assert.AreEqual(val, binRes.GetField<T>("value__"));
+            }
         }
 
         /// <summary>
