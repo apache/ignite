@@ -60,6 +60,9 @@ public class JdbcStatement implements Statement {
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
 
+    /** Query id. */
+    private long qryId = -1;
+
     /**
      * Creates new statement.
      *
@@ -85,7 +88,9 @@ public class JdbcStatement implements Statement {
 
             assert res != null;
 
-            return new JdbcResultSet(this, res.getQueryId(), res.getColumnsMetadata(), fetchSize, maxRows);
+            qryId = res.getQueryId();
+
+            return new JdbcResultSet(this, qryId, res.getColumnsMetadata(), fetchSize, maxRows);
         }
         catch (IOException | IgniteCheckedException e) {
             throw new SQLException("Failed to query Ignite.", e);
@@ -101,7 +106,18 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        closed = true;
+        if (qryId < 0) {
+            closed = true;
+
+            return;
+        }
+
+        try {
+            conn.cliIo().queryClose(qryId);
+        }
+        catch (IOException | IgniteCheckedException e) {
+            throw new SQLException("Failed to close statement. [queryId=" + qryId + ']', e);
+        }
     }
 
     /** {@inheritDoc} */

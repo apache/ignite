@@ -47,14 +47,17 @@ public class JdbcTcpIo {
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
-    /** Initial output stream capacity. */
+    /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 10;
 
-    /** Initial output for query msg. */
+    /** Initial output for query message. */
     private static final int QUERY_EXEC_MSG_INIT_CAP = 1024;
 
-    /** Initial output for query msg. */
-    private static final int QUERY_FETCH_MSG_INIT_CAP = 13;
+    /** Initial output for query fetch message. */
+    private static final int QUERY_FETCH_MSG_SIZE = 13;
+
+    /** Initial output for query close message. */
+    private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -208,7 +211,7 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryFetchResult queryFetch(Long qryId, int fetchSize)
         throws IOException, IgniteCheckedException {
-        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_FETCH_MSG_INIT_CAP));
+        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_FETCH_MSG_SIZE));
 
         writer.writeByte((byte)SqlListenerRequest.QRY_FETCH);
 
@@ -255,6 +258,35 @@ public class JdbcTcpIo {
         }
 
         return new SqlListenerQueryFetchResult(qryId, rows, last);
+    }
+
+    /**
+     * @param qryId Query ID.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public void queryClose(long qryId) throws IOException, IgniteCheckedException {
+        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_CLOSE_MSG_SIZE));
+
+        writer.writeByte((byte)SqlListenerRequest.QRY_CLOSE);
+        writer.writeLong(qryId);
+
+        send(writer.array());
+
+        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+
+        byte status = reader.readByte();
+
+        if (status != SqlListenerResponse.STATUS_SUCCESS) {
+            String err = reader.readString();
+
+            throw new IgniteCheckedException("Query execute error: " + err);
+        }
+
+        long respQryId = reader.readLong();
+
+        assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
+            + respQryId + ']';
     }
 
     /**
