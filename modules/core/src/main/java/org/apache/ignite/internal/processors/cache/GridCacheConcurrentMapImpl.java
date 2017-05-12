@@ -102,7 +102,6 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         GridCacheContext ctx,
         final AffinityTopologyVersion topVer,
         KeyCacheObject key,
-        @Nullable final CacheObject val,
         final boolean create,
         final boolean touch) {
         GridCacheMapEntry cur = null;
@@ -130,7 +129,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                 reserved = true;
                             }
 
-                            created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            created0 = factory.create(ctx, topVer, key);
                         }
 
                         cur = created = created0;
@@ -153,7 +152,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                     reserved = true;
                                 }
 
-                                created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                                created0 = factory.create(ctx, topVer, key);
                             }
 
                             cur = created = created0;

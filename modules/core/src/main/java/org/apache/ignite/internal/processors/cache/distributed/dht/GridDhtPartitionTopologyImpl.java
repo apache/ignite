@@ -401,8 +401,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         int num = grp.affinity().partitions();
 
         if (grp.rebalanceEnabled()) {
-            boolean added = exchFut.cacheGroupStarting(grp.groupId()) ||
-                (exchId.isJoined() && exchId.nodeId().equals(grp.receivedFrom()));
+            boolean added = exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom());
 
             boolean first = added || (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined());
 
@@ -550,7 +549,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 cntrMap.clear();
 
                 // If this is the oldest node.
-                if (oldest != null && (loc.equals(oldest) || grp.localStartVersion().equals(exchId.topologyVersion()))) {
+                if (oldest != null && (loc.equals(oldest) || exchFut.cacheGroupAddedOnExchange(grp.groupId(), grp.receivedFrom())) {
                     if (node2part == null) {
                         node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 

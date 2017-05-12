@@ -320,7 +320,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param exchActions Cache change requests to execte on exchange.
+     * @param exchActions Cache change requests to execute on exchange.
      */
     private void updateCachesInfo(ExchangeActions exchActions) {
         for (CacheGroupDescriptor stopDesc : exchActions.cacheGroupsToStop()) {
@@ -386,7 +386,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (startCache)
                 cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
-            if (fut.isCacheAdded(cacheDesc.cacheId(), fut.topologyVersion())) {
+            if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                 if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupDescriptor().groupId()).isEmpty())
                     U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
             }
@@ -895,8 +895,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert grpDesc != null : aff.groupName();
 
-        return fut.cacheGroupStarting(aff.groupId()) ||
-            cctx.localNodeId().equals(grpDesc.receivedFrom()) ||
+        return fut.cacheGroupAddedOnExchange(aff.groupId(), grpDesc.receivedFrom()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }

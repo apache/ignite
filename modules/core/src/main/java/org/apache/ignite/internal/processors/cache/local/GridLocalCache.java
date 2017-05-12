@@ -86,11 +86,9 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridLocalCacheEntry(ctx, key, hash, val);
+                return new GridLocalCacheEntry(ctx, key);
             }
         };
     }

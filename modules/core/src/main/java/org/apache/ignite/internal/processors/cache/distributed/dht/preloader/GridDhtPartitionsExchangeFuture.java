@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -320,7 +319,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param exchActions Exchange actions.
      */
     public void exchangeActions(ExchangeActions exchActions) {
-        assert exchActions == null || !exchActions.empty();
+        assert exchActions == null || !exchActions.empty() : exchActions;
         assert evtLatch != null && evtLatch.getCount() == 1L : this;
 
         this.exchActions = exchActions;
@@ -382,16 +381,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param cacheId Cache ID to check.
-     * @param topVer Topology version.
+     * @param rcvdFrom Topology version.
      * @return {@code True} if cache was added during this exchange.
      */
-    public boolean isCacheAdded(int cacheId, AffinityTopologyVersion topVer) {
-        if (cacheStarted(cacheId))
-            return true;
-
-        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-        return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
+    public boolean cacheAddedOnExchange(int cacheId, UUID rcvdFrom) {
+        return dynamicCacheStarted(cacheId) || (exchId.isJoined() && exchId.nodeId().equals(rcvdFrom));
     }
 
     public boolean cacheGroupStarting(int grpId) {
@@ -402,7 +396,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param cacheId Cache ID.
      * @return {@code True} if non-client cache was added during this exchange.
      */
-    public boolean cacheStarted(int cacheId) {
+    public boolean dynamicCacheStarted(int cacheId) {
         return exchActions != null && exchActions.cacheStarted(cacheId);
     }
 

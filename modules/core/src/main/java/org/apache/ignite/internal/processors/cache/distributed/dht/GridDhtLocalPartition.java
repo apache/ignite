@@ -933,14 +933,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         CacheDataRow row = it0.next();
 
                         if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != row.cacheId()))
-                            cctx = ctx.cacheContext(row.cacheId());
-
-                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
+                            cctx = ctx.cacheContext(row.cacheId());GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
                             grp.affinity().lastVersion(),
-                            row.key(),
-                            null,
-                            true,
-                            false);
+                            row.key(),  true, false);
 
                         if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                             if (rec) {

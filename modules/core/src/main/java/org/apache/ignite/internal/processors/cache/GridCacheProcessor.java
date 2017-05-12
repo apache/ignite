@@ -916,7 +916,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
+     * @throws IgniteCheckedException if check failed.
      */
     private void checkConsistency() throws IgniteCheckedException {
         for (ClusterNode n : ctx.discovery().remoteNodes()) {
@@ -928,9 +928,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DeploymentMode locDepMode = ctx.config().getDeploymentMode();
             DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
-            CU.checkAttributeMismatch(
-                    log, null, n.id(), "deploymentMode", "Deployment mode",
-                    locDepMode, rmtDepMode, true);
+            CU.checkAttributeMismatch(log, null, n.id(), "deploymentMode", "Deployment mode",
+                locDepMode, rmtDepMode, true);
         }
     }
 
@@ -1364,8 +1363,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cfg Cache configuration to use to create cache.
      * @param grp Cache group infrastructure.
      * @param pluginMgr Cache plugin manager.
-     * @param cacheType Cache type.
+     * @param desc Cache descriptor.
+     * @param locStartTopVer Current topology version.
      * @param cacheObjCtx Cache object context.
+     * @param affNode {@code True} if local node affinity node.
      * @param updatesAllowed Updates allowed flag.
      * @return Cache context.
      * @throws IgniteCheckedException If failed to create cache.
@@ -1373,7 +1374,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheContext createCache(CacheConfiguration<?, ?> cfg,
         CacheGroupInfrastructure grp,
         @Nullable CachePluginManager pluginMgr,
-        CacheType cacheType,
+        DynamicCacheDescriptor desc,
         AffinityTopologyVersion locStartTopVer,
         CacheObjectContext cacheObjCtx,
         boolean affNode,
@@ -1394,7 +1395,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         QueryUtils.prepareCacheConfiguration(cfg);
 
-        validate(ctx.config(), cfg, cacheType, cfgStore);
+        validate(ctx.config(), cfg, desc.cacheType(), cfgStore);
 
         if (pluginMgr == null)
             pluginMgr = new CachePluginManager(ctx, cfg);
@@ -1404,7 +1405,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         sharedCtx.jta().registerCache(cfg);
 
         // Skip suggestions for internal caches.
-        if (cacheType.userCache())
+        if (desc.cacheType().userCache())
             suggestOptimizations(cfg, cfgStore != null);
 
         Collection<Object> toPrepare = new ArrayList<>();
@@ -1443,8 +1444,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx,
             cfg,
             grp,
-            cacheType,
+            desc.cacheType(),
             locStartTopVer,
+            desc.receivedFrom(),
             affNode,
             updatesAllowed,
 
@@ -1573,8 +1575,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sharedCtx,
                 cfg,
                 grp,
-                cacheType,
+                desc.cacheType(),
                 locStartTopVer,
+                desc.receivedFrom(),
                 affNode,
                 true,
 
@@ -1749,8 +1752,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheDesc.groupDescriptor(),
             cacheDesc.cacheConfiguration(),
             nearCfg,
-            cacheDesc.cacheType(),
-            cacheDesc.deploymentId(),
+            cacheDesc,
             exchTopVer,
             cacheDesc.schema()
         );
@@ -1771,8 +1773,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     desc.groupDescriptor(),
                     desc.cacheConfiguration(),
                     t.get2(),
-                    desc.cacheType(),
-                    desc.deploymentId(),
+                    desc,
                     exchTopVer,
                     desc.schema()
                 );
@@ -1801,8 +1802,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         desc.groupDescriptor(),
                         desc.cacheConfiguration(),
                         null,
-                        desc.cacheType(),
-                        desc.deploymentId(),
+                        desc,
                         exchTopVer,
                         desc.schema()
                     );
@@ -1816,8 +1816,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param startCfg Start configuration.
      * @param reqNearCfg Near configuration if specified for client cache start request.
-     * @param cacheType Cache type.
-     * @param deploymentId Deployment ID.
+     * @param desc Cache descriptor.
      * @param exchTopVer Current exchange version.
      * @param schema Query schema.
      * @throws IgniteCheckedException If failed.
@@ -1826,8 +1825,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheGroupDescriptor grpDesc,
         CacheConfiguration startCfg,
         @Nullable NearCacheConfiguration reqNearCfg,
-        CacheType cacheType,
-        IgniteUuid deploymentId,
+        DynamicCacheDescriptor desc,
         AffinityTopologyVersion exchTopVer,
         @Nullable QuerySchema schema
     ) throws IgniteCheckedException {
@@ -1884,7 +1882,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheContext cacheCtx = createCache(ccfg,
             grp,
             null,
-            cacheType,
+            desc,
             exchTopVer,
             cacheObjCtx,
             affNode,
@@ -1893,7 +1891,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!grp.sharedGroup())
             grp.cacheContext(cacheCtx);
 
-        cacheCtx.dynamicDeploymentId(deploymentId);
+        cacheCtx.dynamicDeploymentId(desc.deploymentId());
 
         GridCacheAdapter cache = cacheCtx.cache();
 
@@ -2003,7 +2001,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
-        ExchangeActions exchActions,
+        @Nullable ExchangeActions exchActions,
         Throwable err
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
@@ -2634,8 +2632,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         if (req.close() && desc.cacheConfiguration().getCacheMode() == LOCAL) {
                             req.close(false);
+
                             req.stop(true);
-                            req.destroy(true);
                         }
                     }
                 }

@@ -228,6 +228,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Topology version when cache was started on local node. */
     private AffinityTopologyVersion locStartTopVer;
 
+    /** */
+    private UUID rcvdFrom;
+
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
@@ -280,6 +283,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheGroupInfrastructure grp,
         CacheType cacheType,
         AffinityTopologyVersion locStartTopVer,
+        UUID rcvdFrom,
         boolean affNode,
         boolean updatesAllowed,
 
@@ -325,6 +329,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.grp = grp;
         this.cacheType = cacheType;
         this.locStartTopVer = locStartTopVer;
+        this.rcvdFrom = rcvdFrom;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
@@ -447,6 +452,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void onStarted() {
         startLatch.countDown();
+    }
+
+    /**
+     * @return Node ID cache was received from.
+     */
+    public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     /**
@@ -2018,6 +2030,18 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
         return affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+    }
+
+    /**
+     * Checks if it is possible to directly read data memory without entry creation (this
+     * is optimization to avoid unnecessary blocking synchronization on cache entry).
+     *
+     * @param expiryPlc Optional expiry policy for read operation.
+     * @param readers {@code True} if need update near cache readers.
+     * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
+     */
+    public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
+        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
     }
 
     /**

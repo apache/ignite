@@ -31,7 +31,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache change requests to execute on request.
+ * Cache change requests to execute when receive {@link DynamicCacheChangeBatch} event.
  */
 public class ExchangeActions {
     /** */

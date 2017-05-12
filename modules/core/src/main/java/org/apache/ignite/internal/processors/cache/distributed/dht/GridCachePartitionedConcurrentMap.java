@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -80,20 +79,22 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(GridCacheContext ctx, AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create, boolean touch) {
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(GridCacheContext ctx, AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        boolean create,
+        boolean touch) {
         while (true) {
             GridDhtLocalPartition part = localPartition(ctx, key, topVer, create);
 
             if (part == null)
                 return null;
 
-            GridCacheMapEntry res = part.putEntryIfObsoleteOrAbsent(ctx, topVer, key, val, create, touch);
+            GridCacheMapEntry res = part.putEntryIfObsoleteOrAbsent(ctx, topVer, key, create, touch);
 
             if (res != null || !create)
                 return res;
 
-            // Otherwise parttion was concurrently evicted and should be re-created on next iteration.
+            // Otherwise partition was concurrently evicted and should be re-created on next iteration.
         }
     }
 
