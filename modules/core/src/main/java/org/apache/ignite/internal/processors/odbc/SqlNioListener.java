@@ -126,7 +126,7 @@ public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse SQL client request [err=" + e + ']');
+            log.error("Failed to parse SQL client request.", e);
 
             ses.close();
 

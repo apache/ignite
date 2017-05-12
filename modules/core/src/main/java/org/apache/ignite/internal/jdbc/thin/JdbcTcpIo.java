@@ -24,8 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderWithJdkObjectImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterWithJdkObjectImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
@@ -51,7 +54,10 @@ public class JdbcTcpIo {
     private static final int HANDSHAKE_MSG_SIZE = 10;
 
     /** Initial output for query msg. */
-    private static final int QUERY_MSG_INIT_CAP = 1024;
+    private static final int QUERY_EXEC_MSG_INIT_CAP = 1024;
+
+    /** Initial output for query msg. */
+    private static final int QUERY_FETCH_MSG_INIT_CAP = 13;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -107,8 +113,7 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null,
-            new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),null, null);
+        BinaryWriterExImpl writer = new BinaryWriterWithJdkObjectImpl(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -123,7 +128,7 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, false);
+        BinaryRawReader reader = new BinaryReaderWithJdkObjectImpl(new BinaryHeapInputStream(read()));
 
         boolean accepted = reader.readBoolean();
 
@@ -152,8 +157,7 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryExecuteResult queryExecute(String cache, String sql, Object[] args)
         throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null,
-            new BinaryHeapOutputStream(QUERY_MSG_INIT_CAP),null, null);
+        BinaryWriterExImpl writer = new BinaryWriterWithJdkObjectImpl(new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP));
 
         writer.writeByte((byte)SqlListenerRequest.QRY_EXEC);
 
@@ -163,12 +167,12 @@ public class JdbcTcpIo {
 
         if (args != null) {
             for (Object arg : args)
-                writer.writeObject(arg);
+                writer.writeObjectDetached(arg);
         }
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, false);
+        BinaryReaderExImpl reader = new BinaryReaderWithJdkObjectImpl(new BinaryHeapInputStream(read()));
 
         byte status = reader.readByte();
 
@@ -207,7 +211,54 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryFetchResult queryFetch(Long qryId, int fetchSize)
         throws IOException, IgniteCheckedException {
-        return null;
+        BinaryWriterExImpl writer = new BinaryWriterWithJdkObjectImpl(
+            new BinaryHeapOutputStream(QUERY_FETCH_MSG_INIT_CAP));
+
+        writer.writeByte((byte)SqlListenerRequest.QRY_FETCH);
+
+        writer.writeLong(qryId);
+        writer.writeInt(fetchSize);
+
+        send(writer.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderWithJdkObjectImpl(new BinaryHeapInputStream(read()));
+
+        byte status = reader.readByte();
+
+        if (status != SqlListenerResponse.STATUS_SUCCESS) {
+            String err = reader.readString();
+
+            throw new IgniteCheckedException("Query execute error: " + err);
+        }
+
+        long respQryId = reader.readLong();
+
+        assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
+            + respQryId + ']';
+
+        boolean last = reader.readBoolean();
+
+        int rowsSize = reader.readInt();
+
+        List<List<Object>> rows = null;
+
+        if (rowsSize > 0) {
+            rows = new ArrayList<>(rowsSize);
+
+            for (int i = 0; i < rowsSize; ++i) {
+
+                int colsSize = reader.readInt();
+
+                List<Object> col = new ArrayList<>(colsSize);
+
+                for (int colCnt = 0; colCnt < colsSize; ++colCnt)
+                    col.add(reader.readObjectDetached());
+
+                rows.add(col);
+            }
+        }
+
+        return new SqlListenerQueryFetchResult(qryId, rows, last);
     }
 
     /**

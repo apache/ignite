@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +46,7 @@ public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
     public SqlListenerQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
-        this.cacheName = cacheName.isEmpty() ? null : cacheName;
+        this.cacheName = F.isEmpty(cacheName) ? null : cacheName;
         this.sqlQry = sqlQry;
         this.args = args;
     }

@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderWithJdkObjectImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterWithJdkObjectImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 
 /**
@@ -34,12 +38,12 @@ public class JdbcMessageParser extends SqlListenerMessageParserImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeUserObject(BinaryWriterExImpl writer, Object obj) {
-        // TODO: JDK marshaller based write object for thin JDBC driver.
+    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
+        return new BinaryWriterWithJdkObjectImpl(new BinaryHeapOutputStream(cap));
     }
 
     /** {@inheritDoc} */
-    @Override protected BinaryWriterExImpl createBinaryWriter() {
-        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(INIT_CAP), null, null);
+    @Override protected BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+        return new BinaryReaderWithJdkObjectImpl(in);
     }
 }

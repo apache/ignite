@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 
@@ -43,12 +45,12 @@ public class OdbcMessageParser extends SqlListenerMessageParserImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeUserObject(BinaryWriterExImpl writer, Object obj) {
-        writer.writeObjectDetached(obj);
+    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
+        return marsh.writer(new BinaryHeapOutputStream(cap));
     }
 
     /** {@inheritDoc} */
-    @Override protected BinaryWriterExImpl createBinaryWriter() {
-        return marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
+    @Override protected BinaryReaderExImpl createBinaryReader(BinaryInputStream stream) {
+        return new BinaryReaderExImpl(null, stream, null, true);
     }
 }

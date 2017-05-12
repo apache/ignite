@@ -324,7 +324,7 @@ public class JdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        return null;
+        return new org.apache.ignite.internal.jdbc.thin.JdbcStatement(this);
     }
 
     /** {@inheritDoc} */
