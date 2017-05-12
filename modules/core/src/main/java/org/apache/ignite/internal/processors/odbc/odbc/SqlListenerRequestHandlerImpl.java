@@ -71,7 +71,7 @@ import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_
 /**
  * SQL query handler.
  */
-public class OdbcRequestHandler implements SqlListenerRequestHandler {
+public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
@@ -105,7 +105,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      */
-    public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
+    public SqlListenerRequestHandlerImpl(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder) {
         this.ctx = ctx;
         this.busyLock = busyLock;
