@@ -161,14 +161,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("Starting DHT rebalancer...");
 
-        ctx.io().addHandler(grp.groupId(), GridDhtForceKeysRequest.class,
+        ctx.io().addHandler(true, grp.groupId(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
                     processForceKeysRequest(node, msg);
                 }
             });
 
-        ctx.io().addHandler(grp.groupId(), GridDhtForceKeysResponse.class,
+        ctx.io().addHandler(true, grp.groupId(), GridDhtForceKeysResponse.class,
             new MessageHandler<GridDhtForceKeysResponse>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse msg) {
                     processForceKeyResponse(node, msg);

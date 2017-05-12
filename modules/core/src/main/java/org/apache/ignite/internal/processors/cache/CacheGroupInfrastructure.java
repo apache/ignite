@@ -378,6 +378,8 @@ public class CacheGroupInfrastructure {
      */
     void stopGroup() {
         offheapMgr.stop();
+
+        ctx.io().removeCacheGroupHandlers(grpId);
     }
 
     /**
@@ -406,7 +408,7 @@ public class CacheGroupInfrastructure {
             top = new GridDhtPartitionTopologyImpl(ctx, this, entryFactory);
 
             if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                ctx.io().addHandler(true, groupId(), GridDhtAffinityAssignmentRequest.class,
                     new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>() {
                         @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentRequest msg) {
                             processAffinityAssignmentRequest(nodeId, msg);

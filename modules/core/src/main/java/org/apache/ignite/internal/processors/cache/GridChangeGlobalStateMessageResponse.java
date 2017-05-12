@@ -60,6 +60,11 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean cacheGroupMessage() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public int handlerId() {
         return 0;
     }

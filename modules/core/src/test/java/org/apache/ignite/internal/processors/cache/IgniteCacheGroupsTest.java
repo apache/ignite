@@ -177,7 +177,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateCache1() throws Exception {
-        Ignite srv0 = ignite(0);
+        Ignite srv0 = startGrid(0);
 
         {
             IgniteCache<Object, Object> cache1 = srv0.createCache(cacheConfiguration("grp1", "cache1", ATOMIC, 2));
@@ -215,7 +215,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateCache2() throws Exception {
-        Ignite srv0 = ignite(0);
+        Ignite srv0 = startGrid(0);
 
         {
             IgniteCache<Object, Object> cache1 = srv0.createCache(cacheConfiguration("grp1", "cache1", ATOMIC, 0));

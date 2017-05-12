@@ -171,7 +171,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.io().addHandler(ctx.cacheId(), GridCacheTtlUpdateRequest.class, new CI2<UUID, GridCacheTtlUpdateRequest>() {
+        ctx.io().addHandler(false, ctx.cacheId(), GridCacheTtlUpdateRequest.class, new CI2<UUID, GridCacheTtlUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridCacheTtlUpdateRequest req) {
                 processTtlUpdateRequest(req);
             }

@@ -310,7 +310,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Integer grpId = grp.groupId();
 
         if (!grpHolders.containsKey(grp.groupId())) {
-            cctx.io().addHandler(grpId, GridDhtAffinityAssignmentResponse.class,
+            cctx.io().addHandler(true, grpId, GridDhtAffinityAssignmentResponse.class,
                 new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                     @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
                         processAffinityAssignmentResponse(grpId, nodeId, res);
@@ -469,7 +469,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     stoppedGrps.add(cacheGrp.groupId());
 
-                    cctx.io().removeHandler(cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
+                    cctx.io().removeHandler(true, cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
                 }
             }
         }
@@ -1139,7 +1139,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
                 if (grp == null) {
-                    cctx.io().addHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
+                    cctx.io().addHandler(true, desc.groupId(), GridDhtAffinityAssignmentResponse.class,
                         new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                             @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
                                 processAffinityAssignmentResponse(grpId, nodeId, res);
@@ -1231,7 +1231,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final CacheGroupInfrastructure grp = cctx.cache().cacheGroup(desc.groupId());
 
         if (grp == null) {
-            cctx.io().addHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
+            cctx.io().addHandler(true, desc.groupId(), GridDhtAffinityAssignmentResponse.class,
                 new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                     @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
                         processAffinityAssignmentResponse(desc.groupId(), nodeId, res);

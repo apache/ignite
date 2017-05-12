@@ -221,6 +221,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean addDeploymentInfo() {
             return false;
         }
@@ -318,6 +323,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int handlerId() {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -446,6 +456,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int handlerId() {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */

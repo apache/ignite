@@ -239,6 +239,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         metrics = m;
 
         ctx.io().addHandler(
+            false,
             ctx.cacheId(),
             GridNearGetRequest.class,
             new CI2<UUID, GridNearGetRequest>() {
@@ -253,6 +254,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
 
         ctx.io().addHandler(
+            false,
             ctx.cacheId(),
             GridNearSingleGetRequest.class,
             new CI2<UUID, GridNearSingleGetRequest>() {
@@ -267,6 +269,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
 
         ctx.io().addHandler(
+            false,
             ctx.cacheId(),
             GridNearAtomicAbstractUpdateRequest.class,
             new CI2<UUID, GridNearAtomicAbstractUpdateRequest>() {
@@ -285,7 +288,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addHandler(
+            false,
+            ctx.cacheId(),
             GridNearAtomicUpdateResponse.class,
             new CI2<UUID, GridNearAtomicUpdateResponse>() {
                 @Override public void apply(
@@ -304,6 +309,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
 
         ctx.io().addHandler(
+            false,
             ctx.cacheId(),
             GridDhtAtomicAbstractUpdateRequest.class,
             new CI2<UUID, GridDhtAtomicAbstractUpdateRequest>() {
@@ -323,6 +329,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             });
 
         ctx.io().addHandler(
+            false,
             ctx.cacheId(),
             GridDhtAtomicUpdateResponse.class,
             new CI2<UUID, GridDhtAtomicUpdateResponse>() {
@@ -341,7 +348,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addHandler(
+            false,
+            ctx.cacheId(),
             GridDhtAtomicDeferredUpdateResponse.class,
             new CI2<UUID, GridDhtAtomicDeferredUpdateResponse>() {
                 @Override public void apply(
@@ -359,7 +368,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addHandler(
+            false,
+            ctx.cacheId(),
             GridDhtAtomicNearResponse.class,
             new CI2<UUID, GridDhtAtomicNearResponse>() {
             @Override public void apply(UUID uuid, GridDhtAtomicNearResponse msg) {
@@ -372,7 +383,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addHandler(
+            false,
+            ctx.cacheId(),
             GridNearAtomicCheckUpdateRequest.class,
             new CI2<UUID, GridNearAtomicCheckUpdateRequest>() {
                 @Override public void apply(UUID uuid, GridNearAtomicCheckUpdateRequest msg) {
@@ -387,6 +400,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (near == null) {
             ctx.io().addHandler(
+                false,
                 ctx.cacheId(),
                 GridNearGetResponse.class,
                 new CI2<UUID, GridNearGetResponse>() {
@@ -401,6 +415,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 });
 
             ctx.io().addHandler(
+                false,
                 ctx.cacheId(),
                 GridNearSingleGetResponse.class,
                 new CI2<UUID, GridNearSingleGetResponse>() {

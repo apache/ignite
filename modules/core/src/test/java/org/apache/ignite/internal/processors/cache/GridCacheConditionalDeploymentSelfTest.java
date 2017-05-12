@@ -188,6 +188,11 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public short directType() {
             return DIRECT_TYPE;
         }

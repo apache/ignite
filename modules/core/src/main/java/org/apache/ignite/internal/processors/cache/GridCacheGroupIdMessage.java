@@ -39,6 +39,11 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean cacheGroupMessage() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public final int handlerId() {
         return grpId;
     }

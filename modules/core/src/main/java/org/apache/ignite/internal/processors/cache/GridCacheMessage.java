@@ -90,6 +90,11 @@ public abstract class GridCacheMessage implements Message {
     public abstract int handlerId();
 
     /**
+     * @return {@code True} if cache group message.
+     */
+    public abstract boolean cacheGroupMessage();
+
+    /**
      * @return Error, if any.
      */
     @Nullable public Throwable error() {

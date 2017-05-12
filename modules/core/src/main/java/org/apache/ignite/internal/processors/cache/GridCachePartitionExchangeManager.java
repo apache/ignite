@@ -308,21 +308,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
 
-        cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
+        cctx.io().addHandler(false, 0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
                     processSinglePartitionUpdate(node, msg);
                 }
             });
 
-        cctx.io().addHandler(0, GridDhtPartitionsFullMessage.class,
+        cctx.io().addHandler(false, 0, GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     processFullPartitionUpdate(node, msg);
                 }
             });
 
-        cctx.io().addHandler(0, GridDhtPartitionsSingleRequest.class,
+        cctx.io().addHandler(false, 0, GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
                     processSinglePartitionRequest(node, msg);
@@ -381,7 +381,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
                 final int idx = cnt;
 
-                cctx.io().addOrderedHandler(rebalanceTopic(cnt), new CI2<UUID, GridCacheMessage>() {
+                cctx.io().addOrderedHandler(true, rebalanceTopic(cnt), new CI2<UUID, GridCacheMessage>() {
                     @Override public void apply(final UUID id, final GridCacheMessage m) {
                         if (!enterBusy())
                             return;
@@ -498,9 +498,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridEvents().removeDiscoveryEventListener(discoLsnr);
 
-        cctx.io().removeHandler(0, GridDhtPartitionsSingleMessage.class);
-        cctx.io().removeHandler(0, GridDhtPartitionsFullMessage.class);
-        cctx.io().removeHandler(0, GridDhtPartitionsSingleRequest.class);
+        cctx.io().removeHandler(false, 0, GridDhtPartitionsSingleMessage.class);
+        cctx.io().removeHandler(false, 0, GridDhtPartitionsFullMessage.class);
+        cctx.io().removeHandler(false, 0, GridDhtPartitionsSingleRequest.class);
 
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
@@ -520,7 +520,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++)
-                cctx.io().removeOrderedHandler(rebalanceTopic(cnt));
+                cctx.io().removeOrderedHandler(true, rebalanceTopic(cnt));
         }
 
         U.cancel(exchWorker);
