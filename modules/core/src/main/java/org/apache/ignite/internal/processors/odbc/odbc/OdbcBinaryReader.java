@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
@@ -36,7 +33,7 @@ public class OdbcBinaryReader extends AbstractSqlBinaryReader {
      * @param in Binary reader.
      */
     public OdbcBinaryReader(BinaryInputStream in) {
-        super(null, in, null, false);
+        super(null, in, null, true);
     }
 
     /** {@inheritDoc} */
