@@ -313,7 +313,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             cctx.io().addHandler(cacheId, GridDhtAffinityAssignmentResponse.class,
                 new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                     @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                        processAffinityAssignmentResponse(cacheId, nodeId, res);
+                        processAffinityAssignmentResponse(nodeId, res);
                     }
                 });
         }
@@ -396,12 +396,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
             }
 
-            if (startCache)
+            if (startCache) {
                 cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
-            if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
-                    U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                    if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
+                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                }
             }
 
             if (!crd || !lateAffAssign) {
@@ -710,11 +711,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processAffinityAssignmentResponse(Integer cacheId, UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+    private void processAffinityAssignmentResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment response [node=" + nodeId + ", res=" + res + ']');
 
@@ -837,6 +837,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param desc Cache descriptor.
      * @param aff Affinity.
      * @param fut Exchange future.
      * @param fetch Force fetch flag.
@@ -1123,7 +1124,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     cctx.io().addHandler(desc.cacheId(), GridDhtAffinityAssignmentResponse.class,
                         new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                             @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                                processAffinityAssignmentResponse(cacheId, nodeId, res);
+                                processAffinityAssignmentResponse(nodeId, res);
                             }
                         }
                     );
@@ -1216,7 +1217,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             cctx.io().addHandler(cacheId, GridDhtAffinityAssignmentResponse.class,
                 new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                     @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-                        processAffinityAssignmentResponse(cacheId, nodeId, res);
+                        processAffinityAssignmentResponse(nodeId, res);
                     }
                 }
             );
