@@ -100,7 +100,7 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
+        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -115,7 +115,7 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
 
         boolean accepted = reader.readBoolean();
 
