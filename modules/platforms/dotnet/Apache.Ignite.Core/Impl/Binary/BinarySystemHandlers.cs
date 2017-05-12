@@ -239,10 +239,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new BinarySystemWriteHandler<Guid?[]>(WriteGuidArray, true);
                 // Enums.
                 if (IsIntEnum(elemType) || elemType == typeof(BinaryEnum))
-                    return new BinarySystemWriteHandler<object[]>(WriteEnumArray, true);
+                    return new BinarySystemWriteHandler<object>(WriteEnumArray, true);
 
                 // Object array.
-                return new BinarySystemWriteHandler<object[]>(WriteArray, true);
+                return new BinarySystemWriteHandler<object>(WriteArray, true);
             }
 
             return null;
