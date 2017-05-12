@@ -858,7 +858,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                WriteEnum(TypeCaster<int>.Cast(val), val.GetType());
+                var type = val.GetType();
+
+                if (!type.IsEnum)
+                {
+                    throw new BinaryObjectException("Type is not an enum: " + type);
+                }
+
+                var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+                if (handler != null)
+                {
+                    // All enums except long/ulong.
+                    handler.Write(this, val);
+                }
+                else
+                {
+                    throw new BinaryObjectException(string.Format("Enum '{0}' has unsupported underlying type '{1}'. " +
+                                                                  "Use WriteObject instead of WriteEnum.",
+                        type, Enum.GetUnderlyingType(type)));
+                }
             }
         }
 
