@@ -385,11 +385,9 @@ public class CacheGroupInfrastructure {
                 @Override public GridCacheMapEntry create(
                     GridCacheContext ctx,
                     AffinityTopologyVersion topVer,
-                    KeyCacheObject key,
-                    int hash,
-                    CacheObject val
+                    KeyCacheObject key
                 ) {
-                    return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
+                    return new GridDhtCacheEntry(ctx, topVer, key);
                 }
             };
 

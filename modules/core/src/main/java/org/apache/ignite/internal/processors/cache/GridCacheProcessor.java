@@ -1865,7 +1865,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (grp == null) {
                 grp = startCacheGroup(grpDesc,
-                    cacheType,
+                    desc.cacheType(),
                     affNode,
                     cacheObjCtx,
                     exchTopVer);
@@ -1873,7 +1873,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else {
             grp = startCacheGroup(grpDesc,
-                cacheType,
+                desc.cacheType(),
                 affNode,
                 cacheObjCtx,
                 exchTopVer);

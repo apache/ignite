@@ -382,15 +382,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow read(KeyCacheObject key) throws IgniteCheckedException {
+    @Nullable @Override public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
         CacheDataRow row;
 
         if (cctx.isLocal())
-            row = locCacheDataStore.find(key);
+            row = locCacheDataStore.find(cctx, key);
         else {
             GridDhtLocalPartition part = cctx.topology().localPartition(cctx.affinity().partition(key), null, false);
 
-            row = part != null ? dataStore(part).find(key) : null;
+            row = part != null ? dataStore(part).find(cctx, key) : null;
         }
 
         assert row == null || row.value() != null : row;

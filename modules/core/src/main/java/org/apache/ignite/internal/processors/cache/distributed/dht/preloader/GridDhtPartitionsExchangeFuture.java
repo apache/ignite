@@ -380,24 +380,38 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param cacheId Cache ID to check.
-     * @param rcvdFrom Topology version.
+     * @param cacheId Cache ID.
+     * @param rcvdFrom Node ID cache was received from.
      * @return {@code True} if cache was added during this exchange.
      */
     public boolean cacheAddedOnExchange(int cacheId, UUID rcvdFrom) {
         return dynamicCacheStarted(cacheId) || (exchId.isJoined() && exchId.nodeId().equals(rcvdFrom));
     }
 
-    public boolean cacheGroupStarting(int grpId) {
-        return exchActions != null && exchActions.cacheGroupStarting(grpId);
+    /**
+     * @param grpId Cache group ID.
+     * @param rcvdFrom Node ID cache group was received from.
+     * @return {@code True} if cache group was added during this exchange.
+     */
+    public boolean cacheGroupAddedOnExchange(int grpId, UUID rcvdFrom) {
+        return dynamicCacheGroupStarted(grpId) ||
+            (exchId.isJoined() && exchId.nodeId().equals(rcvdFrom));
     }
 
     /**
      * @param cacheId Cache ID.
      * @return {@code True} if non-client cache was added during this exchange.
      */
-    public boolean dynamicCacheStarted(int cacheId) {
+    private boolean dynamicCacheStarted(int cacheId) {
         return exchActions != null && exchActions.cacheStarted(cacheId);
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @return {@code True} if non-client cache group was added during this exchange.
+     */
+    public boolean dynamicCacheGroupStarted(int grpId) {
+        return exchActions != null && exchActions.cacheGroupStarting(grpId);
     }
 
     /**
