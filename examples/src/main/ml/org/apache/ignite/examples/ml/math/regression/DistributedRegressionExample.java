@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.examples.ml.math.regression;
 
 import java.util.Arrays;
@@ -14,12 +31,14 @@ import org.apache.ignite.thread.IgniteThread;
  * Run linear regression over distributed matrix.
  *
  * TODO: Currently works only in local mode.
+ *
+ * @see OLSMultipleLinearRegression
  */
 public class DistributedRegressionExample {
-
+    /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> Sparse distributed matrix API usage example started.");
+        System.out.println(">>> Linear regression over sparse distributed matrix API usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -98,19 +117,25 @@ public class DistributedRegressionExample {
 
                 System.out.println(">>> Estimates the regression parameters b:");
                 System.out.println(Arrays.toString(regression.estimateRegressionParameters()));
+
                 System.out.println(">>> Estimates the residuals, ie u = y - X*b:");
                 System.out.println(Arrays.toString(regression.estimateResiduals()));
+
                 System.out.println(">>> Standard errors of the regression parameters:");
                 System.out.println(Arrays.toString(regression.estimateRegressionParametersStandardErrors()));
+
                 System.out.println(">>> Estimates the variance of the regression parameters, ie Var(b):");
                 Tracer.showAscii(regression.estimateRegressionParametersVariance());
 
                 System.out.println(">>> Estimates the standard error of the regression:");
                 System.out.println(regression.estimateRegressionStandardError());
+
                 System.out.println(">>> R-Squared statistic:");
                 System.out.println(regression.calculateRSquared());
+
                 System.out.println(">>> Adjusted R-squared statistic:");
                 System.out.println(regression.calculateAdjustedRSquared());
+
                 System.out.println(">>> Returns the variance of the regressand, ie Var(y):");
                 System.out.println(regression.estimateErrorVariance());
             });
