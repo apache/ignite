@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -54,7 +49,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
+        BinaryReaderExImpl reader = createBinaryReader(stream);
 
         byte cmd = reader.readByte();
 
@@ -135,7 +130,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
         assert msg != null;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = createBinaryWriter();
+        BinaryWriterExImpl writer = createBinaryWriter(INIT_CAP);
 
         // Writing status.
         writer.writeByte((byte) msg.status());
@@ -189,71 +184,8 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
 
                     writer.writeInt(row.size());
 
-                    for (Object obj : row) {
-                        if (obj == null) {
-                            writer.writeObjectDetached(null);
-                            continue;
-                        }
-
-                        Class<?> cls = obj.getClass();
-
-                        if (cls == Boolean.class)
-                            writer.doWriteBoolean((Boolean)obj);
-                        else if (cls == Byte.class)
-                            writer.doWriteByte((Byte)obj);
-                        else if (cls == Character.class)
-                            writer.doWriteChar((Character)obj);
-                        else if (cls == Short.class)
-                            writer.doWriteShort((Short)obj);
-                        else if (cls == Integer.class)
-                            writer.doWriteInt((Integer)obj);
-                        else if (cls == Long.class)
-                            writer.doWriteLong((Long)obj);
-                        else if (cls == Float.class)
-                            writer.doWriteFloat((Float)obj);
-                        else if (cls == Double.class)
-                            writer.doWriteDouble((Double)obj);
-                        else if (cls == String.class)
-                            writer.doWriteString((String)obj);
-                        else if (cls == BigDecimal.class)
-                            writer.doWriteDecimal((BigDecimal)obj);
-                        else if (cls == UUID.class)
-                            writer.writeUuid((UUID)obj);
-                        else if (cls == Time.class)
-                            writer.writeTime((Time)obj);
-                        else if (cls == Timestamp.class)
-                            writer.writeTimestamp((Timestamp)obj);
-                        else if (cls == Date.class)
-                            writer.writeDate((Date)obj);
-                        else if (cls == boolean[].class)
-                            writer.writeBooleanArray((boolean[])obj);
-                        else if (cls == byte[].class)
-                            writer.writeByteArray((byte[])obj);
-                        else if (cls == char[].class)
-                            writer.writeCharArray((char[])obj);
-                        else if (cls == short[].class)
-                            writer.writeShortArray((short[])obj);
-                        else if (cls == int[].class)
-                            writer.writeIntArray((int[])obj);
-                        else if (cls == float[].class)
-                            writer.writeFloatArray((float[])obj);
-                        else if (cls == double[].class)
-                            writer.writeDoubleArray((double[])obj);
-                        else if (cls == String[].class)
-                            writer.writeStringArray((String[])obj);
-                        else if (cls == BigDecimal[].class)
-                            writer.writeDecimalArray((BigDecimal[])obj);
-                        else if (cls == UUID[].class)
-                            writer.writeUuidArray((UUID[])obj);
-                        else if (cls == Time[].class)
-                            writer.writeTimeArray((Time[])obj);
-                        else if (cls == Timestamp[].class)
-                            writer.writeTimestampArray((Timestamp[])obj);
-                        else if (cls == Date[].class)
-                            writer.writeDateArray((Date[])obj);
-                        else
-                            writeUserObject(writer, obj);
-                    }
+                    for (Object obj : row)
+                        writer.writeObjectDetached(obj);
                 }
             }
         }
@@ -294,7 +226,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
 
             byte[] typeIds = res.typeIds();
 
-            writeUserObject(writer, typeIds);
+            writer.writeObjectDetached(typeIds);
         }
         else
             assert false : "Should not reach here.";
@@ -303,13 +235,14 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
     }
 
     /**
-     * @param writer Binary writer.
-     * @param obj Object to write.
-     */
-    protected abstract void writeUserObject(BinaryWriterExImpl writer, Object obj);
-
-    /**
+     * @param cap Initial capacity.
      * @return Binary writer instance.
      */
-    protected abstract BinaryWriterExImpl createBinaryWriter();
+    protected abstract BinaryWriterExImpl createBinaryWriter(int cap);
+
+    /**
+     * @param in Binary input stream.
+     * @return Binary writer instance.
+     */
+    protected abstract BinaryReaderExImpl createBinaryReader(BinaryInputStream in);
 }
