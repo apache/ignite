@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System;
+    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -122,7 +124,27 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSerializableField()
         {
-            // TODO
+            // Min values.
+            var val = new EnumsSerializable();
+
+            var res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
+
+            // Max values.
+            val = new EnumsSerializable
+            {
+                Byte = ByteEnum.Bar,
+                Int = IntEnum.Bar,
+                Long = LongEnum.Bar,
+                SByte = SByteEnum.Bar,
+                Short = ShortEnum.Bar,
+                UInt = UIntEnum.Bar,
+                ULong = ULongEnum.Bar,
+                UShort = UShortEnum.Bar
+            };
+
+            res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
         }
 
         private enum ByteEnum : byte
@@ -195,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 if (ReferenceEquals(null, obj)) return false;
                 if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != this.GetType()) return false;
+                if (obj.GetType() != GetType()) return false;
                 return Equals((EnumsBinarizable) obj);
             }
 
@@ -213,6 +235,39 @@ namespace Apache.Ignite.Core.Tests.Binary
                     hashCode = (hashCode * 397) ^ ULong.GetHashCode();
                     return hashCode;
                 }
+            }
+        }
+
+        [Serializable]
+        private class EnumsSerializable : EnumsBinarizable, ISerializable
+        {
+            public EnumsSerializable()
+            {
+                // No-op.
+            }
+
+            protected EnumsSerializable(SerializationInfo info, StreamingContext context)
+            {
+                Byte = (ByteEnum) info.GetValue("byte", typeof(ByteEnum));
+                SByte = (SByteEnum) info.GetValue("sbyte", typeof(SByteEnum));
+                Short = (ShortEnum) info.GetValue("short", typeof(ShortEnum));
+                UShort = (UShortEnum) info.GetValue("ushort", typeof(UShortEnum));
+                Int = (IntEnum) info.GetValue("int", typeof(IntEnum));
+                UInt = (UIntEnum) info.GetValue("uint", typeof(UIntEnum));
+                Long = (LongEnum) info.GetValue("long", typeof(LongEnum));
+                ULong = (ULongEnum) info.GetValue("ulong", typeof(ULongEnum));
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("byte", Byte);
+                info.AddValue("sbyte", SByte);
+                info.AddValue("short", Short);
+                info.AddValue("ushort", UShort);
+                info.AddValue("int", Int);
+                info.AddValue("uint", UInt);
+                info.AddValue("long", Long);
+                info.AddValue("ulong", ULong);
             }
         }
     }
