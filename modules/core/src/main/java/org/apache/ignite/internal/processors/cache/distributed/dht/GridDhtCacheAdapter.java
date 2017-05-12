@@ -246,11 +246,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
+                return new GridDhtCacheEntry(ctx, topVer, key);
             }
         };
     }
@@ -428,7 +426,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Cache entry.
      */
     protected GridDistributedCacheEntry createEntry(KeyCacheObject key) {
-        return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0);
+        return new GridDhtDetachedCacheEntry(ctx, key);
     }
 
     /** {@inheritDoc} */
