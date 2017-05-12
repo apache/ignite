@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -110,8 +112,7 @@ public class CacheGroupInfrastructure {
     private boolean needsRecovery;
 
     /** */
-    private GridCacheContext singleCacheCtx;
-
+    private final List<GridCacheContext> caches;
 
     /**
      * @param grpId Group ID.
@@ -152,6 +153,8 @@ public class CacheGroupInfrastructure {
             (sharedGroup() || memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED);
 
         log = ctx.kernalContext().log(getClass());
+
+        caches = new ArrayList<>();
     }
 
     /**
@@ -187,21 +190,44 @@ public class CacheGroupInfrastructure {
     }
 
     /**
-     * @param singleCacheCtx Cache context if group contains single cache.
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If failed.
      */
-    public void cacheContext(GridCacheContext singleCacheCtx) {
-        assert !sharedGroup();
+    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+        addCacheContext(cctx);
 
-        this.singleCacheCtx = singleCacheCtx;
+        offheapMgr.onCacheStarted(cctx);
+    }
+
+    /**
+     * @param cctx Cache context.
+     */
+    private void addCacheContext(GridCacheContext cctx) {
+        assert sharedGroup() || caches.isEmpty();
+
+        boolean add = caches.add(cctx);
+
+        assert add : cctx.name();
+    }
+
+    /**
+     * @param cctx Cache context.
+     */
+    private void removeCacheContext(GridCacheContext cctx) {
+        assert sharedGroup() || caches.size() == 1 : caches.size();
+
+        boolean rmv = caches.remove(cctx);
+
+        assert rmv : cctx.name();
     }
 
     /**
      * @return Cache context if group contains single cache.
      */
-    public GridCacheContext cacheContext() {
-        assert !sharedGroup();
+    public GridCacheContext singleCacheContext() {
+        assert !sharedGroup() && caches.size() == 1;
 
-        return singleCacheCtx;
+        return caches.get(0);
     }
 
     // TODO IGNITE-5075: need separate caches with/without queries?
@@ -360,17 +386,20 @@ public class CacheGroupInfrastructure {
      *
      */
     public void onKernalStop() {
-        preldr.onKernalStop();
+        if (preldr != null) // null for LOCAL cache.
+            preldr.onKernalStop();
 
         offheapMgr.onKernalStop();
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param cctx Cache context.
      * @param destroy Destroy flag.
      */
-    void stopCache(int cacheId, boolean destroy) {
-        offheapMgr.stopCache(cacheId, destroy);
+    void stopCache(GridCacheContext cctx, boolean destroy) {
+        offheapMgr.stopCache(cctx.cacheId(), destroy);
+
+        removeCacheContext(cctx);
     }
 
     /**
@@ -380,6 +409,29 @@ public class CacheGroupInfrastructure {
         offheapMgr.stop();
 
         ctx.io().removeCacheGroupHandlers(grpId);
+    }
+
+    /**
+     * @return {@code True} if group contains caches.
+     */
+    boolean hasCaches() {
+        return !caches.isEmpty();
+    }
+
+    /**
+     * @param part Partition ID.
+     */
+    public void onPartitionEvicted(int part) {
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
+
+            if (cctx.isDrEnabled())
+                cctx.dr().partitionEvicted(part);
+
+            cctx.continuousQueries().onPartitionEvicted(part);
+
+            cctx.dataStructures().onPartitionEvicted(part);
+        }
     }
 
     /**

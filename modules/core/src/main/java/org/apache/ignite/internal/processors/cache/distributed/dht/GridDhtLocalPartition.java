@@ -163,8 +163,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         };
 
-        // TODO IGNITE-5075.
-        int delQueueSize = CU.isSystemCache(grp.name()) ? 100 :
+        int delQueueSize = CU.isSystemCache(grp.config().getName()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / grp.affinity().partitions(), 20);
 
         rmvQueueMaxSize = U.ceilPow2(delQueueSize);
@@ -726,13 +725,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         assert state() == EVICTED : this;
         assert evictGuard.get() == -1;
 
-// TODO IGNITE-5075.
-//        if (cctx.isDrEnabled())
-//            cctx.dr().partitionEvicted(id);
-//
-//        cctx.continuousQueries().onPartitionEvicted(id);
-//
-//        cctx.dataStructures().onPartitionEvicted(id);
+        grp.onPartitionEvicted(id);
 
         destroyCacheDataStore();
 
@@ -921,7 +914,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         if (!grp.allowFastEviction()) {
-            GridCacheContext cctx = grp.sharedGroup() ? null : grp.cacheContext();
+            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
             try {
                 GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);

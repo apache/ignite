@@ -1253,7 +1253,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.stop(cancel, destroy);
         }
 
-        ctx.group().stopCache(ctx.cacheId(), destroy);
+        ctx.group().stopCache(ctx, destroy);
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
@@ -1888,9 +1888,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             affNode,
             true);
 
-        if (!grp.sharedGroup())
-            grp.cacheContext(cacheCtx);
-
         cacheCtx.dynamicDeploymentId(desc.deploymentId());
 
         GridCacheAdapter cache = cacheCtx.cache();
@@ -1900,6 +1897,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         caches.put(cacheCtx.name(), cache);
 
         startCache(cache, schema != null ? schema : new QuerySchema());
+
+        grp.onCacheStarted(cacheCtx);
 
         onKernalStart(cache);
     }
@@ -2050,22 +2049,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CacheGroupInfrastructure grp = prepareCacheStop(req.request());
 
-                        if (grp != null) {
-                            boolean stopGrp = true;
-
-                            if (!grp.sharedGroup()) {
-                                for (GridCacheContext cctx : sharedCtx.cacheContexts()) {
-                                    if (cctx.group() == grp) {
-                                        stopGrp = false;
-
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (stopGrp)
-                                stopCacheGroup(grp.groupId());
-                        }
+                        if (grp != null && !grp.hasCaches())
+                            stopCacheGroup(grp.groupId());
                     }
                 }
             }

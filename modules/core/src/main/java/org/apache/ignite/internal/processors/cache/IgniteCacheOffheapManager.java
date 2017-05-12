@@ -47,6 +47,12 @@ public interface IgniteCacheOffheapManager {
     public void start(GridCacheSharedContext ctx, CacheGroupInfrastructure grp) throws IgniteCheckedException;;
 
     /**
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException;
+
+    /**
      *
      */
     public void onKernalStop();
@@ -134,7 +140,7 @@ public interface IgniteCacheOffheapManager {
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean expire(IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount) throws IgniteCheckedException;
+    public boolean expire(GridCacheContext cctx, IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount) throws IgniteCheckedException;
 
     /**
      * Gets the number of entries pending expire.

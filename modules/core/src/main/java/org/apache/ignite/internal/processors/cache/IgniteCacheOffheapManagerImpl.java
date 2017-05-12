@@ -29,10 +29,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -52,10 +50,8 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -90,7 +86,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected CacheGroupInfrastructure grp;
 
     /** */
-    private IgniteLogger log;
+    protected IgniteLogger log;
 
     /** */
     // TODO GG-11208 need restore size after restart.
@@ -148,11 +144,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
     }
 
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void initDataStructures() throws IgniteCheckedException {
-        if (ctx.ttl().eagerTtlEnabled()) {
+    /** {@inheritDoc} */
+    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException{
+        if (cctx.affinityNode() && cctx.ttl().eagerTtlEnabled() && pendingEntries == null) {
             String name = "PendingEntries";
 
             long rootPage = allocateForTree();
@@ -165,6 +159,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 grp.reuseList(),
                 true);
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void initDataStructures() throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -819,9 +820,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public boolean expire(
+        GridCacheContext cctx,
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
+        // TODO IGNITE-5075 filter by cache ID if needed.
         if (hasPendingEntries && pendingEntries != null) {
             GridCacheVersion obsoleteVer = null;
 
@@ -836,18 +839,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (amount != -1 && cleared > amount)
                     return true;
-// TODO: IGNITE-5075.
-//                if (row.key.partition() == -1)
-//                    row.key.partition(cctx.affinity().partition(row.key));
-//
-//                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
-//
-//                if (pendingEntries.remove(row) != null) {
-//                    if (obsoleteVer == null)
-//                        obsoleteVer = ctx.versions().next();
-//
-//                    c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
-//                }
+
+                if (row.key.partition() == -1)
+                    row.key.partition(cctx.affinity().partition(row.key));
+
+                assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+
+                if (pendingEntries.remove(row) != null) {
+                    if (obsoleteVer == null)
+                        obsoleteVer = ctx.versions().next();
+
+                    c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
+                }
 
                 cleared++;
             }
