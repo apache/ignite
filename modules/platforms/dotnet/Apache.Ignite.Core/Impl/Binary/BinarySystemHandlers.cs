@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinary;
             if (type == typeof (BinaryEnum))
                 return WriteBinaryEnum;
-            if (type.IsEnum)
+            if (type.IsEnum && Enum.GetUnderlyingType(type) == typeof(int))  // TODO: Handle smaller types too.
                 return WriteEnum;
             if (type == typeof(Ignite))
                 return WriteIgnite;

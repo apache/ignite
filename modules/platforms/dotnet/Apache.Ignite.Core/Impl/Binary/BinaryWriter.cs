@@ -1120,14 +1120,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // Handle enums.
-            if (type.IsEnum)
-            {
-                WriteEnum(obj);
-
-                return;
-            }
-
             // Handle special case for builder.
             if (WriteBuilderSpecials(obj))
                 return;
