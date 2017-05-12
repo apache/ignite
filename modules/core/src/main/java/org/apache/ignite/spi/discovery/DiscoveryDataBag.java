@@ -188,7 +188,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @return ID on joining node.
+     * @return ID of joining node.
      */
     public UUID joiningNodeId() {
         return joiningNodeId;

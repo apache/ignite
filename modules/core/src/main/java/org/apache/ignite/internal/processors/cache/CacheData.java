@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;

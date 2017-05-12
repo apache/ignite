@@ -237,6 +237,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Topology version when cache was started on local node. */
     private AffinityTopologyVersion locStartTopVer;
 
+    /** */
+    private UUID rcvdFrom;
+
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
@@ -290,6 +293,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         AffinityTopologyVersion locStartTopVer,
+        UUID rcvdFrom,
         boolean affNode,
         boolean updatesAllowed,
         MemoryPolicy memPlc,
@@ -336,6 +340,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.locStartTopVer = locStartTopVer;
+        this.rcvdFrom = rcvdFrom;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
@@ -452,6 +457,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void onStarted() {
         startLatch.countDown();
+    }
+
+    /**
+     * @return Node ID cache was received from.
+     */
+    public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     /**

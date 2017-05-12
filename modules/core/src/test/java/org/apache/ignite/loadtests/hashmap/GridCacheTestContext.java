@@ -18,6 +18,7 @@
 package org.apache.ignite.loadtests.hashmap;
 
 import java.util.IdentityHashMap;
+import java.util.UUID;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -80,6 +81,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             defaultCacheConfiguration(),
             CacheType.USER,
             AffinityTopologyVersion.ZERO,
+            UUID.randomUUID(),
             true,
             true,
             null,

@@ -79,7 +79,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         //Check that nodes are alie
         assertEquals("one", cache1.get(1));
-        assertEquals("tow", cache2.get(2));
+        assertEquals("two", cache2.get(2));
 
         String fullLog = strWr.toString();
 
