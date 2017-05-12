@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinary;
             if (type == typeof (BinaryEnum))
                 return WriteBinaryEnum;
-            if (type.IsEnum && Enum.GetUnderlyingType(type) == typeof(int))  // TODO: Handle smaller types too.
+            if (IsIntEnum(type))  // TODO: Handle smaller types too.
                 return WriteEnum;
             if (type == typeof(Ignite))
                 return WriteIgnite;
@@ -255,6 +255,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether specified type is an enum which fits into Int32.
+        /// </summary>
+        private static bool IsIntEnum(Type type)
+        {
+            if (!type.IsEnum)
+                return false;
+
+            var underlyingType = Enum.GetUnderlyingType(type);
+
+            return underlyingType == typeof(int) 
+                || underlyingType == typeof(short)
+                || underlyingType == typeof(ushort)
+                || underlyingType == typeof(byte)
+                || underlyingType == typeof(sbyte);
         }
 
         /// <summary>
