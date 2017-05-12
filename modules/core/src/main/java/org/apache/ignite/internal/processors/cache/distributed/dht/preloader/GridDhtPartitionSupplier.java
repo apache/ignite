@@ -32,8 +32,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -227,8 +230,6 @@ class GridDhtPartitionSupplier {
 
             IgniteRebalanceIterator iter;
 
-            // TODO: compute estimated keys count (s.estimatedKeysCount(...)).
-
             Set<Integer> remainingParts;
 
             if (sctx == null || sctx.entryIt == null) {
@@ -237,6 +238,28 @@ class GridDhtPartitionSupplier {
                 remainingParts = new HashSet<>(d.partitions().fullSet());
 
                 remainingParts.addAll(d.partitions().historicalMap().keySet());
+
+                long keysCnt = 0;
+
+                for (Integer part : d.partitions().fullSet()) {
+                    if (iter.isPartitionMissing(part))
+                        continue;
+
+                    GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
+
+                    assert loc != null && loc.state() == GridDhtPartitionState.OWNING;
+
+                    keysCnt += cctx.offheap().entriesCount(part);
+                }
+
+                for (Map.Entry<Integer, T2<Long, Long>> e : d.partitions().historicalMap().entrySet()) {
+                    if (iter.isPartitionMissing(e.getKey()))
+                        continue;
+
+                    keysCnt += (e.getValue().get2() - e.getValue().get1());
+                }
+
+                s.estimatedKeysCount(keysCnt);
             }
             else {
                 iter = sctx.entryIt;
@@ -330,8 +353,7 @@ class GridDhtPartitionSupplier {
 
                     remainingIter.remove();
                 }
-
-                if (iter.isPartitionMissing(p)) {
+                else if (iter.isPartitionMissing(p)) {
                     s.missed(p);
 
                     remainingIter.remove();

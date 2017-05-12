@@ -97,11 +97,11 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
     /** {@inheritDoc} */
     @Override public synchronized boolean isPartitionDone(int partId) {
+        if (missingParts.contains(partId))
+            return false;
+
         if (historical(partId))
             return historicalIterator.isDone(partId);
-
-        if (current == null && missingParts.contains(partId))
-            return false;
 
         return current == null || current.getKey() > partId;
     }

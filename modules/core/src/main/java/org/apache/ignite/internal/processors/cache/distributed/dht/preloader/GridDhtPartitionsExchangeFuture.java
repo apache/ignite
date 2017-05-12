@@ -734,7 +734,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                 if (updateTop && clientTop != null)
-                    top.update(exchId, clientTop.partitionMap(true), clientTop.updateCounters(false), Collections.<Integer>emptySet());
+                    top.update(exchId, clientTop.partitionMap(true), clientTop.updateCounters(false),
+                        Collections.<Integer>emptySet());
             }
 
             top.updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));

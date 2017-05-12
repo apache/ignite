@@ -484,8 +484,8 @@ public class GridDhtPartitionDemander {
 
             int cnt = 0;
 
-                while (it.hasNext())
-                    sParts.get(cnt++ % lsnrCnt - (hasReservedStripe ? 1 : 0)).addFull(it.next());
+            while (it.hasNext())
+                sParts.get(cnt++ % lsnrCnt - (hasReservedStripe ? 1 : 0)).addFull(it.next());
 
             for (cnt = 0; cnt < lsnrCnt; cnt++) {
                 if (!sParts.get(cnt).isEmpty()) {
