@@ -193,5 +193,4 @@ public class JdbcTcpIo {
         if (endpoint != null)
             endpoint.close();
     }
-
 }
