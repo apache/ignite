@@ -82,7 +82,9 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Check array.
             var arr = new[] {val, val};
-            // TODO
+            var arrRes = TestUtils.SerializeDeserialize(arr);
+
+            Assert.AreEqual(arr, arrRes);
         }
 
         /// <summary>
