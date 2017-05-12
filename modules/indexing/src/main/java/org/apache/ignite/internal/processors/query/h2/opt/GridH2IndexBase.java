@@ -480,11 +480,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 if (msg.bounds() != null) {
                     // This is the first request containing all the search rows.
-                    Object[] snapshotObj = qctx.getSnapshot(idxId);
-
-                    // We should get correct segment here.
-                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = snapshotObj == null ? null :
-                        (ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>)snapshotObj[msg.segment()];
+                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
 

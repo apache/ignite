@@ -166,30 +166,26 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override protected Object doTakeSnapshot() {
         assert snapshotEnabled;
 
-        final ConcurrentNavigableMap[] snapshot = new ConcurrentNavigableMap[segmentsCount()];
+        int seg = threadLocalSegment();
 
-        for(int i = 0; i < segmentsCount(); i++) {
-            final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree = segments[i];
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree = segments[seg];
 
-            snapshot[i] = tree instanceof SnapTreeMap ?
+        return tree instanceof SnapTreeMap ?
                 ((SnapTreeMap)tree).clone() :
                 ((GridOffHeapSnapTreeMap)tree).clone();
         }
-
-        return snapshot;
-    }
 
     /** {@inheritDoc} */
     protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int seg) {
         if (!snapshotEnabled)
             return segments[seg];
 
-        final ConcurrentNavigableMap[] snapshot = threadLocalSnapshot();
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> res = threadLocalSnapshot();
 
-        if (snapshot == null)
+        if (res == null)
             return segments[seg];
 
-        return snapshot[seg];
+        return res;
     }
 
     /** {@inheritDoc} */

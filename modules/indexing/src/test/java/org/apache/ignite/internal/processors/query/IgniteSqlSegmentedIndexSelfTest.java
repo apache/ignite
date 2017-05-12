@@ -144,7 +144,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      */
     public void testSegmentedIndexReproducableResults() throws Exception {
         ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class)
-        .setOffHeapMaxMemory(-1) // Make index snapshot to be used.
+        .setOffHeapMaxMemory(-1) // Force index snapshots enabling.
         .setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED));
 
         IgniteCache<Object, Object> cache = ignite(0).cache(ORG_CACHE_NAME);
