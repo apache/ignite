@@ -27,6 +27,10 @@ web-console-footer {
 
     p {
         margin-bottom: 0;
+
+        &:first-of-type {
+            margin-bottom: 5px;
+        }
     }
 
     .wcf-content {
