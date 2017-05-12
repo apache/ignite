@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -314,7 +315,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             else
                 System.clearProperty(prop);
 
-            startGrid(0);
+            IgniteEx ignite = startGrid(0);
+
+            // Ignore if disabled security plugin used.
+            if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
+                return;
 
             if (second != null)
                 System.setProperty(prop, String.valueOf(second));
