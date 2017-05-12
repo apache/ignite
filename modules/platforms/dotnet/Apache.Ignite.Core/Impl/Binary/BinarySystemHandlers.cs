@@ -188,8 +188,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return new BinarySystemWriteHandler<BinaryObject>(WriteBinary, false);
             if (type == typeof (BinaryEnum))
                 return new BinarySystemWriteHandler<BinaryEnum>(WriteBinaryEnum, false);
-            if (IsIntEnum(type))
-                return new BinarySystemWriteHandler<object>(WriteEnum, false);  // TODO?
+            if (type.IsEnum)
+            {
+                var underlyingType = Enum.GetUnderlyingType(type);
+
+                if (underlyingType == typeof(int))
+                    return new BinarySystemWriteHandler<int>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(byte))
+                    return new BinarySystemWriteHandler<byte>((w, i) => w.WriteEnum(i, type), false);
+
+                return null; // Other enums, such as uint, long, ulong, can't be expressed as int.
+            }
             if (type == typeof(Ignite))
                 return new BinarySystemWriteHandler<object>(WriteIgnite, false);
 
@@ -521,14 +530,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryUtils.WriteBinary(ctx.Stream, obj);
         }
         
-        /// <summary>
-        /// Write enum.
-        /// </summary>
-        private static void WriteEnum(BinaryWriter ctx, object obj)
-        {
-            ctx.WriteEnum(obj);
-        }
-
         /// <summary>
         /// Write enum.
         /// </summary>

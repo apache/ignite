@@ -1440,20 +1440,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write enum.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="val">Value.</param>
-        public static void WriteEnum<T>(BinaryWriter writer, T val)
-        {
-            var enumType = val.GetType();
-            var marshaller = writer.Marshaller;
-
-            writer.WriteInt(marshaller.GetDescriptor(enumType).TypeId);
-            writer.WriteInt(TypeCaster<int>.Cast(val));
-        }
-
-        /// <summary>
         /// Gets the enum value by type id and int representation.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>

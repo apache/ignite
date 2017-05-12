@@ -858,16 +858,25 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                var desc = _marsh.GetDescriptor(val.GetType());
-
-                var metaHnd = _marsh.GetBinaryTypeHandler(desc);
-
-                _stream.WriteByte(BinaryUtils.TypeEnum);
-
-                BinaryUtils.WriteEnum(this, val);
-
-                SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
+                WriteEnum(TypeCaster<int>.Cast(val), val.GetType());
             }
+        }
+
+        /// <summary>
+        /// Write enum value.
+        /// </summary>
+        /// <param name="val">Enum value.</param>
+        /// <param name="type">Enum type.</param>
+        internal void WriteEnum(int val, Type type)
+        {
+            var desc = _marsh.GetDescriptor(type);
+
+            _stream.WriteByte(BinaryUtils.TypeEnum);
+            _stream.WriteInt(desc.TypeId);
+            _stream.WriteInt(val);
+
+            var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+            SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
         }
 
         /// <summary>
