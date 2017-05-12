@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -30,8 +32,43 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestDirectValue()
         {
-            // TODO: check serialization and metadata.
-            Assert.AreEqual(ByteEnum.Foo, TestUtils.SerializeDeserialize(ByteEnum.Foo));
+            CheckValue(ByteEnum.Foo);
+            CheckValue(ByteEnum.Bar);
+
+            CheckValue(SByteEnum.Foo);
+            CheckValue(SByteEnum.Bar);
+
+            CheckValue(ShortEnum.Foo);
+            CheckValue(ShortEnum.Bar);
+            
+            CheckValue(UShortEnum.Foo);
+            CheckValue(UShortEnum.Bar);
+            
+            CheckValue(IntEnum.Foo);
+            CheckValue(IntEnum.Bar);
+            
+            CheckValue(UIntEnum.Foo);
+            CheckValue(UIntEnum.Bar);
+
+            CheckValue(LongEnum.Foo);
+            CheckValue(LongEnum.Bar);
+            
+            CheckValue(ULongEnum.Foo);
+            CheckValue(ULongEnum.Bar);
+        }
+
+        /// <summary>
+        /// Checks the enum value serialization.
+        /// </summary>
+        private static void CheckValue<T>(T val)
+        {
+            var marsh = new Marshaller(null) {CompactFooter = false};
+            var bytes = marsh.Marshal(val);
+            var res = marsh.Unmarshal<T>(bytes);
+            var binRes = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
+
+            Assert.AreEqual(val, res);
+            Assert.AreEqual(val, binRes.Deserialize<T>());
         }
 
         /// <summary>
