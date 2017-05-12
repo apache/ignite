@@ -40,6 +40,12 @@
             <bean class="org.apache.ignite.internal.binary.BinaryMarshaller"/>
         </property>
 
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+            </bean>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <!-- Configuring persistence for "cache2" cache -->

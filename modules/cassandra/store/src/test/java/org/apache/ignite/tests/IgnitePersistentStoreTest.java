@@ -265,9 +265,11 @@ public class IgnitePersistentStoreTest {
         Ignition.stopAll(true);
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
-            IgniteCache<Long, Object> personCache = ignite.getOrCreateCache("cache2");
+            IgniteCache<Long, PojoPerson> personCache = ignite.getOrCreateCache("cache2");
 
             personCache.loadCache(null, null);
+
+            PojoPerson person = personCache.get(1L);
 
             LOGGER.info("loadCache tests passed");
         }
