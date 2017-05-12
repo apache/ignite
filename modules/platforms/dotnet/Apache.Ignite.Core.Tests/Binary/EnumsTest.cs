@@ -79,6 +79,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 Assert.AreEqual(val, binRes.GetField<T>("value__"));
             }
+
+            // TODO: Check array
         }
 
         /// <summary>
