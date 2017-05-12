@@ -30,7 +30,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestDirectValue()
         {
-            // TODO
+            // TODO: check serialization and metadata.
+            Assert.AreEqual(ByteEnum.Foo, TestUtils.SerializeDeserialize(ByteEnum.Foo));
         }
 
         /// <summary>
