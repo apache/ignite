@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-ul.nav.navbar-nav(ng-if='!IgniteDemoMode' ng-switch='ctrl.clusters.length' style='padding-right: 5px')
+ul.nav(ng-switch='ctrl.clusters.length')
     li.disabled(ng-switch-when='0')
         a
             i.icon-cluster
@@ -35,7 +35,7 @@ ul.nav.navbar-nav(ng-if='!IgniteDemoMode' ng-switch='ctrl.clusters.length' style
                 div(ng-click='item.click()')
                     i.icon-cluster.pull-left(style='margin: 0; padding-left: 10px;')
                     div: a {{item.name}}
-i.icon-help(ng-if='!IgniteDemoMode' bs-tooltip='' data-placement='bottom' data-html=true style='line-height: 25px'
+
+i.icon-help(bs-tooltip='' data-placement='bottom' data-html=true
     data-title='Multi-Cluster Support<br/>\
         <a href="https://apacheignite-tools.readme.io/docs/multi-cluster-support" target="_blank">More info</a>')
-span(ng-if='!IgniteDemoMode' style='padding-right: 20px')
