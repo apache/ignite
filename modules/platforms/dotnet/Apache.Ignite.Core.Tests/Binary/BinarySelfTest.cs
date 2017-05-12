@@ -2436,12 +2436,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
-        public enum TestEnum
-        {
-            Val1, Val2, Val3 = 10
-        }
-
-        public enum TestEnum2
+        public enum TestEnum : short
         {
             Val1, Val2, Val3 = 10
         }
