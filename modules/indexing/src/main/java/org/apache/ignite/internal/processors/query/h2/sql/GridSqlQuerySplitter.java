@@ -2057,12 +2057,6 @@ public class GridSqlQuerySplitter {
                 if (partsLeft != null && partsRight != null)
                     return mergeParts(partsLeft, partsRight);
 
-                if (partsLeft != null)
-                    return partsLeft;
-
-                if (partsRight != null)
-                    return partsRight;
-
                 return null;
             }
 
