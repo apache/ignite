@@ -196,6 +196,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new BinarySystemWriteHandler<int>((w, i) => w.WriteEnum(i, type), false);
                 if (underlyingType == typeof(byte))
                     return new BinarySystemWriteHandler<byte>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(sbyte))
+                    return new BinarySystemWriteHandler<sbyte>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(short))
+                    return new BinarySystemWriteHandler<short>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(ushort))
+                    return new BinarySystemWriteHandler<ushort>((w, i) => w.WriteEnum(i, type), false);
 
                 return null; // Other enums, such as uint, long, ulong, can't be expressed as int.
             }
