@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,64 +45,97 @@ public abstract class AbstractSqlBinaryReader extends BinaryReaderExImpl {
     @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
         byte type = readByte();
 
-        if (type == GridBinaryMarshaller.NULL)
-            return null;
-        else if (type == GridBinaryMarshaller.BOOLEAN)
-            return readBoolean();
-        else if (type == GridBinaryMarshaller.BYTE)
-            return readByte();
-        else if (type == GridBinaryMarshaller.CHAR)
-            return readChar();
-        else if (type == GridBinaryMarshaller.SHORT)
-            return readShort();
-        else if (type == GridBinaryMarshaller.INT)
-            return readInt();
-        else if (type == GridBinaryMarshaller.LONG)
-            return readLong();
-        else if (type == GridBinaryMarshaller.FLOAT)
-            return readFloat();
-        else if (type == GridBinaryMarshaller.DOUBLE)
-            return readDouble();
-        else if (type == GridBinaryMarshaller.STRING)
-            return BinaryUtils.doReadString(in());
-        else if (type == GridBinaryMarshaller.DECIMAL)
-            return BinaryUtils.doReadDecimal(in());
-        else if (type == GridBinaryMarshaller.UUID)
-            return BinaryUtils.doReadUuid(in());
-        else if (type == GridBinaryMarshaller.TIME)
-            return BinaryUtils.doReadTime(in());
-        else if (type == GridBinaryMarshaller.TIMESTAMP)
-            return BinaryUtils.doReadTimestamp(in());
-        else if (type == GridBinaryMarshaller.DATE)
-            return BinaryUtils.doReadDate(in());
-        else if (type == GridBinaryMarshaller.BOOLEAN_ARR)
-            return BinaryUtils.doReadBooleanArray(in());
-        else if (type == GridBinaryMarshaller.BYTE_ARR)
-            return BinaryUtils.doReadByteArray(in());
-        else if (type == GridBinaryMarshaller.CHAR_ARR)
-            return BinaryUtils.doReadCharArray(in());
-        else if (type == GridBinaryMarshaller.SHORT_ARR)
-            return BinaryUtils.doReadShortArray(in());
-        else if (type == GridBinaryMarshaller.INT_ARR)
-            return BinaryUtils.doReadIntArray(in());
-        else if (type == GridBinaryMarshaller.FLOAT_ARR)
-            return BinaryUtils.doReadFloatArray(in());
-        else if (type == GridBinaryMarshaller.DOUBLE_ARR)
-            return BinaryUtils.doReadDoubleArray(in());
-        else if (type == GridBinaryMarshaller.STRING_ARR)
-            return BinaryUtils.doReadStringArray(in());
-        else if (type == GridBinaryMarshaller.DECIMAL_ARR)
-            return BinaryUtils.doReadDecimalArray(in());
-        else if (type == GridBinaryMarshaller.UUID_ARR)
-            return BinaryUtils.doReadUuidArray(in());
-        else if (type == GridBinaryMarshaller.TIME_ARR)
-            return BinaryUtils.doReadTimeArray(in());
-        else if (type == GridBinaryMarshaller.TIMESTAMP_ARR)
-            return BinaryUtils.doReadTimestampArray(in());
-        else if (type == GridBinaryMarshaller.DATE_ARR)
-            return BinaryUtils.doReadDateArray(in());
-        else
-            return readNotEmbeddedObject();
+        switch (type) {
+            case GridBinaryMarshaller.NULL:
+                return null;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                return readBoolean();
+
+            case GridBinaryMarshaller.BYTE:
+                return readByte();
+
+            case GridBinaryMarshaller.CHAR:
+                return readChar();
+
+            case GridBinaryMarshaller.SHORT:
+                return readShort();
+
+            case GridBinaryMarshaller.INT:
+                return readInt();
+
+            case GridBinaryMarshaller.LONG:
+                return readLong();
+
+            case GridBinaryMarshaller.FLOAT:
+                return readFloat();
+
+            case GridBinaryMarshaller.DOUBLE:
+                return readDouble();
+
+            case GridBinaryMarshaller.STRING:
+                return BinaryUtils.doReadString(in());
+
+            case GridBinaryMarshaller.DECIMAL:
+                return BinaryUtils.doReadDecimal(in());
+
+            case GridBinaryMarshaller.UUID:
+                return BinaryUtils.doReadUuid(in());
+
+            case GridBinaryMarshaller.TIME:
+                return BinaryUtils.doReadTime(in());
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                return BinaryUtils.doReadTimestamp(in());
+
+            case GridBinaryMarshaller.DATE:
+                return BinaryUtils.doReadDate(in());
+
+            case GridBinaryMarshaller.BOOLEAN_ARR:
+                return BinaryUtils.doReadBooleanArray(in());
+
+            case GridBinaryMarshaller.BYTE_ARR:
+                return BinaryUtils.doReadByteArray(in());
+
+            case GridBinaryMarshaller.CHAR_ARR:
+                return BinaryUtils.doReadCharArray(in());
+
+            case GridBinaryMarshaller.SHORT_ARR:
+                return BinaryUtils.doReadShortArray(in());
+
+            case GridBinaryMarshaller.INT_ARR:
+                return BinaryUtils.doReadIntArray(in());
+
+            case GridBinaryMarshaller.FLOAT_ARR:
+                return BinaryUtils.doReadFloatArray(in());
+
+            case GridBinaryMarshaller.DOUBLE_ARR:
+                return BinaryUtils.doReadDoubleArray(in());
+
+            case GridBinaryMarshaller.STRING_ARR:
+                return BinaryUtils.doReadStringArray(in());
+
+            case GridBinaryMarshaller.DECIMAL_ARR:
+                return BinaryUtils.doReadDecimalArray(in());
+
+            case GridBinaryMarshaller.UUID_ARR:
+                return BinaryUtils.doReadUuidArray(in());
+
+            case GridBinaryMarshaller.TIME_ARR:
+                return BinaryUtils.doReadTimeArray(in());
+
+            case GridBinaryMarshaller.TIMESTAMP_ARR:
+                return BinaryUtils.doReadTimestampArray(in());
+
+            case GridBinaryMarshaller.DATE_ARR:
+                return BinaryUtils.doReadDateArray(in());
+
+            case GridBinaryMarshaller.JDK_MARSH:
+                return readNotEmbeddedObject();
+
+            default:
+                throw new BinaryObjectException("Unknown object type: " + type);
+        }
     }
 
     /**
