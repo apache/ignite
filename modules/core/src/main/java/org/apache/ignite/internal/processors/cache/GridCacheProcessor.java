@@ -970,7 +970,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 stopCache(cache, cancel, false);
         }
 
-        for (CacheGroupInfrastructure grp :cacheGrps.values())
+        for (CacheGroupInfrastructure grp : cacheGrps.values())
             stopCacheGroup(grp.groupId());
 
         cachesInfo.clearCaches();

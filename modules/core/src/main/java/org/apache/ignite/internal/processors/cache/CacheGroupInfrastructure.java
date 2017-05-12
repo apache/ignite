@@ -332,9 +332,9 @@ public class CacheGroupInfrastructure {
      */
     @Nullable public String nameForLog() {
         if (ccfg.getGroupName() == null)
-            return "Cache-" + ccfg.getName();
+            return "[cache, name=" + ccfg.getName() + ']';
 
-        return "CacheGroup-" + ccfg.getGroupName();
+        return "[cacheGroup, name=" + ccfg.getGroupName() + ']';
     }
 
     /**

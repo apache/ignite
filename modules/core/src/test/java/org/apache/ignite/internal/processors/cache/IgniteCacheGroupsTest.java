@@ -89,10 +89,23 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         checkCacheGroup(0, GROUP1, true);
         checkCacheGroup(0, GROUP1, true);
 
+        checkCache(0, "c1");
+        checkCache(1, "c1");
+
         c1.close();
 
         checkCacheGroup(0, GROUP1, true);
         checkCacheGroup(1, GROUP1, false);
+
+        checkCache(0, "c1");
+
+        assertNotNull(client.cache("c1"));
+
+        checkCacheGroup(0, GROUP1, true);
+        checkCacheGroup(1, GROUP1, true);
+
+        checkCache(0, "c1");
+        checkCache(1, "c1");
     }
 
     /**

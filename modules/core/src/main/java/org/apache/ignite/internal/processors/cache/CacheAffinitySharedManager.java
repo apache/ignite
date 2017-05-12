@@ -398,8 +398,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (crd) {
-            for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStart())
-                initStartedGroupOnCoordinator(fut, grpDesc);
+            for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests())
+                initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());
         }
 
         List<ExchangeActions.ActionData> closeReqs = exchActions.closeRequests(cctx.localNodeId());
@@ -434,7 +434,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     grpClosed = true;
 
-                // All client caches were stopped, need create 'client' CacheGroupHolder.
+                // All client cache groups were stopped, need create 'client' CacheGroupHolder.
                 if (grpClosed) {
                     CacheGroupHolder grpHolder = grpHolders.remove(grp.groupId());
 
@@ -754,8 +754,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     private void forAllCacheGroups(boolean crd, IgniteInClosureX<GridAffinityAssignmentCache> c) {
         if (crd) {
-            for (CacheGroupHolder cache : grpHolders.values())
-                c.apply(cache.affinity());
+            for (CacheGroupHolder grp : grpHolders.values())
+                c.apply(grp.affinity());
         }
         else {
             for (CacheGroupInfrastructure grp : cctx.kernalContext().cache().cacheGroups()) {
@@ -1128,12 +1128,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupHolder grpHolder = grpHolders.get(desc.groupId());
 
                 if (grpHolder != null) {
-                    if (grpHolder.client())
+                    if (grpHolder.client()) // Affinity for non-client holders calculated in {@link #onServerLeft}.
                         grpHolder.affinity().calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
 
                     return;
                 }
 
+                // Need initialize holders and affinity if this node became coordinator during this exchange.
                 final Integer grpId = desc.groupId();
 
                 CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);

@@ -243,7 +243,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
                                 U.warn(log, "Failed to wait for partition eviction [" +
                                     "topVer=" + topVer +
-                                    ", group=" + grp.name() +
+                                    ", group=" + grp.nameForLog() +
                                     ", part=" + part.id() +
                                     ", partState=" + part.state() +
                                     ", size=" + part.size() +
@@ -337,7 +337,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         AffinityTopologyVersion topVer = this.topVer;
 
         assert topVer.topologyVersion() > 0 : "Invalid topology version [topVer=" + topVer +
-            ", group=" + grp.name() + ']';
+            ", group=" + grp.nameForLog() + ']';
 
         return topVer;
     }
@@ -387,12 +387,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         assert topVer.equals(exchFut.topologyVersion()) :
             "Invalid topology [topVer=" + topVer +
-                ", grp=" + grp.name() +
+                ", grp=" + grp.nameForLog() +
                 ", futVer=" + exchFut.topologyVersion() +
                 ", fut=" + exchFut + ']';
         assert grp.affinity().lastVersion().equals(exchFut.topologyVersion()) :
             "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
-                ", grp=" + grp.name() +
+                ", grp=" + grp.nameForLog() +
                 ", futVer=" + exchFut.topologyVersion() +
                 ", fut=" + exchFut + ']';
 
@@ -414,7 +414,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         boolean owned = locPart.own();
 
-                        assert owned : "Failed to own partition for oldest node [grp=" + grp.name() +
+                        assert owned : "Failed to own partition for oldest node [grp=" + grp.nameForLog() +
                             ", part=" + locPart + ']';
 
                         if (log.isDebugEnabled())
@@ -654,7 +654,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (F.isEmpty(owners)) {
                                 boolean owned = locPart.own();
 
-                                assert owned : "Failed to own partition [grp=" + grp.name() + ", locPart=" +
+                                assert owned : "Failed to own partition [grp=" + grp.nameForLog() + ", locPart=" +
                                     locPart + ']';
 
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq);
@@ -960,7 +960,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
                 ", topVer2=" + this.topVer +
                 ", node=" + ctx.igniteInstanceName() +
-                ", grp=" + grp.name() +
+                ", grp=" + grp.nameForLog() +
                 ", node2part=" + node2part + ']';
 
             List<ClusterNode> nodes = null;
@@ -1015,7 +1015,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
                 ", allIds=" + allIds +
                 ", node2part=" + node2part +
-                ", grp=" + grp.name() + ']';
+                ", grp=" + grp.nameForLog() + ']';
 
             Collection<UUID> nodeIds = part2node.get(p);
 
@@ -1942,7 +1942,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         try {
             assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
-                ", grp=" + grp.name() +
+                ", grp=" + grp.nameForLog() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + ctx.localNodeId() +
                 ", locName=" + ctx.igniteInstanceName() + ']';
@@ -1962,7 +1962,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
         X.println(">>>  Cache partition topology stats [igniteInstanceName=" + ctx.igniteInstanceName() +
-            ", grp=" + grp.name() + ']');
+            ", grp=" + grp.nameForLog() + ']');
 
         lock.readLock().lock();
 
@@ -2017,7 +2017,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             rebalancedTopVer = topVer;
 
             if (log.isDebugEnabled())
-                log.debug("Updated rebalanced version [cache=" + grp.name() + ", ver=" + rebalancedTopVer + ']');
+                log.debug("Updated rebalanced version [cache=" + grp.nameForLog() + ", ver=" + rebalancedTopVer + ']');
         }
     }
 
