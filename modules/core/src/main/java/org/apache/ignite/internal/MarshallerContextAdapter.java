@@ -91,11 +91,11 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
             if (plugins != null && !plugins.isEmpty()) {
                 for (PluginProvider plugin : plugins) {
-                    URL pluginClsNames = ldr.getResource("META-INF/" + plugin.name().toLowerCase()
+                    Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
                         + ".classnames.properties");
 
-                    if (pluginClsNames != null)
-                        processResource(pluginClsNames);
+                    while (pluginUrls.hasMoreElements())
+                        processResource(pluginUrls.nextElement());
                 }
             }
         }
