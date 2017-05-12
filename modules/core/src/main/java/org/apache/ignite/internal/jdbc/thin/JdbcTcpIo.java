@@ -113,7 +113,7 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
+        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -128,7 +128,7 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        BinaryRawReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
 
         boolean accepted = reader.readBoolean();
 
@@ -157,7 +157,7 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryExecuteResult queryExecute(String cache, String sql, Object[] args)
         throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP));
+        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP));
 
         writer.writeByte((byte)SqlListenerRequest.QRY_EXEC);
 
@@ -172,7 +172,7 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
 
         byte status = reader.readByte();
 
@@ -211,7 +211,7 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryFetchResult queryFetch(Long qryId, int fetchSize)
         throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_FETCH_MSG_INIT_CAP));
+        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_FETCH_MSG_INIT_CAP));
 
         writer.writeByte((byte)SqlListenerRequest.QRY_FETCH);
 
@@ -220,7 +220,7 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
 
         byte status = reader.readByte();
 
