@@ -73,7 +73,13 @@ public class DynamicCacheDescriptor {
     private volatile CacheObjectContext objCtx;
 
     /** */
-    private volatile transient AffinityTopologyVersion locStartVer;
+    private AffinityTopologyVersion startTopVer;
+
+    /** */
+    private AffinityTopologyVersion rcvdFromVer;
+
+    /** */
+    private AffinityTopologyVersion clientCacheStartVer;
 
     /** Mutex to control schema. */
     private final Object schemaMux = new Object();
@@ -230,17 +236,46 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Version when client cache on local node was started.
+     * @return Topology version when node provided cache configuration was started.
      */
-    @Nullable AffinityTopologyVersion localStartVersion() {
-        return locStartVer;
+    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
+        return rcvdFromVer;
     }
 
     /**
-     * @param locStartVer Version when cache on local node was started.
+     * @param rcvdFromVer Topology version when node provided cache configuration was started.
      */
-    public void localStartVersion(AffinityTopologyVersion locStartVer) {
-        this.locStartVer = locStartVer;
+    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+        this.rcvdFromVer = rcvdFromVer;
+    }
+
+
+    /**
+     * @return Start topology version.
+     */
+    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+        return startTopVer;
+    }
+
+    /**
+     * @param startTopVer Start topology version.
+     */
+    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        this.startTopVer = startTopVer;
+    }
+
+    /**
+     * @return Version when client cache on local node was started.
+     */
+    @Nullable AffinityTopologyVersion clientCacheStartVersion() {
+        return clientCacheStartVer;
+    }
+
+    /**
+     * @param clientCacheStartVer Version when client cache on local node was started.
+     */
+    public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
+        this.clientCacheStartVer = clientCacheStartVer;
     }
 
     /**

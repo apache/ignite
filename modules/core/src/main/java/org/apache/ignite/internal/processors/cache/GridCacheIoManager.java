@@ -146,22 +146,26 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
                     assert cacheMsg.topologyVersion() != null : cacheMsg;
 
+                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
+
                     DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
 
-                    AffinityTopologyVersion waitVer = cacheDesc != null ? cacheDesc.localStartVersion() : null;
-
-                    if (waitVer == null)
-                        waitVer = new AffinityTopologyVersion(cctx.localNode().order());
+                    if (cacheDesc != null) {
+                        if (cacheDesc.startTopologyVersion() != null)
+                            startTopVer = cacheDesc.startTopologyVersion();
+                        else if (cacheDesc.receivedFromStartVersion() != null)
+                            startTopVer = cacheDesc.receivedFromStartVersion();
+                    }
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
-                    fut = cctx.exchange().affinityReadyFuture(waitVer);
+                    fut = cctx.exchange().affinityReadyFuture(startTopVer);
 
                     if (fut != null && !fut.isDone()) {
                         if (log.isDebugEnabled()) {
                             log.debug("Wait for exchange before processing message [msg=" + msg +
                                 ", node=" + nodeId +
-                                ", waitVer=" + waitVer +
-                                ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');
+                                ", waitVer=" + startTopVer +
+                                ", cacheDesc=" + cacheDesc + ']');
                         }
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
