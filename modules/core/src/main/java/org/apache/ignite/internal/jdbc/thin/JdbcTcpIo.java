@@ -29,6 +29,8 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryReader;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryWriter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -98,7 +100,7 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE), null, null);
+        BinaryWriterExImpl writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -113,7 +115,7 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, false);
+        BinaryReaderExImpl reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
 
         boolean accepted = reader.readBoolean();
 
