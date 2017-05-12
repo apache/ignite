@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryWriterHandles;
+import org.apache.ignite.internal.binary.BinaryWriterSchemaHolder;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryWriter;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -31,10 +33,15 @@ public class OdbcBinaryWriter extends AbstractSqlBinaryWriter {
     private JdkMarshaller jdkMars = new JdkMarshaller();
 
     /**
-     * @param out Binary writer.
+     * @param ctx Binary context.
+     * @param out Binary output stream.
+     * @param schema Schema.
+     * @param handles Handles.
      */
-    public OdbcBinaryWriter(BinaryOutputStream out) {
-        super(null, out, null, null);
+    public OdbcBinaryWriter(BinaryContext ctx,
+        BinaryOutputStream out, BinaryWriterSchemaHolder schema,
+        BinaryWriterHandles handles) {
+        super(ctx, out, schema, handles);
     }
 
     /** {@inheritDoc} */

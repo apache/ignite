@@ -238,11 +238,11 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
      * @param cap Initial capacity.
      * @return Binary writer instance.
      */
-    protected abstract BinaryWriterExImpl createBinaryWriter(int cap);
+    protected abstract AbstractSqlBinaryWriter createBinaryWriter(int cap);
 
     /**
      * @param in Binary input stream.
      * @return Binary writer instance.
      */
-    protected abstract BinaryReaderExImpl createBinaryReader(BinaryInputStream in);
+    protected abstract AbstractSqlBinaryReader createBinaryReader(BinaryInputStream in);
 }
