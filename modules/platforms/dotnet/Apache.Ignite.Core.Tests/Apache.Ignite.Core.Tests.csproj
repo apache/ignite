@@ -80,6 +80,7 @@
     <Compile Include="Binary\Serializable\CallbacksTest.cs" />
     <Compile Include="Binary\Serializable\DelegatesTest.cs" />
     <Compile Include="Binary\Serializable\BasicSerializableObjectsTest.cs" />
+    <Compile Include="Binary\EnumsTest.cs" />
     <Compile Include="Binary\Serializable\ObjectReferenceTests.cs" />
     <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
     <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
