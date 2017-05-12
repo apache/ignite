@@ -48,8 +48,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckValue(IntEnum.Foo);
             CheckValue(IntEnum.Bar);
             
-            CheckValue(UIntEnum.Foo, false);
-            CheckValue(UIntEnum.Bar, false);
+            CheckValue(UIntEnum.Foo);
+            CheckValue(UIntEnum.Bar);
 
             CheckValue(LongEnum.Foo, false);
             CheckValue(LongEnum.Bar, false);
@@ -80,7 +80,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(val, binRes.GetField<T>("value__"));
             }
 
-            // TODO: Check array
+            // Check array.
+            var arr = new[] {val, val};
+            // TODO
         }
 
         /// <summary>
@@ -103,50 +105,50 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private enum ByteEnum : byte
         {
-            Foo,
-            Bar
+            Foo = byte.MinValue,
+            Bar = byte.MaxValue
         }
 
         private enum SByteEnum : sbyte
         {
-            Foo = -1,
-            Bar = 1
+            Foo = sbyte.MinValue,
+            Bar = sbyte.MaxValue
         }
 
         private enum ShortEnum : short
         {
-            Foo = -1,
-            Bar = 1
+            Foo = short.MinValue,
+            Bar = short.MaxValue
         }
 
         private enum UShortEnum : ushort
         {
-            Foo,
-            Bar
+            Foo = ushort.MinValue,
+            Bar = ushort.MaxValue
         }
 
         private enum IntEnum
         {
-            Foo = -1,
-            Bar = 1
+            Foo = int.MinValue,
+            Bar = int.MaxValue
         }
 
         private enum UIntEnum : uint
         {
-            Foo,
-            Bar
+            Foo = uint.MinValue,
+            Bar = uint.MaxValue
         }
 
         private enum LongEnum : long
         {
-            Foo = -1,
-            Bar = 1
+            Foo = long.MinValue,
+            Bar = long.MaxValue
         }
 
         private enum ULongEnum : ulong
         {
-            Foo,
-            Bar
+            Foo = ulong.MinValue,
+            Bar = ulong.MaxValue
         }
     }
 }
