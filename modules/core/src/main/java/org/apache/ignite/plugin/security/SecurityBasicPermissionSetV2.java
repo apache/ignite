@@ -26,7 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Simple implementation of {@link SecurityPermissionSetV2} interface. Provides
+ * convenient way to specify permission set in the XML configuration.
  */
 public class SecurityBasicPermissionSetV2 extends SecurityBasicPermissionSet implements SecurityPermissionSetV2 {
     /** Serial version uid. */
