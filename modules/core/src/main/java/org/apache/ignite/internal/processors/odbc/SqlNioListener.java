@@ -30,7 +30,6 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMessageParser;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcMessageParser;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -239,8 +238,8 @@ public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
 
-        OdbcRequestHandler handler =
-            new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
+        SqlListenerRequestHandlerImpl handler =
+            new SqlListenerRequestHandlerImpl(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
 
         SqlListenerMessageParser parser = null;
 
