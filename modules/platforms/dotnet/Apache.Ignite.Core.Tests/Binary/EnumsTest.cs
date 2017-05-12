@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             if (binRes is BinaryEnum)
             {
-                
+                Assert.AreEqual(TypeCaster<int>.Cast(val), binRes.EnumValue);
             }
             else
             {
