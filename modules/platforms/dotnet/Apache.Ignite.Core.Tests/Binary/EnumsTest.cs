@@ -93,7 +93,27 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestBinarizableField()
         {
-            // TODO
+            // Min values.
+            var val = new EnumsBinarizable();
+            
+            var res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
+
+            // Max values.
+            val = new EnumsBinarizable
+            {
+                Byte = ByteEnum.Bar,
+                Int = IntEnum.Bar,
+                Long = LongEnum.Bar,
+                SByte = SByteEnum.Bar,
+                Short = ShortEnum.Bar,
+                UInt = UIntEnum.Bar,
+                ULong = ULongEnum.Bar,
+                UShort = UShortEnum.Bar
+            };
+
+            res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
         }
 
         /// <summary>
@@ -151,6 +171,49 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             Foo = ulong.MinValue,
             Bar = ulong.MaxValue
+        }
+
+        private class EnumsBinarizable
+        {
+            public ByteEnum Byte { get; set; }
+            public SByteEnum SByte { get; set; }
+            public ShortEnum Short { get; set; }
+            public UShortEnum UShort { get; set; }
+            public IntEnum Int { get; set; }
+            public UIntEnum UInt { get; set; }
+            public LongEnum Long { get; set; }
+            public ULongEnum ULong { get; set; }
+
+            private bool Equals(EnumsBinarizable other)
+            {
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short 
+                    && UShort == other.UShort && Int == other.Int && UInt == other.UInt 
+                    && Long == other.Long && ULong == other.ULong;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((EnumsBinarizable) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = (int) Byte;
+                    hashCode = (hashCode * 397) ^ (int) SByte;
+                    hashCode = (hashCode * 397) ^ (int) Short;
+                    hashCode = (hashCode * 397) ^ (int) UShort;
+                    hashCode = (hashCode * 397) ^ (int) Int;
+                    hashCode = (hashCode * 397) ^ (int) UInt;
+                    hashCode = (hashCode * 397) ^ Long.GetHashCode();
+                    hashCode = (hashCode * 397) ^ ULong.GetHashCode();
+                    return hashCode;
+                }
+            }
         }
     }
 }
