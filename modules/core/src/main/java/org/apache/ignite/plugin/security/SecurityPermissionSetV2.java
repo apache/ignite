@@ -21,7 +21,16 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- *
+ * Security permission set for authorized security subjects. Permission set
+ * allows to specify task permissions for every task and cache permissions
+ * for every cache. While cards are supported at the end of task or
+ * cache name.
+ * <p>
+ * Property {@link #defaultAllowAll()} specifies whether to allow or deny
+ * cache and task operations if they were not explicitly specified.
+ * <p>
+ *     Adds service permissions to {@link SecurityPermissionSet}
+ * </p>
  */
 public interface SecurityPermissionSetV2 extends SecurityPermissionSet {
     /**
