@@ -48,20 +48,20 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckValue(IntEnum.Foo);
             CheckValue(IntEnum.Bar);
             
-            CheckValue(UIntEnum.Foo);
-            CheckValue(UIntEnum.Bar);
+            CheckValue(UIntEnum.Foo, false);
+            CheckValue(UIntEnum.Bar, false);
 
-            CheckValue(LongEnum.Foo);
-            CheckValue(LongEnum.Bar);
+            CheckValue(LongEnum.Foo, false);
+            CheckValue(LongEnum.Bar, false);
             
-            CheckValue(ULongEnum.Foo);
-            CheckValue(ULongEnum.Bar);
+            CheckValue(ULongEnum.Foo, false);
+            CheckValue(ULongEnum.Bar, false);
         }
 
         /// <summary>
         /// Checks the enum value serialization.
         /// </summary>
-        private static void CheckValue<T>(T val)
+        private static void CheckValue<T>(T val, bool isBinaryEnum = true)
         {
             var marsh = new Marshaller(null) {CompactFooter = false};
             var bytes = marsh.Marshal(val);
@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(val, res);
             Assert.AreEqual(val, binRes.Deserialize<T>());
 
-            if (binRes is BinaryEnum)
+            if (isBinaryEnum)
             {
                 Assert.AreEqual(TypeCaster<int>.Cast(val), binRes.EnumValue);
             }
