@@ -15,15 +15,31 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
+web-console-footer {
+    display: block;
+    color: #fafafa;
+    background: linear-gradient(to bottom, #5f5e5e, #393939);
+    font-family: Roboto;
+    font-size: 12px;
+    font-weight: 300;
+    padding-top: 12px;
+    padding-bottom: 12px;
 
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+    p {
+        margin-bottom: 0;
+
+        &:first-of-type {
+            margin-bottom: 5px;
+        }
+    }
+
+    .wcf-content {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+    
+    ignite-powered-by-apache {
+        margin-left: auto;
+    }
+}

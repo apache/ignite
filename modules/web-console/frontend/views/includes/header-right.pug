@@ -14,13 +14,27 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-web-console-header
-    web-console-header-left
-        include ./includes/header-left
-    web-console-header-right
-        include ./includes/header-right
+.wch-demo-toggle(ng-controller='demoController')
+    button.btn.btn-info.btn-demo(
+        ng-if='IgniteDemoMode'
+        ng-click='closeDemo()'
+    ) Close Demo
+    button.btn.btn-info.btn-demo(
+        ng-if='!IgniteDemoMode'
+        ng-click='startDemo()'
+    ) Start Demo
 
-.container.body-container
-    .main-content(ui-view='')
+ignite-cluster-select.wch-nav-item(ng-if='!IgniteDemoMode')
 
-web-console-footer
+.wch-nav-item(ignite-userbar)
+    div(
+        ng-class='{active: $state.includes("base.settings")}'
+        ng-click='$event.stopPropagation()'
+        bs-dropdown='userbar.items'
+        data-placement='bottom-right'
+        data-trigger='hover focus'
+        data-container='self'
+        data-animation=''
+    )
+        span {{$root.user.firstName}} {{$root.user.lastName}}
+            span.caret
