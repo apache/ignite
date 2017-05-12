@@ -18,17 +18,24 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -37,6 +44,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String GROUP1 = "grp1";
+
+    /** */
+    private static final String GROUP2 = "grp2";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -50,17 +63,88 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(1);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        super.afterTestsStopped();
+        super.afterTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateDestroyCaches1() throws Exception {
+        createDestroyCaches(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateDestroyCaches2() throws Exception {
+        createDestroyCaches(5);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @throws Exception If failed.
+     */
+    private void createDestroyCaches(int srvs) throws Exception {
+        startGridsMultiThreaded(srvs);
+
+        Ignite srv0 = ignite(0);
+
+        for (int i = 0; i < srvs; i++)
+            checkCacheGroup(i, GROUP1, false);
+
+        for (int iter = 0; iter < 3; iter++) {
+            log.info("Iteration: " + iter);
+
+            srv0.createCache(cacheConfiguration(GROUP1, "cache1", ATOMIC, 2));
+
+            for (int i = 0; i < srvs; i++) {
+                checkCacheGroup(i, GROUP1, true);
+
+                checkCache(i, "cache1");
+            }
+
+            srv0.createCache(cacheConfiguration(GROUP1, "cache2", ATOMIC, 2));
+
+            for (int i = 0; i < srvs; i++) {
+                checkCacheGroup(i, GROUP1, true);
+
+                checkCache(i, "cache2");
+            }
+
+            srv0.destroyCache("cache1");
+
+            for (int i = 0; i < srvs; i++) {
+                checkCacheGroup(i, GROUP1, true);
+
+                //checkCache(i, "cache2");
+            }
+
+            srv0.destroyCache("cache2");
+
+            for (int i = 0; i < srvs; i++)
+                checkCacheGroup(i, GROUP1, false);
+        }
+    }
+
+    /**
+     * @param idx Node index.
+     * @param cacheName Cache name.
+     */
+    private void checkCache(int idx, String cacheName) {
+        IgniteCache cache = ignite(idx).cache(cacheName);
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 10; i++) {
+            Integer key = rnd.nextInt();
+
+            cache.put(key, i);
+
+            assertEquals(i, cache.get(key));
+        }
     }
 
     /**
@@ -198,7 +282,40 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfg.setGroupName(grpName);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(backups);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
+    }
+
+    /**
+     * @param idx Node index.
+     * @param grpName Cache group name.
+     * @param expGrp {@code True} if cache group should be created.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkCacheGroup(int idx, final String grpName, final boolean expGrp) throws IgniteCheckedException {
+        final IgniteKernal node = (IgniteKernal)ignite(idx);
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return expGrp == (cacheGroup(node, grpName) != null);
+            }
+        }, 1000));
+
+        assertNotNull(node.context().cache().cache(CU.UTILITY_CACHE_NAME));
+    }
+
+    /**
+     * @param node Node.
+     * @param grpName Cache group name.
+     * @return Cache group.
+     */
+    private CacheGroupInfrastructure cacheGroup(IgniteKernal node, String grpName) {
+        for (CacheGroupInfrastructure grp : node.context().cache().cacheGroups()) {
+            if (grpName.equals(grp.name()))
+                return grp;
+        }
+
+        return null;
     }
 }

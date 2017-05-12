@@ -99,7 +99,7 @@ public class CacheGroupDescriptor {
     }
 
     boolean hasCaches() {
-        return caches != null;
+        return caches != null && !caches.isEmpty();
     }
 
     public boolean sharedGroup() {

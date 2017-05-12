@@ -326,6 +326,16 @@ public class CacheGroupInfrastructure {
     }
 
     /**
+     * @return Group name.
+     */
+    @Nullable public String nameForLog() {
+        if (ccfg.getGroupName() == null)
+            return "Cache-" + ccfg.getName();
+
+        return "CacheGroup-" + ccfg.getGroupName();
+    }
+
+    /**
      * @return Group ID.
      */
     public int groupId() {

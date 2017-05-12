@@ -495,7 +495,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
         throws IgniteCheckedException {
-
         DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
         ClusterState newState = exchFut.newClusterState();
@@ -1087,8 +1086,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
-                ", grp=" + grp.name() +
+            assert node2part != null && node2part.valid() : "Invalid node2part [node2part=" + node2part +
+                ", grp=" + grp.nameForLog() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + ctx.localNode().id() +
                 ", locName=" + ctx.igniteInstanceName() + ']';

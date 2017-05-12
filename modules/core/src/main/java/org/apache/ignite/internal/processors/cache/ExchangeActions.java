@@ -298,8 +298,8 @@ public class ExchangeActions {
 
     public boolean cacheGroupStarting(int grpId) {
         if (cacheGrpsToStart != null) {
-            for (CacheGroupDescriptor grpToStop : cacheGrpsToStart) {
-                if (grpToStop.groupId() == grpId)
+            for (CacheGroupDescriptor grp : cacheGrpsToStart) {
+                if (grp.groupId() == grpId)
                     return true;
             }
         }
@@ -320,8 +320,8 @@ public class ExchangeActions {
 
     public boolean cacheGroupStopping(int grpId) {
         if (cacheGrpsToStop != null) {
-            for (CacheGroupDescriptor grpToStop : cacheGrpsToStop) {
-                if (grpToStop.groupId() == grpId)
+            for (CacheGroupDescriptor grp : cacheGrpsToStop) {
+                if (grp.groupId() == grpId)
                     return true;
             }
         }

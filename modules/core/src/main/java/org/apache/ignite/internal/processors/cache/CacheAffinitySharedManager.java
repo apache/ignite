@@ -394,7 +394,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
             if (grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE))
-                initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut, lateAffAssign);
+                initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut, false);
         }
 
         if (crd) {
