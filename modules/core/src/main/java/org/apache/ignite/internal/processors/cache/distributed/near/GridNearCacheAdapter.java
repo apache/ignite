@@ -95,11 +95,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridNearCacheEntry(ctx, key, hash, val);
+                return new GridNearCacheEntry(ctx, key);
             }
         };
     }
