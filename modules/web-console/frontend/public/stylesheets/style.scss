@@ -37,16 +37,7 @@ hr {
     outline: none;
 }
 
-.navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
-    position: absolute;
-    left: 0;
-    text-align: center;
-}
 
-.navbar-brand {
-    padding: 5px 0;
-    margin: 10px 0;
-}
 
 .modal.center .modal-dialog {
     position: fixed;
@@ -74,10 +65,6 @@ hr {
     font-size: 22px;
 }
 
-.theme-line .footer {
-    text-align: center;
-}
-
 .table.table-vertical-middle tbody > tr > td {
   vertical-align: middle;
 }
@@ -87,7 +74,7 @@ hr {
     padding-right: 10px;
 }
 
-ul.navbar-nav, .sidebar-nav {
+.sidebar-nav {
     li.active > a {
         color: $link-color;
     }
@@ -266,21 +253,6 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 12px;
 }
 
-.theme-line header {
-    border-bottom: 8px solid $ignite-border-bottom-color;
-
-    p {
-        color: $ignite-header-color;
-    }
-}
-
-.header .title {
-    margin: 20px 0 5px 0;
-    padding: 0 15px;
-
-    font-size: 1.4em;
-}
-
 .nav > li {
     > a {
         color: $navbar-default-link-color;
@@ -302,17 +274,6 @@ ul.navbar-nav, .sidebar-nav {
     }
 }
 
-.theme-line header .navbar-nav {
-    a {
-        line-height: 25px;
-        font-size: 18px;
-    }
-
-    > li > a {
-        padding-right: 0;
-    }
-}
-
 .theme-line .section-right {
     padding-left: 30px;
 }
@@ -330,21 +291,12 @@ ul.navbar-nav, .sidebar-nav {
 
 body {
     font-weight: 400;
+    background-color: $ignite-new-background-color;
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     margin-bottom: 10px;
-}
-
-.container-footer {
-    margin-top: 20px;
-    margin-bottom: 20px;
-
-    p {
-        font-size: 12px;
-        margin-bottom: 0;
-    }
 }
 
 /* Modal */
@@ -447,18 +399,17 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0;
 }
 
-.greedy {
+body > .wrapper,
+// Nested ui-view, like on password reset state
+body > .wrapper > ui-view {
+    display: flex;
+    flex-direction: column;
     min-height: 100%;
-    height: #{"calc(100vh - 270px)"};
-}
+    flex: 1;
 
-.signin-greedy {
-    height: #{"calc(100vh - 300px)"};
-}
-
-@media (min-width: 768px) {
-    .navbar-nav > li > a {
-        padding: 0 15px;
+    .body-container {
+        flex: 1;
+        padding-bottom: 30px;
     }
 }
 
@@ -1525,11 +1476,6 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
 .theme-line .nav-tabs > li > a {
     padding: 5px 5px;
     color: $ignite-header-color;
-}
-
-.viewedUser {
-    text-align: center;
-    background-color: $brand-warning;
 }
 
 a {
