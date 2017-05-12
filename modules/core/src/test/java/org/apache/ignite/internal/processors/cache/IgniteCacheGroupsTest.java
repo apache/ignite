@@ -51,6 +51,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final String GROUP2 = "grp2";
 
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -58,6 +61,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         //cfg.setLateAffinityAssignment(false);
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -67,6 +72,27 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseCache1() throws Exception {
+        startGrid(0);
+
+        client = true;
+
+        Ignite client = startGrid(1);
+
+        IgniteCache c1 = client.createCache(cacheConfiguration(GROUP1, "c1", ATOMIC, 0));
+
+        checkCacheGroup(0, GROUP1, true);
+        checkCacheGroup(0, GROUP1, true);
+
+        c1.close();
+
+        checkCacheGroup(0, GROUP1, true);
+        checkCacheGroup(1, GROUP1, false);
     }
 
     /**

@@ -438,14 +438,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (grpClosed) {
                     CacheGroupHolder grpHolder = grpHolders.remove(grp.groupId());
 
-                    assert !grpHolder.client() : grpHolder;
+                    if (grpHolder != null) {
+                        assert !grpHolder.client() : grpHolder;
 
-                    grpHolder = CacheGroupHolder2.create(cctx,
-                        registeredGrps.get(grp.groupId()),
-                        fut,
-                        grp.affinity());
+                        grpHolder = CacheGroupHolder2.create(cctx,
+                            registeredGrps.get(grp.groupId()),
+                            fut,
+                            grp.affinity());
 
-                    grpHolders.put(grp.groupId(), grpHolder);
+                        grpHolders.put(grp.groupId(), grpHolder);
+                    }
                 }
             }
         }

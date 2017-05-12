@@ -131,6 +131,7 @@ public class CacheGroupInfrastructure {
         AffinityTopologyVersion locStartVer) {
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
+        assert memPlc != null || !affNode;
 
         this.grpId = grpId;
         this.rcvdFrom = rcvdFrom;
@@ -147,7 +148,8 @@ public class CacheGroupInfrastructure {
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
 
-        storeCacheId = sharedGroup() || memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+        storeCacheId = affNode &&
+            (sharedGroup() || memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED);
 
         log = ctx.kernalContext().log(getClass());
     }

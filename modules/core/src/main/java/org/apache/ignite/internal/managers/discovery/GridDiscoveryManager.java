@@ -70,7 +70,6 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -2039,7 +2038,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 CacheGroupAffinity grpAff = e.getValue();
                 Integer grpId = e.getKey();
 
-                if (grpAff.cacheFilter.apply(node)) {
+                if (CU.affinityNode(node, grpAff.cacheFilter)) {
                     List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
 
                     if (nodes == null)

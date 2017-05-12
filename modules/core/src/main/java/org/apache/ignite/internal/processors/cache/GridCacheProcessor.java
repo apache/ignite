@@ -1974,8 +1974,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param req Stop request.
+     * @return Cache group for stopped cache.
      */
-    private void prepareCacheStop(DynamicCacheChangeRequest req) {
+    private CacheGroupInfrastructure prepareCacheStop(DynamicCacheChangeRequest req) {
         assert req.stop() || req.close() : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(req.cacheName());
@@ -1988,7 +1989,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStop(cache, req.destroy());
 
             stopCache(cache, true, req.destroy());
+
+            return ctx.group();
         }
+
+        return null;
     }
 
     /**
@@ -2043,7 +2048,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         proxy.context().gate().onStopped();
 
-                        prepareCacheStop(req.request());
+                        CacheGroupInfrastructure grp = prepareCacheStop(req.request());
+
+                        if (grp != null) {
+                            boolean stopGrp = true;
+
+                            if (!grp.sharedGroup()) {
+                                for (GridCacheContext cctx : sharedCtx.cacheContexts()) {
+                                    if (cctx.group() == grp) {
+                                        stopGrp = false;
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (stopGrp)
+                                stopCacheGroup(grp.groupId());
+                        }
                     }
                 }
             }
