@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -319,7 +318,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param exchActions Exchange actions.
      */
     public void exchangeActions(ExchangeActions exchActions) {
-        assert exchActions == null || !exchActions.empty();
+        assert exchActions == null || !exchActions.empty() : exchActions;
         assert evtLatch != null && evtLatch.getCount() == 1L : this;
 
         this.exchActions = exchActions;
