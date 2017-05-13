@@ -194,6 +194,23 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests automatic grid name generation.
+        /// </summary>
+        [Test]
+        public void TestStartUniqueName()
+        {
+            var cfg = TestUtils.GetTestConfiguration();
+            cfg.AutoGenerateIgniteInstanceName = true;
+
+            Ignition.Start(cfg);
+            Assert.IsNotNull(Ignition.GetIgnite());
+
+            Ignition.Start(cfg);
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
+            Assert.AreEqual(2, Ignition.GetAll().Count);
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         [Test]
