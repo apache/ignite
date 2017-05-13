@@ -771,7 +771,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Preloader.
      */
     public GridCachePreloader preloader() {
-        return cache().preloader();
+        return cache() == null ? null : cache().preloader();
     }
 
     /**
