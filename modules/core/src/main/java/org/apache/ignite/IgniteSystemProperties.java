@@ -484,13 +484,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
-     * System property to specify period for SQL connection to remain valid.
-     * <p>
-     * Default value is {@code 30,000ms}.
-     */
-    public static final String IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD = "IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD";
-
-    /**
      * Size of the H2 prepared statement cache.
      * <p>
      * Default value is {@code 256}.

@@ -38,7 +38,6 @@ import org.h2.jdbc.JdbcConnection;
 import org.h2.schema.Schema;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
@@ -46,10 +45,6 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryPar
  * Pooled H2 connection with statement cache inside.
  */
 public final class H2Connection implements GridCancelable {
-    /** The period of clean up the connection from pool. */
-    private static final long CLEANUP_PERIOD = IgniteSystemProperties.getLong(
-        IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 30_000);
-
     /** */
     private static final int PREPARED_STMT_CACHE_SIZE = IgniteSystemProperties.getInteger(
         IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE, 256);
@@ -65,9 +60,6 @@ public final class H2Connection implements GridCancelable {
     private final Statement stmt;
 
     /** */
-    private final long createTime = U.currentTimeMillis();
-
-    /** */
     private final StatementCache stmtCache = new StatementCache(PREPARED_STMT_CACHE_SIZE);
 
     /** */
@@ -80,7 +72,7 @@ public final class H2Connection implements GridCancelable {
     private final Session ses;
 
     /** */
-    private boolean destroyed;
+    private volatile boolean destroyed;
 
     /**
      * @param dbUrl Database URL.
@@ -195,6 +187,7 @@ public final class H2Connection implements GridCancelable {
             return;
 
         // TODO conn.setSchema(schema);
+        // TODO need to check correct case + quotes
 
         stmt.executeUpdate("SET SCHEMA " + schema);
 
@@ -285,7 +278,7 @@ public final class H2Connection implements GridCancelable {
      * @throws SQLException If failed.
      */
     public boolean isValid() throws SQLException {
-        if (destroyed || U.currentTimeMillis() - createTime > CLEANUP_PERIOD)
+        if (destroyed)
             return false;
 
         synchronized (conn) { // Possible NPE in H2 with racy close.
