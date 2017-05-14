@@ -17,13 +17,9 @@
 mixin lblRequired(txt)
     label.col-xs-3.col-md-3.required #{txt}
 
-header#header.header
-    table.container
-        tr
-            td.col-xs-3.col-sm-3.col-md-2
-                ignite-header-logo
-            td
-                ignite-header-title
+web-console-header
+    web-console-header-left
+        ignite-header-title
 
 .container.body-container
     .main-content(ng-controller='auth')
@@ -155,7 +151,7 @@ header#header.header
                             span.fa.fa-chevron-right(aria-hidden='true')
                             span.sr-only Next
 
-include includes/footer
+web-console-footer
 
 script.
     $('.carousel').carousel()

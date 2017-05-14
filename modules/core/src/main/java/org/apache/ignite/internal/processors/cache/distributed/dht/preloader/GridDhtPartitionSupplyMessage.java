@@ -206,36 +206,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
-        assert info != null;
-
-        marshalInfo(info, ctx);
-
-        msgSize += info.marshalledSize(ctx);
-
-        CacheEntryInfoCollection infoCol = infos().get(p);
-
-        if (infoCol == null) {
-            msgSize += 4;
-
-            infos().put(p, infoCol = new CacheEntryInfoCollection());
-
-            infoCol.init();
-        }
-
-        infoCol.add(info);
-    }
-
-    /**
-     * @param p Partition.
-     * @param info Entry to add.
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
     void addEntry0(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
         assert info != null;
-        assert (info.key() != null || info.keyBytes() != null);
-        assert info.value() != null;
+        assert info.key() != null : info;
+        assert info.value() != null : info;
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx);
