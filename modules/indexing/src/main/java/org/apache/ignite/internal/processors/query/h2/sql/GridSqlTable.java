@@ -45,7 +45,7 @@ public class GridSqlTable extends GridSqlElement {
      * @param schema Schema.
      * @param tblName Table name.
      */
-    public GridSqlTable(@Nullable String schema, String tblName) {
+    public GridSqlTable(String schema, String tblName) {
         this(schema, tblName, null);
     }
 
@@ -61,7 +61,7 @@ public class GridSqlTable extends GridSqlElement {
      * @param tblName Table name.
      * @param tbl H2 Table.
      */
-    private GridSqlTable(@Nullable String schema, String tblName, @Nullable Table tbl) {
+    private GridSqlTable(String schema, String tblName, @Nullable Table tbl) {
         super(Collections.<GridSqlAst>emptyList());
 
         assert tblName != null : "tblName is null";

@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.prepared;
 
 /**
  * Pooled H2 connection with statement cache inside.
@@ -122,15 +123,25 @@ public final class H2Connection implements GridCancelable {
     public PreparedStatement prepare(String sql, Object[] params) throws SQLException {
         PreparedStatement ps = stmtCache.get(sql);
 
+        if (ps != null) {
+            // We should never close prepared statements, because they are all cacheable.
+            if (ps.isClosed()) {
+                stmtCache.remove(sql);
+
+                throw new IllegalStateException("Cached prepared statements must never be closed: \n" + sql);
+            }
+
+            // If db schema was changed we can return outdated prepared statement here.
+            // This is usually ok for execution because it will recompile itself,
+            // but Ignite SQL parser will fail.
+            if (prepared(ps).needRecompile())
+                ps = null;
+        }
+
         if (ps == null) {
             ps = conn.prepareStatement(sql);
 
             stmtCache.put(sql, ps);
-        }
-        else if (ps.isClosed()) {
-            stmtCache.remove(sql);
-
-            throw new IllegalStateException("Cached prepared statements must never be closed: \n" + sql);
         }
 
         bindParameters(ps, params);
