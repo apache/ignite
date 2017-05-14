@@ -159,7 +159,6 @@ import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
-import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.message.DbException;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
@@ -1402,7 +1401,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridH2QueryContext.set(c, new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoinMode(distributedJoinMode));
 
-            PreparedStatement stmt = null;
+            PreparedStatement stmt;
             Prepared prepared;
 
             boolean cachesCreated = false;
@@ -1412,9 +1411,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     while (true) {
                         try {
                             stmt = c.prepare(sqlQry, qry.getArgs());
-
-                            // Do not cache this statement because the whole two step query object will be cached later on.
-                            c.dropCachedStatement(sqlQry);
 
                             break;
                         }
@@ -1531,8 +1527,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteSQLException(e);
             }
             finally {
-                U.close(stmt, log);
-
                 returnToPool(c); // This connection was not used to run query.
             }
         }
