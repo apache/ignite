@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Field;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -28,8 +25,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.jdbc.JdbcResultSet;
-import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 
 /**
@@ -37,65 +32,26 @@ import org.h2.value.Value;
  */
 public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
-    private static final Field RESULT_FIELD;
-
-    /**
-     * Initialize.
-     */
-    static {
-        try {
-            RESULT_FIELD = JdbcResultSet.class.getDeclaredField("result");
-
-            RESULT_FIELD.setAccessible(true);
-        }
-        catch (NoSuchFieldException e) {
-            throw new IllegalStateException("Check H2 version in classpath.", e);
-        }
-    }
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ResultInterface res;
-
-    /** */
-    private final ResultSet data;
+    private final H2ResultSet data;
 
     /** */
     protected final Object[] row;
-
-    /** */
-    private final boolean closeStmt;
 
     /** */
     private boolean hasRow;
 
     /**
      * @param data Data array.
-     * @param closeStmt If {@code true} closes result set statement when iterator is closed.
-     * @param needCpy {@code True} if need copy cache object's value.
      * @throws IgniteCheckedException If failed.
      */
-    protected GridH2ResultSetIterator(ResultSet data, boolean closeStmt, boolean needCpy) throws IgniteCheckedException {
+    protected GridH2ResultSetIterator(H2ResultSet data) throws IgniteCheckedException {
         this.data = data;
-        this.closeStmt = closeStmt;
 
-        try {
-            res = needCpy ? (ResultInterface)RESULT_FIELD.get(data) : null;
-        }
-        catch (IllegalAccessException e) {
-            throw new IllegalStateException(e); // Must not happen.
-        }
-
-        if (data != null) {
-            try {
-                row = new Object[data.getMetaData().getColumnCount()];
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
+        if (data != null)
+            row = new Object[data.getColumnsCount()];
         else
             row = null;
     }
@@ -111,32 +67,26 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
             if (!data.next())
                 return false;
 
-            if (res != null) {
-                Value[] values = res.currentRow();
+            Value[] values = data.currentRow();
 
-                for (int c = 0; c < row.length; c++) {
-                    Value val = values[c];
+            for (int c = 0; c < row.length; c++) {
+                Value val = values[c];
 
-                    if (val instanceof GridH2ValueCacheObject) {
-                        GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
+                if (val instanceof GridH2ValueCacheObject) {
+                    GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
 
-                        GridCacheContext cctx = valCacheObj.getCacheContext();
+                    GridCacheContext cctx = valCacheObj.getCacheContext();
 
-                        row[c] = valCacheObj.getObject(cctx != null && cctx.needValueCopy());
-                    }
-                    else
-                        row[c] = val.getObject();
+                    row[c] = valCacheObj.getObject(cctx != null && cctx.needValueCopy());
                 }
-            }
-            else {
-                for (int c = 0; c < row.length; c++)
-                    row[c] = data.getObject(c + 1);
+                else
+                    row[c] = val.getObject();
             }
 
             return true;
         }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
+        catch (Exception e) {
+            throw new IgniteSQLException("Failed to execute query.", e);
         }
     }
 
@@ -168,19 +118,6 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
 
     /** {@inheritDoc} */
     @Override public void onClose() throws IgniteCheckedException {
-        if (data == null)
-            // Nothing to close.
-            return;
-
-        if (closeStmt) {
-            try {
-                U.closeQuiet(data.getStatement());
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-
         U.closeQuiet(data);
     }
 

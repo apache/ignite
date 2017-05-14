@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.util.GridCancelable;
@@ -72,7 +73,7 @@ public final class H2Connection implements GridCancelable {
     private final Session ses;
 
     /** */
-    private volatile boolean destroyed;
+    private final AtomicReference<State> state;
 
     /**
      * @param dbUrl Database URL.
@@ -86,6 +87,8 @@ public final class H2Connection implements GridCancelable {
 
         // Need to take session here because on connection close we can loose it too early.
         ses = (Session)((JdbcConnection)conn).getSession();
+
+        state = new AtomicReference<>(pool == null ? null : State.IN_POOL);
     }
 
     /**
@@ -240,10 +243,12 @@ public final class H2Connection implements GridCancelable {
      * Destroy the connection.
      */
     public void destroy() {
-        if (destroyed)
+        State oldState = state.get();
+
+        if (oldState == State.DESTROYED)
             return;
 
-        destroyed = true;
+        state.set(State.DESTROYED);
 
         clearSessionLocalQueryContext();
 
@@ -278,7 +283,7 @@ public final class H2Connection implements GridCancelable {
      * @throws SQLException If failed.
      */
     public boolean isValid() throws SQLException {
-        if (destroyed)
+        if (state.get() == State.DESTROYED)
             return false;
 
         synchronized (conn) { // Possible NPE in H2 with racy close.
@@ -291,6 +296,26 @@ public final class H2Connection implements GridCancelable {
      */
     public void dropCachedStatement(String sql) {
         stmtCache.remove(sql);
+    }
+
+    /**
+     *
+     */
+    public void onPoolPut() {
+        if (!state.compareAndSet(State.TAKEN_FROM_POOL, State.IN_POOL)) {
+            if (state.get() != State.DESTROYED)
+                throw new IllegalStateException("Wrong take/release sequence.");
+        }
+    }
+
+    /**
+     *
+     */
+    public void onPoolTake() {
+        if (!state.compareAndSet(State.IN_POOL, State.TAKEN_FROM_POOL)) {
+            if (state.get() != State.DESTROYED)
+                throw new IllegalStateException("Wrong take/release sequence.");
+        }
     }
 
     /**
@@ -321,5 +346,12 @@ public final class H2Connection implements GridCancelable {
 
             return rmv;
         }
+    }
+
+    /**
+     * State of this connection.
+     */
+    private enum State {
+        IN_POOL, TAKEN_FROM_POOL, DESTROYED
     }
 }

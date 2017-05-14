@@ -911,7 +911,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 runs.putIfAbsent(run.id(), run);
 
                 try {
-                    ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
+                    H2ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, qry, params, timeout, cancel);
 
                     return new FieldsIterator(rs);
                 }
@@ -1064,7 +1064,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public ResultSet executeSqlQueryWithTimer(String space,
+    public H2ResultSet executeSqlQueryWithTimer(String space,
         H2Connection conn,
         String sql,
         @Nullable Object[] params,
@@ -1093,7 +1093,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQueryWithTimer(
+    private H2ResultSet executeSqlQueryWithTimer(
         String space,
         PreparedStatement stmt,
         H2Connection conn,
@@ -1129,7 +1129,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 LT.warn(log, longMsg, msg);
             }
 
-            return rs;
+            return new H2ResultSet(conn, rs);
         }
         catch (SQLException e) {
             onSqlException(conn);
@@ -1265,7 +1265,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             runs.put(run.id(), run);
 
             try {
-                ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, 0, cancel);
+                H2ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, 0, cancel);
 
                 return new KeyValIterator(rs);
             }
@@ -3058,8 +3058,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param data Data.
          * @throws IgniteCheckedException If failed.
          */
-        public FieldsIterator(ResultSet data) throws IgniteCheckedException {
-            super(data, false, true);
+        public FieldsIterator(H2ResultSet data) throws IgniteCheckedException {
+            super(data);
         }
 
         /** {@inheritDoc} */
@@ -3083,8 +3083,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param data Data array.
          * @throws IgniteCheckedException If failed.
          */
-        protected KeyValIterator(ResultSet data) throws IgniteCheckedException {
-            super(data, false, true);
+        protected KeyValIterator(H2ResultSet data) throws IgniteCheckedException {
+            super(data);
         }
 
         /** {@inheritDoc} */

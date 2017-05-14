@@ -20,6 +20,22 @@ public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLExc
     }
 
     /** {@inheritDoc} */
+    @Override public H2Connection take() throws SQLException {
+        H2Connection c = super.take();
+
+        c.onPoolTake();
+
+        return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void put(H2Connection c) throws SQLException {
+        c.onPoolPut();
+
+        super.put(c);
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean validate(H2Connection o) throws SQLException {
         return o.isValid();
     }

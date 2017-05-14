@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.lang.reflect.Field;
-import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
+import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -76,8 +76,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.h2.jdbc.JdbcResultSet;
-import org.h2.result.ResultInterface;
 import org.h2.value.Value;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -97,23 +95,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
  * Map query executor.
  */
 public class GridMapQueryExecutor {
-    /** */
-    private static final Field RESULT_FIELD;
-
-    /**
-     * Initialize.
-     */
-    static {
-        try {
-            RESULT_FIELD = JdbcResultSet.class.getDeclaredField("result");
-
-            RESULT_FIELD.setAccessible(true);
-        }
-        catch (NoSuchFieldException e) {
-            throw new IllegalStateException("Check H2 version in classpath.", e);
-        }
-    }
-
     /** */
     private IgniteLogger log;
 
@@ -601,7 +582,7 @@ public class GridMapQueryExecutor {
                 boolean evt = ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
                 for (GridCacheSqlQuery qry : qrys) {
-                    ResultSet rs = null;
+                    H2ResultSet rs = null;
 
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
@@ -626,8 +607,6 @@ public class GridMapQueryExecutor {
                                 node.id(),
                                 null));
                         }
-
-                        assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
                     qr.addResult(qryIdx, qry, node.id(), rs, params);
@@ -755,7 +734,22 @@ public class GridMapQueryExecutor {
 
         List<Value[]> rows = new ArrayList<>(Math.min(64, pageSize));
 
-        boolean last = res.fetchNextPage(rows, pageSize);
+        boolean last;
+
+        try {
+            last = res.fetchNextPage(rows, pageSize);
+        }
+        catch (SQLException e) {
+            U.error(log, "Failed to run map query.", e);
+
+            qr.cancel(true);
+
+            nodeRess.remove(qr.qryReqId, segmentId, qr);
+
+            sendError(node, qr.qryReqId, e);
+
+            return;
+        }
 
         if (last) {
             res.close();
@@ -768,7 +762,7 @@ public class GridMapQueryExecutor {
             boolean loc = node.isLocal();
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, segmentId, qry, page,
-                page == 0 ? res.rowCnt : -1,
+                last ? -2 : -1, // Mark last row as -2, others -1.
                 res.cols,
                 loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
                 loc ? rows : null);
@@ -993,7 +987,7 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param rs Result set.
          */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
+        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, H2ResultSet rs, Object[] params) {
             if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q, params)))
                 throw new IllegalStateException();
         }
@@ -1045,10 +1039,7 @@ public class GridMapQueryExecutor {
      */
     private class QueryResult implements AutoCloseable {
         /** */
-        private final ResultInterface res;
-
-        /** */
-        private final ResultSet rs;
+        private final H2ResultSet rs;
 
         /** */
         private final GridCacheContext<?,?> cctx;
@@ -1066,9 +1057,6 @@ public class GridMapQueryExecutor {
         private int page;
 
         /** */
-        private final int rowCnt;
-
-        /** */
         private boolean cpNeeded;
 
         /** */
@@ -1084,8 +1072,13 @@ public class GridMapQueryExecutor {
          * @param qry Query.
          * @param params Query params.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
-            Object[] params) {
+        private QueryResult(
+            H2ResultSet rs,
+            GridCacheContext<?, ?> cctx,
+            UUID qrySrcNodeId,
+            GridCacheSqlQuery qry,
+            Object[] params
+        ) {
             this.cctx = cctx;
             this.qry = qry;
             this.params = params;
@@ -1094,21 +1087,12 @@ public class GridMapQueryExecutor {
 
             if (rs != null) {
                 this.rs = rs;
-                try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs);
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e); // Must not happen.
-                }
 
-                rowCnt = res.getRowCount();
-                cols = res.getVisibleColumnCount();
+                cols = rs.getColumnsCount();
             }
             else {
                 this.rs = null;
-                this.res = null;
                 this.cols = -1;
-                this.rowCnt = -1;
 
                 closed = true;
             }
@@ -1118,8 +1102,9 @@ public class GridMapQueryExecutor {
          * @param rows Collection to fetch into.
          * @param pageSize Page size.
          * @return {@code true} If there are no more rows available.
+         * @throws SQLException If failed.
          */
-        synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
+        synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) throws SQLException {
             if (closed)
                 return true;
 
@@ -1128,10 +1113,10 @@ public class GridMapQueryExecutor {
             page++;
 
             for (int i = 0 ; i < pageSize; i++) {
-                if (!res.next())
+                if (!rs.next())
                     return true;
 
-                Value[] row = res.currentRow();
+                Value[] row = rs.currentRow();
 
                 if (cpNeeded) {
                     boolean copied = false;
@@ -1182,7 +1167,7 @@ public class GridMapQueryExecutor {
                         row(row)));
                 }
 
-                rows.add(res.currentRow());
+                rows.add(rs.currentRow());
             }
 
             return false;
