@@ -37,7 +37,6 @@ const DFLT_IGFS = {
     fragmentizerThrottlingDelay: 200,
     blockSize: 65536,
     bufferSize: 65536,
-    maxSpaceSize: 0,
     maximumTaskRangeLength: 0,
     managementPort: 11400,
     perNodeBatchSize: 100,

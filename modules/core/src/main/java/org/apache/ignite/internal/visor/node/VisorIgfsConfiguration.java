@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
-
 /**
  * Data transfer object for IGFS configuration properties.
  */
@@ -92,14 +90,20 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled;
 
-    /** Maximum space. */
-    private long maxSpace;
-
     /** Management port. */
     private int mgmtPort;
 
     /** Amount of sequential block reads before prefetch is triggered. */
     private int seqReadsBeforePrefetch;
+
+    /** Metadata co-location flag. */
+    private boolean colocateMeta;
+
+    /** Relaxed consistency flag. */
+    private boolean relaxedConsistency;
+
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush;
 
     /**
      * Default constructor.
@@ -135,9 +139,12 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
 
         ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
-        maxSpace = igfs.getMaxSpaceSize();
         mgmtPort = igfs.getManagementPort();
         seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
+
+        colocateMeta = igfs.isColocateMetadata();
+        relaxedConsistency = igfs.isRelaxedConsistency();
+        updateFileLenOnFlush = igfs.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -277,13 +284,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Maximum space.
-     */
-    public long getMaxSpace() {
-        return maxSpace;
-    }
-
-    /**
      * @return Management port.
      */
     public int getManagementPort() {
@@ -295,6 +295,27 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
      */
     public int getSequenceReadsBeforePrefetch() {
         return seqReadsBeforePrefetch;
+    }
+
+    /**
+     * @return {@code True} if metadata co-location is enabled.
+     */
+    public boolean isColocateMetadata() {
+        return colocateMeta;
+    }
+
+    /**
+     * @return {@code True} if relaxed consistency is enabled.
+     */
+    public boolean isRelaxedConsistency() {
+        return relaxedConsistency;
+    }
+
+    /**
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
     }
 
     /** {@inheritDoc} */
@@ -316,9 +337,11 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         out.writeLong(fragmentizerThrottlingDelay);
         U.writeString(out, ipcEndpointCfg);
         out.writeBoolean(ipcEndpointEnabled);
-        out.writeLong(maxSpace);
         out.writeInt(mgmtPort);
         out.writeInt(seqReadsBeforePrefetch);
+        out.writeBoolean(colocateMeta);
+        out.writeBoolean(relaxedConsistency);
+        out.writeBoolean(updateFileLenOnFlush);
     }
 
     /** {@inheritDoc} */
@@ -340,9 +363,11 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         fragmentizerThrottlingDelay = in.readLong();
         ipcEndpointCfg = U.readString(in);
         ipcEndpointEnabled = in.readBoolean();
-        maxSpace = in.readLong();
         mgmtPort = in.readInt();
         seqReadsBeforePrefetch = in.readInt();
+        colocateMeta = in.readBoolean();
+        relaxedConsistency = in.readBoolean();
+        updateFileLenOnFlush = in.readBoolean();
     }
 
     /** {@inheritDoc} */

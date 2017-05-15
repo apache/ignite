@@ -61,19 +61,18 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
         iCfg.setCacheConfiguration(cCfg0, cCfg1, cCfg2);
 
         for (CacheConfiguration cCfg : iCfg.getCacheConfiguration()) {
-            if (cCfg.getName() != null)
-                if (cCfg.getName().equals(CACHE_NAME_1))
-                    cCfg.setTopologyValidator(new TopologyValidator() {
-                        @Override public boolean validate(Collection<ClusterNode> nodes) {
-                            return nodes.size() == 2;
-                        }
-                    });
-                else if (cCfg.getName().equals(CACHE_NAME_2))
-                    cCfg.setTopologyValidator(new TopologyValidator() {
-                        @Override public boolean validate(Collection<ClusterNode> nodes) {
-                            return nodes.size() >= 2;
-                        }
-                    });
+            if (cCfg.getName().equals(CACHE_NAME_1))
+                cCfg.setTopologyValidator(new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return nodes.size() == 2;
+                    }
+                });
+            else if (cCfg.getName().equals(CACHE_NAME_2))
+                cCfg.setTopologyValidator(new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return nodes.size() >= 2;
+                    }
+                });
         }
 
         return iCfg;
@@ -181,8 +180,8 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     /** topology validator test. */
     public void testTopologyValidator() throws Exception {
 
-        putValid(null);
-        remove(null);
+        putValid(DEFAULT_CACHE_NAME);
+        remove(DEFAULT_CACHE_NAME);
 
         putInvalid(CACHE_NAME_1);
         removeInvalid(CACHE_NAME_1);
@@ -192,8 +191,8 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         startGrid(1);
 
-        putValid(null);
-        remove(null);
+        putValid(DEFAULT_CACHE_NAME);
+        remove(DEFAULT_CACHE_NAME);
 
         putValid(CACHE_NAME_1);
 
@@ -202,8 +201,8 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         startGrid(2);
 
-        putValid(null);
-        remove(null);
+        putValid(DEFAULT_CACHE_NAME);
+        remove(DEFAULT_CACHE_NAME);
 
         getInvalid(CACHE_NAME_1);
         putInvalid(CACHE_NAME_1);

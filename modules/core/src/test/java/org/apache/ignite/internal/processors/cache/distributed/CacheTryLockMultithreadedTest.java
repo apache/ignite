@@ -55,7 +55,7 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -92,7 +92,7 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
         final Integer key = 1;
 
-        final IgniteCache<Integer, Integer> cache = client.cache(null);
+        final IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
         final long stopTime = System.currentTimeMillis() + 30_000;
 

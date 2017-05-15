@@ -329,7 +329,7 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
         CacheAtomicityMode atomicityMode,
         int backups,
         boolean nearCache) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);

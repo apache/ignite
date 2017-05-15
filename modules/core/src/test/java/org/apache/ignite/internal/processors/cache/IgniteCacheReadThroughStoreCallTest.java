@@ -214,7 +214,7 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
     protected CacheConfiguration<Object, Object> cacheConfiguration(CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
         int backups) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);

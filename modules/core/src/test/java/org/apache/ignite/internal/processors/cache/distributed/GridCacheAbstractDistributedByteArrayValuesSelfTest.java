@@ -148,49 +148,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     }
 
     /**
-     * Test swapping.
-     *
-     * @throws Exception If failed.
-     */
-    public void testSwap() throws Exception {
-// TODO: GG-11148 check if test makes sense.
-//        for (IgniteCache<Integer, Object> cache : caches)
-//            assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
-        if (true)
-            return;
-
-        byte[] val1 = wrap(1);
-
-        IgniteCache<Integer, Object> primaryCache = null;
-
-        int i = 0;
-
-        for (IgniteCache<Integer, Object> cache : caches) {
-            Ignite ignite = ignites[i++];
-
-            if (affinity(cache).isPrimary(ignite.cluster().localNode(), SWAP_TEST_KEY)) {
-                primaryCache = cache;
-
-                break;
-            }
-        }
-
-        assert primaryCache != null;
-
-        primaryCache.put(SWAP_TEST_KEY, val1);
-
-        assert Arrays.equals(val1, (byte[])primaryCache.get(SWAP_TEST_KEY));
-
-        primaryCache.localEvict(Collections.singleton(SWAP_TEST_KEY));
-
-        assert primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP) == null;
-
-        primaryCache.localPromote(Collections.singleton(SWAP_TEST_KEY));
-
-        assert Arrays.equals(val1, (byte[])primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP));
-    }
-
-    /**
      * Test transaction behavior.
      *
      * @param caches Caches.

@@ -29,6 +29,8 @@
     .ignite-form-field__control {
         outline: none;
 
+        font-size: 14px;
+
         & > a {
             display: inline-block;
             height: 36px;
@@ -39,7 +41,7 @@
             border-radius: 4px;
 
             color: #de4538;
-            line-height: 36px;
+            line-height: 34px;
 
             .caret {
                 margin-left: 9px;
@@ -76,6 +78,28 @@
 
             li:not(:last-child) {
                 border-bottom: 1px solid #dddddd;
+            }
+        }
+
+        &[disabled='disabled'] {
+            opacity: .5;
+
+            & > a {
+                border-color: #c5c5c5;
+
+                color: #393939;
+            }
+
+            &:hover, &:focus {
+                & > a {
+                    border-color: #c5c5c5;
+
+                    color: #393939;
+                }
+            }
+
+            ul {
+                display: none !important;
             }
         }
     }

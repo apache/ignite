@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashSet;
 
 /**
  * Wrapper type for primary key.
@@ -65,10 +68,10 @@ public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder) {
+        SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rows = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
+        double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
 
         int mul = delegate().getDistributedMultiplier(ses, filters, filter);
 

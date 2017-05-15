@@ -723,7 +723,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         int backups,
         CacheAtomicityMode atomicityMode,
         boolean store) {
-        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);

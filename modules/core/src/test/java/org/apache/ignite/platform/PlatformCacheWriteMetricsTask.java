@@ -235,11 +235,6 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapMaxSize() {
-            return 28;
-        }
-
-        /** {@inheritDoc} */
         @Override public int getSize() {
             return 29;
         }

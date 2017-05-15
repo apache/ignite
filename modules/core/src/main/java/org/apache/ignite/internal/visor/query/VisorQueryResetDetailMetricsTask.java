@@ -56,8 +56,10 @@ public class VisorQueryResetDetailMetricsTask extends VisorOneNodeTask<Void, Voi
             for (String cacheName : ignite.cacheNames()) {
                 IgniteCache cache = ignite.cache(cacheName);
 
-                if (cache != null)
-                    cache.resetQueryDetailMetrics();
+                if (cache == null)
+                    throw new IllegalStateException("Failed to find cache for name: " + cacheName);
+
+                cache.resetQueryDetailMetrics();
             }
 
             return null;

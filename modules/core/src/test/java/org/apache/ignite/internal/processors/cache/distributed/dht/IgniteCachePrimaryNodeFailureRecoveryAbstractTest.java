@@ -174,7 +174,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
         IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         Integer key0 = null;
 
@@ -331,7 +331,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
         IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         Integer key0 = null;
 
@@ -422,13 +422,13 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     private void checkKey(Integer key, Collection<ClusterNode> keyNodes) {
         if (keyNodes == null) {
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
             }
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertNull("Unexpected value for: " + ignite.name(), cache.get(key));
             }
@@ -442,7 +442,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
                     found = true;
 
-                    ignite.cache(null);
+                    ignite.cache(DEFAULT_CACHE_NAME);
 
                     assertEquals("Unexpected value for: " + ignite.name(), key, key);
                 }
@@ -454,7 +454,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             assertTrue("Failed to find key node.", found);
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertEquals("Unexpected value for: " + ignite.name(), key, cache.get(key));
             }

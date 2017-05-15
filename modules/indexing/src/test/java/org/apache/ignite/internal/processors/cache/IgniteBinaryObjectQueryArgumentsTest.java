@@ -106,7 +106,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      * @return Cache config.
      */
     protected CacheConfiguration getCacheConfiguration(final String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         QueryEntity person = new QueryEntity();
@@ -164,7 +164,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration getCacheConfiguration(final String cacheName, final Class<?> key, final Class<?> val) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName(cacheName);
 
@@ -292,7 +292,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         final SqlQuery<T, Person> qry = new SqlQuery<>(Person.class, "where _key=?");
 
-        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select * from Person where _key=?");
+        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select _key, _val, * from Person where _key=?");
 
         qry.setLocal(isLocal());
         fieldsQry.setLocal(isLocal());
@@ -335,7 +335,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         final SqlQuery<Person, T> qry = new SqlQuery<>(valType, "where _val=?");
 
-        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select * from " + valType.getSimpleName() + " where _val=?");
+        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select _key, _val, * from " + valType.getSimpleName() + " where _val=?");
 
         qry.setLocal(isLocal());
         fieldsQry.setLocal(isLocal());

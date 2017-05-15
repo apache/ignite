@@ -37,14 +37,14 @@ import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixSto
 
 /**
  * Sparse distributed matrix implementation based on data grid.
- *
+ * <p>
  * Unlike {@link CacheMatrix} that is based on existing cache, this implementation creates distributed
- * cache internally and doesn't rely on pre-existing cache.
- *
+ * cache internally and doesn't rely on pre-existing cache.</p>
+ * <p>
  * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
- * matrix.
- *
- * <b>Currently fold supports only commutative operations.<b/>
+ * matrix.</p>
+ * <p>
+ * <b>Currently fold supports only commutative operations.<b/></p>
  */
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {
     /**

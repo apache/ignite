@@ -38,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
  * Redis command handler done via REST.
  */
 public abstract class GridRedisRestCommandHandler implements GridRedisCommandHandler {
+    /** Used cache name. */
+    protected final static String CACHE_NAME = "default";
+
     /** Logger. */
     protected final IgniteLogger log;
 

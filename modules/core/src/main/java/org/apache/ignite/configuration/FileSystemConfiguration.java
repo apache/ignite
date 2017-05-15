@@ -136,9 +136,6 @@ public class FileSystemConfiguration {
     /** Path modes. */
     private Map<String, IgfsMode> pathModes;
 
-    /** Maximum space. */
-    private long maxSpace;
-
     /** Maximum range length. */
     private long maxTaskRangeLen;
 
@@ -187,7 +184,6 @@ public class FileSystemConfiguration {
         secondaryFs = cfg.getSecondaryFileSystem();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
-        maxSpace = cfg.getMaxSpaceSize();
         maxTaskRangeLen = cfg.getMaximumTaskRangeLength();
         metaCacheCfg = cfg.getMetaCacheConfiguration();
         mgmtPort = cfg.getManagementPort();
@@ -677,27 +673,6 @@ public class FileSystemConfiguration {
      */
     public FileSystemConfiguration setFragmentizerEnabled(boolean fragmentizerEnabled) {
         this.fragmentizerEnabled = fragmentizerEnabled;
-
-        return this;
-    }
-
-    /**
-     * Get maximum space available for data cache to store file system entries.
-     *
-     * @return Maximum space available for data cache.
-     */
-    public long getMaxSpaceSize() {
-        return maxSpace;
-    }
-
-    /**
-     * Set maximum space in bytes available in data cache.
-     *
-     * @param maxSpace Maximum space available in data cache.
-     * @return {@code this} for chaining.
-     */
-    public FileSystemConfiguration setMaxSpaceSize(long maxSpace) {
-        this.maxSpace = maxSpace;
 
         return this;
     }

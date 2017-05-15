@@ -78,14 +78,14 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfgLoc = new CacheConfiguration();
+        CacheConfiguration ccfgLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgLoc.setName(CACHE_LOCAL);
         ccfgLoc.setCacheMode(LOCAL);
         ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
         ccfgLoc.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgPartitioned = new CacheConfiguration();
+        CacheConfiguration ccfgPartitioned = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgPartitioned.setName(CACHE_PARTITIONED);
         ccfgPartitioned.setCacheMode(PARTITIONED);
@@ -99,7 +99,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgColocated = new CacheConfiguration();
+        CacheConfiguration ccfgColocated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgColocated.setName(CACHE_COLOCATED);
         ccfgColocated.setCacheMode(PARTITIONED);
@@ -107,7 +107,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgColocated.setWriteSynchronizationMode(FULL_SYNC);
         ccfgColocated.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgReplicated = new CacheConfiguration();
+        CacheConfiguration ccfgReplicated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgReplicated.setName(CACHE_REPLICATED);
         ccfgReplicated.setCacheMode(REPLICATED);

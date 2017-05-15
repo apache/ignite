@@ -582,5 +582,22 @@ public class GridIntList implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
-    }    
+    }
+
+    /**
+     * @return Iterator.
+     */
+    public GridIntIterator iterator() {
+        return new GridIntIterator() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < idx;
+            }
+
+            @Override public int next() {
+                return arr[c++];
+            }
+        };
+    }
 }

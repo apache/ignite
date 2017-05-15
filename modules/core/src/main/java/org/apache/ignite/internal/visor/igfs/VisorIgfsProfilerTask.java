@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgfsPr
  * Task that parse hadoop profiler logs.
  */
 @GridInternal
-public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, List<VisorIgfsProfilerEntry>> {
+public class VisorIgfsProfilerTask extends VisorOneNodeTask<VisorIgfsProfilerTaskArg, List<VisorIgfsProfilerEntry>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -140,14 +140,14 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, List<VisorIg
         };
 
     /** {@inheritDoc} */
-    @Override protected VisorIgfsProfilerJob job(String arg) {
+    @Override protected VisorIgfsProfilerJob job(VisorIgfsProfilerTaskArg arg) {
         return new VisorIgfsProfilerJob(arg, debug);
     }
 
     /**
      * Job that do actual profiler work.
      */
-    private static class VisorIgfsProfilerJob extends VisorJob<String, List<VisorIgfsProfilerEntry>> {
+    private static class VisorIgfsProfilerJob extends VisorJob<VisorIgfsProfilerTaskArg, List<VisorIgfsProfilerEntry>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -196,22 +196,24 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, List<VisorIg
          * @param arg IGFS name.
          * @param debug Debug flag.
          */
-        private VisorIgfsProfilerJob(String arg, boolean debug) {
+        private VisorIgfsProfilerJob(VisorIgfsProfilerTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected List<VisorIgfsProfilerEntry> run(String arg) {
+        @Override protected List<VisorIgfsProfilerEntry> run(VisorIgfsProfilerTaskArg arg) {
+            String name = arg.getIgfsName();
+
             try {
-                Path logsDir = resolveIgfsProfilerLogsDir(ignite.fileSystem(arg));
+                Path logsDir = resolveIgfsProfilerLogsDir(ignite.fileSystem(name));
 
                 if (logsDir != null)
-                    return parse(logsDir, arg);
+                    return parse(logsDir, name);
 
                 return Collections.emptyList();
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new IgniteException("Failed to parse profiler logs for IGFS: " + arg, e);
+                throw new IgniteException("Failed to parse profiler logs for IGFS: " + name, e);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

@@ -82,7 +82,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, TestValue> cacheConfiguration(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
@@ -152,7 +152,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
             }
 
             for (int g = 0; g < NODES; g++) {
-                IgniteCache<Integer, TestValue> nodeCache = ignite(g).cache(null);
+                IgniteCache<Integer, TestValue> nodeCache = ignite(g).cache(DEFAULT_CACHE_NAME);
                 IgniteCache<Integer, BinaryObject> nodeBinaryCache = nodeCache.withKeepBinary();
 
                 for (int i = 0; i < 100; i++) {
@@ -172,7 +172,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
             }
         }
         finally {
-            client.destroyCache(null);
+            client.destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 

@@ -63,6 +63,9 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.LAST_FUT
  * Handles memcache requests.
  */
 public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<GridMemcachedMessage> {
+    /** Used cache name in case the name was not defined in a request. */
+    private static final String CACHE_NAME = "default";
+
     /** Logger */
     private final IgniteLogger log;
 
@@ -288,7 +291,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             restReq.command(cmd);
             restReq.clientId(req.clientId());
             restReq.ttl(req.expiration());
-            restReq.cacheName(req.cacheName());
+            restReq.cacheName(req.cacheName() == null ? CACHE_NAME : req.cacheName());
             restReq.key(req.key());
 
             if (cmd == CACHE_REMOVE_ALL) {

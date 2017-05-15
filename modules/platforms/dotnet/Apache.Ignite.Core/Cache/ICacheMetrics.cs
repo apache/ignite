@@ -249,14 +249,6 @@ namespace Apache.Ignite.Core.Cache
         long OffHeapAllocatedSize { get; }
 
         /// <summary>
-        /// Gets off-heap memory maximum size.
-        /// </summary>
-        /// <returns>
-        /// Off-heap memory maximum size.
-        /// </returns>
-        long OffHeapMaxSize { get; }
-
-        /// <summary>
         /// Gets number of non-null values in the cache.
         /// </summary>
         /// <returns>

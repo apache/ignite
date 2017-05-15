@@ -1719,13 +1719,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long igfsDataSpaceUsed();
 
     /**
-     * Get maximum space available for IGFS.
-     *
-     * @return Amount of space available for IGFS in bytes.
-     */
-    public long igfsDataSpaceMax();
-
-    /**
      * Checks whether this cache is Mongo data cache.
      *
      * @return {@code True} if this cache is mongo data cache.
@@ -1885,17 +1878,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If failed.
      */
     public V getTopologySafe(K key) throws IgniteCheckedException;
-
-    /**
-     * Tries to get and put value in cache. Will fail with {@link GridCacheTryPutFailedException}
-     * if topology exchange is in progress.
-     *
-     * @param key Key.
-     * @param val value.
-     * @return Old value.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @Nullable public V tryGetAndPut(K key, V val) throws IgniteCheckedException;
 
     /**
      * @param topVer Locked topology version.

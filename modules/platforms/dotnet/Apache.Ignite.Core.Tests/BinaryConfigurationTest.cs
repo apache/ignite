@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
                 BinaryConfiguration = binaryConfiguration
             });
 
-            _cache = grid.GetCache<int, TestGenericBinarizableBase>(null);
+            _cache = grid.GetCache<int, TestGenericBinarizableBase>("default");
         }
 
         /// <summary>

@@ -55,9 +55,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Boolean>
     implements GridCacheMvccFuture<Boolean> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

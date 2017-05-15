@@ -194,7 +194,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
             List<Cache.Entry<Integer, Integer>> all = cache.query(qry).getAll();
 
-            assertTrue(pages.get() > ignite().cluster().forDataNodes(null).nodes().size());
+            assertTrue(pages.get() > ignite().cluster().forDataNodes(DEFAULT_CACHE_NAME).nodes().size());
 
             assertEquals(50, all.size());
         }

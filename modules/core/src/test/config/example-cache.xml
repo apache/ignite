@@ -129,9 +129,6 @@
 
     <!-- Template for all example cache configurations. -->
     <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
-        <!-- Initial cache size. -->
-        <property name="startSize" value="3000000"/>
-
         <!-- Set synchronous rebalancing (default is asynchronous). -->
         <property name="rebalanceMode" value="SYNC"/>
 

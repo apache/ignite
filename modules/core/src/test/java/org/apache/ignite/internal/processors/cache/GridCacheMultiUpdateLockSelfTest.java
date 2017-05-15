@@ -112,7 +112,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
         try {
             IgniteKernal g = (IgniteKernal)grid(0);
 
-            GridCacheContext<Object, Object> cctx = g.internalCache().context();
+            GridCacheContext<Object, Object> cctx = g.internalCache(DEFAULT_CACHE_NAME).context();
 
             GridDhtCacheAdapter cache = nearEnabled ? cctx.near().dht() : cctx.colocated();
 
@@ -133,7 +133,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         started.set(true);
 
-                        IgniteCache<Object, Object> c = g4.cache(null);
+                        IgniteCache<Object, Object> c = g4.cache(DEFAULT_CACHE_NAME);
 
                         info(">>>> Checking tx in new grid.");
 
@@ -154,7 +154,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                 assertFalse(started.get());
 
                 // Check we can proceed with transactions.
-                IgniteCache<Object, Object> cache0 = g.cache(null);
+                IgniteCache<Object, Object> cache0 = g.cache(DEFAULT_CACHE_NAME);
 
                 info(">>>> Checking tx commit.");
 

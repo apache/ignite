@@ -48,7 +48,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect;
@@ -58,6 +57,7 @@ import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -537,20 +537,33 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
     /**
      * @param type Type name to check.
+     * @param binarySupported True if binary marshaller enable.
      * @return {@code True} if class not found.
      */
-    protected TypeKind kindForName(String type) {
+    protected TypeKind kindForName(String type, boolean binarySupported) {
         if (BUILT_IN_TYPES.contains(type))
             return TypeKind.BUILT_IN;
+
+        if (binarySupported)
+            return TypeKind.BINARY;
 
         try {
             Class.forName(type);
 
             return TypeKind.POJO;
         }
-        catch(ClassNotFoundException ignored) {
-            return TypeKind.BINARY;
+        catch (ClassNotFoundException e) {
+            throw new CacheException("Failed to find class " + type +
+                " (make sure the class is present in classPath or use BinaryMarshaller)", e);
         }
+    }
+
+    /**
+     * @param type Type name to check.
+     * @return {@code True} if class not found.
+     */
+    protected TypeKind kindForName(String type) {
+        return kindForName(type, ignite.configuration().getMarshaller() instanceof BinaryMarshaller);
     }
 
     /**
@@ -587,11 +600,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     String keyType = type.getKeyType();
                     String valType = type.getValueType();
 
-                    TypeKind keyKind = kindForName(keyType);
-
-                    if (!binarySupported && keyKind == TypeKind.BINARY)
-                        throw new CacheException("Key type has no class [cache=" + U.maskName(cacheName) +
-                            ", type=" + keyType + "]");
+                    TypeKind keyKind = kindForName(keyType, binarySupported);
 
                     checkTypeConfiguration(cacheName, keyKind, keyType, type.getKeyFields());
 
@@ -601,21 +610,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         throw new CacheException("Key type must be unique in type metadata [cache=" +
                             U.maskName(cacheName) + ", type=" + keyType + "]");
 
-                    TypeKind valKind = kindForName(valType);
+                    TypeKind valKind = kindForName(valType, binarySupported);
 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
                     entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind, sqlEscapeAll));
-
-                    // Add one more binding to binary typeId for POJOs,
-                    // because object could be passed to store in binary format.
-                    if (binarySupported && keyKind == TypeKind.POJO) {
-                        keyTypeId = typeIdForTypeName(TypeKind.BINARY, keyType);
-
-                        valKind = valKind == TypeKind.POJO ? TypeKind.BINARY : valKind;
-
-                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind, sqlEscapeAll));
-                    }
                 }
 
                 Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
@@ -1349,10 +1348,17 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             // No-op.
                     }
                 }
-                else if (field.getJavaFieldType().isEnum() && fieldVal instanceof Enum) {
-                    Enum val = (Enum)fieldVal;
+                else if (field.getJavaFieldType().isEnum()) {
+                    if (fieldVal instanceof Enum) {
+                        Enum val = (Enum)fieldVal;
 
-                    fieldVal = NUMERIC_TYPES.contains(field.getDatabaseFieldType()) ? val.ordinal() : val.name();
+                        fieldVal = NUMERIC_TYPES.contains(field.getDatabaseFieldType()) ? val.ordinal() : val.name();
+                    }
+                    else if (fieldVal instanceof BinaryEnumObjectImpl) {
+                        BinaryEnumObjectImpl val = (BinaryEnumObjectImpl)fieldVal;
+
+                        fieldVal = val.enumOrdinal();
+                    }
                 }
 
                 stmt.setObject(idx, fieldVal);
@@ -1404,14 +1410,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      */
     protected int fillValueParameters(PreparedStatement stmt, int idx, EntryMapping em, Object val)
         throws CacheWriterException {
-        TypeKind valKind = em.valueKind();
-
-        // Object could be passed by cache in binary format in case of cache configured with setStoreKeepBinary(true).
-        if (valKind == TypeKind.POJO && val instanceof BinaryObject)
-            valKind = TypeKind.BINARY;
-
         for (JdbcTypeField field : em.uniqValFlds) {
-            Object fieldVal = extractParameter(em.cacheName, em.valueType(), valKind, field.getJavaFieldName(), val);
+            Object fieldVal = extractParameter(
+                em.cacheName,
+                em.valueType(),
+                em.valueKind(),
+                field.getJavaFieldName(),
+                val
+            );
 
             fillParameter(stmt, idx++, field, fieldVal);
         }

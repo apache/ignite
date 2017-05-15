@@ -42,7 +42,7 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     private String name;
 
     /** Thread ID. */
-    private Long id;
+    private long id;
 
     /** Thread state. */
     private Thread.State state;
@@ -54,28 +54,28 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     private String lockName;
 
     /** Lock owner thread ID. */
-    private Long lockOwnerId;
+    private long lockOwnerId;
 
     /** Lock owner name. */
     private String lockOwnerName;
 
     /** Thread executing native code. */
-    private Boolean inNative;
+    private boolean inNative;
 
     /** Thread is suspended. */
-    private Boolean suspended;
+    private boolean suspended;
 
     /** Waited count. */
-    private Long waitedCnt;
+    private long waitedCnt;
 
     /** Waited time. */
-    private Long waitedTime;
+    private long waitedTime;
 
     /** Blocked count. */
-    private Long blockedCnt;
+    private long blockedCnt;
 
     /** Blocked time. */
-    private Long blockedTime;
+    private long blockedTime;
 
     /** Stack trace. */
     private List<StackTraceElement> stackTrace;
@@ -141,7 +141,7 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     /**
      * @return Thread ID.
      */
-    public Long getId() {
+    public long getId() {
         return id;
     }
 
@@ -169,7 +169,7 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     /**
      * @return Lock owner thread ID.
      */
-    public Long getLockOwnerId() {
+    public long getLockOwnerId() {
         return lockOwnerId;
     }
 
@@ -183,42 +183,42 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     /**
      * @return Thread executing native code.
      */
-    public Boolean isInNative() {
+    public boolean isInNative() {
         return inNative;
     }
 
     /**
      * @return Thread is suspended.
      */
-    public Boolean isSuspended() {
+    public boolean isSuspended() {
         return suspended;
     }
 
     /**
      * @return Waited count.
      */
-    public Long getWaitedCount() {
+    public long getWaitedCount() {
         return waitedCnt;
     }
 
     /**
      * @return Waited time.
      */
-    public Long getWaitedTime() {
+    public long getWaitedTime() {
         return waitedTime;
     }
 
     /**
      * @return Blocked count.
      */
-    public Long getBlockedCount() {
+    public long getBlockedCount() {
         return blockedCnt;
     }
 
     /**
      * @return Blocked time.
      */
-    public Long getBlockedTime() {
+    public long getBlockedTime() {
         return blockedTime;
     }
 
@@ -246,18 +246,18 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        out.writeObject(id);
+        out.writeLong(id);
         U.writeString(out, state.toString());
         out.writeObject(lock);
         U.writeString(out, lockName);
-        out.writeObject(lockOwnerId);
+        out.writeLong(lockOwnerId);
         U.writeString(out, lockOwnerName);
-        out.writeObject(inNative);
-        out.writeObject(suspended);
-        out.writeObject(waitedCnt);
-        out.writeObject(waitedTime);
-        out.writeObject(blockedCnt);
-        out.writeObject(blockedTime);
+        out.writeBoolean(inNative);
+        out.writeBoolean(suspended);
+        out.writeLong(waitedCnt);
+        out.writeLong(waitedTime);
+        out.writeLong(blockedCnt);
+        out.writeLong(blockedTime);
         U.writeCollection(out, stackTrace);
         U.writeCollection(out, locks);
         U.writeCollection(out, lockedMonitors);
@@ -266,7 +266,7 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        id = (Long)in.readObject();
+        id = in.readLong();
 
         String statePresentation = U.readString(in);
 
@@ -275,14 +275,14 @@ public class VisorThreadInfo extends VisorDataTransferObject {
 
         lock = (VisorThreadLockInfo)in.readObject();
         lockName = U.readString(in);
-        lockOwnerId = (Long)in.readObject();
+        lockOwnerId = in.readLong();
         lockOwnerName = U.readString(in);
-        inNative = (Boolean)in.readObject();
-        suspended = (Boolean)in.readObject();
-        waitedCnt = (Long)in.readObject();
-        waitedTime = (Long)in.readObject();
-        blockedCnt = (Long)in.readObject();
-        blockedTime = (Long)in.readObject();
+        inNative = in.readBoolean();
+        suspended = in.readBoolean();
+        waitedCnt = in.readLong();
+        waitedTime = in.readLong();
+        blockedCnt = in.readLong();
+        blockedTime = in.readLong();
         stackTrace = U.readList(in);
         locks = U.readList(in);
         lockedMonitors = U.readList(in);

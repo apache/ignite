@@ -42,6 +42,9 @@ namespace Apache.Ignite.Core.Tests
     public class EventsTest
     {
         /** */
+        public const string CacheName = "eventsTest";
+
+        /** */
         private IIgnite _grid1;
 
         /** */
@@ -240,7 +243,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.GetCache<int, int>(null).Put(TestUtils.GetPrimaryKey(g), 1),
+                    GenerateEvent = g => g.GetCache<int, int>(CacheName).Put(TestUtils.GetPrimaryKey(g, CacheName), 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
                     EventCount = 3
                 };
@@ -699,7 +702,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 IgniteInstanceName = name,
                 EventStorageSpi = new MemoryEventStorageSpi(),
-                CacheConfiguration = new [] {new CacheConfiguration() },
+                CacheConfiguration = new [] {new CacheConfiguration(CacheName) },
                 ClientMode = client
             };
         }
@@ -730,11 +733,11 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void GenerateCacheQueryEvent(IIgnite g)
         {
-            var cache = g.GetCache<int, int>(null);
+            var cache = g.GetCache<int, int>(CacheName);
 
             cache.Clear();
 
-            cache.Put(TestUtils.GetPrimaryKey(g), 1);
+            cache.Put(TestUtils.GetPrimaryKey(g, CacheName), 1);
 
             cache.Query(new ScanQuery<int, int>()).GetAll();
         }
@@ -748,7 +751,7 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var cacheEvent in e)
             {
-                Assert.AreEqual(null, cacheEvent.CacheName);
+                Assert.AreEqual(CacheName, cacheEvent.CacheName);
                 Assert.AreEqual(null, cacheEvent.ClosureClassName);
                 Assert.AreEqual(null, cacheEvent.TaskName);
                 Assert.AreEqual(grid.GetCluster().GetLocalNode(), cacheEvent.EventNode);

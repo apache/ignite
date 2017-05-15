@@ -114,7 +114,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTest(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 
@@ -155,7 +155,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTestOneNode(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 

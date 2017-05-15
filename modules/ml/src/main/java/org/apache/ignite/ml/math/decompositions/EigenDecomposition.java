@@ -24,8 +24,8 @@ import org.apache.ignite.ml.math.functions.Functions;
 /**
  * This class provides EigenDecomposition of given matrix. The class is based on
  * class with similar name from <a href="http://mahout.apache.org/">Apache Mahout</a> library.
- * <p>
- * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a></p>
+ *
+ * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a>
  */
 public class EigenDecomposition extends DecompositionSupport {
     /** Row and column dimension (square matrix). */

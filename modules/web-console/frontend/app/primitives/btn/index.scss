@@ -16,26 +16,42 @@
  */
 
 .btn.btn--stroke {
-  min-width: 36px;
-  height: 36px;
+    min-width: 36px;
+    height: 36px;
 
-  line-height: 36px;
-  text-align: center;
+    line-height: 34px;
+    text-align: center;
 
-  color: #ee2b27;
-  border: 1px solid #ee2b27;
-  background: initial;
+    color: #ee2b27;
+    border: 1px solid #ee2b27;
+    background: initial;
 
-  &:hover, &:focus {
-    color: #a8110f;
-    border-color: #a8110f;
-  }
+    i {
+        margin: 0;
 
-  &:focus {
-    outline: none;
-  }
+        &.export-icon {
+            display: block;
+            width: 16px;
+            height: 16px;
+            margin: auto;
 
-  i {
-    margin: 0;
-  }
+            background-image: url('/images/icons/export.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+    }
+
+    &:hover, &:focus {
+        color: #a8110f;
+        border-color: #a8110f;
+
+        i {
+            filter: hue-rotate(1deg) saturate(85) brightness(.66);
+        }
+    }
+
+    &:focus {
+        outline: none;
+    }
+
 }

@@ -246,9 +246,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     public GridAtomicLong globalRemoveId();
 
-    // TODO GG-10884: moved from GridCacheSwapManager.
-    void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
-
     /**
      * @param idxName Index name.
      * @return Root page for index tree.

@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioBackPressureControl;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
@@ -103,7 +102,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -646,7 +644,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             filter,
-            true,
             false).get();
     }
 
@@ -659,7 +656,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             filter,
-            true,
             false).get();
 
         assert res != null;
@@ -677,7 +673,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             filter,
-            true,
             true);
     }
 
@@ -691,23 +686,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             filter,
-            true,
             true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        A.notNull(key, "key", val, "val");
-
-        return (V)update0(
-            key,
-            val,
-            null,
-            null,
-            true,
-            null,
-            false,
-            false).get();
     }
 
     /** {@inheritDoc} */
@@ -719,7 +698,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            true,
             UPDATE,
             false).get();
     }
@@ -733,7 +711,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            true,
             UPDATE,
             true).chain(RET2NULL);
     }
@@ -755,7 +732,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            true,
             UPDATE,
             true);
     }
@@ -823,39 +799,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (fail != null)
             return fail;
 
-        FutureHolder holder = lastFut.get();
+        IgniteInternalFuture<T> f = op.apply();
 
-        holder.lock();
-
-        try {
-            IgniteInternalFuture fut = holder.future();
-
-            if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
-                    new IgniteOutClosure<IgniteInternalFuture>() {
-                        @Override public IgniteInternalFuture<T> apply() {
-                            if (ctx.kernalContext().isStopping())
-                                return new GridFinishedFuture<>(
-                                    new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
-
-                            return op.apply();
-                        }
-                    });
-
-                saveFuture(holder, f, /*retry*/false);
-
-                return f;
+        f.listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
+                asyncOpRelease(/*retry*/false);
             }
+        });
 
-            IgniteInternalFuture<T> f = op.apply();
-
-            saveFuture(holder, f, /*retry*/false);
-
-            return f;
-        }
-        finally {
-            holder.unlock();
-        }
+        return f;
     }
 
     /** {@inheritDoc} */
@@ -924,7 +876,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             args,
             false,
             null,
-            true,
             async);
 
         return fut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, EntryProcessorResult<T>>() {
@@ -995,7 +946,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            true,
             TRANSFORM,
             async);
 
@@ -1027,7 +977,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            true,
             TRANSFORM,
             false).get();
     }
@@ -1049,7 +998,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            true,
             TRANSFORM,
             true);
     }
@@ -1064,7 +1012,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param conflictRmvMap Conflict remove map.
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
-     * @param waitTopFut Whether to wait for topology future.
      * @param async Async operation flag.
      * @return Completion future.
      */
@@ -1077,7 +1024,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable Map<KeyCacheObject, GridCacheVersion> conflictRmvMap,
         final boolean retval,
         final boolean rawRetval,
-        final boolean waitTopFut,
         final GridCacheOperation op,
         boolean async
     ) {
@@ -1154,8 +1100,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-            waitTopFut);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1182,7 +1127,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param invokeArgs Invoke arguments.
      * @param retval Return value flag.
      * @param filter Filter.
-     * @param waitTopFut Whether to wait for topology future.
      * @param async Async operation flag.
      * @return Future.
      */
@@ -1193,7 +1137,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable Object[] invokeArgs,
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
-        final boolean waitTopFut,
         boolean async
     ) {
         assert val == null || proc == null;
@@ -1205,7 +1148,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
         final GridNearAtomicAbstractUpdateFuture updateFut =
-            createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter, waitTopFut);
+            createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1244,8 +1187,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             null,
             retval,
-            filter,
-            true);
+            filter);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1272,7 +1214,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param invokeArgs Invoke arguments.
      * @param retval Return value flag.
      * @param filter Filter.
-     * @param waitTopFut Whether to wait for topology future.
      * @return Future.
      */
     private GridNearAtomicAbstractUpdateFuture createSingleUpdateFuture(
@@ -1281,8 +1222,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable EntryProcessor proc,
         @Nullable Object[] invokeArgs,
         boolean retval,
-        @Nullable CacheEntryPredicate filter,
-        boolean waitTopFut
+        @Nullable CacheEntryPredicate filter
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -1344,8 +1284,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-                waitTopFut
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES
             );
         }
         else {
@@ -1368,8 +1307,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-                waitTopFut);
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
         }
     }
 
@@ -1435,8 +1373,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-            true);
+            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
 
         if (async) {
             return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -3045,8 +2982,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.skipStore(),
             req.keepBinary(),
             req.recovery(),
-            MAX_RETRIES,
-            true);
+            MAX_RETRIES);
 
         updateFut.map();
     }

@@ -121,7 +121,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).cache(null).get(nearKey());
+                    grid(0).cache(DEFAULT_CACHE_NAME).get(nearKey());
 
                     return null;
                 }
@@ -139,7 +139,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             key = String.valueOf(i);
 
-            if (!grid(0).affinity(null).isPrimaryOrBackup(grid(0).localNode(), key))
+            if (!grid(0).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(0).localNode(), key))
                 break;
         }
 

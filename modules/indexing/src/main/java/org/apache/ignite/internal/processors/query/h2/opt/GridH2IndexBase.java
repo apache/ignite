@@ -390,30 +390,41 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
+        GridH2RowDescriptor desc = getTable().rowDescriptor();
 
         int affColId = -1;
         boolean ucast = false;
 
         if (affCol != null) {
             affColId = affCol.column.getColumnId();
-            int[] masks = filter.getMasks();
+            int[] masks = filters[filter].getMasks();
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                    (masks[KEY_COL] & IndexCondition.EQUALITY) != 0;
+                        desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
             }
         }
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
         return new DistributedLookupBatch(cctx, ucast, affColId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeChildrenAndResources(Session session) {
+        // The sole purpose of this override is to pass session to table.removeIndex
+        assert table instanceof GridH2Table;
+
+        ((GridH2Table)table).removeIndex(session, this);
+        remove(session);
+        database.removeMeta(session, getId());
     }
 
     /**
@@ -1130,7 +1141,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
                 return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
 
-            if (affColId == KEY_COL)
+            if (getTable().rowDescriptor().isKeyColumn(affColId))
                 return null;
 
             // Try to extract affinity key from primary key.
@@ -1360,6 +1371,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * Start streaming.
          */
         private void start() {
+            assert ctx != null;
+            assert log != null: getName();
+
             remainingRanges = req.bounds().size();
 
             assert remainingRanges > 0;
