@@ -93,7 +93,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @Override public void start() throws IgniteCheckedException {
         if (map == null) {
             map = new GridCacheLocalConcurrentMap(
-                ctx.group(),
+                ctx.cacheId(),
                 entryFactory(),
                 ctx.config().getNearConfiguration().getNearStartSize());
         }
@@ -127,7 +127,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public void onReconnected() {
         map = new GridCacheLocalConcurrentMap(
-            ctx.group(),
+            ctx.cacheId(),
             entryFactory(),
             ctx.config().getNearConfiguration().getNearStartSize());
     }

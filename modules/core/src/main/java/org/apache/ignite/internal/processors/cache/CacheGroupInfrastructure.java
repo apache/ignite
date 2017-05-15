@@ -117,7 +117,10 @@ public class CacheGroupInfrastructure {
     /**
      * @param grpId Group ID.
      * @param ctx Context.
+     * @param cacheType Cache type.
      * @param ccfg Cache configuration.
+     * @param affNode Affinity node flag.
+     * @param cacheObjCtx Cache object context.
      */
     CacheGroupInfrastructure(GridCacheSharedContext ctx,
         int grpId,

@@ -260,7 +260,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCacheApiTx() throws Exception {
+    public void _testCacheApiTx() throws Exception {
         startGridsMultiThreaded(4);
 
         client = true;
@@ -305,7 +305,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentOperations() throws Exception {
+    public void _testConcurrentOperations() throws Exception {
         final int SRVS = 4;
         final int CLIENTS = 4;
         final int NODES = SRVS + CLIENTS;

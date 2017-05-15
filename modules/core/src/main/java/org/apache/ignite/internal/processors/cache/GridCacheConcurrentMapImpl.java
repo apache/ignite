@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -28,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
@@ -37,18 +37,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
  * Implementation of concurrent cache map.
  */
 public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
-    /** Default load factor. */
-    private static final float DFLT_LOAD_FACTOR = 0.75f;
-
-    /** Default concurrency level. */
-    private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
-
-    /** */
-    private final CacheGroupInfrastructure grp;
-
-    /** Internal map. */
-    private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map;
-
     /** Map entry factory. */
     private final GridCacheMapEntryFactory factory;
 
@@ -57,49 +45,19 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * capacity.
      *
      * @param factory Entry factory.
-     * @param initCap the initial capacity. The implementation
-     *      performs internal sizing to accommodate this many elements.
 
      * @throws IllegalArgumentException if the initial capacity is
      *      negative.
      */
-    public GridCacheConcurrentMapImpl(CacheGroupInfrastructure grp, GridCacheMapEntryFactory factory, int initCap) {
-        this(grp, factory, initCap, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
-    }
-
-    /**
-     * Creates a new, empty map with the specified initial
-     * capacity, load factor and concurrency level.
-     *
-     * @param factory Entry factory.
-     * @param initCap the initial capacity. The implementation
-     *      performs internal sizing to accommodate this many elements.
-     * @param loadFactor  the load factor threshold, used to control resizing.
-     *      Resizing may be performed when the average number of elements per
-     *      bin exceeds this threshold.
-     * @param concurrencyLevel the estimated number of concurrently
-     *      updating threads. The implementation performs internal sizing
-     *      to try to accommodate this many threads.
-     * @throws IllegalArgumentException if the initial capacity is
-     *      negative or the load factor or concurrencyLevel are
-     *      non-positive.
-     */
-    private GridCacheConcurrentMapImpl(
-        CacheGroupInfrastructure grp,
-        GridCacheMapEntryFactory factory,
-        int initCap,
-        float loadFactor,
-        int concurrencyLevel
-    ) {
-        this.grp = grp;
+    public GridCacheConcurrentMapImpl(GridCacheMapEntryFactory factory) {
         this.factory = factory;
-
-        map = new ConcurrentHashMap8<>(initCap, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
-        return map.get(key);
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
+
+        return map != null ? map.get(key) : null;
     }
 
     /** {@inheritDoc} */
@@ -109,6 +67,11 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         KeyCacheObject key,
         final boolean create,
         final boolean touch) {
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), create);
+
+        if (map == null)
+            return null;
+
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;
@@ -242,6 +205,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         }
     }
 
+    protected abstract ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(int cacheId, boolean create);
+
     /**
      *
      */
@@ -269,11 +234,13 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
+        GridCacheContext ctx = entry.context();
+
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
+
         boolean rmv = map.remove(entry.key(), entry);
 
         if (rmv) {
-            GridCacheContext ctx = entry.context();
-
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED)) {
                 // Event notification.
                 ctx.events().addEvent(entry.partition(),
@@ -302,12 +269,12 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Override public int internalSize() {
-        return map.size();
-    }
+    @Override public Collection<GridCacheMapEntry> entries(int cacheId, final CacheEntryPredicate... filter) {
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(cacheId, false);
 
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
+        if (map == null)
+            return Collections.emptyList();
+
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
             @Override public boolean apply(GridCacheMapEntry entry) {
                 return entry.visitable(filter);
@@ -318,18 +285,12 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
-        final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
-            @Override public boolean apply(GridCacheMapEntry entry) {
-                return F.isAll(entry, filter);
-            }
-        };
+    @Override public Set<GridCacheMapEntry> entrySet(int cacheId, final CacheEntryPredicate... filter) {
+        final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(cacheId, false);
 
-        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), p);
-    }
+        if (map == null)
+            return Collections.emptySet();
 
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
             @Override public boolean apply(GridCacheMapEntry entry) {
                 return entry.visitable(filter);

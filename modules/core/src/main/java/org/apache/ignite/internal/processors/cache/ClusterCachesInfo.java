@@ -392,7 +392,7 @@ class ClusterCachesInfo {
                     grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
 
                     if (!grpDesc.hasCaches()) {
-                        registeredCacheGrps.remove(grpDesc.groupId());
+                        registeredCacheGrps.remove(grpDesc.groupName());
 
                         exchangeActions.addCacheGroupToStop(grpDesc);
                     }

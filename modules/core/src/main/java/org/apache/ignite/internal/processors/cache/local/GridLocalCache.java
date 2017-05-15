@@ -74,7 +74,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (map == null)
-            map = new GridCacheLocalConcurrentMap(ctx.group(), entryFactory(), DFLT_START_CACHE_SIZE);
+            map = new GridCacheLocalConcurrentMap(ctx.cacheId(), entryFactory(), DFLT_START_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * GridCacheConcurrentMap implementation for local and near caches.
@@ -27,29 +29,54 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     /** */
     private final AtomicInteger pubSize = new AtomicInteger();
 
+    /** */
+    private final int cacheId;
+
+    /** */
+    private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entryMap;
+
     /**
-     * @param grp Cache group.
+     * @param cacheId Cache ID.
      * @param factory Entry factory.
      * @param initCap Initial capacity.
      */
-    public GridCacheLocalConcurrentMap(CacheGroupInfrastructure grp,
-        GridCacheMapEntryFactory factory,
-        int initCap) {
-        super(grp, factory, initCap);
+    public GridCacheLocalConcurrentMap(int cacheId, GridCacheMapEntryFactory factory, int initCap) {
+        super(factory);
+
+        this.cacheId = cacheId;
+        this.entryMap = new ConcurrentHashMap8<>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2);
     }
 
     /** {@inheritDoc} */
-    @Override public int publicSize() {
+    @Override public int internalSize() {
+        return entryMap.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(int cacheId, boolean create) {
+        assert this.cacheId == cacheId;
+
+        return entryMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int publicSize(int cacheId) {
+        assert this.cacheId == cacheId;
+
         return pubSize.get();
     }
 
     /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
+        assert cacheId == e.context().cacheId();
+
         pubSize.incrementAndGet();
     }
 
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
+        assert cacheId == e.context().cacheId();
+
         pubSize.decrementAndGet();
     }
 }

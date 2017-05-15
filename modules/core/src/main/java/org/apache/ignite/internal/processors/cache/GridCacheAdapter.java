@@ -971,7 +971,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Set of internal cached entry representations.
      */
     public final Iterable<? extends GridCacheEntryEx> allEntries() {
-        return map.entries();
+        return map.entries(ctx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -981,7 +981,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public final Set<K> keySet() {
-        return new KeySet(map.entrySet());
+        return new KeySet(map.entrySet(ctx.cacheId()));
     }
 
     /**
@@ -3755,12 +3755,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return map.publicSize();
+        return map.publicSize(ctx.cacheId());
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong() {
-        return map.publicSize();
+        return map.publicSize(ctx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -3770,12 +3770,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        return map.publicSize();
+        return map.publicSize(ctx.cacheId());
     }
 
     /** {@inheritDoc} */
     @Override public long primarySizeLong() {
-        return map.publicSize();
+        return map.publicSize(ctx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -4417,7 +4417,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public Set<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
         boolean keepBinary = ctx.keepBinary();
 
-        return new EntrySet(map.entrySet(filter), keepBinary);
+        return new EntrySet(map.entrySet(ctx.cacheId(), filter), keepBinary);
     }
 
     /**

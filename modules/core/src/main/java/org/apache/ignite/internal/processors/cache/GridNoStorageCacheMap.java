@@ -55,7 +55,7 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public int publicSize() {
+    @Override public int publicSize(int cacheId) {
         return 0;
     }
 
@@ -70,17 +70,12 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
+    @Override public Iterable<GridCacheMapEntry> entries(int cacheId, CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
-        return Collections.emptySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
+    @Override public Set<GridCacheMapEntry> entrySet(int cacheId, CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 }

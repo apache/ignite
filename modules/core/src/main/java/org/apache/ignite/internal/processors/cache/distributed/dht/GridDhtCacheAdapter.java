@@ -1047,7 +1047,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             false);
 
         if (part != null)
-            part.onDeferredDelete(entry.key(), ver);
+            part.onDeferredDelete(entry.context().cacheId(), entry.key(), ver);
     }
 
     /**
@@ -1098,7 +1098,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Specified affinity topology version.
      * @return Local entries iterator.
      */
-    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+    private Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
         final boolean backup,
         final boolean keepBinary,
         final AffinityTopologyVersion topVer) {
@@ -1112,7 +1112,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param topVer Specified affinity topology version.
      * @return Local entries iterator.
      */
-    public Iterator<? extends GridCacheEntryEx> localEntriesIteratorEx(final boolean primary,
+    private Iterator<? extends GridCacheEntryEx> localEntriesIteratorEx(final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer) {
         assert primary || backup;
@@ -1159,7 +1159,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 GridDhtLocalPartition part = partIt.next();
 
                                 if (primary == part.primary(topVer)) {
-                                    curIt = part.entries().iterator();
+                                    curIt = part.entries(ctx.cacheId()).iterator();
 
                                     break;
                                 }

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -57,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
+import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -119,6 +124,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
 
+    /** */
+    private final ConcurrentMap<Integer, ConcurrentMap<KeyCacheObject, GridCacheMapEntry>> cachesEntryMaps;
+
+    /** */
+    private final ConcurrentMap<Integer, AtomicInteger> cacheSizes;
+
+    /** */
+    private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> singleCacheEntryMap;
+
     /** Remove queue. */
     private final ConcurrentLinkedDeque8<RemovedEntryHolder> rmvQueue = new ConcurrentLinkedDeque8<>();
 
@@ -140,6 +154,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * @param ctx Context.
+     * @param grp Cache group.
      * @param id Partition ID.
      * @param entryFactory Entry factory.
      */
@@ -148,13 +163,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         CacheGroupInfrastructure grp,
         int id,
         GridCacheMapEntryFactory entryFactory) {
-        super(grp, entryFactory, Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()));
+        super(entryFactory);
 
         this.id = id;
         this.ctx = ctx;
         this.grp = grp;
 
         log = U.logger(ctx.kernalContext(), logRef, this);
+
+        if (grp.sharedGroup()) {
+            singleCacheEntryMap = null;
+            cachesEntryMaps = new ConcurrentHashMap<>();
+            cacheSizes = new ConcurrentHashMap<>();
+        }
+        else {
+            singleCacheEntryMap = createEntriesMap();
+            cachesEntryMaps = null;
+            cacheSizes = null;
+        }
 
         rent = new GridFutureAdapter<Object>() {
             @Override public String toString() {
@@ -176,6 +202,72 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // TODO ignite-db
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @return Entries map.
+     */
+    private ConcurrentMap<KeyCacheObject, GridCacheMapEntry> createEntriesMap() {
+        return new ConcurrentHashMap8<>(Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()),
+            0.75f,
+            Runtime.getRuntime().availableProcessors() * 2);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Size counter.
+     */
+    private AtomicInteger cacheSizeCounter(int cacheId) {
+        assert grp.sharedGroup();
+
+        AtomicInteger cntr = cacheSizes.get(cacheId);
+
+        if (cntr != null)
+            return cntr;
+
+        AtomicInteger old = cacheSizes.putIfAbsent(cacheId, cntr = new AtomicInteger());
+
+        if (old != null)
+            cntr = old;
+
+        return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int internalSize() {
+        if (grp.sharedGroup()) {
+            int size = 0;
+
+            for (ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map : cachesEntryMaps.values())
+                size += map.size();
+
+            return size;
+        }
+
+        return singleCacheEntryMap.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(int cacheId, boolean create) {
+        if (grp.sharedGroup()) {
+            ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = cachesEntryMaps.get(cacheId);
+
+            if (map != null)
+                return map;
+
+            if (!create)
+                return null;
+
+            ConcurrentMap<KeyCacheObject, GridCacheMapEntry> old =
+                cachesEntryMaps.putIfAbsent(cacheId, map = createEntriesMap());
+
+            if (old != null)
+                map = old;
+
+            return map;
+        }
+
+        return singleCacheEntryMap;
     }
 
     /**
@@ -317,11 +409,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param key Key.
      * @param ver Version.
      */
-    private void removeVersionedEntry(KeyCacheObject key, GridCacheVersion ver) {
-        GridCacheMapEntry entry = getEntry(null, key);
+    private void removeVersionedEntry(int cacheId, KeyCacheObject key, GridCacheVersion ver) {
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(cacheId, false);
+
+        GridCacheMapEntry entry = map != null ? map.get(key) : null;
 
         if (entry != null && entry.markObsoleteVersion(ver))
             removeEntry(entry);
@@ -335,7 +430,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
             if (item != null)
-                removeVersionedEntry(item.key(), item.version());
+                removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
         if (!grp.isDrEnabled()) {
@@ -347,7 +442,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (item == null)
                     break;
 
-                removeVersionedEntry(item.key(), item.version());
+                removeVersionedEntry(item.cacheId(), item.key(), item.version());
 
                 item = rmvQueue.peekFirst();
             }
@@ -355,13 +450,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @param cacheId cacheId Cache ID.
      * @param key Removed key.
      * @param ver Removed version.
      */
-    public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) {
+    public void onDeferredDelete(int cacheId, KeyCacheObject key, GridCacheVersion ver) {
         cleanupRemoveQueue();
 
-        rmvQueue.add(new RemovedEntryHolder(key, ver, rmvdEntryTtl));
+        rmvQueue.add(new RemovedEntryHolder(cacheId, key, ver, rmvdEntryTtl));
     }
 
     /**
@@ -460,6 +556,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** {@inheritDoc} */
     @Override protected void release(int sizeChange, GridCacheEntryEx e) {
+        if (sizeChange != 0)
+            cacheSizeCounter(e.context().cacheId()).addAndGet(sizeChange);
+
         release0(sizeChange);
     }
 
@@ -855,24 +954,28 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         // TODO IGNITE-5075.
         boolean rec = grp.shared().gridEvents().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridCacheMapEntry> it = allEntries().iterator();
+        Collection<ConcurrentMap<KeyCacheObject, GridCacheMapEntry>> maps =
+            grp.sharedGroup() ? cachesEntryMaps.values() : Collections.singleton(singleCacheEntryMap);
 
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
 
-        while (it.hasNext()) {
-            GridCacheMapEntry cached = null;
+        for (ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map : maps) {
+            Iterator<GridCacheMapEntry> it = map.values().iterator();
 
-            ctx.database().checkpointReadLock();
+            while (it.hasNext()) {
+                GridCacheMapEntry cached = null;
 
-            try {
-                cached = it.next();
+                ctx.database().checkpointReadLock();
 
-                if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                    removeEntry(cached);
+                try {
+                    cached = it.next();
 
-                    if (!cached.isInternal()) {
-                        if (rec) {
-                            // TODO IGNITE-5075.
+                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                        removeEntry(cached);
+
+                        if (!cached.isInternal()) {
+                            if (rec) {
+                                // TODO IGNITE-5075.
 //                            cctx.events().addEvent(cached.partition(),
 //                                cached.key(),
 //                                ctx.localNodeId(),
@@ -887,28 +990,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 //                                null,
 //                                null,
 //                                false);
+                            }
                         }
                     }
                 }
-            }
-            catch (GridDhtInvalidPartitionException e) {
-                assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
+                catch (GridDhtInvalidPartitionException e) {
+                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                break; // Partition is already concurrently cleared and evicted.
-            }
-            catch (NodeStoppingException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
+                    break; // Partition is already concurrently cleared and evicted.
+                }
+                catch (NodeStoppingException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
 
-                rent.onDone(e);
+                    rent.onDone(e);
 
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
+                    throw e;
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
             }
         }
 
@@ -925,7 +1029,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         CacheDataRow row = it0.next();
 
                         if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != row.cacheId()))
-                            cctx = ctx.cacheContext(row.cacheId());GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
+                            cctx = ctx.cacheContext(row.cacheId());
+
+                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
                             grp.affinity().lastVersion(),
                             row.key(),  true, false);
 
@@ -977,7 +1083,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private void clearDeferredDeletes() {
         for (RemovedEntryHolder e : rmvQueue)
-            removeVersionedEntry(e.key(), e.version());
+            removeVersionedEntry(e.cacheId(), e.key(), e.version());
     }
 
     /** {@inheritDoc} */
@@ -1009,12 +1115,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override public int publicSize() {
+    @Override public int publicSize(int cacheId) {
+        if (grp.sharedGroup())
+            return cacheSizeCounter(cacheId).get();
+
         return getSize(state.get());
     }
 
     /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
+        if (grp.sharedGroup())
+            cacheSizeCounter(e.context().cacheId()).incrementAndGet();
+
         while (true) {
             long state = this.state.get();
 
@@ -1025,6 +1137,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
+        if (grp.sharedGroup())
+            cacheSizeCounter(e.context().cacheId()).decrementAndGet();
+
         while (true) {
             long state = this.state.get();
 
@@ -1090,6 +1205,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Removed entry holder.
      */
     private static class RemovedEntryHolder {
+        /** */
+        private final int cacheId;
+
         /** Cache key */
         private final KeyCacheObject key;
 
@@ -1100,15 +1218,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         private final long expireTime;
 
         /**
+         * @param cacheId Cache ID.
          * @param key Key.
          * @param ver Entry version.
          * @param ttl TTL.
          */
-        private RemovedEntryHolder(KeyCacheObject key, GridCacheVersion ver, long ttl) {
+        private RemovedEntryHolder(int cacheId, KeyCacheObject key, GridCacheVersion ver, long ttl) {
+            this.cacheId = cacheId;
             this.key = key;
             this.ver = ver;
 
             expireTime = U.currentTimeMillis() + ttl;
+        }
+
+        /**
+         * @return Cache ID.
+         */
+        int cacheId() {
+            return cacheId;
         }
 
         /**

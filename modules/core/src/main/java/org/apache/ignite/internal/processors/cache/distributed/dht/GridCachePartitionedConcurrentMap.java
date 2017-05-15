@@ -49,6 +49,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param topVer Topology version.
      * @param create Create flag.
@@ -109,11 +110,11 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public int publicSize() {
+    @Override public int publicSize(int cacheId) {
         int size = 0;
 
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-            size += part.publicSize();
+            size += part.publicSize(cacheId);
 
         return size;
     }
@@ -139,12 +140,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
+    @Override public Iterable<GridCacheMapEntry> entries(final int cacheId, final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
                 return new PartitionedIterator<GridCacheMapEntry>() {
                     @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
-                        return part.entries(filter).iterator();
+                        return part.entries(cacheId, filter).iterator();
                     }
                 };
             }
@@ -152,23 +153,10 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
-        return new Iterable<GridCacheMapEntry>() {
-            @Override public Iterator<GridCacheMapEntry> iterator() {
-                return new PartitionedIterator<GridCacheMapEntry>() {
-                    @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
-                        return part.allEntries(filter).iterator();
-                    }
-                };
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
+    @Override public Set<GridCacheMapEntry> entrySet(final int cacheId, final CacheEntryPredicate... filter) {
         return new PartitionedSet<GridCacheMapEntry>() {
             @Override protected Set<GridCacheMapEntry> set(GridDhtLocalPartition part) {
-                return part.entrySet(filter);
+                return part.entrySet(cacheId, filter);
             }
         };
     }
