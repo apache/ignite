@@ -99,6 +99,9 @@ public class GridH2Table extends TableBase {
     private final boolean snapshotEnabled;
 
     /** */
+    private final boolean hasHashIndex;
+
+    /** */
     private final H2RowFactory rowFactory;
 
     /** */
@@ -162,8 +165,10 @@ public class GridH2Table extends TableBase {
         }
         idxs.addAll(clones);
 
+        hasHashIndex = idxs.size() >= 2 && index(0).getIndexType().isHash();
+
         // Add scan index at 0 which is required by H2.
-        if (idxs.size() >= 2 && index(0).getIndexType().isHash())
+        if (hasHashIndex)
             idxs.add(0, new GridH2PrimaryScanIndex(this, index(1), index(0)));
         else
             idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
@@ -172,7 +177,7 @@ public class GridH2Table extends TableBase {
 
         final int segments = desc != null ? desc.configuration().getQueryParallelism() :
             // Get index segments count from PK index. Null desc can be passed from tests.
-            index(1).getIndexType().isHash() ? index(2).segmentsCount() : index(1).segmentsCount();
+            hasHashIndex ? index(2).segmentsCount() : index(1).segmentsCount();
 
         actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
 
@@ -384,12 +389,16 @@ public class GridH2Table extends TableBase {
     private Object[] doSnapshotIndexes(Object[] segmentSnapshot, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
+        //TODO: make HashIndex snapshotable or remove it at all?
+        // Scan index + hash index if exists
+        final int skipFirstIndices = hasHashIndex ? 2 : 1;
+
         if (segmentSnapshot == null) // Nothing to reuse, create new snapshots.
-            segmentSnapshot = new Object[idxs.size() - 2];
+            segmentSnapshot = new Object[idxs.size() - skipFirstIndices];
 
         // Take snapshots on all except first which is scan.
-        for (int i = 2, len = idxs.size(); i < len; i++) {
-            Object s = segmentSnapshot[i - 2];
+        for (int i = skipFirstIndices, len = idxs.size(); i < len; i++) {
+            Object s = segmentSnapshot[i - skipFirstIndices];
 
             boolean reuseExisting = s != null;
 
@@ -403,7 +412,7 @@ public class GridH2Table extends TableBase {
                 if (qctx != null)
                     qctx.clearSnapshots();
 
-                for (int j = 2; j < i; j++)
+                for (int j = skipFirstIndices; j < i; j++)
                     if ((idxs.get(j) instanceof GridH2IndexBase))
                         index(j).releaseSnapshot();
 
@@ -413,7 +422,7 @@ public class GridH2Table extends TableBase {
                 return null;
             }
 
-            segmentSnapshot[i - 2] = s;
+            segmentSnapshot[i - skipFirstIndices] = s;
         }
 
         return segmentSnapshot;
@@ -589,7 +598,7 @@ public class GridH2Table extends TableBase {
 
                 int len = idxs.size();
 
-                int i = 2;
+                int i = hasHashIndex ? 2 : 1;
 
                 // Put row if absent to all indexes sequentially.
                 // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
@@ -611,7 +620,7 @@ public class GridH2Table extends TableBase {
                 if (old != null) {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
-                    for (int i = 3, len = idxs.size(); i < len; i++) {
+                    for (int i = hasHashIndex ? 3 : 2, len = idxs.size(); i < len; i++) {
                         if (!(idxs.get(i) instanceof GridH2IndexBase))
                             continue;
                         Row res = index(i).remove(old);
@@ -687,9 +696,10 @@ public class GridH2Table extends TableBase {
     ArrayList<GridH2IndexBase> indexes() {
         ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
 
-        for (int i = 2, len = idxs.size(); i < len; i++)
+        for (int i = hasHashIndex ? 2 : 1, len = idxs.size(); i < len; i++) {
             if (idxs.get(i) instanceof GridH2IndexBase)
                 res.add(index(i));
+        }
 
         return res;
     }
@@ -698,6 +708,8 @@ public class GridH2Table extends TableBase {
      *
      */
     public void markRebuildFromHashInProgress(boolean value) {
+        assert !value || hasHashIndex;
+
         rebuildFromHashInProgress = value;
     }
 
