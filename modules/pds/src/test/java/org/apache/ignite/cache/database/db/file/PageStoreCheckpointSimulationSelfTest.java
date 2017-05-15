@@ -567,7 +567,7 @@ public class PageStoreCheckpointSimulationSelfTest extends GridCommonAbstractTes
                 long page = mem.acquirePage(fullId.cacheId(), fullId.pageId());
 
                 try {
-                    assertFalse(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
+                    assertTrue(mem.isDirty(fullId.cacheId(), fullId.pageId(), page));
 
                     long pageAddr = mem.writeLock(fullId.cacheId(), fullId.pageId(), page);
 
