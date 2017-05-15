@@ -20,21 +20,22 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
+import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.index.SpatialIndex;
@@ -45,6 +46,7 @@ import org.h2.mvstore.rtree.MVRTreeMap;
 import org.h2.mvstore.rtree.SpatialKey;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -128,6 +130,18 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             segments[i] = store.openMap("spatialIndex-" + i, new MVRTreeMap.Builder<Long>());
 
         ctx = tbl.rowDescriptor().context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
+        if (getTable().isPartitioned()) {
+            assert filter > 0; // Lookup batch will not be created for the first table filter.
+
+            throw DbException.throwInternalError(
+                "Table with a spatial index must be the first in the query: " + getTable());
+        }
+
+        return null; // Support must be explicitly added.
     }
 
     /**
@@ -260,7 +274,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, HashSet<Column> cols) {
         return SpatialTreeIndex.getCostRangeIndex(masks,
             table.getRowCountApproximation(), columns) / 10;
     }
@@ -370,7 +385,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor findByGeometry(TableFilter filter, SearchRow intersection) {
+    @Override public Cursor findByGeometry(TableFilter filter, SearchRow first, SearchRow last,
+        SearchRow intersection) {
         Lock l = lock.readLock();
 
         l.lock();

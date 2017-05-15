@@ -122,7 +122,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      */
     private IgniteConfiguration dataNode(TcpDiscoveryIpFinder ipFinder, String igniteInstanceName)
         throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);

@@ -52,7 +52,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
@@ -101,7 +101,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String val = "val";
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            ignite.cache(DEFAULT_CACHE_NAME).put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -125,7 +125,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String val = "val";
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            ignite.cache(DEFAULT_CACHE_NAME).put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -149,7 +149,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String val = "val";
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            ignite.cache(DEFAULT_CACHE_NAME).put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -173,7 +173,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String val = "val";
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            ignite.cache(DEFAULT_CACHE_NAME).put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -197,7 +197,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String val = "val";
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            ignite.cache(DEFAULT_CACHE_NAME).put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -221,11 +221,11 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         final String val = "val";
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            ignite.cache(DEFAULT_CACHE_NAME).put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }
@@ -246,7 +246,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         final String key = "key";
 
-        Lock lock = ignite.cache(null).lock(key);
+        Lock lock = ignite.cache(DEFAULT_CACHE_NAME).lock(key);
 
         lock.lock();
 

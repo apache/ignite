@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -39,18 +38,19 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
+import org.h2.index.SpatialIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
-import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -72,7 +72,10 @@ public class GridH2Table extends TableBase {
     private final GridH2RowDescriptor desc;
 
     /** */
-    private final ArrayList<Index> idxs;
+    private volatile ArrayList<Index> idxs;
+
+    /** */
+    private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
     private final ReadWriteLock lock;
@@ -81,7 +84,7 @@ public class GridH2Table extends TableBase {
     private boolean destroyed;
 
     /** */
-    private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session,Boolean>());
+    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
 
     /** */
     private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
@@ -106,11 +109,12 @@ public class GridH2Table extends TableBase {
      *
      * @param createTblData Table description.
      * @param desc Row descriptor.
+     * @param rowFactory Row factory.
      * @param idxsFactory Indexes factory.
      * @param spaceName Space name.
      */
-    public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, IndexesFactory idxsFactory,
-        @Nullable String spaceName) {
+    public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, H2RowFactory rowFactory,
+        GridH2SystemIndexFactory idxsFactory, @Nullable String spaceName) {
         super(createTblData);
 
         assert idxsFactory != null;
@@ -143,18 +147,26 @@ public class GridH2Table extends TableBase {
             }
         }
 
+        this.rowFactory = rowFactory;
+
         // Indexes must be created in the end when everything is ready.
-        rowFactory = idxsFactory.createRowFactory(this);
-        idxs = idxsFactory.createIndexes(this);
+        idxs = idxsFactory.createSystemIndexes(this);
 
         assert idxs != null;
 
+        List<Index> clones = new ArrayList<>(idxs.size());
+        for (Index index: idxs) {
+            Index clone = createDuplicateIndexIfNeeded(index);
+            if (clone != null)
+               clones.add(clone);
+        }
+        idxs.addAll(clones);
+
         // Add scan index at 0 which is required by H2.
-        if (idxs.size() >= 2
-                && index(0).getIndexType().isHash())
-            idxs.add(0, new ScanIndex(index(1), index(0)));
+        if (idxs.size() >= 2 && index(0).getIndexType().isHash())
+            idxs.add(0, new GridH2PrimaryScanIndex(this, index(1), index(0)));
         else
-            idxs.add(0, new ScanIndex(index(0), null));
+            idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
@@ -188,77 +200,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Should be called when entry is swapped.
-     *
-     * @param key Entry key.
-     * @return {@code true} If row was found.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
-        return onSwapUnswap(key, partId, null);
-    }
-
-    /**
-     * Should be called when entry is unswapped.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @return {@code true} If row was found.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
-        assert val != null : "Key=" + key;
-
-        return onSwapUnswap(key, partId, val);
-    }
-
-    /**
-     * Swaps or unswaps row.
-     *
-     * @param key Key.
-     * @param val Value for promote or {@code null} if we have to swap.
-     * @return {@code true} if row was found and swapped/unswapped.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(KeyCacheObject key, int partId, @Nullable CacheObject val) throws IgniteCheckedException {
-        assert key != null;
-
-        GridH2IndexBase pk = pk();
-
-        assert desc != null;
-
-        GridH2Row searchRow = desc.createRow(key, partId, null, null, 0);
-
-        GridUnsafeMemory mem = desc.memory();
-
-        lock(false);
-
-        if (mem != null)
-            desc.guard().begin();
-
-        try {
-            GridH2AbstractKeyValueRow row = (GridH2AbstractKeyValueRow)pk.findOne(searchRow);
-
-            if (row == null)
-                return false;
-
-            if (val == null)
-                row.onSwap();
-            else
-                row.onUnswap(val, false);
-
-            return true;
-        }
-        finally {
-            unlock(false);
-
-            if (mem != null)
-                desc.guard().end();
-        }
-    }
-
-    /**
      * @return Space name.
      */
     @Nullable public String spaceName() {
@@ -266,13 +207,21 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
-    @Override public boolean lock(@Nullable final Session ses, boolean exclusive, boolean force) {
-        if (ses != null) {
-            if (!sessions.add(ses))
-                return false;
+    @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
+        Boolean putRes = sessions.putIfAbsent(ses, exclusive);
 
-            ses.addLock(this);
+        // In accordance with base method semantics, we'll return true if we were already exclusively locked
+        if (putRes != null)
+            return putRes;
+
+        ses.addLock(this);
+
+        lock(exclusive);
+
+        if (destroyed) {
+            unlock(exclusive);
+
+            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
         }
 
         if (snapshotInLock())
@@ -320,6 +269,8 @@ public class GridH2Table extends TableBase {
         }
 
         try {
+            ensureNotDestroyed();
+
             // Try again inside of the lock.
             snapshots = actualSnapshot.get();
 
@@ -362,12 +313,6 @@ public class GridH2Table extends TableBase {
 
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
-
-        if (destroyed) {
-            unlock(exclusive);
-
-            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
-        }
     }
 
     /**
@@ -388,12 +333,6 @@ public class GridH2Table extends TableBase {
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
 
-        if (destroyed) {
-            unlock(exclusive);
-
-            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
-        }
-
         return true;
     }
 
@@ -406,6 +345,14 @@ public class GridH2Table extends TableBase {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         l.unlock();
+    }
+
+    /**
+     * Check if table is not destroyed.
+     */
+    private void ensureNotDestroyed() {
+        if (destroyed)
+            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
     }
 
     /**
@@ -428,6 +375,9 @@ public class GridH2Table extends TableBase {
 
             boolean reuseExisting = s != null;
 
+            if (!(idxs.get(i) instanceof GridH2IndexBase))
+                continue;
+
             s = index(i).takeSnapshot(s, qctx);
 
             if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
@@ -436,7 +386,8 @@ public class GridH2Table extends TableBase {
                     qctx.clearSnapshots();
 
                 for (int j = 2; j < i; j++)
-                    index(j).releaseSnapshot();
+                    if ((idxs.get(j) instanceof GridH2IndexBase))
+                        index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
                 actualSnapshot.compareAndSet(snapshots, null);
@@ -462,12 +413,15 @@ public class GridH2Table extends TableBase {
         lock(true);
 
         try {
+            ensureNotDestroyed();
+
             assert sessions.isEmpty() : sessions;
 
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
-                index(i).destroy();
+                if (idxs.get(i) instanceof GridH2IndexBase)
+                    index(i).destroy();
         }
         finally {
             unlock(true);
@@ -475,12 +429,16 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(@Nullable Session ses) {
-        if (ses != null && !sessions.remove(ses))
+    @Override public void unlock(Session ses) {
+        Boolean exclusive = sessions.remove(ses);
+
+        if (exclusive == null)
             return;
 
         if (snapshotInLock())
             releaseSnapshots();
+
+        unlock(exclusive);
     }
 
     /**
@@ -599,6 +557,8 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
+            ensureNotDestroyed();
+
             GridH2IndexBase pk = pk();
 
             if (!del) {
@@ -606,12 +566,7 @@ public class GridH2Table extends TableBase {
 
                 GridH2Row old = pk.put(row); // Put to PK.
 
-                if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value on replace.
-                    GridH2AbstractKeyValueRow kvOld = (GridH2AbstractKeyValueRow)old;
-
-                    kvOld.onUnswap(kvOld.getValue(VAL_COL), true);
-                }
-                else if (old == null)
+                if (old == null)
                     size.increment();
 
                 int len = idxs.size();
@@ -621,40 +576,33 @@ public class GridH2Table extends TableBase {
                 // Put row if absent to all indexes sequentially.
                 // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                 while (++i < len) {
+                    if (!(idxs.get(i) instanceof GridH2IndexBase))
+                        continue;
                     GridH2IndexBase idx = index(i);
 
-                    assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
-
-                    GridH2Row old2 = idx.put(row);
-
-                    if (old2 != null) { // Row was replaced in index.
-                        if (!eq(pk, old2, old))
-                            throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                                "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
-                    }
-                    else if (old != null) // Row was not replaced, need to remove manually.
-                        idx.removex(old);
+                    addToIndex(idx, pk, row, old, false);
                 }
+
+                for (GridH2IndexBase idx : tmpIdxs.values())
+                    addToIndex(idx, pk, row, old, true);
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
                 GridH2Row old = pk.remove(row);
 
-                if (row.getColumnCount() != 1 && old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
-                    Value v = row.getValue(VAL_COL);
-
-                    if (v != null)
-                        ((GridH2AbstractKeyValueRow)old).onUnswap(v.getObject(), true);
-                }
-
                 if (old != null) {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                     for (int i = 3, len = idxs.size(); i < len; i++) {
+                        if (!(idxs.get(i) instanceof GridH2IndexBase))
+                            continue;
                         Row res = index(i).remove(old);
 
                         assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
+
+                    for (GridH2IndexBase idx : tmpIdxs.values())
+                        idx.remove(old);
 
                     size.decrement();
                 }
@@ -673,6 +621,31 @@ public class GridH2Table extends TableBase {
             if (mem != null)
                 desc.guard().end();
         }
+    }
+
+    /**
+     * Add row to index.
+     *
+     * @param idx Index to add row to.
+     * @param pk Primary key index.
+     * @param row Row to add to index.
+     * @param old Previous row state, if any.
+     * @param tmp {@code True} if this is proposed index which may be not consistent yet.
+     */
+    private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old, boolean tmp) {
+        assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
+
+        GridH2Row old2 = idx.put(row);
+
+        if (old2 != null) { // Row was replaced in index.
+            if (!tmp) {
+                if (!eq(pk, old2, old))
+                    throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                        "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
+            }
+        }
+        else if (old != null) // Row was not replaced, need to remove manually.
+            idx.removex(old);
     }
 
     /**
@@ -696,7 +669,8 @@ public class GridH2Table extends TableBase {
         ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
 
         for (int i = 2, len = idxs.size(); i < len; i++)
-            res.add(index(i));
+            if (idxs.get(i) instanceof GridH2IndexBase)
+                res.add(index(i));
 
         return res;
     }
@@ -716,9 +690,146 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Index addIndex(Session ses, String s, int i, IndexColumn[] idxCols, IndexType idxType,
-        boolean b, String s1) {
-        throw DbException.getUnsupportedException("addIndex");
+    @Override public Index addIndex(Session ses, String idxName, int idxId, IndexColumn[] cols, IndexType idxType,
+        boolean create, String idxComment) {
+        return commitUserIndex(ses, idxName);
+    }
+
+    /**
+     * Add index that is in an intermediate state and is still being built, thus is not used in queries until it is
+     * promoted.
+     *
+     * @param idx Index to add.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void proposeUserIndex(Index idx) throws IgniteCheckedException {
+        assert idx instanceof GridH2IndexBase;
+
+        lock(true);
+
+        try {
+            ensureNotDestroyed();
+
+            for (Index oldIdx : idxs) {
+                if (F.eq(oldIdx.getName(), idx.getName()))
+                    throw new IgniteCheckedException("Index already exists: " + idx.getName());
+            }
+
+            Index oldTmpIdx = tmpIdxs.put(idx.getName(), (GridH2IndexBase)idx);
+
+            assert oldTmpIdx == null;
+        }
+        finally {
+            unlock(true);
+        }
+    }
+
+    /**
+     * Promote temporary index to make it usable in queries.
+     *
+     * @param ses H2 session.
+     * @param idxName Index name.
+     * @return Temporary index with given name.
+     */
+    private Index commitUserIndex(Session ses, String idxName) {
+        lock(true);
+
+        try {
+            ensureNotDestroyed();
+
+            Index idx = tmpIdxs.remove(idxName);
+
+            assert idx != null;
+
+            Index cloneIdx = createDuplicateIndexIfNeeded(idx);
+
+            ArrayList<Index> newIdxs = new ArrayList<>(
+                    idxs.size() + ((cloneIdx == null) ? 1 : 2));
+
+            newIdxs.addAll(idxs);
+
+            newIdxs.add(idx);
+            if (cloneIdx != null)
+                newIdxs.add(cloneIdx);
+
+            idxs = newIdxs;
+
+            database.addSchemaObject(ses, idx);
+
+            if (cloneIdx != null)
+                database.addSchemaObject(ses, cloneIdx);
+
+            setModified();
+
+            return idx;
+        }
+        finally {
+            unlock(true);
+        }
+    }
+
+    /**
+     * Remove user index without promoting it.
+     *
+     * @param idxName Index name.
+     */
+    public void rollbackUserIndex(String idxName) {
+        lock(true);
+
+        try {
+            ensureNotDestroyed();
+
+            GridH2IndexBase rmvIdx = tmpIdxs.remove(idxName);
+
+            assert rmvIdx != null;
+        }
+        finally {
+            unlock(true);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeIndex(Index h2Idx) {
+        throw DbException.getUnsupportedException("must use removeIndex(session, idx)");
+    }
+
+    /**
+     * Remove the given index from the list.
+     *
+     * @param h2Idx the index to remove
+     */
+    public void removeIndex(Session session, Index h2Idx) {
+        lock(true);
+
+        try {
+            ArrayList<Index> idxs = new ArrayList<>(this.idxs);
+
+            Index targetIdx = (h2Idx instanceof GridH2ProxyIndex)?
+                    ((GridH2ProxyIndex)h2Idx).underlyingIndex(): h2Idx;
+
+            for (int i = 2; i < idxs.size(); ) {
+                Index idx = idxs.get(i);
+
+                if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
+                   ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
+
+                    idxs.remove(i);
+
+                    if (idx instanceof GridH2ProxyIndex &&
+                        idx.getSchema().findIndex(session, idx.getName()) != null)
+                        database.removeSchemaObject(session, idx);
+
+                    continue;
+                }
+
+                i++;
+            }
+
+            this.idxs = idxs;
+        }
+        finally {
+            unlock(true);
+        }
     }
 
     /** {@inheritDoc} */
@@ -742,8 +853,8 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */
@@ -849,135 +960,46 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * H2 Table engine.
+     * Creates proxy index for given target index.
+     * Proxy index refers to alternative key and val columns.
+     *
+     * @param target Index to clone.
+     * @return Proxy index.
      */
-    @SuppressWarnings({"PublicInnerClass", "FieldAccessedSynchronizedAndUnsynchronized"})
-    public static class Engine implements TableEngine {
-        /** */
-        private static GridH2RowDescriptor rowDesc;
+    public Index createDuplicateIndexIfNeeded(Index target) {
+        if (!(target instanceof H2TreeIndex) &&
+            !(target instanceof SpatialIndex))
+            return null;
 
-        /** */
-        private static IndexesFactory idxsFactory;
+        IndexColumn[] cols = target.getIndexColumns();
+        List<IndexColumn> proxyCols = new ArrayList<>(cols.length);
+        boolean modified = false;
+        for (int i = 0; i < cols.length; i++) {
+            IndexColumn col = cols[i];
+            IndexColumn proxyCol = new IndexColumn();
+            proxyCol.columnName = col.columnName;
+            proxyCol.column = col.column;
+            proxyCol.sortType = col.sortType;
 
-        /** */
-        private static GridH2Table resTbl;
-
-        /** */
-        private static String spaceName;
-
-        /** {@inheritDoc} */
-        @Override public TableBase createTable(CreateTableData createTblData) {
-            resTbl = new GridH2Table(createTblData, rowDesc, idxsFactory, spaceName);
-
-            return resTbl;
-        }
-
-        /**
-         * Creates table using given connection, DDL clause for given type descriptor and list of indexes.
-         *
-         * @param conn Connection.
-         * @param sql DDL clause.
-         * @param desc Row descriptor.
-         * @param factory Indexes factory.
-         * @param space Space name.
-         * @throws SQLException If failed.
-         * @return Created table.
-         */
-        public static synchronized GridH2Table createTable(Connection conn, String sql,
-            @Nullable GridH2RowDescriptor desc, IndexesFactory factory, String space)
-            throws SQLException {
-            rowDesc = desc;
-            idxsFactory = factory;
-            spaceName = space;
-
-            try {
-                try (Statement s = conn.createStatement()) {
-                    s.execute(sql + " engine \"" + Engine.class.getName() + "\"");
-                }
-
-                return resTbl;
+            int altColId = desc.getAlternativeColumnId(proxyCol.column.getColumnId());
+            if (altColId != proxyCol.column.getColumnId()) {
+                proxyCol.column = getColumn(altColId);
+                proxyCol.columnName = proxyCol.column.getName();
+                modified = true;
             }
-            finally {
-                resTbl = null;
-                idxsFactory = null;
-                rowDesc = null;
-            }
-        }
-    }
 
-    /**
-     * Type which can create indexes list for given table.
-     */
-    @SuppressWarnings({"PackageVisibleInnerClass", "PublicInnerClass"})
-    public static interface IndexesFactory {
-        /**
-         * Create list of indexes. First must be primary key, after that all unique indexes and
-         * only then non-unique indexes.
-         * All indexes must be subtypes of {@link H2TreeIndex}.
-         *
-         * @param tbl Table to create indexes for.
-         * @return List of indexes.
-         */
-        ArrayList<Index> createIndexes(GridH2Table tbl);
-
-        /**
-         * @param tbl Table.
-         * @return Data store.
-         */
-        H2RowFactory createRowFactory(GridH2Table tbl);
-    }
-
-    /**
-     * Wrapper type for primary key.
-     */
-    @SuppressWarnings("PackageVisibleInnerClass")
-    class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
-        /** */
-        static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
-
-        /** */
-        private final GridH2IndexBase hashIdx;
-
-        /**
-         * Constructor.
-         */
-        private ScanIndex(GridH2IndexBase treeIdx, GridH2IndexBase hashIdx) {
-            super(treeIdx);
-
-            this.hashIdx = hashIdx;
+            proxyCols.add(proxyCol);
         }
 
-        /**
-         *
-         */
-        @Override protected GridH2IndexBase delegate() {
-            if (hashIdx != null)
-                return rebuildFromHashInProgress ? hashIdx : super.delegate();
-            else {
-                assert !rebuildFromHashInProgress;
+        if (modified) {
+            String proxyName = target.getName() + "_proxy";
 
-                return super.delegate();
-            }
+            if (target.getIndexType().isSpatial())
+                return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
+
+            return new GridH2ProxyIndex(this, proxyName, proxyCols, target);
         }
 
-        /** {@inheritDoc} */
-        @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-            SortOrder sortOrder) {
-            long rows = getRowCountApproximation();
-            double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
-            int mul = delegate().getDistributedMultiplier(ses, filters, filter);
-
-            return mul * baseCost;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getPlanSQL() {
-            return delegate().getTable().getSQL() + "." + SCAN_INDEX_NAME_SUFFIX;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getName() {
-            return delegate().getName() + SCAN_INDEX_NAME_SUFFIX;
-        }
+        return null;
     }
 }

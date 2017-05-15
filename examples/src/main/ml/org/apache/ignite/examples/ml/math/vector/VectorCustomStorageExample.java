@@ -18,11 +18,11 @@
 package org.apache.ignite.examples.ml.math.vector;
 
 import java.util.Arrays;
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.VectorStorage;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.math.impls.vector.AbstractVector;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorStorage;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.AbstractVector;
 
 /**
  * This example shows how to use {@link Vector} based on custom {@link VectorStorage}.
@@ -53,8 +53,6 @@ public final class VectorCustomStorageExample {
         System.out.println("\n>>> Dot product of vectors: [" + dotProduct
             + "], it is 0 as expected: [" + dotProductIsAsExp + "].");
 
-        assert dotProductIsAsExp : "Expect dot product of perpendicular vectors to be 0.";
-
         Vector hypotenuse = v1.plus(v2);
 
         System.out.println("\n>>> Hypotenuse (sum of vectors): " + Arrays.toString(hypotenuse.getStorage().data()));
@@ -71,14 +69,12 @@ public final class VectorCustomStorageExample {
             + "], equals sum of squared lengths of two original vectors as expected: ["
             + lenSquaredHypotenuseIsAsExp + "].");
 
-        assert lenSquaredHypotenuseIsAsExp : "Expect squared length of hypotenuse to be as per Pythagorean theorem.";
-
         System.out.println("\n>>> Vector custom storage API usage example completed.");
     }
 
     /**
      * Example of vector with custom storage, modeled after
-     * {@link org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector}.
+     * {@link org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector}.
      */
     static class VectorCustomStorage extends AbstractVector {
         /**
@@ -118,7 +114,7 @@ public final class VectorCustomStorageExample {
 
         /** {@inheritDoc */
         @Override public Vector like(int crd) {
-            return new org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector(crd);
+            return new org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector(crd);
         }
     }
 }

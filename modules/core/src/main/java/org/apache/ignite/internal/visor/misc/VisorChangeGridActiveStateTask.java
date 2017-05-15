@@ -26,19 +26,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task for changing grid active state.
  */
 @GridInternal
-public class VisorChangeGridActiveStateTask extends VisorOneNodeTask<Boolean, Void> {
+public class VisorChangeGridActiveStateTask extends VisorOneNodeTask<VisorChangeGridActiveStateTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorChangeGridActiveStateJob job(Boolean arg) {
+    @Override protected VisorChangeGridActiveStateJob job(VisorChangeGridActiveStateTaskArg arg) {
         return new VisorChangeGridActiveStateJob(arg, debug);
     }
 
     /**
      * Job for changing grid active state.
      */
-    private static class VisorChangeGridActiveStateJob extends VisorJob<Boolean, Void> {
+    private static class VisorChangeGridActiveStateJob extends VisorJob<VisorChangeGridActiveStateTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -46,13 +46,13 @@ public class VisorChangeGridActiveStateTask extends VisorOneNodeTask<Boolean, Vo
          * @param arg New state of grid.
          * @param debug Debug flag.
          */
-        private VisorChangeGridActiveStateJob(Boolean arg, boolean debug) {
+        private VisorChangeGridActiveStateJob(VisorChangeGridActiveStateTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Boolean arg) {
-            ignite.active(arg);
+        @Override protected Void run(VisorChangeGridActiveStateTaskArg arg) {
+            ignite.active(arg.isActive());
 
             return null;
         }

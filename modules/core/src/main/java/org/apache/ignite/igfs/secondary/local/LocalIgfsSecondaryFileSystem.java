@@ -395,7 +395,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
         Path p = fileForPath(path).toPath();
 
         if (!Files.exists(p))

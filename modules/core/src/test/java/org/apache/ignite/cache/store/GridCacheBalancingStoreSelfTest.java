@@ -128,7 +128,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentLoad() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         assertEquals(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, cfg.getStoreConcurrentLoadAllThreshold());
 
@@ -139,7 +139,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentLoadCustomThreshold() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setStoreConcurrentLoadAllThreshold(15);
 
@@ -180,7 +180,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentLoadAll() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         assertEquals(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, cfg.getStoreConcurrentLoadAllThreshold());
 
@@ -191,7 +191,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentLoadAllCustomThreshold() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setStoreConcurrentLoadAllThreshold(15);
 

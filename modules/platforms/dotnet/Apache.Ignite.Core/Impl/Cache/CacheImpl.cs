@@ -58,6 +58,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
 
+        /** Flag: partition recover.*/
+        private readonly bool _flagPartitionRecover;
+
         /** Transaction manager. */
         private readonly CacheTransactionManager _txManager;
 
@@ -70,8 +73,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagSkipStore">Skip store flag.</param>
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
+        /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
         public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
-            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries) : base(target, marsh)
+            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover)
+            : base(target, marsh)
         {
             Debug.Assert(grid != null);
 
@@ -79,6 +84,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
+            _flagPartitionRecover = flagPartitionRecover;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
                 ? new CacheTransactionManager(grid.GetTransactions())
@@ -167,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithSkipStore), Marshaller,
-                true, _flagKeepBinary, true);
+                true, _flagKeepBinary, true, _flagPartitionRecover);
         }
 
         /// <summary>
@@ -191,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int) CacheOp.WithKeepBinary), Marshaller,
-                _flagSkipStore, true, _flagNoRetries);
+                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -201,7 +207,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
-            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, 
+                _flagNoRetries, _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -818,14 +825,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             return (int) DoOutInOp((int) op, modes0);
         }
 
-        /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
-        {
-            IgniteArgumentCheck.NotNull(keys, "keys");
-
-            DoOutOp(CacheOp.LocPromote, writer => WriteEnumerable(writer, keys));
-        }
-
         /** <inheritdoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
@@ -1013,7 +1012,38 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithNoRetries), Marshaller,
-                _flagSkipStore, _flagKeepBinary, true);
+                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithPartitionRecover()
+        {
+            if (_flagPartitionRecover)
+                return this;
+
+            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithPartitionRecover), Marshaller,
+                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<int> GetLostPartitions()
+        {
+            return DoInOp((int) CacheOp.GetLostPartitions, s =>
+            {
+                var cnt = s.ReadInt();
+
+                var res = new List<int>(cnt);
+
+                if (cnt > 0)
+                {
+                    for (var i = 0; i < cnt; i++)
+                    {
+                        res.Add(s.ReadInt());
+                    }
+                }
+
+                return res;
+            });
         }
 
         #region Queries

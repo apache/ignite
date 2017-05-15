@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples.ml.math.matrix;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 
 /**
  * This example shows how to use sparse {@link Matrix} API.
@@ -76,8 +76,8 @@ public final class SparseMatrixExample {
         System.out.println(">>> Matrix product determinant: [" + detMult
             + "], equals product of two other matrices determinants: [" + detMultIsAsExp + "].");
 
-        assert detMultIsAsExp : "Determinant of product matrix [" + detMult
-            + "] should be equal to product of determinants [" + (det1 * det2) + "].";
+        System.out.println("Determinant of product matrix [" + detMult
+            + "] should be equal to product of determinants [" + (det1 * det2) + "].");
 
         System.out.println("\n>>> Sparse matrix API usage example completed.");
     }

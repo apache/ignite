@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -41,6 +42,17 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /** Path for memory mapped file. */
     private String swapFilePath;
 
+    /** An algorithm for memory pages eviction. */
+    private DataPageEvictionMode pageEvictionMode;
+
+    /**
+     * A threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page
+     * memory will start the eviction only after 90% memory region (defined by this policy) is occupied.
+     */
+    private double evictionThreshold;
+
+    /** Minimum number of empty pages in reuse lists. */
+    private int emptyPagesPoolSize;
 
     /**
      * Default constructor.
@@ -58,8 +70,11 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         assert plc != null;
 
         name = plc.getName();
-        size = plc.getSize();
+        size = plc.getMaxSize();
         swapFilePath = plc.getSwapFilePath();
+        pageEvictionMode = plc.getPageEvictionMode();
+        evictionThreshold = plc.getEvictionThreshold();
+        emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
     }
 
     /**
@@ -83,12 +98,35 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         return swapFilePath;
     }
 
+    /**
+     * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
+     */
+    public DataPageEvictionMode getPageEvictionMode() {
+        return pageEvictionMode;
+    }
+
+    /**
+     * @return Memory pages eviction threshold.
+     */
+    public double getEvictionThreshold() {
+        return evictionThreshold;
+    }
+
+    /**
+     * @return Minimum number of empty pages in reuse list.
+     */
+    public int getEmptyPagesPoolSize() {
+        return emptyPagesPoolSize;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         out.writeLong(size);
         U.writeString(out, swapFilePath);
+        U.writeEnum(out, pageEvictionMode);
+        out.writeDouble(evictionThreshold);
+        out.writeInt(emptyPagesPoolSize);
     }
 
     /** {@inheritDoc} */
@@ -96,6 +134,9 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         name = U.readString(in);
         size = in.readLong();
         swapFilePath = U.readString(in);
+        pageEvictionMode = DataPageEvictionMode.fromOrdinal(in.readByte());
+        evictionThreshold = in.readDouble();
+        emptyPagesPoolSize = in.readInt();
     }
 
     /** {@inheritDoc} */

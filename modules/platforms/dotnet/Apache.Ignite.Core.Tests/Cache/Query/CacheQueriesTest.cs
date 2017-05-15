@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -50,35 +51,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const int MaxItemCnt = 100;
 
         /// <summary>
-        /// 
+        /// Fixture setup.
         /// </summary>
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.KillProcesses();
-
-            IgniteConfiguration cfg = new IgniteConfiguration
-            {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new[]
-                    {
-                        new BinaryTypeConfiguration(typeof (QueryPerson)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
-                    },
-                    NameMapper = GetNameMapper()
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = CfgPath
-            };
-
             for (int i = 0; i < GridCnt; i++)
             {
-                cfg.IgniteInstanceName = "grid-" + i;
-
-                Ignition.Start(cfg);
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    BinaryConfiguration = new BinaryConfiguration
+                    {
+                        NameMapper = GetNameMapper()
+                    },
+                    SpringConfigUrl = CfgPath,
+                    IgniteInstanceName = "grid-" + i
+                });
             }
         }
         
@@ -91,13 +79,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
         public void StopGrids()
         {
-            for (int i = 0; i < GridCnt; i++)
-                Ignition.Stop("grid-" + i, true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -632,6 +619,58 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
             Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
+        }
+
+        /// <summary>
+        /// Tests custom key and value field names.
+        /// </summary>
+        [Test]
+        public void TestCustomKeyValueFieldNames()
+        {
+            // Check select * with default config - does not include _key, _val.
+            var cache = Cache();
+
+            cache[1] = new QueryPerson("Joe", 48);
+
+            var row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(2, row.Count);
+            Assert.AreEqual(48, row[0]);
+            Assert.AreEqual("Joe", row[1]);
+
+            // Check select * with custom names - fields are included.
+            cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("customKeyVal")
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
+                        {
+                            Fields = new[]
+                            {
+                                new QueryField("age", "int"),
+                                new QueryField("FullKey", "int"),
+                                new QueryField("FullVal", "QueryPerson")
+                            },
+                            KeyFieldName = "FullKey",
+                            ValueFieldName = "FullVal"
+                        }
+                    }
+                });
+
+            cache[1] = new QueryPerson("John", 33);
+
+            row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            
+            Assert.AreEqual(3, row.Count);
+            Assert.AreEqual(33, row[0]);
+            Assert.AreEqual(1, row[1]);
+
+            var person = (QueryPerson) row[2];
+            Assert.AreEqual("John", person.Name);
+
+            // Check explicit select.
+            row = cache.QueryFields(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(1, row[0]);
         }
 
         /// <summary>

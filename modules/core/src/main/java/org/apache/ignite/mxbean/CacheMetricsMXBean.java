@@ -144,10 +144,6 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public long getOffHeapAllocatedSize();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Off-heap memory maximum size.")
-    public long getOffHeapMaxSize();
-
-    /** {@inheritDoc} */
     @MXBeanDescription("Number of non-null values in the cache.")
     public int getSize();
 

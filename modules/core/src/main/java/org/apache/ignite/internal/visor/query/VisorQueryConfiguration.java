@@ -48,9 +48,6 @@ public class VisorQueryConfiguration extends VisorDataTransferObject {
     private List<String> indexedTypes;
 
     /** */
-    private int sqlOnheapRowCacheSize;
-
-    /** */
     private String sqlSchema;
 
     /**
@@ -102,13 +99,6 @@ public class VisorQueryConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-     */
-    public int getSqlOnheapRowCacheSize() {
-        return sqlOnheapRowCacheSize;
-    }
-
-    /**
      * @return Schema name, which is used by SQL engine for SQL statements generation.
      */
     public String getSqlSchema() {
@@ -121,7 +111,6 @@ public class VisorQueryConfiguration extends VisorDataTransferObject {
         out.writeLong(longQryWarnTimeout);
         out.writeBoolean(sqlEscapeAll);
         U.writeCollection(out, indexedTypes);
-        out.writeInt(sqlOnheapRowCacheSize);
         U.writeString(out, sqlSchema);
     }
 
@@ -131,7 +120,6 @@ public class VisorQueryConfiguration extends VisorDataTransferObject {
         longQryWarnTimeout = in.readLong();
         sqlEscapeAll = in.readBoolean();
         indexedTypes = U.readList(in);
-        sqlOnheapRowCacheSize = in.readInt();
         sqlSchema = U.readString(in);
     }
 

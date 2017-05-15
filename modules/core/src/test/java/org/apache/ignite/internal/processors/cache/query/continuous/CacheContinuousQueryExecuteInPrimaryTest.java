@@ -82,7 +82,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     protected CacheConfiguration<Integer, String> cacheConfiguration(
         CacheAtomicityMode cacheAtomicityMode,
         CacheMode cacheMode) {
-        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(cacheAtomicityMode);
         ccfg.setCacheMode(cacheMode);

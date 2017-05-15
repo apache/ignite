@@ -27,19 +27,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task for cancel services with specified name.
  */
 @GridInternal
-public class VisorCancelServiceTask extends VisorOneNodeTask<String, Void> {
+public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelServiceJob job(String arg) {
+    @Override protected VisorCancelServiceJob job(VisorCancelServiceTaskArg arg) {
         return new VisorCancelServiceJob(arg, debug);
     }
 
     /**
      * Job for cancel services with specified name.
      */
-    private static class VisorCancelServiceJob extends VisorJob<String, Void> {
+    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -49,15 +49,15 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<String, Void> {
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        protected VisorCancelServiceJob(String arg, boolean debug) {
+        protected VisorCancelServiceJob(VisorCancelServiceTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(final String arg) {
+        @Override protected Void run(final VisorCancelServiceTaskArg arg) {
             IgniteServices services = ignite.services();
 
-            services.cancel(arg);
+            services.cancel(arg.getName());
 
             return null;
         }

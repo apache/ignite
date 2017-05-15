@@ -97,7 +97,6 @@ public class ConfigVariations {
         Parameters.objectParameters("setLoadPreviousValue", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
-        Parameters.objectParameters("setStartSize", 1024),
         Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
@@ -124,7 +123,6 @@ public class ConfigVariations {
         ),
         // Set default parameters.
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
-        Parameters.objectParameters("setStartSize", 1024),
         Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 

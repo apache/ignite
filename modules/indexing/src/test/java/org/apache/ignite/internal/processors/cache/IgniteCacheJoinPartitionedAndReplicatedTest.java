@@ -129,7 +129,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -161,6 +161,8 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testJoin() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
+
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);

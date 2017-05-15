@@ -205,7 +205,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private IgniteConfiguration configuration(int idx) throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(cacheMode());

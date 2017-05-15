@@ -390,36 +390,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             using (cache1.QueryContinuous(qry))
             {
                 // Put from local node.
-                try
-                {
-                    cache1.GetAndPut(PrimaryKey(cache1), Entry(1));
-
-                    Assert.Fail("Should not reach this place.");
-                }
-                catch (IgniteException)
-                {
-                    // No-op.
-                }
-                catch (Exception)
-                {
-                    Assert.Fail("Unexpected error.");
-                }
+                Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache1), Entry(1)));
 
                 // Put from remote node.
-                try
-                {
-                    cache1.GetAndPut(PrimaryKey(cache2), Entry(1));
-
-                    Assert.Fail("Should not reach this place.");
-                }
-                catch (IgniteException)
-                {
-                    // No-op.
-                }
-                catch (Exception)
-                {
-                    Assert.Fail("Unexpected error.");
-                }
+                Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache2), Entry(1)));
             }
         }
 
@@ -552,20 +526,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 CheckFilterSingle(key1, null, Entry(key1));
                 
                 // Remote put must fail.
-                try
-                {
-                    cache1.GetAndPut(PrimaryKey(cache2), Entry(1));
-
-                    Assert.Fail("Should not reach this place.");
-                }
-                catch (IgniteException)
-                {
-                    // No-op.
-                }
-                catch (Exception)
-                {
-                    Assert.Fail("Unexpected error.");
-                }
+                Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache2), Entry(1)));
             }
         }
 

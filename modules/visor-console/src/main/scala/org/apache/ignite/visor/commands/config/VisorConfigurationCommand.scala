@@ -162,7 +162,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         cmnT += ("Grid name", escapeName(basic.getIgniteInstanceName))
         cmnT += ("Ignite home", safe(basic.getGgHome))
         cmnT += ("Localhost", safe(basic.getLocalHost))
-        cmnT += ("Node ID", safe(basic.getNodeId))
+        cmnT += ("Consistent ID", safe(basic.getConsistentId))
         cmnT += ("Marshaller", basic.getMarshaller)
         cmnT += ("Deployment mode", safe(basic.getDeploymentMode))
         cmnT += ("ClientMode", javaBoolToStr(basic.isClientMode))

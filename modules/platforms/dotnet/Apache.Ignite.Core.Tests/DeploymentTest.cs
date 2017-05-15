@@ -125,11 +125,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void VerifyNodeStarted(string exePath)
         {
-            using (var ignite = Ignition.Start(new IgniteConfiguration
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\compute\\compute-grid1.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
             }))
             {
                 Assert.IsTrue(ignite.WaitTopology(2));

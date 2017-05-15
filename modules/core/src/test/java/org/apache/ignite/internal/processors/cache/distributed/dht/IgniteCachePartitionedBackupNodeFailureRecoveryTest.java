@@ -87,9 +87,9 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
 
         awaitPartitionMapExchange();
 
-        final IgniteCache<Integer, Integer> cache1 = node1.cache(null);
+        final IgniteCache<Integer, Integer> cache1 = node1.cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Integer> aff = node1.affinity(null);
+        Affinity<Integer> aff = node1.affinity(DEFAULT_CACHE_NAME);
 
         Integer key0 = null;
 
@@ -143,7 +143,7 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
 
                         IgniteEx backUp = startGrid(2);
 
-                        final IgniteCache<Integer, Integer> cache3 = backUp.cache(null);
+                        final IgniteCache<Integer, Integer> cache3 = backUp.cache(DEFAULT_CACHE_NAME);
 
                         lock.lock();
 

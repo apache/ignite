@@ -79,7 +79,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     private static final String NON_UNIQUE_IDX_NAME = "__GG_IDX_";
 
     /** */
-    private static final String SCAN_IDX_NAME = GridH2Table.ScanIndex.SCAN_INDEX_NAME_SUFFIX;
+    private static final String SCAN_IDX_NAME = GridH2PrimaryScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
     /** */
     private Connection conn;
@@ -89,31 +89,36 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Driver.load();
-
-        conn = DriverManager.getConnection(DB_URL);
-
-        tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
-            @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
-                return null;
-            }
-
-            @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {
-                ArrayList<Index> idxs = new ArrayList<>();
-
-                IndexColumn id = tbl.indexColumn(0, SortOrder.ASCENDING);
-                IndexColumn t = tbl.indexColumn(1, SortOrder.ASCENDING);
-                IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
-                IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
-
-                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
-                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
-                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
-                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
-
-                return idxs;
-            }
-        }, null);
+        // TODO: IGNITE-4994: Restore mock.
+//        Driver.load();
+//
+//        conn = DriverManager.getConnection(DB_URL);
+//
+//        tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
+//            @Override public void onTableCreated(GridH2Table tbl) {
+//                // No-op.
+//            }
+//
+//            @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
+//                return null;
+//            }
+//
+//            @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {
+//                ArrayList<Index> idxs = new ArrayList<>();
+//
+//                IndexColumn id = tbl.indexColumn(0, SortOrder.ASCENDING);
+//                IndexColumn t = tbl.indexColumn(1, SortOrder.ASCENDING);
+//                IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
+//                IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
+//
+//                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
+//                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
+//                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
+//                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
+//
+//                return idxs;
+//            }
+//        }, null);
     }
 
     /** {@inheritDoc} */
@@ -282,120 +287,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(cnt, i);
-    }
-
-    /**
-     * Multithreaded indexes consistency test.
-     *
-     * @throws Exception If failed.
-     */
-    public void testIndexesMultiThreadedConsistency() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3484");
-
-        final int threads = 19;
-        final int iterations = 1500;
-
-        multithreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                Random rnd = new Random();
-
-                PreparedStatement ps1 = null;
-
-                for (int i = 0; i < iterations; i++) {
-                    UUID id = UUID.randomUUID();
-
-                    int x = rnd.nextInt(50);
-
-                    long t = System.currentTimeMillis();
-
-                    GridH2Row row = row(id, t, rnd.nextBoolean() ? id.toString() : UUID.randomUUID().toString(), x);
-
-                    assertTrue(tbl.doUpdate(row, false));
-
-                    if (rnd.nextInt(100) == 0) {
-                        tbl.lock(null, false, false);
-
-                        long cnt = 0;
-
-                        try {
-                            ArrayList<Index> idxs = tbl.getIndexes();
-
-                            // Consistency check.
-                            Set<Row> rowSet = checkIndexesConsistent(idxs, null);
-
-                            // Order check.
-                            checkOrdered(idxs);
-
-                            checkIndexesConsistent(idxs, rowSet);
-
-                            cnt = idxs.get(0).getRowCount(null);
-                        }
-                        finally {
-                            tbl.unlock(null);
-                        }
-
-                        // Row count is valid.
-                        ResultSet rs = conn.createStatement().executeQuery("select count(*) from t");
-
-                        assertTrue(rs.next());
-
-                        int cnt2 = rs.getInt(1);
-
-                        rs.close();
-
-                        assertTrue(cnt2 + " must be >= " + cnt, cnt2 >= cnt);
-                        assertTrue(cnt2 <= threads * iterations);
-
-                        // Search by ID.
-                        rs = conn.createStatement().executeQuery("select * from t where id = '" + id.toString() + "'");
-
-                        assertTrue(rs.next());
-                        assertFalse(rs.next());
-
-                        rs.close();
-
-                        // Scan search.
-                        if (ps1 == null)
-                            ps1 = conn.prepareStatement("select id from t where x = ? order by t desc");
-
-                        ps1.setInt(1, x);
-
-                        rs = ps1.executeQuery();
-
-                        for (;;) {
-                            assertTrue(rs.next());
-
-                            if (rs.getObject(1).equals(id))
-                                break;
-                        }
-
-                        rs.close();
-                    }
-                }
-                return null;
-            }
-        }, threads);
-    }
-
-    /**
-     * Run test in endless loop.
-     *
-     * @param args Arguments.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("InfiniteLoopStatement")
-    public static void main(String ... args) throws Exception {
-        for (int i = 0;;) {
-            GridH2TableSelfTest t = new GridH2TableSelfTest();
-
-            t.beforeTest();
-
-            t.testDataLoss();
-
-            t.afterTest();
-
-            System.out.println("..." + ++i);
-        }
     }
 
     /**

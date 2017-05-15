@@ -64,24 +64,6 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-hibernate</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-schedule</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-geospatial</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -260,10 +242,6 @@
                 <ml.folder>src/main/ml</ml.folder>
             </properties>
 
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-
             <build>
                 <plugins>
                     <plugin>
@@ -292,6 +270,26 @@
                 <lgpl.folder>src/main/java-lgpl</lgpl.folder>
                 <lgpl.test.folder>src/test/java-lgpl</lgpl.test.folder>
             </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-hibernate_5.1</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-schedule</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-geospatial</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 

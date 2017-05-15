@@ -97,13 +97,13 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * You should tune these values based on the level of accuracy needed vs. the additional memory
  * that would be required for storing metrics.
  * <p>
- * You should also keep in mind that metrics for remote nodes are delayed (usually by the
- * heartbeat frequency). So if it is acceptable in your environment, set the heartbeat frequency
- * to be more inline with job execution time. Generally, the more often heartbeats between nodes
+ * You should also keep in mind that metrics for remote nodes are delayed (usually by the metrics
+ * update frequency). So if it is acceptable in your environment, set the metrics update frequency
+ * to be more inline with job execution time. Generally, the more often metrics update between nodes
  * are exchanged, the more precise the metrics are. However, you should keep in mind that if
- * heartbeats are exchanged too often then it may create unnecessary traffic in the network.
- * Heartbeats (or metrics update frequency) can be configured via underlying
- * {@link org.apache.ignite.spi.discovery.DiscoverySpi} used in your grid.
+ * metrics update are exchanged too often then it may create unnecessary traffic in the network.
+ * Metrics update frequency can be configured via underlying
+ * {@link org.apache.ignite.configuration.IgniteConfiguration} used in your grid.
  * <p>
  * Here is an example of how probing can be implemented to use
  * number of active and waiting jobs as probing mechanism:

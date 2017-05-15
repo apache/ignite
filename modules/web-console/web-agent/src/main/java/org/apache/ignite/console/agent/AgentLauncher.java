@@ -33,9 +33,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.Scanner;
 import java.util.Collection;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -65,7 +65,7 @@ import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 
 /**
- * Control Center Agent launcher.
+ * Ignite Web Agent launcher.
  */
 public class AgentLauncher {
     /** */
@@ -235,7 +235,7 @@ public class AgentLauncher {
      * @param fmt Format string.
      * @param args Arguments.
      */
-    private static String readLine(String fmt, Object ... args) {
+    private static String readLine(String fmt, Object... args) {
         if (System.console() != null)
             return System.console().readLine(fmt, args);
 
@@ -248,7 +248,7 @@ public class AgentLauncher {
      * @param fmt Format string.
      * @param args Arguments.
      */
-    private static char[] readPassword(String fmt, Object ... args) {
+    private static char[] readPassword(String fmt, Object... args) {
         if (System.console() != null)
             return System.console().readPassword(fmt, args);
 
@@ -339,7 +339,7 @@ public class AgentLauncher {
             case "http":
             case "https":
                 final String username = System.getProperty(uri.getScheme() + ".proxyUsername");
-                final char[] pwd = System.getProperty(uri.getScheme() +  ".proxyPassword", "").toCharArray();
+                final char[] pwd = System.getProperty(uri.getScheme() + ".proxyPassword", "").toCharArray();
 
                 Authenticator.setDefault(new Authenticator() {
                     @Override protected PasswordAuthentication getPasswordAuthentication() {

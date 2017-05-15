@@ -108,7 +108,7 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
 
         BinaryObject binObj = builder.build();
 
-        IgniteCache<String, BinaryObject> cache = grid(0).cache(null);
+        IgniteCache<String, BinaryObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put("0", binObj);
 

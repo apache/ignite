@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -224,7 +226,6 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setDefaultMode(dfltMode);
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
         igfsCfg.setSecondaryFileSystem(secondaryFs);
-        igfsCfg.setInitializeDefaultPathModes(true);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -242,6 +243,15 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         igfsCfg.setDataCacheConfiguration(dataCacheCfg);
         igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
+        if (secondaryFs != null) {
+            Map<String, IgfsMode> modes = new HashMap<>();
+            modes.put("/ignite/sync/", IgfsMode.DUAL_SYNC);
+            modes.put("/ignite/async/", IgfsMode.DUAL_ASYNC);
+            modes.put("/ignite/proxy/", IgfsMode.PROXY);
+
+            igfsCfg.setPathModes(modes);
+        }
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 

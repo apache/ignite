@@ -297,7 +297,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 // 6          +     +
                 // 7          +       - only local node
 
-                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(null, new AffinityTopologyVersion(ver));
+                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(DEFAULT_CACHE_NAME, new AffinityTopologyVersion(ver));
 
                 Collection<UUID> act = new ArrayList<>(F.viewReadOnly(cacheNodes, new C1<ClusterNode, UUID>() {
                     @Override public UUID apply(ClusterNode n) {

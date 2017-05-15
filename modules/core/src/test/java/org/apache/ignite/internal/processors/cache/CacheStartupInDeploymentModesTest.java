@@ -50,11 +50,11 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         cfg.setMarshaller(marshaller);
         cfg.setDeploymentMode(deploymentMode);
 
-        CacheConfiguration cacheCfg1 = new CacheConfiguration();
+        CacheConfiguration cacheCfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg1.setCacheMode(CacheMode.REPLICATED);
         cacheCfg1.setName(REPLICATED_CACHE);
 
-        CacheConfiguration cacheCfg2 = new CacheConfiguration();
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg2.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg2.setName(PARTITIONED_CACHE);
 

@@ -79,14 +79,14 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).removeAll();
+        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            IgniteCache<String, int[]> c = g.cache(null);
+            IgniteCache<String, int[]> c = g.cache(DEFAULT_CACHE_NAME);
 
-            GridCacheAdapter<Object, Object> cache = ((IgniteEx)g).context().cache().internalCache();
+            GridCacheAdapter<Object, Object> cache = ((IgniteEx)g).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
             info("Node: " + g.cluster().localNode().id());
             info("Entries: " + cache.entries());
@@ -135,7 +135,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         final String key = "TestKey";
 
-        info("Primary node for test key: " + grid(0).affinity(null).mapKeyToNode(key));
+        info("Primary node for test key: " + grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key));
 
         for (int i = 0; i < jobCnt; i++) {
             futs.add(ignite.compute().applyAsync(new CX1<Integer, Void>() {
@@ -143,7 +143,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) {
-                    IgniteCache<String, int[]> cache = ignite.cache(null);
+                    IgniteCache<String, int[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     try (Transaction tx = ignite.transactions().txStart(concur, isolation)) {
                         int[] arr = cache.get(key);
@@ -177,10 +177,10 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             for (int g = 0; g < GRID_CNT; g++) {
                 info("Will check grid: " + g);
 
-                info("Value: " + grid(i).cache(null).localPeek(key));
+                info("Value: " + grid(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
             }
 
-            IgniteCache<String, int[]> c = grid(i).cache(null);
+            IgniteCache<String, int[]> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.
