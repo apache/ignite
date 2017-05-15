@@ -24,8 +24,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,8 +42,6 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -87,7 +83,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** Local value of sequence. */
     @GridToStringInclude(sensitive = true)
-    private long locVal;
+    private volatile long locVal;
 
     /**  Upper bound of local counter. */
     private long upBound;
@@ -98,17 +94,11 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /** Synchronization lock. */
     private final Lock lock = new ReentrantLock();
 
-    /** Await condition. */
-    private Condition cond = lock.newCondition();
-
     /** Callable for execution {@link #incrementAndGet} operation in async and sync mode.  */
     private final Callable<Long> incAndGetCall = internalUpdate(1, true);
 
     /** Callable for execution {@link #getAndIncrement} operation in async and sync mode.  */
     private final Callable<Long> getAndIncCall = internalUpdate(1, false);
-
-    /** Add and get cache call guard. */
-    private final AtomicBoolean updateGuard = new AtomicBoolean();
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -161,14 +151,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     @Override public long get() {
         checkRemoved();
 
-        lock.lock();
-
-        try {
-            return locVal;
-        }
-        finally {
-            lock.unlock();
-        }
+        return locVal;
     }
 
     /** {@inheritDoc} */
@@ -235,69 +218,29 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
         try {
             // If reserved range isn't exhausted.
-            if (locVal + l <= upBound) {
-                long curVal = locVal;
+            long locVal0 = locVal;
 
-                locVal += l;
+            if (locVal0 + l <= upBound) {
+                locVal = locVal0 + l;
 
-                return updated ? locVal : curVal;
+                return updated ? locVal0 + l : locVal0;
+            }
+
+            if (updateCall == null)
+                updateCall = internalUpdate(l, updated);
+
+            try {
+                return updateCall.call();
+            }
+            catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
             }
         }
         finally {
             lock.unlock();
-        }
-
-        if (updateCall == null)
-            updateCall = internalUpdate(l, updated);
-
-        while (true) {
-            if (updateGuard.compareAndSet(false, true)) {
-                try {
-                    try {
-                        return retryTopologySafe(updateCall);
-                    }
-                    catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
-                        throw e;
-                    }
-                    catch (Exception e) {
-                        throw new IgniteCheckedException(e);
-                    }
-                }
-                finally {
-                    lock.lock();
-
-                    try {
-                        updateGuard.set(false);
-
-                        cond.signalAll();
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-                }
-            }
-            else {
-                lock.lock();
-
-                try {
-                    while (locVal >= upBound && updateGuard.get())
-                        U.await(cond, 500, MILLISECONDS);
-
-                    checkRemoved();
-
-                    // If reserved range isn't exhausted.
-                    if (locVal + l <= upBound) {
-                        long curVal = locVal;
-
-                        locVal += l;
-
-                        return updated ? locVal : curVal;
-                    }
-                }
-                finally {
-                    lock.unlock();
-                }
-            }
         }
     }
 
@@ -422,12 +365,10 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                         curLocVal = locVal;
 
                         // If local range was already reserved in another thread.
-                        if (locVal + l <= upBound) {
-                            long retVal = locVal;
+                        if (curLocVal + l <= upBound) {
+                            locVal = curLocVal + l;
 
-                            locVal += l;
-
-                            return updated ? locVal : retVal;
+                            return updated ? curLocVal + l : curLocVal;
                         }
 
                         long curGlobalVal = seq.get();
