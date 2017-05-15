@@ -292,34 +292,6 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
-        final IgnitePredicate<KeyCacheObject> p = new IgnitePredicate<KeyCacheObject>() {
-            @Override public boolean apply(KeyCacheObject key) {
-                GridCacheMapEntry entry = map.get(key);
-
-                return entry != null && entry.visitable(filter);
-            }
-        };
-
-        return new AbstractSet<KeyCacheObject>() {
-            @Override public Iterator<KeyCacheObject> iterator() {
-                return F.iterator0(map.keySet(), true, p);
-            }
-
-            @Override public int size() {
-                return F.size(iterator());
-            }
-
-            @Override public boolean contains(Object o) {
-                if (!(o instanceof KeyCacheObject))
-                    return false;
-
-                return map.keySet().contains(o) && p.apply((KeyCacheObject)o);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
             @Override public boolean apply(GridCacheMapEntry entry) {
