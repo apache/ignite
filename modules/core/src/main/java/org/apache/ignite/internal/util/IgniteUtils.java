@@ -1853,10 +1853,10 @@ public abstract class IgniteUtils {
      * @return List of reachable addresses.
      */
     public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
-        final int reachTimeout = 2000;
-
         if (addrs.isEmpty())
             return Collections.emptyList();
+
+        final int reachTimeout = 2000;
 
         if (addrs.size() == 1) {
             InetAddress addr = F.first(addrs);
