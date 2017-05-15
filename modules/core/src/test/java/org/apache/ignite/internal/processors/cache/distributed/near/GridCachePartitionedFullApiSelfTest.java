@@ -59,24 +59,6 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionEntrySetToString() throws Exception {
-        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
-
-        for (int i = 0; i < 100; i++) {
-            String key = String.valueOf(i);
-
-            cache.getAndPut(key, i);
-        }
-
-        Affinity aff = grid(0).affinity(cache.name());
-
-        for (int i = 0 ; i < aff.partitions(); i++)
-            String.valueOf(cache.entrySet(i));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testUpdate() throws Exception {
         if (gridCount() > 1) {
             IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);

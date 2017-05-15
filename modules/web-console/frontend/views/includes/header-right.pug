@@ -14,10 +14,27 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.container.container-footer
-    footer
-        .col-md-offset-1.col-md-10
-            ignite-footer
-        .col-md-1
-            .pull-right
-                ignite-powered-by-apache
+.wch-demo-toggle(ng-controller='demoController')
+    button.btn-ignite.btn-ignite--success(
+        ng-if='IgniteDemoMode'
+        ng-click='closeDemo()'
+    ) Close Demo
+    button.btn-ignite.btn-ignite--success(
+        ng-if='!IgniteDemoMode'
+        ng-click='startDemo()'
+    ) Start Demo
+
+ignite-cluster-select.wch-nav-item(ng-if='!IgniteDemoMode')
+
+.wch-nav-item(ignite-userbar)
+    div(
+        ng-class='{active: $state.includes("base.settings")}'
+        ng-click='$event.stopPropagation()'
+        bs-dropdown='userbar.items'
+        data-placement='bottom-right'
+        data-trigger='hover focus'
+        data-container='self'
+        data-animation=''
+    )
+        span {{$root.user.firstName}} {{$root.user.lastName}}
+            span.caret
