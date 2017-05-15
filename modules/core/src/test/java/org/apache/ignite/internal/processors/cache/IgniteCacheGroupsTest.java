@@ -19,15 +19,21 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -35,6 +41,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -84,7 +92,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid(1);
 
-        IgniteCache c1 = client.createCache(cacheConfiguration(GROUP1, "c1", ATOMIC, 0));
+        IgniteCache c1 = client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 0));
 
         checkCacheGroup(0, GROUP1, true);
         checkCacheGroup(0, GROUP1, true);
@@ -137,7 +145,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
 
-            srv0.createCache(cacheConfiguration(GROUP1, "cache1", ATOMIC, 2));
+            srv0.createCache(cacheConfiguration(GROUP1, "cache1", PARTITIONED, ATOMIC, 2));
 
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
@@ -145,7 +153,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 checkCache(i, "cache1");
             }
 
-            srv0.createCache(cacheConfiguration(GROUP1, "cache2", ATOMIC, 2));
+            srv0.createCache(cacheConfiguration(GROUP1, "cache2", PARTITIONED, ATOMIC, 2));
 
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
@@ -193,8 +201,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Ignite srv0 = startGrid(0);
 
         {
-            IgniteCache<Object, Object> cache1 = srv0.createCache(cacheConfiguration("grp1", "cache1", ATOMIC, 2));
-            IgniteCache<Object, Object> cache2 = srv0.createCache(cacheConfiguration("grp1", "cache2", ATOMIC, 2));
+            IgniteCache<Object, Object> cache1 =
+                srv0.createCache(cacheConfiguration("grp1", "cache1", PARTITIONED, ATOMIC, 2));
+            IgniteCache<Object, Object> cache2 =
+                srv0.createCache(cacheConfiguration("grp1", "cache2", PARTITIONED, ATOMIC, 2));
 
             cache1.put(new Key1(1), 1);
             assertEquals(1, cache1.get(new Key1(1)));
@@ -231,8 +241,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Ignite srv0 = startGrid(0);
 
         {
-            IgniteCache<Object, Object> cache1 = srv0.createCache(cacheConfiguration("grp1", "cache1", ATOMIC, 0));
-            IgniteCache<Object, Object> cache2 = srv0.createCache(cacheConfiguration("grp1", "cache2", ATOMIC, 0));
+            IgniteCache<Object, Object> cache1 =
+                srv0.createCache(cacheConfiguration(GROUP1, "cache1", PARTITIONED, ATOMIC, 0));
+            IgniteCache<Object, Object> cache2 =
+                srv0.createCache(cacheConfiguration(GROUP1, "cache2", PARTITIONED, ATOMIC, 0));
 
             for (int i = 0; i < 10; i++) {
                 cache1.put(new Key1(i), 1);
@@ -243,6 +255,162 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Ignite srv1 = startGrid(1);
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheApiTx() throws Exception {
+        startGridsMultiThreaded(4);
+
+        client = true;
+
+        startGrid(4);
+
+        cacheApiTest(PARTITIONED, TRANSACTIONAL, 2);
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     * @param backups Number of backups.
+     */
+    private void cacheApiTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int backups) {
+        for (int i = 0; i < 2; i++)
+            ignite(0).createCache(cacheConfiguration(GROUP1, "cache-" + i, cacheMode, atomicityMode, backups));
+
+        for (Ignite node : Ignition.allGrids()) {
+            for (int i = 0; i < 2; i++) {
+                IgniteCache cache = node.cache("cache-" + i);
+
+                log.info("Test cache [node=" + node.name() + ", cache=" + cache.getName() +
+                    ", mode=" + cacheMode + ", atomicity=" + atomicityMode + ", backups=" + backups + ']');
+
+                cacheApiTest(cache);
+            }
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cacheApiTest(IgniteCache cache) {
+        int key = 1;
+
+        cache.put(key, 1);
+
+        cache.remove(key);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentOperations() throws Exception {
+        final int SRVS = 4;
+        final int CLIENTS = 4;
+        final int NODES = SRVS + CLIENTS;
+
+        Ignite srv0 = startGridsMultiThreaded(SRVS);
+
+        client = true;
+
+        startGridsMultiThreaded(SRVS, CLIENTS);
+
+        final int CACHES = 4;
+
+        for (int i = 0; i < CACHES; i++) {
+            srv0.createCache(cacheConfiguration(GROUP1, GROUP1 + "-" + i, PARTITIONED, ATOMIC, i));
+            srv0.createCache(cacheConfiguration(GROUP2, GROUP2 + "-" + i, PARTITIONED, TRANSACTIONAL, i));
+        }
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        final AtomicBoolean err = new AtomicBoolean();
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture opFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    Ignite node = ignite(idx.getAndIncrement() % NODES);
+
+                    log.info("Start thread [node=" + node.name() + ']');
+
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    while (!stop.get()) {
+                        String grp = rnd.nextBoolean() ? GROUP1 : GROUP2;
+                        int cacheIdx = rnd.nextInt(CACHES);
+
+                        IgniteCache cache = node.cache(grp + "-" + cacheIdx);
+
+                        for (int i = 0; i < 10; i++)
+                            cacheOperation(rnd, cache);
+                    }
+                }
+                catch (Exception e) {
+                    err.set(true);
+
+                    log.error("Unexpected error: " + e, e);
+
+                    stop.set(true);
+                }
+            }
+        }, (SRVS + CLIENTS) * 2, "op-thread");
+
+        IgniteInternalFuture cacheFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (!stop.get()) {
+//                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+//
+//                        String grp = rnd.nextBoolean() ? GROUP1 : GROUP2;
+//
+//                        Ignite node = ignite(rnd.nextInt(NODES));
+//
+//                        IgniteCache cache = node.createCache(cacheConfiguration(grp, "tmpCache",
+//                            rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL,
+//                            rnd.nextInt(3)));
+//
+//                        for (int i = 0; i < 10; i++)
+//                            cacheOperation(rnd, cache);
+//
+//                        node.destroyCache(cache.getName());
+
+                        U.sleep(1000);
+                    }
+                }
+                catch (Exception e) {
+                    err.set(true);
+
+                    log.error("Unexpected error: " + e, e);
+
+                    stop.set(true);
+                }
+            }
+        }, "cache-thread");
+
+        try {
+            U.sleep(10_000);
+        }
+        finally {
+            stop.set(true);
+        }
+
+        opFut.get();
+        cacheFut.get();
+
+        assertFalse("Unexpected error, see log for details", err.get());
+    }
+
+    /**
+     * @param rnd Random.
+     * @param cache Cache.
+     */
+    private void cacheOperation(ThreadLocalRandom rnd, IgniteCache cache) {
+        int key = rnd.nextInt(1000);
+
+        cache.put(key, 1);
     }
 
     /**
@@ -311,8 +479,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         }
     }
 
-    private CacheConfiguration cacheConfiguration(String grpName,
+    private CacheConfiguration cacheConfiguration(
+        String grpName,
         String name,
+        CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
         int backups) {
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -321,6 +491,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         ccfg.setGroupName(grpName);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(backups);
+        ccfg.setCacheMode(cacheMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
