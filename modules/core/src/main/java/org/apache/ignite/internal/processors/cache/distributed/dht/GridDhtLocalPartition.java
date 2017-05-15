@@ -556,7 +556,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** {@inheritDoc} */
     @Override protected void release(int sizeChange, GridCacheEntryEx e) {
-        if (sizeChange != 0)
+        if (grp.sharedGroup() && sizeChange != 0)
             cacheSizeCounter(e.context().cacheId()).addAndGet(sizeChange);
 
         release0(sizeChange);
