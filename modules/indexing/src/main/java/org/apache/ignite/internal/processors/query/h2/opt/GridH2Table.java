@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -87,7 +87,7 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
 
     /** */
-    private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
+    private final AtomicReferenceArray<Object[]> actualSnapshot;
 
     /** */
     private IndexColumn affKeyCol;
@@ -155,10 +155,10 @@ public class GridH2Table extends TableBase {
         assert idxs != null;
 
         List<Index> clones = new ArrayList<>(idxs.size());
-        for (Index index: idxs) {
+        for (Index index : idxs) {
             Index clone = createDuplicateIndexIfNeeded(index);
             if (clone != null)
-               clones.add(clone);
+                clones.add(clone);
         }
         idxs.addAll(clones);
 
@@ -169,6 +169,12 @@ public class GridH2Table extends TableBase {
             idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
+
+        final int segments = desc != null ? desc.configuration().getQueryParallelism() :
+            // Get index segments count from PK index. Null desc can be passed from tests.
+            index(1).getIndexType().isHash() ? index(2).segmentsCount() : index(1).segmentsCount();
+
+        actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
 
         lock = new ReentrantReadWriteLock();
     }
@@ -225,9 +231,20 @@ public class GridH2Table extends TableBase {
         }
 
         if (snapshotInLock())
-            snapshotIndexes(null);
+            snapshotIndexes(null, threadLocalSegmentId());
 
         return false;
+    }
+
+    /**
+     * @return segmentId for current thread.
+     */
+    private int threadLocalSegmentId() {
+        final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        return qctx.segment();
     }
 
     /**
@@ -247,20 +264,20 @@ public class GridH2Table extends TableBase {
     /**
      * @param qctx Query context.
      */
-    public void snapshotIndexes(GridH2QueryContext qctx) {
+    public void snapshotIndexes(GridH2QueryContext qctx, int segment) {
         if (!snapshotEnabled)
             return;
 
-        Object[] snapshots;
+        Object[] segmentSnapshot;
 
         // Try to reuse existing snapshots outside of the lock.
-        for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
-            snapshots = actualSnapshot.get();
+        for (long waitTime = 200; ; waitTime *= 2) { // Increase wait time to avoid starvation.
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) { // Reuse existing snapshot without locking.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) { // Reuse existing snapshot without locking.
+                segmentSnapshot = doSnapshotIndexes(segmentSnapshot, qctx);
 
-                if (snapshots != null)
+                if (segmentSnapshot != null)
                     return; // Reused successfully.
             }
 
@@ -272,17 +289,17 @@ public class GridH2Table extends TableBase {
             ensureNotDestroyed();
 
             // Try again inside of the lock.
-            snapshots = actualSnapshot.get();
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) // Try reusing.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) // Try reusing.
+                segmentSnapshot = doSnapshotIndexes(segmentSnapshot, qctx);
 
-            if (snapshots == null) { // Reuse failed, produce new snapshots.
-                snapshots = doSnapshotIndexes(null, qctx);
+            if (segmentSnapshot == null) { // Reuse failed, produce new snapshots.
+                segmentSnapshot = doSnapshotIndexes(null, qctx);
 
-                assert snapshots != null;
+                assert segmentSnapshot != null;
 
-                actualSnapshot.set(snapshots);
+                actualSnapshot.set(segment, segmentSnapshot);
             }
         }
         finally {
@@ -359,19 +376,20 @@ public class GridH2Table extends TableBase {
      * Must be called inside of write lock because when using multiple indexes we have to ensure that all of them have
      * the same contents at snapshot taking time.
      *
+     * @param segmentSnapshot snapshot to be reused.
      * @param qctx Query context.
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
+    private Object[] doSnapshotIndexes(Object[] segmentSnapshot, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
-        if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 2];
+        if (segmentSnapshot == null) // Nothing to reuse, create new snapshots.
+            segmentSnapshot = new Object[idxs.size() - 2];
 
-        // Take snapshots on all except first which is scan and second which is hash.
-        for (int i = 2, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 2];
+        // Take snapshots on all except first which is scan.
+        for (int i = 1, len = idxs.size(); i < len; i++) {
+            Object s = segmentSnapshot[i - 2];
 
             boolean reuseExisting = s != null;
 
@@ -390,15 +408,15 @@ public class GridH2Table extends TableBase {
                         index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(snapshots, null);
+                actualSnapshot.compareAndSet(threadLocalSegmentId(), segmentSnapshot, null);
 
                 return null;
             }
 
-            snapshots[i - 2] = s;
+            segmentSnapshot[i - 2] = s;
         }
 
-        return snapshots;
+        return segmentSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -611,7 +629,8 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            actualSnapshot.set(null);
+            if (actualSnapshot != null)
+                actualSnapshot.set(pk.segmentForRow(row), null);
 
             return true;
         }
@@ -744,7 +763,7 @@ public class GridH2Table extends TableBase {
             Index cloneIdx = createDuplicateIndexIfNeeded(idx);
 
             ArrayList<Index> newIdxs = new ArrayList<>(
-                    idxs.size() + ((cloneIdx == null) ? 1 : 2));
+                idxs.size() + ((cloneIdx == null) ? 1 : 2));
 
             newIdxs.addAll(idxs);
 
@@ -804,14 +823,14 @@ public class GridH2Table extends TableBase {
         try {
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
 
-            Index targetIdx = (h2Idx instanceof GridH2ProxyIndex)?
-                    ((GridH2ProxyIndex)h2Idx).underlyingIndex(): h2Idx;
+            Index targetIdx = (h2Idx instanceof GridH2ProxyIndex) ?
+                ((GridH2ProxyIndex)h2Idx).underlyingIndex() : h2Idx;
 
             for (int i = 2; i < idxs.size(); ) {
                 Index idx = idxs.get(i);
 
                 if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
-                   ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
+                    ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
 
                     idxs.remove(i);
 
