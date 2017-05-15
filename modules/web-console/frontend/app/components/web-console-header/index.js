@@ -15,15 +15,9 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
+import angular from 'angular';
+import component from './component';
 
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+export default angular
+	.module('ignite-console.web-console-header', [])
+	.component('webConsoleHeader', component);

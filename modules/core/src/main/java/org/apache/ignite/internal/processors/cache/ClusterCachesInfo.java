@@ -351,15 +351,17 @@ class ClusterCachesInfo {
                     if (needExchange) {
                         req.clientStartOnly(true);
 
-                        desc.localStartVersion(topVer.nextMinorVersion());
+                        desc.clientCacheStartVersion(topVer.nextMinorVersion());
 
                         exchangeActions.addClientCacheToStart(req, desc);
                     }
                 }
 
-                if (!needExchange) {
-                    if (desc != null)
-                        waitTopVer = desc.localStartVersion();
+                if (!needExchange && desc != null) {
+                    if (desc.clientCacheStartVersion() != null)
+                        waitTopVer = desc.clientCacheStartVersion();
+                    else
+                        waitTopVer = desc.startTopologyVersion();
                 }
             }
             else if (req.globalStateChange())
@@ -421,7 +423,7 @@ class ClusterCachesInfo {
             for (DynamicCacheDescriptor desc : addedDescs) {
                 assert desc.template() || incMinorTopVer;
 
-                desc.localStartVersion(startTopVer);
+                desc.startTopologyVersion(startTopVer);
             }
         }
 
@@ -565,8 +567,6 @@ class ClusterCachesInfo {
                     processJoiningNode(joinDiscoData, node.id());
 
                     for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                        desc.localStartVersion(topVer);
-
                         CacheConfiguration cfg = desc.cacheConfiguration();
 
                         CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
@@ -584,7 +584,9 @@ class ClusterCachesInfo {
                                 desc.deploymentId(),
                                 desc.schema());
 
-                            desc0.localStartVersion(desc.localStartVersion());
+                            desc0.startTopologyVersion(desc.startTopologyVersion());
+                            desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
+                            desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
                             desc0.receivedFrom(desc.receivedFrom());
                             desc0.staticallyConfigured(desc.staticallyConfigured());
 
@@ -599,12 +601,12 @@ class ClusterCachesInfo {
 
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (node.id().equals(desc.receivedFrom()))
-                    desc.localStartVersion(topVer);
+                    desc.receivedFromStartVersion(topVer);
             }
 
             for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
                 if (node.id().equals(desc.receivedFrom()))
-                    desc.localStartVersion(topVer);
+                    desc.receivedFromStartVersion(topVer);
             }
         }
     }

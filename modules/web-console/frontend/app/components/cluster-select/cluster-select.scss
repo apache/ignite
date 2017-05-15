@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-import template from './cluster-select.pug';
-import './cluster-select.scss';
-import controller from './cluster-select.controller';
+ignite-cluster-select {
+    @import "./../../../public/stylesheets/variables.scss";
 
-export default [() => {
-    return {
-        restrict: 'E',
-        template,
-        controller,
-        controllerAs: 'ctrl'
-    };
-}];
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .icon-help {
+        margin-left: 4px;
+
+        color: $text-color;
+    }
+}

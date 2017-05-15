@@ -139,15 +139,6 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
-        return new PartitionedSet<KeyCacheObject>() {
-            @Override protected Set<KeyCacheObject> set(GridDhtLocalPartition part) {
-                return part.keySet(filter);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {

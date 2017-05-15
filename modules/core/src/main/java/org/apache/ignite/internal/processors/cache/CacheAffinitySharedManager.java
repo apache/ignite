@@ -383,12 +383,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
             }
 
-            if (startCache)
+            if (startCache) {
                 cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
-            if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupDescriptor().groupId()).isEmpty())
-                    U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                    if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupDescriptor().groupId()).isEmpty())
+                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                }
             }
         }
 
@@ -852,6 +853,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param desc Cache descriptor.
      * @param aff Affinity.
      * @param fut Exchange future.
      * @param fetch Force fetch flag.
