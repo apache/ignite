@@ -991,76 +991,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return entrySet((CacheEntryPredicate[])null);
     }
 
-    /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
-     */
-    @Override public final Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
-        boolean keepBinary = ctx.keepBinary();
-
-        return new EntrySet(map.entrySet(filter), keepBinary);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        throw new UnsupportedOperationException();
-    }
-
     /** {@inheritDoc} */
     @Override public final Set<K> keySet() {
         return new KeySet(map.entrySet());
-    }
-
-    /** {@inheritDoc} */
-    @Override public final Set<K> keySetx() {
-        return keySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public final Set<K> primaryKeySet() {
-        return new KeySet(map.entrySet(CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<V> values() {
-        return values((CacheEntryPredicate[])null);
-    }
-
-    /**
-     * Collection of values cached on this node. You cannot modify this collection.
-     * <p>
-     * Iterator over this collection will not fail if collection was
-     * concurrently updated by another thread. This means that iterator may or
-     * may not return latest values depending on whether they were added before
-     * or after current iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the values cached on this node.
-     *
-     * @param filter Filters.
-     * @return Collection of cached values.
-     */
-    public final Iterable<V> values(final CacheEntryPredicate... filter) {
-        return new Iterable<V>() {
-            @Override public Iterator<V> iterator() {
-                return new Iterator<V>() {
-                    private final Iterator<? extends GridCacheEntryEx> it = entries().iterator();
-
-                    @Override public boolean hasNext() {
-                        return it.hasNext();
-                    }
-
-                    @Override public V next() {
-                        return (V)it.next().wrap().getValue();
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException("remove");
-                    }
-                };
-            }
-        };
     }
 
     /**
@@ -4491,7 +4424,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Entry set.
      */
     public Set<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
-        return entrySetx(filter);
+        boolean keepBinary = ctx.keepBinary();
+
+        return new EntrySet(map.entrySet(filter), keepBinary);
     }
 
     /**

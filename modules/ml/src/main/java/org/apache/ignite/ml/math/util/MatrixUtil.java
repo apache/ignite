@@ -24,6 +24,7 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -116,6 +117,6 @@ public class MatrixUtil {
     /** */
     private static boolean isCopyLikeSupport(Matrix matrix) {
         return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
-            matrix instanceof PivotedMatrixView;
+            matrix instanceof PivotedMatrixView || matrix instanceof SparseDistributedMatrix;
     }
 }
