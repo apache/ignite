@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -1722,21 +1723,30 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
-                if (type == null || type.metadata() == null)
-                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                        typeId);
+                if (type == null || type.metadata() == null) {
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE, false)) {
+                        BinaryClassDescriptor desc = ctx.descriptorForTypeId(true, typeId, getClass().getClassLoader(), false);
 
-                for (BinarySchema typeSchema : type.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
-
-                        break;
+                        schema = desc.schema();
                     }
+                    else
+                        throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
+                            typeId);
                 }
 
-                if (schema == null)
-                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+                if (schema == null) {
+                    for (BinarySchema typeSchema : type.metadata().schemas()) {
+                        if (schemaId == typeSchema.schemaId()) {
+                            schema = typeSchema;
+
+                            break;
+                        }
+                    }
+
+                    if (schema == null)
+                        throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                            "typeId=" + typeId + ", schemaId=" + schemaId + ']');
+                }
             }
             else
                 schema = createSchema();
