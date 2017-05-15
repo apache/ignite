@@ -29,7 +29,7 @@ import org.h2.result.*;
 /**
  * Cursor.
  */
-public class H2Cursor implements Cursor {
+public final class H2Cursor implements Cursor {
     /** */
     private final GridCursor<GridH2Row> cursor;
 
