@@ -483,8 +483,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
                 readAction = raw ? GetRawReader(field, MthdReadEnumRaw) : GetReader(field, MthdReadEnum);
             }
-            else if (type == BinaryUtils.TypDictionary ||
-                     type.GetInterface(BinaryUtils.TypDictionary.FullName) != null && !type.IsGenericType)
+            else if (type == typeof(IDictionary) || type == typeof(Hashtable))
             {
                 writeAction = raw
                     ? GetRawWriter<IDictionary>(field, (w, o) => w.WriteDictionary(o))
@@ -493,8 +492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadDictionary())
                     : GetReader(field, (f, r) => r.ReadDictionary(f));
             }
-            else if (type == BinaryUtils.TypCollection ||
-                     type.GetInterface(BinaryUtils.TypCollection.FullName) != null && !type.IsGenericType)
+            else if (type == typeof(ICollection) || type == typeof(ArrayList))
             {
                 writeAction = raw
                     ? GetRawWriter<ICollection>(field, (w, o) => w.WriteCollection(o))

@@ -107,15 +107,6 @@ web-console-header {
         &:nth-last-child(2) {
             margin-right: $nav-item-margin;
         }
-
-        .btn-demo {
-            padding: 8px 10px;
-            font-size: $font-size-base;
-            line-height: 18px;
-            border-radius: 4px;
-
-            margin-right: 0;
-        }
     }
 
     .wch-revert-identity {

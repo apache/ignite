@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml;
 
+import org.apache.ignite.ml.math.MathImplMainTestSuite;
+import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for local and distributed math tests.
+ * Test suite for all module tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MathImplLocalTestSuite.class,
-    MathImplDistributedTestSuite.class,
-    TracerTest.class
+    MathImplMainTestSuite.class,
+    RegressionsTestSuite.class
 })
-public class MathImplMainTestSuite {
+public class IgniteMLTestSuite {
     // No-op.
 }
