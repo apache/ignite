@@ -212,7 +212,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite0.cache(cacheName);
 
         for (int i = 0; i < 1000; i++)
             cache1.put(i, i);
