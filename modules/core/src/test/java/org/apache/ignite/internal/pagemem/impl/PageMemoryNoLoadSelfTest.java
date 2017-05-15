@@ -280,7 +280,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     protected PageMemory memory() throws Exception {
         File memDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false);
 
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(10 * 1024 * 1024);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+            .setInitialSize(10 * 1024 * 1024).setMaxSize(10 * 1024 * 1024);
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 

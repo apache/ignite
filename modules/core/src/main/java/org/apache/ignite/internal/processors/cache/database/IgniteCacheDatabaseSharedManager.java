@@ -715,7 +715,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memMetrics {@link MemoryMetrics} object to collect memory usage metrics.
      * @return Memory policy instance.
      */
-    private MemoryPolicy initMemory(MemoryConfiguration memCfg, MemoryPolicyConfiguration plcCfg, MemoryMetricsImpl memMetrics) {
+    private MemoryPolicy initMemory(MemoryConfiguration memCfg, MemoryPolicyConfiguration plcCfg,
+        MemoryMetricsImpl memMetrics) {
         File allocPath = buildAllocPath(plcCfg);
 
         DirectMemoryProvider memProvider = allocPath == null ?
@@ -726,23 +727,29 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
 
-        return new MemoryPolicy(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg,
-            (PageMemoryNoStoreImpl)pageMem));
+        return new MemoryPolicy(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
 
     /**
      * @param plc Memory Policy Configuration.
      * @param pageMem Page memory.
      */
-    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemoryNoStoreImpl pageMem) {
+    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            return new NoOpPageEvictionTracker();
+
+        assert pageMem instanceof PageMemoryNoStoreImpl : pageMem.getClass();
+
+        PageMemoryNoStoreImpl pageMem0 = (PageMemoryNoStoreImpl)pageMem;
+
         if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
-            return new FairFifoPageEvictionTracker(pageMem, plc, cctx);
+            return new FairFifoPageEvictionTracker(pageMem0, plc, cctx);
 
         switch (plc.getPageEvictionMode()) {
             case RANDOM_LRU:
-                return new RandomLruPageEvictionTracker(pageMem, plc, cctx);
+                return new RandomLruPageEvictionTracker(pageMem0, plc, cctx);
             case RANDOM_2_LRU:
-                return new Random2LruPageEvictionTracker(pageMem, plc, cctx);
+                return new Random2LruPageEvictionTracker(pageMem0, plc, cctx);
             default:
                 return new NoOpPageEvictionTracker();
         }

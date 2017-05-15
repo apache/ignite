@@ -586,6 +586,9 @@ public final class IgniteSystemProperties {
     /** Cache start size for on-heap maps. Defaults to 4096. */
     public static final String IGNITE_CACHE_START_SIZE = "IGNITE_CACHE_START_SIZE";
 
+    /** */
+    public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {

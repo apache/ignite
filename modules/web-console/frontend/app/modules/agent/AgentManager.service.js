@@ -41,7 +41,7 @@ export default class IgniteAgentManager {
 
         this.clusters = [];
 
-        $root.$on('$stateChangeSuccess', _.bind(this.stopWatch, this));
+        $root.$on('$stateChangeSuccess', () => this.stopWatch());
 
         /**
          * Connection to backend.
@@ -128,20 +128,29 @@ export default class IgniteAgentManager {
     }
 
     /**
+     * @param states
      * @returns {Promise}
      */
-    awaitAgent() {
-        this.latchAwaitAgent = this.$q.defer();
+    awaitConnectionState(...states) {
+        this.latchAwaitStates = this.$q.defer();
 
         this.offAwaitAgent = this.$root.$watch(() => this.connectionState, (state) => {
-            if (state === State.CONNECTED) {
+            if (_.includes(states, state)) {
                 this.offAwaitAgent();
 
-                this.latchAwaitAgent.resolve();
+                this.latchAwaitStates.resolve();
             }
         });
 
-        return this.latchAwaitAgent.promise;
+        return this.latchAwaitStates.promise;
+    }
+
+    awaitCluster() {
+        return this.awaitConnectionState(State.CONNECTED);
+    }
+
+    awaitAgent() {
+        return this.awaitConnectionState(State.CONNECTED, State.CLUSTER_DISCONNECTED);
     }
 
     /**
@@ -149,7 +158,7 @@ export default class IgniteAgentManager {
      * @param {String} [backState]
      * @returns {Promise}
      */
-    startWatch(backText, backState) {
+    startAgentWatch(backText, backState) {
         const self = this;
 
         self.backText = backText;
@@ -163,18 +172,14 @@ export default class IgniteAgentManager {
 
         self.offStateWatch = this.$root.$watch(() => self.connectionState, (state) => {
             switch (state) {
+                case State.CONNECTED:
+                case State.CLUSTER_DISCONNECTED:
+                    this.AgentModal.hide();
+
+                    break;
+
                 case State.AGENT_DISCONNECTED:
                     this.AgentModal.agentDisconnected(self.backText, self.backState);
-
-                    break;
-
-                case State.CLUSTER_DISCONNECTED:
-                    self.AgentModal.clusterDisconnected(self.backText, self.backState);
-
-                    break;
-
-                case State.CONNECTED:
-                    this.AgentModal.hide();
 
                     break;
 
@@ -186,6 +191,48 @@ export default class IgniteAgentManager {
         return self.awaitAgent();
     }
 
+    /**
+     * @param {String} backText
+     * @param {String} [backState]
+     * @returns {Promise}
+     */
+    startClusterWatch(backText, backState) {
+        const self = this;
+
+        self.backText = backText;
+        self.backState = backState;
+
+        if (_.nonEmpty(self.clusters) && _.get(self.cluster, 'disconnect') === true) {
+            self.cluster = _.head(self.clusters);
+
+            self.connectionState = State.CONNECTED;
+        }
+
+        self.offStateWatch = this.$root.$watch(() => self.connectionState, (state) => {
+            switch (state) {
+                case State.CONNECTED:
+                    this.AgentModal.hide();
+
+                    break;
+
+                case State.AGENT_DISCONNECTED:
+                    this.AgentModal.agentDisconnected(self.backText, self.backState);
+
+                    break;
+
+                case State.CLUSTER_DISCONNECTED:
+                    self.AgentModal.clusterDisconnected(self.backText, self.backState);
+
+                    break;
+
+                default:
+                    // Connection to backend is not established yet.
+            }
+        });
+
+        return self.awaitCluster();
+    }
+
     stopWatch() {
         if (!_.isFunction(this.offStateWatch))
             return;
@@ -194,10 +241,10 @@ export default class IgniteAgentManager {
 
         this.AgentModal.hide();
 
-        if (this.latchAwaitAgent) {
+        if (this.latchAwaitStates) {
             this.offAwaitAgent();
 
-            this.latchAwaitAgent.reject('Agent watch stopped.');
+            this.latchAwaitStates.reject('Agent watch stopped.');
         }
     }
 

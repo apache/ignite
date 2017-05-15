@@ -2505,6 +2505,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to process.
          */
         @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            spi.startMessageProcess(msg);
+
             sendMetricsUpdateMessage();
 
             DebugLogger log = messageLogger(msg);
@@ -4096,6 +4098,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
+
+                    assert dataPacket != null : msg;
 
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));

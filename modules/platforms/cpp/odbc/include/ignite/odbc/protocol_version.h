@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 #include <string>
-#include <map>
+#include <set>
 
 namespace ignite
 {
@@ -31,27 +31,17 @@ namespace ignite
         class ProtocolVersion
         {
         public:
-            /** String to version map type alias. */
-            typedef std::map<std::string, ProtocolVersion> StringToVersionMap;
+            /** Current protocol version. */
+            static const ProtocolVersion VERSION_2_1_0;
 
-            /** Version to string map type alias. */
-            typedef std::map<ProtocolVersion, std::string> VersionToStringMap;
-
-            /** First version of the protocol that was introduced in Ignite 1.6.0. */
-            static const ProtocolVersion VERSION_1_6_0;
-
-            /** First version of the protocol that was introduced in Ignite 1.8.0. */
-            static const ProtocolVersion VERSION_1_8_0;
-
-            /** Unknown version of the protocol. */
-            static const ProtocolVersion VERSION_UNKNOWN;
+            typedef std::set<ProtocolVersion> VersionSet;
 
             /**
              * Get string to version map.
              *
              * @return String to version map.
              */
-            static const StringToVersionMap& GetMap();
+            static const VersionSet& GetSupported();
 
             /**
              * Get current version.
@@ -72,32 +62,59 @@ namespace ignite
             /**
              * Convert to string value.
              *
-             * @throw IgniteException if version is unknow parsed.
-             * @param version Version string to parse.
              * @return Protocol version.
              */
-            const std::string& ToString() const;
+            std::string ToString() const;
 
             /**
-             * Get int value.
-             *
-             * @return Integer value.
+             * Default constructor.
              */
-            int64_t GetIntValue() const;
+            ProtocolVersion();
 
             /**
-             * Check if the version is unknown.
+             * Constructor.
              *
-             * @return True if the version is unknown.
+             * @param vmajor Major version part.
+             * @param vminor Minor version part.
+             * @param vmaintenance Maintenance version part.
              */
-            bool IsUnknown() const;
+            ProtocolVersion(int16_t vmajor, int16_t vminor, int16_t vmaintenance);
 
             /**
-             * Check if the distributed joins supported.
+             * Get major part.
              *
-             * @retuen True if the distributed joins supported.
+             * @return Major part.
              */
-            bool IsDistributedJoinsSupported() const;
+            int16_t GetMajor() const;
+
+            /**
+             * Get minor part.
+             *
+             * @return Minor part.
+             */
+            int16_t GetMinor() const;
+
+            /**
+             * Get maintenance part.
+             *
+             * @return Maintenance part.
+             */
+            int16_t GetMaintenance() const;
+
+            /**
+             * Check if the version is supported.
+             *
+             * @return True if the version is supported.
+             */
+            bool IsSupported() const;
+
+            /**
+             * Compare to another value.
+             *
+             * @param other Instance to compare to.
+             * @return Zero if equeals, negative number if less and positive if more.
+             */
+            int32_t Compare(const ProtocolVersion& other) const;
 
             /**
              * Comparison operator.
@@ -154,33 +171,17 @@ namespace ignite
             friend bool operator>=(const ProtocolVersion& val1, const ProtocolVersion& val2);
 
         private:
-            /**
-             * Constructor.
-             *
-             * @param val Underlying value.
-             */
-            explicit ProtocolVersion(int64_t val);
-            
-            /**
-             * Make int value for the version.
-             *
-             * @param major Major version.
-             * @param minor Minor version.
-             * @param revision Revision.
-             * @return Int value for the version.
-             */
-            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t revision);
+            /** Set of supported versions. */
+            const static VersionSet supported;
 
-            ProtocolVersion();
+            /** Major part. */
+            int16_t vmajor;
 
-            /** String to version map. */
-            static const StringToVersionMap stringToVersionMap;
+            /** Minor part. */
+            int16_t vminor;
 
-            /** Version to string map. */
-            static const VersionToStringMap versionToStringMap;
-
-            /** Underlying int value. */
-            int64_t val;
+            /** Maintenance part. */
+            int16_t vmaintenance;
         };
     }
 }

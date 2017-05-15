@@ -14,9 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ./includes/header
+web-console-header
+    web-console-header-left
+        include ./includes/header-left
+    web-console-header-right
+        include ./includes/header-right
 
 .container.body-container
     div(ui-view='')
 
-include ./includes/footer
+web-console-footer
