@@ -949,7 +949,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         seg.writeLock().lock();
 
         try {
-
             long relPtr = seg.loadedPages.get(
                 fullId.cacheId(),
                 PageIdUtils.effectivePageId(fullId.pageId()),
@@ -960,6 +959,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
             );
+
+            if (relPtr == INVALID_REL_PTR)
+                return null;
 
             if (relPtr == OUTDATED_REL_PTR){
                 refreshOutdatedPage(
@@ -1001,8 +1003,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 copyInBuffer(absPtr, tmpBuf);
 
                 PageHeader.dirty(absPtr, false);
-
-                PageHeader.releasePage(absPtr);
 
                 return;
             }
@@ -1398,13 +1398,13 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      * @param absPtr Absolute pointer.
      * @param dirty {@code True} dirty flag.
-     * @param forceAdd If this flag is {@code true}, then the page will be added to the dirty set regardless whether
-     *      the old flag was dirty or not.
+     * @param forceAdd If this flag is {@code true}, then the page will be added to the dirty set regardless whether the
+     * old flag was dirty or not.
      */
     void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean forceAdd) {
-        if (dirty) {
-            boolean wasDirty = PageHeader.dirty(absPtr, dirty);
+        boolean wasDirty = PageHeader.dirty(absPtr, dirty);
 
+        if (dirty) {
             if (!wasDirty || forceAdd)
                 segment(pageId.cacheId(), pageId.pageId()).dirtyPages.add(pageId);
         }
@@ -1894,8 +1894,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                     continue;
                 }
 
-                loadedPages.remove(fullPageId.cacheId(), PageIdUtils.effectivePageId(fullPageId.pageId()),
-                    partTag(fullPageId.cacheId(), PageIdUtils.partId(fullPageId.pageId())));
+                loadedPages.remove(
+                    fullPageId.cacheId(),
+                    PageIdUtils.effectivePageId(fullPageId.pageId()),
+                    partTag(
+                        fullPageId.cacheId(),
+                        PageIdUtils.partId(fullPageId.pageId())
+                    )
+                );
 
                 return relEvictAddr;
             }
@@ -1941,8 +1947,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                 final FullPageId fullPageId = PageHeader.fullPageId(absEvictAddr);
 
                 if (prepareEvict(fullPageId, absEvictAddr)) {
-                    loadedPages.remove(fullPageId.cacheId(), PageIdUtils.effectivePageId(fullPageId.pageId()),
-                        partTag(fullPageId.cacheId(), PageIdUtils.partId(fullPageId.pageId())));
+                    loadedPages.remove(
+                        fullPageId.cacheId(),
+                        PageIdUtils.effectivePageId(fullPageId.pageId()),
+                        partTag(
+                            fullPageId.cacheId(),
+                            PageIdUtils.partId(fullPageId.pageId())
+                        )
+                    );
 
                     return addr;
                 }
