@@ -238,18 +238,22 @@ public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
 
-        SqlListenerRequestHandlerImpl handler =
-            new SqlListenerRequestHandlerImpl(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
-
+        SqlListenerRequestHandlerImpl handler = null;
         SqlListenerMessageParser parser = null;
 
         switch (clientType) {
             case ODBC_CLIENT:
                 parser = new OdbcMessageParser(ctx);
 
+                handler = new SqlListenerRequestHandlerImpl(ctx, busyLock, maxCursors,
+                    distributedJoins, enforceJoinOrder, true);
+
                 break;
             case JDBC_CLIENT:
                 parser = new JdbcMessageParser(ctx);
+
+                handler = new SqlListenerRequestHandlerImpl(ctx, busyLock, maxCursors,
+                    distributedJoins, enforceJoinOrder, false);
 
                 break;
         }

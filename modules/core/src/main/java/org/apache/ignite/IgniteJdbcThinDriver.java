@@ -162,7 +162,7 @@ public class IgniteJdbcThinDriver implements Driver {
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + ENFORCE_JOIN_ORDER;
 
     /** URL prefix. */
-    public static final String URL_PREFIX = "jdbc:ignite:thin//";
+    public static final String URL_PREFIX = "jdbc:ignite:thin://";
 
     /** Default port. */
     public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;

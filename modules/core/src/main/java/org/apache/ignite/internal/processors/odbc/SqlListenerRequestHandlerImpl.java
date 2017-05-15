@@ -77,22 +77,26 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Keep binary flag. */
+    private final boolean keppBinary;
+
     /**
      * Constructor.
-     *
-     * @param ctx Context.
+     *  @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param keppBinary Keep binary flag.
      */
     public SqlListenerRequestHandlerImpl(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean keppBinary) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.keppBinary = keppBinary;
 
         log = ctx.log(getClass());
     }
@@ -163,13 +167,21 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
+            IgniteCache<Object, Object> cache0;
+
+            if (req.cacheName() != null)
+                cache0 = ctx.grid().cache(req.cacheName());
+            else {
+                boolean start = ctx.config().isClientMode();
+
+                cache0 = (IgniteCache<Object, Object>)ctx.cache().getOrStartPublicCache(start, false);
+            }
 
             if (cache0 == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
                     "Cache doesn't exist (did you configure it?): " + req.cacheName());
 
-            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
+            IgniteCache<Object, Object> cache = keppBinary ? cache0.withKeepBinary() : cache0;
 
             if (cache == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,

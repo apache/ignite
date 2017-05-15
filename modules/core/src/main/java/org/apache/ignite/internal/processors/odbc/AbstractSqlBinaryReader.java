@@ -89,7 +89,7 @@ public abstract class AbstractSqlBinaryReader extends BinaryReaderExImpl {
                 return BinaryUtils.doReadTimestamp(in());
 
             case GridBinaryMarshaller.DATE:
-                return BinaryUtils.doReadDate(in());
+                return BinaryUtils.doReadSqlDate(in());
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
                 return BinaryUtils.doReadBooleanArray(in());
@@ -128,7 +128,7 @@ public abstract class AbstractSqlBinaryReader extends BinaryReaderExImpl {
                 return BinaryUtils.doReadTimestampArray(in());
 
             case GridBinaryMarshaller.DATE_ARR:
-                return BinaryUtils.doReadDateArray(in());
+                return BinaryUtils.doReadSqlDateArray(in());
 
             case GridBinaryMarshaller.JDK_MARSH:
                 return readNotEmbeddedObject();

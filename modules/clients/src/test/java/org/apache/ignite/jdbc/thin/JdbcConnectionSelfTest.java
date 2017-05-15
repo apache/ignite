@@ -43,7 +43,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
     /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:ignite:thin//";
+    private static final String URL_PREFIX = "jdbc:ignite:thin://";
 
     /** Host. */
     private static final String HOST = "127.0.0.1";
