@@ -35,6 +35,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.CacheQryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -1327,7 +1328,7 @@ public class GridSqlQuerySplitter {
         map.partitioned(hasPartitionedTables(mapQry));
 
         if (map.isPartitioned())
-            map.partitions(deduceQryPartition(mapQry, params, ctx));
+            map.derivedPartitions(derivePartitionsFromQry(mapQry, ctx));
 
         mapSqlQrys.add(map);
     }
@@ -1997,11 +1998,10 @@ public class GridSqlQuerySplitter {
      * set of partitions.
      *
      * @param qry Query.
-     * @param params Query Parameters.
      * @param ctx Kernal context.
      * @return Array of partitions, or {@code null} if none identified
      */
-    private static int[] deduceQryPartition(GridSqlQuery qry, Object[] params, GridKernalContext ctx) {
+    private static CacheQryPartitionInfo[] derivePartitionsFromQry(GridSqlQuery qry, GridKernalContext ctx) {
         if (!(qry instanceof GridSqlSelect))
             return null;
 
@@ -2011,16 +2011,15 @@ public class GridSqlQuerySplitter {
         if (select.from() == null || select.from().size() != 1)
             return null;
 
-        return extractPartition(select.where(), params, ctx);
+        return extractPartition(select.where(), ctx);
     }
 
     /**
      * @param el AST element to start with.
-     * @param params Query parameters.
      * @param ctx Kernal context.
-     * @return Array of partitions, or {@code null} if none identified
+     * @return Array of partition info objects, or {@code null} if none identified
      */
-    private static int[] extractPartition(GridSqlAst el, Object[] params, GridKernalContext ctx) {
+    private static CacheQryPartitionInfo[] extractPartition(GridSqlAst el, GridKernalContext ctx) {
         if (!(el instanceof GridSqlOperation))
             return null;
 
@@ -2028,13 +2027,17 @@ public class GridSqlQuerySplitter {
 
         switch (op.operationType()) {
             case EQUAL:
-                return extractPartitionFromEquality(op, params, ctx);
+                CacheQryPartitionInfo partInfo = extractPartitionFromEquality(op, ctx);
+                if (partInfo != null)
+                    return new CacheQryPartitionInfo[] { partInfo };
+
+                return null;
 
             case AND: {
                 assert op.size() == 2;
 
-                int[] partsLeft = extractPartition(op.child(0), params, ctx);
-                int[] partsRight = extractPartition(op.child(1), params, ctx);
+                CacheQryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
+                CacheQryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
 
                 if (partsLeft != null && partsRight != null)
                     return null; //kind of conflict (_key = 1) and (_key = 2)
@@ -2051,11 +2054,11 @@ public class GridSqlQuerySplitter {
             case OR: {
                 assert op.size() == 2;
 
-                int[] partsLeft = extractPartition(op.child(0), params, ctx);
-                int[] partsRight = extractPartition(op.child(1), params, ctx);
+                CacheQryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
+                CacheQryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
 
                 if (partsLeft != null && partsRight != null)
-                    return mergeParts(partsLeft, partsRight);
+                    return mergePartitionInfo(partsLeft, partsRight);
 
                 return null;
             }
@@ -2069,11 +2072,10 @@ public class GridSqlQuerySplitter {
      * Analyses the equality operation and extracts the partition if possible
      *
      * @param op AST equality operation.
-     * @param params Query parameters.
      * @param ctx Kernal Context.
-     * @return Array of partitions, or {@code null} if none identified
+     * @return partition info, or {@code null} if none identified
      */
-    private static int[] extractPartitionFromEquality(GridSqlOperation op, Object[] params, GridKernalContext ctx) {
+    private static CacheQryPartitionInfo extractPartitionFromEquality(GridSqlOperation op, GridKernalContext ctx) {
         assert op.operationType() == GridSqlOperationType.EQUAL;
 
         GridSqlElement left = op.child(0);
@@ -2099,18 +2101,18 @@ public class GridSqlQuerySplitter {
             return null;
 
         try {
-            Object val;
             if (right instanceof GridSqlConst) {
                 GridSqlConst constant = (GridSqlConst)right;
-                val = constant.value().getObject();
-            }
-            else {
-                assert right instanceof GridSqlParameter;
-                GridSqlParameter param = (GridSqlParameter) right;
-                val = params[param.index()];
+
+                return new CacheQryPartitionInfo(ctx.affinity().partition(tbl.spaceName(),
+                                constant.value().getObject()), null, -1);
             }
 
-            return new int[] { ctx.affinity().partition(tbl.spaceName(), val) };
+            assert right instanceof GridSqlParameter;
+
+            GridSqlParameter param = (GridSqlParameter) right;
+
+            return new CacheQryPartitionInfo(-1, tbl.spaceName(), param.index());
         }
         catch (IgniteCheckedException ex) {
             return null;
@@ -2118,40 +2120,31 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * Merges two sorted partitions arrays
+     * Merges two partition info arrays, removing duplicates
      */
-    private static int[] mergeParts(int[] a, int[] b) {
+    private static CacheQryPartitionInfo[] mergePartitionInfo(CacheQryPartitionInfo[] a, CacheQryPartitionInfo[] b) {
         assert a != null;
         assert b != null;
 
         if (a.length == 1 && b.length == 1) {
-            if (a[0] < b[0])
-                return new int[] { a[0], b[0] };
+            if (a[0].equals(b[0]))
+                return new CacheQryPartitionInfo[] { a[0] };
 
-            if (a[0] > b[0])
-                return new int[] { b[0], a[0] };
-
-            return a; //no duplicates
+            return new CacheQryPartitionInfo[] { a[0], b[0] };
         }
 
-        ArrayList<Integer> list = new ArrayList<>(a.length + b.length);
-        for (int part: a)
+        ArrayList<CacheQryPartitionInfo> list = new ArrayList<>(a.length + b.length);
+        for (CacheQryPartitionInfo part: a)
             list.add(part);
 
-        for (int part: b) {
+        for (CacheQryPartitionInfo part: b) {
             int i = 0;
-            while (i < list.size() && list.get(i) < part) i++;
-
-            // maintain order, skip duplicates
-            if (i < list.size()) {
-                if (list.get(i) > part)
-                    list.add(i, part);
-            }
-            else
+            while (i < list.size() && !list.get(i).equals(part)) i++;
+            if (i == list.size())
                 list.add(part);
         }
 
-        int[] result = new int[list.size()];
+        CacheQryPartitionInfo[] result = new CacheQryPartitionInfo[list.size()];
         for (int i = 0; i < list.size(); i++)
             result[i] = list.get(i);
 

@@ -72,7 +72,7 @@ public class GridCacheSqlQuery implements Message {
     /** */
     @GridToStringInclude
     @GridDirectTransient
-    private transient int[] partitions;
+    private transient Object[] derivedPartitions;
 
     /**
      * For {@link Message}.
@@ -258,7 +258,7 @@ public class GridCacheSqlQuery implements Message {
         cp.paramIdxs = paramIdxs;
         cp.sort = sort;
         cp.partitioned = partitioned;
-        cp.partitions = partitions;
+        cp.derivedPartitions = derivedPartitions;
 
         return cp;
     }
@@ -332,13 +332,13 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /** */
-    public int[] partitions() {
-        return partitions;
+    public Object[] derivedPartitions() {
+        return derivedPartitions;
     }
 
     /** */
-    public GridCacheSqlQuery partitions(int[] partitions) {
-        this.partitions = partitions;
+    public GridCacheSqlQuery derivedPartitions(Object[] partitions) {
+        this.derivedPartitions = partitions;
 
         return this;
     }

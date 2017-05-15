@@ -1734,9 +1734,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
+        int partitions[] = qry.getPartitions();
+        if (partitions == null) {
+            try {
+                partitions = twoStepQry.getPartitions(kernalContext().affinity(), qry.getArgs());
+            } catch (IgniteCheckedException e) {
+                throw new CacheException("Failed to bind partition parameters: [qry=" + sqlQry + ", params=" +
+                        Arrays.deepToString(qry.getArgs()) + "]", e);
+            }
+        }
+
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel,
-                    qry.getArgs(), qry.getPartitions() == null ? twoStepQry.getPartitions() : qry.getPartitions()),
+                    qry.getArgs(), partitions),
             cancel);
 
         cursor.fieldsMeta(meta);

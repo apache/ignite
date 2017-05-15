@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -298,28 +300,33 @@ public class GridCacheTwoStepQuery {
      *
      * @return Partitions.
      */
-    @Nullable public int[] getPartitions() {
+    @Nullable public int[] getPartitions(GridAffinityProcessor aff, Object[] params) throws IgniteCheckedException {
         ArrayList<Integer> list = null;
 
         for (GridCacheSqlQuery mapQry : mapQrys) {
-            if (!F.isEmpty(mapQry.partitions())) {
-                if (list == null)
-                    list = new ArrayList<>(mapQry.partitions().length);
+            Object[] derivedPartitions = mapQry.derivedPartitions();
 
-                for (int part : mapQry.partitions()) {
-                    // assuming that partition arrays are small
-                    // we can use linear search here
-                    int i = 0;
-                    while (i < list.size() && list.get(i) < part) i++;
+            if (F.isEmpty(derivedPartitions))
+                return null; //all map queries must have derived partitions
 
-                    // maintain order, skip duplicates
-                    if (i < list.size()) {
-                        if (list.get(i) > part)
-                            list.add(i, part);
-                    }
-                    else
-                        list.add(part);
+            if (list == null)
+                list = new ArrayList<>(derivedPartitions.length);
+
+            for (Object obj : derivedPartitions) {
+                CacheQryPartitionInfo part = (CacheQryPartitionInfo)obj;
+                int partId = part.partition() < 0 ?
+                        aff.partition(part.cacheName(), params[part.paramIdx()]) :
+                        part.partition();
+
+                int i = 0;
+                while (i < list.size() && list.get(i) < partId) i++;
+
+                if (i < list.size()) {
+                    if (list.get(i) > partId)
+                        list.add(i, partId);
                 }
+                else
+                    list.add(partId);
             }
         }
 
