@@ -302,15 +302,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @SuppressWarnings("OverriddenMethodCallDuringObjectConstruction")
     protected GridCacheAdapter(GridCacheContext<K, V> ctx) {
-        this(ctx, DFLT_START_CACHE_SIZE);
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param startSize Start size.
-     */
-    @SuppressWarnings("OverriddenMethodCallDuringObjectConstruction")
-    protected GridCacheAdapter(GridCacheContext<K, V> ctx, int startSize) {
         this(ctx, null);
     }
 
@@ -559,11 +550,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @throws IgniteCheckedException If start failed.
      */
-    public void start() throws IgniteCheckedException {
-        // TODO: IGNITE-5075: make start abstract?
-        if (map == null)
-            map = new GridCacheLocalConcurrentMap(entryFactory(), DFLT_START_CACHE_SIZE);
-    }
+    public abstract void start() throws IgniteCheckedException;
 
     /**
      * Startup info.

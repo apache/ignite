@@ -43,6 +43,9 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     /** Default concurrency level. */
     private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
 
+    /** */
+    private final CacheGroupInfrastructure grp;
+
     /** Internal map. */
     private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map;
 
@@ -54,14 +57,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * capacity.
      *
      * @param factory Entry factory.
-     * @param initialCapacity the initial capacity. The implementation
+     * @param initCap the initial capacity. The implementation
      *      performs internal sizing to accommodate this many elements.
 
      * @throws IllegalArgumentException if the initial capacity is
      *      negative.
      */
-    public GridCacheConcurrentMapImpl(GridCacheMapEntryFactory factory, int initialCapacity) {
-        this(factory, initialCapacity, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
+    public GridCacheConcurrentMapImpl(CacheGroupInfrastructure grp, GridCacheMapEntryFactory factory, int initCap) {
+        this(grp, factory, initCap, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
     }
 
     /**
@@ -69,7 +72,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * capacity, load factor and concurrency level.
      *
      * @param factory Entry factory.
-     * @param initialCapacity the initial capacity. The implementation
+     * @param initCap the initial capacity. The implementation
      *      performs internal sizing to accommodate this many elements.
      * @param loadFactor  the load factor threshold, used to control resizing.
      *      Resizing may be performed when the average number of elements per
@@ -81,15 +84,17 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      *      negative or the load factor or concurrencyLevel are
      *      non-positive.
      */
-    public GridCacheConcurrentMapImpl(
+    private GridCacheConcurrentMapImpl(
+        CacheGroupInfrastructure grp,
         GridCacheMapEntryFactory factory,
-        int initialCapacity,
+        int initCap,
         float loadFactor,
         int concurrencyLevel
     ) {
+        this.grp = grp;
         this.factory = factory;
 
-        map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
+        map = new ConcurrentHashMap8<>(initCap, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */
@@ -264,15 +269,28 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
-        boolean removed = map.remove(entry.key(), entry);
+        boolean rmv = map.remove(entry.key(), entry);
 
-        if (removed) {
+        if (rmv) {
             GridCacheContext ctx = entry.context();
 
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED)) {
                 // Event notification.
-                ctx.events().addEvent(entry.partition(), entry.key(), ctx.localNodeId(), (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
+                ctx.events().addEvent(entry.partition(),
+                    entry.key(),
+                    ctx.localNodeId(),
+                    (IgniteUuid)null,
+                    null,
+                    EVT_CACHE_ENTRY_DESTROYED,
+                    null,
+                    false,
+                    null,
+                    false,
+                    null,
+                    null,
+                    null,
+                    false);
+            }
 
             synchronized (entry) {
                 if (!entry.deleted())
@@ -280,7 +298,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             }
         }
 
-        return removed;
+        return rmv;
     }
 
     /** {@inheritDoc} */

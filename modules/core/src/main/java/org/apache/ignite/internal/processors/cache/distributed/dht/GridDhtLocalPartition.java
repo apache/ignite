@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -149,7 +148,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         CacheGroupInfrastructure grp,
         int id,
         GridCacheMapEntryFactory entryFactory) {
-        super(entryFactory, Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()));
+        super(grp, entryFactory, Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()));
 
         this.id = id;
         this.ctx = ctx;

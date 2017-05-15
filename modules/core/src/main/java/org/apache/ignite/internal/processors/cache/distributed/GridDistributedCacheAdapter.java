@@ -79,10 +79,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /**
      * @param ctx Cache registry.
-     * @param startSize Start size.
      */
-    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx, int startSize) {
-        super(ctx, startSize);
+    protected GridDistributedCacheAdapter(GridCacheContext<K, V> ctx) {
+        super(ctx);
     }
 
     /**

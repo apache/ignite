@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 public interface GridCacheConcurrentMap {
     /**
      * Returns the entry associated with the specified key in the
-     * HashMap.  Returns null if the HashMap contains no mapping
+     * HashMap. Returns null if the HashMap contains no mapping
      * for this key.
      *
      * @param key Key.
