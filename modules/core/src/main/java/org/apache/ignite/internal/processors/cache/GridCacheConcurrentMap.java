@@ -63,7 +63,7 @@ public interface GridCacheConcurrentMap {
      *
      * @return the number of key-value mappings in this map.
      */
-    public int size();
+    public int internalSize();
 
     /**
      * Returns the number of publicly available key-value mappings in this map.

@@ -287,7 +287,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         return map.size();
     }
 
