@@ -669,7 +669,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @param updateSeq Update sequence.
      */
-    void tryEvictAsync(boolean updateSeq) {
+    public void tryEvictAsync(boolean updateSeq) {
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);

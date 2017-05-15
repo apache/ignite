@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -30,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -331,11 +333,25 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 else {
                     if (cctx.shared().database().persistenceEnabled()) {
                         if (part.state() == RENTING || part.state() == EVICTED) {
-                            try {
-                                part.rent(false).get();
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(log, "Error while clearing outdated local partition", e);
+                            IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                            while (true) {
+                                try {
+                                    rentFut.get(20, TimeUnit.SECONDS);
+
+                                    break;
+                                }
+                                catch (IgniteFutureTimeoutCheckedException ignore) {
+                                    // Continue.
+                                    U.warn(log, "Still waiting for partition eviction: " + part);
+
+                                    part.tryEvictAsync(false);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Error while clearing outdated local partition", e);
+
+                                    break;
+                                }
                             }
 
                             part = top.localPartition(p, topVer, true);
