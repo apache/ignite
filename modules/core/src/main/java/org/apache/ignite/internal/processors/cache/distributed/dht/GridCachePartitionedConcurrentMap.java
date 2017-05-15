@@ -99,11 +99,11 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         int size = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
-            size += part.size();
+            size += part.internalSize();
 
         return size;
     }
