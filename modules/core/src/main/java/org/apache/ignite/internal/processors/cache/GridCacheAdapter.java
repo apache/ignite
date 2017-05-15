@@ -1062,14 +1062,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!F.isEmpty(jobs)) {
             ExecutorService execSvc = null;
 
-            if (jobs.size() > 1) {
-                execSvc = Executors.newFixedThreadPool(jobs.size() - 1);
-
-                for (int i = 1; i < jobs.size(); i++)
-                    execSvc.execute(jobs.get(i));
-            }
-
             try {
+                if (jobs.size() > 1) {
+                    execSvc = Executors.newFixedThreadPool(jobs.size() - 1);
+
+                    for (int i = 1; i < jobs.size(); i++)
+                        execSvc.execute(jobs.get(i));
+                }
+
                 jobs.get(0).run();
             }
             finally {
