@@ -222,14 +222,6 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
 
         ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT);
 
-        System.out.println("=======");
-//        for(int e : ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).enabledEvents()) {
-        for(int e : ignite.events().enabledEvents()) {
-            System.out.println(e);
-        }
-//        System.out.println(ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).enabledEvents().length);
-        System.out.println("=======");
-
         return listener;
     }
 

@@ -45,7 +45,7 @@ class IgniteAkkaActorStreamer[T, K, V](
         }
     }
 
-    override val strm: IgniteDataStreamer[K, V] = strm
+    override val strm: IgniteDataStreamer[K, V] = stm
     override val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V] = ste
     override val multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V] = mte
 }
