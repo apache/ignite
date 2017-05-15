@@ -388,7 +388,7 @@ public class GridH2Table extends TableBase {
             segmentSnapshot = new Object[idxs.size() - 2];
 
         // Take snapshots on all except first which is scan.
-        for (int i = 1, len = idxs.size(); i < len; i++) {
+        for (int i = 2, len = idxs.size(); i < len; i++) {
             Object s = segmentSnapshot[i - 2];
 
             boolean reuseExisting = s != null;
