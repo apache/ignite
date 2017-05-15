@@ -31,9 +31,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Verifies that containsKey() works as expected on atomic cache.
  */
-public class IgniteCacheContainsKeyAtomicTest extends IgniteCacheContainsKeyAbstractSelfTest {
+public class IgniteCacheContainsKeyAtomicTest extends GridCacheAbstractSelfTest {
     /** Cache name. */
     public static final String CACHE_NAME = "replicated";
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 4;
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
