@@ -464,6 +464,14 @@ public abstract class IgniteUtils {
     /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
+    /**
+     * Whether Ignite disables MBean creation.
+     * JMX bean server is always created.
+     * <p>
+     * Defaults to {@code} false, meaning that MBeans created as usually.
+     */
+    public static boolean IGNITE_DISABLE_MBEANS = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_MBEANS, false);
+
     /** Clock timer. */
     private static Thread timer;
 
@@ -4422,6 +4430,9 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String gridName, @Nullable String grp,
         String name, T impl, @Nullable Class<T> itf) throws JMException {
+        if (IGNITE_DISABLE_MBEANS)
+            return null;
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4446,6 +4457,9 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if (IGNITE_DISABLE_MBEANS)
+            return null;
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4472,6 +4486,9 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String gridName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
+        if (IGNITE_DISABLE_MBEANS)
+            return null;
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;

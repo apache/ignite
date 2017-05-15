@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
+import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -3528,7 +3530,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     srvr.unregisterMBean(U.makeCacheMBeanName(ctx.gridName(), cacheName, o.getClass().getName()));
                 }
                 catch (JMException e) {
-                    U.error(log, "Failed to unregister MBean for component: " + o, e);
+                    if (! (e instanceof InstanceNotFoundException && IgniteUtils.IGNITE_DISABLE_MBEANS))
+                        U.error(log, "Failed to unregister MBean for component: " + o, e);
                 }
 
                 break;

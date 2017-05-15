@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -445,7 +447,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
                     log.debug("Unregistered SPI MBean: " + spiMBean);
             }
             catch (JMException e) {
-                throw new IgniteSpiException("Failed to unregister SPI MBean: " + spiMBean, e);
+                if (! (e instanceof InstanceNotFoundException && IgniteUtils.IGNITE_DISABLE_MBEANS))
+                    throw new IgniteSpiException("Failed to unregister SPI MBean: " + spiMBean, e);
             }
         }
     }
