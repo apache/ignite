@@ -106,7 +106,7 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (qryId < 0) {
+        if (qryId < 0 || conn.isClosed()) {
             closed = true;
 
             return;

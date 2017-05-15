@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
@@ -78,22 +77,26 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
+    /** Keep binary flag. */
+    private final boolean keppBinary;
+
     /**
      * Constructor.
-     *
-     * @param ctx Context.
+     *  @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param keppBinary Keep binary flag.
      */
     public SqlListenerRequestHandlerImpl(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean keppBinary) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.keppBinary = keppBinary;
 
         log = ctx.log(getClass());
     }
@@ -178,7 +181,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
                     "Cache doesn't exist (did you configure it?): " + req.cacheName());
 
-            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
+            IgniteCache<Object, Object> cache = keppBinary ? cache0.withKeepBinary() : cache0;
 
             if (cache == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,

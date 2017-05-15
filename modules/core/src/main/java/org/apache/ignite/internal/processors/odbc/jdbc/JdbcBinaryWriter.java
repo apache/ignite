@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -42,18 +41,10 @@ public class JdbcBinaryWriter extends AbstractSqlBinaryWriter {
 
     /** {@inheritDoc} */
     @Override protected void writeNotEmbeddedObject(Object obj) throws BinaryObjectException {
-        Object obj0 = obj;
-
-        if (obj instanceof BinaryObject) {
-            BinaryObject bo = (BinaryObject)obj;
-
-            obj0 = bo.deserialize();
-        }
-
         writeByte(GridBinaryMarshaller.JDK_MARSH);
 
         try {
-            writeByteArray(U.marshal(jdkMars, obj0));
+             writeByteArray(U.marshal(jdkMars, obj));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException(e);

@@ -48,7 +48,17 @@ public abstract class AbstractSqlBinaryWriter extends BinaryWriterExImpl {
 
     /** {@inheritDoc} */
     @Override public void writeObjectDetached(@Nullable Object obj) throws BinaryObjectException {
+        System.out.println("+++ writePos=" + out().position());
+        if (obj == null) {
+            super.writeObjectDetached(obj);
+            System.out.println("+++ NULL");
+
+            return;
+        }
+
         Class<?> cls = obj.getClass();
+
+        System.out.println("+++ " + cls.getName());
 
         if (cls == Boolean.class)
             doWriteBoolean((Boolean)obj);

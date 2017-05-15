@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +43,10 @@ public class JdbcBinaryReader extends AbstractSqlBinaryReader {
     /** {@inheritDoc} */
     @Override protected Object readNotEmbeddedObject() throws BinaryObjectException {
         try {
+            byte type = readByte();
+
+            assert type == GridBinaryMarshaller.BYTE_ARR;
+
             return U.unmarshal(jdkMars, BinaryUtils.doReadByteArray(in()), null);
         }
         catch (IgniteCheckedException e) {

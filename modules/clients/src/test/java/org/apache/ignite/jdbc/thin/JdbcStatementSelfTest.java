@@ -45,7 +45,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin//127.0.0.1/";
+    private static final String URL = "jdbc:ignite:thin:        //127.0.0.1/";
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
