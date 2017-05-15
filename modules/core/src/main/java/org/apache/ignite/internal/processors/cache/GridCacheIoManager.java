@@ -142,10 +142,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     assert cacheMsg.topologyVersion() != null : cacheMsg;
 
                     // TODO IGNITE-5075.
-                    AffinityTopologyVersion waitVer = null;//cctx.affinity().localStartVersion(((GridDhtAffinityAssignmentRequest) cacheMsg).groupId());
+                    AffinityTopologyVersion startTopVer = null;//cctx.affinity().localStartVersion(((GridDhtAffinityAssignmentRequest) cacheMsg).groupId());
 
-                    if (waitVer == null)
-                        waitVer = new AffinityTopologyVersion(cctx.localNode().order());
+                    if (startTopVer == null)
+                        startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
 //                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 //
@@ -165,7 +165,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         if (log.isDebugEnabled()) {
                             log.debug("Wait for exchange before processing message [msg=" + msg +
                                 ", node=" + nodeId +
-                                ", waitVer=" + waitVer +
+                                ", waitVer=" + startTopVer +
                                 ", cacheDesc=" + cacheDescriptor(cacheMsg) + ']');
                         }
 
