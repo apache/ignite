@@ -106,11 +106,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     action(obj, reader);
 
                 _serializableDescriptor.OnDeserialized(obj, ctx);
-
-            }
-            finally
-            {
+                
                 DeserializationCallbackProcessor.Pop();
+            }
+            catch (Exception)
+            {
+                // Clear callbacks on exception to avoid dangling objects.
+                DeserializationCallbackProcessor.Clear();
+                throw;
             }
 
             return (T) obj;

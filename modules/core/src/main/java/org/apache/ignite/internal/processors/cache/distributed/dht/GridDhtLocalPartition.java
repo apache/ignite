@@ -247,9 +247,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public boolean isEmpty() {
         if (grp.allowFastEviction())
-            return size() == 0;
+            return internalSize() == 0;
 
-        return store.fullSize() == 0 && size() == 0;
+        return store.fullSize() == 0 && internalSize() == 0;
     }
 
     /**
