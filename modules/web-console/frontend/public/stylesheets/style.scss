@@ -37,16 +37,6 @@ hr {
     outline: none;
 }
 
-
-
-.modal.center .modal-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateX(-50%) translateY(-50%);
-    transform: translateX(-50%) translateY(-50%);
-}
-
 .border-left {
     box-shadow: 1px 0 0 0 $gray-lighter inset;
 }
@@ -300,63 +290,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Modal */
-.modal {
-    display: block;
-    overflow: hidden;
-}
-
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    float: none;
-}
-
-.modal-header {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-// Close icon
-.modal-header .close {
-    margin-right: -2px;
-}
-
-// Modal icon
-.modal-header h4 > i.fa {
-    cursor: default;
-    float: left;
-    line-height: $modal-title-line-height;
-}
-
-.modal .modal-dialog {
-    width: 650px;
-}
-
-.modal .modal-content {
-    background-color: $gray-lighter;
-
-    .input-tip {
-        padding-top: 1px;
-    }
-}
-
-.modal .modal-content .modal-header {
-    background-color: $ignite-background-color;
-    text-align: center;
-    color: $ignite-header-color;
-    padding: 15px 25px 15px 15px;
-}
-
-.modal .modal-content .modal-header h4 {
-    font-size: 22px;
-}
-
-.modal .modal-content .modal-footer {
+.login-header {
     margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 2em;
 }
 
-.modal-footer {
+.login-footer {
+    padding: 15px 0;
+    text-align: right;
+    border-top: 1px solid #e5e5e5;
+
     label {
         float: left;
         margin: 0;
@@ -369,38 +313,23 @@ h1, h2, h3, h4, h5, h6 {
     .checkbox {
         margin: 0;
     }
-}
-
-.login-header {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 2em;
-}
-
-.login-footer {
-    @extend .modal-footer;
-
-    padding-left: 0;
-    padding-right: 0;
 
     .btn {
         margin-right: 0;
     }
 }
 
-.modal-body {
-    margin-left: 20px;
-    margin-right: 20px;
+.greedy {
+    min-height: 100%;
+    height: #{"calc(100vh - 270px)"};
 }
 
-.modal-body-with-scroll {
-    max-height: 420px;
-    overflow-y: auto;
-    margin: 0;
+.signin-greedy {
+    height: #{"calc(100vh - 300px)"};
 }
 
 body > .wrapper,
-// Nested ui-view, like on password reset state
+    // Nested ui-view, like on password reset state
 body > .wrapper > ui-view {
     display: flex;
     flex-direction: column;
