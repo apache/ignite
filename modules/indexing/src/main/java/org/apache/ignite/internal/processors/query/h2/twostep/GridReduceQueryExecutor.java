@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -772,30 +773,8 @@ public class GridReduceQueryExecutor {
                 Iterator<List<?>> resIter = null;
 
                 if (!retry) {
-                    if (skipMergeTbl) {
-                        List<List<?>> res = new ArrayList<>();
-
-                        // TODO lazy
-                        // Simple UNION ALL can have multiple indexes.
-                        for (GridMergeIndex idx : r.idxs) {
-                            Cursor cur = idx.findInStream(null, null);
-
-                            while (cur.next()) {
-                                Row row = cur.get();
-
-                                int cols = row.getColumnCount();
-
-                                List<Object> resRow = new ArrayList<>(cols);
-
-                                for (int c = 0; c < cols; c++)
-                                    resRow.add(row.getValue(c).getObject());
-
-                                res.add(resRow);
-                            }
-                        }
-
-                        resIter = res.iterator();
-                    }
+                    if (skipMergeTbl)
+                        resIter = new LazyMergeIndexIterator(conn, r.idxs.iterator());
                     else {
                         cancel.checkCancelled();
 
@@ -1567,6 +1546,91 @@ public class GridReduceQueryExecutor {
         }
 
         return cp.isEmpty() ? null : cp;
+    }
+
+    /**
+     *
+     */
+    private final class LazyMergeIndexIterator implements AutoCloseable, Iterator<List<?>> {
+        /** */
+        final H2Connection conn;
+
+        /** */
+        final Iterator<GridMergeIndex> idxs;
+
+        /** */
+        Cursor cursor;
+
+        /** */
+        boolean hasNext;
+
+        /**
+         * @param conn Connection.
+         * @param idxs Indexes.
+         */
+        private LazyMergeIndexIterator(
+            H2Connection conn,
+            Iterator<GridMergeIndex> idxs
+        ) {
+            this.conn = conn;
+            this.idxs = idxs;
+
+            if (!idxs.hasNext())
+                throw new IllegalStateException();
+
+            nextCursor();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+//            h2.returnToPool(conn); // TODO lazy
+        }
+
+        /**
+         */
+        private void nextCursor() {
+            cursor = idxs.next().findInStream(null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            if (hasNext)
+                return true;
+
+            for (;;) {
+                if (hasNext = cursor.next())
+                    return true;
+
+                if (!idxs.hasNext())
+                    return false;
+
+                nextCursor();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<?> next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            hasNext = false;
+
+            Row row = cursor.get();
+
+            int cols = row.getColumnCount();
+
+            List<Object> resRow = new ArrayList<>(cols);
+
+            for (int c = 0; c < cols; c++)
+                resRow.add(row.getValue(c).getObject());
+
+            return resRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /** */
