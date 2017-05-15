@@ -2524,10 +2524,14 @@ public class IgnitionEx {
                         // Unregister MBean if no grid instances started for current MBeanServer.
                         if (data.getCounter() == 1) {
                             try {
-                                entry.getKey().unregisterMBean(data.getMbean());
+                                ObjectName mbean = data.getMbean();
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Unregistered MBean: " + data.getMbean());
+                                if (mbean != null) {
+                                    entry.getKey().unregisterMBean(mbean);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Unregistered MBean: " + mbean);
+                                }
                             }
                             catch (JMException e) {
                                 U.error(log, "Failed to unregister MBean.", e);

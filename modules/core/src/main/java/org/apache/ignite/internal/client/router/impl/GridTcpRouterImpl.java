@@ -25,6 +25,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.UUID;
+import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.apache.ignite.internal.client.router.GridTcpRouterMBean;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
@@ -206,7 +208,8 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                     log.debug("Unregistered MBean: " + mbeanName);
             }
             catch (JMException e) {
-                U.error(log, "Failed to unregister MBean.", e);
+                if (! (e instanceof InstanceNotFoundException && IgniteUtils.IGNITE_DISABLE_MBEANS))
+                    U.error(log, "Failed to unregister MBean.", e);
             }
 
         if (log.isInfoEnabled())

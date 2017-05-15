@@ -31,6 +31,7 @@ import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Configuration;
 import javax.cache.management.CacheMXBean;
 import javax.cache.management.CacheStatisticsMXBean;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -364,6 +366,9 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param beanType Bean type.
      */
     private void registerCacheObject(Object mxbean, String name, String beanType) {
+        if (IgniteUtils.IGNITE_DISABLE_MBEANS)
+            return;
+
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
         ObjectName registeredObjName = getObjectName(name, beanType);
@@ -399,8 +404,10 @@ public class CacheManager implements javax.cache.CacheManager {
                 mBeanSrv.unregisterMBean(registeredObjectName);
             }
             catch (Exception e) {
-                throw new CacheException("Error unregistering object instance " + registeredObjectName
-                    + " . Error was " + e.getMessage(), e);
+                if (! (e instanceof InstanceNotFoundException && IgniteUtils.IGNITE_DISABLE_MBEANS))
+                    throw new CacheException("Error unregistering object instance " + registeredObjectName
+                        + " . Error was " + e.getMessage(), e);
+
             }
         }
     }

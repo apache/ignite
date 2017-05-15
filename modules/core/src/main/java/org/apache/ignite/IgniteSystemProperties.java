@@ -494,6 +494,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
 
     /**
+     * Whether Ignite disables MBean creation.
+     * JMX bean server is always created.
+     * <p>
+     * Defaults to {@code} false, meaning that MBeans created as usually.
+     */
+    public static final String IGNITE_DISABLE_MBEANS = "IGNITE_DISABLE_MBEANS";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
