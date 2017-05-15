@@ -26,6 +26,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.compression.BinaryCompression;
+import org.apache.ignite.internal.binary.compression.Compressor;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +46,9 @@ public abstract class BinaryFieldAccessor {
 
     /** Mode. */
     protected final BinaryWriteMode mode;
+
+    /** */
+    protected final boolean compression;
 
     /**
      * Create accessor for the field.
@@ -132,6 +138,7 @@ public abstract class BinaryFieldAccessor {
         this.name = field.getName();
         this.id = id;
         this.mode = mode;
+        this.compression = field.isAnnotationPresent(BinaryCompression.class);
     }
 
     /**
@@ -481,6 +488,11 @@ public abstract class BinaryFieldAccessor {
                 throw new BinaryObjectException("Failed to get value for field: " + field, e);
             }
 
+            BinaryWriterExImpl mainWriter = writer;
+
+            if (compression)
+                writer = new BinaryWriterExImpl(writer.context());
+
             switch (mode(val)) {
                 case BYTE:
                     writer.writeByteField((Byte) val);
@@ -672,11 +684,25 @@ public abstract class BinaryFieldAccessor {
                 default:
                     assert false : "Invalid mode: " + mode;
             }
+
+            if (compression) {
+                Compressor compressor = writer.context().configuration().getCompressor();
+
+                byte[] compressed = compressor.compress(writer.array());
+
+                mainWriter.writeByte(GridBinaryMarshaller.COMPRESSED);
+                mainWriter.writeByteArrayField(compressed);
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            Object val = dynamic ? reader.readField(id) : readFixedType(reader);
+            Object val;
+
+            if (compression)
+                val = readCompressedType(reader);
+            else
+                val = dynamic ? reader.readField(id) : readFixedType(reader);
 
             try {
                 if (val != null || !field.getType().isPrimitive())
@@ -884,11 +910,38 @@ public abstract class BinaryFieldAccessor {
 
                     break;
 
+                case COMPRESSED:
+                    val = readCompressedType(reader);
+
+                    break;
+
                 default:
                     assert false : "Invalid mode: " + mode;
             }
 
             return val;
+        }
+
+        /**
+         * Reads compressed type from the given reader.
+         *
+         * @param reader Reader to read from.
+         * @return Decompressed read value.
+         * @throws BinaryObjectException If failed to read value from the stream.
+         */
+        protected Object readCompressedType(BinaryReaderExImpl reader) throws BinaryObjectException {
+            assert reader.readByte() == GridBinaryMarshaller.COMPRESSED;
+
+            byte[] arr = reader.readByteArray();
+
+            assert arr != null;
+
+            BinaryContext context = reader.context();
+            Compressor compressor = context.configuration().getCompressor();
+
+            byte[] decompressed = compressor.decompress(arr);
+
+            return new BinaryReaderExImpl(context, new BinaryHeapInputStream(decompressed), null, true).deserialize();
         }
 
         /**

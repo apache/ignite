@@ -42,6 +42,8 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.binary.compression.Compressor;
+import org.apache.ignite.internal.binary.compression.DeflaterCompressor;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -468,6 +470,12 @@ public class IgniteConfiguration {
     private SqlConnectorConfiguration sqlConnCfg = new SqlConnectorConfiguration();
 
     /**
+     * Defines the {@link Compressor} implementation, which will be used to compress object's fields
+     * or with {@link org.apache.ignite.internal.binary.compression.BinaryCompression} to compress annotated fields.
+     */
+    private Compressor compressor = new DeflaterCompressor();
+
+    /**
      * Creates valid grid configuration with all default values.
      */
     public IgniteConfiguration() {
@@ -573,6 +581,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        compressor = cfg.getCompressor();
     }
 
     /**
@@ -2770,6 +2779,20 @@ public class IgniteConfiguration {
      */
     public SqlConnectorConfiguration getSqlConnectorConfiguration() {
         return sqlConnCfg;
+    }
+
+    /**
+     * @return {@link Compressor} implementation.
+     */
+    public Compressor getCompressor() {
+        return compressor;
+    }
+
+    /**
+     * @param compressor {@link Compressor} implementation.
+     */
+    public void setCompressor(Compressor compressor) {
+        this.compressor = compressor;
     }
 
     /** {@inheritDoc} */

@@ -58,6 +58,8 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
+import org.apache.ignite.internal.binary.compression.Compressor;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -194,7 +196,7 @@ public class BinaryUtils {
             GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
             GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
             GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
-            GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
+            GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL, GridBinaryMarshaller.COMPRESSED}) {
 
             PLAIN_TYPE_FLAG[b] = true;
         }
@@ -250,6 +252,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.COL] = "Collection";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.MAP] = "Map";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.CLASS] = "Class";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.COMPRESSED] = "Compressed";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BYTE_ARR] = "byte[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.SHORT_ARR] = "short[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.INT_ARR] = "int[]";
@@ -1777,6 +1780,20 @@ public class BinaryUtils {
         int start = in.position();
 
         byte flag = in.readByte();
+
+        if (flag == GridBinaryMarshaller.COMPRESSED) {
+            assert in.readByte() == GridBinaryMarshaller.BYTE_ARR;
+
+            byte[] arr = doReadByteArray(in);
+
+            Compressor compressor = ctx.configuration().getCompressor();
+
+            byte[] decompressed = compressor.decompress(arr);
+
+            in = BinaryHeapInputStream.create(decompressed, 0);
+            start = 0;
+            flag = in.readByte();
+        }
 
         switch (flag) {
             case GridBinaryMarshaller.NULL:

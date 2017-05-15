@@ -196,6 +196,9 @@ public class GridBinaryMarshaller {
     public static final int OBJECT = -1;
 
     /** */
+    public static final byte COMPRESSED = 40;
+
+    /** */
     public static final int UNREGISTERED_TYPE_ID = 0;
 
     /** Protocol version. */
