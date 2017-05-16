@@ -1553,17 +1553,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     }
                     // Update map for remote node.
                     else if (plc != PartitionLossPolicy.IGNORE) {
-                        // TODO
-//                        Set<UUID> nodeIds = part2node.get(part);
-//
-//                        if (nodeIds != null) {
-//                            for (UUID nodeId : nodeIds) {
-//                                GridDhtPartitionMap nodeMap = node2part.get(nodeId);
-//
-//                                if (nodeMap.get(part) != EVICTED)
-//                                    nodeMap.put(part, LOST);
-//                            }
-//                        }
+                        for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                            if (e.getKey().equals(cctx.localNodeId()))
+                                continue;
+
+                            if (e.getValue().get(part) != EVICTED)
+                                e.getValue().put(part, LOST);
+                        }
                     }
 
                     if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST))
@@ -1584,57 +1580,36 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions() {
-        // TODO
+        lock.writeLock().lock();
 
-//        lock.writeLock().lock();
-//
-//        try {
-//            int parts = cctx.affinity().partitions();
-//            long updSeq = updateSeq.incrementAndGet();
-//
-//            for (int part = 0; part < parts; part++) {
-//                Set<UUID> nodeIds = part2node.get(part);
-//
-//                if (nodeIds != null) {
-//                    boolean lost = false;
-//
-//                    for (UUID node : nodeIds) {
-//                        GridDhtPartitionMap map = node2part.get(node);
-//
-//                        if (map.get(part) == LOST) {
-//                            lost = true;
-//
-//                            break;
-//                        }
-//                    }
-//
-//                    if (lost) {
-//                        GridDhtLocalPartition locPart = localPartition(part, topVer, false);
-//
-//                        if (locPart != null) {
-//                            boolean marked = locPart.own();
-//
-//                            if (marked)
-//                                updateLocal(locPart.id(), locPart.state(), updSeq);
-//                        }
-//
-//                        for (UUID nodeId : nodeIds) {
-//                            GridDhtPartitionMap nodeMap = node2part.get(nodeId);
-//
-//                            if (nodeMap.get(part) == LOST)
-//                                nodeMap.put(part, OWNING);
-//                        }
-//                    }
-//                }
-//            }
-//
-//            checkEvictions(updSeq, cctx.affinity().assignments(topVer));
-//
-//            cctx.needsRecovery(false);
-//        }
-//        finally {
-//            lock.writeLock().unlock();
-//        }
+        try {
+            long updSeq = updateSeq.incrementAndGet();
+
+            for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+                    if (e0.getValue() != LOST)
+                        continue;
+
+                    e0.setValue(OWNING);
+
+                    GridDhtLocalPartition locPart = localPartition(e0.getKey(), topVer, false);
+
+                    if (locPart != null && locPart.state() == LOST) {
+                        boolean marked = locPart.own();
+
+                        if (marked)
+                            updateLocal(locPart.id(), locPart.state(), updSeq);
+                    }
+                }
+            }
+
+            checkEvictions(updSeq, cctx.affinity().assignments(topVer));
+
+            cctx.needsRecovery(false);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
