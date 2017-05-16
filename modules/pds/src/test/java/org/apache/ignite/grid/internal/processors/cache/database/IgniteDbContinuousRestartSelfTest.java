@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.database;
+package org.apache.ignite.grid.internal.processors.cache.database;
 
 import java.util.Map;
 import java.util.Random;
@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -44,7 +45,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAbstractTest {
+public class IgniteDbContinuousRestartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
 
@@ -80,7 +81,9 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
+        PersistenceConfiguration pdsCfg = new PersistenceConfiguration();
+
+        cfg.setPersistenceConfiguration(pdsCfg);
 
         return cfg;
     }
@@ -98,6 +101,8 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY);
+
         deleteWorkFiles();
     }
 
@@ -113,6 +118,7 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
     }
 
     /**
@@ -208,6 +214,8 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
         int threads,
         final int batch
     ) throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY,
+            String.valueOf(checkpointDelay));
 
         startGrids(GRID_CNT);
 
@@ -224,7 +232,8 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
 
         IgniteInternalFuture<?> busyFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
+            @Override
+            public Object call() throws Exception {
                 IgniteCache<Object, Object> cache = load.cache(CACHE_NAME);
                 Random rnd = ThreadLocalRandom.current();
 

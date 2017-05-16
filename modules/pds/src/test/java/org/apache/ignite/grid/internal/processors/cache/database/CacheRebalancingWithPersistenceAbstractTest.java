@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.database;
+package org.apache.ignite.grid.internal.processors.cache.database;
 
 import java.io.File;
 import java.io.Serializable;
@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,8 +38,8 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistenceConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.EventType;
@@ -60,21 +59,18 @@ import org.apache.ignite.transactions.Transaction;
 /**
  * Test for rebalancing and persistence integration.
  */
-public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends GridCommonAbstractTest {
+public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected boolean explicitTx;
-
-    /** Cache name. */
-    private final String cacheName = "cache";
+    protected boolean explicitTx = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg1 = cacheConfiguration(cacheName);
+        CacheConfiguration ccfg1 = cacheConfiguration(null);
         ccfg1.setBackups(1);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -82,20 +78,20 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         ccfg2.setBackups(1);
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
+        QueryEntity queryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
         fields.put("v1", Integer.class.getName());
         fields.put("v2", Integer.class.getName());
 
-        qryEntity.setFields(fields);
+        queryEntity.setFields(fields);
 
-        QueryIndex qryIdx = new QueryIndex("v1", true);
+        QueryIndex queryIndex = new QueryIndex("v1", true);
 
-        qryEntity.setIndexes(Collections.singleton(qryIdx));
+        queryEntity.setIndexes(Collections.singleton(queryIndex));
 
-        ccfg2.setQueryEntities(Collections.singleton(qryEntity));
+        ccfg2.setQueryEntities(Collections.singleton(queryEntity));
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
@@ -162,7 +158,6 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
     /**
      * Test that outdated partitions on restarted nodes are correctly replaced with newer versions.
-     *
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestart() throws Exception {
@@ -174,7 +169,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite0.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite0.cache(null);
 
         for (int i = 0; i < 5000; i++)
             cache1.put(i, i);
@@ -203,15 +198,15 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache3 = ignite2.cache(cacheName);
+        IgniteCache<Integer, Integer> cache3 = ignite2.cache(null);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 100; i++) {
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache3.get(i));
+        }
     }
 
     /**
      * Test that outdated partitions on restarted nodes are correctly replaced with newer versions.
-     *
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
@@ -222,14 +217,14 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         IgniteEx ignite2 = startGrid(2);
         IgniteEx ignite3 = startGrid(3);
 
-        ignite0.cache(cacheName).rebalance().get();
-        ignite1.cache(cacheName).rebalance().get();
-        ignite2.cache(cacheName).rebalance().get();
-        ignite3.cache(cacheName).rebalance().get();
+        ignite0.cache(null).rebalance().get();
+        ignite1.cache(null).rebalance().get();
+        ignite2.cache(null).rebalance().get();
+        ignite3.cache(null).rebalance().get();
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite0.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite0.cache(null);
 
         for (int i = 0; i < 1000; i++)
             cache1.put(i, i);
@@ -263,13 +258,13 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
 
-        ignite2.cache(cacheName).rebalance().get();
-        ignite3.cache(cacheName).rebalance().get();
+        ignite2.cache(null).rebalance().get();
+        ignite3.cache(null).rebalance().get();
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
 
         for (int i = 0; i < 100; i++) {
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache2.get(i));
@@ -279,25 +274,24 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
     /**
      * Test that up-to-date partitions aren't rebalanced after cluster restarts gracefully.
-     *
      * @throws Exception If fails.
      */
     public void testNoRebalancingOnRestartDeactivated() throws Exception {
         fail();
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        IgniteEx ignite1 = (IgniteEx) G.start(getConfiguration("test1"));
+        IgniteEx ignite2 = (IgniteEx) G.start(getConfiguration("test2"));
+        IgniteEx ignite3 = (IgniteEx) G.start(getConfiguration("test3"));
+        IgniteEx ignite4 = (IgniteEx) G.start(getConfiguration("test4"));
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
 
         final Collection<Integer> parts = new HashSet<>();
 
         for (int i = 0; i < 100; i++) {
             cache1.put(i, i);
-            parts.add(ignite1.affinity(cacheName).partition(i));
+            parts.add(ignite1.affinity(null).partition(i));
         }
 
         ignite1.active(false);
@@ -307,36 +301,36 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         ignite3.close();
         ignite4.close();
 
-        final AtomicInteger evtCnt = new AtomicInteger();
+        final AtomicInteger eventCount = new AtomicInteger();
 
-        ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+        ignite1 = (IgniteEx) G.start(getConfiguration("test1"));
 
-        cache1 = ignite1.cache(cacheName);
+        cache1 = ignite1.cache(null);
 
         ignite1.active(false);
 
         ignite1.events().remoteListen(new IgniteBiPredicate<UUID, CacheRebalancingEvent>() {
-            @Override public boolean apply(UUID uuid, CacheRebalancingEvent evt) {
-                if (Objects.equals(evt.cacheName(), cacheName) && parts.contains(evt.partition()))
-                    evtCnt.incrementAndGet();
+            @Override public boolean apply(UUID uuid, CacheRebalancingEvent event) {
+                if (event.cacheName() == null && parts.contains(event.partition()))
+                    eventCount.incrementAndGet();
 
                 return true;
             }
         }, null, EventType.EVT_CACHE_REBALANCE_PART_LOADED);
 
-        ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        ignite2 = (IgniteEx) G.start(getConfiguration("test2"));
+        ignite3 = (IgniteEx) G.start(getConfiguration("test3"));
+        ignite4 = (IgniteEx) G.start(getConfiguration("test4"));
 
         ignite1.active(true);
 
         awaitPartitionMapExchange();
 
-        assert evtCnt.get() == 0 : evtCnt.get();
+        assert eventCount.get() == 0 : eventCount.get();
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache(null);
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
@@ -348,38 +342,38 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
     /**
      * Test that all data is correctly restored after non-graceful restart.
-     *
      * @throws Exception If fails.
      */
     public void testDataCorrectnessAfterRestart() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        IgniteEx ignite1 = (IgniteEx) G.start(getConfiguration("test1"));
+        IgniteEx ignite2 = (IgniteEx) G.start(getConfiguration("test2"));
+        IgniteEx ignite3 = (IgniteEx) G.start(getConfiguration("test3"));
+        IgniteEx ignite4 = (IgniteEx) G.start(getConfiguration("test4"));
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 100; i++) {
             cache1.put(i, i);
+        }
 
         ignite1.close();
         ignite2.close();
         ignite3.close();
         ignite4.close();
 
-        ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        ignite1 = (IgniteEx) G.start(getConfiguration("test1"));
+        ignite2 = (IgniteEx) G.start(getConfiguration("test2"));
+        ignite3 = (IgniteEx) G.start(getConfiguration("test3"));
+        ignite4 = (IgniteEx) G.start(getConfiguration("test4"));
 
         awaitPartitionMapExchange();
 
-        cache1 = ignite1.cache(cacheName);
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
+        cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache(null);
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
@@ -391,21 +385,21 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
     /**
      * Test that partitions are marked as lost when all owners leave cluster, but recover after nodes rejoin.
-     *
      * @throws Exception If fails.
      */
     public void testPartitionLossAndRecover() throws Exception {
         Ignite ignite1 = G.start(getConfiguration("test1"));
         Ignite ignite2 = G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        IgniteEx ignite3 = (IgniteEx) G.start(getConfiguration("test3"));
+        IgniteEx ignite4 = (IgniteEx) G.start(getConfiguration("test4"));
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 100; i++) {
             cache1.put(i, i);
+        }
 
         ignite1.active(false);
 
@@ -416,18 +410,18 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        assert !ignite1.cache(cacheName).lostPartitions().isEmpty();
+        assert !cache1.lostPartitions().isEmpty();
 
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        ignite3 = (IgniteEx) G.start(getConfiguration("test3"));
+        ignite4 = (IgniteEx) G.start(getConfiguration("test4"));
 
         awaitPartitionMapExchange();
 
         ignite1.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache4 = ignite4.cache(null);
 
         for (int i = 0; i < 100; i++) {
             assert cache1.get(i).equals(i);
@@ -441,7 +435,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
-        final int entriesCnt = 10_000;
+        final int entriesCount = 10_000;
         int maxNodesCount = 4;
         int topChanges = 20;
         final String cacheName = "indexed";
@@ -454,12 +448,12 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         IgniteCache<Integer, TestValue> cache = ignite.cache(cacheName);
 
-        for (int i = 0; i < entriesCnt; i++) {
+        for (int i = 0; i < entriesCount; i++) {
             cache.put(i, new TestValue(i, i));
             map.put(i, new TestValue(i, i));
         }
 
-        final AtomicInteger nodesCnt = new AtomicInteger();
+        final AtomicInteger nodesCount = new AtomicInteger();
 
         IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -467,11 +461,11 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
                     if (stop.get())
                         return null;
 
-                    int k = ThreadLocalRandom.current().nextInt(entriesCnt);
+                    int k = ThreadLocalRandom.current().nextInt(entriesCount);
                     int v1 = ThreadLocalRandom.current().nextInt();
                     int v2 = ThreadLocalRandom.current().nextInt();
 
-                    int n = nodesCnt.get();
+                    int n = nodesCount.get();
 
                     if (n <= 0)
                         continue;
@@ -481,7 +475,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
                     try {
                         ignite = grid(ThreadLocalRandom.current().nextInt(n));
                     }
-                    catch (Exception ignored) {
+                    catch (Exception e) {
                         continue;
                     }
 
@@ -491,8 +485,9 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
                     Transaction tx = null;
                     boolean success = true;
 
-                    if (explicitTx)
+                    if (explicitTx) {
                         tx = ignite.transactions().txStart();
+                    }
 
                     try {
                         ignite.cache(cacheName).put(k, new TestValue(v1, v2));
@@ -521,17 +516,17 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
             U.sleep(3_000);
 
             boolean add;
-            if (nodesCnt.get() <= maxNodesCount / 2)
+            if (nodesCount.get() <= maxNodesCount / 2)
                 add = true;
-            else if (nodesCnt.get() > maxNodesCount)
+            else if (nodesCount.get() > maxNodesCount)
                 add = false;
             else
                 add = ThreadLocalRandom.current().nextBoolean();
 
             if (add)
-                startGrid(nodesCnt.incrementAndGet());
+                startGrid(nodesCount.incrementAndGet());
             else
-                stopGrid(nodesCnt.getAndDecrement());
+                stopGrid(nodesCount.getAndDecrement());
 
             awaitPartitionMapExchange();
 
@@ -544,51 +539,40 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         awaitPartitionMapExchange();
 
-        for (Map.Entry<Integer, TestValue> entry : map.entrySet())
+        for (Map.Entry<Integer, TestValue> entry : map.entrySet()) {
             assertEquals(Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
+        }
     }
 
-    /**
-     *
-     */
     private static class TestValue implements Serializable {
-        /** V 1. */
         private final int v1;
-        /** V 2. */
         private final int v2;
 
-        /**
-         * @param v1 V 1.
-         * @param v2 V 2.
-         */
         private TestValue(int v1, int v2) {
             this.v1 = v1;
             this.v2 = v2;
         }
 
-        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue val = (TestValue)o;
+            TestValue value = (TestValue)o;
 
-            return v1 == val.v1 && v2 == val.v2;
+            if (v1 != value.v1)
+                return false;
+            return v2 == value.v2;
 
         }
 
-        /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = v1;
-
-            res = 31 * res + v2;
-
-            return res;
+            int result = v1;
+            result = 31 * result + v2;
+            return result;
         }
 
-        /** {@inheritDoc} */
         @Override public String toString() {
             return "TestValue{" +
                 "v1=" + v1 +
