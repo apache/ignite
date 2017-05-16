@@ -60,7 +60,7 @@ public class TransactionsHangTest extends GridCommonAbstractTest {
     public static final int DURATION = 180;
 
     /** Maximum count of inserted keys. */
-    public static final int MAX_KEY_COUNT = 1_000_000;
+    public static final int MAX_KEY_COUNT = 500_000;
 
     /** Checkpoint frequency. */
     public static final long CHECKPOINT_FREQUENCY = 20_000;
@@ -107,6 +107,7 @@ public class TransactionsHangTest extends GridCommonAbstractTest {
 
         PersistenceConfiguration pCfg = new PersistenceConfiguration();
 
+        pCfg.setWalHistorySize(1);
         pCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
 
         cfg.setPersistenceConfiguration(pCfg);
