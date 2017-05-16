@@ -35,6 +35,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -89,8 +90,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        //todo why it fixes test:
-        // cfg.setMarshaller(new JdkMarshaller());
+        //todo why it fixes test: with binary marshaller results to full version of toString()
+        // org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=392066768, hash=11433031, a=100, b=AAAA]
+
+        cfg.setMarshaller(new JdkMarshaller());
         return cfg;
     }
 
@@ -687,9 +690,11 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PackageVisibleField")
     private static class TestObjectField implements Serializable {
         /** */
+        @GridToStringInclude
         final int a;
 
         /** */
+        @GridToStringInclude
         final String b;
 
         /**
