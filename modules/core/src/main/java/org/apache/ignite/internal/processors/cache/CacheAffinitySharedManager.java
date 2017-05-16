@@ -853,7 +853,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param desc Cache descriptor.
+     * @param grpDesc Cache group descriptor.
      * @param aff Affinity.
      * @param fut Exchange future.
      * @param fetch Force fetch flag.
@@ -1001,6 +1001,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
             else {
                 CacheGroupDescriptor grpDesc = registeredGrps.get(grp.groupId());
+
+                assert grpDesc != null : grp.nameForLog();
 
                 GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                     grpDesc,

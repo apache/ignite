@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -48,15 +49,23 @@ public class CacheGroupDescriptor {
     /** */
     private final UUID rcvdFrom;
 
-    CacheGroupDescriptor(String grpName,
+    /**
+     * @param cacheCfg Cache configuration.
+     * @param grpName Group name.
+     * @param grpId  Group ID.
+     * @param rcvdFrom Node ID cache group received from.
+     * @param deploymentId Deployment ID.
+     * @param caches Cache group caches.
+     */
+    CacheGroupDescriptor(
+        CacheConfiguration cacheCfg,
+        @Nullable String grpName,
         int grpId,
         UUID rcvdFrom,
         IgniteUuid deploymentId,
-        CacheConfiguration cacheCfg,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
-        assert grpName != null;
-        assert grpId != 0;
+        assert grpId > 0 : grpId;
 
         this.grpName = grpName;
         this.grpId = grpId;

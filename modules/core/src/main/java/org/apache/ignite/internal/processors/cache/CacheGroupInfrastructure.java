@@ -65,7 +65,7 @@ public class CacheGroupInfrastructure {
     private GridAffinityAssignmentCache aff;
 
     /** */
-    private final int grpId;
+    private int grpId;
 
     /** */
     private UUID rcvdFrom;
@@ -699,9 +699,13 @@ public class CacheGroupInfrastructure {
     }
 
     /**
-     *
+     * @param grpId New group ID.
      */
-    public void onReconnected() {
+    public void onReconnected(int grpId) {
+        assert grpId > 0 : grpId;
+
+        this.grpId = grpId;
+
         aff.onReconnected();
 
         if (top != null)

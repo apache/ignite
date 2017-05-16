@@ -43,7 +43,7 @@ class CacheNodeCommonDiscoveryData implements Serializable {
 
     /** */
     @GridToStringInclude
-    private final Map<String, CacheGroupData> cacheGrps;
+    private final Map<Integer, CacheGroupData> cacheGrps;
 
     /** */
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
@@ -55,7 +55,7 @@ class CacheNodeCommonDiscoveryData implements Serializable {
      */
     CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
-        Map<String, CacheGroupData> cacheGrps,
+        Map<Integer, CacheGroupData> cacheGrps,
         int cacheGrpIdGen,
         Map<String, Map<UUID, Boolean>> clientNodesMap) {
         assert caches != null;
@@ -75,7 +75,7 @@ class CacheNodeCommonDiscoveryData implements Serializable {
         return cacheGrpIdGen;
     }
 
-    Map<String, CacheGroupData> cacheGroups() {
+    Map<Integer, CacheGroupData> cacheGroups() {
         return cacheGrps;
     }
 

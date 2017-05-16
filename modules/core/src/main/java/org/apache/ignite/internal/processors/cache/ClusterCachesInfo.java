@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -63,7 +64,7 @@ class ClusterCachesInfo {
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<String, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
 
     /** */
     private int cacheGrpIdGen = 1;
@@ -75,7 +76,7 @@ class ClusterCachesInfo {
     private final IgniteLogger log;
 
     /** */
-    private Map<String, DynamicCacheDescriptor> cachesOnDisconnect;
+    private CachesOnDisconnect cachesOnDisconnect;
 
     /** */
     private CacheJoinNodeDiscoveryData joinDiscoData;
@@ -387,14 +388,14 @@ class ClusterCachesInfo {
 
                     exchangeActions.addCacheToStop(req, desc);
 
-                    CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupDescriptor().groupName());
+                    CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupDescriptor().groupId());
 
                     assert grpDesc != null && grpDesc.groupId() == desc.groupDescriptor().groupId() : desc;
 
                     grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
 
                     if (!grpDesc.hasCaches()) {
-                        registeredCacheGrps.remove(grpDesc.groupName());
+                        registeredCacheGrps.remove(grpDesc.groupId());
 
                         exchangeActions.addCacheGroupToStop(grpDesc);
                     }
@@ -477,10 +478,24 @@ class ClusterCachesInfo {
      */
     private Serializable joinDiscoveryData() {
         if (cachesOnDisconnect != null) {
+            Map<Integer, CacheClientReconnectDiscoveryData.CacheGroupInfo> cacheGrpsInfo = new HashMap<>();
             Map<String, CacheClientReconnectDiscoveryData.CacheInfo> cachesInfo = new HashMap<>();
 
+            Map<Integer, CacheGroupDescriptor> grps = cachesOnDisconnect.cacheGrps;
+            Map<String, DynamicCacheDescriptor> caches = cachesOnDisconnect.caches;
+
+            for (CacheGroupInfrastructure grp : ctx.cache().cacheGroups()) {
+                CacheGroupDescriptor desc = grps.get(grp.groupId());
+
+                assert desc != null : grp.nameForLog();
+
+                cacheGrpsInfo.put(grp.groupId(), new CacheClientReconnectDiscoveryData.CacheGroupInfo(desc.config(),
+                    desc.deploymentId(),
+                    (byte)0));
+            }
+
             for (IgniteInternalCache cache : ctx.cache().caches()) {
-                DynamicCacheDescriptor desc = cachesOnDisconnect.get(cache.name());
+                DynamicCacheDescriptor desc = caches.get(cache.name());
 
                 assert desc != null : cache.name();
 
@@ -491,7 +506,7 @@ class ClusterCachesInfo {
                     (byte)0));
             }
 
-            return new CacheClientReconnectDiscoveryData(cachesInfo);
+            return new CacheClientReconnectDiscoveryData(cacheGrpsInfo, cachesInfo);
         }
         else {
             assert ctx.config().isDaemon() || joinDiscoData != null || !ctx.state().active();
@@ -645,7 +660,7 @@ class ClusterCachesInfo {
             caches.put(desc.cacheName(), cacheData);
         }
 
-        Map<String, CacheGroupData> cacheGrps = new HashMap<>();
+        Map<Integer, CacheGroupData> cacheGrps = new HashMap<>();
 
         for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
             CacheGroupData grpData = new CacheGroupData(grpDesc.config(),
@@ -655,7 +670,7 @@ class ClusterCachesInfo {
                 grpDesc.deploymentId(),
                 grpDesc.caches());
 
-            cacheGrps.put(grpDesc.groupName(), grpData);
+            cacheGrps.put(grpDesc.groupId(), grpData);
         }
 
         Map<String, CacheData> templates = new HashMap<>();
@@ -696,15 +711,18 @@ class ClusterCachesInfo {
 
         cacheGrpIdGen = cachesData.currentCacheGroupId();
 
+        assert cacheGrpIdGen > 0 : cacheGrpIdGen;
+
         for (CacheGroupData grpData : cachesData.cacheGroups().values()) {
-            CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(grpData.groupName(),
+            CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
+                grpData.config(),
+                grpData.groupName(),
                 grpData.groupId(),
                 grpData.receivedFrom(),
                 grpData.deploymentId(),
-                grpData.config(),
                 grpData.caches());
 
-            CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupName(), grpDesc);
+            CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupId(), grpDesc);
 
             assert old == null : old;
 
@@ -732,7 +750,7 @@ class ClusterCachesInfo {
         }
 
         for (CacheData cacheData : cachesData.caches().values()) {
-            CacheGroupDescriptor grpDesc = groupDescriptor(cacheData.groupId());
+            CacheGroupDescriptor grpDesc = registeredCacheGrps.get(cacheData.groupId());
 
             assert grpDesc != null : cacheData.cacheConfiguration().getName();
 
@@ -792,15 +810,6 @@ class ClusterCachesInfo {
             else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData)
                 processJoiningNode((CacheJoinNodeDiscoveryData)joiningNodeData, data.joiningNodeId());
         }
-    }
-
-    private CacheGroupDescriptor groupDescriptor(int grpId) {
-        for (CacheGroupDescriptor desc : registeredCacheGrps.values()) {
-            if (desc.groupId() == grpId)
-                return desc;
-        }
-
-        return null;
     }
 
     /**
@@ -893,6 +902,36 @@ class ClusterCachesInfo {
         }
     }
 
+    /**
+     * @param grpName Group name.
+     * @return Group descriptor.
+     */
+    @Nullable private CacheGroupDescriptor cacheGroupByName(String grpName) {
+        assert grpName != null;
+
+        for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
+            if (grpName.equals(grpDesc.groupName()))
+                return grpDesc;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Group descriptor.
+     */
+    @Nullable private CacheGroupDescriptor nonSharedCacheGroupByCacheName(String cacheName) {
+        assert cacheName != null;
+
+        for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
+            if (!grpDesc.sharedGroup() && grpDesc.caches().containsKey(cacheName))
+                return grpDesc;
+        }
+
+        return null;
+    }
+
     private CacheGroupDescriptor registerCacheGroup(
         ExchangeActions exchActions,
         CacheConfiguration startedCacheCfg,
@@ -900,7 +939,7 @@ class ClusterCachesInfo {
         UUID rcvdFrom,
         IgniteUuid deploymentId) {
         if (startedCacheCfg.getGroupName() != null) {
-            CacheGroupDescriptor desc = registeredCacheGrps.get(startedCacheCfg.getGroupName());
+            CacheGroupDescriptor desc = cacheGroupByName(startedCacheCfg.getGroupName());
 
             if (desc != null) {
                 desc.onCacheAdded(startedCacheCfg.getName(), cacheId);
@@ -913,18 +952,15 @@ class ClusterCachesInfo {
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
-        String grpName = startedCacheCfg.getGroupName() != null ?
-            startedCacheCfg.getGroupName() : startedCacheCfg.getName();
-
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
-            grpName,
+            startedCacheCfg,
+            startedCacheCfg.getGroupName(),
             grpId,
             rcvdFrom,
             deploymentId,
-            startedCacheCfg,
             caches);
 
-        CacheGroupDescriptor old = registeredCacheGrps.put(grpName, grpDesc);
+        CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 
         assert old == null : old;
 
@@ -939,7 +975,7 @@ class ClusterCachesInfo {
     /**
      * @return Registered cache groups.
      */
-    ConcurrentMap<String, CacheGroupDescriptor> registeredCacheGroups() {
+    ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGroups() {
         return registeredCacheGrps;
     }
 
@@ -949,7 +985,7 @@ class ClusterCachesInfo {
      */
     void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
         if (ccfg.getGroupName() != null) {
-            CacheGroupDescriptor grpDesc = registeredCacheGrps.get(ccfg.getGroupName());
+            CacheGroupDescriptor grpDesc = cacheGroupByName(ccfg.getGroupName());
 
             if (grpDesc != null) {
                 assert ccfg.getGroupName().equals(grpDesc.groupName());
@@ -1005,8 +1041,11 @@ class ClusterCachesInfo {
      *
      */
     void onDisconnect() {
-        cachesOnDisconnect = new HashMap<>(registeredCaches);
+        cachesOnDisconnect = new CachesOnDisconnect(
+            new HashMap<>(registeredCacheGrps),
+            new HashMap<>(registeredCaches));
 
+        registeredCacheGrps.clear();
         registeredCaches.clear();
         registeredTemplates.clear();
 
@@ -1014,14 +1053,42 @@ class ClusterCachesInfo {
     }
 
     /**
-     * @return Stopped caches names.
+     * @return Information about stopped caches and cache groups.
      */
-    Set<String> onReconnected() {
+    ClusterCachesReconnectResult onReconnected() {
         assert disconnectedState();
 
         Set<String> stoppedCaches = new HashSet<>();
+        Set<Integer> stoppedCacheGrps = new HashSet<>();
+        Map<Integer, Integer> newCacheGrpIds = new HashMap<>();
 
-        for(Map.Entry<String, DynamicCacheDescriptor> e : cachesOnDisconnect.entrySet()) {
+        for (Map.Entry<Integer, CacheGroupDescriptor> e : cachesOnDisconnect.cacheGrps.entrySet()) {
+            CacheGroupDescriptor locDesc = e.getValue();
+
+            CacheGroupDescriptor desc;
+            boolean stopped = true;
+
+            if (locDesc.sharedGroup()) {
+                desc = cacheGroupByName(locDesc.groupName());
+
+                if (desc != null && desc.deploymentId().equals(locDesc.deploymentId()))
+                    stopped = false;
+            }
+            else {
+                desc = nonSharedCacheGroupByCacheName(locDesc.config().getName());
+
+                if (desc != null &&
+                    (surviveReconnect(locDesc.config().getName()) || desc.deploymentId().equals(locDesc.deploymentId())))
+                    stopped = false;
+            }
+
+            if (stopped)
+                stoppedCacheGrps.add(locDesc.groupId());
+            else
+                newCacheGrpIds.put(locDesc.groupId(), desc.groupId());
+        }
+
+        for (Map.Entry<String, DynamicCacheDescriptor> e : cachesOnDisconnect.caches.entrySet()) {
             DynamicCacheDescriptor desc = e.getValue();
 
             String cacheName = e.getKey();
@@ -1049,7 +1116,7 @@ class ClusterCachesInfo {
 
         cachesOnDisconnect = null;
 
-        return stoppedCaches;
+        return new ClusterCachesReconnectResult(stoppedCacheGrps, stoppedCaches, newCacheGrpIds);
     }
 
     /**
@@ -1071,6 +1138,28 @@ class ClusterCachesInfo {
      *
      */
     void clearCaches() {
+        registeredCacheGrps.clear();
+
         registeredCaches.clear();
+    }
+
+    /**
+     *
+     */
+    private static class CachesOnDisconnect {
+        /** */
+        final Map<Integer, CacheGroupDescriptor> cacheGrps;
+
+        /** */
+        final Map<String, DynamicCacheDescriptor> caches;
+
+        /**
+         * @param cacheGrps Cache groups.
+         * @param caches Caches.
+         */
+        CachesOnDisconnect(Map<Integer, CacheGroupDescriptor> cacheGrps, Map<String, DynamicCacheDescriptor> caches) {
+            this.cacheGrps = cacheGrps;
+            this.caches = caches;
+        }
     }
 }

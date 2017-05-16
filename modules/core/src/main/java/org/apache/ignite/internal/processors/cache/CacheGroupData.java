@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -53,17 +54,21 @@ public class CacheGroupData implements Serializable {
 
     /**
      * @param cacheCfg Cache configuration.
-     * @param grpId
+     * @param grpName Group name.
+     * @param grpId  Group ID.
+     * @param rcvdFrom Node ID cache group received from.
+     * @param deploymentId Deployment ID.
+     * @param caches Cache group caches.
      */
-    public CacheGroupData(CacheConfiguration cacheCfg,
-        String grpName,
+    CacheGroupData(
+        CacheConfiguration cacheCfg,
+        @Nullable String grpName,
         int grpId,
         UUID rcvdFrom,
         IgniteUuid deploymentId,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
-        assert grpName != null;
-        assert grpId != 0;
+        assert grpId > 0 : grpId;
         assert deploymentId != null;
 
         this.cacheCfg = cacheCfg;

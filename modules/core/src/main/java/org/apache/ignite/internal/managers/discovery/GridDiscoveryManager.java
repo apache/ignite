@@ -633,6 +633,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     locJoin = new GridFutureAdapter<>();
 
                     registeredCaches.clear();
+                    registeredCacheGrps.clear();
 
                     for (AffinityTopologyVersion histVer : discoCacheHist.keySet()) {
                         Object rmvd = discoCacheHist.remove(histVer);
