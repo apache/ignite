@@ -82,18 +82,7 @@ import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransaction
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
 import org.apache.ignite.internal.processors.cache.MarshallerCacheJobRunNodeRestartTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheStartOnJoinTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFromBackupTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtTxPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheLockFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheMultiTxLockSelfTest;
@@ -224,6 +213,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheCreatePutMultiNodeSelfTest.class);
         suite.addTestSuite(IgniteCacheCreatePutTest.class);
         suite.addTestSuite(CacheStartOnJoinTest.class);
+        suite.addTestSuite(CacheDiscoveryDataConcurrentJoinTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
