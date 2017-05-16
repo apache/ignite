@@ -2488,7 +2488,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    private CacheConfiguration createConfigFromTemplate(String cacheName) throws IgniteCheckedException {
+    public CacheConfiguration createConfigFromTemplate(String cacheName) throws IgniteCheckedException {
         CacheConfiguration cfgTemplate = null;
 
         CacheConfiguration dfltCacheCfg = null;

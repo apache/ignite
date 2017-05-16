@@ -236,11 +236,6 @@ public class DdlStatementsProcessor {
 
         res.setTableName(createTbl.tableName());
 
-        if (createTbl.columns().containsKey(QueryUtils.KEY_FIELD_NAME) ||
-            createTbl.columns().containsKey(QueryUtils.VAL_FIELD_NAME))
-            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
-                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
-
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
@@ -248,14 +243,6 @@ public class DdlStatementsProcessor {
 
             res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
         }
-
-        if (F.isEmpty(createTbl.primaryKeyColumns()))
-            throw new IgniteSQLException("No PRIMARY KEY columns specified");
-
-        int valColsNum = res.getFields().size() - createTbl.primaryKeyColumns().size();
-
-        if (valColsNum == 0)
-            throw new IgniteSQLException("No cache value related columns found");
 
         res.setKeyType(createTbl.tableName() + "Key");
 

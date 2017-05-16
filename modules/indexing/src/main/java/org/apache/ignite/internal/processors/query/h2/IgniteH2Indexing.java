@@ -858,63 +858,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         executeSql(spaceName, sql);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
-        throws IgniteCheckedException {
-        IgniteInternalCache<?, ?> tplCache = ctx.cache().cache(tplCacheName);
-
-        if (tplCache == null)
-            throw new IgniteSQLException("", IgniteQueryErrorCode.CACHE_NOT_FOUND);
-
-        CacheConfiguration<?, ?> tplCfg = tplCache.configuration();
-
-        if (!F.isEmpty(tplCfg.getQueryEntities()))
-            throw new IgniteSQLException("Template cache already contains query entities which it should not " +
-                "[cacheName=" + tplCacheName + ']', IgniteQueryErrorCode.QUERY_ENTITIES_PRESENT);
-
-        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(tplCfg);
-
-        newCfg.setName(entity.getTableName());
-
-        newCfg.setQueryEntities(Collections.singleton(entity));
-
-        // We want to preserve user specified names as they are
-        newCfg.setSqlEscapeAll(true);
-
-        IgniteBiTuple<? extends IgniteCache<?, ?>, Boolean> res = ctx.grid().getOrCreateCache0(newCfg);
-
-        if (!ifNotExists && F.eq(res.get2(), false))
-            throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
-                IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
-        String spaceName = space(schemaName);
-
-        QueryTypeDescriptorImpl type = ctx.query().type(spaceName, tblName);
-
-        if (type == null || !F.eq(schemaName, spaceName)) {
-            if (!ifExists)
-                throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
-                    ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-            return;
-        }
-
-        if (!F.eq(schemaName, tblName))
-            throw new IgniteSQLException("Only dynamically created table can be dropped [schemaName=" + schemaName +
-                ",tblName=" + tblName +']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        IgniteCache cache = ctx.grid().cache(spaceName);
-
-        assert cache != null;
-
-        cache.destroy();
-    }
-
     /**
      * Execute DDL command.
      *

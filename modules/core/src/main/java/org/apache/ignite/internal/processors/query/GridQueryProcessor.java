@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -36,8 +37,20 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -1262,7 +1275,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
         throws IgniteCheckedException {
-        getIndexing().dynamicTableCreate(entity, tplCacheName, ifNotExists);
+        CacheConfiguration<?, ?> tplCfg = ctx.cache().createConfigFromTemplate(tplCacheName);
+
+        if (!F.isEmpty(tplCfg.getQueryEntities()))
+            throw new IgniteSQLException("Template cache already contains query entities which it should not " +
+                "[cacheName=" + tplCacheName + ']', IgniteQueryErrorCode.UNKNOWN);
+
+        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(tplCfg);
+
+        newCfg.setName(entity.getTableName());
+
+        newCfg.setQueryEntities(Collections.singleton(entity));
+
+        // We want to preserve user specified names as they are
+        newCfg.setSqlEscapeAll(true);
+
+        IgniteBiTuple<? extends IgniteCache<?, ?>, Boolean> res = ctx.grid().getOrCreateCache0(newCfg);
+
+        if (!ifNotExists && F.eq(res.get2(), false))
+            throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
+                IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
     }
 
     /**
@@ -1274,7 +1306,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
-        getIndexing().dynamicTableDrop(schemaName, tblName, ifExists);
+        String spaceName = getIndexing().space(schemaName);
+
+        QueryTypeDescriptorImpl type = type(spaceName, tblName);
+
+        if (type == null || !F.eq(schemaName, spaceName)) {
+            if (!ifExists)
+                throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
+                    ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+            return;
+        }
+
+        if (!F.eq(schemaName, tblName))
+            throw new IgniteSQLException("Only dynamically created table can be dropped [schemaName=" + schemaName +
+                ",tblName=" + tblName +']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        IgniteCache cache = ctx.grid().cache(spaceName);
+
+        assert cache != null;
+
+        cache.destroy();
     }
 
     /**

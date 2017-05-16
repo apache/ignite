@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * CREATE TABLE statement.
+ * DROP TABLE statement.
  */
 public class GridSqlDropTable extends GridSqlStatement {
     /** Schema name. */
@@ -27,7 +27,7 @@ public class GridSqlDropTable extends GridSqlStatement {
     /** Table name. */
     private String tblName;
 
-    /** Quietly ignore this command if table does not exist. */
+    /** Quietly ignore this command if table already exists. */
     private boolean ifExists;
 
     /**
@@ -59,19 +59,20 @@ public class GridSqlDropTable extends GridSqlStatement {
     }
 
     /**
-     * @return Quietly ignore this command if table does not exist.
+     * @return Quietly ignore this command if table already exists.
      */
     public boolean ifExists() {
         return ifExists;
     }
 
     /**
-     * @param ifExists Quietly ignore this command if table does not exist.
+     * @param ifExists Quietly ignore this command if table already exists.
      */
     public void ifExists(boolean ifExists) {
         this.ifExists = ifExists;
     }
-    
+
+    /** {@inheritDoc} */
     @Override public String getSQL() {
         return null;
     }

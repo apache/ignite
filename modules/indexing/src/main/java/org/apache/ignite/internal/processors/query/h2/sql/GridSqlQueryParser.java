@@ -33,9 +33,8 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -377,18 +376,6 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<CreateTable, Query> CREATE_TABLE_QUERY = getter(CreateTable.class, "asQuery");
-
-    /** */
-    private static final Getter<CreateTable, Boolean> CREATE_TABLE_ON_COMMIT_DROP = getter(CreateTable.class,
-        "onCommitDrop");
-
-    /** */
-    private static final Getter<CreateTable, Boolean> CREATE_TABLE_ON_COMMIT_TRUNCATE = getter(CreateTable.class,
-        "onCommitTruncate");
-
-    /** */
-    private static final Getter<CreateTable, Boolean> CREATE_TABLE_SORTED_INSERT = getter(CreateTable.class,
-        "sortedInsertMode");
 
     /** */
     private static final Getter<DropTable, Boolean> DROP_TABLE_IF_EXISTS = getter(DropTable.class, "ifExists");
@@ -843,6 +830,12 @@ public class GridSqlQueryParser {
     private GridSqlCreateTable parseCreateTable(CreateTable createTbl) {
         GridSqlCreateTable res = new GridSqlCreateTable();
 
+        Query qry = CREATE_TABLE_QUERY.get(createTbl);
+
+        if (qry != null)
+            throw new IgniteSQLException("CREATE TABLE ... AS ... syntax is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         Schema schema = SCHEMA_COMMAND_SCHEMA.get(createTbl);
 
         res.schemaName(schema.getName());
@@ -862,6 +855,11 @@ public class GridSqlQueryParser {
             cols.put(col.getName(), gridCol);
         }
 
+        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME) ||
+            cols.containsKey(QueryUtils.VAL_FIELD_NAME))
+            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
+                IgniteQueryErrorCode.PARSING);
+
         IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
 
         LinkedHashSet<String> pkCols = new LinkedHashSet<>();
@@ -873,6 +871,14 @@ public class GridSqlQueryParser {
 
             pkCols.add(gridCol.columnName());
         }
+
+        if (F.isEmpty(pkCols))
+            throw new IgniteSQLException("No PRIMARY KEY columns specified");
+
+        int valColsNum = cols.size() - pkCols.size();
+
+        if (valColsNum == 0)
+            throw new IgniteSQLException("No cache value related columns found");
 
         res.columns(cols);
 

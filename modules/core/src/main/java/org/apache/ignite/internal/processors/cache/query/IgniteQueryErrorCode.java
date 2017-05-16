@@ -96,9 +96,6 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
-    /** Cache already contains query entities. */
-    public final static int QUERY_ENTITIES_PRESENT = 4007;
-
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
