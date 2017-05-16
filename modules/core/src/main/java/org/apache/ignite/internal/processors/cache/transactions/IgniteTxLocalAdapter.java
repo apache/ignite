@@ -471,7 +471,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
-    @Override public void userCommit() throws IgniteCheckedException {
+    @Override public synchronized void userCommit() throws IgniteCheckedException {
         TransactionState state = state();
 
         if (state != COMMITTING) {
@@ -944,7 +944,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void userRollback() throws IgniteCheckedException {
+    @Override public synchronized void userRollback() throws IgniteCheckedException {
         TransactionState state = state();
 
         if (state != ROLLING_BACK && state != ROLLED_BACK) {

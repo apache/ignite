@@ -112,6 +112,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
+import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -1242,6 +1243,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Rolling back from TM [locNodeId=" + cctx.localNodeId() + ", tx=" + tx + ']');
+
+        boolean stateChanged = tx.state(ROLLING_BACK);
+
+        assert stateChanged || tx.state() == ROLLING_BACK;
 
         // 1. Record transaction version to avoid duplicates.
         addRolledbackTx(tx);
