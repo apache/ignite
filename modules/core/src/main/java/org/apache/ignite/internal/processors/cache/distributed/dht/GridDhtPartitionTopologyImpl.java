@@ -959,7 +959,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             List<ClusterNode> nodes = null;
 
             if (!topVer.equals(diffFromAffinityVer)) {
-                System.out.println("??? node2part [topVer=" + topVer + ", diffVer=" + diffFromAffinityVer + "]");
+                U.warn(log, "Requested affinity version isn't equal to calculated diff, full iteration over " +
+                    "node2part map required [topVer=" + topVer + ", diffVer=" + diffFromAffinityVer + ']');
 
                 nodes = new ArrayList<>();
 
@@ -970,8 +971,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     ClusterNode n = cctx.discovery().node(entry.getKey());
 
-                    if (n != null && state != null && (state == MOVING || state == OWNING || state == RENTING) && !nodes.contains(n)
-                        && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
+                    if (n != null && state != null && (state == MOVING || state == OWNING || state == RENTING)
+                        && !nodes.contains(n) && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
                         nodes.add(n);
                     }
 
@@ -1206,8 +1207,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             node2part = partMap;
 
-            int diffFromAffinitySize = 0;
-
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
             if (diffFromAffinityVer.compareTo(affVer) <= 0) {
@@ -1225,14 +1224,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             if (diffIds == null)
                                 diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
-                            if (diffIds.add(e.getKey())) {
-                                diffFromAffinitySize++;
-                            }
+                            diffIds.add(e.getKey());
                         }
                         else {
                             if (diffIds != null && diffIds.remove(e.getKey())) {
-                                diffFromAffinitySize--;
-
                                 if (diffIds.isEmpty())
                                     diffFromAffinity.remove(p);
                             }
@@ -1241,9 +1236,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 }
 
                 diffFromAffinityVer = affVer;
-
-                if (diffFromAffinitySize > 0)
-                    U.error(log, "??? F diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
             }
 
             boolean changed = false;
@@ -1385,8 +1377,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (affVer.compareTo(diffFromAffinityVer) >= 0) {
                 AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
 
-                int diffFromAffinitySize = 0;
-
                 // Add new mappings.
                 for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
                     int p = e.getKey();
@@ -1398,17 +1388,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         if (diffIds == null)
                             diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
-                        if (diffIds.add(parts.nodeId())) {
+                        if (diffIds.add(parts.nodeId()))
                             changed = true;
-
-                            diffFromAffinitySize++;
-                        }
                     }
                     else {
                         if (diffIds != null && diffIds.remove(parts.nodeId())) {
                             changed = true;
-
-                            diffFromAffinitySize--;
 
                             if (diffIds.isEmpty())
                                 diffFromAffinity.remove(p);
@@ -1425,8 +1410,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         if (ids != null && ids.remove(parts.nodeId())) {
                             changed = true;
 
-                            diffFromAffinitySize--;
-
                             if (ids.isEmpty())
                                 diffFromAffinity.remove(p);
                         }
@@ -1434,9 +1417,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 }
 
                 diffFromAffinityVer = affVer;
-
-                if (diffFromAffinitySize > 0)
-                    U.error(log, "??? S diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
             }
 
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
@@ -1467,7 +1447,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
-            if (assignment.topologyVersion().compareTo(diffFromAffinityVer) >= 0)
+            if (assignment.topologyVersion().compareTo(diffFromAffinityVer) > 0)
                 rebuildDiff(assignment);
         }
         finally {
