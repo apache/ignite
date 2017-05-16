@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for local and distributed tests.
+ * Test suite for local and distributed math tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

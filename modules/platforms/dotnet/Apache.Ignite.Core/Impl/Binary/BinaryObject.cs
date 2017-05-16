@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             get
             {
                 throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
-                    "Check IBinaryObject.IsEnum property before accessing Value.");
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
             }
         }
 

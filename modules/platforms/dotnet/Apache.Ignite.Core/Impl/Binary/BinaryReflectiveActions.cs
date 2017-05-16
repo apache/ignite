@@ -476,15 +476,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     : GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
                 readAction = raw ? GetRawReader(field, r => r.ReadGuid()) : GetReader(field, (f, r) => r.ReadGuid(f));
             }
-            else if (type.IsEnum)
+            else if (type.IsEnum && !new[] {typeof(long), typeof(ulong)}.Contains(Enum.GetUnderlyingType(type)))
             {
                 writeAction = raw
                     ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)
                     : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
                 readAction = raw ? GetRawReader(field, MthdReadEnumRaw) : GetReader(field, MthdReadEnum);
             }
-            else if (type == BinaryUtils.TypDictionary ||
-                     type.GetInterface(BinaryUtils.TypDictionary.FullName) != null && !type.IsGenericType)
+            else if (type == typeof(IDictionary) || type == typeof(Hashtable))
             {
                 writeAction = raw
                     ? GetRawWriter<IDictionary>(field, (w, o) => w.WriteDictionary(o))
@@ -493,8 +492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadDictionary())
                     : GetReader(field, (f, r) => r.ReadDictionary(f));
             }
-            else if (type == BinaryUtils.TypCollection ||
-                     type.GetInterface(BinaryUtils.TypCollection.FullName) != null && !type.IsGenericType)
+            else if (type == typeof(ICollection) || type == typeof(ArrayList))
             {
                 writeAction = raw
                     ? GetRawWriter<ICollection>(field, (w, o) => w.WriteCollection(o))
@@ -503,7 +501,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadCollection())
                     : GetReader(field, (f, r) => r.ReadCollection(f));
             }
-            else if (type == typeof (DateTime) && IsQueryField(field) && !raw)
+            else if (type == typeof(DateTime) && IsQueryField(field) && !raw)
             {
                 // Special case for DateTime and query fields.
                 // If a field is marked with [QuerySqlField], write it as TimeStamp so that queries work.
@@ -514,7 +512,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadObject<DateTime>(f));
             }
-            else if (nullableType == typeof (DateTime) && IsQueryField(field) && !raw)
+            else if (nullableType == typeof(DateTime) && IsQueryField(field) && !raw)
             {
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));

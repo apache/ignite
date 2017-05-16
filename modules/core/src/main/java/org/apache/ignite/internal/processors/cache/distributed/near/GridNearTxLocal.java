@@ -3878,17 +3878,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param val Value.
      * @param filter Filter.
      * @return {@code True} if filter passed.
      */
     private boolean isAll(GridCacheContext cctx,
         KeyCacheObject key,
-        CacheObject val,
+        final CacheObject val0,
         CacheEntryPredicate[] filter) {
-        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key, 0, val, null, 0) {
+        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key) {
             @Nullable @Override public CacheObject peekVisibleValue() {
-                return rawGet();
+                return val0;
             }
         };
 
