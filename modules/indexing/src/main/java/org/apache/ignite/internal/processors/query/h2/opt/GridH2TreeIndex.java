@@ -171,9 +171,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree = segments[seg];
 
         return tree instanceof SnapTreeMap ?
-            ((SnapTreeMap)tree).clone() :
-            ((GridOffHeapSnapTreeMap)tree).clone();
-    }
+                ((SnapTreeMap)tree).clone() :
+                ((GridOffHeapSnapTreeMap)tree).clone();
+        }
 
     /** {@inheritDoc} */
     protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int seg) {

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -74,10 +75,10 @@ public class GridH2Table extends TableBase {
     private boolean destroyed;
 
     /** */
-    private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session,Boolean>());
+    private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session, Boolean>());
 
     /** */
-    private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
+    private final AtomicReferenceArray<Object[]> actualSnapshot;
 
     /** */
     private IndexColumn affKeyCol;
@@ -140,6 +141,11 @@ public class GridH2Table extends TableBase {
         idxs.add(0, new ScanIndex(index(0)));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
+
+        final int segments = desc != null ? desc.configuration().getQueryParallelism() :
+            index(1).segmentsCount(); // Get index segments count from PK index. Null desc can be passed from tests.
+
+        actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
 
         lock = snapshotEnabled ? new ReentrantReadWriteLock() : null;
     }
@@ -259,9 +265,20 @@ public class GridH2Table extends TableBase {
         }
 
         if (snapshotInLock())
-            snapshotIndexes(null);
+            snapshotIndexes(null, threadLocalSegmentId());
 
         return false;
+    }
+
+    /**
+     * @return segmentId for current thread.
+     */
+    private int threadLocalSegmentId() {
+        final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        return qctx.segment();
     }
 
     /**
@@ -281,22 +298,22 @@ public class GridH2Table extends TableBase {
     /**
      * @param qctx Query context.
      */
-    public void snapshotIndexes(GridH2QueryContext qctx) {
+    public void snapshotIndexes(GridH2QueryContext qctx, int segment) {
         if (!snapshotEnabled)
             return;
 
-        Object[] snapshots;
+        Object[] segmentSnapshot;
 
         Lock l;
 
         // Try to reuse existing snapshots outside of the lock.
-        for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
-            snapshots = actualSnapshot.get();
+        for (long waitTime = 200; ; waitTime *= 2) { // Increase wait time to avoid starvation.
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) { // Reuse existing snapshot without locking.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) { // Reuse existing snapshot without locking.
+                segmentSnapshot = doSnapshotIndexes(segmentSnapshot, qctx);
 
-                if (snapshots != null)
+                if (segmentSnapshot != null)
                     return; // Reused successfully.
             }
 
@@ -308,17 +325,17 @@ public class GridH2Table extends TableBase {
 
         try {
             // Try again inside of the lock.
-            snapshots = actualSnapshot.get();
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) // Try reusing.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) // Try reusing.
+                segmentSnapshot = doSnapshotIndexes(segmentSnapshot, qctx);
 
-            if (snapshots == null) { // Reuse failed, produce new snapshots.
-                snapshots = doSnapshotIndexes(null, qctx);
+            if (segmentSnapshot == null) { // Reuse failed, produce new snapshots.
+                segmentSnapshot = doSnapshotIndexes(null, qctx);
 
-                assert snapshots != null;
+                assert segmentSnapshot != null;
 
-                actualSnapshot.set(snapshots);
+                actualSnapshot.set(segment, segmentSnapshot);
             }
         }
         finally {
@@ -373,19 +390,20 @@ public class GridH2Table extends TableBase {
      * Must be called inside of write lock because when using multiple indexes we have to ensure that all of them have
      * the same contents at snapshot taking time.
      *
+     * @param segmentSnapshot snapshot to be reused.
      * @param qctx Query context.
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
+    private Object[] doSnapshotIndexes(Object[] segmentSnapshot, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
-        if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 1];
+        if (segmentSnapshot == null) // Nothing to reuse, create new snapshots.
+            segmentSnapshot = new Object[idxs.size() - 1];
 
         // Take snapshots on all except first which is scan.
         for (int i = 1, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 1];
+            Object s = segmentSnapshot[i - 1];
 
             boolean reuseExisting = s != null;
 
@@ -400,15 +418,15 @@ public class GridH2Table extends TableBase {
                     index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(snapshots, null);
+                actualSnapshot.compareAndSet(threadLocalSegmentId(), segmentSnapshot, null);
 
                 return null;
             }
 
-            snapshots[i - 1] = s;
+            segmentSnapshot[i - 1] = s;
         }
 
-        return snapshots;
+        return segmentSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -585,7 +603,7 @@ public class GridH2Table extends TableBase {
                     for (int i = 2, len = idxs.size(); i < len; i++) {
                         Row res = index(i).remove(old);
 
-                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
                 }
                 else
@@ -593,7 +611,7 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            actualSnapshot.set(null);
+            actualSnapshot.set(pk.segmentForRow(row), null);
 
             return true;
         }
@@ -625,7 +643,7 @@ public class GridH2Table extends TableBase {
     ArrayList<GridH2IndexBase> indexes() {
         ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 1);
 
-        for (int i = 1, len = idxs.size(); i < len ; i++)
+        for (int i = 1, len = idxs.size(); i < len; i++)
             res.add(index(i));
 
         return res;
@@ -643,7 +661,9 @@ public class GridH2Table extends TableBase {
         ArrayList<Index> idxs0 = new ArrayList<>(idxs);
 
         try {
-            snapshotIndexes(null); // Allow read access while we are rebuilding indexes.
+            // Allow read access while we are rebuilding indexes.
+            for (int seg = 0; seg < actualSnapshot.length(); seg++)
+                snapshotIndexes(null, seg);
 
             for (int i = 1, len = idxs.size(); i < len; i++) {
                 GridH2IndexBase newIdx = index(i).rebuild();
@@ -804,8 +824,8 @@ public class GridH2Table extends TableBase {
          * @param desc Row descriptor.
          * @param factory Indexes factory.
          * @param space Space name.
-         * @throws SQLException If failed.
          * @return Created table.
+         * @throws SQLException If failed.
          */
         public static synchronized GridH2Table createTable(Connection conn, String sql,
             @Nullable GridH2RowDescriptor desc, IndexesFactory factory, String space)
@@ -867,7 +887,7 @@ public class GridH2Table extends TableBase {
             double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
             int mul = delegate.getDistributedMultiplier(ses, filters, filter);
 
-            return  mul * baseCost;
+            return mul * baseCost;
         }
 
         /** {@inheritDoc} */
