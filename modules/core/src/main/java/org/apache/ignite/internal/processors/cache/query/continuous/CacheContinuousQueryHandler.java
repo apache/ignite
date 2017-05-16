@@ -719,7 +719,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
+        //returns stub if system cache not created yet
+        final IgniteCache cache = cctx.kernalContext().cache().safeJcache(cctx.name());
 
         if (internal) {
             if (e.isFiltered())
