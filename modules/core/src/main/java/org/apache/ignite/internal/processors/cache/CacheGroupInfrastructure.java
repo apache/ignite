@@ -517,8 +517,7 @@ public class CacheGroupInfrastructure {
      *
      */
     public void onKernalStop() {
-        if (preldr != null) // null for LOCAL cache.
-            preldr.onKernalStop();
+        preldr.onKernalStop();
 
         offheapMgr.onKernalStop();
     }
@@ -615,6 +614,8 @@ public class CacheGroupInfrastructure {
 
             preldr.start();
         }
+        else
+            preldr = new GridCachePreloaderAdapter(this);
 
         // TODO IGNITE-5075 get from plugin.
         offheapMgr = new IgniteCacheOffheapManagerImpl();
@@ -706,7 +707,6 @@ public class CacheGroupInfrastructure {
         if (top != null)
             top.onReconnected();
 
-        if (preldr != null)
-            preldr.onReconnected();
+        preldr.onReconnected();
     }
 }
