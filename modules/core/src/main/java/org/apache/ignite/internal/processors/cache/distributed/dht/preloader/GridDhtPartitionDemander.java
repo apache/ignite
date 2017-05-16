@@ -110,18 +110,6 @@ public class GridDhtPartitionDemander {
     private final Map<Integer, Object> rebalanceTopics;
 
     /**
-     * Started event sent.
-     * Make sense for replicated cache only.
-     */
-    private final AtomicBoolean startedEvtSent = new AtomicBoolean();
-
-    /**
-     * Stopped event sent.
-     * Make sense for replicated cache only.
-     */
-    private final AtomicBoolean stoppedEvtSent = new AtomicBoolean();
-
-    /**
      * @param grp Ccahe group.
      */
     public GridDhtPartitionDemander(CacheGroupInfrastructure grp) {
@@ -254,11 +242,10 @@ public class GridDhtPartitionDemander {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int part, int type, DiscoveryEvent discoEvt) {
+    private void rebalanceEvent(int part, int type, DiscoveryEvent discoEvt) {
         assert discoEvt != null;
 
-        // TODO IGNITE-5075.
-        // cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+        grp.addRebalanceEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
     }
 
     /**
@@ -293,7 +280,7 @@ public class GridDhtPartitionDemander {
         if (delay == 0 || force) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            final RebalanceFuture fut = new RebalanceFuture(grp, assigns, log, startedEvtSent, stoppedEvtSent, cnt);
+            final RebalanceFuture fut = new RebalanceFuture(grp, assigns, log, cnt);
 
             if (!oldFut.isInitial())
                 oldFut.cancel();
@@ -823,19 +810,10 @@ public class GridDhtPartitionDemander {
      */
     public static class RebalanceFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private static final long serialVersionUID = 1L;
-
-        /** */
         private final GridCacheSharedContext<?, ?> ctx;
 
         /** */
         private final CacheGroupInfrastructure grp;
-
-        /** Should EVT_CACHE_REBALANCE_STARTED event be sent or not. */
-        private final AtomicBoolean startedEvtSent;
-
-        /** Should EVT_CACHE_REBALANCE_STOPPED event be sent or not. */
-        private final AtomicBoolean stoppedEvtSent;
 
         /** */
         private final IgniteLogger log;
@@ -860,16 +838,12 @@ public class GridDhtPartitionDemander {
          * @param assigns Assigns.
          * @param grp Cache group.
          * @param log Logger.
-         * @param startedEvtSent Start event sent flag.
-         * @param stoppedEvtSent Stop event sent flag.
          * @param updateSeq Update sequence.
          */
         RebalanceFuture(
             CacheGroupInfrastructure grp,
             GridDhtPreloaderAssignments assigns,
             IgniteLogger log,
-            AtomicBoolean startedEvtSent,
-            AtomicBoolean stoppedEvtSent,
             long updateSeq) {
             assert assigns != null;
 
@@ -877,8 +851,6 @@ public class GridDhtPartitionDemander {
             this.topVer = assigns.topologyVersion();
             this.grp = grp;
             this.log = log;
-            this.startedEvtSent = startedEvtSent;
-            this.stoppedEvtSent = stoppedEvtSent;
             this.updateSeq = updateSeq;
 
             ctx= grp.shared();
@@ -893,8 +865,6 @@ public class GridDhtPartitionDemander {
             this.ctx = null;
             this.grp = null;
             this.log = null;
-            this.startedEvtSent = null;
-            this.stoppedEvtSent = null;
             this.updateSeq = -1;
         }
 
@@ -1023,10 +993,8 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return;
 
-                // TODO IGNITE-5075.
-//                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
-//                    preloadEvent(p, EVT_CACHE_REBALANCE_PART_LOADED,
-//                        exchFut.discoveryEvent());
+                if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
+                    rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchFut.discoveryEvent());
 
                 T2<Long, Collection<Integer>> t = remaining.get(nodeId);
 
@@ -1057,19 +1025,18 @@ public class GridDhtPartitionDemander {
          * @param type Type.
          * @param discoEvt Discovery event.
          */
-        private void preloadEvent(int part, int type, DiscoveryEvent discoEvt) {
+        private void rebalanceEvent(int part, int type, DiscoveryEvent discoEvt) {
             assert discoEvt != null;
 
-            // TODO IGNITE-5075.
-            // cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+            grp.addRebalanceEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
         }
 
         /**
          * @param type Type.
          * @param discoEvt Discovery event.
          */
-        private void preloadEvent(int type, DiscoveryEvent discoEvt) {
-            preloadEvent(-1, type, discoEvt);
+        private void rebalanceEvent(int type, DiscoveryEvent discoEvt) {
+            rebalanceEvent(-1, type, discoEvt);
         }
 
         /**
@@ -1119,26 +1086,16 @@ public class GridDhtPartitionDemander {
          *
          */
         private void sendRebalanceStartedEvent() {
-            // TODO IGNITE-5075.
-//            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STARTED) &&
-//                (!cctx.isReplicated() || !startedEvtSent.get())) {
-//                preloadEvent(EVT_CACHE_REBALANCE_STARTED, exchFut.discoveryEvent());
-//
-//                startedEvtSent.set(true);
-//            }
+            if (grp.eventRecordable(EVT_CACHE_REBALANCE_STARTED))
+                rebalanceEvent(EVT_CACHE_REBALANCE_STARTED, exchFut.discoveryEvent());
         }
 
         /**
          *
          */
         private void sendRebalanceFinishedEvent() {
-            // TODO IGNITE-5075.
-//            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) &&
-//                (!cctx.isReplicated() || !stoppedEvtSent.get())) {
-//                preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
-//
-//                stoppedEvtSent.set(true);
-//            }
+            if (grp.eventRecordable(EVT_CACHE_REBALANCE_STOPPED))
+                rebalanceEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
         }
 
         /** {@inheritDoc} */

@@ -122,8 +122,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** {@inheritDoc} */
     @Override public void unwindUndeploys() {
-        // TODO IGNITE-5075.
-        // cctx.deploy().unwind(cctx);
+        grp.unwindUndeploys();
     }
 
     /** {@inheritDoc} */

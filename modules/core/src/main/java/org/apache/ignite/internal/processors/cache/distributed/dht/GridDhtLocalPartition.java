@@ -951,8 +951,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public void clearAll() throws NodeStoppingException {
         GridCacheVersion clearVer = ctx.versions().next();
 
-        // TODO IGNITE-5075.
-        boolean rec = grp.shared().gridEvents().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
+        boolean rec = grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
         Collection<ConcurrentMap<KeyCacheObject, GridCacheMapEntry>> maps =
             grp.sharedGroup() ? cachesEntryMaps.values() : Collections.singleton(singleCacheEntryMap);
@@ -975,21 +974,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         if (!cached.isInternal()) {
                             if (rec) {
-                                // TODO IGNITE-5075.
-//                            cctx.events().addEvent(cached.partition(),
-//                                cached.key(),
-//                                ctx.localNodeId(),
-//                                (IgniteUuid)null,
-//                                null,
-//                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-//                                null,
-//                                false,
-//                                cached.rawGet(),
-//                                cached.hasValue(),
-//                                null,
-//                                null,
-//                                null,
-//                                false);
+                                grp.addCacheEvent(cached.partition(),
+                                    cached.key(),
+                                    ctx.localNodeId(),
+                                    null,
+                                    null,
+                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                    null,
+                                    false,
+                                    cached.rawGet(),
+                                    cached.hasValue(),
+                                    null,
+                                    null,
+                                    null,
+                                    false);
                             }
                         }
                     }

@@ -899,31 +899,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
             if (!grp.isLocal()) {
-                boolean ready;
+                GridAffinityAssignmentCache affCache = grp.affinity();
 
-                if (exchId != null) {
-                    AffinityTopologyVersion startTopVer = grp.localStartVersion();
+                GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
 
-                    ready = startTopVer.compareTo(exchId.topologyVersion()) <= 0;
-                }
-                else
-                    ready = grp.started();
+                assert locMap != null || exchId == null : grp.nameForLog();
 
-                if (ready) {
-                    GridAffinityAssignmentCache affCache = grp.affinity();
-
-                    GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
-
+                if (locMap != null) {
                     addFullPartitionsMap(m,
                         dupData,
                         compress,
                         grp.groupId(),
                         locMap,
                         affCache.similarAffinityKey());
-
-                    if (exchId != null)
-                        m.addPartitionUpdateCounters(grp.groupId(), grp.topology().updateCounters(true));
                 }
+
+                if (exchId != null)
+                    m.addPartitionUpdateCounters(grp.groupId(), grp.topology().updateCounters(true));
             }
         }
 

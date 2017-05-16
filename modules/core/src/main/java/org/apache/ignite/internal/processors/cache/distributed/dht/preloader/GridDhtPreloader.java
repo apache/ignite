@@ -300,14 +300,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (picked.isEmpty()) {
                     top.own(part);
 
-// TODO IGNITE-5075.
-//                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-//                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-//
-//                        cctx.events().addPreloadEvent(p,
-//                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
-//                            discoEvt.type(), discoEvt.timestamp());
-//                    }
+                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                        grp.addRebalanceEvent(p,
+                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                            discoEvt.eventNode(),
+                            discoEvt.type(),
+                            discoEvt.timestamp());
+                    }
 
                     if (log.isDebugEnabled())
                         log.debug("Owning partition as there are no other owners: " + part);
@@ -594,9 +595,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         try {
             top.onEvicted(part, updateSeq);
 
-// TODO IGNITE-5075.
-//            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-//                cctx.events().addUnloadEvent(part.id());
+            if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
+                grp.addUnloadEvent(part.id());
 
             if (updateSeq)
                 ctx.exchange().scheduleResendPartitions();
@@ -696,8 +696,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         demandLock.writeLock().lock();
 
         try {
-            // TODO IGNITE-5075.
-            // cctx.deploy().unwind(cctx);
+            grp.unwindUndeploys();
         }
         finally {
             demandLock.writeLock().unlock();

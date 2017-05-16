@@ -542,7 +542,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
+            if (stopping || node2part == null)
+                return null;
+
+            assert node2part.valid() : "Invalid node2part [node2part: " + node2part +
                 ", locNodeId=" + cctx.localNodeId() +
                 ", igniteInstanceName=" + cctx.igniteInstanceName() + ']';
 

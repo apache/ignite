@@ -661,14 +661,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                                 changed = true;
 
-// TODO IGNITE-5075.
-//                                if (ctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-//                                    DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-//
-//                                    cctx.events().addPreloadEvent(p,
-//                                        EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
-//                                        discoEvt.type(), discoEvt.timestamp());
-//                                }
+                                if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                                    DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                                    grp.addRebalanceEvent(p,
+                                        EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                                        discoEvt.eventNode(),
+                                        discoEvt.type(),
+                                        discoEvt.timestamp());
+                                }
 
                                 if (log.isDebugEnabled())
                                     log.debug("Owned partition: " + locPart);
@@ -1471,10 +1472,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
                     }
 
-// TODO: IGNITE-5075.
-//                    if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST))
-//                        cctx.events().addPreloadEvent(part, EVT_CACHE_REBALANCE_PART_DATA_LOST,
-//                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+                    if (grp.eventRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                        grp.addRebalanceEvent(part,
+                            EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                            discoEvt.eventNode(),
+                            discoEvt.type(),
+                            discoEvt.timestamp());
+                    }
                 }
 
                 if (plc != PartitionLossPolicy.IGNORE)

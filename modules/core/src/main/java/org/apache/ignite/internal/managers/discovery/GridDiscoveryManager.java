@@ -2692,7 +2692,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * TODO IGNTIE-5075: also store list of started caches.
+     *
      */
     private static class CacheGroupAffinity {
         /** */

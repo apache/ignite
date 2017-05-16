@@ -45,6 +45,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -56,8 +57,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -106,9 +105,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -248,6 +248,12 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** */
     private boolean customAffMapper;
+
+    /** Whether {@link EventType#EVT_CACHE_REBALANCE_STARTED} was sent (used only for REPLICATED cache). */
+    private volatile boolean rebalanceStartedEvtSent;
+
+    /** Whether {@link EventType#EVT_CACHE_REBALANCE_STOPPED} was sent (used only for REPLICATED cache). */
+    private volatile boolean rebalanceStoppedEvtSent;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -2064,6 +2070,35 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         return (top.rebalanceFinished(topVer) && (isReplicated() || affNodes.contains(locNode)))
             || (top.partitionState(localNodeId(), part) == OWNING);
+    }
+
+    /**
+     * @param type Event type.
+     * @return {@code True} if event should be recorded.
+     */
+    public boolean recordEvent(int type) {
+        if (isReplicated()) {
+            if (type == EVT_CACHE_REBALANCE_STARTED) {
+                if (!rebalanceStartedEvtSent) {
+                    rebalanceStartedEvtSent = true;
+
+                    return true;
+                }
+                else
+                    return false;
+            }
+            else if (type == EVT_CACHE_REBALANCE_STOPPED) {
+                if (!rebalanceStoppedEvtSent) {
+                    rebalanceStoppedEvtSent = true;
+
+                    return true;
+                }
+                else
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

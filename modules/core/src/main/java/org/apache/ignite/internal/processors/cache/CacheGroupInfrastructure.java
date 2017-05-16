@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -40,13 +42,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 
 /**
@@ -206,40 +211,162 @@ public class CacheGroupInfrastructure {
      * @param cctx Cache context.
      */
     private void addCacheContext(GridCacheContext cctx) {
-        assert sharedGroup() || caches.isEmpty();
+        synchronized (caches) {
+            assert sharedGroup() || caches.isEmpty();
 
-        boolean add = caches.add(cctx);
+            boolean add = caches.add(cctx);
 
-        assert add : cctx.name();
+            assert add : cctx.name();
+        }
     }
 
     /**
      * @param cctx Cache context.
      */
     private void removeCacheContext(GridCacheContext cctx) {
-        assert sharedGroup() || caches.size() == 1 : caches.size();
+        synchronized (caches) {
+            assert sharedGroup() || caches.size() == 1 : caches.size();
 
-        boolean rmv = caches.remove(cctx);
+            boolean rmv = caches.remove(cctx);
 
-        assert rmv : cctx.name();
+            assert rmv : cctx.name();
+        }
     }
 
     /**
      * @return Cache context if group contains single cache.
      */
     public GridCacheContext singleCacheContext() {
-        assert !sharedGroup() && caches.size() == 1;
+        synchronized (caches) {
+            assert !sharedGroup() && caches.size() == 1;
 
-        return caches.get(0);
+            return caches.get(0);
+        }
+    }
+
+    /**
+     *
+     */
+    public void unwindUndeploys() {
+        synchronized (caches) {
+            for (int i = 0; i < caches.size(); i++) {
+                GridCacheContext cctx = caches.get(i);
+
+                cctx.deploy().unwind(cctx);
+            }
+        }
+    }
+
+    /**
+     * @param type Event type to check.
+     * @return {@code True} if given event type should be recorded.
+     */
+    public boolean eventRecordable(int type) {
+        return ctx.gridEvents().isRecordable(type);
+    }
+
+    /**
+     * Adds preloading event.
+     *
+     * @param part Partition.
+     * @param type Event type.
+     * @param discoNode Discovery node.
+     * @param discoType Discovery event type.
+     * @param discoTs Discovery event timestamp.
+     */
+    public void addRebalanceEvent(int part, int type, ClusterNode discoNode, int discoType, long discoTs) {
+        assert discoNode != null;
+        assert type > 0;
+        assert discoType > 0;
+        assert discoTs > 0;
+
+        if (!eventRecordable(type))
+            LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));
+
+        synchronized (caches) {
+            for (int i = 0; i < caches.size(); i++) {
+                GridCacheContext cctx = caches.get(i);
+
+                if (cctx.recordEvent(type)) {
+                    cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                        cctx.localNode(),
+                        "Cache rebalancing event.",
+                        type,
+                        part,
+                        discoNode,
+                        discoType,
+                        discoTs));
+                }
+            }
+        }
+    }
+    /**
+     * Adds partition unload event.
+     *
+     * @param part Partition.
+     */
+    public void addUnloadEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_UNLOADED));
+
+        synchronized (caches) {
+            for (int i = 0; i < caches.size(); i++) {
+                GridCacheContext cctx = caches.get(i);
+
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache unloading event.",
+                    EVT_CACHE_REBALANCE_PART_UNLOADED,
+                    part,
+                    null,
+                    0,
+                    0));
+            }
+        }
+    }
+
+    public void addCacheEvent(
+        int part,
+        KeyCacheObject key,
+        UUID evtNodeId,
+        @Nullable IgniteUuid xid,
+        @Nullable Object lockId,
+        int type,
+        @Nullable CacheObject newVal,
+        boolean hasNewVal,
+        @Nullable CacheObject oldVal,
+        boolean hasOldVal,
+        UUID subjId,
+        @Nullable String cloClsName,
+        @Nullable String taskName,
+        boolean keepBinary
+    ) {
+        synchronized (caches) {
+            for (int i = 0; i < caches.size(); i++) {
+                GridCacheContext cctx = caches.get(i);
+
+                cctx.events().addEvent(part,
+                    key,
+                    evtNodeId,
+                    xid,
+                    lockId,
+                    type,
+                    newVal,
+                    hasNewVal,
+                    oldVal,
+                    hasOldVal,
+                    subjId,
+                    cloClsName,
+                    taskName,
+                    keepBinary);
+            }
+        }
     }
 
     // TODO IGNITE-5075: need separate caches with/without queries?
     public boolean queriesEnabled() {
         return QueryUtils.isEnabled(ccfg);
-    }
-
-    public boolean started() {
-        return true; // TODO IGNITE-5075.
     }
 
     /**
@@ -257,7 +384,6 @@ public class CacheGroupInfrastructure {
     }
 
     /**
-     * TODO IGNITE-5075: get rid of CacheObjectContext?
      * @return Cache object context.
      */
     public CacheObjectContext cacheObjectContext() {
@@ -418,22 +544,26 @@ public class CacheGroupInfrastructure {
      * @return {@code True} if group contains caches.
      */
     boolean hasCaches() {
-        return !caches.isEmpty();
+        synchronized (caches) {
+            return !caches.isEmpty();
+        }
     }
 
     /**
      * @param part Partition ID.
      */
     public void onPartitionEvicted(int part) {
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = caches.get(i);
+        synchronized (caches) {
+            for (int i = 0; i < caches.size(); i++) {
+                GridCacheContext cctx = caches.get(i);
 
-            if (cctx.isDrEnabled())
-                cctx.dr().partitionEvicted(part);
+                if (cctx.isDrEnabled())
+                    cctx.dr().partitionEvicted(part);
 
-            cctx.continuousQueries().onPartitionEvicted(part);
+                cctx.continuousQueries().onPartitionEvicted(part);
 
-            cctx.dataStructures().onPartitionEvicted(part);
+                cctx.dataStructures().onPartitionEvicted(part);
+            }
         }
     }
 
