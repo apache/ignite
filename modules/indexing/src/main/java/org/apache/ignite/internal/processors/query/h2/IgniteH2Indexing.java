@@ -1676,9 +1676,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 List<Integer> extraCaches = null;
 
                 // Setup spaces from schemas.
-                if (!twoStepQry.schemas().isEmpty()) {
-                    Collection<String> spaces = new ArrayList<>(twoStepQry.schemas().size());
-                    caches = new ArrayList<>(twoStepQry.schemas().size() + 1);
+                assert twoStepQry != null;
+
+                int tblCnt = twoStepQry.tablesCount();
+
+                if (tblCnt > 0) {
+                    Collection<String> spaces = new ArrayList<>(tblCnt);
+
+                    caches = new ArrayList<>(tblCnt + 1);
+
                     caches.add(cctx.cacheId());
 
                     for (String schema : twoStepQry.schemas()) {

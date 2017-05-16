@@ -55,7 +55,7 @@ public class GridCacheTwoStepQuery {
     private Set<String> schemas;
 
     /** */
-    private Set<String> tbls;
+    private Set<QueryTable> tbls;
 
     /** */
     private boolean distributedJoins;
@@ -74,12 +74,10 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param originalSql Original query SQL.
-     * @param schemas Schema names in query.
      * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(String originalSql, Set<String> schemas, Set<String> tbls) {
+    public GridCacheTwoStepQuery(String originalSql, Set<QueryTable> tbls) {
         this.originalSql = originalSql;
-        this.schemas = schemas;
         this.tbls = tbls;
     }
 
@@ -262,7 +260,7 @@ public class GridCacheTwoStepQuery {
     public GridCacheTwoStepQuery copy() {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, schemas, tbls);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, tbls);
 
         cp.caches = caches;
         cp.extraCaches = extraCaches;
@@ -276,6 +274,13 @@ public class GridCacheTwoStepQuery {
             cp.mapQrys.add(mapQrys.get(i).copy());
 
         return cp;
+    }
+
+    /**
+     * @return Nuumber of tables.
+     */
+    public int tablesCount() {
+        return tbls.size();
     }
 
     /**
