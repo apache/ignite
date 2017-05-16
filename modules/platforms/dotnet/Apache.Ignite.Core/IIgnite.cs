@@ -330,5 +330,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheNames">Names of caches to reset partitions for.</param>
         void ResetLostPartitions(params string[] cacheNames);
+
+        /// <summary>
+        /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
+        /// <para />
+        /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
+        /// </summary>
+        ICollection<IMemoryMetrics> GetMemoryMetrics();
     }
 }
