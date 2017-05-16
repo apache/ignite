@@ -1963,6 +1963,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
+    /**
+     * @param cacheId Cache ID.
+     */
+    public void onCacheStopped(int cacheId) {
+        if (!grp.sharedGroup())
+            return;
+
+        for (int i = 0; i < locParts.length(); i++) {
+            GridDhtLocalPartition part = locParts.get(i);
+
+            if (part != null)
+                part.onCacheStopped(cacheId);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
         X.println(">>>  Cache partition topology stats [igniteInstanceName=" + ctx.igniteInstanceName() +

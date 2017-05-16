@@ -706,12 +706,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testConcurrentOperationsAndDestroy() throws Exception {
+    public void testConcurrentOperationsAndCacheDestroy() throws Exception {
         final int SRVS = 4;
         final int CLIENTS = 4;
         final int NODES = SRVS + CLIENTS;
 
-        Ignite srv0 = startGridsMultiThreaded(SRVS);
+        startGrid(0);
+
+        Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
         client = true;
 
@@ -721,6 +723,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final int grp1Backups = ThreadLocalRandom.current().nextInt(3);
         final int grp2Backups = ThreadLocalRandom.current().nextInt(3);
+
+        log.info("Start test [grp1Backups=" + grp1Backups + ", grp2Backups=" + grp2Backups + ']');
 
         for (int i = 0; i < CACHES; i++) {
             srv0.createCache(
@@ -758,7 +762,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 catch (Exception e) {
                     err.set(true);
 
-                    log.error("Unexpected error: " + e, e);
+                    log.error("Unexpected error(1): " + e, e);
 
                     stop.set(true);
                 }
@@ -768,6 +772,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         IgniteInternalFuture cacheFut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
+                    int cntr = 0;
+
                     while (!stop.get()) {
                         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -787,7 +793,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                         log.info("Create cache [node=" + node.name() + ", grp=" + grp + ']');
 
-                        IgniteCache cache = node.createCache(cacheConfiguration(grp, "tmpCache",
+                        IgniteCache cache = node.createCache(cacheConfiguration(grp, "tmpCache-" + cntr++,
                             PARTITIONED,
                             rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL,
                             backups,
@@ -804,15 +810,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 catch (Exception e) {
                     err.set(true);
 
-                    log.error("Unexpected error: " + e, e);
+                    log.error("Unexpected error(2): " + e, e);
 
                     stop.set(true);
                 }
             }
-        }, "cache-thread");
+        }, "cache-destroy-thread");
 
         try {
-            U.sleep(10_000);
+            U.sleep(30_000);
         }
         finally {
             stop.set(true);
@@ -866,7 +872,27 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void cacheOperation(ThreadLocalRandom rnd, IgniteCache cache) {
         Object key = rnd.nextInt(1000);
 
-        cache.put(key, 1);
+        switch (rnd.nextInt(4)) {
+            case 0:
+                cache.put(key, 1);
+
+                break;
+
+            case 1:
+                cache.get(key);
+
+                break;
+
+            case 2:
+                cache.remove(key);
+
+                break;
+
+            case 3:
+                cache.localPeek(key);
+
+                break;
+        }
     }
 
     /**

@@ -528,6 +528,9 @@ public class CacheGroupInfrastructure {
      * @param destroy Destroy flag.
      */
     void stopCache(GridCacheContext cctx, boolean destroy) {
+        if (top != null)
+            top.onCacheStopped(cctx.cacheId());
+
         offheapMgr.stopCache(cctx.cacheId(), destroy);
 
         removeCacheContext(cctx);
