@@ -21,8 +21,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +41,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     private Collection<DynamicCacheChangeRequest> reqs;
 
     /** Client nodes map. Used in discovery data exchange. */
-    @GridToStringInclude
+    @GridToStringExclude
     private Map<String, Map<UUID, Boolean>> clientNodes;
 
     /** Custom message ID. */
@@ -132,6 +135,13 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheChangeBatch.class, this);
+        Object clients = F.viewReadOnly(clientNodes, new IgniteBiClosure<String, Map<UUID,Boolean>, Object>() {
+                @Override public Object apply(String s, Map<UUID, Boolean> map) {
+                    return map != null ? map.keySet() : null;
+                }
+            }
+        );
+
+        return S.toString(DynamicCacheChangeBatch.class, this, "clientNodes", clients);
     }
 }
