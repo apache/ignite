@@ -2240,7 +2240,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override public String toString() {
-                return "put [key=" + key + ", val=" + val + ", filter=" + filter + ']';
+                return S.toString("put",
+                    "key", key, true,
+                    "val", val, true,
+                    "filter", filter, false);
             }
         });
     }
