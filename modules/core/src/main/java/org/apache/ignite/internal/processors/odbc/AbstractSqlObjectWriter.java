@@ -23,33 +23,22 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterHandles;
-import org.apache.ignite.internal.binary.BinaryWriterSchemaHolder;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public abstract class AbstractSqlBinaryWriter extends BinaryWriterExImpl {
+public abstract class AbstractSqlObjectWriter {
     /**
-     * @param ctx Binary context.
-     * @param out Binary output stream.
-     * @param schema Schema.
-     * @param handles Handles.
+     * @param writer Writer.
+     * @param obj Object to write.
+     * @throws BinaryObjectException On error.
      */
-    public AbstractSqlBinaryWriter(BinaryContext ctx,
-        BinaryOutputStream out, BinaryWriterSchemaHolder schema,
-        BinaryWriterHandles handles) {
-        super(ctx, out, schema, handles);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeObjectDetached(@Nullable Object obj) throws BinaryObjectException {
+    public void writeObject(BinaryWriterExImpl writer, @Nullable Object obj) throws BinaryObjectException {
         if (obj == null) {
-            super.writeObjectDetached(obj);
+            writer.writeByte(GridBinaryMarshaller.NULL);
 
             return;
         }
@@ -57,74 +46,67 @@ public abstract class AbstractSqlBinaryWriter extends BinaryWriterExImpl {
         Class<?> cls = obj.getClass();
 
         if (cls == Boolean.class)
-            doWriteBoolean((Boolean)obj);
+            writer.writeBooleanFieldPrimitive((Boolean)obj);
         else if (cls == Byte.class)
-            doWriteByte((Byte)obj);
+            writer.writeByteFieldPrimitive((Byte)obj);
         else if (cls == Character.class)
-            doWriteChar((Character)obj);
+            writer.writeCharFieldPrimitive((Character)obj);
         else if (cls == Short.class)
-            doWriteShort((Short)obj);
+            writer.writeShortFieldPrimitive((Short)obj);
         else if (cls == Integer.class)
-            doWriteInt((Integer)obj);
+            writer.writeIntFieldPrimitive((Integer)obj);
         else if (cls == Long.class)
-            doWriteLong((Long)obj);
+            writer.writeLongFieldPrimitive((Long)obj);
         else if (cls == Float.class)
-            doWriteFloat((Float)obj);
+            writer.writeFloatFieldPrimitive((Float)obj);
         else if (cls == Double.class)
-            doWriteDouble((Double)obj);
+            writer.writeDoubleFieldPrimitive((Double)obj);
         else if (cls == String.class)
-            doWriteString((String)obj);
+            writer.doWriteString((String)obj);
         else if (cls == BigDecimal.class)
-            doWriteDecimal((BigDecimal)obj);
+            writer.doWriteDecimal((BigDecimal)obj);
         else if (cls == UUID.class)
-            writeUuid((UUID)obj);
+            writer.writeUuid((UUID)obj);
         else if (cls == Time.class)
-            writeTime((Time)obj);
+            writer.writeTime((Time)obj);
         else if (cls == Timestamp.class)
-            writeTimestamp((Timestamp)obj);
+            writer.writeTimestamp((Timestamp)obj);
         else if (cls == Date.class)
-            writeDate((Date)obj);
+            writer.writeDate((Date)obj);
         else if (cls == boolean[].class)
-            writeBooleanArray((boolean[])obj);
+            writer.writeBooleanArray((boolean[])obj);
         else if (cls == byte[].class)
-            writeByteArray((byte[])obj);
+            writer.writeByteArray((byte[])obj);
         else if (cls == char[].class)
-            writeCharArray((char[])obj);
+            writer.writeCharArray((char[])obj);
         else if (cls == short[].class)
-            writeShortArray((short[])obj);
+            writer.writeShortArray((short[])obj);
         else if (cls == int[].class)
-            writeIntArray((int[])obj);
+            writer.writeIntArray((int[])obj);
         else if (cls == float[].class)
-            writeFloatArray((float[])obj);
+            writer.writeFloatArray((float[])obj);
         else if (cls == double[].class)
-            writeDoubleArray((double[])obj);
+            writer.writeDoubleArray((double[])obj);
         else if (cls == String[].class)
-            writeStringArray((String[])obj);
+            writer.writeStringArray((String[])obj);
         else if (cls == BigDecimal[].class)
-            writeDecimalArray((BigDecimal[])obj);
+            writer.writeDecimalArray((BigDecimal[])obj);
         else if (cls == UUID[].class)
-            writeUuidArray((UUID[])obj);
+            writer.writeUuidArray((UUID[])obj);
         else if (cls == Time[].class)
-            writeTimeArray((Time[])obj);
+            writer.writeTimeArray((Time[])obj);
         else if (cls == Timestamp[].class)
-            writeTimestampArray((Timestamp[])obj);
+            writer.writeTimestampArray((Timestamp[])obj);
         else if (cls == Date[].class)
-            writeDateArray((Date[])obj);
+            writer.writeDateArray((Date[])obj);
         else
-            writeNotEmbeddedObject(obj);
+            writeNotEmbeddedObject(writer, obj);
     }
 
     /**
-     * @param obj Object to write.
-     * @throws BinaryObjectException On error.
-     */
-    protected void binWriteObjectDetached(Object obj) throws BinaryObjectException {
-        super.writeObjectDetached(obj);
-    }
-
-    /**
+     * @param writer Writer.
      * @param obj Object to marshal with marshaller and write to binary stream.
      * @throws BinaryObjectException On error.
      */
-    protected abstract void writeNotEmbeddedObject(Object obj) throws BinaryObjectException;
+    protected abstract void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException;
 }

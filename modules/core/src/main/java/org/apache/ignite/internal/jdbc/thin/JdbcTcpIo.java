@@ -22,13 +22,15 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlNioListener;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryReader;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryWriter;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectReader;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectWriter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -98,7 +100,8 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
+            null, null);
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -113,7 +116,8 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
 
         boolean accepted = reader.readBoolean();
 

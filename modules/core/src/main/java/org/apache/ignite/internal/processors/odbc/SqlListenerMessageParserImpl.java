@@ -36,10 +36,19 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Object reader. */
+    AbstractSqlObjectReader objReader;
+
+    /** Object writer. */
+    AbstractSqlObjectWriter objWriter;
+
     /**
      * @param ctx Context.
+     * @param objReader Object reader.
+     * @param objWriter Object writer.
      */
-    protected SqlListenerMessageParserImpl(final GridKernalContext ctx) {
+    protected SqlListenerMessageParserImpl(final GridKernalContext ctx, AbstractSqlObjectReader objReader,
+        AbstractSqlObjectWriter objWriter) {
         log = ctx.log(getClass());
     }
 
@@ -49,7 +58,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        BinaryReaderExImpl reader = createBinaryReader(stream);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
 
         byte cmd = reader.readByte();
 
@@ -64,7 +73,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
                 Object[] params = new Object[argsNum];
 
                 for (int i = 0; i < argsNum; ++i)
-                    params[i] = reader.readObjectDetached();
+                    params[i] = objReader.readObject(reader);
 
                 res = new SqlListenerQueryExecuteRequest(cache, sql, params);
 
@@ -185,7 +194,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
                     writer.writeInt(row.size());
 
                     for (Object obj : row)
-                        writer.writeObjectDetached(obj);
+                        objWriter.writeObject(writer, obj);
                 }
             }
         }
@@ -226,7 +235,7 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
 
             byte[] typeIds = res.typeIds();
 
-            writer.writeObjectDetached(typeIds);
+            objWriter.writeObject(writer, typeIds);
         }
         else
             assert false : "Should not reach here.";
@@ -238,11 +247,5 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
      * @param cap Initial capacity.
      * @return Binary writer instance.
      */
-    protected abstract AbstractSqlBinaryWriter createBinaryWriter(int cap);
-
-    /**
-     * @param in Binary input stream.
-     * @return Binary writer instance.
-     */
-    protected abstract AbstractSqlBinaryReader createBinaryReader(BinaryInputStream in);
+    protected abstract BinaryWriterExImpl createBinaryWriter(int cap);
 }

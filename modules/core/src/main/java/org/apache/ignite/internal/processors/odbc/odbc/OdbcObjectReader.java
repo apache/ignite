@@ -15,28 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectReader;
 
 /**
- * SQL listener message parser.
+ * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
-public interface SqlListenerMessageParser {
-    /** */
-    public static final byte JDK_MARSH = -3;
-
-    /**
-     * Decode request from byte array.
-     *
-     * @param msg Message.
-     * @return Request.
-     */
-    public SqlListenerRequest decode(byte[] msg);
-
-    /**
-     * Encode response to byte array.
-     *
-     * @param resp Response.
-     * @return Message.
-     */
-    public byte[] encode(SqlListenerResponse resp);
+@SuppressWarnings("unchecked")
+public class OdbcObjectReader extends AbstractSqlObjectReader {
+    /** {@inheritDoc} */
+    @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        return reader.readObjectDetached();
+    }
 }

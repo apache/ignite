@@ -19,32 +19,25 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryWriter;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class JdbcBinaryWriter extends AbstractSqlBinaryWriter {
+public class JdbcObjectWriter extends AbstractSqlObjectWriter {
     /** Jdk marshaller. */
     private JdkMarshaller jdkMars = new JdkMarshaller();
 
-    /**
-     * @param out Binary writer.
-     */
-    public JdbcBinaryWriter(BinaryOutputStream out) {
-        super(null, out, null, null);
-    }
-
     /** {@inheritDoc} */
-    @Override protected void writeNotEmbeddedObject(Object obj) throws BinaryObjectException {
-        writeByte(GridBinaryMarshaller.JDK_MARSH);
+    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+        writer.writeByte(SqlListenerMessageParser.JDK_MARSH);
 
         try {
-            writeByteArray(U.marshal(jdkMars, obj));
+            writer.writeByteArray(U.marshal(jdkMars, obj));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException(e);

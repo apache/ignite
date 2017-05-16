@@ -18,26 +18,20 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterHandles;
+import org.apache.ignite.internal.binary.BinaryWriterSchemaHolder;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
- * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
+ * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-@SuppressWarnings("unchecked")
-public class OdbcBinaryReader extends AbstractSqlBinaryReader {
-    /** Jdk marshaller. */
-    private JdkMarshaller jdkMars = new JdkMarshaller();
-    /**
-     * @param in Binary reader.
-     */
-    public OdbcBinaryReader(BinaryInputStream in) {
-        super(null, in, null, true);
-    }
-
+public class OdbcObjectWriter extends AbstractSqlObjectWriter {
     /** {@inheritDoc} */
-    @Override protected Object readNotEmbeddedObject() throws BinaryObjectException {
-        return binReadObjectDetached();
+    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+        writer.writeObjectDetached(obj);
     }
 }

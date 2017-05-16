@@ -18,137 +18,120 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
 @SuppressWarnings("unchecked")
-public abstract class AbstractSqlBinaryReader extends BinaryReaderExImpl {
+public abstract class AbstractSqlObjectReader {
     /**
-     * @param ctx Binary context.
-     * @param in Binary input stream.
-     * @param ldr Calss loader.
-     * @param forUnmarshal Use to unmarshal flag.
+     * @param reader Reader.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
      */
-    public AbstractSqlBinaryReader(BinaryContext ctx,
-        BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
-        super(ctx, in, ldr, forUnmarshal);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object readObjectDetached() throws BinaryObjectException {
-        byte type = readByte();
+    @Nullable public Object readObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        byte type = reader.readByte();
 
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
 
             case GridBinaryMarshaller.BOOLEAN:
-                return readBoolean();
+                return reader.readBoolean();
 
             case GridBinaryMarshaller.BYTE:
-                return readByte();
+                return reader.readByte();
 
             case GridBinaryMarshaller.CHAR:
-                return readChar();
+                return reader.readChar();
 
             case GridBinaryMarshaller.SHORT:
-                return readShort();
+                return reader.readShort();
 
             case GridBinaryMarshaller.INT:
-                return readInt();
+                return reader.readInt();
 
             case GridBinaryMarshaller.LONG:
-                return readLong();
+                return reader.readLong();
 
             case GridBinaryMarshaller.FLOAT:
-                return readFloat();
+                return reader.readFloat();
 
             case GridBinaryMarshaller.DOUBLE:
-                return readDouble();
+                return reader.readDouble();
 
             case GridBinaryMarshaller.STRING:
-                return BinaryUtils.doReadString(in());
+                return BinaryUtils.doReadString(reader.in());
 
             case GridBinaryMarshaller.DECIMAL:
-                return BinaryUtils.doReadDecimal(in());
+                return BinaryUtils.doReadDecimal(reader.in());
 
             case GridBinaryMarshaller.UUID:
-                return BinaryUtils.doReadUuid(in());
+                return BinaryUtils.doReadUuid(reader.in());
 
             case GridBinaryMarshaller.TIME:
-                return BinaryUtils.doReadTime(in());
+                return BinaryUtils.doReadTime(reader.in());
 
             case GridBinaryMarshaller.TIMESTAMP:
-                return BinaryUtils.doReadTimestamp(in());
+                return BinaryUtils.doReadTimestamp(reader.in());
 
             case GridBinaryMarshaller.DATE:
-                return BinaryUtils.doReadSqlDate(in());
+                return BinaryUtils.doReadSqlDate(reader.in());
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return BinaryUtils.doReadBooleanArray(in());
+                return BinaryUtils.doReadBooleanArray(reader.in());
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(in());
+                return BinaryUtils.doReadByteArray(reader.in());
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return BinaryUtils.doReadCharArray(in());
+                return BinaryUtils.doReadCharArray(reader.in());
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return BinaryUtils.doReadShortArray(in());
+                return BinaryUtils.doReadShortArray(reader.in());
 
             case GridBinaryMarshaller.INT_ARR:
-                return BinaryUtils.doReadIntArray(in());
+                return BinaryUtils.doReadIntArray(reader.in());
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return BinaryUtils.doReadFloatArray(in());
+                return BinaryUtils.doReadFloatArray(reader.in());
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return BinaryUtils.doReadDoubleArray(in());
+                return BinaryUtils.doReadDoubleArray(reader.in());
 
             case GridBinaryMarshaller.STRING_ARR:
-                return BinaryUtils.doReadStringArray(in());
+                return BinaryUtils.doReadStringArray(reader.in());
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return BinaryUtils.doReadDecimalArray(in());
+                return BinaryUtils.doReadDecimalArray(reader.in());
 
             case GridBinaryMarshaller.UUID_ARR:
-                return BinaryUtils.doReadUuidArray(in());
+                return BinaryUtils.doReadUuidArray(reader.in());
 
             case GridBinaryMarshaller.TIME_ARR:
-                return BinaryUtils.doReadTimeArray(in());
+                return BinaryUtils.doReadTimeArray(reader.in());
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return BinaryUtils.doReadTimestampArray(in());
+                return BinaryUtils.doReadTimestampArray(reader.in());
 
             case GridBinaryMarshaller.DATE_ARR:
-                return BinaryUtils.doReadSqlDateArray(in());
-
-            case GridBinaryMarshaller.JDK_MARSH:
-                return readNotEmbeddedObject();
+                return BinaryUtils.doReadSqlDateArray(reader.in());
 
             default:
-                throw new BinaryObjectException("Unknown object type: " + type);
+                reader.in().position(reader.in().position() - 1);
+
+                return readNotEmbeddedObject(reader);
         }
     }
 
     /**
-     * @return Read object.
-     * @throws BinaryObjectException On error.
-     */
-    protected Object binReadObjectDetached() throws BinaryObjectException {
-        return super.readObjectDetached();
-    }
-
-    /**
+     * @param reader Reader.
      * @return An object is unmarshaled by marshaller.
      * @throws BinaryObjectException On error.
      */
-    protected abstract Object readNotEmbeddedObject() throws BinaryObjectException;
+    protected abstract Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException;
 }

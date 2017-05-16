@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryWriter;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectReader;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 
 /**
@@ -38,7 +40,7 @@ public class OdbcMessageParser extends SqlListenerMessageParserImpl {
      * @param ctx Context.
      */
     public OdbcMessageParser(GridKernalContext ctx) {
-        super(ctx);
+        super(ctx, new OdbcObjectReader(), new OdbcObjectWriter());
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
@@ -46,13 +48,8 @@ public class OdbcMessageParser extends SqlListenerMessageParserImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractSqlBinaryWriter createBinaryWriter(int cap) {
-        return new OdbcBinaryWriter(marsh.context(), new BinaryHeapOutputStream(cap),
+    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
+        return new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(cap),
             BinaryThreadLocalContext.get().schemaHolder(), null);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected AbstractSqlBinaryReader createBinaryReader(BinaryInputStream stream) {
-        return new OdbcBinaryReader(stream);
     }
 }

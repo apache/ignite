@@ -19,10 +19,11 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectReader;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
@@ -30,24 +31,22 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
 @SuppressWarnings("unchecked")
-public class JdbcBinaryReader extends AbstractSqlBinaryReader {
+public class JdbcObjectReader extends AbstractSqlObjectReader {
     /** Jdk marshaller. */
     private JdkMarshaller jdkMars = new JdkMarshaller();
-    /**
-     * @param in Binary reader.
-     */
-    public JdbcBinaryReader(BinaryInputStream in) {
-        super(null, in, null, false);
-    }
 
     /** {@inheritDoc} */
-    @Override protected Object readNotEmbeddedObject() throws BinaryObjectException {
+    @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
         try {
-            byte type = readByte();
+            byte objType = reader.readByte();
+
+            assert objType == SqlListenerMessageParser.JDK_MARSH;
+
+            byte type = reader.readByte();
 
             assert type == GridBinaryMarshaller.BYTE_ARR;
 
-            return U.unmarshal(jdkMars, BinaryUtils.doReadByteArray(in()), null);
+            return U.unmarshal(jdkMars, BinaryUtils.doReadByteArray(reader.in()), null);
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException(e);
