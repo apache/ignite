@@ -28,14 +28,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,7 +59,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         affFunction = cctx.group().config().getAffinity();
-        affMapper = cctx.group().config().getAffinityMapper();
+        affMapper = cctx.config().getAffinityMapper();
 
         aff = cctx.group().affinity();
     }
