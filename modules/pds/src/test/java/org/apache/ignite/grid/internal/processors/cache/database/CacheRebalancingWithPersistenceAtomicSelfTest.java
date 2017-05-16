@@ -15,27 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.wal.crc;
+package org.apache.ignite.grid.internal.processors.cache.database;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Will be thrown if data integrity violation is found
+ *
  */
-public class IgniteDataIntegrityViolationException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class CacheRebalancingWithPersistenceAtomicSelfTest extends CacheRebalancingWithPersistenceAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
-    /**
-     * Default constructor.
-     */
-    public IgniteDataIntegrityViolationException() {
+        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        return ccfg;
     }
 
-    /**
-     * @param msg Message.
-     */
-    public IgniteDataIntegrityViolationException(String msg) {
-        super(msg);
-    }
 }
