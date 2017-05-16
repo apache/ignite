@@ -750,94 +750,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     @Override public void finishCheckpoint() {
-        // Lock segment by segment and flush changes.
-        for (Segment seg : segments) {
-            GridLongList activePages = null;
-
-          /*  seg.writeLock().lock();
-
-            try {
-                assert seg.segCheckpointPages != null : "Checkpoint has not been started.";
-
-                for (FullPageId fullId : seg.segCheckpointPages) {
-                    int partTag = seg.partTag(
-                        fullId.cacheId(),
-                        PageIdUtils.partId(fullId.pageId())
-                    );
-
-                    long relPtr = seg.loadedPages.get(
-                        fullId.cacheId(),
-                        PageIdUtils.effectivePageId(fullId.pageId()),
-                        partTag,
-                        INVALID_REL_PTR,
-                        OUTDATED_REL_PTR
-                    );
-
-                    // Checkpoint page may have been written by evict.
-                    if (relPtr == INVALID_REL_PTR)
-                        continue;
-
-                    if (relPtr == OUTDATED_REL_PTR) {
-                        relPtr = refreshOutdatedPage(
-                            seg,
-                            fullId.cacheId(),
-                            PageIdUtils.effectivePageId(fullId.pageId()),
-                            true
-                        );
-
-                        seg.pool.releaseFreePage(relPtr);
-
-                        continue;
-                    }
-
-                    long absPtr = seg.absolute(relPtr);
-
-                    boolean pinned = PageHeader.isAcquired(absPtr);
-
-                    if (pinned) {
-                        // Pin the page one more time.
-                        seg.acquirePage(absPtr);
-
-                        if (activePages == null)
-                            activePages = new GridLongList(seg.segCheckpointPages.size() / 2 + 1);
-
-                        activePages.add(relPtr);
-                    }
-                    // Page is not pinned and nobody can pin it since we hold the segment write lock.
-                    else {
-                        flushPageTempBuffer(fullId, absPtr);
-
-                        assert PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR;
-                        assert !PageHeader.tempDirty(absPtr) : "ptr=" + U.hexLong(absPtr) + ", fullId=" + fullId;
-                    }
-                }
-            }
-            finally {
-                seg.writeLock().unlock();
-            }
-
-            // Must release active pages outside of segment write lock.
-            if (activePages != null) {
-                for (int p = 0; p < activePages.size(); p++) {
-                    long relPtr = activePages.get(p);
-
-                    long absPtr = seg.absolute(relPtr);
-
-                    flushCheckpoint(absPtr);
-
-                    seg.readLock().lock();
-
-                    try {
-                        seg.releasePage(absPtr);
-                    }
-                    finally {
-                        seg.readLock().unlock();
-                    }
-                }
-            }*/
-
+        for (Segment seg : segments)
             seg.segCheckpointPages = null;
-        }
     }
 
     /**
@@ -917,12 +831,18 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         Segment seg = segment(fullId.cacheId(), fullId.pageId());
 
+        long absPtr = 0;
+
+        long relPtr;
+
+        int tag;
+
         seg.readLock().lock();
 
         try {
-            int tag = seg.partTag(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
+            tag = seg.partTag(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
 
-            long relPtr = seg.loadedPages.get(
+            relPtr= seg.loadedPages.get(
                 fullId.cacheId(),
                 PageIdUtils.effectivePageId(fullId.pageId()),
                 tag,
@@ -935,48 +855,55 @@ public class PageMemoryImpl implements PageMemoryEx {
                 return null;
 
             if (relPtr != OUTDATED_REL_PTR){
-                long absPtr = seg.absolute(relPtr);
+                absPtr = seg.absolute(relPtr);
 
-                copyPageForCheckpoint(absPtr, fullId, tmpBuf);
-
-                return tag;
+                if (PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR)
+                    PageHeader.acquirePage(absPtr);
             }
         }
         finally {
             seg.readLock().unlock();
         }
 
-        seg.writeLock().lock();
+        assert absPtr != 0;
 
-        try {
-            long relPtr = seg.loadedPages.get(
-                fullId.cacheId(),
-                PageIdUtils.effectivePageId(fullId.pageId()),
-                seg.partTag(
-                    fullId.cacheId(),
-                    PageIdUtils.partId(fullId.pageId())
-                ),
-                INVALID_REL_PTR,
-                OUTDATED_REL_PTR
-            );
+        if (relPtr != OUTDATED_REL_PTR) {
+            copyPageForCheckpoint(absPtr, fullId, tmpBuf);
 
-            if (relPtr == INVALID_REL_PTR)
-                return null;
+            return tag;
+        }else {
+            seg.writeLock().lock();
 
-            if (relPtr == OUTDATED_REL_PTR){
-                refreshOutdatedPage(
-                    seg,
+            try {
+                relPtr = seg.loadedPages.get(
                     fullId.cacheId(),
                     PageIdUtils.effectivePageId(fullId.pageId()),
-                    true
+                    seg.partTag(
+                        fullId.cacheId(),
+                        PageIdUtils.partId(fullId.pageId())
+                    ),
+                    INVALID_REL_PTR,
+                    OUTDATED_REL_PTR
                 );
+
+                if (relPtr == INVALID_REL_PTR)
+                    return null;
+
+                if (relPtr == OUTDATED_REL_PTR){
+                    refreshOutdatedPage(
+                        seg,
+                        fullId.cacheId(),
+                        PageIdUtils.effectivePageId(fullId.pageId()),
+                        true
+                    );
+                }
+
+                seg.pool.releaseFreePage(relPtr);
+
+                return null;
+            }finally {
+                seg.writeLock().unlock();
             }
-
-            seg.pool.releaseFreePage(relPtr);
-
-            return null;
-        }finally {
-            seg.writeLock().unlock();
         }
     }
 
@@ -1003,6 +930,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 copyInBuffer(absPtr, tmpBuf);
 
                 PageHeader.dirty(absPtr, false);
+
+                PageHeader.releasePage(absPtr);
 
                 return;
             }
