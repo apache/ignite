@@ -21,6 +21,9 @@ package org.apache.ignite.internal.processors.odbc;
  * SQL listener message parser.
  */
 public interface SqlListenerMessageParser {
+    /** */
+    public static final byte JDK_MARSH = -3;
+
     /**
      * Decode request from byte array.
      *

@@ -17,17 +17,29 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryWriter;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * JDBC message parser.
  */
 public class JdbcMessageParser extends SqlListenerMessageParserImpl {
+    /** Jdk marshaller. */
+    private JdkMarshaller jdkMars = new JdkMarshaller();
+
     /**
      * @param ctx Context.
      */
@@ -36,12 +48,40 @@ public class JdbcMessageParser extends SqlListenerMessageParserImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractSqlBinaryWriter createBinaryWriter(int cap) {
-        return new JdbcBinaryWriter(new BinaryHeapOutputStream(cap));
+    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
+        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractSqlBinaryReader createBinaryReader(BinaryInputStream in) {
-        return new JdbcBinaryReader(in);
+    @Override protected BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+        return new BinaryReaderExImpl(null, in, null, false);
     }
+
+    /** {@inheritDoc} */
+    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+        writer.writeByte(SqlListenerMessageParser.JDK_MARSH);
+
+        try {
+            writer.writeByteArray(U.marshal(jdkMars, obj));
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object readJdkMarshalledObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        try {
+            byte type = reader.readByte();
+
+            assert type == GridBinaryMarshaller.BYTE_ARR;
+
+            return U.unmarshal(jdkMars, BinaryUtils.doReadByteArray(reader.in()), null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException(e);
+        }
+
+    }
+
 }
