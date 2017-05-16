@@ -67,6 +67,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     /** Buffer to store mutations performed withing transaction. */
     private static final String TRANSACTION_BUFFER = "CASSANDRA_TRANSACTION_BUFFER";
 
+    /** Thread name. */
     private static final String CACHE_LOADER_THREAD_NAME = "cassandra-cache-loader";
 
     /** Auto-injected ignite instance. */
