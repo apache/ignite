@@ -145,6 +145,9 @@ namespace ignite
             /** Operation: SizeLoc(peekModes). */
             const int32_t OP_SIZE_LOC = 48;
 
+            /** Operation: Rebalance. */
+            const int32_t OP_REBALANCE = 55;
+
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
                 name(name)
@@ -297,6 +300,11 @@ namespace ignite
                 int32_t op = local ? OP_SIZE_LOC : OP_SIZE;
 
                 return static_cast<int32_t>(OutInOpLong(op, peekModes, err));
+            }
+
+            void CacheImpl::Rebalance(IgniteError &err)
+            {
+                OutOp(OP_REBALANCE, err);
             }
 
             QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError& err)
