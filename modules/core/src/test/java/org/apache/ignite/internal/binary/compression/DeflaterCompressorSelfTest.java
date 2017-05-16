@@ -30,7 +30,7 @@ public class DeflaterCompressorSelfTest extends GridCommonAbstractTest {
     private Compressor compressor;
 
     /** */
-    String line = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private String line = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789迎簡益大诶比西迪伊艾弗吉尺杰开勒马娜哦屁吉吾儿丝提伊吾维豆贝尔维克斯吾贼德";
 
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -42,9 +42,8 @@ public class DeflaterCompressorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStringCompress() throws Exception {
-        byte[] compressed = compressor.compress(line.getBytes());
-        byte[] decompressed = compressor.decompress(compressed);
-        String decompressedLine = new String(decompressed);
+        byte[] bytes = compressDecompress(line.getBytes());
+        String decompressedLine = new String(bytes);
         assertEquals(line, decompressedLine);
     }
 
@@ -53,9 +52,7 @@ public class DeflaterCompressorSelfTest extends GridCommonAbstractTest {
      */
     public void testByteArrayCompression() throws Exception {
         byte[] bytes = new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15};
-        byte[] compressed = compressor.compress(bytes);
-        byte[] decompressed = compressor.decompress(compressed);
-        assertTrue(Arrays.equals(bytes, decompressed));
+        assertTrue(Arrays.equals(bytes, compressDecompress(bytes)));
     }
 
     /**
@@ -63,8 +60,12 @@ public class DeflaterCompressorSelfTest extends GridCommonAbstractTest {
      */
     public void testByteArrayCompression2() throws Exception {
         byte[] bytes = new byte[] {33, 117, 4, -55, -16, 90, 1, 0, 0, 0, 0, 0, 0};
-        byte[] compressed = compressor.compress(bytes);
-        byte[] decompressed = compressor.decompress(compressed);
-        assertTrue(Arrays.equals(bytes, decompressed));
+        assertTrue(Arrays.equals(bytes, compressDecompress(bytes)));
+    }
+
+    /** */
+    private byte[] compressDecompress(byte[] bytes) {
+        byte[] arr = compressor.compress(bytes);
+        return compressor.decompress(arr);
     }
 }

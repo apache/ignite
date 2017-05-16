@@ -76,6 +76,7 @@ import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
@@ -2784,14 +2785,14 @@ public class IgniteConfiguration {
     /**
      * @return {@link Compressor} implementation.
      */
-    public Compressor getCompressor() {
+    @NotNull public Compressor getCompressor() {
         return compressor;
     }
 
     /**
      * @param compressor {@link Compressor} implementation.
      */
-    public void setCompressor(Compressor compressor) {
+    public void setCompressor(@NotNull Compressor compressor) {
         this.compressor = compressor;
     }
 

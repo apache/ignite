@@ -47,7 +47,7 @@ public abstract class BinaryFieldAccessor {
     /** Mode. */
     protected final BinaryWriteMode mode;
 
-    /** */
+    /** Indicates whether compression of a represented field is switched on. */
     protected final boolean compression;
 
     /**
