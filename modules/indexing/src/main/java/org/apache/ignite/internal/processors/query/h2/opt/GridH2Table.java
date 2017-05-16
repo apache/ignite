@@ -235,21 +235,15 @@ public class GridH2Table extends TableBase {
             throw new IllegalStateException("Table " + identifier() + " already destroyed.");
         }
 
-        if (snapshotInLock())
-            snapshotIndexes(null, threadLocalSegmentId());
+        if (snapshotInLock()) {
+            final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            assert qctx != null;
+
+            snapshotIndexes(null, qctx.segment());
+        }
 
         return false;
-    }
-
-    /**
-     * @return segmentId for current thread.
-     */
-    private int threadLocalSegmentId() {
-        final GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        assert qctx != null;
-
-        return qctx.segment();
     }
 
     /**
@@ -268,6 +262,7 @@ public class GridH2Table extends TableBase {
 
     /**
      * @param qctx Query context.
+     * @param segment id of index segment to be snapshoted.
      */
     public void snapshotIndexes(GridH2QueryContext qctx, int segment) {
         if (!snapshotEnabled)
@@ -280,7 +275,7 @@ public class GridH2Table extends TableBase {
             segmentSnapshot = actualSnapshot.get(segment);
 
             if (segmentSnapshot != null) { // Reuse existing snapshot without locking.
-                segmentSnapshot = doSnapshotIndexes(segmentSnapshot, qctx);
+                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
 
                 if (segmentSnapshot != null)
                     return; // Reused successfully.
@@ -297,10 +292,10 @@ public class GridH2Table extends TableBase {
             segmentSnapshot = actualSnapshot.get(segment);
 
             if (segmentSnapshot != null) // Try reusing.
-                segmentSnapshot = doSnapshotIndexes(segmentSnapshot, qctx);
+                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
 
             if (segmentSnapshot == null) { // Reuse failed, produce new snapshots.
-                segmentSnapshot = doSnapshotIndexes(null, qctx);
+                segmentSnapshot = doSnapshotIndexes(segment,null, qctx);
 
                 assert segmentSnapshot != null;
 
@@ -381,12 +376,13 @@ public class GridH2Table extends TableBase {
      * Must be called inside of write lock because when using multiple indexes we have to ensure that all of them have
      * the same contents at snapshot taking time.
      *
+     * @param segment id of index segment snapshot.
      * @param segmentSnapshot snapshot to be reused.
      * @param qctx Query context.
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(Object[] segmentSnapshot, GridH2QueryContext qctx) {
+    private Object[] doSnapshotIndexes(int segment, Object[] segmentSnapshot, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
         //TODO: make HashIndex snapshotable or remove it at all?
@@ -414,7 +410,7 @@ public class GridH2Table extends TableBase {
                         index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(threadLocalSegmentId(), segmentSnapshot, null);
+                actualSnapshot.compareAndSet(segment, segmentSnapshot, null);
 
                 return null;
             }
