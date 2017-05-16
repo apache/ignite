@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
+import org.apache.ignite.internal.binary.BinaryWriterHandles;
+import org.apache.ignite.internal.binary.BinaryWriterSchemaHolder;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
- * JDBC message parser.
+ * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class JdbcMessageParser extends SqlListenerMessageParserImpl {
-    /**
-     * @param ctx Context.
-     */
-    public JdbcMessageParser(GridKernalContext ctx) {
-        super(ctx, new JdbcObjectReader(), new JdbcObjectWriter());
-    }
+public class OdbcObjectWriter extends AbstractSqlObjectWriter {
     /** {@inheritDoc} */
-    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
-        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+        writer.writeObjectDetached(obj);
     }
 }

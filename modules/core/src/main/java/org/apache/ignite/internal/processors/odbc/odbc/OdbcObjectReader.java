@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.jdbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectReader;
 
 /**
- * JDBC message parser.
+ * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
-public class JdbcMessageParser extends SqlListenerMessageParserImpl {
-    /**
-     * @param ctx Context.
-     */
-    public JdbcMessageParser(GridKernalContext ctx) {
-        super(ctx, new JdbcObjectReader(), new JdbcObjectWriter());
-    }
+@SuppressWarnings("unchecked")
+public class OdbcObjectReader extends AbstractSqlObjectReader {
     /** {@inheritDoc} */
-    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
-        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+    @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        return reader.readObjectDetached();
     }
 }

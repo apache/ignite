@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
@@ -33,8 +35,8 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlNioListener;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryReader;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBinaryWriter;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectReader;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectWriter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -80,6 +82,12 @@ public class JdbcTcpIo {
     /** Enforce join order. */
     private boolean enforceJoinOrder;
 
+    /** Object reader. */
+    private final JdbcObjectReader objReader = new JdbcObjectReader();
+
+    /** Object writer. */
+    private final JdbcObjectWriter objWriter = new JdbcObjectWriter();
+
     /**
      * @param endpointAddr Endpoint.
      * @param distributedJoins Distributed joins flag.
@@ -113,7 +121,8 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void handshake() throws IOException, IgniteCheckedException {
-        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE));
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
+            null, null);
 
         writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
 
@@ -128,7 +137,8 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
 
         boolean accepted = reader.readBoolean();
 
@@ -157,7 +167,8 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryExecuteResult queryExecute(String cache, String sql, Object[] args)
         throws IOException, IgniteCheckedException {
-        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP));
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP),
+            null, null);
 
         writer.writeByte((byte)SqlListenerRequest.QRY_EXEC);
 
@@ -167,12 +178,13 @@ public class JdbcTcpIo {
 
         if (args != null) {
             for (Object arg : args)
-                writer.writeObjectDetached(arg);
+                objWriter.writeObject(writer, arg);
         }
 
         send(writer.array());
 
-        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
 
         byte status = reader.readByte();
 
@@ -211,7 +223,8 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryFetchResult queryFetch(Long qryId, int fetchSize)
         throws IOException, IgniteCheckedException {
-        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_FETCH_MSG_SIZE));
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_FETCH_MSG_SIZE),
+            null, null);
 
         writer.writeByte((byte)SqlListenerRequest.QRY_FETCH);
 
@@ -220,7 +233,8 @@ public class JdbcTcpIo {
 
         send(writer.array());
 
-        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
 
         byte status = reader.readByte();
 
@@ -251,7 +265,7 @@ public class JdbcTcpIo {
                 List<Object> col = new ArrayList<>(colsSize);
 
                 for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(reader.readObjectDetached());
+                    col.add(objReader.readObject(reader));
 
                 rows.add(col);
             }
@@ -266,14 +280,16 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
-        JdbcBinaryWriter writer = new JdbcBinaryWriter(new BinaryHeapOutputStream(QUERY_CLOSE_MSG_SIZE));
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_CLOSE_MSG_SIZE),
+            null, null);
 
         writer.writeByte((byte)SqlListenerRequest.QRY_CLOSE);
         writer.writeLong(qryId);
 
         send(writer.array());
 
-        JdbcBinaryReader reader = new JdbcBinaryReader(new BinaryHeapInputStream(read()));
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
 
         byte status = reader.readByte();
 

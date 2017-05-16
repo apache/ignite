@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
@@ -26,8 +25,8 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryReader;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlBinaryWriter;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectReader;
+import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
 import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
 
 /**
@@ -41,7 +40,7 @@ public class OdbcMessageParser extends SqlListenerMessageParserImpl {
      * @param ctx Context.
      */
     public OdbcMessageParser(GridKernalContext ctx) {
-        super(ctx);
+        super(ctx, new OdbcObjectReader(), new OdbcObjectWriter());
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
@@ -52,20 +51,5 @@ public class OdbcMessageParser extends SqlListenerMessageParserImpl {
     @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
         return new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(cap),
             BinaryThreadLocalContext.get().schemaHolder(), null);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
-        return new BinaryReaderExImpl(null, in, null, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
-        writer.writeObjectDetached(obj);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object readJdkMarshalledObject(BinaryReaderExImpl reader) throws BinaryObjectException {
-        throw new BinaryObjectException("Internal error. Invalid reader state. JDK marshaller isn't used with ODBC");
     }
 }
