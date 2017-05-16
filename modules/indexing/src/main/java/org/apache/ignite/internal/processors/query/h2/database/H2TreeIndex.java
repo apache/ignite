@@ -327,7 +327,8 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             if (cctx.affinityNode()) {
                 for (H2Tree tree : segments) {
-                    tree.destroy();
+                    if (!cctx.kernalContext().cache().context().database().persistenceEnabled())
+                        tree.destroy();
 
                     cctx.offheap().dropRootPageForIndex(tree.getName());
                 }
