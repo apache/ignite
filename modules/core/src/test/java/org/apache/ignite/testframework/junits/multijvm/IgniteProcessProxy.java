@@ -39,10 +39,10 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -137,23 +137,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
 
-        Collection<String> filteredJvmArgs = new ArrayList<>();
-
-        filteredJvmArgs.add("-ea");
-
-        Marshaller marsh = cfg.getMarshaller();
-
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-        else
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
-
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                filteredJvmArgs.add(arg);
-        }
+        Collection<String> filteredJvmArgs = filteredJvmArgs(cfg);
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
@@ -187,6 +171,27 @@ public class IgniteProcessProxy implements IgniteEx {
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
+    }
+
+    protected Collection<String> filteredJvmArgs(IgniteConfiguration cfg) {
+        Collection<String> filteredJvmArgs = new ArrayList<>();
+
+        filteredJvmArgs.add("-ea");
+
+        Marshaller marsh = cfg.getMarshaller();
+
+        if (marsh != null)
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+        else
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
+                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                filteredJvmArgs.add(arg);
+        }
+        return filteredJvmArgs;
     }
 
     /**
