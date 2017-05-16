@@ -586,6 +586,11 @@ public final class IgniteSystemProperties {
     /** Cache start size for on-heap maps. Defaults to 4096. */
     public static final String IGNITE_CACHE_START_SIZE = "IGNITE_CACHE_START_SIZE";
 
+    /**
+     * Creation and registering of MBeans disabled.
+     */
+    public static final String IGNITE_DISABLE_MBEANS = "IGNITE_DISABLE_MBEANS";
+
     /** */
     public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
 

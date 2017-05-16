@@ -505,6 +505,8 @@ public abstract class IgniteUtils {
     /** Empty local Ignite name. */
     public static final String LOC_IGNITE_NAME_EMPTY = new String();
 
+    public static boolean IGNITE_DISABLE_MBEANS = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_MBEANS, false);
+
     /** Local Ignite name thread local. */
     private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
         @Override protected String initialValue() {
@@ -4512,6 +4514,9 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
         @Nullable String grp, String name, T impl, @Nullable Class<T> itf) throws JMException {
+        if (IGNITE_DISABLE_MBEANS)
+            return null;
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4536,6 +4541,9 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if (IGNITE_DISABLE_MBEANS)
+            return null;
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4562,6 +4570,9 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
+        if (IGNITE_DISABLE_MBEANS)
+            return null;
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;

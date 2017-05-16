@@ -46,6 +46,7 @@ import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
+import org.apache.ignite.util.mbeans.IgniteDisableMBeansTest;
 
 /**
  * Test suite for Ignite utility classes.
@@ -76,6 +77,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridToStringBuilderSelfTest.class);
         suite.addTestSuite(GridByteArrayListSelfTest.class);
         suite.addTestSuite(GridMBeanSelfTest.class);
+        suite.addTestSuite(IgniteDisableMBeansTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridIntListSelfTest.class);
         suite.addTestSuite(GridArraysSelfTest.class);

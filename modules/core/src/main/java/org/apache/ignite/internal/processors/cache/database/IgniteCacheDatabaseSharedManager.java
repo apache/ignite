@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -565,7 +567,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                             memPlc.memoryMetrics().getName()));
                 }
                 catch (JMException e) {
-                    U.error(log, "Failed to unregister MBean for memory metrics: " +
+                    if (! (e instanceof InstanceNotFoundException && IgniteUtils.IGNITE_DISABLE_MBEANS))
+                        U.error(log, "Failed to unregister MBean for memory metrics: " +
                         memPlc.memoryMetrics().getName(), e);
                 }
             }

@@ -1,0 +1,23 @@
+grant
+{
+  permission java.io.FilePermission "<<ALL FILES>>","read";
+  permission java.io.FilePermission "<<ALL FILES>>","write";
+  /* Give permission to read and write all system properties - this ia required in method org.apache.ignite.IgniteSystemProperties.snapshot():
+         Properties sysProps = (Properties)System.getProperties().clone();
+  */
+  permission java.util.PropertyPermission "*","read,write";
+  permission java.io.SerializablePermission "enableSubstitution";
+  permission java.io.SerializablePermission "enableSubclassImplementation";
+  permission java.lang.management.ManagementPermission "monitor";
+  permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  permission java.lang.RuntimePermission "*";
+  permission java.net.SocketPermission "localhost:*","listen,resolve";
+  permission java.net.SocketPermission "127.0.0.1:*","connect,resolve";
+  permission javax.management.MBeanServerPermission "createMBeanServer";
+  permission javax.management.MBeanPermission "*","queryMBeans";
+  /* uncomment these lines to allow creation of MBeans
+  permission javax.management.MBeanPermission "*","registerMBean,unregisterMBean";
+  permission javax.management.MBeanTrustPermission "register";
+  */
+  permission javax.net.ssl.SSLPermission "setHostnameVerifier";
+};

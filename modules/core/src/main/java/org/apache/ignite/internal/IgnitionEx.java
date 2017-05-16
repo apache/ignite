@@ -41,6 +41,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
+import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -2661,13 +2662,19 @@ public class IgnitionEx {
                         // Unregister MBean if no grid instances started for current MBeanServer.
                         if (data.getCounter() == 1) {
                             try {
-                                entry.getKey().unregisterMBean(data.getMbean());
+                                ObjectName mbean = data.getMbean();
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Unregistered MBean: " + data.getMbean());
+                                if (mbean != null) {
+                                    entry.getKey().unregisterMBean(mbean);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Unregistered MBean: " + mbean);
+
+                                }
                             }
                             catch (JMException e) {
-                                U.error(log, "Failed to unregister MBean.", e);
+                                if (! (e instanceof InstanceNotFoundException && IgniteUtils.IGNITE_DISABLE_MBEANS))
+                                    U.error(log, "Failed to unregister MBean.", e);
                             }
 
                             iter.remove();
