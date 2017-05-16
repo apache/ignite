@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -405,6 +407,41 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         cacheFut.get();
 
         assertFalse("Unexpected error, see log for details", err.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConfigurationConsistencyValidation() throws Exception {
+        startGrids(2);
+
+        client = true;
+
+        startGrid(2);
+
+        ignite(0).createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
+
+        for (int i = 0; i < 3; i++) {
+            try {
+                ignite(i).createCache(cacheConfiguration(GROUP1, "c2", REPLICATED, ATOMIC, Integer.MAX_VALUE, false));
+
+                fail();
+            }
+            catch (CacheException e) {
+                assertTrue("Unexpected message: " + e.getMessage(),
+                    e.getMessage().contains("Cache mode mismatch for caches related to the same group [groupName=grp1"));
+            }
+
+            try {
+                ignite(i).createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 2, false));
+
+                fail();
+            }
+            catch (CacheException e) {
+                assertTrue("Unexpected message: " + e.getMessage(),
+                    e.getMessage().contains("Backups mismatch for caches related to the same group [groupName=grp1"));
+            }
+        }
     }
 
     /**

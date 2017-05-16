@@ -1086,6 +1086,44 @@ public class GridCacheUtils {
             }
         }
     }
+    /**
+     * @param cfg1 Existing configuration.
+     * @param cfg2 Cache configuration to start.
+     * @param attrName Short attribute name for error message.
+     * @param attrMsg Full attribute name for error message.
+     * @param val1 Attribute value in existing configuration.
+     * @param val2 Attribute value in starting configuration.
+     * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
+     * @throws IgniteCheckedException If validation failed.
+     */
+    public static void validateCacheGroupsAttributesMismatch(IgniteLogger log,
+        CacheConfiguration cfg1,
+        CacheConfiguration cfg2,
+        String attrName,
+        String attrMsg,
+        Object val1,
+        Object val2,
+        boolean fail) throws IgniteCheckedException {
+        if (F.eq(val1, val2))
+            return;
+
+        if (fail) {
+            throw new IgniteCheckedException(attrMsg + " mismatch for caches related to the same group " +
+                "[groupName=" + cfg1.getGroupName() +
+                ", existingCache=" + cfg1.getName() +
+                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", startingCache=" + cfg2.getName() +
+                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+        }
+        else {
+            U.warn(log, attrMsg + " mismatch for caches related to the same group " +
+                "[groupName=" + cfg1.getGroupName() +
+                ", existingCache=" + cfg1.getName() +
+                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", startingCache=" + cfg2.getName() +
+                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+        }
+    }
 
     /**
      * @param str String.

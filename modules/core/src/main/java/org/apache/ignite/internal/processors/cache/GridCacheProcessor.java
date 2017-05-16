@@ -790,7 +790,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param grpId Group ID.
-     * @return
+     * @return Cache group.
      */
     @Nullable public CacheGroupInfrastructure cacheGroup(int grpId) {
         return cacheGrps.get(grpId);
@@ -2642,6 +2642,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             req.stop(true);
                         }
+                    }
+                }
+                if (req.start() && req.startCacheConfiguration() != null) {
+                    CacheConfiguration ccfg = req.startCacheConfiguration();
+
+                    try {
+                        cachesInfo.validateStartCacheConfiguration(ccfg);
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onDone(e);
                     }
                 }
 

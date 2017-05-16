@@ -118,6 +118,8 @@ class ClusterCachesInfo {
 
                 if (cacheData != null)
                     checkCache(locCfg, cacheData.cacheConfiguration(), cacheData.receivedFrom());
+
+                validateStartCacheConfiguration(locCfg);
             }
         }
 
@@ -939,6 +941,50 @@ class ClusterCachesInfo {
      */
     ConcurrentMap<String, CacheGroupDescriptor> registeredCacheGroups() {
         return registeredCacheGrps;
+    }
+
+    /**
+     * @param ccfg Cache configuration to start.
+     * @throws IgniteCheckedException If failed.
+     */
+    void validateStartCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
+        if (ccfg.getGroupName() != null) {
+            CacheGroupDescriptor grpDesc = registeredCacheGrps.get(ccfg.getGroupName());
+
+            if (grpDesc != null) {
+                assert ccfg.getGroupName().equals(grpDesc.groupName());
+
+                validateCacheGroupConfiguration(grpDesc.config(), ccfg);
+            }
+        }
+    }
+
+    /**
+     * @param cfg Existing configuration.
+     * @param startCfg Cache configuration to start.
+     * @throws IgniteCheckedException If validation failed.
+     */
+    private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
+        throws IgniteCheckedException {
+        GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
+        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
+            cfg.getCacheMode(), startCfg.getCacheMode(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceMode", "Rebalance mode",
+            cfg.getRebalanceMode(), startCfg.getRebalanceMode(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
+            attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "nodeFilter", "Node filter",
+            attr1.nodeFilterClassName(), attr2.nodeFilterClassName(), true);
+
+        if (cfg.getCacheMode() == PARTITIONED) {
+            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "backups", "Backups",
+                cfg.getBackups(), startCfg.getBackups(), true);
+        }
     }
 
     /**
