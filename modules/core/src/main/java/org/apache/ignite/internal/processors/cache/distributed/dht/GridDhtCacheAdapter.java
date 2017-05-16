@@ -177,19 +177,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void onReconnected() {
-        super.onReconnected();
-
-        ctx.affinity().onReconnected();
-
-        // TODO IGNITE-5075.
-//        top.onReconnected();
-//
-//        if (preldr != null)
-//            preldr.onReconnected();
-    }
-
-    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         super.printMemoryStats();
 

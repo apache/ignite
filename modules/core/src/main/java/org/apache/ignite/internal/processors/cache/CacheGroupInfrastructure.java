@@ -537,6 +537,11 @@ public class CacheGroupInfrastructure {
      *
      */
     void stopGroup() {
+        IgniteCheckedException err =
+            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
+
+        aff.cancelFutures(err);
+
         offheapMgr.stop();
 
         ctx.io().removeCacheGroupHandlers(grpId);

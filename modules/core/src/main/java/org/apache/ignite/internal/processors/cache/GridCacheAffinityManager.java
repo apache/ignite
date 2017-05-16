@@ -74,44 +74,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        cancelFutures();
-    }
-
-    /**
-     *
-     */
-    public void cancelFutures() {
-        if (!starting.get())
-            // Ignoring attempt to stop manager that has never been started.
-            return;
-
-        IgniteCheckedException err =
-            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
-
-        if (aff != null)
-            aff.cancelFutures(err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture reconnectFut) {
-        // TODO IGNITE-5075.
-//        IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
-//            "Failed to wait for topology update, client disconnected.");
-//
-//        if (aff != null)
-//            aff.cancelFutures(err);
-    }
-
-    /**
-     *
-     */
-    public void onReconnected() {
-        // TODO IGNITE-5075.
-//        aff.onReconnected();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel, boolean destroy) {
         aff = null;
     }
