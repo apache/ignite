@@ -21,13 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Two step map-reduce style query.
@@ -76,6 +71,9 @@ public class GridCacheTwoStepQuery {
 
     /** */
     private boolean local;
+
+    /** */
+    private CacheQryPartitionInfo[] derivedPartitions;
 
     /**
      * @param originalSql Original query SQL.
@@ -262,6 +260,20 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
+     * @return Query derived partitions info.
+     */
+    public CacheQryPartitionInfo[] derivedPartitions() {
+        return this.derivedPartitions;
+    }
+
+    /**
+     * @param derivedPartitions Query derived partitions info.
+     */
+    public void derivedPartitions(CacheQryPartitionInfo[] derivedPartitions) {
+        this.derivedPartitions = derivedPartitions;
+    }
+
+    /**
      * @return Copy.
      */
     public GridCacheTwoStepQuery copy() {
@@ -276,6 +288,7 @@ public class GridCacheTwoStepQuery {
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
+        cp.derivedPartitions = derivedPartitions;
 
         for (int i = 0; i < mapQrys.size(); i++)
             cp.mapQrys.add(mapQrys.get(i).copy());
@@ -293,52 +306,5 @@ public class GridCacheTwoStepQuery {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheTwoStepQuery.class, this);
-    }
-
-    /**
-     * Get partitions for map queries, if the former were identified.
-     *
-     * @return Partitions.
-     */
-    @Nullable public int[] getPartitions(GridAffinityProcessor aff, Object[] params) throws IgniteCheckedException {
-        ArrayList<Integer> list = null;
-
-        for (GridCacheSqlQuery mapQry : mapQrys) {
-            Object[] derivedPartitions = mapQry.derivedPartitions();
-
-            if (F.isEmpty(derivedPartitions))
-                return null; //all map queries must have derived partitions
-
-            if (list == null)
-                list = new ArrayList<>(derivedPartitions.length);
-
-            for (Object obj : derivedPartitions) {
-                CacheQryPartitionInfo part = (CacheQryPartitionInfo)obj;
-                int partId = part.partition() < 0 ?
-                        aff.partition(part.cacheName(), params[part.paramIdx()]) :
-                        part.partition();
-
-                int i = 0;
-                while (i < list.size() && list.get(i) < partId) i++;
-
-                if (i < list.size()) {
-                    if (list.get(i) > partId)
-                        list.add(i, partId);
-                }
-                else
-                    list.add(partId);
-            }
-        }
-
-        if (list != null) {
-            int[] result = new int[list.size()];
-
-            for (int i = 0; i < list.size(); i++)
-                result[i] = list.get(i);
-
-            return result;
-        }
-
-        return null;
     }
 }

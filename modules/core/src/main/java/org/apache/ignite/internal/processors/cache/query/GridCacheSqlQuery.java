@@ -69,7 +69,7 @@ public class GridCacheSqlQuery implements Message {
     /** Single node to execute the query on. */
     private UUID node;
 
-    /** */
+    /** Derived partition info. */
     @GridToStringInclude
     @GridDirectTransient
     private transient Object[] derivedPartitions;
@@ -331,14 +331,19 @@ public class GridCacheSqlQuery implements Message {
         return res;
     }
 
-    /** */
+    /**
+     * @return Derived partitions.
+     */
     public Object[] derivedPartitions() {
         return derivedPartitions;
     }
 
-    /** */
-    public GridCacheSqlQuery derivedPartitions(Object[] partitions) {
-        this.derivedPartitions = partitions;
+    /**
+     * @param derivedPartitions Derived partitions.
+     * @return {@code this}.
+     */
+    public GridCacheSqlQuery derivedPartitions(Object[] derivedPartitions) {
+        this.derivedPartitions = derivedPartitions;
 
         return this;
     }
