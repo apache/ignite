@@ -50,6 +50,9 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
     protected SqlListenerMessageParserImpl(final GridKernalContext ctx, AbstractSqlObjectReader objReader,
         AbstractSqlObjectWriter objWriter) {
         log = ctx.log(getClass());
+
+        this.objReader = objReader;
+        this.objWriter = objWriter;
     }
 
     /** {@inheritDoc} */
