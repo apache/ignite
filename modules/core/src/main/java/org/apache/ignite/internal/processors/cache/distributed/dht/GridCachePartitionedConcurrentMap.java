@@ -99,11 +99,11 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         int size = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
-            size += part.size();
+            size += part.internalSize();
 
         return size;
     }
@@ -136,15 +136,6 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             return false;
 
         return part.removeEntry(entry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
-        return new PartitionedSet<KeyCacheObject>() {
-            @Override protected Set<KeyCacheObject> set(GridDhtLocalPartition part) {
-                return part.keySet(filter);
-            }
-        };
     }
 
     /** {@inheritDoc} */

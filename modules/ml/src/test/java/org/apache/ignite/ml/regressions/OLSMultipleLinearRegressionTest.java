@@ -809,4 +809,11 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.calculateTotalSumOfSquares();
     }
+
+    /** */
+    @Test(expected = MathIllegalArgumentException.class)
+    public void testMathIllegalArgumentException(){
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
+        mdl.validateSampleData(new DenseLocalOnHeapMatrix(1, 2), new DenseLocalOnHeapVector(1));
+    }
 }
