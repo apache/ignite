@@ -403,6 +403,7 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @param c Closure.
          * @throws IgniteCheckedException If failed.
@@ -410,6 +411,7 @@ public interface IgniteCacheOffheapManager {
         public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @param partId Partition number.
          * @throws IgniteCheckedException If failed.
@@ -417,6 +419,7 @@ public interface IgniteCacheOffheapManager {
         public void remove(GridCacheContext cctx, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @return Data row.
          * @throws IgniteCheckedException If failed.
@@ -430,12 +433,19 @@ public interface IgniteCacheOffheapManager {
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
 
         /**
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException;
+
+        /**
+         * @param cacheId Cache ID.
          * @param lower Lower bound.
          * @param upper Upper bound.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCursor<? extends CacheDataRow> cursor(KeyCacheObject lower,
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper) throws IgniteCheckedException;
 
         /**
@@ -444,6 +454,13 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void destroy() throws IgniteCheckedException;
+
+        /**
+         * Clears all the records associated with logical cache with given ID.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        public void clear(int cacheId) throws IgniteCheckedException;
 
         /**
          * @return Row store.

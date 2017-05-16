@@ -19,14 +19,12 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
@@ -121,13 +119,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert link != 0 : "link";
         assert key == null : "key";
 
-        CacheObjectContext coctx = null;
+        CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
 
-        if (grp != null) {
-            cacheId = !grp.storeCacheId() ? -1 : 0; // Skip cacheId reading if it is not needed.
-
-            coctx = grp.cacheObjectContext();
-        }
+        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
 
         long nextLink = link;
         IncompleteObject<?> incomplete = null;
@@ -135,6 +129,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         do {
             final long pageId = pageId(nextLink);
+
+            // TODO IGNITE-5075 Here must be "physical" cache ID (aka group ID)
             final long page = pageMem.acquirePage(cacheId, pageId);
 
             try {
@@ -154,7 +150,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     if (first) {
                         if (nextLink == 0) {
                             // Fast path for a single page row.
-                            readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData);
+                            readFullRow(sharedCtx, coctx, pageAddr + data.offset(), rowData, readCacheId);
 
                             return;
                         }
@@ -169,7 +165,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     boolean keyOnly = rowData == RowData.KEY_ONLY;
 
-                    incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, incomplete);
+                    incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete);
 
                     if (keyOnly && key != null)
                         return;
@@ -191,6 +187,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param coctx Cache object context.
      * @param buf Buffer.
      * @param keyOnly {@code true} If need to read only key object.
+     * @param readCacheId {@code true} If need to read cache ID.
      * @param incomplete Incomplete object.
      * @throws IgniteCheckedException If failed.
      * @return Read object.
@@ -200,9 +197,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx,
         ByteBuffer buf,
         boolean keyOnly,
+        boolean readCacheId,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
-        if (cacheId == 0) {
+        if (readCacheId && cacheId == 0) {
             incomplete = readIncompleteCacheId(buf, incomplete);
 
             if (cacheId == 0)
@@ -212,6 +210,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         if (coctx == null)
+            // TODO IGNITE-5075 Possible null pointer in case cacheId is not stored
             coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
 
         // Read key.
@@ -254,17 +253,19 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param coctx Cache object context.
      * @param addr Address.
      * @param rowData Required row data.
+     * @param readCacheId {@code true} If need to read cache ID.
      * @throws IgniteCheckedException If failed.
      */
     private void readFullRow(
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
         long addr,
-        RowData rowData)
+        RowData rowData,
+        boolean readCacheId)
         throws IgniteCheckedException {
         int off = 0;
 
-        if (cacheId == 0) {
+        if (readCacheId) {
             cacheId = PageUtils.getInt(addr, off);
 
             off += 4;
@@ -328,6 +329,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
             if (remaining >= size) {
                 cacheId = buf.getInt();
 
+                assert cacheId != 0;
+
                 return null;
             }
 
@@ -342,6 +345,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
             timeBuf.order(buf.order());
 
             cacheId = timeBuf.getInt();
+
+            assert cacheId != 0;
         }
 
         return incomplete;

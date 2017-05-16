@@ -157,8 +157,7 @@ public class CacheGroupInfrastructure {
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
 
-        storeCacheId = affNode &&
-            (sharedGroup() || memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED);
+        storeCacheId = affNode && memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
         log = ctx.kernalContext().log(getClass());
 
@@ -172,7 +171,10 @@ public class CacheGroupInfrastructure {
         return rcvdFrom;
     }
 
-    public boolean storeCacheId() {
+    /**
+     * @return {@code True} if cacheId should be stored in data pages.
+     */
+    public boolean storeCacheIdInDataPage() {
         return storeCacheId;
     }
 
