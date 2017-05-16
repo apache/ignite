@@ -44,8 +44,8 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
     private Set<Integer> clientNodes;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assertNotNull(clientNodes);
 
@@ -54,7 +54,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
         boolean client = false;
 
         for (Integer clientIdx : clientNodes) {
-            if (getTestGridName(clientIdx).equals(gridName)) {
+            if (getTestIgniteInstanceName(clientIdx).equals(igniteInstanceName)) {
                 client = true;
 
                 break;
@@ -63,7 +63,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
 
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(0);
         ccfg.setRebalanceMode(SYNC);

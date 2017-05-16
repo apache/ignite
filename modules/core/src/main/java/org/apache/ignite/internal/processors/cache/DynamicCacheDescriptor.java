@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,6 +85,21 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Cached object context for marshalling issues when cache isn't started. */
+    private volatile CacheObjectContext objCtx;
+
+    /** */
+    private transient AffinityTopologyVersion clientCacheStartVer;
+
+    /** Mutex to control schema. */
+    private final Object schemaMux = new Object();
+
+    /** Current schema. */
+    private QuerySchema schema;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -88,12 +107,15 @@ public class DynamicCacheDescriptor {
      * @param template {@code True} if this is template configuration.
      * @param deploymentId Deployment ID.
      */
+    @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         boolean template,
-        IgniteUuid deploymentId) {
+        IgniteUuid deploymentId,
+        QuerySchema schema) {
         assert cacheCfg != null;
+        assert schema != null;
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
@@ -103,6 +125,10 @@ public class DynamicCacheDescriptor {
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
+
+        synchronized (schemaMux) {
+            this.schema = schema.copy();
+        }
     }
 
     /**
@@ -210,6 +236,22 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * Creates and caches cache object context if needed.
+     *
+     * @param proc Object processor.
+     */
+    public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
+        if (objCtx == null) {
+            synchronized (mux) {
+                if (objCtx == null)
+                    objCtx = proc.contextForCache(cacheCfg);
+            }
+        }
+
+        return objCtx;
+    }
+
+    /**
      * @return Cache plugin manager.
      */
     public CachePluginManager pluginManager() {
@@ -300,6 +342,53 @@ public class DynamicCacheDescriptor {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Version when client cache on local node was started.
+     */
+    @Nullable AffinityTopologyVersion clientCacheStartVersion() {
+        return clientCacheStartVer;
+    }
+
+    /**
+     * @param clientCacheStartVer Version when client cache on local node was started.
+     */
+    public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
+        this.clientCacheStartVer = clientCacheStartVer;
+    }
+
+    /**
+     * @return Schema.
+     */
+    public QuerySchema schema() {
+        synchronized (schemaMux) {
+            return schema.copy();
+        }
+    }
+
+    /**
+     * Set schema
+     *
+     * @param schema Schema.
+     */
+    public void schema(QuerySchema schema) {
+        assert schema != null;
+
+        synchronized (schemaMux) {
+            this.schema = schema.copy();
+        }
+    }
+
+    /**
+     * Try applying finish message.
+     *
+     * @param msg Message.
+     */
+    public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
+        synchronized (schemaMux) {
+            schema.finish(msg);
+        }
     }
 
     /** {@inheritDoc} */

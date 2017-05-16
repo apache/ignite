@@ -961,10 +961,8 @@ public class VisorMimeTypes {
             if (c4 == 0xE0)
                 return "image/jpeg";
 
-            /**
-             * File format used by digital cameras to store images. Exif Format can be read by any application supporting JPEG. Exif Spec can be found at:
-             * http://www.pima.net/standards/it10/PIMA15740/Exif_2-1.PDF
-             */
+            // File format used by digital cameras to store images. Exif Format can be read by any application supporting JPEG. Exif Spec can be found at:
+            // http://www.pima.net/standards/it10/PIMA15740/Exif_2-1.PDF
             if ((c4 == 0xE1) && (c7 == 'E' && c8 == 'x' && c9 == 'i' && c10 == 'f' && c11 == 0))
                 return "image/jpeg";
 
@@ -972,10 +970,8 @@ public class VisorMimeTypes {
                 return "image/jpg";
         }
 
-        /**
-         * According to http://www.opendesign.com/files/guestdownloads/OpenDesign_Specification_for_.dwg_files.pdf
-         * first 6 bytes are of type "AC1018" (for example) and the next 5 bytes are 0x00.
-         */
+        // According to http://www.opendesign.com/files/guestdownloads/OpenDesign_Specification_for_.dwg_files.pdf
+        // first 6 bytes are of type "AC1018" (for example) and the next 5 bytes are 0x00.
         if ((c1 == 0x41 && c2 == 0x43) && (c7 == 0x00 && c8 == 0x00 && c9 == 0x00 && c10 == 0x00 && c11 == 0x00))
             return "application/acad";
 

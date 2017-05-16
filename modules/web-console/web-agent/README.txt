@@ -7,7 +7,7 @@ Two main functions of Ignite Web Agent:
  1. Proxy between Ignite Web Console and Ignite Grid to execute SQL statements and collect metrics for monitoring.
    You may need to specify URI for connect to Ignite REST server via "-n" option.
 
- 2. Proxy between Ignite Web Console and user RDBMS to collect database metadata for later CacheTypeMetadata configuration.
+ 2. Proxy between Ignite Web Console and user RDBMS to collect database metadata for later indexed types configuration.
    You may need to copy JDBC driver into "./jdbc-drivers" subfolder or specify path via "-d" option.
 
 Usage example:
@@ -32,7 +32,7 @@ Security tokens:
   3) One may specify several comma separated tokens using configuration file or command line arguments of web agent.
 
 Ignite Web agent requirements:
-  1) In order to communicate with web agent Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
+  1) In order to communicate with web agent Ignite node should be started with REST server (copy "ignite-rest-http" folder from "libs/optional/" to "libs/").
   2) Configure web agent serverURI property by Ignite node REST server URI.
 
 Options:

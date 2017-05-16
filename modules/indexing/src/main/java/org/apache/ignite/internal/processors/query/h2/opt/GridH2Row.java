@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
@@ -25,7 +29,22 @@ import org.h2.value.Value;
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class GridH2Row extends Row implements GridSearchRowPointer {
+public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, Row {
+    /** */
+    public long link; // TODO remove
+
+    /** */
+    public KeyCacheObject key; // TODO remove
+
+    /** */
+    public CacheObject val; // TODO remove
+
+    /** */
+    public GridCacheVersion ver; // TODO remove
+
+    /** */
+    public int partId; // TODO remove
+
     /** {@inheritDoc} */
     @Override public long pointer() {
         throw new IllegalStateException();
@@ -39,6 +58,41 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer {
     /** {@inheritDoc} */
     @Override public void decrementRefCount() {
         throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject key() {
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject value() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion version() {
+        return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return link;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(long link) {
+        this.link = link;
     }
 
     /** {@inheritDoc} */
@@ -114,5 +168,15 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer {
     /** {@inheritDoc} */
     @Override public Value[] getValueList() {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hash() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return 0;
     }
 }

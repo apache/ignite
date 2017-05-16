@@ -53,7 +53,15 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_USER_NAME = ATTR_PREFIX + ".user.name";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_GRID_NAME = ATTR_PREFIX + ".ignite.name";
+    public static final String ATTR_IGNITE_INSTANCE_NAME = ATTR_PREFIX + ".ignite.name";
+
+    /**
+     * Internal attribute name constant.
+     *
+     * @deprecated Use {@link #ATTR_IGNITE_INSTANCE_NAME}.
+     */
+    @Deprecated
+    public static final String ATTR_GRID_NAME = ATTR_IGNITE_INSTANCE_NAME;
 
     /** Deployment mode. */
     public static final String ATTR_DEPLOYMENT_MODE = ATTR_PREFIX + ".ignite.dep.mode";
@@ -159,6 +167,9 @@ public final class IgniteNodeAttributes {
 
     /** Ignite services compatibility mode (can be {@code null}). */
     public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
+
+    /** Late affinity assignment mode. */
+    public static final String ATTR_ACTIVE_ON_START = ATTR_PREFIX + ".active.on.start";
 
     /**
      * Enforces singleton.

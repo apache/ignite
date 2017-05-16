@@ -55,7 +55,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** SQL query. */
     private static final String SQL =
@@ -68,8 +68,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -97,7 +97,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -495,8 +495,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert "http://abc.com/".equals(rs.getURL("urlVal").toString());
-                assert "http://abc.com/".equals(rs.getURL(15).toString());
+                assertTrue("http://abc.com/".equals(rs.getURL("urlVal").toString()));
+                assertTrue("http://abc.com/".equals(rs.getURL(15).toString()));
             }
 
             cnt++;
@@ -596,6 +596,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         stmt.setFetchSize(0);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNewQueryTaskFetchSize() throws Exception {
+        stmt.setFetchSize(1);
+
+        boolean res = stmt.execute("select * from TestObject where id > 0");
+
+        assertTrue(res);
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+
+        stmt.setFetchSize(0);
+    }
 
     /**
      * @throws Exception If failed.
@@ -636,10 +654,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         protected boolean boolVal3;
 
         /** */
+        @QuerySqlField(index = false)
         protected boolean boolVal4;
 
         /** */
-        @QuerySqlField(index = false)
         public boolean isBoolVal4() {
             return boolVal4;
         }

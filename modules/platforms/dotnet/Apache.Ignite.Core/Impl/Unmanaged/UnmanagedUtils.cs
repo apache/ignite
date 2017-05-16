@@ -38,17 +38,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var platfrom = Environment.Is64BitProcess ? "x64" : "x86";
+            var platform = Environment.Is64BitProcess ? "x64" : "x86";
 
-            var resName = string.Format("{0}.{1}", platfrom, IgniteUtils.FileIgniteJniDll);
+            var resName = string.Format("{0}.{1}", platform, IgniteUtils.FileIgniteJniDll);
 
             var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
             var ptr = NativeMethods.LoadLibrary(path);
 
             if (ptr == IntPtr.Zero)
-                throw new IgniteException(string.Format("Failed to load {0}: {1}", 
-                    IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
+            {
+                var err = Marshal.GetLastWin32Error();
+
+                throw new IgniteException(string.Format("Failed to load {0} from {1}: [{2}]",
+                    IgniteUtils.FileIgniteJniDll, path, IgniteUtils.FormatWin32Error(err)));
+            }
 
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
 
@@ -317,6 +321,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
+        internal static IUnmanagedTarget ProcessorExtension(IUnmanagedTarget target, int id)
+        {
+            void* res = JNI.ProcessorExtension(target.Context, target.Target, id);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorAtomicLong(IUnmanagedTarget target, string name, long initialValue, 
             bool create)
         {
@@ -457,6 +468,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
+        internal static void TargetInStreamAsync(IUnmanagedTarget target, int opType, long memPtr)
+        {
+            JNI.TargetInStreamAsync(target.Context, target.Target, opType, memPtr);
+        }
+
         #endregion
 
         #region NATIVE METHODS: MISCELANNEOUS
@@ -514,11 +530,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void DestroyJvm(void* ctx)
         {
             JNI.DestroyJvm(ctx);
-        }
-
-        internal static bool ListenableCancel(IUnmanagedTarget target)
-        {
-            return JNI.ListenableCancel(target.Context, target.Target);
         }
 
         #endregion

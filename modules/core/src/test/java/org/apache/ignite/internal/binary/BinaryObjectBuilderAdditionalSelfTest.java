@@ -76,10 +76,10 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg.setCacheMode(REPLICATED);
 
         CacheConfiguration cacheCfg2 = new CacheConfiguration("partitioned");
@@ -896,11 +896,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutableObj = wrap(obj);
 
-        assertEquals(obj.hashCode(), mutableObj.build().hashCode());
+        BinaryObject bo = mutableObj.build();
 
-        mutableObj.hashCode(25);
-
-        assertEquals(25, mutableObj.build().hashCode());
+        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
     }
 
     /**
@@ -1377,7 +1375,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             jcache(0, "partitioned").withKeepBinary();
 
         BinaryObjectBuilder keyBuilder = ignite(0).binary().builder("keyType")
-            .setField("F1", "V1").hashCode("V1".hashCode());
+            .setField("F1", "V1");
 
         BinaryObjectBuilder valBuilder = ignite(0).binary().builder("valueType")
             .setField("F2", "V2")

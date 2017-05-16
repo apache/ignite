@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Query
 {
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
 
     /// <summary>
     /// SQL fields query.
@@ -25,7 +26,7 @@ namespace Apache.Ignite.Core.Cache.Query
     public class SqlFieldsQuery
     {
         /// <summary> Default page size. </summary>
-        public const int DfltPageSize = 1024;
+        public const int DefaultPageSize = 1024;
 
         /// <summary>
         /// Constructor.
@@ -49,7 +50,7 @@ namespace Apache.Ignite.Core.Cache.Query
             Local = loc;
             Arguments = args;
 
-            PageSize = DfltPageSize;
+            PageSize = DefaultPageSize;
         }
 
         /// <summary>
@@ -74,7 +75,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Optional page size.
         /// <para />
-        /// Defaults to <see cref="DfltPageSize"/>.
+        /// Defaults to <see cref="DefaultPageSize"/>.
         /// </summary>
         public int PageSize { get; set; }
 
@@ -102,5 +103,20 @@ namespace Apache.Ignite.Core.Cache.Query
         ///   <c>true</c> if join order should be enforced; otherwise, <c>false</c>.
         /// </value>
         public bool EnforceJoinOrder { get; set; }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}]", Sql, args, Local,
+                                 PageSize, EnableDistributedJoins, EnforceJoinOrder);
+        }
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -30,62 +30,51 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     private volatile long lastUsed = U.currentTimeMillis();
 
     /** Reservations. */
-    private final AtomicInteger reserves = new AtomicInteger();
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /** Metrics listener. */
     protected final GridNioMetricsListener metricsLsnr;
 
+    /** */
+    private final int connIdx;
+
     /**
+     * @param connIdx Connection index.
      * @param metricsLsnr Metrics listener.
      */
-    protected GridAbstractCommunicationClient(@Nullable GridNioMetricsListener metricsLsnr) {
+    protected GridAbstractCommunicationClient(int connIdx, @Nullable GridNioMetricsListener metricsLsnr) {
+        this.connIdx = connIdx;
         this.metricsLsnr = metricsLsnr;
     }
 
     /** {@inheritDoc} */
+    @Override public int connectionIndex() {
+        return connIdx;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean close() {
-        return reserves.compareAndSet(0, -1);
+        return !closed.get() && closed.compareAndSet(false, true);
     }
 
     /** {@inheritDoc} */
     @Override public void forceClose() {
-        reserves.set(-1);
+        closed.set(false);
     }
 
     /** {@inheritDoc} */
     @Override public boolean closed() {
-        return reserves.get() == -1;
+        return closed.get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean reserve() {
-        while (true) {
-            int r = reserves.get();
-
-            if (r == -1)
-                return false;
-
-            if (reserves.compareAndSet(r, r + 1))
-                return true;
-        }
+        return !closed.get();
     }
 
     /** {@inheritDoc} */
     @Override public void release() {
-        while (true) {
-            int r = reserves.get();
-
-            if (r == -1)
-                return;
-
-            if (reserves.compareAndSet(r, r - 1))
-                return;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean reserved() {
-        return reserves.get() > 0;
+        // No-op.
     }
 
     /** {@inheritDoc} */

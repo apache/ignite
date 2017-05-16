@@ -21,6 +21,7 @@ namespace Apache.Ignite.Examples.Datagrid
     using System.Collections.Generic;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
@@ -159,13 +160,13 @@ namespace Apache.Ignite.Examples.Datagrid
             cache.PutAll(map);
 
             // Get recently created organizations as a strongly-typed fully de-serialized instances.
-            IDictionary<int, Organization> mapFromCache = cache.GetAll(new List<int> { 1, 2 });
+            ICollection<ICacheEntry<int, Organization>> mapFromCache = cache.GetAll(new List<int> { 1, 2 });
 
             Console.WriteLine();
             Console.WriteLine(">>> Retrieved organization instances from cache:");
 
-            foreach (Organization org in mapFromCache.Values)
-                Console.WriteLine(">>>     " + org);
+            foreach (ICacheEntry<int, Organization> org in mapFromCache)
+                Console.WriteLine(">>>     " + org.Value);
         }
 
         /// <summary>
@@ -200,13 +201,13 @@ namespace Apache.Ignite.Examples.Datagrid
             var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
 
             // Get recently created organizations as binary objects.
-            IDictionary<int, IBinaryObject> binaryMap = binaryCache.GetAll(new List<int> { 1, 2 });
+            ICollection<ICacheEntry<int, IBinaryObject>> binaryMap = binaryCache.GetAll(new List<int> { 1, 2 });
 
             Console.WriteLine();
             Console.WriteLine(">>> Retrieved organization names from binary objects:");
 
-            foreach (IBinaryObject poratbleOrg in binaryMap.Values)
-                Console.WriteLine(">>>     " + poratbleOrg.GetField<string>("name"));
+            foreach (var pair in binaryMap)
+                Console.WriteLine(">>>     " + pair.Value.GetField<string>("name"));
         }
     }
 }

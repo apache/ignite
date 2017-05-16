@@ -51,6 +51,12 @@ class JavaIgniteContext[K, V](
         })
     }
 
+    def this(sc: JavaSparkContext, springUrl: String, standalone: Boolean) {
+        this(sc, new IgniteOutClosure[IgniteConfiguration] {
+            override def apply() = IgnitionEx.loadConfiguration(springUrl).get1()
+        }, standalone)
+    }
+
     def fromCache(cacheName: String): JavaIgniteRDD[K, V] =
         JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheName, null, false))
 

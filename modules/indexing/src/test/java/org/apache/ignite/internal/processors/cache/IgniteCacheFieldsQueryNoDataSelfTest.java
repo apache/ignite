@@ -38,8 +38,8 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -75,7 +75,7 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        Collection<Cache.Entry<Object, Object>> res = grid().cache(null)
+        Collection<Cache.Entry<Object, Object>> res = grid().cache(DEFAULT_CACHE_NAME)
             .query(new SqlQuery("Integer", "from Integer")).getAll();
 
         assert res != null;

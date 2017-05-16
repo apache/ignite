@@ -69,10 +69,9 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
      * Adds a Near key.
      *
      * @param key Key.
-     * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
+    public void addNearKey(KeyCacheObject key)
         throws IgniteCheckedException {
         if (nearKeys == null)
             nearKeys = new ArrayList<>();
@@ -120,11 +119,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
                 writer.incrementState();
 
-            case 9:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -149,26 +143,18 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
                 reader.incrementState();
 
-            case 9:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridDhtUnlockRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 36;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 9;
     }
 }

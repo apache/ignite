@@ -201,7 +201,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys0);
+
+                    writer.writeInt(keys0.size());
+
+                    for (Object o : keys0)
+                        writer.writeObject(o);
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
@@ -311,7 +315,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys);
+
+                    writer.writeInt(keys.size());
+
+                    for (Object o : keys)
+                        writer.writeObject(o);
                 }
             }, null);
         }
@@ -402,7 +410,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         if (sesPtr == null) {
             // Session is not deployed yet, do that.
-            sesPtr = platformCtx.gateway().cacheStoreSessionCreate(ptr);
+            sesPtr = platformCtx.gateway().cacheStoreSessionCreate();
 
             ses.properties().put(KEY_SES, sesPtr);
         }
@@ -425,11 +433,13 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
+
             task.apply(writer);
 
             out.synchronize();
 
-            int res = platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer());
+            int res = platformCtx.gateway().cacheStoreInvoke(mem.pointer());
 
             if (res != 0) {
                 // Read error

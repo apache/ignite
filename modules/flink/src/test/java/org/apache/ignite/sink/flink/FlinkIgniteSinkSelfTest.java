@@ -151,7 +151,7 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
         // Listen to cache PUT events and expect as many as messages as test data items.
         CacheListener listener = new CacheListener();
 
-        ignite.events(ignite.cluster().forCacheNodes(null)).localListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT);
 
         return listener;
     }
@@ -162,7 +162,7 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
      * @param listener Cache listener.
      */
     private void unsubscribeToPutEvents(CacheListener listener) {
-        ignite.events(ignite.cluster().forCacheNodes(null)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
     }
 
     /** Listener. */

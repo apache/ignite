@@ -37,6 +37,7 @@ public class IgniteTopologyValidatorTestSuit extends TestSuite {
         suite.addTest(new TestSuite(IgniteTopologyValidatorPartitionedTxCacheTest.class));
         suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedAtomicCacheTest.class));
         suite.addTest(new TestSuite(IgniteTopologyValidatorReplicatedTxCacheTest.class));
+        suite.addTest(new TestSuite(IgniteTopologyValidatorGridSplitCacheTest.class));
 
         return suite;
     }

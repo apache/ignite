@@ -27,29 +27,13 @@
 
 #include <string>
 #include <algorithm>
+#include <sstream>
 
 #include <ignite/common/utils.h>
 #include <ignite/common/decimal.h>
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
-
-
-#ifdef ODBC_DEBUG
-
-extern FILE* log_file;
-void logInit(const char*);
-
-#   define LOG_MSG(fmt, ...)                                        \
-    do {                                                            \
-        logInit(ODBC_LOG_PATH);                                     \
-        fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__);   \
-        fflush(log_file);                                           \
-    } while (false)
-
-#else
-#   define LOG_MSG(...)
-#endif
 
 namespace ignite
 {
@@ -137,6 +121,13 @@ namespace ignite
         size_t CopyStringToBuffer(const std::string& str, char* buf, size_t buflen);
 
         /**
+         * Read array from reader.
+         * @param reader Reader.
+         * @param res Resulting vector.
+         */
+        void ReadByteArray(impl::binary::BinaryReaderImpl& reader, std::vector<int8_t>& res);
+
+        /**
          * Read string from reader.
          * @param reader Reader.
          * @param str String.
@@ -174,6 +165,14 @@ namespace ignite
          * @return Standard string containing the same data.
          */
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen);
+
+        /**
+         * Convert binary data to hex dump form
+         * @param data  pointer to data
+         * @param count data length
+         * @return standard string containing the formated hex dump
+         */
+        std::string HexDump(const void* data, size_t count);
     }
 }
 

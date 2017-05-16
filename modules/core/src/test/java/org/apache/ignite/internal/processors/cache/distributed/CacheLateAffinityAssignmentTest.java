@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -92,13 +93,12 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  *
@@ -138,15 +138,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private boolean skipCheckOrder;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLateAffinityAssignment(true);
 
         TestRecordingCommunicationSpi commSpi;
 
         if (spiC != null)
-            commSpi = spiC.apply(gridName);
+            commSpi = spiC.apply(igniteInstanceName);
         else
             commSpi = new TestRecordingCommunicationSpi();
 
@@ -158,15 +158,16 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         discoSpi.setForceServerMode(forceSrvMode);
         discoSpi.setIpFinder(ipFinder);
-        discoSpi.setMaxMissedClientHeartbeats(100);
         discoSpi.setNetworkTimeout(60_000);
 
         cfg.setDiscoverySpi(discoSpi);
 
+        cfg.setClientFailureDetectionTimeout(100000);
+
         CacheConfiguration[] ccfg;
 
         if (cacheC != null)
-            ccfg = cacheC.apply(gridName);
+            ccfg = cacheC.apply(igniteInstanceName);
         else
             ccfg = new CacheConfiguration[]{cacheConfiguration()};
 
@@ -174,7 +175,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(ccfg);
 
         if (clientC != null) {
-            client = clientC.apply(gridName);
+            client = clientC.apply(igniteInstanceName);
 
             discoSpi.setJoinTimeout(30_000);
         }
@@ -194,7 +195,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         ccfg.setNodeFilter(cacheNodeFilter);
         ccfg.setAffinity(affinityFunction(null));
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setBackups(0);
 
         return ccfg;
@@ -313,15 +313,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testAffinitySimpleSequentialStartNoCacheOnCoordinator() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(0)))
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestIgniteInstanceName(0)));
 
         testAffinitySimpleSequentialStart();
 
@@ -333,15 +333,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testAffinitySimpleNoCacheOnCoordinator1() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(1)))
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(1)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestIgniteInstanceName(1)));
 
         startServer(0, 1);
 
@@ -372,15 +372,16 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testAffinitySimpleNoCacheOnCoordinator2() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(1)) || gridName.equals(getTestGridName(2)))
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                if (igniteInstanceName.equals(getTestIgniteInstanceName(1)) ||
+                    igniteInstanceName.equals(getTestIgniteInstanceName(2)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(1), getTestGridName(2)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestIgniteInstanceName(1), getTestIgniteInstanceName(2)));
 
         startServer(0, 1);
         startServer(1, 2);
@@ -423,12 +424,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testCreateCloseClientCacheOnCoordinator1() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
                 return null;
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestIgniteInstanceName(0)));
 
         Ignite ignite0 = startServer(0, 1);
 
@@ -448,15 +449,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testCreateCloseClientCacheOnCoordinator2() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(0)))
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestIgniteInstanceName(0)));
 
         Ignite ignite0 = startServer(0, 1);
 
@@ -509,7 +510,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     private void cacheDestroyAndCreate(boolean cacheOnCrd) throws Exception {
         if (!cacheOnCrd)
-            cacheNodeFilter = new CacheNodeFilter(Collections.singletonList(getTestGridName(0)));
+            cacheNodeFilter = new CacheNodeFilter(Collections.singletonList(getTestIgniteInstanceName(0)));
 
         startServer(0, 1);
 
@@ -1083,12 +1084,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             TestRecordingCommunicationSpi spi =
                     (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
-            spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    Message msg0 = msg.message();
-
-                    return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg0.getClass().equals(GridDhtPartitionsFullMessage.class);
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
+                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
                 }
             });
         }
@@ -1102,12 +1101,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 U.sleep(5000);
 
                 for (int i = 0; i < NODES; i++)
-                    stopGrid(i);
+                    stopGrid(getTestIgniteInstanceName(i), false, false);
 
                 return null;
             }
         }, "stop-thread");
-
 
         latch.countDown();
 
@@ -1226,8 +1224,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testClientCacheStartClose() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(1)))
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
@@ -1424,7 +1422,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(srvName, ++topVer, false);
 
@@ -1470,7 +1468,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(clientName, ++topVer, true);
 
@@ -1575,7 +1573,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         log.info("Start server: " + srvName);
 
-        cacheClosure(rnd, caches, null, srvs, srvIdx);
+        cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
         startNode(srvName, ++topVer, false);
 
@@ -1604,8 +1602,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     private void concurrentStartStaticCaches(boolean withClients) throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                int caches = getTestGridIndex(gridName) + 1;
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                int caches = getTestIgniteInstanceIndex(igniteInstanceName) + 1;
 
                 CacheConfiguration[] ccfgs = new CacheConfiguration[caches];
 
@@ -1623,8 +1621,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (withClients) {
             clientC = new IgniteClosure<String, Boolean>() {
-                @Override public Boolean apply(String gridName) {
-                    int idx = getTestGridIndex(gridName);
+                @Override public Boolean apply(String igniteInstanceName) {
+                    int idx = getTestIgniteInstanceIndex(igniteInstanceName);
 
                     return idx % 3 == 2;
                 }
@@ -1712,14 +1710,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             @Override public TestRecordingCommunicationSpi apply(String s) {
                 TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-                spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                    @Override public boolean apply(GridIoMessage msg) {
-                        Message msg0 = msg.message();
-
-                        if (msg0 instanceof GridDhtForceKeysRequest || msg0 instanceof GridDhtForceKeysResponse) {
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg instanceof GridDhtForceKeysRequest || msg instanceof GridDhtForceKeysResponse) {
                             fail.set(true);
 
-                            U.dumpStack(log, "Unexpected message: " + msg0);
+                            U.dumpStack(log, "Unexpected message: " + msg);
                         }
 
                         return false;
@@ -1942,7 +1938,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param srvIdx Current servers index.
      */
     private void cacheClosure(Random rnd, List<String> caches, String cacheName, List<String> srvs, int srvIdx) {
-        if (cacheName != null) {
+        if (!DEFAULT_CACHE_NAME.equals(cacheName)) {
             final CacheConfiguration ccfg = randomCacheConfiguration(rnd, cacheName, srvs, srvIdx);
 
             cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
@@ -1976,7 +1972,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         ccfg.setBackups(rnd.nextInt(10));
         ccfg.setRebalanceMode(rnd.nextBoolean() ? SYNC : ASYNC);
         ccfg.setAffinity(affinityFunction(rnd.nextInt(2048) + 10));
-        ccfg.setStartSize(128);
 
         if (rnd.nextBoolean()) {
             Set<String> exclude = new HashSet<>();
@@ -2013,14 +2008,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      */
     private void blockSupplySend(TestRecordingCommunicationSpi spi, final String cacheName) {
-        spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage ioMsg) {
-                if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessageV2.class))
+        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                     return false;
 
-                GridDhtPartitionSupplyMessageV2 msg = (GridDhtPartitionSupplyMessageV2)ioMsg.message();
-
-                return msg.cacheId() == CU.cacheId(cacheName);
+                return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(cacheName);
             }
         });
     }
@@ -2207,7 +2200,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                         if (partNodes.isEmpty()) {
                             try {
-                                ClusterNode primary = cacheAff.mapKeyToNode(i);
+                                cacheAff.mapKeyToNode(i);
 
                                 fail();
                             }
@@ -2334,7 +2327,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void stopNode(int idx, long topVer) throws Exception {
-        stopNode(getTestGridName(idx), topVer);
+        stopNode(getTestIgniteInstanceName(idx), topVer);
     }
 
     /**
@@ -2425,7 +2418,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNotNull("Failed to find exchange future:", evt);
 
-        List<ClusterNode> allNodes = ctx.discovery().serverNodes(topVer0);
+        Collection<ClusterNode> allNodes = ctx.discovery().cacheNodes(topVer0);
 
         for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors()) {
             if (assignments.get(cacheDesc.cacheId()) != null)
@@ -2577,7 +2570,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            String name = clusterNode.attribute(ATTR_GRID_NAME).toString();
+            String name = clusterNode.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
 
             return !excludeNodes.contains(name);
         }

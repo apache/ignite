@@ -18,13 +18,16 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-
 import org.apache.ignite.IgniteSystemProperties;
+import sun.misc.JavaNioAccess;
+import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -45,11 +48,21 @@ import sun.misc.Unsafe;
  * </p>
  */
 public abstract class GridUnsafe {
+    /** */
+    public static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
+
+    /** Direct byte buffer factory. */
+    private static final JavaNioAccess nioAccess = SharedSecrets.getJavaNioAccess();
+
     /** Unsafe. */
     private static final Unsafe UNSAFE = unsafe();
 
     /** Unaligned flag. */
     private static final boolean UNALIGNED = unaligned();
+
+    /** Per-byte copy threshold. */
+    private static final long PER_BYTE_THRESHOLD =
+        IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD, 0L);
 
     /** Big endian. */
     public static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
@@ -59,6 +72,9 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
+    public static final int BYTE_ARR_INT_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
     public static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
@@ -86,6 +102,40 @@ public abstract class GridUnsafe {
      */
     private GridUnsafe() {
         // No-op.
+    }
+
+    /**
+     * @param ptr Pointer to wrap.
+     * @param len Memory location length.
+     * @return Byte buffer wrapping the given memory.
+     */
+    public static ByteBuffer wrapPointer(long ptr, int len) {
+        ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
+
+        assert buf instanceof DirectBuffer;
+
+        buf.order(NATIVE_BYTE_ORDER);
+
+        return buf;
+    }
+
+    /**
+     * @param len Length.
+     * @return Allocated direct buffer.
+     */
+    public static ByteBuffer allocateBuffer(int len) {
+        long ptr = allocateMemory(len);
+
+        return wrapPointer(ptr, len);
+    }
+
+    /**
+     * @param buf Direct buffer allocated by {@link #allocateBuffer(int)}.
+     */
+    public static void freeBuffer(ByteBuffer buf) {
+        long ptr = bufferAddress(buf);
+
+        freeMemory(ptr);
     }
 
     /**
@@ -1027,6 +1077,56 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Copy memory between offheap locations.
+     *
+     * @param srcAddr Source address.
+     * @param dstAddr Destination address.
+     * @param len Length.
+     */
+    public static void copyOffheapOffheap(long srcAddr, long dstAddr, long len) {
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcAddr + i));
+        }
+        else
+            UNSAFE.copyMemory(srcAddr, dstAddr, len);
+    }
+
+    /**
+     * Copy memory from offheap to heap.
+     *
+     * @param srcAddr Source address.
+     * @param dstBase Destination base.
+     * @param dstOff Destination offset.
+     * @param len Length.
+     */
+    public static void copyOffheapHeap(long srcAddr, Object dstBase, long dstOff, long len) {
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcAddr + i));
+        }
+        else
+            UNSAFE.copyMemory(null, srcAddr, dstBase, dstOff, len);
+    }
+
+    /**
+     * Copy memory from heap to offheap.
+     *
+     * @param srcBase Source base.
+     * @param srcOff Source offset.
+     * @param dstAddr Destination address.
+     * @param len Length.
+     */
+    public static void copyHeapOffheap(Object srcBase, long srcOff, long dstAddr, long len) {
+        if (len <= PER_BYTE_THRESHOLD) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstAddr + i, UNSAFE.getByte(srcBase, srcOff + i));
+        }
+        else
+            UNSAFE.copyMemory(srcBase, srcOff, null, dstAddr, len);
+    }
+
+    /**
      * Copies memory.
      *
      * @param src Source.
@@ -1047,7 +1147,12 @@ public abstract class GridUnsafe {
      * @param len Length.
      */
     public static void copyMemory(Object srcBase, long srcOff, Object dstBase, long dstOff, long len) {
-        UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
+        if (len <= PER_BYTE_THRESHOLD && srcBase != null && dstBase != null) {
+            for (int i = 0; i < len; i++)
+                UNSAFE.putByte(dstBase, dstOff + i, UNSAFE.getByte(srcBase, srcOff + i));
+        }
+        else
+            UNSAFE.copyMemory(srcBase, srcOff, dstBase, dstOff, len);
     }
 
     /**
@@ -1209,7 +1314,7 @@ public abstract class GridUnsafe {
         boolean res = arch.equals("i386") || arch.equals("x86") || arch.equals("amd64") || arch.equals("x86_64");
 
         if (!res)
-            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNALIGNED_MEMORY_ACCESS, false);
+            res = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MEMORY_UNALIGNED_ACCESS, false);
 
         return res;
     }
@@ -1542,5 +1647,13 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * @param buf Direct buffer.
+     * @return Buffer memory address.
+     */
+    public static long bufferAddress(ByteBuffer buf) {
+        return ((DirectBuffer)buf).address();
     }
 }

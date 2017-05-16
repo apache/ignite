@@ -32,7 +32,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_binary_la_LIBADD = \
     @top_srcdir@/common/libignite-common.la
@@ -57,9 +57,11 @@ libignite_binary_la_SOURCES = \
     src/impl/binary/binary_reader_impl.cpp \
     src/impl/binary/binary_type_handler.cpp \
     src/impl/binary/binary_writer_impl.cpp \
-    src/impl/binary/binary_type_updater.cpp \
     src/impl/binary/binary_schema.cpp \
     src/impl/binary/binary_type_snapshot.cpp \
+    src/impl/binary/binary_object_header.cpp \
+    src/impl/binary/binary_object_impl.cpp \
+    src/impl/binary/binary_field_meta.cpp \
     src/impl/interop/interop_memory.cpp \
     src/impl/interop/interop_output_stream.cpp \
     src/impl/interop/interop_input_stream.cpp

@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -44,17 +44,17 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     private Marshaller marshaller;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(marshaller);
         cfg.setDeploymentMode(deploymentMode);
 
-        CacheConfiguration cacheCfg1 = new CacheConfiguration();
+        CacheConfiguration cacheCfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg1.setCacheMode(CacheMode.REPLICATED);
         cacheCfg1.setName(REPLICATED_CACHE);
 
-        CacheConfiguration cacheCfg2 = new CacheConfiguration();
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg2.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg2.setName(PARTITIONED_CACHE);
 
@@ -77,7 +77,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         deploymentMode = DeploymentMode.ISOLATED;
         marshaller = new OptimizedMarshaller();
 
-        doCheckFailed(deploymentMode);
+        doCheckFailed();
     }
 
     /**
@@ -87,7 +87,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         deploymentMode = DeploymentMode.PRIVATE;
         marshaller = new OptimizedMarshaller();
 
-        doCheckFailed(deploymentMode);
+        doCheckFailed();
     }
 
     /**
@@ -133,10 +133,9 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mode Deployment mode.
      * @throws Exception If failed.
      */
-    private void doCheckFailed(DeploymentMode mode) throws Exception {
+    private void doCheckFailed() throws Exception {
         try {
             startGridsMultiThreaded(2);
         }

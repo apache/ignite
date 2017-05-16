@@ -24,11 +24,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
@@ -109,6 +111,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         
         /** */
         private const int OpForServers = 23;
+        
+        /** */
+        private const int OpCacheMetrics = 24;
+        
+        /** */
+        private const int OpResetLostPartitions = 25;
         
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
@@ -503,6 +511,45 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public void ResetMetrics()
         {
             DoOutInOp(OpResetMetrics);
+        }
+
+        /// <summary>
+        /// Resets the lost partitions.
+        /// </summary>
+        public void ResetLostPartitions(IEnumerable<string> cacheNames)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpResetLostPartitions, w =>
+            {
+                var pos = w.Stream.Position;
+
+                var count = 0;
+                w.WriteInt(count);  // Reserve space.
+
+                foreach (var cacheName in cacheNames)
+                {
+                    w.WriteString(cacheName);
+                    count++;
+                }
+
+                w.Stream.WriteInt(pos, count);
+            });
+        }
+
+        /// <summary>
+        /// Gets the cache metrics within this cluster group.
+        /// </summary>
+        /// <param name="cacheName">Name of the cache.</param>
+        /// <returns>Metrics.</returns>
+        public ICacheMetrics GetCacheMetrics(string cacheName)
+        {
+            return DoOutInOp(OpCacheMetrics, w => w.WriteString(cacheName), stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                return new CacheMetricsImpl(reader);
+            });
         }
 
         /// <summary>

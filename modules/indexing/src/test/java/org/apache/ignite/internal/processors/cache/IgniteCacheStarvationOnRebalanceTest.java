@@ -52,8 +52,8 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Use small system thread pool to reproduce the issue.
         cfg.setSystemThreadPoolSize(IGNITE_THREAD_POOL_SIZE);
@@ -87,7 +87,7 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
      * @throws Exception If failed.
      */
     public void testLoadSystemWithPutAndStartRebalancing() throws Exception {
-        final IgniteCache<Integer, CacheValue> cache = grid(0).cache(null);
+        final IgniteCache<Integer, CacheValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final long endTime = System.currentTimeMillis() + TEST_TIMEOUT - 60_000;
 

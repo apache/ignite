@@ -47,10 +47,10 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
      * {@inheritDoc}
      */
     @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setName(CACHE_NAME);
         cache.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -70,7 +70,7 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
      * {@inheritDoc}
      */
     @Override
-    public String getTestGridName() {
+    public String getTestIgniteInstanceName() {
         return "testGrid";
     }
 
@@ -128,7 +128,7 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
         try {
             service.putWithError(c, entryCnt);
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 

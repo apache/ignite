@@ -74,7 +74,7 @@ public class GridFactoryVmShutdownTest {
             @Override public void run() {
                 IgniteConfiguration cfg = new IgniteConfiguration();
 
-                cfg.setGridName("test1");
+                cfg.setIgniteInstanceName("test1");
 
                 try {
                     G.start(cfg);

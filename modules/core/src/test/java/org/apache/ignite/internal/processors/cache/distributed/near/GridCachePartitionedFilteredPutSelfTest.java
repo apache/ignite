@@ -42,8 +42,8 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -104,7 +104,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
         doPutAndRollback();
 
         GridCacheAdapter<Integer, Integer> c =
-            ((GridNearCacheAdapter<Integer, Integer>)((IgniteKernal)grid()).internalCache().<Integer, Integer>cache()).dht();
+            ((GridNearCacheAdapter<Integer, Integer>)((IgniteKernal)grid()).internalCache(DEFAULT_CACHE_NAME).<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }

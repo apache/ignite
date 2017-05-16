@@ -18,6 +18,7 @@
 package org.apache.ignite.scalar.tests.examples
 
 import org.apache.ignite.scalar.examples._
+import org.apache.ignite.scalar.examples.spark._
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
 import org.scalatest.junit.JUnitSuiteLike
@@ -94,5 +95,10 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     /** */
     def testScalarSnowflakeSchemaExample() {
         ScalarSnowflakeSchemaExample.main(EMPTY_ARGS)
+    }
+
+    /** */
+    def testScalarSharedRDDExample() {
+        ScalarSharedRDDExample.main(EMPTY_ARGS)
     }
 }

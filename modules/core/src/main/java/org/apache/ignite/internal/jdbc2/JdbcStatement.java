@@ -23,13 +23,17 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -44,7 +48,7 @@ public class JdbcStatement implements Statement {
     private static final int DFLT_FETCH_SIZE = 1024;
 
     /** Connection. */
-    private final JdbcConnection conn;
+    protected final JdbcConnection conn;
 
     /** Closed flag. */
     private boolean closed;
@@ -53,10 +57,10 @@ public class JdbcStatement implements Statement {
     private int maxRows;
 
     /** Current result set. */
-    private ResultSet rs;
+    protected ResultSet rs;
 
     /** Query arguments. */
-    protected Object[] args;
+    protected ArrayList<Object> args;
 
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
@@ -66,6 +70,12 @@ public class JdbcStatement implements Statement {
 
     /** Fields indexes. */
     Map<String, Integer> fieldsIdxs = new HashMap<>();
+
+    /** Current updated items count. */
+    long updateCnt = -1;
+
+    /** Batch statements. */
+    private List<String> batch;
 
     /**
      * Creates new statement.
@@ -79,12 +89,15 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         ensureNotClosed();
 
         rs = null;
 
-        if (sql == null || sql.isEmpty())
+        updateCnt = -1;
+
+        if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
         Ignite ignite = conn.ignite();
@@ -95,8 +108,8 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
-            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, true, loc, getArgs(),
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -111,6 +124,9 @@ public class JdbcStatement implements Statement {
 
             return rs;
         }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
         catch (Exception e) {
             throw new SQLException("Failed to query Ignite.", e);
         }
@@ -120,7 +136,78 @@ public class JdbcStatement implements Statement {
     @Override public int executeUpdate(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        rs = null;
+
+        updateCnt = -1;
+
+        return Long.valueOf(doUpdate(sql, getArgs())).intValue();
+    }
+
+    /**
+     * Run update query.
+     * @param sql SQL query.
+     * @param args Update arguments.
+     * @return Number of affected items.
+     * @throws SQLException If failed.
+     */
+    long doUpdate(String sql, Object[] args) throws SQLException {
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        UUID uuid = UUID.randomUUID();
+
+        boolean loc = nodeId == null;
+
+        if (!conn.isDmlSupported())
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            JdbcQueryTask.QueryResult qryRes =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+    }
+
+    /**
+     * @param rows query result.
+     * @return update counter, if found
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+         if (F.isEmpty(rows))
+            return -1;
+
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation");
+
+        List<?> row = rows.get(0);
+
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation");
+
+        Object objRes = row.get(0);
+
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type");
+
+        return (Long)objRes;
     }
 
     /** {@inheritDoc} */
@@ -220,11 +307,59 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql) throws SQLException {
+        if (!conn.isDmlSupported()) {
+            // We attempt to run a query without any checks as long as server does not support DML anyway,
+            // so it simply will throw an exception when given a DML statement instead of a query.
+            rs = executeQuery(sql);
+
+            return true;
+        }
+
         ensureNotClosed();
 
-        rs = executeQuery(sql);
+        rs = null;
 
-        return true;
+        updateCnt = -1;
+
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        UUID uuid = UUID.randomUUID();
+
+        boolean loc = nodeId == null;
+
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            JdbcQueryTask.QueryResult res =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            if (res.isQuery()) {
+                JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(),
+                    res.getTypes(), res.getRows(), res.isFinished());
+
+                rs.setFetchSize(fetchSize);
+
+                resSets.add(rs);
+
+                this.rs = rs;
+            }
+            else
+                updateCnt = updateCounterFromQueryResult(res.getRows());
+
+            return res.isQuery();
+        }
+        catch (IgniteSQLException e) {
+            throw e.toJdbcException();
+        }
+        catch (Exception e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -242,7 +377,11 @@ public class JdbcStatement implements Statement {
     @Override public int getUpdateCount() throws SQLException {
         ensureNotClosed();
 
-        return -1;
+        long res = updateCnt;
+
+        updateCnt = -1;
+
+        return Long.valueOf(res).intValue();
     }
 
     /** {@inheritDoc} */
@@ -302,21 +441,27 @@ public class JdbcStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        if (batch == null)
+            batch = new ArrayList<>();
+
+        batch.add(sql);
     }
 
     /** {@inheritDoc} */
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        batch = null;
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -340,28 +485,37 @@ public class JdbcStatement implements Statement {
     @Override public ResultSet getGeneratedKeys() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (autoGeneratedKeys == RETURN_GENERATED_KEYS)
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
+
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int[] colIndexes) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colIndexes))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
+
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, String[] colNames) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colNames))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
+
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
@@ -369,7 +523,7 @@ public class JdbcStatement implements Statement {
         ensureNotClosed();
 
         if (autoGeneratedKeys == RETURN_GENERATED_KEYS)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
 
         return execute(sql);
     }
@@ -378,8 +532,8 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql, int[] colIndexes) throws SQLException {
         ensureNotClosed();
 
-        if (colIndexes != null && colIndexes.length > 0)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colIndexes))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
 
         return execute(sql);
     }
@@ -388,8 +542,8 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql, String[] colNames) throws SQLException {
         ensureNotClosed();
 
-        if (colNames != null && colNames.length > 0)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colNames))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
 
         return execute(sql);
     }
@@ -448,11 +602,18 @@ public class JdbcStatement implements Statement {
     }
 
     /**
+     * @return Args for current statement
+     */
+    protected final Object[] getArgs() {
+        return args != null ? args.toArray() : null;
+    }
+
+    /**
      * Ensures that statement is not closed.
      *
      * @throws SQLException If statement is closed.
      */
-    protected void ensureNotClosed() throws SQLException {
+    void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Statement is closed.");
     }

@@ -275,6 +275,25 @@ namespace ignite
             int32_t ReadTimestampArray(Timestamp* res, int32_t len);
 
             /**
+             * Read Time. Maps to "Time" type in Java.
+             *
+             * @return Result.
+             */
+            Time ReadTime();
+
+            /**
+             * Read array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param res Array to store data to.
+             * @param len Expected length of array.
+             * @return Actual amount of elements read. If "len" argument is less than actual
+             *     array size or resulting array is set to null, nothing will be written
+             *     to resulting array and returned value will contain required array length.
+             *     -1 will be returned in case array in stream was null.
+             */
+            int32_t ReadTimeArray(Time* res, int32_t len);
+
+            /**
              * Read string.
              *
              * @param res Array to store data to. 
@@ -338,7 +357,7 @@ namespace ignite
             template<typename T>
             BinaryCollectionReader<T> ReadCollection()
             {
-                CollectionType typ;
+                CollectionType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadCollection(&typ, &size);
@@ -366,7 +385,7 @@ namespace ignite
             template<typename K, typename V>
             BinaryMapReader<K, V> ReadMap()
             {
-                MapType typ;
+                MapType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadMap(&typ, &size);
@@ -379,7 +398,7 @@ namespace ignite
              *
              * @return Collection type.
              */
-            CollectionType ReadCollectionType();
+            CollectionType::Type ReadCollectionType();
 
             /**
              * Read type of the collection.
@@ -398,6 +417,27 @@ namespace ignite
             {
                 return impl->ReadObject<T>();
             }
+
+            /**
+             * Try read object.
+             * Reads value, stores it to res and returns true if the value is
+             * not null. Otherwise just returns false.
+             *
+             * @param res Read value is placed here if non-null.
+             * @return True if the non-null value has been read and false
+             *     otherwise.
+             */
+            template<typename T>
+            bool TryReadObject(T& res)
+            {
+                if (impl->SkipIfNull())
+                    return false;
+
+                res = impl->ReadObject<T>();
+
+                return true;
+            }
+
         private:
             /** Implementation delegate. */
             ignite::impl::binary::BinaryReaderImpl* impl;  

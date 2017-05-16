@@ -95,23 +95,4 @@ public interface IndexingSpi extends IgniteSpi {
      * @throws IgniteSpiException If failed.
      */
     public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException;
-
-    /**
-     * Will be called when entry with given key is swapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @throws IgniteSpiException If failed.
-     */
-    public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException;
-
-    /**
-     * Will be called when entry with given key is unswapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteSpiException If failed.
-     */
-    public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException;
 }

@@ -168,6 +168,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Request topology version. */
     private final AffinityTopologyVersion reqTopVer;
 
+    /** Request topology version. */
+    private final String execName;
+
     /**
      * @param ctx Kernal context.
      * @param dep Grid deployment.
@@ -182,6 +185,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param holdLsnr Hold listener.
      * @param partsReservation Reserved partitions (must be released at the job finish).
      * @param reqTopVer Affinity topology version of the job request.
+     * @param execName Custom executor name.
      */
     GridJobWorker(
         GridKernalContext ctx,
@@ -196,8 +200,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr,
         GridReservable partsReservation,
-        AffinityTopologyVersion reqTopVer) {
-        super(ctx.gridName(), "grid-job-worker", ctx.log(GridJobWorker.class));
+        AffinityTopologyVersion reqTopVer,
+        String execName) {
+        super(ctx.igniteInstanceName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
         assert ctx != null;
         assert ses != null;
@@ -219,6 +224,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.holdLsnr = holdLsnr;
         this.partsReservation = partsReservation;
         this.reqTopVer = reqTopVer;
+        this.execName = execName;
 
         if (job != null)
             this.job = job;
@@ -617,6 +623,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 // Finish here only if not held by this thread.
                 if (!HOLD.get())
                     finishJob(res, ex, sndRes);
+                else
+                    // Make sure flag is not set for current thread.
+                    // This may happen in case of nested internal task call with continuation.
+                    HOLD.set(false);
 
                 ctx.job().currentTaskSession(null);
 
@@ -720,6 +730,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             if (e instanceof Error)
                 throw e;
         }
+    }
+
+    /**
+     * @return Custom executor name.
+     */
+    public String executorName() {
+        return execName;
     }
 
     /**
@@ -908,7 +925,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
                             else
                                 // Send response to common topic as unordered message.
-                                ctx.io().send(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
+                                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.

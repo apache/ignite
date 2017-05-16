@@ -23,6 +23,7 @@ import java.util.List;
 import javax.cache.CacheException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
@@ -95,6 +96,63 @@ public final class GridH2CollocationModel {
         this.filter = filter;
         this.view = view;
         this.validate = validate;
+    }
+
+    /**
+     * @return Table filter for this collocation model.
+     */
+    private TableFilter filter() {
+        return upper == null ? null : upper.childFilters[filter];
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        calculate();
+
+        SB b = new SB();
+
+        for (int lvl = 0; lvl < 20; lvl++) {
+            if (!toString(b, lvl))
+                break;
+
+            b.a('\n');
+        }
+
+        return b.toString();
+    }
+
+    /**
+     * @param b String builder.
+     * @param lvl Depth level.
+     */
+    private boolean toString(SB b, int lvl) {
+        boolean res = false;
+
+        if (lvl == 0) {
+            TableFilter f = filter();
+            String tblAlias = f == null ? "^" : f.getTableAlias();
+
+            b.a("[tbl=").a(tblAlias).a(", type=").a(type).a(", mul=").a(multiplier).a("]");
+
+            res = true;
+        }
+        else if (childFilters != null) {
+            assert lvl > 0;
+
+            lvl--;
+
+            for (int i = 0; i < childFilters.length; i++) {
+                if (lvl == 0)
+                    b.a(" | ");
+
+                res |= child(i, true).toString(b, lvl);
+            }
+
+            if (lvl == 0)
+                b.a(" | ");
+        }
+
+        return res;
     }
 
     /**
@@ -240,10 +298,10 @@ public final class GridH2CollocationModel {
             assert childFilters == null;
 
             // We are at table instance.
-            GridH2Table tbl = (GridH2Table)upper.childFilters[filter].getTable();
+            Table tbl = filter().getTable();
 
             // Only partitioned tables will do distributed joins.
-            if (!tbl.isPartitioned()) {
+            if (!(tbl instanceof GridH2Table) || !((GridH2Table)tbl).isPartitioned()) {
                 type = Type.REPLICATED;
                 multiplier = MULTIPLIER_COLLOCATED;
 
@@ -261,7 +319,7 @@ public final class GridH2CollocationModel {
                 // It is enough to make sure that our previous join by affinity key is collocated, then we are
                 // collocated. If we at least have affinity key condition, then we do unicast which is cheaper.
                 switch (upper.joinedWithCollocated(filter)) {
-                    case JOINED_WITH_COLLOCATED:
+                    case COLLOCATED_JOIN:
                         type = Type.PARTITIONED_COLLOCATED;
                         multiplier = MULTIPLIER_COLLOCATED;
 
@@ -349,15 +407,14 @@ public final class GridH2CollocationModel {
 
             for (int i = 0; i < idxConditions.size(); i++) {
                 IndexCondition c = idxConditions.get(i);
-
+                int colId = c.getColumn().getColumnId();
                 int cmpType = c.getCompareType();
 
                 if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
-                    c.getColumn().getColumnId() == affColId && c.isEvaluatable()) {
+                    (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
                     affKeyCondFound = true;
 
                     Expression exp = c.getExpression();
-
                     exp = exp.getNonAliasExpression();
 
                     if (exp instanceof ExpressionColumn) {
@@ -369,11 +426,14 @@ public final class GridH2CollocationModel {
                         if (prevJoin != null) {
                             GridH2CollocationModel cm = child(indexOf(prevJoin), true);
 
-                            if (cm != null) {
+                            // If the previous joined model is a subquery (view), we can not be sure that
+                            // the found affinity column is the needed one, since we can select multiple
+                            // different affinity columns from different tables.
+                            if (cm != null && !cm.view) {
                                 Type t = cm.type(true);
 
                                 if (t.isPartitioned() && t.isCollocated() && isAffinityColumn(prevJoin, expCol, validate))
-                                    return Affinity.JOINED_WITH_COLLOCATED;
+                                    return Affinity.COLLOCATED_JOIN;
                             }
                         }
                     }
@@ -531,7 +591,7 @@ public final class GridH2CollocationModel {
     private GridH2CollocationModel child(int i, boolean create) {
         GridH2CollocationModel child = children[i];
 
-        if (child == null && create && isChildTableOrView(i, null)) {
+        if (child == null && create) {
             TableFilter f = childFilters[i];
 
             if (f.getTable().isView()) {
@@ -778,6 +838,6 @@ public final class GridH2CollocationModel {
         HAS_AFFINITY_CONDITION,
 
         /** */
-        JOINED_WITH_COLLOCATED
+        COLLOCATED_JOIN
     }
 }

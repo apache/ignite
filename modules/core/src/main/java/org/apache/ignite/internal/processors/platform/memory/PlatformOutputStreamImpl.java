@@ -208,10 +208,13 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasArray() {
-        assert false;
+    @Override public long rawOffheapPointer() {
+        return data;
+    }
 
-        throw new UnsupportedOperationException("Should not be called.");
+    /** {@inheritDoc} */
+    @Override public boolean hasArray() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -327,8 +330,13 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     private void copyAndShift(Object src, long off, int len) {
         ensureCapacity(pos + len);
 
-        GridUnsafe.copyMemory(src, off, null, data + pos, len);
+        GridUnsafe.copyHeapOffheap(src, off, data + pos, len);
 
         shift(len);
+    }
+
+    /** {@inheritDoc} */
+    public int capacity() {
+        return cap;
     }
 }

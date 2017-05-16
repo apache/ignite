@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -31,9 +33,6 @@ import org.jetbrains.annotations.Nullable;
  * Request for single partition info.
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
-    /** */
-    public static final IgniteProductVersion PART_MAP_COMPRESS_SINCE = IgniteProductVersion.fromString("1.6.11");
-
     /** */
     protected static final byte COMPRESSED_FLAG_MASK = 1;
 
@@ -66,6 +65,11 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        return GridIoMessage.STRIPE_DISABLED_PART;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }
@@ -76,11 +80,17 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
-     * @return Exchange ID.
+     * @return Exchange ID. {@code Null} if message doesn't belong to exchange process.
      */
-    public GridDhtPartitionExchangeId exchangeId() {
+    @Nullable public GridDhtPartitionExchangeId exchangeId() {
         return exchId;
     }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Parition update counters.
+     */
+    public abstract Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId);
 
     /**
      * @return Last used version among all nodes.

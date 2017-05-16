@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
-    using System;
-
     /// <summary>
     /// Internal generic serializer interface.
     /// </summary>
@@ -32,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Read binary object.
         /// </summary>
-        T ReadBinary<T>(BinaryReader reader, Type type, int pos);
+        T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos);
 
         /// <summary>
         /// Gets a value indicating whether this serializer supports handles.

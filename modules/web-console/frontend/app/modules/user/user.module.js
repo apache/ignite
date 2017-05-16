@@ -22,10 +22,10 @@ import Auth from './Auth.service';
 import User from './User.service';
 import AclRouteProvider from './AclRoute.provider';
 
-angular
-.module('ignite-console.user', [
+angular.module('ignite-console.user', [
     'mm.acl',
-    'ignite-console.config'
+    'ignite-console.config',
+    'ignite-console.core'
 ])
 .factory('sessionRecoverer', ['$injector', '$q', ($injector, $q) => {
     return {

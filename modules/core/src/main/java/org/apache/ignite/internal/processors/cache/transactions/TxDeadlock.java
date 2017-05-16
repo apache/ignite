@@ -21,12 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -134,14 +132,24 @@ public class TxDeadlock {
         for (Map.Entry<IgniteTxKey, String> e : keyLabels.entrySet()) {
             IgniteTxKey txKey = e.getKey();
 
-            GridCacheContext cctx = ctx.cacheContext(txKey.cacheId());
+            try {
+                CacheObjectContext objCtx = ctx.cacheObjectContext(txKey.cacheId());
 
-            Object val = CU.value(txKey.key(), cctx, true);
+                Object val = txKey.key().value(objCtx, true);
 
-            sb.append(e.getValue()).append(" [");
+                sb.append(e.getValue())
+                    .append(" [");
             if (S.INCLUDE_SENSITIVE)
-                sb.append("key=").append(val).append(", ");
-            sb.append("cache=").append(cctx.namexx()).append("]\n");
+                sb.append("key=")
+                    .append(val)
+                    .append(", ");
+            sb.append("cache=")
+                    .append(objCtx.cacheName())
+                    .append("]\n");
+            }
+            catch (Exception ex) {
+                sb.append("Unable to unmarshall deadlock information for key [key=").append(e.getValue()).append("]\n");
+            }
         }
 
         return sb.toString();

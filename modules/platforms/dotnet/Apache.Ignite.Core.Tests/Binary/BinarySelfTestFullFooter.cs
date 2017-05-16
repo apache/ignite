@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -27,9 +26,9 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinarySelfTestFullFooter : BinarySelfTest
     {
         /** <inheritdoc /> */
-        protected override BinaryConfiguration GetBinaryConfiguration()
+        protected override bool GetCompactFooter()
         {
-            return new BinaryConfiguration {CompactFooter = false};
+            return false;
         }
     }
 }

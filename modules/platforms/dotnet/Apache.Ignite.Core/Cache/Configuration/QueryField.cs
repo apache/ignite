@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 FieldTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _type = value;
             }
@@ -107,6 +107,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 _type = null;
             }
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this field belongs to the cache key.
+        /// Proper value here is required for SQL DML queries which create/modify cache keys.
+        /// </summary>
+        public bool IsKeyField { get; set; }
 
         /// <summary>
         /// Validates this instance and outputs information to the log, if necessary.

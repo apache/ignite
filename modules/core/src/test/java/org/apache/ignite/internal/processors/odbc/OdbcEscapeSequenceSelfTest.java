@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.odbc.escape.OdbcEscapeUtils;
+import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -71,6 +71,137 @@ public class OdbcEscapeSequenceSelfTest extends GridCommonAbstractTest {
             "select func(field1), func(field2) from table;",
             "select {fn func(field1)}, {fn func(field2)} from table;"
         );
+    }
+
+    /**
+     * Test escape sequence for explicit data type conversion
+     */
+    public void testConvertFunction() throws Exception {
+        check(
+         "CONVERT ( CURDATE(), CHAR )",
+         "{ fn CONVERT ( { fn CURDATE() }, SQL_CHAR ) }"
+        );
+
+        check(
+         "conVerT ( some_expression('one', 'two') , DECIMAL ( 5 , 2 ) )",
+         "{ fn conVerT ( some_expression('one', 'two') , SQL_DECIMAL ( 5 , 2 ) ) }"
+        );
+
+        check(
+         "convert(field,CHAR)",
+         "{fn convert(field,sql_char)}"
+        );
+
+        check(
+         "convert(field,BIGINT)",
+         "{fn convert(field,sql_bigint)}"
+        );
+
+        check(
+         "convert(field,BINARY)",
+         "{fn convert(field,sql_binary)}" // also sql_varbinary,sql_longvarbinary
+        );
+
+        check(
+         "convert(field,BIT)",
+         "{fn convert(field,sql_bit)}"
+        );
+
+        check(
+         "convert(field,CHAR(100))",
+         "{fn convert(field,sql_char(100))}"
+        );
+
+        check(
+         "convert(field,DECIMAL(5,2))",
+         "{fn convert(field,sql_decimal(5,2))}" // also sql_numeric
+        );
+
+        check(
+         "convert(field,VARCHAR(100))",
+         "{fn convert(field,sql_varchar(100))}" // also sql_longvarchar,sql_wchar,sql_wlongvarchar,sql_wvarchar
+        );
+
+        check(
+         "convert(field,DOUBLE)",
+         "{fn convert(field,sql_double)}" // also sql_float
+        );
+
+        check(
+         "convert(field,REAL)",
+         "{fn convert(field,sql_real)}"
+        );
+
+        check(
+         "convert(field,UUID)",
+         "{fn convert(field,sql_guid)}"
+        );
+
+        check(
+         "convert(field,SMALLINT)",
+         "{fn convert(field,sql_smallint)}"
+        );
+
+        check(
+         "convert(field,INTEGER)",
+         "{fn convert(field,sql_integer)}"
+        );
+
+        check(
+         "convert(field,DATE)",
+         "{fn convert(field,sql_date)}"
+        );
+
+        check(
+         "convert(field,TIME)",
+         "{fn convert(field,sql_time)}"
+        );
+
+        check(
+         "convert(field,TIMESTAMP)",
+         "{fn convert(field,sql_timestamp)}"
+        );
+
+        check(
+         "convert(field,TINYINT)",
+         "{fn convert(field,sql_tinyint)}"
+        );
+
+        //invalid odbc type
+        checkFail("{fn convert(field,char)}");
+
+        //no support for interval types
+        checkFail("{fn convert(field,sql_interval_second)}");
+        checkFail("{fn convert(field,sql_interval_minute)}");
+        checkFail("{fn convert(field,sql_interval_hour)}");
+        checkFail("{fn convert(field,sql_interval_day)}");
+        checkFail("{fn convert(field,sql_interval_month)}");
+        checkFail("{fn convert(field,sql_interval_year)}");
+        checkFail("{fn convert(field,sql_interval_year_to_month)}");
+        checkFail("{fn convert(field,sql_interval_hour_to_minute)}");
+        checkFail("{fn convert(field,sql_interval_hour_to_second)}");
+        checkFail("{fn convert(field,sql_interval_minute_to_second)}");
+        checkFail("{fn convert(field,sql_interval_day_to_hour)}");
+        checkFail("{fn convert(field,sql_interval_day_to_minute)}");
+        checkFail("{fn convert(field,sql_interval_day_to_second)}");
+
+        //failure: expected function name
+        checkFail("{fn    }");
+
+        //failure: expected function parameter list
+        checkFail("{fn convert}");
+
+        //failure: expected data type parameter for convert function
+        checkFail("{fn convert ( justoneparam ) }");
+
+        //failure: empty precision/scale
+        checkFail("{fn convert ( justoneparam, sql_decimal( ) }");
+
+        //failure: empty precision/scale
+        checkFail("{fn convert ( justoneparam, sql_decimal(not_a_number) }");
+
+        //failure: missing scale after comma
+        checkFail("{fn convert ( justoneparam, sql_decimal(10,) }");
     }
 
     /**

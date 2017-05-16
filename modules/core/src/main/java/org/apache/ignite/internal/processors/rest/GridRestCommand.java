@@ -151,7 +151,16 @@ public enum GridRestCommand {
     FETCH_SQL_QUERY("qryfetch"),
 
     /** Close query. */
-    CLOSE_SQL_QUERY("qrycls");
+    CLOSE_SQL_QUERY("qrycls"),
+
+    /** */
+    CLUSTER_ACTIVE("active"),
+
+    /** */
+    CLUSTER_INACTIVE("inactive"),
+
+    /** */
+    CLUSTER_CURRENT_STATE("currentState");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

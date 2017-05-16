@@ -54,8 +54,8 @@ namespace Apache.Ignite.Core.Events
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();
-            _taskSessionId = IgniteGuid.Read(r);
-            _jobId = IgniteGuid.Read(r);
+            _taskSessionId = r.ReadObject<IgniteGuid?>();
+            _jobId = r.ReadObject<IgniteGuid?>();
             _taskNode = ReadNode(r);
             _taskSubjectId = r.ReadGuid();
         }

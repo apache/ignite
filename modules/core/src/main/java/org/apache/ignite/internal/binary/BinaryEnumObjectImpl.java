@@ -29,6 +29,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,6 +40,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.objectPutSize;
 
 /**
  * Binary enum object.
@@ -59,6 +61,10 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** Ordinal. */
     private int ord;
+
+    /** Value bytes. */
+    @GridDirectTransient
+    private byte[] valBytes;
 
     /**
      * {@link Externalizable} support.
@@ -92,6 +98,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         assert ctx != null;
         assert arr != null;
         assert arr[0] == GridBinaryMarshaller.ENUM;
+
+        valBytes = arr;
 
         this.ctx = ctx;
 
@@ -205,7 +213,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
             return new SB().a(val).toString();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
 
@@ -215,7 +223,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         try {
             type = rawType();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             type = null;
         }
 
@@ -252,7 +260,36 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext cacheCtx) throws IgniteCheckedException {
-        return U.marshal(ctx.marshaller(), this);
+        if (valBytes != null)
+            return valBytes;
+
+        valBytes = U.marshal(ctx.marshaller(), this);
+
+        return valBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(buf, 0, objectPutSize(valBytes.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        return objectPutSize(valueBytes(ctx).length);
     }
 
     /** {@inheritDoc} */
@@ -286,7 +323,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 119;
     }
 

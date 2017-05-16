@@ -25,6 +25,7 @@
 #include "test_utils.h"
 
 using namespace ignite;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 

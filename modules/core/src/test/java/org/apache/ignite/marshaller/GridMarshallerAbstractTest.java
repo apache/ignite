@@ -89,7 +89,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static Marshaller marsh;
 
     /** */
-    private static String gridName;
+    private static String igniteInstanceName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -129,16 +129,16 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration namedCache = new CacheConfiguration();
+        CacheConfiguration namedCache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setMarshaller(marshaller());
-        cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), namedCache);
 
         return cfg;
     }
@@ -151,14 +151,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
-        gridName = grid().configuration().getGridName();
+        igniteInstanceName = grid().configuration().getIgniteInstanceName();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        IgniteCache<String, String> cache = grid().cache(null);
+        IgniteCache<String, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.put("key", "val");
 
@@ -178,7 +178,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         IgniteCache<String, String> cache0 = (IgniteCache<String, String>)outBean.getObjectField();
 
-        assertNull(cache0.getName());
+        assertEquals(DEFAULT_CACHE_NAME, cache0.getName());
         assertEquals("val", cache0.get("key"));
 
         outBean.checkNullResources();
@@ -707,7 +707,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().cache(null).put(1, 1);
+            grid().cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 
@@ -846,16 +846,15 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             }
         });
 
-        // Any deserialization has to be executed under a thread, that contains the grid name.
-        new IgniteThread(gridName, "unmarshal-thread", f).start();
+        // Any deserialization has to be executed under a thread, that contains the Ignite instance name.
+        new IgniteThread(igniteInstanceName, "unmarshal-thread", f).start();
 
         try {
             return f.get();
         }
         catch (Exception e) {
-            if (e.getCause() instanceof IgniteCheckedException) {
+            if (e.getCause() instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e.getCause();
-            }
 
             fail(e.getCause().getMessage());
         }

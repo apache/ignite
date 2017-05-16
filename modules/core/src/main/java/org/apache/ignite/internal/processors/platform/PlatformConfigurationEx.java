@@ -50,12 +50,12 @@ public interface PlatformConfigurationEx {
     public Collection<String> warnings();
 
     /**
-     * @return Available cache extensions.
-     */
-    @Nullable public Collection<PlatformCacheExtension> cacheExtensions();
-
-    /**
      * @return Platform logger.
      */
     public PlatformLogger logger();
+
+    /**
+     * @return Available cache extensions.
+     */
+    @Nullable public Collection<PlatformCacheExtension> cacheExtensions();
 }

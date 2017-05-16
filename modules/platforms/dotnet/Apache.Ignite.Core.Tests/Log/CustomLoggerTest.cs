@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Log
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
@@ -45,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Log
         [SetUp]
         public void TestSetUp()
         {
-            TestLogger.Entries.Clear();
+            TestLogger.Clear();
         }
 
         /// <summary>
@@ -58,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Log
             using (var ignite = Ignition.Start(cfg))
             {
                 // Check injection
-                Assert.AreEqual(((Ignite) ignite).Proxy, ((TestLogger) cfg.Logger).Ignite);
+                Assert.AreEqual(ignite, ((TestLogger) cfg.Logger).Ignite);
 
                 // Check initial message
                 Assert.IsTrue(TestLogger.Entries[0].Message.StartsWith("Starting Ignite.NET"));
@@ -112,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.Throws<IgniteException>(() =>
                 Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
                 {
-                    LifecycleBeans = new[] {new FailBean()}
+                    LifecycleHandlers = new[] {new FailBean()}
                 }));
 
             var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
@@ -127,16 +126,18 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             // Start 2 nodes: PlatformNativeException does not occur in local scenario
             using (var ignite = Ignition.Start(GetConfigWithLogger()))
-            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "1"}))
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "1"}))
             {
                 var compute = ignite.GetCluster().ForRemotes().GetCompute();
 
-                Assert.Throws<ArithmeticException>(() => compute.Call(new FailFunc()));
+                var ex = Assert.Throws<IgniteException>(() => compute.Call(new FailFunc()));
+                Assert.IsInstanceOf<ArithmeticException>(ex.InnerException);
 
                 // Log updates may not arrive immediately
                 TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.Exception != null), 3000);
 
                 var errFromJava = TestLogger.Entries.Single(x => x.Exception != null);
+                Assert.IsNotNull(errFromJava.Exception.InnerException);
                 Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception.InnerException).Message);
             }
         }
@@ -363,7 +364,7 @@ namespace Apache.Ignite.Core.Tests.Log
         /// </summary>
         private class TestLogger : ILogger
         {
-            public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
+            private static readonly List<LogEntry> Logs = new List<LogEntry>(5000);
 
             private readonly LogLevel _minLevel;
 
@@ -372,15 +373,26 @@ namespace Apache.Ignite.Core.Tests.Log
                 _minLevel = minLevel;
             }
 
+            public static List<LogEntry> Entries
+            {
+                get
+                {
+                    lock (Logs)
+                    {
+                        return Logs.ToList();
+                    }
+                }
+            }
+
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, 
                 string category, string nativeErrorInfo, Exception ex)
             {
                 if (!IsEnabled(level))
                     return;
 
-                lock (Entries)
+                lock (Logs)
                 {
-                    Entries.Add(new LogEntry
+                    Logs.Add(new LogEntry
                     {
                         Level = level,
                         Message = message,
@@ -401,13 +413,21 @@ namespace Apache.Ignite.Core.Tests.Log
             [InstanceResource]
             // ReSharper disable once UnusedAutoPropertyAccessor.Local
             public IIgnite Ignite { get; set; }
+
+            public static void Clear()
+            {
+                lock (Logs)
+                {
+                    Logs.Clear();
+                }
+            }
         }
 
 
         /// <summary>
         /// Failing lifecycle bean.
         /// </summary>
-        private class FailBean : ILifecycleBean
+        private class FailBean : ILifecycleHandler
         {
             public void OnLifecycleEvent(LifecycleEventType evt)
             {

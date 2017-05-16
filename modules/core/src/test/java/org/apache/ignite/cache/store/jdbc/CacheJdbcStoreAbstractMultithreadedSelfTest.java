@@ -32,7 +32,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
@@ -64,7 +64,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
     extends GridCommonAbstractTest {
     /** Default config with mapping. */
-    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-type-metadata.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-jdbc-type.xml";
 
     /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
@@ -84,6 +84,40 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         store = store();
+
+        URL cfgUrl;
+
+        try {
+            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
+        }
+        catch (MalformedURLException ignore) {
+            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
+        }
+
+        if (cfgUrl == null)
+            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
+
+        try {
+            GenericApplicationContext springCtx = new GenericApplicationContext();
+
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
+
+            springCtx.refresh();
+
+            Collection<JdbcType> types = new ArrayList<>(springCtx.getBeansOfType(JdbcType.class).values());
+
+            store.setTypes(types.toArray(new JdbcType[types.size()]));
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
+                    "[springUrl=" + cfgUrl + ']', e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                    cfgUrl + ", err=" + e.getMessage() + ']', e);
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -124,8 +158,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     protected abstract T store() throws Exception;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -147,43 +181,10 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(ATOMIC);
-        cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
 
-        URL cfgUrl;
-
-        try {
-            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
-        }
-        catch (MalformedURLException ignore) {
-            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
-        }
-
-        if (cfgUrl == null)
-            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
-
-        try {
-            GenericApplicationContext springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
-
-            springCtx.refresh();
-
-            Collection<CacheTypeMetadata> tp = new ArrayList<>(springCtx.getBeansOfType(CacheTypeMetadata.class).values());
-
-            cc.setTypeMetadata(tp);
-        }
-        catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
-                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + cfgUrl + ']', e);
-            else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    cfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
-
         cc.setCacheStoreFactory(singletonFactory(store));
+
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -208,7 +209,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         cache.put(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                     else
                         cache.put(new PersonKey(id), new Person(id, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + id, 1));
+                            new Date(System.currentTimeMillis()), "Name" + id, 1, Gender.random()));
                 }
 
                 return null;
@@ -228,7 +229,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         cache.putIfAbsent(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                     else
                         cache.putIfAbsent(new PersonKey(id), new Person(id, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + id, i));
+                            new Date(System.currentTimeMillis()), "Name" + id, i, Gender.random()));
                 }
 
                 return null;
@@ -268,7 +269,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                             map.put(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                         else
                             map.put(new PersonKey(id), new Person(id, rnd.nextInt(),
-                                new Date(System.currentTimeMillis()), "Name" + id, 1));
+                                new Date(System.currentTimeMillis()), "Name" + id, 1, Gender.random()));
                     }
 
                     IgniteCache<Object, Object> cache = jcache();
@@ -294,11 +295,11 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
                     try (Transaction tx = grid().transactions().txStart()) {
                         cache.put(new PersonKey(1), new Person(1, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 1, 1));
+                            new Date(System.currentTimeMillis()), "Name" + 1, 1, Gender.random()));
                         cache.put(new PersonKey(2), new Person(2, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 2, 2));
+                            new Date(System.currentTimeMillis()), "Name" + 2, 2, Gender.random()));
                         cache.put(new PersonKey(3), new Person(3, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 3, 3));
+                            new Date(System.currentTimeMillis()), "Name" + 3, 3, Gender.random()));
 
                         cache.get(new PersonKey(1));
                         cache.get(new PersonKey(4));
@@ -306,9 +307,9 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         Map<PersonKey, Person> map =  U.newHashMap(2);
 
                         map.put(new PersonKey(5), new Person(5, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 5, 5));
+                            new Date(System.currentTimeMillis()), "Name" + 5, 5, Gender.random()));
                         map.put(new PersonKey(6), new Person(6, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 6, 6));
+                            new Date(System.currentTimeMillis()), "Name" + 6, 6, Gender.random()));
 
                         cache.putAll(map);
 

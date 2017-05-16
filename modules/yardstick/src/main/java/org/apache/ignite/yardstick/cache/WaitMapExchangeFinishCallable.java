@@ -25,7 +25,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.yardstickframework.BenchmarkUtils;
@@ -53,7 +53,7 @@ public class WaitMapExchangeFinishCallable implements IgniteCallable<Void> {
                     boolean success = true;
 
                     if (top.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion()) {
-                        for (Map.Entry<UUID, GridDhtPartitionMap2> e : top.partitionMap(true).entrySet()) {
+                        for (Map.Entry<UUID, GridDhtPartitionMap> e : top.partitionMap(true).entrySet()) {
                             for (Map.Entry<Integer, GridDhtPartitionState> p : e.getValue().entrySet()) {
                                 if (p.getValue() != GridDhtPartitionState.OWNING) {
                                     BenchmarkUtils.println("Not owning partition [part=" + p.getKey() +

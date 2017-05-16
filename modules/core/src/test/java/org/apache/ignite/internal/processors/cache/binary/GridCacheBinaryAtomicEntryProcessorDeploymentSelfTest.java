@@ -30,7 +30,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     extends GridCacheAtomicEntryProcessorDeploymentSelfTest {
     /** {@inheritDoc} */
     protected IgniteCache getCache() {
-        return grid(1).cache(null).withKeepBinary();
+        return grid(1).cache(DEFAULT_CACHE_NAME).withKeepBinary();
     }
 
     /** {@inheritDoc} */
@@ -90,8 +90,8 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
             assertTrue(grid(1).configuration().isClientMode());
             assertFalse(grid(0).configuration().isClientMode());
 
-            IgniteCache cache1 = grid(1).cache(null);
-            IgniteCache cache0 = grid(0).cache(null);
+            IgniteCache cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
+            IgniteCache cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
             if (withKeepBinary) {
                 cache1 = cache1.withKeepBinary();
@@ -108,7 +108,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
 
                     fail("Exception did not happened.");
                 }
-                catch (BinaryInvalidTypeException e) {
+                catch (BinaryInvalidTypeException ignored) {
                     // No-op.
                 }
             }
@@ -118,7 +118,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
 
                     fail("Exception did not happened.");
                 }
-                catch (BinaryInvalidTypeException e) {
+                catch (BinaryInvalidTypeException ignored) {
                     // No-op.
                 }
         }

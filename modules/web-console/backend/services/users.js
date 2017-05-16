@@ -21,20 +21,21 @@
 
 module.exports = {
     implements: 'services/users',
-    inject: ['require(lodash)', 'mongo', 'settings', 'services/spaces', 'services/mails', 'agent-manager', 'errors']
+    inject: ['require(lodash)', 'errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'agents-handler']
 };
 
 /**
  * @param _
  * @param mongo
+ * @param errors
  * @param settings
  * @param {SpacesService} spacesService
  * @param {MailsService} mailsService
- * @param agentMgr
- * @param errors
+ * @param {ActivitiesService} activitiesService
+ * @param {AgentsHandler} agentHnd
  * @returns {UsersService}
  */
-module.exports.factory = (_, mongo, settings, spacesService, mailsService, agentMgr, errors) => {
+module.exports.factory = (_, errors, settings, mongo, spacesService, mailsService, activitiesService, agentHnd) => {
     const _randomString = () => {
         const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const possibleLen = possible.length;
@@ -131,7 +132,7 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
                 })
                 .then((user) => {
                     if (changed.token && user.token !== changed.token)
-                        agentMgr.close(user._id, user.token);
+                        agentHnd.onTokenReset(user);
 
                     _.extend(user, changed);
 
@@ -143,7 +144,7 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
          * Get list of user accounts and summary information.
          * @returns {mongo.Account[]} - returns all accounts with counters object
          */
-        static list() {
+        static list(params) {
             return Promise.all([
                 mongo.Space.aggregate([
                     {$match: {demo: false}},
@@ -161,13 +162,17 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
                         }
                     }
                 ]).exec(),
+                activitiesService.total(params),
+                activitiesService.detail(params),
                 mongo.Account.find({}).sort('firstName lastName').lean().exec()
             ])
-                .then(([counters, users]) => {
+                .then(([counters, activitiesTotal, activitiesDetail, users]) => {
                     const countersMap = _.keyBy(counters, 'owner');
 
                     _.forEach(users, (user) => {
                         user.counters = _.omit(countersMap[user._id], '_id', 'owner');
+                        user.activitiesTotal = activitiesTotal[user._id];
+                        user.activitiesDetail = activitiesDetail[user._id];
                     });
 
                     return users;
@@ -207,11 +212,8 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
 
             const becomeUsed = viewedUser && user.admin;
 
-            if (becomeUsed) {
-                user = viewedUser;
-
-                user.becomeUsed = true;
-            }
+            if (becomeUsed)
+                user = _.extend({}, viewedUser, {becomeUsed: true, becameToken: user.token});
             else
                 user = user.toJSON();
 

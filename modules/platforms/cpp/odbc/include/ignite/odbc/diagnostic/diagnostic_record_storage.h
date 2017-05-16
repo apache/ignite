@@ -64,7 +64,7 @@ namespace ignite
                  *
                  * @param retCode Operation return code.
                  */
-                void SetHeaderRecord(SqlResult result);
+                void SetHeaderRecord(SqlResult::Type result);
 
                 /**
                  * Add status record to diagnostic records.
@@ -83,7 +83,7 @@ namespace ignite
                  *
                  * @return Result of the last operation.
                  */
-                SqlResult GetOperaionResult() const;
+                SqlResult::Type GetOperaionResult() const;
 
                 /**
                  * Get return code of the last operation.
@@ -169,7 +169,7 @@ namespace ignite
                  * @param buffer Buffer to put data to.
                  * @return Operation result.
                  */
-                SqlResult GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const;
+                SqlResult::Type GetField(int32_t recNum, DiagnosticField::Type field, app::ApplicationDataBuffer& buffer) const;
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DiagnosticRecordStorage);
@@ -196,7 +196,7 @@ namespace ignite
                  * Operation result. This field is mapped to "Return code" header
                  * record field.
                  */
-                SqlResult result;
+                SqlResult::Type result;
 
                 /**
                  * Header record field. The number of rows affected by an insert,

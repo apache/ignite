@@ -20,6 +20,7 @@ package org.apache.ignite.thread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -27,8 +28,8 @@ import org.jetbrains.annotations.NotNull;
  * for creating grid threads.
  */
 public class IgniteThreadFactory implements ThreadFactory {
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Thread name. */
     private final String threadName;
@@ -40,26 +41,31 @@ public class IgniteThreadFactory implements ThreadFactory {
      * Constructs new thread factory for given grid. All threads will belong
      * to the same default thread group.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      */
-    public IgniteThreadFactory(String gridName) {
-        this(gridName, "ignite");
+    public IgniteThreadFactory(String igniteInstanceName) {
+        this(igniteInstanceName, "ignite");
     }
 
     /**
      * Constructs new thread factory for given grid. All threads will belong
      * to the same default thread group.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param threadName Thread name.
      */
-    public IgniteThreadFactory(String gridName, String threadName) {
-        this.gridName = gridName;
+    public IgniteThreadFactory(String igniteInstanceName, String threadName) {
+        this.igniteInstanceName = igniteInstanceName;
         this.threadName = threadName;
     }
 
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
-        return new IgniteThread(gridName, threadName, r, idxGen.incrementAndGet());
+        return new IgniteThread(igniteInstanceName, threadName, r, idxGen.incrementAndGet(), -1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteThreadFactory.class, this, super.toString());
     }
 }

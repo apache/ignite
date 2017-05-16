@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -29,13 +30,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
     /// Queries tests.
     /// </summary>
-    public sealed class CacheQueriesTest
+    public class CacheQueriesTest
     {
         /** Grid count. */
         private const int GridCnt = 2;
@@ -50,46 +50,40 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const int MaxItemCnt = 100;
 
         /// <summary>
-        /// 
+        /// Fixture setup.
         /// </summary>
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.JvmDebug = true;
-            TestUtils.KillProcesses();
-
-            IgniteConfiguration cfg = new IgniteConfiguration
-            {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new[]
-                    {
-                        new BinaryTypeConfiguration(typeof (QueryPerson)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
-                    }
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = CfgPath
-            };
-
             for (int i = 0; i < GridCnt; i++)
             {
-                cfg.GridName = "grid-" + i;
-
-                Ignition.Start(cfg);
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    BinaryConfiguration = new BinaryConfiguration
+                    {
+                        NameMapper = GetNameMapper()
+                    },
+                    SpringConfigUrl = CfgPath,
+                    IgniteInstanceName = "grid-" + i
+                });
             }
+        }
+        
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
-        /// 
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
         public void StopGrids()
         {
-            for (int i = 0; i < GridCnt; i++)
-                Ignition.Stop("grid-" + i, true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -124,32 +118,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        /// Gets the ignite.
         /// </summary>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        private IIgnite GetIgnite(int idx)
+        private static IIgnite GetIgnite()
         {
-            return Ignition.GetIgnite("grid-" + idx);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        private ICache<int, QueryPerson> Cache(int idx)
-        {
-            return GetIgnite(idx).GetCache<int, QueryPerson>(CacheName);
+            return Ignition.GetIgnite("grid-0");
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        private ICache<int, QueryPerson> Cache()
+        private static ICache<int, QueryPerson> Cache()
         {
-            return Cache(0);
+            return GetIgnite().GetCache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -237,8 +219,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Cache().Put(4, new QueryPerson("Unknown", 60));
 
             // 1. Empty result set.
-            using (
-                IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
+            using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
                     Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
             {
                 IEnumerator<ICacheEntry<int, QueryPerson>> e = cursor.GetEnumerator();
@@ -252,9 +233,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     { ICacheEntry<int, QueryPerson> entry = e.Current; });
 
                 Assert.Throws<NotSupportedException>(() => e.Reset());
+
+                e.Dispose();
             }
 
             SqlQuery qry = new SqlQuery(typeof (QueryPerson), "age < 60");
+
+            Assert.AreEqual(QueryBase.DefaultPageSize, qry.PageSize);
 
             // 2. Page size is bigger than result set.
             qry.PageSize = 4;
@@ -442,12 +427,48 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Check scan query.
+        /// </summary>
+        [Test]
+        public void TestScanQuery([Values(true, false)]  bool loc)
+        {
+            CheckScanQuery<QueryPerson>(loc, false);
+        }
+
+        /// <summary>
+        /// Check scan query in binary mode.
+        /// </summary>
+        [Test]
+        public void TestScanQueryBinary([Values(true, false)]  bool loc)
+        {
+            CheckScanQuery<IBinaryObject>(loc, true);
+        }
+
+        /// <summary>
+        /// Check scan query with partitions.
+        /// </summary>
+        [Test]
+        public void TestScanQueryPartitions([Values(true, false)]  bool loc)
+        {
+            CheckScanQueryPartitions<QueryPerson>(loc, false);
+        }
+
+        /// <summary>
+        /// Check scan query with partitions in binary mode.
+        /// </summary>
+        [Test]
+        public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
+        {
+            CheckScanQueryPartitions<IBinaryObject>(loc, true);
+        }
+
+        /// <summary>
         /// Tests that query attempt on non-indexed cache causes an exception.
         /// </summary>
         [Test]
         public void TestIndexingDisabledError()
         {
-            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
+            var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
 
             var queries = new QueryBase[]
             {
@@ -467,11 +488,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Check scan query.
         /// </summary>
-        [Test]
-        public void TestScanQuery<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        /// <param name="loc">Local query flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        private static void CheckScanQuery<TV>(bool loc, bool keepBinary)
         {
             var cache = Cache();
-            var cnt = MaxItemCnt;
+            int cnt = MaxItemCnt;
 
             // No predicate
             var exp = PopulateCache(cache, loc, cnt, x => true);
@@ -504,14 +526,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Checks scan query with partitions.
         /// </summary>
-        [Test]
-        public void TestScanQueryPartitions<TV>([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
+        /// <param name="loc">Local query flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
+        private void CheckScanQueryPartitions<TV>(bool loc, bool keepBinary)
         {
             StopGrids();
             StartGrids();
 
             var cache = Cache();
-            var cnt = MaxItemCnt;
+            int cnt = MaxItemCnt;
 
             var aff = cache.Ignite.GetAffinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
@@ -553,14 +576,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestDistributedJoins()
         {
-            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>(
+            var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
                 new CacheConfiguration("replicatedCache")
                 {
                     QueryEntities = new[]
                     {
                         new QueryEntity(typeof(int), typeof(QueryPerson))
                         {
-                            Fields = new[] {new QueryField("age", typeof(int))}
+                            Fields = new[] {new QueryField("age", "int")}
                         }
                     }
                 });
@@ -583,6 +606,70 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .GetAll().Distinct().Count();
 
             Assert.AreEqual(count, res);
+        }
+
+        /// <summary>
+        /// Tests the get configuration.
+        /// </summary>
+        [Test]
+        public void TestGetConfiguration()
+        {
+            var entity = Cache().GetConfiguration().QueryEntities.Single();
+
+            Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
+            Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
+        }
+
+        /// <summary>
+        /// Tests custom key and value field names.
+        /// </summary>
+        [Test]
+        public void TestCustomKeyValueFieldNames()
+        {
+            // Check select * with default config - does not include _key, _val.
+            var cache = Cache();
+
+            cache[1] = new QueryPerson("Joe", 48);
+
+            var row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(2, row.Count);
+            Assert.AreEqual(48, row[0]);
+            Assert.AreEqual("Joe", row[1]);
+
+            // Check select * with custom names - fields are included.
+            cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("customKeyVal")
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
+                        {
+                            Fields = new[]
+                            {
+                                new QueryField("age", "int"),
+                                new QueryField("FullKey", "int"),
+                                new QueryField("FullVal", "QueryPerson")
+                            },
+                            KeyFieldName = "FullKey",
+                            ValueFieldName = "FullVal"
+                        }
+                    }
+                });
+
+            cache[1] = new QueryPerson("John", 33);
+
+            row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            
+            Assert.AreEqual(3, row.Count);
+            Assert.AreEqual(33, row[0]);
+            Assert.AreEqual(1, row[1]);
+
+            var person = (QueryPerson) row[2];
+            Assert.AreEqual("John", person.Name);
+
+            // Check explicit select.
+            row = cache.QueryFields(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(1, row[0]);
         }
 
         /// <summary>
@@ -826,8 +913,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Filter that can't be serialized.
     /// </summary>
-    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>
+    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 }

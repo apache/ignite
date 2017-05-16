@@ -59,8 +59,8 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     private static final int RANGE = 100_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -68,17 +68,17 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());
@@ -108,7 +108,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(null);
+        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < RANGE; i++) {
             ldr.addData(i, 0);
@@ -154,7 +154,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 IgniteKernal grid = (IgniteKernal)grid(idx);
 
-                IgniteCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -192,9 +192,9 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
 
-                IgniteCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
-                if (grid.affinity(null).isPrimaryOrBackup(grid.localNode(), k)) {
+                if (grid.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {
                         val = cache.localPeek(k, CachePeekMode.ONHEAP);
 
@@ -202,7 +202,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                     }
                     else
                         assertEquals("Failed to find value in cache [primary=" +
-                            grid.affinity(null).isPrimary(grid.localNode(), k) + ']',
+                            grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), k) + ']',
                             val, cache.localPeek(k, CachePeekMode.ONHEAP));
                 }
             }

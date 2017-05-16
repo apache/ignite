@@ -85,11 +85,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Initializes a new instance of the <see cref="ComputeFuncWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeFuncWrapper(IBinaryReader reader)
+        public ComputeFuncWrapper(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _func = reader0.ReadObject<object>();
+            _func = reader.ReadObject<object>();
 
             _invoker = DelegateTypeDescriptor.GetComputeFunc(_func.GetType());
         }
@@ -98,10 +96,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Injects the Ignite instance.
         /// </summary>
         [InstanceResource]
+        // ReSharper disable once UnusedMember.Global (used by injector)
         public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(_func, (IgniteProxy) ignite);
+            ResourceProcessor.Inject(_func, (Ignite) ignite);
         }
     }    
     

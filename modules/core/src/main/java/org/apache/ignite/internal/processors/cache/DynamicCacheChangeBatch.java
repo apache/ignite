@@ -47,6 +47,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** */
     private boolean clientReconnect;
 
+    /** */
+    private boolean startCaches;
+
     /**
      * @param reqs Requests.
      */
@@ -111,6 +114,34 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      */
     public boolean clientReconnect() {
         return clientReconnect;
+    }
+
+    /**
+     * @return {@code True} if required to start all caches on client node.
+     */
+    public boolean startCaches() {
+        return startCaches;
+    }
+
+    /**
+     * @param startCaches {@code True} if required to start all caches on client node.
+     */
+    public void startCaches(boolean startCaches) {
+        this.startCaches = startCaches;
+    }
+
+    /**
+     * @return {@code True} if request should trigger partition exchange.
+     */
+    public boolean exchangeNeeded() {
+        if (reqs != null) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.exchangeNeeded())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */

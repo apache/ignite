@@ -43,7 +43,7 @@ import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.node._
 import org.apache.ignite.internal.visor.util.VisorEventMapper
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -152,16 +152,16 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[Event] = null
+    private var nodeLeftLsnr: IgnitePredicate[Event] = _
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[Event] = null
+    private var nodeJoinLsnr: IgnitePredicate[Event] = _
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[Event] = null
+    private var nodeSegLsnr: IgnitePredicate[Event] = _
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgnitionListener = null
+    private var nodeStopLsnr: IgnitionListener = _
 
     /** */
     @volatile private var isCon: Boolean = false
@@ -209,13 +209,13 @@ object visor extends VisorTag {
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
     /** Log file. */
-    private var logFile: File = null
+    private var logFile: File = _
 
     /** Log timer. */
-    private var logTimer: Timer = null
+    private var logTimer: Timer = _
 
     /** Topology log timer. */
-    private var topTimer: Timer = null
+    private var topTimer: Timer = _
 
     /** Log started flag. */
     @volatile private var logStarted = false
@@ -224,15 +224,15 @@ object visor extends VisorTag {
     @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor()
 
     /** Configuration file path, if any. */
-    @volatile var cfgPath: String = null
+    @volatile var cfgPath: String = _
 
     /** */
-    @volatile var ignite: IgniteEx = null
+    @volatile var ignite: IgniteEx = _
 
     /** */
     @volatile var prevIgnite: Option[IgniteEx] = None
 
-    private var reader: ConsoleReader = null
+    private var reader: ConsoleReader = _
 
     var batchMode: Boolean = false
 
@@ -272,7 +272,8 @@ object visor extends VisorTag {
     def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
         val grp = node match {
             case Some(n) => ignite.cluster.forNode(n)
-            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask],
+                new VisorCacheNodesTaskArg(cacheName)))
         }
 
         if (grp.nodes().isEmpty)
@@ -330,43 +331,6 @@ object visor extends VisorTag {
     )
 
     addHelp(
-        name = "mclear",
-        shortInfo = "Clears Visor console memory variables.",
-        spec = Seq(
-            "mclear",
-            "mclear <name>|-ev|-al|-ca|-no|-tn|-ex"
-        ),
-        args = Seq(
-            "<name>" -> Seq(
-                "Variable name to clear.",
-                "Note that name doesn't include '@' symbol used to reference variable."
-            ),
-            "-ev" ->
-                "Clears all 'event' variables.",
-            "-al" ->
-                "Clears all 'alert' variables.",
-            "-ca" ->
-                "Clears all 'cache' variables.",
-            "-no" ->
-                "Clears all 'node' variables.",
-            "-tn" ->
-                "Clears all 'task name' variables.",
-            "-ex" ->
-                "Clears all 'task execution' variables."
-        ),
-        examples = Seq(
-            "mclear" ->
-                "Clears all Visor console variables.",
-            "mclear -ca" ->
-                "Clears all Visor console cache variables.",
-            "mclear n2" ->
-                "Clears 'n2' Visor console variable."
-        ),
-        emptyArgs = mclear,
-        withArgs = mclear
-    )
-
-    addHelp(
         name = "mget",
         shortInfo = "Gets Visor console memory variable.",
         longInfo = Seq(
@@ -385,6 +349,23 @@ object visor extends VisorTag {
         ),
         emptyArgs = mget,
         withArgs = mget
+    )
+
+    addHelp(
+        name = "mcompact",
+        shortInfo = "Fills gap in Visor console memory variables.",
+        longInfo = Seq(
+            "Finds and fills gap in Visor console memory variables."
+        ),
+        spec = Seq(
+            "mcompact"
+        ),
+        examples = Seq(
+            "mcompact" ->
+                "Fills gap in Visor console memory variables."
+        ),
+        emptyArgs = mcompact,
+        withArgs = _ => wrongArgs("mcompact")
     )
 
     addHelp(
@@ -616,6 +597,28 @@ object visor extends VisorTag {
     }
 
     /**
+      * ==Command==
+      * Fills gap in Visor console memory variables.
+      *
+      * ==Examples==
+      * <ex>mcompact</ex>
+      * Fills gap in Visor console memory variables.
+      */
+    def mcompact() {
+        val namespaces = Array("a", "c", "e", "n", "s", "t")
+        
+        for (namespace <- namespaces) {
+            val vars = mem.filter { case (k, _) => k.matches(s"$namespace\\d+") }
+
+            if (vars.nonEmpty) {
+                clearNamespace(namespace)
+                
+                vars.toSeq.sortBy(_._1).foreach { case (_, v) => setVar(v, namespace) }
+            }
+        }
+    }
+
+    /**
      * Clears given Visor console variable or the whole namespace.
      *
      * @param arg Variable host or namespace mnemonic.
@@ -643,15 +646,8 @@ object visor extends VisorTag {
         assert(namespace != null)
 
         mem.keySet.foreach(k => {
-            if (k.startsWith(namespace))
-                try {
-                    k.substring(1).toInt
-
-                    mem.remove(k)
-                }
-                catch {
-                    case ignored: Throwable => // No-op.
-                }
+            if (k.matches(s"$namespace\\d+"))
+                mem.remove(k)
         })
     }
 
@@ -1339,7 +1335,7 @@ object visor extends VisorTag {
         val t = VisorTextTable()
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
-        t += ("Grid name",
+        t += ("Ignite instance name",
             if (ignite == null)
                 NA
             else {
@@ -1500,20 +1496,20 @@ object visor extends VisorTag {
     /**
      * Connects Visor console to configuration with path.
      *
-     * @param gridName Name of grid instance.
+     * @param igniteInstanceName Name of Ignite instance.
      * @param cfgPath Configuration path.
      */
-    def open(gridName: String, cfgPath: String) {
+    def open(igniteInstanceName: String, cfgPath: String) {
         this.cfgPath = cfgPath
 
         ignite =
             try
-                Ignition.ignite(gridName).asInstanceOf[IgniteEx]
+                Ignition.ignite(igniteInstanceName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteException("Named grid unavailable: " + gridName)
+                    throw new IgniteException("Named Ignite instance unavailable: " + igniteInstanceName)
             }
 
         assert(cfgPath != null)
@@ -1677,13 +1673,37 @@ object visor extends VisorTag {
             val n = ignite.cluster.node(id)
 
             val id8 = nid8(id)
-            val v = mfindHead(id8)
+            var v = mfindHead(id8)
+
+            if(v.isEmpty){
+               v = assignNodeValue(n)
+            }
 
             id8 +
-                (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
+                (if (v.isDefined) "(@" + v.get._1 + ")" else "" )+
                 ", " +
                 (if (n == null) NA else sortAddresses(n.addresses).headOption.getOrElse(NA))
         }
+    }
+
+    def assignNodeValue(node: ClusterNode): Option[(String, String)] = {
+        assert(node != null)
+
+        val id8 = nid8(node.id())
+
+        setVarIfAbsent(id8, "n")
+
+        val alias = if (U.sameMacs(ignite.localNode(), node)) "nl" else "nr"
+
+        if (mgetOpt(alias).isEmpty)
+            msetOpt(alias, nid8(node.id()))
+
+        val ip = sortAddresses(node.addresses).headOption
+
+        if (ip.isDefined)
+            setVarIfAbsent(ip.get, "h")
+
+        mfindHead(id8)
     }
 
     /**
@@ -1813,7 +1833,7 @@ object visor extends VisorTag {
     @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
         executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
-            null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
+            new VisorCacheConfigurationCollectorTaskArg(null.asInstanceOf[JavaCollection[IgniteUuid]])).values()
 
     /**
      * Asks user to select a node from the list.
@@ -2435,15 +2455,15 @@ object visor extends VisorTag {
                             try {
                                 out = new FileWriter(logFile, true)
 
-                                evts.toList.sortBy(_.timestamp).foreach(e => {
+                                evts.toList.sortBy(_.getTimestamp).foreach(e => {
                                     logImpl(
                                         out,
-                                        formatDateTime(e.timestamp),
-                                        nodeId8Addr(e.nid()),
-                                        U.compact(e.shortDisplay())
+                                        formatDateTime(e.getTimestamp),
+                                        nodeId8Addr(e.getNid),
+                                        U.compact(e.getShortDisplay)
                                     )
 
-                                    if (EVTS_DISCOVERY.contains(e.typeId()))
+                                    if (EVTS_DISCOVERY.contains(e.getTypeId))
                                         snapshot()
                                 })
                             }

@@ -52,8 +52,8 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
     private static final int CACHES = 10;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setNetworkTimeout(30_000);
@@ -67,14 +67,14 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(200);
 
-        cfg.setClientMode(!gridName.equals(getTestGridName(0)));
+        cfg.setClientFailureDetectionTimeout(200000);
+        cfg.setClientMode(!igniteInstanceName.equals(getTestIgniteInstanceName(0)));
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
         for (int i = 0 ; i < ccfgs.length; i++) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setAtomicityMode(i % 2 == 0 ? ATOMIC : TRANSACTIONAL);

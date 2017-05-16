@@ -36,7 +36,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             GetMeta = 1,
             GetAllMeta = 2,
             PutMeta = 3,
-            GetSchema = 4
+            GetSchema = 4,
+            RegisterType = 5,
+            GetType = 6
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Put binary types to Grid.
         /// </summary>
         /// <param name="types">Binary types.</param>
-        internal void PutBinaryTypes(ICollection<BinaryType> types)
+        public void PutBinaryTypes(ICollection<BinaryType> types)
         {
             DoOutOp((int) Op.PutMeta, w =>
             {
@@ -120,7 +122,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     foreach (var field in fields)
                     {
                         w.WriteString(field.Key);
-                        w.WriteInt(field.Value);
+                        w.WriteInt(field.Value.TypeId);
+                        w.WriteInt(field.Value.FieldId);
                     }
 
                     w.WriteBoolean(meta.IsEnum);
@@ -151,6 +154,34 @@ namespace Apache.Ignite.Core.Impl.Binary
             });
 
             Marshaller.OnBinaryTypesSent(types);
+        }
+
+        /// <summary>
+        /// Registers the type.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="typeName">The type name.</param>
+        /// <returns>True if registration succeeded; otherwise, false.</returns>
+        public bool RegisterType(int id, string typeName)
+        {
+            Debug.Assert(typeName != null);
+            Debug.Assert(id != BinaryUtils.TypeUnregistered);
+
+            return DoOutOp((int) Op.RegisterType, w =>
+            {
+                w.WriteInt(id);
+                w.WriteString(typeName);
+            }) == True;
+        }
+
+        /// <summary>
+        /// Gets the type by id.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns>Type or null.</returns>
+        public string GetTypeName(int id)
+        {
+            return DoOutInOp((int) Op.GetType, w => w.WriteInt(id), r => Marshaller.StartUnmarshal(r).ReadString());
         }
     }
 }

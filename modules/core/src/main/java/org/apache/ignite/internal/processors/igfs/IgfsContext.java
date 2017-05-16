@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -169,7 +170,10 @@ public class IgfsContext {
         if (!kernalContext().localNodeId().equals(nodeId))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
 
-        kernalContext().io().send(nodeId, topic, msg, plc);
+        if (topic instanceof GridTopic)
+            kernalContext().io().sendToGridTopic(nodeId, (GridTopic)topic, msg, plc);
+        else
+            kernalContext().io().sendToCustomTopic(nodeId, topic, msg, plc);
     }
 
     /**
@@ -184,7 +188,7 @@ public class IgfsContext {
         if (!kernalContext().localNodeId().equals(node.id()))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
 
-        kernalContext().io().send(node, topic, msg, plc);
+        kernalContext().io().sendToCustomTopic(node, topic, msg, plc);
     }
 
     /**
@@ -226,7 +230,7 @@ public class IgfsContext {
      */
     public void runInIgfsThreadPool(Runnable r) {
         try {
-            igfsSvc.submit(r);
+            igfsSvc.execute(r);
         }
         catch (RejectedExecutionException ignored) {
             // This exception will happen if network speed is too low and data comes faster

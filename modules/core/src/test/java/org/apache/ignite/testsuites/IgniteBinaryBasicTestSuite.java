@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNe
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
 import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
@@ -37,13 +39,13 @@ import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerTest;
-import org.apache.ignite.marshaller.optimized.OptimizedObjectStreamSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -93,6 +95,9 @@ public class IgniteBinaryBasicTestSuite extends TestSuite {
         ignoredTests.add(IgniteDaemonNodeMarshallerCacheTest.class);
 
         suite.addTest(IgniteBasicTestSuite.suite(ignoredTests));
+
+        suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
+        suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
 
         return suite;
     }

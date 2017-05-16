@@ -107,7 +107,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool forceStar)
+        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
         {
             _aliases.Push();
 
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Linq.Impl
             _builder.Append("select ");
 
             // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, forceStar);
+            VisitSelectors(queryModel, includeAllFields);
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
@@ -129,14 +129,14 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the selectors.
         /// </summary>
-        public void VisitSelectors(QueryModel queryModel, bool forceStar)
+        public void VisitSelectors(QueryModel queryModel, bool includeAllFields)
         {
             var parenCount = ProcessResultOperatorsBegin(queryModel);
 
             if (parenCount >= 0)
             {
                 // FIELD1, FIELD2
-                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
+                BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0, includeAllFields);
                 _builder.Append(')', parenCount).Append(" ");
             }
         }
@@ -183,6 +183,9 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator
                          || op is DefaultIfEmptyResultOperator || op is SkipResultOperator || op is TakeResultOperator)
                     // Will be processed later
+                    break;
+                else if (op is ContainsResultOperator)
+                    // Should be processed already
                     break;
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
@@ -345,12 +348,27 @@ namespace Apache.Ignite.Linq.Impl
             base.VisitMainFromClause(fromClause, queryModel);
 
             _builder.AppendFormat("from ");
+            ValidateFromClause(fromClause);
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
             {
                 _builder.AppendFormat(", ");
+                ValidateFromClause(additionalFrom);
                 _aliases.AppendAsClause(_builder, additionalFrom).Append(" ");
+            }
+        }
+
+        /// <summary>
+        /// Validates from clause.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateFromClause(IFromClause clause)
+        {
+            // Only IQueryable can be used in FROM clause. IEnumerable is not supported.
+            if (!typeof(IQueryable).IsAssignableFrom(clause.FromExpression.Type))
+            {
+                throw new NotSupportedException("FROM clause must be IQueryable: " + clause);
             }
         }
 
@@ -494,9 +512,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
         }
     }
 }

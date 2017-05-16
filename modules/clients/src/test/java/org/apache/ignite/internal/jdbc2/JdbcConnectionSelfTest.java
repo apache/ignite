@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -44,9 +45,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
-    /** Ignite configuration URL. */
-    private static final String CFG_URL = "modules/clients/src/test/config/jdbc-config.xml";
-
     /** Grid count. */
     private static final int GRID_CNT = 2;
 
@@ -56,11 +54,18 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** Client node flag. */
     private boolean client;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    /**
+     * @return Config URL to use in test.
+     */
+    protected String configURL() {
+        return "modules/clients/src/test/config/jdbc-config.xml";
+    }
 
-        cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(CUSTOM_CACHE_NAME));
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -80,7 +85,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String name) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
@@ -104,7 +109,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaults() throws Exception {
-        String url = CFG_URL_PREFIX + CFG_URL;
+        String url = CFG_URL_PREFIX + configURL();
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
@@ -121,13 +126,13 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNodeId() throws Exception {
-        String url = CFG_URL_PREFIX + "nodeId=" + grid(0).localNode().id() + '@' + CFG_URL;
+        String url = CFG_URL_PREFIX + "nodeId=" + grid(0).localNode().id() + '@' + configURL();
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
         }
 
-        url = CFG_URL_PREFIX + "cache=" + CUSTOM_CACHE_NAME + ":nodeId=" + grid(0).localNode().id() + '@' + CFG_URL;
+        url = CFG_URL_PREFIX + "cache=" + CUSTOM_CACHE_NAME + ":nodeId=" + grid(0).localNode().id() + '@' + configURL();
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
@@ -140,7 +145,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     public void testWrongNodeId() throws Exception {
         UUID wrongId = UUID.randomUUID();
 
-        final String url = CFG_URL_PREFIX + "nodeId=" + wrongId + '@' + CFG_URL;
+        final String url = CFG_URL_PREFIX + "nodeId=" + wrongId + '@' + configURL();
 
         GridTestUtils.assertThrows(
                 log,
@@ -166,7 +171,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         UUID clientId = client.localNode().id();
 
-        final String url = CFG_URL_PREFIX + "nodeId=" + clientId + '@' + CFG_URL;
+        final String url = CFG_URL_PREFIX + "nodeId=" + clientId + '@' + configURL();
 
         GridTestUtils.assertThrows(
                 log,
@@ -192,7 +197,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         UUID daemonId = daemon.localNode().id();
 
-        final String url = CFG_URL_PREFIX + "nodeId=" + daemonId + '@' + CFG_URL;
+        final String url = CFG_URL_PREFIX + "nodeId=" + daemonId + '@' + configURL();
 
         GridTestUtils.assertThrows(
             log,
@@ -212,7 +217,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomCache() throws Exception {
-        String url = CFG_URL_PREFIX + "cache=" + CUSTOM_CACHE_NAME + '@' + CFG_URL;
+        String url = CFG_URL_PREFIX + "cache=" + CUSTOM_CACHE_NAME + '@' + configURL();
 
         try (Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
@@ -223,7 +228,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWrongCache() throws Exception {
-        final String url = CFG_URL_PREFIX + "cache=wrongCacheName@" + CFG_URL;
+        final String url = CFG_URL_PREFIX + "cache=wrongCacheName@" + configURL();
 
         GridTestUtils.assertThrows(
             log,
@@ -243,7 +248,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClose() throws Exception {
-        String url = CFG_URL_PREFIX + CFG_URL;
+        String url = CFG_URL_PREFIX + configURL();
 
         try(final Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
@@ -265,6 +270,40 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
                 SQLException.class,
                 "Connection is closed."
             );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxAllowedCommit() throws Exception {
+        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
+
+        try (final Connection conn = DriverManager.getConnection(url)) {
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+            assertEquals(Connection.TRANSACTION_SERIALIZABLE, conn.getTransactionIsolation());
+
+            conn.setAutoCommit(false);
+
+            conn.commit();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxAllowedRollback() throws Exception {
+        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
+
+        try (final Connection conn = DriverManager.getConnection(url)) {
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+            assertEquals(Connection.TRANSACTION_SERIALIZABLE, conn.getTransactionIsolation());
+
+            conn.setAutoCommit(false);
+
+            conn.rollback();
         }
     }
 }

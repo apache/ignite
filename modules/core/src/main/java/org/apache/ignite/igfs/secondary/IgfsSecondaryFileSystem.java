@@ -21,8 +21,10 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -192,4 +194,30 @@ public interface IgfsSecondaryFileSystem {
      * @throws IgniteException In case of error.
      */
     public long usedSpaceSize() throws IgniteException;
+
+    /**
+     * Set times for the given path.
+     *
+     * @param path Path.
+     * @param modificationTime Modification time.
+     * @param accessTime Access time.
+     * @throws IgniteException If failed.
+     */
+    public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException;
+
+     /**
+     * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
+     * particular block location length is greater than this value, block locations will be split into smaller
+     * chunks.
+     *
+     * @param path File path to get affinity for.
+     * @param start Position in the file to start affinity resolution from.
+     * @param len Size of data in the file to resolve affinity for.
+     * @param maxLen Maximum length of a single returned block location length.
+     * @return Affinity block locations.
+     * @throws IgniteException In case of error.
+     * @throws IgfsPathNotFoundException If path doesn't exist.
+     */
+    public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len, long maxLen)
+        throws IgniteException;
 }

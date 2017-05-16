@@ -17,6 +17,8 @@
 
 #include "ignite/odbc.h"
 
+#include "ignite/odbc/log.h"
+
 #include "ignite/odbc/utility.h"
 
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC        conn,
@@ -394,13 +396,11 @@ SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
                                     SQLUSMALLINT scope,
                                     SQLUSMALLINT nullable)
 {
-    return ignite::SQLSpecialColumns(stmt, idType, catalogName,
-        catalogNameLen, schemaName, schemaNameLen, tableName,
-        tableNameLen, scope, nullable);
+    return ignite::SQLSpecialColumns(stmt, idType, catalogName, catalogNameLen, schemaName,
+        schemaNameLen, tableName, tableNameLen, scope, nullable);
 }
 
-SQLRETURN SQL_API SQLParamData(SQLHSTMT    stmt,
-                               SQLPOINTER* value)
+SQLRETURN SQL_API SQLParamData(SQLHSTMT stmt, SQLPOINTER* value)
 {
     return ignite::SQLParamData(stmt, value);
 }
@@ -410,6 +410,17 @@ SQLRETURN SQL_API SQLPutData(SQLHSTMT     stmt,
                              SQLLEN       strLengthOrIndicator)
 {
     return ignite::SQLPutData(stmt, data, strLengthOrIndicator);
+}
+
+SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
+                                   SQLUSMALLINT paramNum,
+                                   SQLSMALLINT* dataType,
+                                   SQLULEN*     paramSize,
+                                   SQLSMALLINT* decimalDigits,
+                                   SQLSMALLINT* nullable)
+{
+    return ignite::SQLDescribeParam(stmt, paramNum, dataType,
+     paramSize, decimalDigits, nullable);
 }
 
 SQLRETURN SQL_API SQLError(SQLHENV      env,
@@ -431,7 +442,7 @@ SQLRETURN SQL_API SQLError(SQLHENV      env,
 
 SQLRETURN SQL_API SQLCancel(SQLHSTMT stmt)
 {
-    LOG_MSG("SQLCancel called\n");
+    LOG_MSG("SQLCancel called");
     return SQL_SUCCESS;
 }
 
@@ -443,7 +454,7 @@ SQLRETURN SQL_API SQLColAttributes(SQLHSTMT     stmt,
                                    SQLSMALLINT* strAttrResLen,
                                    SQLLEN*      numAttrBuf)
 {
-    LOG_MSG("SQLColAttributes called\n");
+    LOG_MSG("SQLColAttributes called");
     return SQL_SUCCESS;
 }
 
@@ -452,7 +463,7 @@ SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT     stmt,
                                    SQLSMALLINT  nameBufLen,
                                    SQLSMALLINT* nameResLen)
 {
-    LOG_MSG("SQLGetCursorName called\n");
+    LOG_MSG("SQLGetCursorName called");
     return SQL_SUCCESS;
 }
 
@@ -460,7 +471,7 @@ SQLRETURN SQL_API SQLSetCursorName(SQLHSTMT     stmt,
                                    SQLCHAR*     name,
                                    SQLSMALLINT  nameLen)
 {
-    LOG_MSG("SQLSetCursorName called\n");
+    LOG_MSG("SQLSetCursorName called");
     return SQL_SUCCESS;
 }
 
@@ -468,7 +479,7 @@ SQLRETURN SQL_API SQLGetConnectOption(SQLHDBC       conn,
                                       SQLUSMALLINT  option,
                                       SQLPOINTER    value)
 {
-    LOG_MSG("SQLGetConnectOption called\n");
+    LOG_MSG("SQLGetConnectOption called");
     return SQL_SUCCESS;
 }
 
@@ -476,7 +487,7 @@ SQLRETURN SQL_API SQLGetStmtOption(SQLHSTMT     stmt,
                                    SQLUSMALLINT option,
                                    SQLPOINTER   value)
 {
-    LOG_MSG("SQLGetStmtOption called\n");
+    LOG_MSG("SQLGetStmtOption called");
     return SQL_SUCCESS;
 }
 
@@ -484,7 +495,7 @@ SQLRETURN SQL_API SQLSetConnectOption(SQLHDBC       conn,
                                       SQLUSMALLINT  option,
                                       SQLULEN       value)
 {
-    LOG_MSG("SQLSetConnectOption called\n");
+    LOG_MSG("SQLSetConnectOption called");
     return SQL_SUCCESS;
 }
 
@@ -492,7 +503,7 @@ SQLRETURN SQL_API SQLSetStmtOption(SQLHSTMT     stmt,
                                    SQLUSMALLINT option,
                                    SQLULEN      value)
 {
-    LOG_MSG("SQLSetStmtOption called\n");
+    LOG_MSG("SQLSetStmtOption called");
     return SQL_SUCCESS;
 }
 
@@ -506,7 +517,7 @@ SQLRETURN SQL_API SQLStatistics(SQLHSTMT        stmt,
                                 SQLUSMALLINT    unique,
                                 SQLUSMALLINT    reserved)
 {
-    LOG_MSG("SQLStatistics called\n");
+    LOG_MSG("SQLStatistics called");
     return SQL_SUCCESS;
 }
 
@@ -517,7 +528,7 @@ SQLRETURN SQL_API SQLBrowseConnect(SQLHDBC      conn,
                                    SQLSMALLINT  outConnectionStrBufLen,
                                    SQLSMALLINT* outConnectionStrResLen)
 {
-    LOG_MSG("SQLBrowseConnect called\n");
+    LOG_MSG("SQLBrowseConnect called");
     return SQL_SUCCESS;
 }
 
@@ -531,7 +542,7 @@ SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT      stmt,
                                       SQLCHAR *     columnName,
                                       SQLSMALLINT   columnNameLen)
 {
-    LOG_MSG("SQLProcedureColumns called\n");
+    LOG_MSG("SQLProcedureColumns called");
     return SQL_SUCCESS;
 }
 
@@ -540,7 +551,7 @@ SQLRETURN SQL_API SQLSetPos(SQLHSTMT        stmt,
                             SQLUSMALLINT    operation,
                             SQLUSMALLINT    lockType)
 {
-    LOG_MSG("SQLSetPos called\n");
+    LOG_MSG("SQLSetPos called");
     return SQL_SUCCESS;
 }
 
@@ -549,7 +560,7 @@ SQLRETURN SQL_API SQLSetScrollOptions(SQLHSTMT      stmt,
                                       SQLLEN        crowKeyset,
                                       SQLUSMALLINT  crowRowset)
 {
-    LOG_MSG("SQLSetScrollOptions called\n");
+    LOG_MSG("SQLSetScrollOptions called");
     return SQL_SUCCESS;
 }
 
@@ -559,7 +570,7 @@ SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC     conn,
                                     SQLINTEGER  valueBufLen,
                                     SQLINTEGER* valueResLen)
 {
-    LOG_MSG("SQLGetConnectAttr called\n");
+    LOG_MSG("SQLGetConnectAttr called");
     return SQL_SUCCESS;
 }
 
@@ -568,14 +579,14 @@ SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
                                     SQLPOINTER  value,
                                     SQLINTEGER  valueLen)
 {
-    LOG_MSG("SQLSetConnectAttr called\n");
+    LOG_MSG("SQLSetConnectAttr called");
     return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLBulkOperations(SQLHSTMT       stmt,
                                     SQLUSMALLINT   operation)
 {
-    LOG_MSG("SQLBulkOperations called\n");
+    LOG_MSG("SQLBulkOperations called");
     return SQL_SUCCESS;
 }
 
@@ -587,13 +598,13 @@ SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT      stmt,
                                      SQLCHAR*      tableName,
                                      SQLSMALLINT   tableNameLen)
 {
-    LOG_MSG("SQLTablePrivileges called\n");
+    LOG_MSG("SQLTablePrivileges called");
     return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLCopyDesc(SQLHDESC src, SQLHDESC dst)
 {
-    LOG_MSG("SQLCopyDesc called\n");
+    LOG_MSG("SQLCopyDesc called");
     return SQL_SUCCESS;
 }
 
@@ -604,7 +615,7 @@ SQLRETURN SQL_API SQLGetDescField(SQLHDESC      descr,
                                   SQLINTEGER    bufferLen,
                                   SQLINTEGER*   resLen)
 {
-    LOG_MSG("SQLGetDescField called\n");
+    LOG_MSG("SQLGetDescField called");
     return SQL_SUCCESS;
 }
 
@@ -620,7 +631,7 @@ SQLRETURN SQL_API SQLGetDescRec(SQLHDESC        DescriptorHandle,
                                 SQLSMALLINT*    scale,
                                 SQLSMALLINT*    nullable)
 {
-    LOG_MSG("SQLGetDescRec called\n");
+    LOG_MSG("SQLGetDescRec called");
     return SQL_SUCCESS;
 }
 
@@ -630,7 +641,7 @@ SQLRETURN SQL_API SQLSetDescField(SQLHDESC      descr,
                                   SQLPOINTER    buffer,
                                   SQLINTEGER    bufferLen)
 {
-    LOG_MSG("SQLSetDescField called\n");
+    LOG_MSG("SQLSetDescField called");
     return SQL_SUCCESS;
 }
 
@@ -645,7 +656,7 @@ SQLRETURN SQL_API SQLSetDescRec(SQLHDESC      descr,
                                 SQLLEN*       resLen,
                                 SQLLEN*       id)
 {
-    LOG_MSG("SQLSetDescRec called\n");
+    LOG_MSG("SQLSetDescRec called");
     return SQL_SUCCESS;
 }
 
@@ -659,28 +670,15 @@ SQLRETURN SQL_API SQLColumnPrivileges(SQLHSTMT      stmt,
                                       SQLCHAR*      columnName,
                                       SQLSMALLINT   columnNameLen)
 {
-    LOG_MSG("SQLColumnPrivileges called\n");
+    LOG_MSG("SQLColumnPrivileges called");
     return SQL_SUCCESS;
 }
-
-/*
-SQLRETURN SQL_API SQLDescribeParam(SQLHSTMT     stmt,
-                                   SQLUSMALLINT paramNum,
-                                   SQLSMALLINT* dataType,
-                                   SQLULEN*     paramSize,
-                                   SQLSMALLINT* decimalDigits,
-                                   SQLSMALLINT* nullable)
-{
-    LOG_MSG("SQLDescribeParam called\n");
-    return SQL_SUCCESS;
-}
-*/
 
 SQLRETURN SQL_API SQLParamOptions(SQLHSTMT  stmt,
                                   SQLULEN   paramSetSize,
                                   SQLULEN*  paramsProcessed)
 {
-    LOG_MSG("SQLParamOptions called\n");
+    LOG_MSG("SQLParamOptions called");
     return SQL_SUCCESS;
 }
 
@@ -692,6 +690,6 @@ SQLRETURN SQL_API SQLProcedures(SQLHSTMT        stmt,
                                 SQLCHAR*        tableName,
                                 SQLSMALLINT     tableNameLen)
 {
-    LOG_MSG("SQLProcedures called\n");
+    LOG_MSG("SQLProcedures called");
     return SQL_SUCCESS;
 }

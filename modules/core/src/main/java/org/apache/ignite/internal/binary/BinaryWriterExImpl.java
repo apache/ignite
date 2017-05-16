@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -139,7 +140,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
-        String newName = ctx.configuration().getGridName();
+        String newName = ctx.configuration().getIgniteInstanceName();
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
@@ -245,10 +246,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      *
      * @param userType User type flag.
      * @param registered Whether type is registered.
-     * @param hashCode Hash code.
-     * @param isHashCodeSet Hash code presence flag.
      */
-    public void postWrite(boolean userType, boolean registered, int hashCode, boolean isHashCodeSet) {
+    public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
@@ -305,9 +304,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             }
         }
 
-        if (!isHashCodeSet)
-            flags |= BinaryUtils.FLAG_EMPTY_HASH_CODE;
-
         // Actual write.
         int retPos = out.position();
 
@@ -317,12 +313,42 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.unsafeWriteByte(GridBinaryMarshaller.PROTO_VER);
         out.unsafeWriteShort(flags);
         out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-        out.unsafeWriteInt(hashCode);
+        out.unsafePosition(start + GridBinaryMarshaller.TOTAL_LEN_POS);
         out.unsafeWriteInt(retPos - start);
         out.unsafeWriteInt(finalSchemaId);
         out.unsafeWriteInt(offset);
 
         out.unsafePosition(retPos);
+    }
+
+    /**
+     * Perform post-write hash code update if necessary.
+     *
+     * @param clsName Class name. Always null if class is registered.
+     */
+    public void postWriteHashCode(@Nullable String clsName) {
+        int typeId = clsName == null ? this.typeId : ctx.typeId(clsName);
+
+        BinaryIdentityResolver identity = ctx.identity(typeId);
+
+        if (out.hasArray()) {
+            // Heap.
+            byte[] data = out.array();
+
+            BinaryObjectImpl obj = new BinaryObjectImpl(ctx, data, start);
+
+            BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
+        }
+        else {
+            // Offheap.
+            long ptr = out.rawOffheapPointer();
+
+            assert ptr != 0;
+
+            BinaryObjectOffheapImpl obj = new BinaryObjectOffheapImpl(ctx, ptr, start, out.capacity());
+
+            BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
+        }
     }
 
     /**
@@ -337,8 +363,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Byte array.
      */
     public void write(byte[] val) {
-        assert val != null;
-
         out.writeByteArray(val);
     }
 
@@ -348,8 +372,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param len Length.
      */
     public void write(byte[] val, int off, int len) {
-        assert val != null;
-
         out.write(val, off, len);
     }
 
@@ -364,17 +386,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
+            out.unsafeWriteInt(val.scale());
+
             BigInteger intVal = val.unscaledValue();
 
-            if (intVal.signum() == -1) {
+            boolean negative = intVal.signum() == -1;
+
+            if (negative)
                 intVal = intVal.negate();
 
-                out.unsafeWriteInt(val.scale() | 0x80000000);
-            }
-            else
-                out.unsafeWriteInt(val.scale());
-
             byte[] vals = intVal.toByteArray();
+
+            if (negative)
+                vals[0] |= -0x80;
 
             out.unsafeWriteInt(vals.length);
             out.writeByteArray(vals);
@@ -441,6 +465,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP);
             out.unsafeWriteLong(ts.getTime());
             out.unsafeWriteInt(ts.getNanos() % 1000000);
+        }
+    }
+
+    /**
+     * @param time Time.
+     */
+    public void doWriteTime(@Nullable Time time) {
+        if (time== null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 8);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIME);
+            out.unsafeWriteLong(time.getTime());
         }
     }
 
@@ -659,6 +696,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                  doWriteTimestamp(ts);
          }
      }
+
+    /**
+     * @param val Array of time.
+     */
+    void doWriteTimeArray(@Nullable Time[] val) {
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIME_ARR);
+            out.unsafeWriteInt(val.length);
+
+            for (Time time : val)
+                doWriteTime(time);
+        }
+    }
 
     /**
      * @param val Array of objects.
@@ -1085,6 +1138,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @param val Value.
+     */
+    void writeTimeField(@Nullable Time val) {
+        doWriteTime(val);
+    }
+
+    /**
      * @param obj Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
@@ -1181,6 +1241,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeTimestampArrayField(@Nullable Timestamp[] val) {
         doWriteTimestampArray(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeTimeArrayField(@Nullable Time[] val) {
+        doWriteTimeArray(val);
     }
 
     /**
@@ -1373,6 +1440,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
+    @Override public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException {
+        writeFieldId(fieldName);
+        writeTimeField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTime(@Nullable Time val) throws BinaryObjectException {
+        doWriteTime(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
         writeFieldId(fieldName);
         writeObjectField(obj);
@@ -1539,6 +1617,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(@Nullable Timestamp[] val) throws BinaryObjectException {
         doWriteTimestampArray(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
+        writeFieldId(fieldName);
+        writeTimeArrayField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTimeArray(@Nullable Time[] val) throws BinaryObjectException {
+        doWriteTimeArray(val);
     }
 
      /** {@inheritDoc} */

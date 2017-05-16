@@ -26,6 +26,12 @@ import org.h2.util.StatementBuilder;
  */
 public class GridSqlUnion extends GridSqlQuery {
     /** */
+    public static final int LEFT_CHILD = 2;
+
+    /** */
+    public static final int RIGHT_CHILD = 3;
+
+    /** */
     private int unionType;
 
     /** */
@@ -33,6 +39,57 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** */
     private GridSqlQuery left;
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <E extends GridSqlAst> E child(int childIdx) {
+        if (childIdx < LEFT_CHILD)
+            return super.child(childIdx);
+
+        switch (childIdx) {
+            case LEFT_CHILD:
+                assert left != null;
+
+                return (E)left;
+
+            case RIGHT_CHILD:
+                assert right != null;
+
+                return (E)right;
+
+            default:
+                throw new IllegalStateException("Child index: " + childIdx);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <E extends GridSqlAst> void child(int childIdx, E child) {
+        if (childIdx < LEFT_CHILD) {
+            super.child(childIdx, child);
+
+            return;
+        }
+
+        switch (childIdx) {
+            case LEFT_CHILD:
+                left = (GridSqlQuery)child;
+
+                break;
+
+            case RIGHT_CHILD:
+                right = (GridSqlQuery)child;
+
+                break;
+
+            default:
+                throw new IllegalStateException("Child index: " + childIdx);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return 4; // OFFSET + LIMIT + LEFT + RIGHT
+    }
 
     /** {@inheritDoc} */
     @Override protected int visibleColumns() {
@@ -50,7 +107,7 @@ public class GridSqlUnion extends GridSqlQuery {
 
         buff.append('(').append(left.getSQL()).append(')');
 
-        switch (unionType) {
+        switch (unionType()) {
             case SelectUnion.UNION_ALL:
                 buff.append("\nUNION ALL\n");
                 break;
@@ -76,6 +133,13 @@ public class GridSqlUnion extends GridSqlQuery {
         getSortLimitSQL(buff);
 
         return buff.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean simpleQuery() {
+        return unionType() == SelectUnion.UNION_ALL && sort().isEmpty() &&
+            offset() == null && limit() == null &&
+            left().simpleQuery() && right().simpleQuery();
     }
 
     /**

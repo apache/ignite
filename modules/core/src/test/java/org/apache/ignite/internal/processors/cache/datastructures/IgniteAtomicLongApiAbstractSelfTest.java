@@ -44,10 +44,10 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -264,5 +264,32 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
             assert curAtomicVal == atomic.getAndSet(newVal);
             assert newVal == atomic.get();
         }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure that
+     * transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        IgniteCache<Object, Object> cache = ignite.cache(TRANSACTIONAL_CACHE_NAME);
+
+        IgniteAtomicLong atomic = ignite.atomicLong("atomic", 0, true);
+
+        long curAtomicVal = atomic.get();
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            atomic.getAndIncrement();
+
+            cache.put(1, 1);
+
+            tx.rollback();
+        }
+
+        assertEquals(0, cache.size());
+        assertEquals(curAtomicVal + 1, atomic.get());
     }
 }

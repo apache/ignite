@@ -127,7 +127,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         assertParameter(histSize > 0, "metricsHistorySize > 0");
         assertParameter(expireTime > 0, "metricsExpireTime > 0");
 
@@ -212,7 +212,8 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job metrics processor processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job metrics processor processor memory stats [igniteInstanceName=" +
+            ctx.igniteInstanceName() + ']');
     }
 
     /**

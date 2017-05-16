@@ -45,8 +45,8 @@ public class IgniteCacheCreateRestartSelfTest extends GridCommonAbstractTest {
     private static final int NODES = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -71,8 +71,6 @@ public class IgniteCacheCreateRestartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopOriginatingNode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1690");
-
         startGrids(NODES);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();

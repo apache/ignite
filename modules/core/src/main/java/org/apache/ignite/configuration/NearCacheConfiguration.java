@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import javax.cache.configuration.MutableConfiguration;
+import java.io.Serializable;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,7 +32,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START
  * or most frequently accessed data. Just like with a partitioned cache,
  * the user can control the size of the near cache and its eviction policies.
  */
-public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+public class NearCacheConfiguration<K, V> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,8 +55,6 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param ccfg Configuration to copy.
      */
     public NearCacheConfiguration(NearCacheConfiguration<K, V> ccfg) {
-        super(ccfg);
-
         nearEvictPlc = ccfg.getNearEvictionPolicy();
         nearStartSize = ccfg.getNearStartSize();
     }
@@ -67,7 +65,6 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Near eviction policy.
      * @see CacheConfiguration#getEvictionPolicy()
-     * @see CacheConfiguration#isEvictSynchronized()
      */
     public EvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;

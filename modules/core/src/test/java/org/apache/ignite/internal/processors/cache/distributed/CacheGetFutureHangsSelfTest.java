@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -60,8 +60,8 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -140,7 +140,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
@@ -152,7 +152,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
                             }
-                            catch (InterruptedException e) {
+                            catch (InterruptedException ignored) {
                                 Thread.currentThread().interrupt();
                             }
                         }
@@ -164,7 +164,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         T2<Ignite, Integer> ignite;
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());
@@ -174,7 +174,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
                             }
-                            catch (InterruptedException e) {
+                            catch (InterruptedException ignored) {
                                 Thread.currentThread().interrupt();
                             }
                         }

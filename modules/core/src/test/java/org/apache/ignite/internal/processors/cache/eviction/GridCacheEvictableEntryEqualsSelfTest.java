@@ -39,6 +39,7 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
             CacheConfiguration<TestKey, String> cfg = new CacheConfiguration<>("test");
 
             cfg.setEvictionPolicy(new TestEvictionPolicy());
+            cfg.setOnheapCacheEnabled(true);
 
             IgniteCache<TestKey, String> cache = ignite.createCache(cfg);
 

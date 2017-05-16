@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Merge newly sent field metadatas into existing ones.
         /// </summary>
         /// <param name="newMap">New field metadatas map.</param>
-        public void Merge(IDictionary<int, Tuple<string, int>> newMap)
+        public void Merge(IDictionary<int, Tuple<string, BinaryField>> newMap)
         {
             _saved = true;
 
@@ -116,11 +116,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
                 var newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
 
-                IDictionary<string, int> newFields = meta0 != null ?
-                    new Dictionary<string, int>(meta0.GetFieldsMap()) : new Dictionary<string, int>(newMap.Count);
+                IDictionary<string, BinaryField> newFields = meta0 != null 
+                    ? new Dictionary<string, BinaryField>(meta0.GetFieldsMap()) 
+                    : new Dictionary<string, BinaryField>(newMap.Count);
 
                 // 2. Add new fields.
-                foreach (KeyValuePair<int, Tuple<string, int>> newEntry in newMap)
+                foreach (var newEntry in newMap)
                 {
                     if (!newIds.Contains(newEntry.Key))
                         newIds.Add(newEntry.Key);

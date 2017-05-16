@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import java.util.List;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionCacheExtension;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Extended .Net configuration.
@@ -84,7 +87,12 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
 
     /** {@inheritDoc} */
     @Nullable @Override public Collection<PlatformCacheExtension> cacheExtensions() {
-        return Collections.<PlatformCacheExtension>singleton(new PlatformDotNetSessionCacheExtension());
+        Collection<PlatformCacheExtension> exts = new ArrayList<>(2);
+
+        exts.add(new PlatformDotNetSessionCacheExtension());
+        exts.add(new PlatformDotNetEntityFrameworkCacheExtension());
+
+        return exts;
     }
 
     /** {@inheritDoc} */
@@ -92,11 +100,28 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
         return logger;
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformDotNetConfigurationEx setBinaryConfiguration(PlatformDotNetBinaryConfiguration binaryCfg) {
+        super.setBinaryConfiguration(binaryCfg);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformDotNetConfigurationEx setAssemblies(List<String> assemblies) {
+        super.setAssemblies(assemblies);
+
+        return this;
+    }
+
     /**
      * @param warnings Warnings.
+     * @return {@code this} for chaining.
      */
-    public void warnings(Collection<String> warnings) {
+    public PlatformDotNetConfigurationEx warnings(Collection<String> warnings) {
         this.warnings = warnings;
+
+        return this;
     }
 
     /**

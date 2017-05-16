@@ -47,15 +47,13 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Default ctor for marshalling.
         /// </summary>
         /// <param name="reader"></param>
-        public ComputeJobHolder(IBinaryReader reader)
+        public ComputeJobHolder(BinaryReader reader)
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (BinaryReader) reader.GetRawReader();
+            _ignite = reader.Marshaller.Ignite;
 
-            _ignite = reader0.Marshaller.Ignite;
-
-            _job = reader0.ReadObject<IComputeJob>();
+            _job = reader.ReadObject<IComputeJob>();
         }
 
         /// <summary>
@@ -85,7 +83,8 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             _jobRes = new ComputeJobResultImpl(
                 success ? res : null, 
-                success ? null : res as Exception, 
+                success ? null : new IgniteException("Compute job has failed on local node, " +
+                                                     "examine InnerException for details.", (Exception) res), 
                 _job, 
                 _ignite.GetLocalNode().Id, 
                 cancel

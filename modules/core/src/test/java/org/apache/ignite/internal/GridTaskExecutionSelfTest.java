@@ -22,8 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -43,6 +45,20 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
     /** */
     public GridTaskExecutionSelfTest() {
         super(false);
+    }
+
+    /** */
+    protected boolean peerClassLoadingEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -68,11 +84,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        assertNull(comp.execute(GridTestTask.class,  "testArg"));
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTestTask.class,  "testArg");
 
         assert fut != null;
 
@@ -85,14 +97,16 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobIdCollision() throws Exception {
+        fail("Test refactoring is needed: https://issues.apache.org/jira/browse/IGNITE-4706");
+
         long locId = IgniteUuid.lastLocalId();
 
         ArrayList<IgniteFuture<Object>> futs = new ArrayList<>(2016);
 
-        IgniteCompute compute = grid(1).compute(grid(1).cluster().forNodeId(grid(3).localNode().id())).withAsync();
+        IgniteCompute compute = grid(1).compute(grid(1).cluster().forNodeId(grid(3).localNode().id()));
 
         for (int i = 0; i < 1000; i++) {
-            compute.call(new IgniteCallable<Object>() {
+            futs.add(compute.callAsync(new IgniteCallable<Object>() {
                 @JobContextResource
                 ComputeJobContext ctx;
 
@@ -107,9 +121,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            });
-
-            futs.add(compute.future());
+            }));
         }
 
         info("Finished first loop.");
@@ -118,10 +130,10 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
         idx.set(locId);
 
-        IgniteCompute compute1 = grid(2).compute(grid(2).cluster().forNodeId(grid(3).localNode().id())).withAsync();
+        IgniteCompute compute1 = grid(2).compute(grid(2).cluster().forNodeId(grid(3).localNode().id()));
 
         for (int i = 0; i < 100; i++) {
-            compute1.call(new IgniteCallable<Object>() {
+            futs.add(compute1.callAsync(new IgniteCallable<Object>() {
                 @JobContextResource
                 ComputeJobContext ctx;
 
@@ -136,12 +148,28 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            });
-
-            futs.add(compute1.future());
+            }));
         }
 
         for (IgniteFuture<Object> fut : futs)
             fut.get();
+    }
+
+    /**
+     * Test execution of non-existing task by name IGNITE-4838.
+     *
+     * @throws Exception If failed.
+     */
+    public void testExecuteTaskWithInvalidName() throws Exception {
+        try {
+            ComputeTaskFuture<?> fut = ignite.compute().execute("invalid.task.name", null);
+
+            fut.get();
+
+            assert false : "Should never be reached due to exception thrown.";
+        }
+        catch (IgniteDeploymentException e) {
+            info("Received correct exception: " + e);
+        }
     }
 }

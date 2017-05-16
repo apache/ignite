@@ -68,8 +68,8 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -83,7 +83,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
             cfg.setDeploymentSpi(depSpi);
         }
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
+        cfg.setMetricsUpdateFrequency(500);
 
         return cfg;
     }

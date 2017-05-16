@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -43,7 +44,10 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
         AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
 
     /** Query executor. */
-    private Iterable<T> iterExec;
+    private final Iterable<T> iterExec;
+
+    /** Result type flag - result set or update counter. */
+    private final boolean isQry;
 
     /** */
     private Iterator<T> iter;
@@ -62,8 +66,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      * @param cancel Cancellation closure.
      */
     public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel) {
-        this.iterExec = iterExec;
-        this.cancel = cancel;
+        this(iterExec, cancel, true);
     }
 
     /**
@@ -71,6 +74,16 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      */
     public QueryCursorImpl(Iterable<T> iterExec) {
         this(iterExec, null);
+    }
+
+    /**
+     * @param iterExec Query executor.
+     * @param isQry Result type flag - {@code true} for query, {@code false} for update operation.
+     */
+    public QueryCursorImpl(Iterable<T> iterExec, GridQueryCancel cancel, boolean isQry) {
+        this.iterExec = iterExec;
+        this.cancel = cancel;
+        this.isQry = isQry;
     }
 
     /** {@inheritDoc} */
@@ -151,6 +164,14 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /**
+     * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
+     * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
+     */
+    public boolean isQuery() {
+        return isQry;
     }
 
     /**

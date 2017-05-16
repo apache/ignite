@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.COMPUTE_MONITORING_HOLDER_KEY;
@@ -38,7 +37,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicit
  */
 @GridInternal
 public class VisorComputeToggleMonitoringTask extends
-    VisorMultiNodeTask<IgniteBiTuple<String, Boolean>, Boolean, Boolean> {
+    VisorMultiNodeTask<VisorComputeToggleMonitoringTaskArg, Boolean, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,14 +53,14 @@ public class VisorComputeToggleMonitoringTask extends
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeToggleMonitoringJob job(IgniteBiTuple<String, Boolean> arg) {
+    @Override protected VisorComputeToggleMonitoringJob job(VisorComputeToggleMonitoringTaskArg arg) {
         return new VisorComputeToggleMonitoringJob(arg, debug);
     }
 
     /**
      * Job to toggle task monitoring on node.
      */
-    private static class VisorComputeToggleMonitoringJob extends VisorJob<IgniteBiTuple<String, Boolean>, Boolean> {
+    private static class VisorComputeToggleMonitoringJob extends VisorJob<VisorComputeToggleMonitoringTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -69,41 +68,40 @@ public class VisorComputeToggleMonitoringTask extends
          * @param arg Visor ID key and monitoring state flag.
          * @param debug Debug flag.
          */
-        private VisorComputeToggleMonitoringJob(IgniteBiTuple<String, Boolean> arg, boolean debug) {
+        private VisorComputeToggleMonitoringJob(VisorComputeToggleMonitoringTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) {
+        @Override protected Boolean run(VisorComputeToggleMonitoringTaskArg arg) {
             if (checkExplicitTaskMonitoring(ignite))
-                return true;
-            else {
-                ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
+                return Boolean.TRUE;
 
-                VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
+            ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
-                if (holder == null) {
-                    VisorComputeMonitoringHolder holderNew = new VisorComputeMonitoringHolder();
+            VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
 
-                    VisorComputeMonitoringHolder holderOld =
-                        storage.putIfAbsent(COMPUTE_MONITORING_HOLDER_KEY, holderNew);
+            if (holder == null) {
+                VisorComputeMonitoringHolder holderNew = new VisorComputeMonitoringHolder();
 
-                    holder = holderOld == null ? holderNew : holderOld;
-                }
+                VisorComputeMonitoringHolder holderOld =
+                    storage.putIfAbsent(COMPUTE_MONITORING_HOLDER_KEY, holderNew);
 
-                String visorKey = arg.get1();
-
-                boolean state = arg.get2();
-
-                // Set task monitoring state.
-                if (state)
-                    holder.startCollect(ignite, visorKey);
-                else
-                    holder.stopCollect(ignite, visorKey);
-
-                // Return actual state. It could stay the same if events explicitly enabled in configuration.
-                return ignite.allEventsUserRecordable(VISOR_TASK_EVTS);
+                holder = holderOld == null ? holderNew : holderOld;
             }
+
+            String visorKey = arg.getVisorKey();
+
+            boolean state = arg.isEnabled();
+
+            // Set task monitoring state.
+            if (state)
+                holder.startCollect(ignite, visorKey);
+            else
+                holder.stopCollect(ignite, visorKey);
+
+            // Return actual state. It could stay the same if events explicitly enabled in configuration.
+            return ignite.allEventsUserRecordable(VISOR_TASK_EVTS);
         }
 
         /** {@inheritDoc} */

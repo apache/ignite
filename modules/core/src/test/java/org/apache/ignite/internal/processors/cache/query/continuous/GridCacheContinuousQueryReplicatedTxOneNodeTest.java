@@ -45,8 +45,8 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -114,7 +114,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTest(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 
@@ -155,7 +155,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTestOneNode(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 

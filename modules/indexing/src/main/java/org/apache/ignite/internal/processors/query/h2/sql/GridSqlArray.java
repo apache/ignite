@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import org.h2.util.StatementBuilder;
 
 /**
@@ -29,7 +30,14 @@ public class GridSqlArray extends GridSqlElement {
      * @param size Array size.
      */
     public GridSqlArray(int size) {
-        super(size == 0 ? Collections.<GridSqlElement>emptyList() : new ArrayList<GridSqlElement>(size));
+        super(size == 0 ? Collections.<GridSqlAst>emptyList() : new ArrayList<GridSqlAst>(size));
+    }
+
+    /**
+     * @param children Initial child list.
+     */
+    public GridSqlArray(List<GridSqlAst> children) {
+        super(children);
     }
 
     /** {@inheritDoc} */
@@ -39,9 +47,9 @@ public class GridSqlArray extends GridSqlElement {
 
         StatementBuilder buff = new StatementBuilder("(");
 
-        for (GridSqlElement e : children) {
+        for (int i = 0; i < size(); i++) {
             buff.appendExceptFirst(", ");
-            buff.append(e.getSQL());
+            buff.append(child(i).getSQL());
         }
 
         if (size() == 1)

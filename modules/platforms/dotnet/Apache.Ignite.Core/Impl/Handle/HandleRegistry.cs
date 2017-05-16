@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Handle
     public class HandleRegistry
     {
         /** Default critical resources capacity. */
-        internal const int DfltFastCap = 1024;
+        private const int DfltFastCap = 1024;
 
         /** Array for fast-path. */
         private readonly object[] _fast;
@@ -99,6 +99,17 @@ namespace Apache.Ignite.Core.Impl.Handle
         public long AllocateCritical(object target)
         {
             return Allocate0(target, true, false);
+        }
+
+        /// <summary>
+        /// Allocate a handle for critical resource in safe mode.
+        /// </summary>
+        /// <param name="target">Target.</param>
+        /// <returns>Pointer.</returns>
+        [ExcludeFromCodeCoverage]
+        public long AllocateCriticalSafe(object target)
+        {
+            return Allocate0(target, true, true);
         }
 
         /// <summary>

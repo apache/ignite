@@ -16,6 +16,7 @@
  */
 
 import StringBuilder from './StringBuilder';
+import IgniteVersion from 'app/modules/configuration/Version.service';
 
 // Java built-in class names.
 import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
@@ -142,11 +143,10 @@ export default class IgniteMavenGenerator {
      * Generate pom.xml.
      *
      * @param cluster Cluster  to take info about dependencies.
-     * @param version Ignite version for Ignite dependencies.
-     * @param sb Resulting output with generated pom.
+     * @param version Version for Ignite dependencies.
      * @returns {string} Generated content.
      */
-    generate(cluster, version, sb = new StringBuilder()) {
+    generate(cluster, version = IgniteVersion.ignite) {
         const caches = cluster.caches;
         const deps = [];
         const storeDeps = [];
@@ -161,6 +161,8 @@ export default class IgniteMavenGenerator {
             if (_.get(cache, 'nodeFilter.kind') === 'Exclude')
                 this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', version);
         });
+
+        const sb = new StringBuilder();
 
         sb.append('<?xml version="1.0" encoding="UTF-8"?>');
 
@@ -229,6 +231,6 @@ export default class IgniteMavenGenerator {
 
         this.build(sb, cluster, excludeGroupIds);
 
-        return sb;
+        return sb.asString();
     }
 }

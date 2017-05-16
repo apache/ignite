@@ -404,16 +404,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public long startTime() {
-        return stats.getCreateTime();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long duration() {
-        return stats.getTotalExecutionTime() + stats.getTotalIdleTime();
-    }
-
-    /** {@inheritDoc} */
     @Override public String pattern() {
         return pat;
     }
@@ -609,8 +599,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                     fut.onDone(e);
                 }
                 catch (RuntimeException | Error e) {
-                    U.warn(null, "Failed to notify chained future (is grid stopped?) [grid=" + ctx.gridName() +
-                        ", doneCb=" + doneCb + ", err=" + e.getMessage() + ']');
+                    U.warn(null, "Failed to notify chained future (is grid stopped?) [igniteInstanceName=" +
+                        ctx.igniteInstanceName() + ", doneCb=" + doneCb + ", err=" + e.getMessage() + ']');
 
                     fut.onDone(e);
 
@@ -773,16 +763,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                 throw U.convertException(U.cast(err));
 
             return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long startTime() {
-            return ref.startTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long duration() {
-            return ref.duration();
         }
 
         /** {@inheritDoc} */

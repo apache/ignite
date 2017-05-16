@@ -17,151 +17,177 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.concurrent.TimeUnit;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
+import org.apache.ignite.internal.processors.query.schema.SchemaKey;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
 
 /**
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
-    /** */
-    public static final String _VAL = "_val";
-
-    /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
-
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
     /** */
-    private static Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
-        Integer.class,
-        Boolean.class,
-        Byte.class,
-        Short.class,
-        Long.class,
-        BigDecimal.class,
-        Double.class,
-        Float.class,
-        Time.class,
-        Timestamp.class,
-        java.util.Date.class,
-        java.sql.Date.class,
-        String.class,
-        UUID.class,
-        byte[].class
-    ));
+    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
 
+    /** JDK marshaller to serialize errors. */
+    private final JdkMarshaller marsh = new JdkMarshaller();
+
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
-
-    /** Type descriptors. */
-    private final Map<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();
-
-    /** Type descriptors. */
-    private final ConcurrentMap<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
-
-    /** */
-    private ExecutorService execSvc;
-
-    /** */
-    private final GridQueryIndexing idx;
 
     /** */
     private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
 
-    /** */
-    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
+    /** Type descriptors. */
+    private final Map<QueryTypeIdKey, QueryTypeDescriptorImpl> types = new ConcurrentHashMap<>();
 
-    /** Default is @{true} */
-    private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
+    /** Type descriptors. */
+    private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap<>();
+
+    /** */
+    private final GridQueryIndexing idx;
+
+    /** All indexes. */
+    private final ConcurrentMap<QueryIndexKey, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
+
+    /** Schema operation futures created on client side. */
+    private final ConcurrentMap<UUID, SchemaOperationClientFuture> schemaCliFuts = new ConcurrentHashMap<>();
+
+    /** IO message listener. */
+    private final GridMessageListener ioLsnr;
+
+    /** Schema operations. */
+    private final ConcurrentHashMap<SchemaKey, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
+
+    /** Active propose messages. */
+    private final LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = new LinkedHashMap<>();
+
+    /** General state mutex. */
+    private final Object stateMux = new Object();
+
+    /** Coordinator node (initialized lazily). */
+    private ClusterNode crd;
+
+    /** Registered spaces. */
+    private final Collection<String> spaces = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
+    /** ID history for index create/drop discovery messages. */
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
+        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
+    /** History of already completed operations. */
+    private final GridBoundedConcurrentLinkedHashSet<UUID> completedOpIds =
+        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
+    /** Pending status messages. */
+    private final LinkedList<SchemaOperationStatusMessage> pendingMsgs = new LinkedList<>();
+
+    /** Disconnected flag. */
+    private boolean disconnected;
+
+    /** Whether exchange thread is ready to process further requests. */
+    private boolean exchangeReady;
+
+    /** */
+    private boolean skipFieldLookup;
 
     /**
      * @param ctx Kernal context.
@@ -176,19 +202,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        ioLsnr = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (msg instanceof SchemaOperationStatusMessage) {
+                    SchemaOperationStatusMessage msg0 = (SchemaOperationStatusMessage)msg;
+
+                    msg0.senderNodeId(nodeId);
+
+                    processStatusMessage(msg0);
+                }
+                else
+                    U.warn(log, "Unsupported IO message: " + msg);
+            }
+        };
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+        super.start(activeOnStart);
 
         if (idx != null) {
             ctx.resource().injectGeneric(idx);
 
-            execSvc = ctx.getExecutorService();
-
             idx.start(ctx, busyLock);
         }
+
+        ctx.io().addMessageListener(TOPIC_SCHEMA, ioLsnr);
 
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
@@ -199,14 +239,399 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        super.onKernalStop(cancel);
+
+        if (cancel && idx != null) {
+            try {
+                while (!busyLock.tryBlock(500))
+                    idx.cancelAllQueries();
+
+                return;
+            } catch (InterruptedException ignored) {
+                U.warn(log, "Interrupted while waiting for active queries cancellation.");
+
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        busyLock.block();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        ctx.io().removeMessageListener(TOPIC_SCHEMA, ioLsnr);
+
+        if (idx != null)
+            idx.stop();
+
+        U.closeQuiet(qryDetailMetricsEvictTask);
+    }
+
     /**
-     * @param ccfg Cache configuration.
-     * @return {@code true} If query index must be enabled for this cache.
+     * Handle cache kernal start. At this point discovery and IO managers are operational, caches are not started yet.
+     *
+     * @throws IgniteCheckedException If failed.
      */
-    public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
-        return !F.isEmpty(ccfg.getIndexedTypes()) ||
-            !F.isEmpty(ccfg.getTypeMetadata()) ||
-            !F.isEmpty(ccfg.getQueryEntities());
+    public void onCacheKernalStart() throws IgniteCheckedException {
+        synchronized (stateMux) {
+            exchangeReady = true;
+
+            // Re-run pending top-level proposals.
+            for (SchemaOperation schemaOp : schemaOps.values())
+                onSchemaPropose(schemaOp.proposeMessage());
+        }
+    }
+
+    /**
+     * Handle cache reconnect.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheReconnect() throws IgniteCheckedException {
+        synchronized (stateMux) {
+            assert disconnected;
+
+            disconnected = false;
+
+            onCacheKernalStart();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.QUERY_PROC;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        // Collect active proposals.
+        synchronized (stateMux) {
+            LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> data = new LinkedHashMap<>(activeProposals);
+
+            dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), data);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        synchronized (stateMux) {
+            // Preserve proposals.
+            LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> data0 =
+                (LinkedHashMap<UUID, SchemaProposeDiscoveryMessage>)data.commonData();
+
+            // Process proposals as if they were received as regular discovery messages.
+            if (data0 != null) {
+                for (SchemaProposeDiscoveryMessage activeProposal : data0.values())
+                    onSchemaProposeDiscovery0(activeProposal);
+            }
+        }
+    }
+
+    /**
+     * Process schema propose message from discovery thread.
+     *
+     * @param msg Message.
+     * @return {@code True} if exchange should be triggered.
+     */
+    private boolean onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+        String space = msg.operation().space();
+
+        if (!msg.initialized()) {
+            // Ensure cache exists on coordinator node.
+            DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
+
+            if (cacheDesc == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received schema propose discovery message, but cache doesn't exist " +
+                        "(will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
+            }
+            else {
+                CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
+
+                if (ccfg.getCacheMode() == CacheMode.LOCAL) {
+                    // Distributed operation is not allowed on LOCAL caches.
+                    if (log.isDebugEnabled())
+                        log.debug("Received schema propose discovery message, but cache is LOCAL " +
+                            "(will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                    msg.onError(new SchemaOperationException("Schema changes are not supported for LOCAL cache."));
+                }
+                else {
+                    // Preserve deployment ID so that we can distinguish between different caches with the same name.
+                    if (msg.deploymentId() == null)
+                        msg.deploymentId(cacheDesc.deploymentId());
+
+                    assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
+                }
+            }
+        }
+
+        // Complete client future and exit immediately in case of error.
+        if (msg.hasError()) {
+            SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+
+            if (cliFut != null)
+                cliFut.onDone(msg.error());
+
+            return false;
+        }
+
+        return onSchemaProposeDiscovery0(msg);
+    }
+
+    /**
+     * Process schema propose message from discovery thread (or from cache start routine).
+     *
+     * @param msg Message.
+     * @return {@code True} if exchange should be triggered.
+     */
+    private boolean onSchemaProposeDiscovery0(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        synchronized (stateMux) {
+            if (disconnected) {
+                if (log.isDebugEnabled())
+                    log.debug("Processing discovery schema propose message, but node is disconnected (will ignore) " +
+                        "[opId=" + opId + ", msg=" + msg + ']');
+
+                return false;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Processing discovery schema propose message [opId=" + opId + ", msg=" + msg + ']');
+
+            // Put message to active operations set.
+            SchemaProposeDiscoveryMessage oldDesc = activeProposals.put(msg.operation().id(), msg);
+
+            assert oldDesc == null;
+
+            // Create schema operation and either trigger it immediately from exchange thread or append to already
+            // running operation.
+            SchemaOperation schemaOp = new SchemaOperation(msg);
+
+            SchemaKey key = msg.schemaKey();
+
+            SchemaOperation prevSchemaOp = schemaOps.get(key);
+
+            if (prevSchemaOp != null) {
+                prevSchemaOp = prevSchemaOp.unwind();
+
+                if (log.isDebugEnabled())
+                    log.debug("Schema change is enqueued and will be executed after previous operation is completed " +
+                        "[opId=" + opId + ", prevOpId=" + prevSchemaOp.id() + ']');
+
+                prevSchemaOp.next(schemaOp);
+
+                return false;
+            }
+            else {
+                schemaOps.put(key, schemaOp);
+
+                return exchangeReady;
+            }
+        }
+    }
+
+    /**
+     * Handle schema propose from exchange thread.
+     *
+     * @param msg Discovery message.
+     */
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    public void onSchemaPropose(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Processing schema propose message (exchange) [opId=" + opId + ']');
+
+        synchronized (stateMux) {
+            if (disconnected)
+                return;
+
+            SchemaOperation curOp = schemaOps.get(msg.schemaKey());
+
+            assert curOp != null;
+            assert F.eq(opId, curOp.id());
+            assert !curOp.started();
+
+            startSchemaChange(curOp);
+        }
+    }
+
+    /**
+     * Process schema finish message from discovery thread.
+     *
+     * @param msg Message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema finish message (discovery) [opId=" + opId + ", msg=" + msg + ']');
+
+        synchronized (stateMux) {
+            if (disconnected)
+                return;
+
+            boolean completedOpAdded = completedOpIds.add(opId);
+
+            assert completedOpAdded;
+
+            // Remove propose message so that it will not be shared with joining nodes.
+            SchemaProposeDiscoveryMessage proposeMsg = activeProposals.remove(opId);
+
+            assert proposeMsg != null;
+
+            // Apply changes to public cache schema if operation is successful and original cache is still there.
+            if (!msg.hasError()) {
+                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(msg.operation().space());
+
+                if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId()))
+                    cacheDesc.schemaChangeFinish(msg);
+            }
+
+            // Propose message will be used from exchange thread to
+            msg.proposeMessage(proposeMsg);
+
+            if (exchangeReady) {
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
+
+                if (F.eq(op.id(), opId)) {
+                    // Completed top operation.
+                    op.finishMessage(msg);
+
+                    if (op.started())
+                        op.doFinish();
+                }
+                else {
+                    // Completed operation in the middle, will schedule completion later.
+                    while (op != null) {
+                        if (F.eq(op.id(), opId))
+                            break;
+
+                        op = op.next();
+                    }
+
+                    assert op != null;
+                    assert !op.started();
+
+                    op.finishMessage(msg);
+                }
+            }
+            else {
+                // Set next operation as top-level one.
+                SchemaKey schemaKey = proposeMsg.schemaKey();
+
+                SchemaOperation op = schemaOps.remove(schemaKey);
+
+                assert op != null;
+                assert F.eq(op.id(), opId);
+
+                // Chain to the next operation (if any).
+                SchemaOperation nextOp = op.next();
+
+                if (nextOp != null)
+                    schemaOps.put(schemaKey, nextOp);
+            }
+
+            // Clean stale IO messages from just-joined nodes.
+            cleanStaleStatusMessages(opId);
+        }
+
+        // Complete client future (if any).
+        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+
+        if (cliFut != null) {
+            if (msg.hasError())
+                cliFut.onDone(msg.error());
+            else
+                cliFut.onDone();
+        }
+    }
+
+    /**
+     * Initiate actual schema change operation.
+     *
+     * @param schemaOp Schema operation.
+     */
+    @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
+    private void startSchemaChange(SchemaOperation schemaOp) {
+        assert Thread.holdsLock(stateMux);
+        assert !schemaOp.started();
+
+        // Get current cache state.
+        SchemaProposeDiscoveryMessage msg = schemaOp.proposeMessage();
+
+        String space = msg.operation().space();
+
+        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
+
+        boolean cacheExists = cacheDesc != null && F.eq(msg.deploymentId(), cacheDesc.deploymentId());
+
+        boolean cacheRegistered = cacheExists && spaces.contains(CU.mask(space));
+
+        // Validate schema state and decide whether we should proceed or not.
+        SchemaAbstractOperation op = msg.operation();
+
+        QueryTypeDescriptorImpl type = null;
+        SchemaOperationException err;
+
+        boolean nop = false;
+
+        if (cacheExists) {
+            if (cacheRegistered) {
+                // If cache is started, we perform validation against real schema.
+                T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
+
+                assert res.get2() != null;
+
+                type = res.get1();
+                nop = res.get2();
+                err = res.get3();
+            }
+            else {
+                // If cache is not started yet, there is no schema. Take schema from cache descriptor and validate.
+                QuerySchema schema = cacheDesc.schema();
+
+                T2<Boolean, SchemaOperationException> res = prepareChangeOnNotStartedCache(op, schema);
+
+                assert res.get1() != null;
+
+                type = null;
+                nop = res.get1();
+                err = res.get2();
+            }
+        }
+        else
+            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
+
+        // Start operation.
+        SchemaOperationWorker worker =
+            new SchemaOperationWorker(ctx, this, msg.deploymentId(), op, nop, err, cacheRegistered, type);
+
+        SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker,
+            ctx.clientNode() ? null : coordinator());
+
+        schemaOp.manager(mgr);
+
+        mgr.start();
+
+        // Unwind pending IO messages.
+        if (!ctx.clientNode() && coordinator().isLocal())
+            unwindPendingMessages(schemaOp.id(), mgr);
+
+        // Schedule operation finish handling if needed.
+        if (schemaOp.hasFinishMessage())
+            schemaOp.doFinish();
     }
 
     /**
@@ -217,302 +642,171 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Indexing.
+     * @throws IgniteException If module is not enabled.
+     */
+    public GridQueryIndexing getIndexing() throws IgniteException {
+        checkxEnabled();
+
+        return idx;
+    }
+
+    /**
+     * Create type descriptors from schema and initialize indexing for given cache.<p>
+     * Use with {@link #busyLock} where appropriate.
      * @param cctx Cache context.
+     * @param schema Initial schema.
      * @throws IgniteCheckedException If failed.
      */
-    private void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-        CacheConfiguration<?,?> ccfg = cctx.config();
+    @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
+    public void onCacheStart0(GridCacheContext<?, ?> cctx, QuerySchema schema)
+        throws IgniteCheckedException {
 
-        idx.registerCache(cctx, cctx.config());
+        cctx.shared().database().checkpointReadLock();
 
         try {
-            List<Class<?>> mustDeserializeClss = null;
+            synchronized (stateMux) {
+                String space = cctx.name();
 
-            boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
+                // Prepare candidates.
+                List<Class<?>> mustDeserializeClss = new ArrayList<>();
 
-            CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
+                Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
-            if (!F.isEmpty(ccfg.getQueryEntities())) {
-                for (QueryEntity qryEntity : ccfg.getQueryEntities()) {
-                    if (F.isEmpty(qryEntity.getValueType()))
-                        throw new IgniteCheckedException("Value type is not set: " + qryEntity);
+                Collection<QueryEntity> qryEntities = schema.entities();
 
-                    TypeDescriptor desc = new TypeDescriptor();
+                if (!F.isEmpty(qryEntities)) {
+                    for (QueryEntity qryEntity : qryEntities) {
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(space, cctx, qryEntity,
+                            mustDeserializeClss);
 
-                    // Key and value classes still can be available if they are primitive or JDK part.
-                    // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
-                    Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
-
-                    // If local node has the classes and they are externalizable, we must use reflection properties.
-                    boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
-                    boolean valMustDeserialize = mustDeserializeBinary(valCls);
-
-                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
-
-                    if (keyCls == null)
-                        keyCls = Object.class;
-
-                    String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
-
-                    desc.name(simpleValType);
-
-                    if (binaryEnabled && !keyOrValMustDeserialize) {
-                        // Safe to check null.
-                        if (SQL_TYPES.contains(valCls))
-                            desc.valueClass(valCls);
-                        else
-                            desc.valueClass(Object.class);
-
-                        if (SQL_TYPES.contains(keyCls))
-                            desc.keyClass(keyCls);
-                        else
-                            desc.keyClass(Object.class);
+                        cands.add(cand);
                     }
-                    else {
-                        if (keyCls == null)
-                            throw new IgniteCheckedException("Failed to find key class in the node classpath " +
-                                "(use default marshaller to enable binary objects): " + qryEntity.getKeyType());
+                }
 
-                        if (valCls == null)
-                            throw new IgniteCheckedException("Failed to find value class in the node classpath " +
-                                "(use default marshaller to enable binary objects) : " + qryEntity.getValueType());
+                // Ensure that candidates has unique index names. Otherwise we will not be able to apply pending operations.
+                Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
+                Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
 
-                        desc.valueClass(valCls);
-                        desc.keyClass(keyCls);
+                for (QueryTypeCandidate cand : cands) {
+                    QueryTypeDescriptorImpl desc = cand.descriptor();
+
+                    QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
+
+                    if (oldDesc != null)
+                        throw new IgniteException("Duplicate table name [cache=" + space +
+                            ", tblName=" + desc.tableName() + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+
+                    for (String idxName : desc.indexes().keySet()) {
+                        oldDesc = idxTypMap.put(idxName, desc);
+
+                        if (oldDesc != null)
+                            throw new IgniteException("Duplicate index name [cache=" + space +
+                                ", idxName=" + idxName + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
                     }
+                }
 
-                    if (binaryEnabled && keyOrValMustDeserialize) {
-                        if (mustDeserializeClss == null)
-                            mustDeserializeClss = new ArrayList<>();
+                // Apply pending operation which could have been completed as no-op at this point.
+                // There could be only one in-flight operation for a cache.
+                for (SchemaOperation op : schemaOps.values()) {
+                    if (F.eq(op.proposeMessage().deploymentId(), cctx.dynamicDeploymentId())) {
+                        if (op.started()) {
+                            SchemaOperationWorker worker = op.manager().worker();
 
-                        if (keyMustDeserialize)
-                            mustDeserializeClss.add(keyCls);
+                            assert !worker.cacheRegistered();
 
-                        if (valMustDeserialize)
-                            mustDeserializeClss.add(valCls);
-                    }
+                            if (!worker.nop()) {
+                                IgniteInternalFuture fut = worker.future();
 
-                    TypeId typeId;
-                    TypeId altTypeId = null;
+                                assert fut.isDone();
 
-                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
-                        processBinaryMeta(qryEntity, desc);
+                                if (fut.error() == null) {
+                                    SchemaAbstractOperation op0 = op.proposeMessage().operation();
 
-                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                                    if (op0 instanceof SchemaIndexCreateOperation) {
+                                        SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation) op0;
 
-                        if (valCls != null)
-                            altTypeId = new TypeId(ccfg.getName(), valCls);
+                                        QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opCreate.tableName());
 
-                        if (!cctx.customAffinityMapper() && qryEntity.getKeyType() != null) {
-                            // Need to setup affinity key for distributed joins.
-                            String affField = ctx.cacheObjects().affinityField(qryEntity.getKeyType());
+                                        assert typeDesc != null;
 
-                            if (affField != null)
-                                desc.affinityKey(affField);
-                        }
-                    }
-                    else {
-                        processClassMeta(qryEntity, desc, coCtx);
+                                        QueryUtils.processDynamicIndexChange(opCreate.indexName(), opCreate.index(),
+                                            typeDesc);
+                                    }
+                                    else if (op0 instanceof SchemaIndexDropOperation) {
+                                        SchemaIndexDropOperation opDrop = (SchemaIndexDropOperation) op0;
 
-                        AffinityKeyMapper keyMapper = cctx.config().getAffinityMapper();
+                                        QueryTypeDescriptorImpl typeDesc = idxTypMap.get(opDrop.indexName());
 
-                        if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
-                            String affField =
-                                ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyCls);
+                                        assert typeDesc != null;
 
-                            if (affField != null)
-                                desc.affinityKey(affField);
+                                        QueryUtils.processDynamicIndexChange(opDrop.indexName(), null, typeDesc);
+                                    }
+                                    else
+                                        assert false;
+                                }
+                            }
                         }
 
-                        typeId = new TypeId(ccfg.getName(), valCls);
-                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                        break;
                     }
+                }
 
-                    addTypeByName(ccfg, desc);
-                    types.put(typeId, desc);
+                // Ready to register at this point.
+                registerCache0(space, cctx, cands);
 
-                    if (altTypeId != null)
-                        types.put(altTypeId, desc);
-
-                    desc.registered(idx.registerType(ccfg.getName(), desc));
+                // Warn about possible implicit deserialization.
+                if (!mustDeserializeClss.isEmpty()) {
+                    U.warn(log, "Some classes in query configuration cannot be written in binary format " +
+                        "because they either implement Externalizable interface or have writeObject/readObject " +
+                        "methods. Instances of these classes will be deserialized in order to build indexes. Please " +
+                        "ensure that all nodes have these classes in classpath. To enable binary serialization " +
+                        "either implement " + Binarylizable.class.getSimpleName() + " interface or set explicit " +
+                        "serializer using BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
                 }
             }
-
-            if (!F.isEmpty(ccfg.getTypeMetadata())) {
-                for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                    if (F.isEmpty(meta.getValueType()))
-                        throw new IgniteCheckedException("Value type is not set: " + meta);
-
-                    if (meta.getQueryFields().isEmpty() && meta.getAscendingFields().isEmpty() &&
-                        meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
-                        continue;
-
-                    TypeDescriptor desc = new TypeDescriptor();
-
-                    // Key and value classes still can be available if they are primitive or JDK part.
-                    // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
-                    Class<?> valCls = U.classForName(meta.getValueType(), null);
-
-                    // If local node has the classes and they are externalizable, we must use reflection properties.
-                    boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
-                    boolean valMustDeserialize = mustDeserializeBinary(valCls);
-
-                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
-
-                    if (keyCls == null)
-                        keyCls = Object.class;
-
-                    String simpleValType = meta.getSimpleValueType();
-
-                    if (simpleValType == null)
-                        simpleValType = typeName(meta.getValueType());
-
-                    desc.name(simpleValType);
-
-                    if (binaryEnabled && !keyOrValMustDeserialize) {
-                        // Safe to check null.
-                        if (SQL_TYPES.contains(valCls))
-                            desc.valueClass(valCls);
-                        else
-                            desc.valueClass(Object.class);
-
-                        if (SQL_TYPES.contains(keyCls))
-                            desc.keyClass(keyCls);
-                        else
-                            desc.keyClass(Object.class);
-                    }
-                    else {
-                        desc.valueClass(valCls);
-                        desc.keyClass(keyCls);
-                    }
-
-                    if (binaryEnabled && keyOrValMustDeserialize) {
-                        if (mustDeserializeClss == null)
-                            mustDeserializeClss = new ArrayList<>();
-
-                        if (keyMustDeserialize)
-                            mustDeserializeClss.add(keyCls);
-
-                        if (valMustDeserialize)
-                            mustDeserializeClss.add(valCls);
-                    }
-
-                    TypeId typeId;
-                    TypeId altTypeId = null;
-
-                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
-                        processBinaryMeta(meta, desc);
-
-                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
-
-                        if (valCls != null)
-                            altTypeId = new TypeId(ccfg.getName(), valCls);
-                    }
-                    else {
-                        processClassMeta(meta, desc, coCtx);
-
-                        typeId = new TypeId(ccfg.getName(), valCls);
-                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
-                    }
-
-                    addTypeByName(ccfg, desc);
-                    types.put(typeId, desc);
-
-                    if (altTypeId != null)
-                        types.put(altTypeId, desc);
-
-                    desc.registered(idx.registerType(ccfg.getName(), desc));
-                }
-            }
-
-            // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
-
-            if (mustDeserializeClss != null) {
-                U.warn(log, "Some classes in query configuration cannot be written in binary format " +
-                    "because they either implement Externalizable interface or have writeObject/readObject methods. " +
-                    "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
-                    "all nodes have these classes in classpath. To enable binary serialization either implement " +
-                    Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
-                    "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
-            }
         }
-        catch (IgniteCheckedException | RuntimeException e) {
-            idx.unregisterCache(ccfg);
-
-            throw e;
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
-    }
-
-    /**
-     * Check whether type still must be deserialized when binary marshaller is set.
-     *
-     * @param cls Class.
-     * @return {@code True} if will be deserialized.
-     */
-    private boolean mustDeserializeBinary(Class cls) {
-        if (cls != null && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
-            CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
-
-            return proc0.binaryContext().mustDeserialize(cls);
-        }
-        else
-            return false;
-    }
-
-    /**
-     * @param ccfg Cache configuration.
-     * @param desc Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
-        if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
-            throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                "in cache '" + ccfg.getName() + "'.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        super.onKernalStop(cancel);
-
-        if (cancel && idx != null)
-            try {
-                while (!busyLock.tryBlock(500))
-                    idx.cancelAllQueries();
-
-                return;
-            }
-            catch (InterruptedException e) {
-                U.warn(log, "Interrupted while waiting for active queries cancellation.");
-
-                Thread.currentThread().interrupt();
-            }
-
-        busyLock.block();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
-
-        if (idx != null)
-            idx.stop();
-
-        U.closeQuiet(qryDetailMetricsEvictTask);
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        Collection<SchemaOperationClientFuture> futs;
+
+        synchronized (stateMux) {
+            disconnected = true;
+            exchangeReady = false;
+
+            // Clear client futures.
+            futs = new ArrayList<>(schemaCliFuts.values());
+
+            schemaCliFuts.clear();
+
+            // Clear operations data.
+            activeProposals.clear();
+            schemaOps.clear();
+        }
+
+        // Complete client futures outside of synchronized block because they may have listeners/chains.
+        for (SchemaOperationClientFuture fut : futs)
+            fut.onDone(new SchemaOperationException("Client node is disconnected (operation result is unknown)."));
+
         if (idx != null)
             idx.onDisconnected(reconnectFut);
     }
 
     /**
+     * Handle cache start. Invoked either from GridCacheProcessor.onKernalStart() method or from exchange worker.
+     * When called for the first time, we initialize topology thus understanding whether current node is coordinator
+     * or not.
+     *
      * @param cctx Cache context.
+     * @param schema Index states.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -520,7 +814,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            initializeCache(cctx);
+            onCacheStart0(cctx, schema);
         }
         finally {
             busyLock.leaveBusy();
@@ -538,22 +832,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            idx.unregisterCache(cctx.config());
-
-            Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
-
-            while (it.hasNext()) {
-                Map.Entry<TypeId, TypeDescriptor> entry = it.next();
-
-                if (F.eq(cctx.name(), entry.getKey().space)) {
-                    it.remove();
-
-                    typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to clear indexing on cache stop (will ignore): " + cctx.name(), e);
+            onCacheStop0(cctx.name());
         }
         finally {
             busyLock.leaveBusy();
@@ -561,23 +840,599 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Rebuilds all search indexes of given value type for given space of spi.
-     *
-     * @param space Space.
-     * @param valTypeName Value type name.
-     * @return Future that will be completed when rebuilding of all indexes is finished.
+     * @return Skip field lookup flag.
      */
-    public IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, String valTypeName) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
+    public boolean skipFieldLookup() {
+        return skipFieldLookup;
+    }
+
+    /**
+     * @param skipFieldLookup Skip field lookup flag.
+     */
+    public void skipFieldLookup(boolean skipFieldLookup) {
+        this.skipFieldLookup = skipFieldLookup;
+    }
+
+    /**
+     * Handle custom discovery message.
+     *
+     * @param msg Message.
+     */
+    public void onDiscovery(SchemaAbstractDiscoveryMessage msg) {
+        IgniteUuid id = msg.id();
+
+        if (!dscoMsgIdHist.add(id)) {
+            U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
+                msg.operation().id() + ", msg=" + msg  +']');
+
+            return;
+        }
+
+        if (msg instanceof SchemaProposeDiscoveryMessage) {
+            SchemaProposeDiscoveryMessage msg0 = (SchemaProposeDiscoveryMessage)msg;
+
+            boolean exchange = onSchemaProposeDiscovery(msg0);
+
+            msg0.exchange(exchange);
+        }
+        else if (msg instanceof SchemaFinishDiscoveryMessage) {
+            SchemaFinishDiscoveryMessage msg0 = (SchemaFinishDiscoveryMessage)msg;
+
+            onSchemaFinishDiscovery(msg0);
+        }
+        else
+            U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
+                msg.operation().id() + ", msg=" + msg  +']');
+    }
+
+    /**
+     * Prepare change on started cache.
+     *
+     * @param op Operation.
+     * @return Result: affected type, nop flag, error.
+     */
+    private T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> prepareChangeOnStartedCache(
+        SchemaAbstractOperation op) {
+        QueryTypeDescriptorImpl type = null;
+        boolean nop = false;
+        SchemaOperationException err = null;
+
+        String space = op.space();
+
+        if (op instanceof SchemaIndexCreateOperation) {
+            SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
+
+            QueryIndex idx = op0.index();
+
+            // Make sure table exists.
+            String tblName = op0.tableName();
+
+            type = type(space, tblName);
+
+            if (type == null)
+                err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+            else {
+                // Make sure that index can be applied to the given table.
+                for (String idxField : idx.getFieldNames()) {
+                    if (!type.fields().containsKey(idxField)) {
+                        err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                            idxField);
+
+                        break;
+                    }
+                }
+            }
+
+            // Check conflict with other indexes.
+            if (err == null) {
+                String idxName = op0.index().getName();
+
+                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+                if (idxs.get(idxKey) != null) {
+                    if (op0.ifNotExists())
+                        nop = true;
+                    else
+                        err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
+                }
+            }
+        }
+        else if (op instanceof SchemaIndexDropOperation) {
+            SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+
+            String idxName = op0.indexName();
+
+            QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(space, idxName));
+
+            if (oldIdx == null) {
+                if (op0.ifExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+            }
+            else
+                type = oldIdx.typeDescriptor();
+        }
+        else
+            err = new SchemaOperationException("Unsupported operation: " + op);
+
+        return new T3<>(type, nop, err);
+    }
+
+    /**
+     * Prepare operation on non-started cache.
+     *
+     * @param op Operation.
+     * @param schema Known cache schema.
+     * @return Result: nop flag, error.
+     */
+    private T2<Boolean, SchemaOperationException> prepareChangeOnNotStartedCache(SchemaAbstractOperation op,
+        QuerySchema schema) {
+        boolean nop = false;
+        SchemaOperationException err = null;
+
+        // Build table and index maps.
+        Map<String, QueryEntity> tblMap = new HashMap<>();
+        Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
+
+        for (QueryEntity entity : schema.entities()) {
+            String tblName = QueryUtils.tableName(entity);
+
+            QueryEntity oldEntity = tblMap.put(tblName, entity);
+
+            if (oldEntity != null) {
+                err = new SchemaOperationException("Invalid schema state (duplicate table found): " + tblName);
+
+                break;
+            }
+
+            for (QueryIndex entityIdx : entity.getIndexes()) {
+                String idxName = QueryUtils.indexName(entity, entityIdx);
+
+                T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
+
+                if (oldIdxEntity != null) {
+                    err = new SchemaOperationException("Invalid schema state (duplicate index found): " +
+                        idxName);
+
+                    break;
+                }
+            }
+
+            if (err != null)
+                break;
+        }
+
+        // Now check whether operation can be applied to schema.
+        if (op instanceof SchemaIndexCreateOperation) {
+            SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
+
+            String idxName = op0.indexName();
+
+            T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
+
+            if (oldIdxEntity == null) {
+                String tblName = op0.tableName();
+
+                QueryEntity oldEntity = tblMap.get(tblName);
+
+                if (oldEntity == null)
+                    err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+                else {
+                    for (String fieldName : op0.index().getFields().keySet()) {
+                        Set<String> oldEntityFields = new HashSet<>(oldEntity.getFields().keySet());
+
+                        for (Map.Entry<String, String> alias : oldEntity.getAliases().entrySet()) {
+                            oldEntityFields.remove(alias.getKey());
+                            oldEntityFields.add(alias.getValue());
+                        }
+
+                        if (!oldEntityFields.contains(fieldName)) {
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                fieldName);
+
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                if (op0.ifNotExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
+            }
+        }
+        else if (op instanceof SchemaIndexDropOperation) {
+            SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
+
+            String idxName = op0.indexName();
+
+            T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
+
+            if (oldIdxEntity == null) {
+                if (op0.ifExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+            }
+        }
+        else
+            err = new SchemaOperationException("Unsupported operation: " + op);
+
+        return new T2<>(nop, err);
+    }
+
+    /**
+     * Invoked when coordinator finished ensuring that all participants are ready.
+     *
+     * @param op Operation.
+     * @param err Error (if any).
+     */
+    public void onCoordinatorFinished(SchemaAbstractOperation op, @Nullable SchemaOperationException err) {
+        synchronized (stateMux) {
+            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, err);
+
+            try {
+                ctx.discovery().sendCustomEvent(msg);
+            }
+            catch (Exception e) {
+                // Failed to send finish message over discovery. This is something unrecoverable.
+                U.warn(log, "Failed to send schema finish discovery message [opId=" + op.id() + ']', e);
+            }
+        }
+    }
+
+    /**
+     * Get current coordinator node.
+     *
+     * @return Coordinator node.
+     */
+    private ClusterNode coordinator() {
+        assert !ctx.clientNode();
+
+        synchronized (stateMux) {
+            if (crd == null) {
+                ClusterNode crd0 = null;
+
+                for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+                    if (crd0 == null || crd0.order() > node.order())
+                        crd0 = node;
+                }
+
+                assert crd0 != null;
+
+                crd = crd0;
+            }
+
+            return crd;
+        }
+    }
+
+    /**
+     * Get rid of stale IO message received from other nodes which joined when operation had been in progress.
+     *
+     * @param opId Operation ID.
+     */
+    private void cleanStaleStatusMessages(UUID opId) {
+        Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
+
+        while (it.hasNext()) {
+            SchemaOperationStatusMessage statusMsg = it.next();
+
+            if (F.eq(opId, statusMsg.operationId())) {
+                it.remove();
+
+                if (log.isDebugEnabled())
+                    log.debug("Dropped operation status message because it is already completed [opId=" + opId +
+                        ", rmtNode=" + statusMsg.senderNodeId() + ']');
+            }
+        }
+    }
+
+    /**
+     * Apply positive index operation result.
+     *
+     * @param op Operation.
+     * @param type Type descriptor (if available),
+     */
+    public void onLocalOperationFinished(SchemaAbstractOperation op, @Nullable QueryTypeDescriptorImpl type) {
+        synchronized (stateMux) {
+            if (disconnected)
+                return;
+
+            // No need to apply anything to obsolete type.
+            if (type == null || type.obsolete()) {
+                if (log.isDebugEnabled())
+                    log.debug("Local operation finished, but type descriptor is either missing or obsolete " +
+                        "(will ignore) [opId=" + op.id() + ']');
+
+                return;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Local operation finished successfully [opId=" + op.id() + ']');
+
+            try {
+                if (op instanceof SchemaIndexCreateOperation) {
+                    SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
+
+                    QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
+
+                    QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
+
+                    QueryIndexKey idxKey = new QueryIndexKey(op.space(), op0.indexName());
+
+                    idxs.put(idxKey, idxDesc);
+                }
+                else {
+                    assert op instanceof SchemaIndexDropOperation;
+
+                    SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+
+                    QueryUtils.processDynamicIndexChange(op0.indexName(), null, type);
+
+                    QueryIndexKey idxKey = new QueryIndexKey(op.space(), op0.indexName());
+
+                    idxs.remove(idxKey);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Failed to finish index operation [opId=" + op.id() + " op=" + op + ']', e);
+            }
+        }
+    }
+
+    /**
+     * Handle node leave.
+     *
+     * @param node Node.
+     */
+    public void onNodeLeave(ClusterNode node) {
+        synchronized (stateMux) {
+            // Clients do not send status messages and are never coordinators.
+            if (ctx.clientNode())
+                return;
+
+            ClusterNode crd0 = coordinator();
+
+            if (F.eq(node.id(), crd0.id())) {
+                crd = null;
+
+                crd0 = coordinator();
+            }
+
+            for (SchemaOperation op : schemaOps.values()) {
+                if (op.started()) {
+                    op.manager().onNodeLeave(node.id(), crd0);
+
+                    if (crd0.isLocal())
+                        unwindPendingMessages(op.id(), op.manager());
+                }
+            }
+        }
+    }
+
+    /**
+     * Process index operation.
+     *
+     * @param op Operation.
+     * @param type Type descriptor.
+     * @param depId Cache deployment ID.
+     * @param cancelTok Cancel token.
+     * @throws SchemaOperationException If failed.
+     */
+    public void processIndexOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
+        SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
+        if (log.isDebugEnabled())
+            log.debug("Started local index operation [opId=" + op.id() + ']');
+
+        String space = op.space();
+
+        GridCacheAdapter cache = ctx.cache().internalCache(op.space());
+
+        if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
 
         try {
-            return rebuildIndexes(
-                space,
-                typesByName.get(
-                    new TypeName(
-                        space,
-                        valTypeName)));
+            if (op instanceof SchemaIndexCreateOperation) {
+                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
+
+                QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
+
+                SchemaIndexCacheVisitor visitor =
+                    new SchemaIndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
+
+                idx.dynamicIndexCreate(space, op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
+            }
+            else if (op instanceof SchemaIndexDropOperation) {
+                SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+
+                idx.dynamicIndexDrop(space, op0.indexName(), op0.ifExists());
+            }
+            else
+                throw new SchemaOperationException("Unsupported operation: " + op);
+        }
+        catch (Exception e) {
+            if (e instanceof SchemaOperationException)
+                throw (SchemaOperationException)e;
+            else
+                throw new SchemaOperationException("Schema change operation failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Register cache in indexing SPI.
+     *
+     * @param space Space.
+     * @param cctx Cache context.
+     * @param cands Candidates.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void registerCache0(String space, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
+        throws IgniteCheckedException {
+        synchronized (stateMux) {
+            if (idx != null)
+                idx.registerCache(space, cctx, cctx.config());
+
+            try {
+                for (QueryTypeCandidate cand : cands) {
+                    QueryTypeIdKey typeId = cand.typeId();
+                    QueryTypeIdKey altTypeId = cand.alternativeTypeId();
+                    QueryTypeDescriptorImpl desc = cand.descriptor();
+
+                    if (typesByName.putIfAbsent(new QueryTypeNameKey(space, desc.name()), desc) != null)
+                        throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                            "in cache '" + space + "'.");
+
+                    types.put(typeId, desc);
+
+                    if (altTypeId != null)
+                        types.put(altTypeId, desc);
+
+                    for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
+                        QueryIndexKey idxKey = new QueryIndexKey(space, idx.name());
+
+                        QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
+
+                        if (oldIdx != null) {
+                            throw new IgniteException("Duplicate index name [cache=" + space +
+                                ", idxName=" + idx.name() + ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+                                ", table=" + desc.tableName() + ']');
+                        }
+                    }
+
+                    if (idx != null)
+                        idx.registerType(space, desc);
+                }
+
+                spaces.add(CU.mask(space));
+            }
+            catch (IgniteCheckedException | RuntimeException e) {
+                onCacheStop0(space);
+
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Unregister cache.<p>
+     * Use with {@link #busyLock} where appropriate.
+     *
+     * @param space Space.
+     */
+    public void onCacheStop0(String space) {
+        if (idx == null)
+            return;
+
+        synchronized (stateMux) {
+            // Clear types.
+            Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
+
+            while (it.hasNext()) {
+                Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> entry = it.next();
+
+                if (F.eq(space, entry.getKey().space())) {
+                    it.remove();
+
+                    typesByName.remove(new QueryTypeNameKey(space, entry.getValue().name()));
+
+                    entry.getValue().markObsolete();
+                }
+            }
+
+            // Clear indexes.
+            Iterator<Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl>> idxIt = idxs.entrySet().iterator();
+
+            while (idxIt.hasNext()) {
+                Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl> idxEntry = idxIt.next();
+
+                QueryIndexKey idxKey = idxEntry.getKey();
+
+                if (F.eq(space, idxKey.space()))
+                    idxIt.remove();
+            }
+
+            // Notify in-progress index operations.
+            for (SchemaOperation op : schemaOps.values()) {
+                if (op.started())
+                    op.manager().worker().cancel();
+            }
+
+            // Notify indexing.
+            try {
+                idx.unregisterCache(space);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
+            }
+
+            spaces.remove(CU.mask(space));
+        }
+    }
+
+    /**
+     * Check whether provided key and value belongs to expected space and table.
+     *
+     * @param cctx Target cache context.
+     * @param expSpace Expected space.
+     * @param expTblName Expected table name.
+     * @param key Key.
+     * @param val Value.
+     * @return {@code True} if this key-value pair belongs to expected space/table, {@code false} otherwise or
+     *     if space or table doesn't exist.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public boolean belongsToTable(GridCacheContext cctx, String expSpace, String expTblName, KeyCacheObject key,
+        CacheObject val) throws IgniteCheckedException {
+        QueryTypeDescriptorImpl desc = type(expSpace, val);
+
+        if (desc == null)
+            return false;
+
+        if (!F.eq(expTblName, desc.tableName()))
+            return false;
+
+        if (!cctx.cacheObjects().isBinaryObject(val)) {
+            Class<?> valCls = val.value(cctx.cacheObjectContext(), false).getClass();
+
+            if (!desc.valueClass().isAssignableFrom(valCls))
+                return false;
+        }
+
+        if (!cctx.cacheObjects().isBinaryObject(key)) {
+            Class<?> keyCls = key.value(cctx.cacheObjectContext(), false).getClass();
+
+            if (!desc.keyClass().isAssignableFrom(keyCls))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Rebuilds indexes for provided caches from corresponding hash indexes.
+     *
+     * @param cacheIds Cache IDs.
+     * @return Future that will be completed when rebuilding is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(Collection<Integer> cacheIds) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to get space size (grid is stopping).");
+
+        try {
+            GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<Object, Object>();
+
+            for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
+                if (cacheIds.contains(CU.cacheId(e.getKey().space())))
+                    fut.add(rebuildIndexesFromHash(e.getKey().space(), e.getValue()));
+            }
+
+            fut.markInitialized();
+
+            return fut;
         }
         finally {
             busyLock.leaveBusy();
@@ -589,19 +1444,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
+    private IgniteInternalFuture<Object> rebuildIndexesFromHash(
+        @Nullable final String space,
+        @Nullable final QueryTypeDescriptorImpl desc
+    ) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
-        if (desc == null || !desc.registered())
-            return new GridFinishedFuture<Void>();
+        if (desc == null)
+            return new GridFinishedFuture<>();
 
-        final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
+        final GridWorkerFuture<Object> fut = new GridWorkerFuture<>();
 
-        GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
+        idx.markForRebuildFromHash(space, desc);
+
+        GridWorker w = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker", log) {
             @Override protected void body() {
                 try {
-                    idx.rebuildIndexes(space, desc);
+                    idx.rebuildIndexesFromHash(space, desc);
 
                     fut.onDone();
                 }
@@ -613,42 +1473,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     fut.onDone(e);
 
-                    if (e instanceof Error)
-                        throw e;
+                    throw e;
                 }
             }
         };
 
         fut.setWorker(w);
 
-        execSvc.execute(w);
+        ctx.getExecutorService().execute(w);
 
         return fut;
-    }
-
-    /**
-     * Rebuilds all search indexes for given spi.
-     *
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> rebuildAllIndexes() {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to get space size (grid is stopping).");
-
-        try {
-            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
-
-            for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
-
-            fut.markInitialized();
-
-            return fut;
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
     }
 
     /**
@@ -669,59 +1503,87 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    @SuppressWarnings("unchecked")
-    public void store(final String space, final CacheObject key, final CacheObject val,
-        byte[] ver, long expirationTime) throws IgniteCheckedException {
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    public void store(final String space,
+        final KeyCacheObject key,
+        int partId,
+        @Nullable CacheObject prevVal,
+        @Nullable GridCacheVersion prevVer,
+        final CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime,
+        long link) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
         if (log.isDebugEnabled())
             log.debug("Store [space=" + space + ", key=" + key + ", val=" + val + "]");
 
-        CacheObjectContext coctx = null;
-
-        if (ctx.indexing().enabled()) {
-            coctx = cacheObjectContext(space);
-
-            Object key0 = unwrap(key, coctx);
-
-            Object val0 = unwrap(val, coctx);
-
-            ctx.indexing().store(space, key0, val0, expirationTime);
-        }
-
         if (idx == null)
             return;
 
         if (!busyLock.enterBusy())
-            return;
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
         try {
-            if (coctx == null)
-                coctx = cacheObjectContext(space);
+            CacheObjectContext coctx = cacheObjectContext(space);
 
-            Class<?> valCls = null;
+            QueryTypeDescriptorImpl desc = typeByValue(coctx, key, val, true);
 
-            TypeId id;
+            if (prevVal != null) {
+                QueryTypeDescriptorImpl prevValDesc = typeByValue(coctx, key, prevVal, false);
 
-            boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
-
-            if (binaryVal) {
-                int typeId = ctx.cacheObjects().typeId(val);
-
-                id = new TypeId(space, typeId);
-            }
-            else {
-                valCls = val.value(coctx, false).getClass();
-
-                id = new TypeId(space, valCls);
+                if (prevValDesc != null && prevValDesc != desc)
+                    idx.remove(space, prevValDesc, key, partId, prevVal, prevVer);
             }
 
-            TypeDescriptor desc = types.get(id);
-
-            if (desc == null || !desc.registered())
+            if (desc == null)
                 return;
 
+            idx.store(space, desc.name(), key, partId, val, ver, expirationTime, link);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param coctx Cache context.
+     * @param key Key.
+     * @param val Value.
+     * @param checkType If {@code true} checks that key and value type correspond to found TypeDescriptor.
+     * @return Type descriptor if found.
+     * @throws IgniteCheckedException If type check failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    @Nullable private QueryTypeDescriptorImpl typeByValue(CacheObjectContext coctx,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean checkType)
+        throws IgniteCheckedException {
+        Class<?> valCls = null;
+
+        QueryTypeIdKey id;
+
+        boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
+
+        if (binaryVal) {
+            int typeId = ctx.cacheObjects().typeId(val);
+
+            id = new QueryTypeIdKey(coctx.cacheName(), typeId);
+        }
+        else {
+            valCls = val.value(coctx, false).getClass();
+
+            id = new QueryTypeIdKey(coctx.cacheName(), valCls);
+        }
+
+        QueryTypeDescriptorImpl desc = types.get(id);
+
+        if (desc == null)
+            return null;
+
+        if (checkType) {
             if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
@@ -734,19 +1596,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
             }
+        }
 
-            idx.store(space, desc, key, val, ver, expirationTime);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+        return desc;
     }
 
     /**
-     * Unwrap CacheObject if needed.
+     * Gets type descriptor for space by given object's type.
+     *
+     * @param space Space name.
+     * @param val Object to determine type for.
+     * @return Type descriptor.
+     * @throws IgniteCheckedException If failed.
      */
-    private Object unwrap(CacheObject obj, CacheObjectContext coctx) {
-        return isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(obj) ? obj : obj.value(coctx, false);
+    @SuppressWarnings("ConstantConditions")
+    private QueryTypeDescriptorImpl type(@Nullable String space, CacheObject val) throws IgniteCheckedException {
+        CacheObjectContext coctx = cacheObjectContext(space);
+
+        QueryTypeIdKey id;
+
+        boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
+
+        if (binaryVal)
+            id = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(val));
+        else
+            id = new QueryTypeIdKey(space, val.value(coctx, false).getClass());
+
+        return types.get(id);
     }
 
     /**
@@ -767,36 +1643,70 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param space Space.
-     * @param clause Clause.
-     * @param params Parameters collection.
-     * @param resType Result type.
-     * @param filters Filters.
-     * @return Key/value rows.
-     * @throws IgniteCheckedException If failed.
+     * Query SQL fields.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(final String space, final String clause,
-        final Collection<Object> params, final String resType, final IndexingQueryFilter filters)
-        throws IgniteCheckedException {
-        checkEnabled();
+    public QueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+        checkxEnabled();
+
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException(
+                "Using both partitions and distributed JOINs is not supported for the same query");
+
+        boolean loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final GridCacheContext<?, ?> cctx = ctx.cache().internalCache(space).context();
+            IgniteOutClosureX<QueryCursor<List<?>>> clo;
 
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, clause, cctx, new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
-                @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                    TypeDescriptor type = typesByName.get(new TypeName(space, resType));
+            if (loc) {
+                clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
+                    @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        GridQueryCancel cancel = new GridQueryCancel();
 
-                    if (type == null || !type.registered())
-                        throw new CacheException("Failed to find SQL table for type: " + resType);
+                        final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
+                            idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
 
-                    return idx.queryLocalSql(space, clause, params, type, filters);
-                }
-            }, false);
+                        Iterable<List<?>> iterExec = new Iterable<List<?>>() {
+                            @Override public Iterator<List<?>> iterator() {
+                                sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
+
+                                return cursor.iterator();
+                            }
+                        };
+
+                        return new QueryCursorImpl<List<?>>(iterExec, cancel) {
+                            @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                                if (cursor instanceof QueryCursorImpl)
+                                    return ((QueryCursorEx)cursor).fieldsMeta();
+
+                                return super.fieldsMeta();
+                            }
+                        };
+                    }
+                };
+            }
+            else {
+                clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
+                    @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        return idx.queryDistributedSqlFields(cctx, qry, null);
+                    }
+                };
+            }
+
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();
@@ -804,25 +1714,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
+     * @param spaceName Cache name.
+     * @param streamer Data streamer.
      * @param qry Query.
-     * @return Cursor.
+     * @return Iterator.
      */
-    public QueryCursor<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
-        checkxEnabled();
+    public long streamUpdateQuery(@Nullable final String spaceName,
+        final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
+        assert streamer != null;
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() {
-                    return idx.queryTwoStep(cctx, qry);
+            GridCacheContext cctx = ctx.cache().cache(spaceName).context();
+
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
+                @Override public Long applyx() throws IgniteCheckedException {
+                    return idx.streamUpdateQuery(spaceName, qry, args, streamer);
                 }
             }, true);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();
@@ -830,22 +1744,47 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Execute distributed SQL query.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     */
+    public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
+        boolean keepBinary) {
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException(
+                "Using both partitions and distributed JOINs is not supported for the same query");
+
+        if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
+            return queryLocalSql(cctx, qry, keepBinary);
+
+        return queryDistributedSql(cctx, qry);
+    }
+
+    /**
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(final GridCacheContext<?,?> cctx, final SqlQuery qry) {
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
+        final SqlQuery qry) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
-                @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                    return idx.queryTwoStep(cctx, qry);
-                }
-            }, true);
+            return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
+                new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
+                    @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
+                        return idx.queryDistributedSql(cctx, qry);
+                    }
+                }, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -861,7 +1800,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(
         final GridCacheContext<?, ?> cctx,
         final SqlQuery qry,
         final boolean keepBinary
@@ -871,58 +1810,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
-                new IgniteOutClosureX<Iterator<Cache.Entry<K, V>>>() {
-                    @Override public Iterator<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        String space = cctx.name();
+                new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
+                    @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         String type = qry.getType();
-                        String sqlQry = qry.getSql();
-                        Object[] params = qry.getArgs();
 
-                        TypeDescriptor typeDesc = typesByName.get(
-                            new TypeName(
-                                space,
-                                type));
+                        String typeName = typeName(cctx.name(), type);
 
-                        if (typeDesc == null || !typeDesc.registered())
-                            throw new CacheException("Failed to find SQL table for type: " + type);
-
-                        final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.queryLocalSql(
-                            space,
-                            sqlQry,
-                            F.asList(params),
-                            typeDesc,
-                            idx.backupFilter(requestTopVer.get(), null));
+                        qry.setType(typeName);
 
                         sendQueryExecutedEvent(
-                            sqlQry,
-                            params);
+                            qry.getSql(),
+                            qry.getArgs(),
+                            cctx.name());
 
-                        return new ClIter<Cache.Entry<K, V>>() {
-                            @Override public void close() throws Exception {
-                                i.close();
-                            }
-
-                            @Override public boolean hasNext() {
-                                return i.hasNext();
-                            }
-
-                            @Override public Cache.Entry<K, V> next() {
-                                IgniteBiTuple<K, V> t = i.next();
-
-                                return new CacheEntryImpl<>(
-                                    (K)cctx.unwrapBinaryIfNeeded(t.getKey(), keepBinary, false),
-                                    (V)cctx.unwrapBinaryIfNeeded(t.getValue(), keepBinary, false));
-                            }
-
-                            @Override public void remove() {
-                                throw new UnsupportedOperationException();
-                            }
-                        };
+                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), qry.getPartitions()), keepBinary);
                     }
                 }, true);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();
@@ -930,17 +1836,114 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+        if (moduleEnabled())
+            return idx.runningQueries(duration);
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries ID's to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries) {
+        if (moduleEnabled())
+            idx.cancelQueries(queries);
+    }
+
+    /**
+     * Entry point for index procedure.
+     *
+     * @param space Space name.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dynamicIndexCreate(String space, String tblName, QueryIndex idx,
+        boolean ifNotExists) {
+        SchemaAbstractOperation op = new SchemaIndexCreateOperation(UUID.randomUUID(), space, tblName, idx, ifNotExists);
+
+        return startIndexOperationDistributed(op);
+    }
+
+    /**
+     * Entry point for index drop procedure
+     *
+     * @param idxName Index name.
+     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dynamicIndexDrop(String space, String idxName, boolean ifExists) {
+        SchemaAbstractOperation op = new SchemaIndexDropOperation(UUID.randomUUID(), space, idxName, ifExists);
+
+        return startIndexOperationDistributed(op);
+    }
+
+    /**
+     * Start distributed index change operation.
+     *
+     * @param op Operation.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
+        SchemaOperationClientFuture fut = new SchemaOperationClientFuture(op.id());
+
+        SchemaOperationClientFuture oldFut = schemaCliFuts.put(op.id(), fut);
+
+        assert oldFut == null;
+
+        try {
+            ctx.discovery().sendCustomEvent(new SchemaProposeDiscoveryMessage(op));
+
+            if (log.isDebugEnabled())
+                log.debug("Sent schema propose discovery message [opId=" + op.id() + ", op=" + op + ']');
+
+            boolean disconnected0;
+
+            synchronized (stateMux) {
+                disconnected0 = disconnected;
+            }
+
+            if (disconnected0) {
+                fut.onDone(new SchemaOperationException("Client node is disconnected (operation result is unknown)."));
+
+                schemaCliFuts.remove(op.id());
+            }
+        }
+        catch (Exception e) {
+            if (e instanceof SchemaOperationException)
+                fut.onDone(e);
+            else {
+                fut.onDone(new SchemaOperationException("Failed to start schema change operation due to " +
+                    "unexpected exception [opId=" + op.id() + ", op=" + op + ']', e));
+            }
+
+            schemaCliFuts.remove(op.id());
+        }
+
+        return fut;
+    }
+
+    /**
      * @param sqlQry Sql query.
      * @param params Params.
      */
-    private void sendQueryExecutedEvent(String sqlQry, Object[] params) {
+    private void sendQueryExecutedEvent(String sqlQry, Object[] params, String cacheName) {
         if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             ctx.event().record(new CacheQueryExecutedEvent<>(
                 ctx.discovery().localNode(),
                 "SQL query executed.",
                 EVT_CACHE_QUERY_EXECUTED,
                 CacheQueryType.SQL.name(),
-                null,
+                cacheName,
                 null,
                 sqlQry,
                 null,
@@ -952,77 +1955,40 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param timeout Timeout.
-     * @param timeUnit Time unit.
-     * @return Converted time.
+     *
+     * @param space Space name.
+     * @param sql Query.
+     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
-        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
+    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
+        checkxEnabled();
 
-        A.ensure(timeout >= 0, "timeout value should be non-negative.");
-
-        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-
-        A.ensure(timeout <= Integer.MAX_VALUE, "timeout value too large.");
-
-        return (int) tmp;
+        return idx.prepareNativeStatement(space, sql);
     }
 
     /**
-     * Closeable iterator.
+     * @param schema Schema name.
+     * @return space (cache) name from schema name.
      */
-    private interface ClIter<X> extends AutoCloseable, Iterator<X> {
-        // No-op.
+    public String space(String schema) throws SQLException {
+        checkxEnabled();
+
+        return idx.space(schema);
     }
 
     /**
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @return Iterator.
+     * @param spaceName Space name.
+     * @param nativeStmt Native statement.
+     * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
+     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
+     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
+     * @param allowOverwrite Overwrite existing cache values on key duplication.
+     * @see IgniteDataStreamer#allowOverwrite
+     * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata.
      */
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            final boolean keepBinary = cctx.keepBinary();
-
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    final String space = cctx.name();
-                    final String sql = qry.getSql();
-                    final Object[] args = qry.getArgs();
-                    final GridQueryCancel cancel = new GridQueryCancel();
-
-                    final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), null), qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
-
-                    QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                        @Override public Iterator<List<?>> iterator() {
-                            try {
-                                sendQueryExecutedEvent(sql, args);
-
-                                return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteException(e);
-                            }
-                        }
-                    }, cancel);
-
-                    cursor.fieldsMeta(res.metaData());
-
-                    return cursor;
-                }
-            }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
+    public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+        return idx.createStreamer(spaceName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
     }
 
     /**
@@ -1030,19 +1996,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(String space, CacheObject key, CacheObject val) throws IgniteCheckedException {
+    public void remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
-
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(space);
-
-            Object key0 = unwrap(key, coctx);
-
-            ctx.indexing().remove(space, key0);
-        }
 
         if (idx == null)
             return;
@@ -1051,81 +2009,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            idx.remove(space, key, val);
+            CacheObjectContext coctx = cacheObjectContext(space);
+
+            QueryTypeDescriptorImpl desc = typeByValue(coctx, key, val, false);
+
+            if (desc == null)
+                return;
+
+            idx.remove(space, desc, key, partId, val, ver);
         }
         finally {
             busyLock.leaveBusy();
         }
-    }
-
-    /**
-     * Checks if the given class can be mapped to a simple SQL type.
-     *
-     * @param cls Class.
-     * @return {@code true} If can.
-     */
-    public static boolean isSqlType(Class<?> cls) {
-        cls = U.box(cls);
-
-        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
-    }
-
-    /**
-     * Checks if the given class is GEOMETRY.
-     *
-     * @param cls Class.
-     * @return {@code true} If this is geometry.
-     */
-    public static boolean isGeometryClass(Class<?> cls) {
-        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
-    }
-
-    /**
-     * Gets type name by class.
-     *
-     * @param cls Class.
-     * @return Type name.
-     */
-    public static String typeName(Class<?> cls) {
-        String typeName = cls.getSimpleName();
-
-        // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName)) {
-            String pkg = cls.getPackage().getName();
-
-            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
-        }
-
-        if (cls.isArray()) {
-            assert typeName.endsWith("[]");
-
-            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
-        }
-
-        return typeName;
-    }
-
-    /**
-     * Gets type name by class.
-     *
-     * @param clsName Class name.
-     * @return Type name.
-     */
-    public static String typeName(String clsName) {
-        int pkgEnd = clsName.lastIndexOf('.');
-
-        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
-            clsName = clsName.substring(pkgEnd + 1);
-
-        if (clsName.endsWith("[]"))
-            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-
-        int parentEnd = clsName.lastIndexOf('$');
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        return clsName;
     }
 
     /**
@@ -1152,16 +2047,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                        TypeDescriptor type = typesByName.get(new TypeName(space, resType));
+                        String typeName = typeName(space, resType);
 
-                        if (type == null || !type.registered())
-                            throw new CacheException("Failed to find SQL table for type: " + resType);
-
-                        return idx.queryLocalText(
-                            space,
-                            clause,
-                            type,
-                            filters);
+                        return idx.queryLocalText(space, clause, typeName, filters);
                     }
                 }, true);
         }
@@ -1171,592 +2059,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Will be called when entry for key will be swapped.
-     *
-     * @param spaceName Space name.
-     * @param key key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onSwap(String spaceName, CacheObject key) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
-
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(spaceName);
-
-            Object key0 = unwrap(key, coctx);
-
-            ctx.indexing().onSwap(spaceName, key0);
-        }
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process swap event (grid is stopping).");
-
-        try {
-            idx.onSwap(
-                spaceName,
-                key);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Will be called when entry for key will be unswapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUnswap(String spaceName, CacheObject key, CacheObject val)
-        throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
-
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(spaceName);
-
-            Object key0 = unwrap(key, coctx);
-
-            Object val0 = unwrap(val, coctx);
-
-            ctx.indexing().onUnswap(spaceName, key0, val0);
-        }
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process swap event (grid is stopping).");
-
-        try {
-            idx.onUnswap(spaceName, key, val);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Removes index tables for all classes belonging to given class loader.
-     *
-     * @param space Space name.
-     * @param ldr Class loader to undeploy.
-     * @throws IgniteCheckedException If undeploy failed.
-     */
-    public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Undeploy [space=" + space + "]");
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process undeploy event (grid is stopping).");
-
-        try {
-            Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
-
-            while (it.hasNext()) {
-                Map.Entry<TypeId, TypeDescriptor> e = it.next();
-
-                if (!F.eq(e.getKey().space, space))
-                    continue;
-
-                TypeDescriptor desc = e.getValue();
-
-                if (ldr.equals(U.detectClassLoader(desc.valCls)) || ldr.equals(U.detectClassLoader(desc.keyCls))) {
-                    idx.unregisterType(e.getKey().space, desc);
-
-                    it.remove();
-                }
-            }
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Processes declarative metadata for class.
-     *
-     * @param meta Type metadata.
-     * @param d Type descriptor.
-     * @param coCtx Cache object context.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d, CacheObjectContext coCtx)
-        throws IgniteCheckedException {
-        Map<String,String> aliases = meta.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
-        Class<?> keyCls = d.keyClass();
-        Class<?> valCls = d.valueClass();
-
-        assert keyCls != null;
-        assert valCls != null;
-
-        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases, coCtx);
-
-        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases, coCtx);
-
-        for (String txtField : meta.getTextFields())
-            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases, coCtx);
-
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
-
-        if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
-                String idxName = entry.getKey();
-
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
-
-                int order = 0;
-
-                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    Boolean descending = idxField.getValue().get2();
-
-                    if (descending == null)
-                        descending = false;
-
-                    addToIndex(d, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
-                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases, coCtx);
-
-                    order++;
-                }
-            }
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                entry.getKey(),
-                entry.getValue(),
-                aliases,
-                coCtx);
-
-            d.addProperty(prop, false);
-        }
-    }
-
-    /**
-     * @param d Type descriptor.
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @param pathStr Path string.
-     * @param resType Result type.
-     * @param idxOrder Order number in index or {@code -1} if no need to index.
-     * @param idxType Index type.
-     * @param idxName Index name.
-     * @param aliases Aliases.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addToIndex(
-        TypeDescriptor d,
-        Class<?> keyCls,
-        Class<?> valCls,
-        String pathStr,
-        Class<?> resType,
-        int idxOrder,
-        IndexType idxType,
-        String idxName,
-        Map<String,String> aliases,
-        CacheObjectContext coCtx
-    ) throws IgniteCheckedException {
-        String propName;
-        Class<?> propCls;
-
-        if (_VAL.equals(pathStr)) {
-            propName = _VAL;
-            propCls = valCls;
-        }
-        else {
-            ClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                pathStr,
-                resType,
-                aliases,
-                coCtx);
-
-            d.addProperty(prop, false);
-
-            propName = prop.name();
-            propCls = prop.type();
-        }
-
-        if (idxType != null) {
-            if (idxName == null)
-                idxName = propName + "_idx";
-
-            if (idxOrder == 0) // Add index only on the first field.
-                d.addIndex(idxName, isGeometryClass(propCls) ? GEO_SPATIAL : SORTED);
-
-            if (idxType == IndexType.TEXT)
-                d.addFieldToTextIndex(propName);
-            else
-                d.addFieldToIndex(idxName, propName, idxOrder, idxType == IndexType.DESC);
-        }
-    }
-
-    /**
-     * Processes declarative metadata for binary object.
-     *
-     * @param meta Declared metadata.
-     * @param d Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processBinaryMeta(CacheTypeMetadata meta, TypeDescriptor d)
-        throws IgniteCheckedException {
-        Map<String,String> aliases = meta.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
-        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, false);
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, true);
-        }
-
-        for (String txtIdx : meta.getTextFields()) {
-            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases);
-
-            d.addProperty(prop, false);
-
-            d.addFieldToTextIndex(prop.name());
-        }
-
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
-
-        if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
-                String idxName = entry.getKey();
-
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
-
-                int order = 0;
-
-                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
-
-                    d.addProperty(prop, false);
-
-                    Boolean descending = idxField.getValue().get2();
-
-                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
-
-                    order++;
-                }
-            }
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
-
-            if (!d.props.containsKey(prop.name()))
-                d.addProperty(prop, false);
-        }
-    }
-
-    /**
-     * Processes declarative metadata for binary object.
-     *
-     * @param qryEntity Declared metadata.
-     * @param d Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processBinaryMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
-        Map<String,String> aliases = qryEntity.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
-        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true), aliases);
-
-            d.addProperty(prop, false);
-        }
-
-        processIndexes(qryEntity, d);
-    }
-
-    /**
-     * Processes declarative metadata for binary object.
-     *
-     * @param qryEntity Declared metadata.
-     * @param d Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processClassMeta(
-        QueryEntity qryEntity,
-        TypeDescriptor d,
-        CacheObjectContext coCtx
-    ) throws IgniteCheckedException {
-        Map<String,String> aliases = qryEntity.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
-        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
-                d.keyClass(),
-                d.valueClass(),
-                entry.getKey(),
-                U.classForName(entry.getValue(), Object.class),
-                aliases,
-                coCtx);
-
-            d.addProperty(prop, false);
-        }
-
-        processIndexes(qryEntity, d);
-    }
-
-    /**
-     * Processes indexes based on query entity.
-     *
-     * @param qryEntity Query entity to process.
-     * @param d Type descriptor to populate.
-     * @throws IgniteCheckedException If failed to build index information.
-     */
-    private void processIndexes(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
-        if (!F.isEmpty(qryEntity.getIndexes())) {
-            Map<String, String> aliases = qryEntity.getAliases();
-
-            if (aliases == null)
-                aliases = Collections.emptyMap();
-
-            for (QueryIndex idx : qryEntity.getIndexes()) {
-                String idxName = idx.getName();
-
-                if (idxName == null)
-                    idxName = QueryEntity.defaultIndexName(idx);
-
-                if (idx.getIndexType() == QueryIndexType.SORTED || idx.getIndexType() == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idx.getIndexType() == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
-
-                    int i = 0;
-
-                    for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
-                        String field = entry.getKey();
-                        boolean asc = entry.getValue();
-
-                        String alias = aliases.get(field);
-
-                        if (alias != null)
-                            field = alias;
-
-                        d.addFieldToIndex(idxName, field, i++, !asc);
-                    }
-                }
-                else {
-                    assert idx.getIndexType() == QueryIndexType.FULLTEXT;
-
-                    for (String field : idx.getFields().keySet()) {
-                        String alias = aliases.get(field);
-
-                        if (alias != null)
-                            field = alias;
-
-                        d.addFieldToTextIndex(field);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Builds binary object property.
-     *
-     * @param pathStr String representing path to the property. May contains dots '.' to identify
-     *      nested fields.
-     * @param resType Result type.
-     * @param aliases Aliases.
-     * @return Binary property.
-     */
-    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
-        String[] path = pathStr.split("\\.");
-
-        BinaryProperty res = null;
-
-        StringBuilder fullName = new StringBuilder();
-
-        for (String prop : path) {
-            if (fullName.length() != 0)
-                fullName.append('.');
-
-            fullName.append(prop);
-
-            String alias = aliases.get(fullName.toString());
-
-            res = new BinaryProperty(prop, res, resType, alias);
-        }
-
-        return res;
-    }
-
-    /**
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @param pathStr Path string.
-     * @param resType Result type.
-     * @param aliases Aliases.
-     * @return Class property.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
-        ClassProperty res = buildClassProperty(
-            true,
-            keyCls,
-            pathStr,
-            resType,
-            aliases,
-            coCtx);
-
-        if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases, coCtx);
-
-        if (res == null)
-            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
-                "key class '" + keyCls + "' and value class '" + valCls + "'. " +
-                "Make sure that one of these classes contains respective getter method or field.");
-
-        return res;
-    }
-
-    /**
-     * @param key If this is a key property.
-     * @param cls Source type class.
-     * @param pathStr String representing path to the property. May contains dots '.' to identify nested fields.
-     * @param resType Expected result type.
-     * @param aliases Aliases.
-     * @return Property instance corresponding to the given path.
-     */
-    static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, CacheObjectContext coCtx) {
-        String[] path = pathStr.split("\\.");
-
-        ClassProperty res = null;
-
-        StringBuilder fullName = new StringBuilder();
-
-        for (String prop : path) {
-            if (fullName.length() != 0)
-                fullName.append('.');
-
-            fullName.append(prop);
-
-            String alias = aliases.get(fullName.toString());
-
-            StringBuilder bld = new StringBuilder("get");
-
-            bld.append(prop);
-
-            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
-            ClassProperty tmp = null;
-
-            try {
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-            }
-            catch (NoSuchMethodException ignore) {
-                // No-op.
-            }
-
-            if (tmp == null) { // Boolean getter can be defined as is###().
-                bld = new StringBuilder("is");
-
-                bld.append(prop);
-
-                bld.setCharAt(2, Character.toUpperCase(bld.charAt(2)));
-
-                try {
-                    tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignore) {
-                    // No-op.
-                }
-            }
-
-            Class cls0 = cls;
-
-            while (tmp == null && cls0 != null)
-                try {
-                    tmp = new ClassProperty(cls0.getDeclaredField(prop), key, alias, coCtx);
-                }
-                catch (NoSuchFieldException ignored) {
-                    cls0 = cls0.getSuperclass();
-                }
-
-            if (tmp == null) {
-                try {
-                    tmp = new ClassProperty(cls.getMethod(prop), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignored) {
-                    // No-op.
-                }
-            }
-
-            if (tmp == null)
-                return null;
-
-            tmp.parent(res);
-
-            cls = tmp.type();
-
-            res = tmp;
-        }
-
-        if (!U.box(resType).isAssignableFrom(U.box(res.type())))
-            return null;
-
-        return res;
-    }
-
-    /**
      * Gets types for space.
      *
      * @param space Space name.
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String space) {
-        Collection<GridQueryTypeDescriptor> spaceTypes = new ArrayList<>(
-            Math.min(10, types.size()));
+        Collection<GridQueryTypeDescriptor> spaceTypes = new ArrayList<>();
 
-        for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
-            TypeDescriptor desc = e.getValue();
+        for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
+            QueryTypeDescriptorImpl desc = e.getValue();
 
-            if (desc.registered() && F.eq(e.getKey().space, space))
+            if (F.eq(e.getKey().space(), space))
                 spaceTypes.add(desc);
         }
 
@@ -1764,20 +2078,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets type descriptor for space and type name.
+     * Get type descriptor for the given space and table name.
+     * @param space Space.
+     * @param tblName Table name.
+     * @return Type (if any).
+     */
+    @Nullable private QueryTypeDescriptorImpl type(@Nullable String space, String tblName) {
+        for (QueryTypeDescriptorImpl type : types.values()) {
+            if (F.eq(space, type.space()) && F.eq(tblName, type.tableName()))
+                return type;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets type name for provided space and type name if type is still valid.
      *
      * @param space Space name.
      * @param typeName Type name.
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryTypeDescriptor type(@Nullable String space, String typeName) throws IgniteCheckedException {
-        TypeDescriptor type = typesByName.get(new TypeName(space, typeName));
+    private String typeName(@Nullable String space, String typeName) throws IgniteCheckedException {
+        QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
-        if (type == null || !type.registered())
-            throw new IgniteCheckedException("Failed to find type descriptor for type name: " + typeName);
+        if (type == null)
+            throw new IgniteCheckedException("Failed to find SQL table for type: " + typeName);
 
-        return type;
+        return type.name();
     }
 
     /**
@@ -1787,8 +2116,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clo Closure.
      * @param complete Complete.
      */
-    public <R> R executeQuery(GridCacheQueryType qryType, String qry, GridCacheContext<?, ?> cctx, IgniteOutClosureX<R> clo, boolean complete)
-        throws IgniteCheckedException {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public <R> R executeQuery(GridCacheQueryType qryType, String qry, GridCacheContext<?, ?> cctx,
+        IgniteOutClosureX<R> clo, boolean complete) throws IgniteCheckedException {
         final long startTime = U.currentTimeMillis();
 
         Throwable err = null;
@@ -1811,7 +2141,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             throw (IgniteCheckedException)err;
         }
-        catch (CacheException e) {
+        catch (CacheException | IgniteException e) {
             err = e;
 
             throw e;
@@ -1837,6 +2167,146 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Send status message to coordinator node.
+     *
+     * @param destNodeId Destination node ID.
+     * @param opId Operation ID.
+     * @param err Error.
+     */
+    public void sendStatusMessage(UUID destNodeId, UUID opId, SchemaOperationException err) {
+        if (log.isDebugEnabled())
+            log.debug("Sending schema operation status message [opId=" + opId + ", crdNode=" + destNodeId +
+                ", err=" + err + ']');
+
+        try {
+            byte[] errBytes = marshalSchemaError(opId, err);
+
+            SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(opId, errBytes);
+
+            // Messages must go to dedicated schema pool. We cannot push them to query pool because in this case
+            // they could be blocked with other query requests.
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_SCHEMA, msg, SCHEMA_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send schema status response [opId=" + opId + ", destNodeId=" + destNodeId +
+                    ", err=" + e + ']');
+        }
+    }
+
+    /**
+     * Process status message.
+     *
+     * @param msg Status message.
+     */
+    private void processStatusMessage(SchemaOperationStatusMessage msg) {
+        synchronized (stateMux) {
+            if (completedOpIds.contains(msg.operationId())) {
+                // Received message from a node which joined topology in the middle of operation execution.
+                if (log.isDebugEnabled())
+                    log.debug("Received status message for completed operation (will ignore) [" +
+                        "opId=" + msg.operationId() + ", sndNodeId=" + msg.senderNodeId() + ']');
+
+                return;
+            }
+
+            UUID opId = msg.operationId();
+
+            SchemaProposeDiscoveryMessage proposeMsg = activeProposals.get(opId);
+
+            if (proposeMsg != null) {
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
+
+                if (op != null && F.eq(op.id(), opId) && op.started() && coordinator().isLocal()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received status message [opId=" + msg.operationId() +
+                            ", sndNodeId=" + msg.senderNodeId() + ']');
+
+                    op.manager().onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()));
+
+                    return;
+                }
+            }
+
+            // Put to pending set if operation is not visible/ready yet.
+            pendingMsgs.add(msg);
+
+            if (log.isDebugEnabled())
+                log.debug("Received status message (added to pending set) [opId=" + msg.operationId() +
+                    ", sndNodeId=" + msg.senderNodeId() + ']');
+        }
+    }
+
+    /**
+     * Unwind pending messages for particular operation.
+     *
+     * @param opId Operation ID.
+     * @param mgr Manager.
+     */
+    private void unwindPendingMessages(UUID opId, SchemaOperationManager mgr) {
+        assert Thread.holdsLock(stateMux);
+
+        Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
+
+        while (it.hasNext()) {
+            SchemaOperationStatusMessage msg = it.next();
+
+            if (F.eq(msg.operationId(), opId)) {
+                mgr.onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()));
+
+                it.remove();
+            }
+        }
+    }
+
+    /**
+     * Marshal schema error.
+     *
+     * @param err Error.
+     * @return Error bytes.
+     */
+    @Nullable private byte[] marshalSchemaError(UUID opId, @Nullable SchemaOperationException err) {
+        if (err == null)
+            return null;
+
+        try {
+            return U.marshal(marsh, err);
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to marshal schema operation error [opId=" + opId + ", err=" + err + ']', e);
+
+            try {
+                return U.marshal(marsh, new SchemaOperationException("Operation failed, but error cannot be " +
+                    "serialized (see local node log for more details) [opId=" + opId + ", nodeId=" +
+                    ctx.localNodeId() + ']'));
+            }
+            catch (Exception e0) {
+                assert false; // Impossible situation.
+
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Unmarshal schema error.
+     *
+     * @param errBytes Error bytes.
+     * @return Error.
+     */
+    @Nullable private SchemaOperationException unmarshalSchemaError(@Nullable byte[] errBytes) {
+        if (errBytes == null)
+            return null;
+
+        try {
+            return U.unmarshal(marsh, errBytes, U.resolveClassLoader(ctx.config()));
+        }
+        catch (Exception e) {
+            return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
+        }
+    }
+
+    /**
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
@@ -1851,672 +2321,158 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Description of type property.
+     * Schema operation.
      */
-    private static class ClassProperty extends GridQueryProperty {
-        /** */
-        private final Member member;
+    private class SchemaOperation {
+        /** Original propose msg. */
+        private final SchemaProposeDiscoveryMessage proposeMsg;
 
-        /** */
-        private ClassProperty parent;
+        /** Next schema operation. */
+        private SchemaOperation next;
 
-        /** */
-        private String name;
+        /** Operation manager. */
+        private SchemaOperationManager mgr;
 
-        /** */
-        private boolean field;
+        /** Finish message. */
+        private SchemaFinishDiscoveryMessage finishMsg;
 
-        /** */
-        private boolean key;
-
-        /** */
-        private CacheObjectContext coCtx;
+        /** Finish guard. */
+        private final AtomicBoolean finishGuard = new AtomicBoolean();
 
         /**
          * Constructor.
          *
-         * @param member Element.
+         * @param proposeMsg Original propose message.
          */
-        ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
-            this.member = member;
-            this.key = key;
-
-            this.name = !F.isEmpty(name) ? name :
-                member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
-
-            ((AccessibleObject) member).setAccessible(true);
-
-            field = member instanceof Field;
-
-            this.coCtx = coCtx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = unwrap(this.key ? key : val);
-
-            if (parent != null)
-                x = parent.value(key, val);
-
-            if (x == null)
-                return null;
-
-            try {
-                if (field) {
-                    Field field = (Field)member;
-
-                    return field.get(x);
-                }
-                else {
-                    Method mtd = (Method)member;
-
-                    return mtd.invoke(x);
-                }
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
+        public SchemaOperation(SchemaProposeDiscoveryMessage proposeMsg) {
+            this.proposeMsg = proposeMsg;
         }
 
         /**
-         * Unwraps cache object, if needed.
-         *
-         * @param o Object to unwrap.
-         * @return Unwrapped object.
+         * @return Operation ID.
          */
-        private Object unwrap(Object o) {
-            return coCtx == null ? o : o instanceof CacheObject ? ((CacheObject)o).value(coCtx, false) : o;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> type() {
-            return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
+        public UUID id() {
+            return proposeMsg.operation().id();
         }
 
         /**
-         * @param parent Parent property if this is embeddable element.
+         * @return Original propose message.
          */
-        public void parent(ClassProperty parent) {
-            this.parent = parent;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ClassProperty.class, this);
+        public SchemaProposeDiscoveryMessage proposeMessage() {
+            return proposeMsg;
         }
 
         /**
-         * @param cls Class.
-         * @return {@code true} If this property or some parent relates to member of the given class.
+         * @return Next schema operation.
          */
-        public boolean knowsClass(Class<?> cls) {
-            return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
+        @Nullable public SchemaOperation next() {
+            return next;
         }
-    }
-
-    /**
-     *
-     */
-    private class BinaryProperty extends GridQueryProperty {
-        /** Property name. */
-        private String propName;
-
-        /** */
-        private String alias;
-
-        /** Parent property. */
-        private BinaryProperty parent;
-
-        /** Result class. */
-        private Class<?> type;
-
-        /** */
-        private volatile int isKeyProp;
-
-        /** Binary field to speed-up deserialization. */
-        private volatile BinaryField field;
-
-        /** Flag indicating that we already tried to take a field. */
-        private volatile boolean fieldTaken;
-
-        /** Whether user was warned about missing property. */
-        private volatile boolean warned;
 
         /**
-         * Constructor.
-         *
-         * @param propName Property name.
-         * @param parent Parent property.
-         * @param type Result type.
+         * @param next Next schema operation.
          */
-        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, String alias) {
-            this.propName = propName;
-            this.alias = F.isEmpty(alias) ? propName : alias;
-            this.parent = parent;
-            this.type = type;
+        public void next(SchemaOperation next) {
+            this.next = next;
         }
 
-        /** {@inheritDoc} */
-        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object obj;
+        /**
+         * @param finishMsg Finish message.
+         */
+        public void finishMessage(SchemaFinishDiscoveryMessage finishMsg) {
+            this.finishMsg = finishMsg;
+        }
 
-            if (parent != null) {
-                obj = parent.value(key, val);
+        /**
+         * @return {@code True} if finish request already received.
+         */
+        public boolean hasFinishMessage() {
+            return finishMsg != null;
+        }
 
-                if (obj == null)
-                    return null;
+        /**
+         * Handle finish message.
+         */
+        @SuppressWarnings("unchecked")
+        public void doFinish() {
+            assert started();
 
-                if (!ctx.cacheObjects().isBinaryObject(obj))
-                    throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
-                        "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
-            }
-            else {
-                int isKeyProp0 = isKeyProp;
+            if (!finishGuard.compareAndSet(false, true))
+                return;
 
-                if (isKeyProp0 == 0) {
-                    // Key is allowed to be a non-binary object here.
-                    // We check key before value consistently with ClassProperty.
-                    if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
-                        isKeyProp = isKeyProp0 = 1;
-                    else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
-                        isKeyProp = isKeyProp0 = -1;
-                    else {
-                        if (!warned) {
-                            U.warn(log, "Neither key nor value have property \"" + propName + "\" " +
-                                "(is cache indexing configured correctly?)");
+            final UUID opId = id();
+            final SchemaKey key = proposeMsg.schemaKey();
 
-                            warned = true;
+            // Operation might be still in progress on client nodes which are not tracked by coordinator,
+            // so we chain to operation future instead of doing synchronous unwind.
+            mgr.worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    synchronized (stateMux) {
+                        SchemaOperation op = schemaOps.remove(key);
+
+                        assert op != null;
+                        assert F.eq(op.id(), opId);
+
+                        // Chain to the next operation (if any).
+                        final SchemaOperation nextOp = op.next();
+
+                        if (nextOp != null) {
+                            schemaOps.put(key, nextOp);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Next schema change operation started [opId=" + nextOp.id() + ']');
+
+                            assert !nextOp.started();
+
+                            // Cannot execute operation synchronously because it may cause starvation in exchange
+                            // thread under load. Hence, moving short-lived operation to separate worker.
+                            new IgniteThread(ctx.igniteInstanceName(), "schema-circuit-breaker-" + op.id(),
+                                new Runnable() {
+                                @Override public void run() {
+                                    onSchemaPropose(nextOp.proposeMessage());
+                                }
+                            }).start();
                         }
-
-                        return null;
                     }
                 }
-
-                obj = isKeyProp0 == 1 ? key : val;
-            }
-
-            assert obj instanceof BinaryObject;
-
-            BinaryObject obj0 = (BinaryObject)obj;
-
-            return fieldValue(obj0);
-        }
-
-        /**
-         * Get binary field for the property.
-         *
-         * @param obj Target object.
-         * @return Binary field.
-         */
-        private BinaryField binaryField(BinaryObject obj) {
-            BinaryField field0 = field;
-
-            if (field0 == null && !fieldTaken) {
-                BinaryType type = obj instanceof BinaryObjectEx ? ((BinaryObjectEx)obj).rawType() : obj.type();
-
-                if (type != null) {
-                    field0 = type.field(propName);
-
-                    assert field0 != null;
-
-                    field = field0;
-                }
-
-                fieldTaken = true;
-            }
-
-            return field0;
-        }
-
-        /**
-         * Gets field value for the given binary object.
-         *
-         * @param obj Binary object.
-         * @return Field value.
-         */
-        @SuppressWarnings("IfMayBeConditional")
-        private Object fieldValue(BinaryObject obj) {
-            BinaryField field = binaryField(obj);
-
-            if (field != null)
-                return field.value(obj);
-            else
-                return obj.field(propName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return alias;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> type() {
-            return type;
-        }
-    }
-
-    /**
-     * Descriptor of type.
-     */
-    private static class TypeDescriptor implements GridQueryTypeDescriptor {
-        /** */
-        private String name;
-
-        /** Value field names and types with preserved order. */
-        @GridToStringInclude
-        private final Map<String, Class<?>> fields = new LinkedHashMap<>();
-
-        /** */
-        @GridToStringExclude
-        private final Map<String, GridQueryProperty> props = new HashMap<>();
-
-        /** */
-        @GridToStringInclude
-        private final Map<String, IndexDescriptor> indexes = new HashMap<>();
-
-        /** */
-        private IndexDescriptor fullTextIdx;
-
-        /** */
-        private Class<?> keyCls;
-
-        /** */
-        private Class<?> valCls;
-
-        /** */
-        private boolean valTextIdx;
-
-        /** */
-        private String affKey;
-
-        /** SPI can decide not to register this type. */
-        private boolean registered;
-
-        /**
-         * @return {@code True} if type registration in SPI was finished and type was not rejected.
-         */
-        boolean registered() {
-            return registered;
-        }
-
-        /**
-         * @param registered Sets registered flag.
-         */
-        void registered(boolean registered) {
-            this.registered = registered;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /**
-         * Sets type name.
-         *
-         * @param name Name.
-         */
-        void name(String name) {
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Class<?>> fields() {
-            return fields;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryProperty property(String name) {
-            return props.get(name);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
-            assert field != null;
-
-            GridQueryProperty prop = props.get(field);
-
-            if (prop == null)
-                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
-
-            return (T)prop.value(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, GridQueryIndexDescriptor> indexes() {
-            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
-        }
-
-        /**
-         * Adds index.
-         *
-         * @param idxName Index name.
-         * @param type Index type.
-         * @return Index descriptor.
-         * @throws IgniteCheckedException In case of error.
-         */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws IgniteCheckedException {
-            IndexDescriptor idx = new IndexDescriptor(type);
-
-            if (indexes.put(idxName, idx) != null)
-                throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
-
-            return idx;
-        }
-
-        /**
-         * Adds field to index.
-         *
-         * @param idxName Index name.
-         * @param field Field name.
-         * @param orderNum Fields order number in index.
-         * @param descending Sorting order.
-         * @throws IgniteCheckedException If failed.
-         */
-        public void addFieldToIndex(String idxName, String field, int orderNum,
-            boolean descending) throws IgniteCheckedException {
-            IndexDescriptor desc = indexes.get(idxName);
-
-            if (desc == null)
-                desc = addIndex(idxName, SORTED);
-
-            desc.addField(field, orderNum, descending);
-        }
-
-        /**
-         * Adds field to text index.
-         *
-         * @param field Field name.
-         */
-        public void addFieldToTextIndex(String field) {
-            if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(FULLTEXT);
-
-                indexes.put(null, fullTextIdx);
-            }
-
-            fullTextIdx.addField(field, 0, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> valueClass() {
-            return valCls;
-        }
-
-        /**
-         * Sets value class.
-         *
-         * @param valCls Value class.
-         */
-        void valueClass(Class<?> valCls) {
-            this.valCls = valCls;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> keyClass() {
-            return keyCls;
-        }
-
-        /**
-         * Set key class.
-         *
-         * @param keyCls Key class.
-         */
-        void keyClass(Class<?> keyCls) {
-            this.keyCls = keyCls;
-        }
-
-        /**
-         * Adds property to the type descriptor.
-         *
-         * @param prop Property.
-         * @param failOnDuplicate Fail on duplicate flag.
-         * @throws IgniteCheckedException In case of error.
-         */
-        public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
-            String name = prop.name();
-
-            if (props.put(name, prop) != null && failOnDuplicate)
-                throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
-
-            fields.put(name, prop.type());
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean valueTextIndex() {
-            return valTextIdx;
-        }
-
-        /**
-         * Sets if this value should be text indexed.
-         *
-         * @param valTextIdx Flag value.
-         */
-        public void valueTextIndex(boolean valTextIdx) {
-            this.valTextIdx = valTextIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String affinityKey() {
-            return affKey;
-        }
-
-        /**
-         * @param affKey Affinity key field.
-         */
-        void affinityKey(String affKey) {
-            this.affKey = affKey;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Index descriptor.
-     */
-    private static class IndexDescriptor implements GridQueryIndexDescriptor {
-        /** Fields sorted by order number. */
-        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
-            new Comparator<T2<String, Integer>>() {
-                @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
-                    if (o1.get2().equals(o2.get2())) // Order is equal, compare field names to avoid replace in Set.
-                        return o1.get1().compareTo(o2.get1());
-
-                    return o1.get2() < o2.get2() ? -1 : 1;
-                }
             });
-
-        /** Fields which should be indexed in descending order. */
-        private Collection<String> descendings;
-
-        /** */
-        private final GridQueryIndexType type;
-
-        /**
-         * @param type Type.
-         */
-        private IndexDescriptor(GridQueryIndexType type) {
-            assert type != null;
-
-            this.type = type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> fields() {
-            Collection<String> res = new ArrayList<>(fields.size());
-
-            for (T2<String, Integer> t : fields)
-                res.add(t.get1());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean descending(String field) {
-            return descendings != null && descendings.contains(field);
         }
 
         /**
-         * Adds field to this index.
+         * Unwind operation queue and get tail operation.
          *
-         * @param field Field name.
-         * @param orderNum Field order number in this index.
-         * @param descending Sort order.
+         * @return Tail operation.
          */
-        public void addField(String field, int orderNum, boolean descending) {
-            fields.add(new T2<>(field, orderNum));
-
-            if (descending) {
-                if (descendings == null)
-                    descendings  = new HashSet<>();
-
-                descendings.add(field);
-            }
+        public SchemaOperation unwind() {
+            if (next == null)
+                return this;
+            else
+                return next.unwind();
         }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
-            return type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IndexDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Identifying TypeDescriptor by space and value class.
-     */
-    private static class TypeId {
-        /** */
-        private final String space;
-
-        /** Value type. */
-        private final Class<?> valType;
-
-        /** Value type ID. */
-        private final int valTypeId;
 
         /**
-         * Constructor.
+         * Whether operation started.
          *
-         * @param space Space name.
-         * @param valType Value type.
+         * @return {@code True} if started.
          */
-        private TypeId(String space, Class<?> valType) {
-            assert valType != null;
-
-            this.space = space;
-            this.valType = valType;
-
-            valTypeId = 0;
+        public boolean started() {
+            return mgr != null;
         }
 
         /**
-         * Constructor.
-         *
-         * @param space Space name.
-         * @param valTypeId Value type ID.
+         * @return Operation manager.
          */
-        private TypeId(String space, int valTypeId) {
-            this.space = space;
-            this.valTypeId = valTypeId;
-
-            valType = null;
+        public SchemaOperationManager manager() {
+            return mgr;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TypeId typeId = (TypeId)o;
-
-            return (valTypeId == typeId.valTypeId) &&
-                (valType != null ? valType == typeId.valType : typeId.valType == null) &&
-                (space != null ? space.equals(typeId.space) : typeId.space == null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + (valType != null ? valType.hashCode() : valTypeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeId.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TypeName {
-        /** */
-        private final String space;
-
-        /** */
-        private final String typeName;
 
         /**
-         * @param space Space name.
-         * @param typeName Type name.
+         * @param mgr Operation manager.
          */
-        private TypeName(@Nullable String space, String typeName) {
-            assert !F.isEmpty(typeName) : typeName;
+        public void manager(SchemaOperationManager mgr) {
+            assert this.mgr == null;
 
-            this.space = space;
-            this.typeName = typeName;
+            this.mgr = mgr;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TypeName other = (TypeName)o;
-
-            return (space != null ? space.equals(other.space) : other.space == null) &&
-                typeName.equals(other.typeName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + typeName.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeName.class, this);
-        }
-    }
-
-    /**
-     * The way to index.
-     */
-    private enum IndexType {
-        /** Ascending index. */
-        ASC,
-        /** Descending index. */
-        DESC,
-        /** Text index. */
-        TEXT
     }
 }

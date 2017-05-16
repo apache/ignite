@@ -17,31 +17,36 @@
 
 export default [() => {
     class AclRoute {
-        static checkAccess = (permissions, failState) => {
+        static checkAccess(permissions, failState) {
             failState = failState || '403';
 
-            return ['$state', 'AclService', 'User', ($state, AclService, User) => {
-                User.read()
-                    .then(() => {
-                        if (AclService.can(permissions))
-                            return;
+            return ['$q', '$state', 'AclService', 'User', 'IgniteActivitiesData', function($q, $state, AclService, User, Activities) {
+                const action = this.name ? $state.href(this.name) : null;
 
-                        return $state.go(failState);
-                    })
+                return User.read()
                     .catch(() => {
                         User.clean();
 
                         if ($state.current.name !== 'signin')
                             $state.go('signin');
+
+                        return $q.reject('Failed to detect user');
+                    })
+                    .then(() => {
+                        if (AclService.can(permissions))
+                            return Activities.post({ action });
+
+                        $state.go(failState);
+
+                        return $q.reject('User are not authorized');
                     });
             }];
         }
-    }
 
-    return {
-        checkAccess: AclRoute.checkAccess,
-        $get: () => {
+        static $get() {
             return AclRoute;
         }
-    };
+    }
+
+    return AclRoute;
 }];

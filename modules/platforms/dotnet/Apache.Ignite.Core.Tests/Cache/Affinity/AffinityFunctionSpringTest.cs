@@ -1,19 +1,19 @@
-﻿﻿/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+﻿/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 // ReSharper disable UnusedMember.Local
@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 var longKey = (long)key;
                 int res;
 
-                if (TestFairFunc.PredefinedParts.TryGetValue(longKey, out res))
+                if (TestRendezvousFunc.PredefinedParts.TryGetValue(longKey, out res))
                     return res;
 
                 return (int)(longKey * 2 % 5);
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
-        private class TestFairFunc : FairAffinityFunction   // [Serializable] is not necessary
+        private class TestRendezvousFunc : RendezvousAffinityFunction   // [Serializable] is not necessary
         {
             public static readonly Dictionary<long, int> PredefinedParts = new Dictionary<long, int>
             {
@@ -162,13 +162,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 Assert.Greater(basePart, -1);
                 Assert.Less(basePart, Partitions);
 
-                var longKey = (long) key;
+                var longKey = (long)key;
                 int res;
 
                 if (PredefinedParts.TryGetValue(longKey, out res))
                     return res;
 
-                return (int) (longKey * 2 % 5);
+                return (int)(longKey * 2 % 5);
             }
 
             public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)

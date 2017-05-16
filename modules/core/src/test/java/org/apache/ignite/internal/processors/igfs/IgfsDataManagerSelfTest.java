@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -56,12 +57,6 @@ import static org.apache.ignite.testframework.GridTestUtils.sleepAndIncrement;
 public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** Test IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = "partitioned";
 
     /** Groups count for data blocks. */
     private static final int DATA_BLOCK_GROUP_CNT = 2;
@@ -92,10 +87,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -105,8 +98,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration("meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration("data"));
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
@@ -117,12 +110,12 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -141,9 +134,9 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            grid(i).cachex(META_CACHE_NAME).clear();
+            grid(i).cachex(grid(i).igfsx("igfs").configuration().getMetaCacheConfiguration().getName()).clear();
 
-            grid(i).cachex(DATA_CACHE_NAME).clear();
+            grid(i).cachex(grid(i).igfsx("igfs").configuration().getDataCacheConfiguration().getName()).clear();
         }
     }
 
@@ -200,7 +193,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
+                    grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -292,7 +286,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(
+                    grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -376,7 +371,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
-                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
+                    grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
@@ -482,7 +478,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             do {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(), null, false, block);
 
-                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(grid(0).igfsx("igfs").configuration()
+                    .getDataCacheConfiguration().getName()).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));
@@ -557,7 +554,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 IgfsBlockKey key = new IgfsBlockKey(info.id(),
                     info.fileMap().affinityKey(block * blockSize, false), false, block);
 
-                ClusterNode affNode = grid(0).affinity(DATA_CACHE_NAME).mapKeyToNode(key);
+                ClusterNode affNode = grid(0).affinity(grid(0).igfsx("igfs").configuration()
+                    .getDataCacheConfiguration().getName()).mapKeyToNode(key);
 
                 assertTrue("Failed to find node in affinity [dataMgr=" + loc.nodeIds() +
                     ", nodeId=" + affNode.id() + ", block=" + block + ']', loc.nodeIds().contains(affNode.id()));

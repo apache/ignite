@@ -26,12 +26,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface AffinityTask {
     /**
-     * @return Affinity key.
-     */
-    @Deprecated
-    @Nullable public Object affinityKey();
-
-    /**
      * @return Partition.
      */
     public int partition();

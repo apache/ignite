@@ -47,6 +47,7 @@ using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloat)
     {
         testCache.Put(i, in[i]);
 
-        avg += in[i].i32Field;
+        avg += in[i].floatField;
     }
 
     avg /= in.size();
@@ -136,7 +137,7 @@ BOOST_AUTO_TEST_CASE(TestAggregateFunctionAvgFloatDistinct)
     {
         testCache.Put(i, in[i]);
 
-        avg += in[i].i32Field;
+        avg += in[i].floatField;
     }
 
     avg /= in.size();

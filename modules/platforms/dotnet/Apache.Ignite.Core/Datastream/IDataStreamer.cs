@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Datastream
     /// <para />
     /// Also note that <c>IDataStreamer</c> is not the only way to load data into cache.
     /// Alternatively you can use 
-    /// <see cref="ICacheStore.LoadCache(Action{object, object}, object[])"/>
+    /// <see cref="ICacheStore{K, V}.LoadCache(Action{K, V}, object[])"/>
     /// method to load data from underlying data store. You can also use standard cache
     /// <c>put</c> and <c>putAll</c> operations as well, but they most likely will not perform 
     /// as well as this class for loading data. And finally, data can be loaded from underlying 

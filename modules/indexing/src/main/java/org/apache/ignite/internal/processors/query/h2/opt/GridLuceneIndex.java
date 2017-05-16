@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -53,8 +54,8 @@ import org.apache.lucene.util.Version;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Lucene fulltext index.
@@ -115,15 +116,7 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        GridQueryIndexDescriptor idx = null;
-
-        for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.type() == GridQueryIndexType.FULLTEXT) {
-                idx = descriptor;
-
-                break;
-            }
-        }
+        GridQueryIndexDescriptor idx = type.textIndex();
 
         if (idx != null) {
             Collection<String> fields = idx.fields();
@@ -160,7 +153,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(CacheObject k, CacheObject v, byte[] ver, long expires) throws IgniteCheckedException {
+    public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 
         Object key = k.isPlatformType() ? k.value(coctx, false) : k;
@@ -200,7 +193,7 @@ public class GridLuceneIndex implements AutoCloseable {
             if (type.valueClass() != String.class)
                 doc.add(new Field(VAL_FIELD_NAME, v.valueBytes(coctx)));
 
-            doc.add(new Field(VER_FIELD_NAME, ver));
+            doc.add(new Field(VER_FIELD_NAME, ver.toString().getBytes()));
 
             doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
                 DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));

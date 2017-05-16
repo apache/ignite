@@ -44,7 +44,7 @@ public class IgniteTxMappingsSingleImpl implements IgniteTxMappings {
     @Override public GridDistributedTxMapping get(UUID nodeId) {
         GridDistributedTxMapping mapping0 = mapping;
 
-        return (mapping0 != null && mapping0.node().id().equals(nodeId)) ? mapping0 : null;
+        return (mapping0 != null && mapping0.primary().id().equals(nodeId)) ? mapping0 : null;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +58,7 @@ public class IgniteTxMappingsSingleImpl implements IgniteTxMappings {
     @Override public GridDistributedTxMapping remove(UUID nodeId) {
         GridDistributedTxMapping mapping0 = mapping;
 
-        if (mapping0 != null && mapping0.node().id().equals(nodeId)) {
+        if (mapping0 != null && mapping0.primary().id().equals(nodeId)) {
             this.mapping = null;
 
             return mapping0;
@@ -71,7 +71,7 @@ public class IgniteTxMappingsSingleImpl implements IgniteTxMappings {
     @Nullable @Override public GridDistributedTxMapping localMapping() {
         GridDistributedTxMapping mapping0 = mapping;
 
-        if (mapping0 != null && mapping0.node().isLocal())
+        if (mapping0 != null && mapping0.primary().isLocal())
             return mapping0;
 
         return null;

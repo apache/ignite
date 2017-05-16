@@ -62,8 +62,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -77,9 +77,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         plc.setMaxMemorySize(1000);
 
         cc.setEvictionPolicy(plc);
-        cc.setSwapEnabled(false);
+        cc.setOnheapCacheEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setEvictSynchronized(false);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
@@ -113,12 +112,12 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         super.afterTest();
 
         if (GRID_CNT > 0)
-            grid(0).cache(null).removeAll();
+            grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).clear();
+            grid(i).cache(DEFAULT_CACHE_NAME).clear();
 
-            assert grid(i).cache(null).localSize() == 0;
+            assert grid(i).cache(DEFAULT_CACHE_NAME).localSize() == 0;
         }
     }
 
@@ -189,7 +188,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() {
-                IgniteCache<Integer, Integer> c = grid(0).cache(null);
+                IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();

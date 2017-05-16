@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
@@ -251,7 +252,8 @@ namespace Apache.Ignite.Core
         IgniteConfiguration GetConfiguration();
 
         /// <summary>
-        /// Starts a near cache on local node if cache with specified was previously started.
+        /// Starts a near cache on local client node if cache with specified was previously started.
+        /// This method does not work on server nodes.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
@@ -307,5 +309,26 @@ namespace Apache.Ignite.Core
         /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
         /// </summary>
         event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /// <summary>
+        /// Gets the plugin by name.
+        /// </summary>
+        /// <typeparam name="T">Plugin type</typeparam>
+        /// <param name="name">Plugin name.</param>
+        /// <exception cref="PluginNotFoundException">When plugin with specified name has not been found.</exception>
+        /// <returns>Plugin instance.</returns>
+        T GetPlugin<T>(string name) where T : class;
+
+        /// <summary>
+        /// Clears partitions' lost state and moves caches to a normal mode.
+        /// </summary>
+        /// <param name="cacheNames">Names of caches to reset partitions for.</param>
+        void ResetLostPartitions(IEnumerable<string> cacheNames);
+
+        /// <summary>
+        /// Clears partitions' lost state and moves caches to a normal mode.
+        /// </summary>
+        /// <param name="cacheNames">Names of caches to reset partitions for.</param>
+        void ResetLostPartitions(params string[] cacheNames);
     }
 }

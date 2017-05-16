@@ -25,12 +25,14 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Entity class for benchmark.
  */
 public class SampleValue implements Externalizable, Binarylizable {
     /** */
+    @QuerySqlField
     private int id;
 
     /** */

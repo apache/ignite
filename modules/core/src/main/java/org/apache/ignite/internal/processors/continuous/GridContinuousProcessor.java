@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -78,6 +79,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -85,6 +89,7 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CONTINUOUS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -112,9 +117,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** Threads started by this processor. */
     private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
-
-    /**  */
-    public static final IgniteProductVersion QUERY_MSG_VER_2_SINCE = IgniteProductVersion.fromString("1.5.9");
 
     /** */
     private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
@@ -151,7 +153,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
 
@@ -230,8 +232,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                             // Update partition counters.
                             if (routine != null && routine.handler().isQuery()) {
-                                Map<UUID, Map<Integer, Long>> cntrsPerNode = msg.updateCountersPerNode();
-                                Map<Integer, Long> cntrs = msg.updateCounters();
+                                Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
+                                Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
 
                                 GridCacheAdapter<Object, Object> interCache =
                                     ctx.cache().internalCache(routine.handler().cacheName());
@@ -319,8 +321,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         });
 
-        ctx.marshallerContext().onContinuousProcessorStarted(ctx);
-
         ctx.cacheObjects().onContinuousProcessorStarted(ctx);
 
         ctx.service().onContinuousProcessorStarted(ctx);
@@ -403,36 +403,42 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.CONTINUOUS_PROC;
+        return CONTINUOUS_PROC;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (data != null)
+            dataBag.addJoiningNodeData(CONTINUOUS_PROC.ordinal(), data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        Serializable data = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (data != null)
+            dataBag.addNodeSpecificData(CONTINUOUS_PROC.ordinal(), data);
+    }
+
+    /**
+     * @param joiningNodeId Joining node id.
+     */
+    private Serializable getDiscoveryData(UUID joiningNodeId) {
         if (log.isDebugEnabled()) {
-            log.debug("collectDiscoveryData [node=" + nodeId +
-                ", loc=" + ctx.localNodeId() +
-                ", locInfos=" + locInfos +
-                ", clientInfos=" + clientInfos +
-                ']');
+            log.debug("collectDiscoveryData [node=" + joiningNodeId +
+                    ", loc=" + ctx.localNodeId() +
+                    ", locInfos=" + locInfos +
+                    ", clientInfos=" + clientInfos +
+                    ']');
         }
 
-        if (!nodeId.equals(ctx.localNodeId()) || !locInfos.isEmpty()) {
-            Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos0 = U.newHashMap(clientInfos.size());
+        if (!joiningNodeId.equals(ctx.localNodeId()) || !locInfos.isEmpty()) {
+            Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos0 = copyClientInfos(clientInfos);
 
-            for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> e : clientInfos.entrySet()) {
-                Map<UUID, LocalRoutineInfo> cp = U.newHashMap(e.getValue().size());
-
-                for (Map.Entry<UUID, LocalRoutineInfo> e0 : e.getValue().entrySet())
-                    cp.put(e0.getKey(), e0.getValue());
-
-                clientInfos0.put(e.getKey(), cp);
-            }
-
-            if (nodeId.equals(ctx.localNodeId()) && ctx.discovery().localNode().isClient()) {
-                Map<UUID, LocalRoutineInfo> infos = new HashMap<>();
-
-                for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet())
-                    infos.put(e.getKey(), e.getValue());
+            if (joiningNodeId.equals(ctx.localNodeId()) && ctx.discovery().localNode().isClient()) {
+                Map<UUID, LocalRoutineInfo> infos = copyLocalInfos(locInfos);
 
                 clientInfos0.put(ctx.localNodeId(), infos);
             }
@@ -445,31 +451,75 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 LocalRoutineInfo info = e.getValue();
 
                 data.addItem(new DiscoveryDataItem(routineId,
-                    info.prjPred,
-                    info.hnd,
-                    info.bufSize,
-                    info.interval,
-                    info.autoUnsubscribe));
+                        info.prjPred,
+                        info.hnd,
+                        info.bufSize,
+                        info.interval,
+                        info.autoUnsubscribe));
             }
 
             return data;
         }
-
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable obj) {
-        DiscoveryData data = (DiscoveryData)obj;
+    /**
+     * @param clientInfos Client infos.
+     */
+    private Map<UUID, Map<UUID, LocalRoutineInfo>> copyClientInfos(Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos) {
+        Map<UUID, Map<UUID, LocalRoutineInfo>> res = U.newHashMap(clientInfos.size());
 
-        if (log.isDebugEnabled()) {
-            log.info("onDiscoveryDataReceived [joining=" + joiningNodeId +
-                ", rmtNodeId=" + rmtNodeId +
-                ", loc=" + ctx.localNodeId() +
-                ", data=" + data +
-                ']');
+        for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> e : clientInfos.entrySet()) {
+            Map<UUID, LocalRoutineInfo> cp = U.newHashMap(e.getValue().size());
+
+            for (Map.Entry<UUID, LocalRoutineInfo> e0 : e.getValue().entrySet())
+                cp.put(e0.getKey(), e0.getValue());
+
+            res.put(e.getKey(), cp);
         }
 
+        return res;
+    }
+
+    /**
+     * @param locInfos Locale infos.
+     */
+    private Map<UUID, LocalRoutineInfo> copyLocalInfos(Map<UUID, LocalRoutineInfo> locInfos) {
+        Map<UUID, LocalRoutineInfo> res = U.newHashMap(locInfos.size());
+
+        for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet())
+            res.put(e.getKey(), e.getValue());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
+        if (log.isDebugEnabled()) {
+            log.info("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
+                    ", loc=" + ctx.localNodeId() +
+                    ", data=" + data.joiningNodeData() +
+                    ']');
+        }
+
+        if (data.hasJoiningNodeData())
+            onDiscoDataReceived((DiscoveryData) data.joiningNodeData());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        Map<UUID, Serializable> nodeSpecData = data.nodeSpecificData();
+
+        if (nodeSpecData != null) {
+            for (Map.Entry<UUID, Serializable> e : nodeSpecData.entrySet())
+                onDiscoDataReceived((DiscoveryData) e.getValue());
+        }
+    }
+
+    /**
+     * @param data received discovery data.
+     */
+    private void onDiscoDataReceived(DiscoveryData data) {
         if (!ctx.isDaemon() && data != null) {
             for (DiscoveryDataItem item : data.items) {
                 try {
@@ -478,14 +528,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     // Register handler only if local node passes projection predicate.
                     if ((item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) &&
-                        !locInfos.containsKey(item.routineId))
+                            !locInfos.containsKey(item.routineId))
                         registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
-                            item.autoUnsubscribe, false);
+                                item.autoUnsubscribe, false);
 
                     if (!item.autoUnsubscribe)
                         // Register routine locally.
                         locInfos.putIfAbsent(item.routineId, new LocalRoutineInfo(
-                            item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
+                                item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to register continuous handler.", e);
@@ -495,7 +545,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
                 UUID clientNodeId = entry.getKey();
 
-                if (!ctx.localNodeId().equals(clientNodeId)) {
+                if (!ctx.clientNode()) {
                     Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
 
                     for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
@@ -508,12 +558,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                             if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
                                 registerHandler(clientNodeId,
-                                    routineId,
-                                    info.hnd,
-                                    info.bufSize,
-                                    info.interval,
-                                    info.autoUnsubscribe,
-                                    false);
+                                        routineId,
+                                        info.hnd,
+                                        info.bufSize,
+                                        info.interval,
+                                        info.autoUnsubscribe,
+                                        false);
                             }
                         }
                         catch (IgniteCheckedException err) {
@@ -583,6 +633,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Routine ID.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public UUID registerStaticRoutine(
         String cacheName,
         CacheEntryUpdatedListener<?, ?> locLsnr,
@@ -912,6 +963,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 unregisterRemote(e.getKey());
         }
 
+        for (LocalRoutineInfo routine : locInfos.values())
+            routine.hnd.onClientDisconnected();
+
         rmtInfos.clear();
 
         clientInfos.clear();
@@ -1144,7 +1198,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 log.debug("Register handler: [nodeId=" + nodeId + ", routineId=" + routineId + ", info=" + info + ']');
 
             if (interval > 0) {
-                IgniteThread checker = new IgniteThread(new GridWorker(ctx.gridName(), "continuous-buffer-checker", log) {
+                IgniteThread checker = new IgniteThread(new GridWorker(ctx.igniteInstanceName(), "continuous-buffer-checker", log) {
                     @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;
@@ -1342,7 +1396,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             ackC);
                     }
                     else
-                        ctx.io().send(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, ackC);
+                        ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, ackC);
 
                     break;
                 }

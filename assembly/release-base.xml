@@ -63,7 +63,6 @@
                 <exclude>igniterouter.bat</exclude>
                 <exclude>**/build-classpath.bat</exclude>
                 <exclude>ignitevisorcmd.bat</exclude>
-                <exclude>ignite-schema-import.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -80,7 +79,6 @@
                 <exclude>**/build-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
                 <exclude>ignitevisorcmd.sh</exclude>
-                <exclude>ignite-schema-import.sh</exclude>
             </excludes>
         </fileSet>
 
