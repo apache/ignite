@@ -27,8 +27,8 @@
             span.caret
 
 .wch-nav-item(ng-controller='notebookController')
-    div(ng-if='IgniteDemoMode' ng-class='{active: $state.includes("base.sql")}')
-        a(ui-sref='base.sql.demo') Queries
+    div(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ng-class='{active: $state.includes("base.sql")}')
+        span Queries
 
     div(ng-if='!IgniteDemoMode')
         div(ng-if='!notebooks.length' ng-class='{active: $state.includes("base.sql")}')
