@@ -168,7 +168,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
 
-                //checkCache(i, "cache2");
+                checkCache(i, "cache2");
             }
 
             srv0.destroyCache("cache2");
@@ -262,14 +262,52 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCacheApiTx() throws Exception {
+    public void testCacheApiTxPartitioned() throws Exception {
+        cacheApiTest(PARTITIONED, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheApiTxReplicated() throws Exception {
+        cacheApiTest(REPLICATED, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheApiAtomicPartitioned() throws Exception {
+        cacheApiTest(PARTITIONED, ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheApiAtomicReplicated() throws Exception {
+        cacheApiTest(REPLICATED, ATOMIC);
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     * @throws Exception If failed.
+     */
+    private void cacheApiTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
         startGridsMultiThreaded(4);
 
         client = true;
 
         startGrid(4);
 
-        cacheApiTest(PARTITIONED, TRANSACTIONAL, 2, false);
+        int[] backups = cacheMode == REPLICATED ? new int[]{Integer.MAX_VALUE} : new int[]{0, 1, 2, 3};
+
+        for (int backups0 : backups)
+            cacheApiTest(cacheMode, atomicityMode, backups0, false);
+
+        int backups0 = cacheMode == REPLICATED ? Integer.MAX_VALUE :
+            backups[ThreadLocalRandom.current().nextInt(backups.length)];
+
+        cacheApiTest(cacheMode, atomicityMode, backups0, true);
     }
 
     /**
@@ -282,15 +320,26 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < 2; i++)
             ignite(0).createCache(cacheConfiguration(GROUP1, "cache-" + i, cacheMode, atomicityMode, backups, heapCache));
 
-        for (Ignite node : Ignition.allGrids()) {
-            for (int i = 0; i < 2; i++) {
-                IgniteCache cache = node.cache("cache-" + i);
+        try {
+            for (Ignite node : Ignition.allGrids()) {
+                for (int i = 0; i < 2; i++) {
+                    IgniteCache cache = node.cache("cache-" + i);
 
-                log.info("Test cache [node=" + node.name() + ", cache=" + cache.getName() +
-                    ", mode=" + cacheMode + ", atomicity=" + atomicityMode + ", backups=" + backups + ']');
+                    log.info("Test cache [node=" + node.name() +
+                        ", cache=" + cache.getName() +
+                        ", mode=" + cacheMode +
+                        ", atomicity=" + atomicityMode +
+                        ", backups=" + backups +
+                        ", heapCache=" + heapCache +
+                        ']');
 
-                cacheApiTest(cache);
+                    cacheApiTest(cache);
+                }
             }
+        }
+        finally {
+            for (int i = 0; i < 2; i++)
+                ignite(0).destroyCache("cache-" + i);
         }
     }
 
@@ -298,11 +347,30 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param cache Cache.
      */
     private void cacheApiTest(IgniteCache cache) {
-        int key = 1;
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        cache.put(key, 1);
+        for (int i = 0; i < 10; i++) {
+            Integer key = rnd.nextInt(10_000);
 
-        cache.remove(key);
+            assertNull(cache.get(key));
+            assertFalse(cache.containsKey(key));
+
+            Integer val = key + 1;
+
+            cache.put(key, val);
+
+            assertEquals(val, cache.get(key));
+            assertTrue(cache.containsKey(key));
+
+            cache.remove(key);
+
+            assertNull(cache.get(key));
+            assertFalse(cache.containsKey(key));
+        }
+
+        cache.clear();
+
+        cache.removeAll();
     }
 
     /**

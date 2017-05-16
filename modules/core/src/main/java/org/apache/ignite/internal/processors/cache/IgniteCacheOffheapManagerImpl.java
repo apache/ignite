@@ -1159,6 +1159,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * @param cctx Cache context.
          * @param newRow New row.
          * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
