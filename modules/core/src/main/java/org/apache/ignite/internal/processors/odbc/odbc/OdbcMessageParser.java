@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -46,13 +49,23 @@ public class OdbcMessageParser extends SqlListenerMessageParserImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractSqlBinaryWriter createBinaryWriter(int cap) {
-        return new OdbcBinaryWriter(marsh.context(), new BinaryHeapOutputStream(cap),
+    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
+        return new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(cap),
             BinaryThreadLocalContext.get().schemaHolder(), null);
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractSqlBinaryReader createBinaryReader(BinaryInputStream stream) {
-        return new OdbcBinaryReader(stream);
+    @Override protected BinaryReaderExImpl createBinaryReader(BinaryInputStream in) {
+        return new BinaryReaderExImpl(null, in, null, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+        writer.writeObjectDetached(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object readJdkMarshalledObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        throw new BinaryObjectException("Internal error. Invalid reader state. JDK marshaller isn't used with ODBC");
     }
 }

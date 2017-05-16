@@ -938,7 +938,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeByteFieldPrimitive(byte val) {
+    public void writeByteFieldPrimitive(byte val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE);
@@ -948,18 +948,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteByte(@Nullable Byte val) {
+    void writeByteField(@Nullable Byte val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeByteFieldPrimitive(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeByteField(@Nullable Byte val) {
-        doWriteByte(val);
     }
 
     /**
@@ -972,7 +965,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeShortFieldPrimitive(short val) {
+    public void writeShortFieldPrimitive(short val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.SHORT);
@@ -982,7 +975,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteShort(@Nullable Short val) {
+    void writeShortField(@Nullable Short val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
@@ -992,14 +985,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeShortField(@Nullable Short val) {
-        doWriteShort(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeIntFieldPrimitive(int val) {
+    public void writeIntFieldPrimitive(int val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.INT);
@@ -1009,7 +995,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteInt(@Nullable Integer val) {
+    void writeIntField(@Nullable Integer val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
@@ -1019,14 +1005,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeIntField(@Nullable Integer val) {
-        doWriteInt(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeLongFieldPrimitive(long val) {
+    public void writeLongFieldPrimitive(long val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.LONG);
@@ -1036,7 +1015,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteLong(@Nullable Long val) {
+    void writeLongField(@Nullable Long val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
@@ -1046,14 +1025,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeLongField(@Nullable Long val) {
-        doWriteLong(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeFloatFieldPrimitive(float val) {
+    public void writeFloatFieldPrimitive(float val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.FLOAT);
@@ -1063,7 +1035,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteFloat(@Nullable Float val) {
+    void writeFloatField(@Nullable Float val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
@@ -1073,14 +1045,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeFloatField(@Nullable Float val) {
-        doWriteFloat(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeDoubleFieldPrimitive(double val) {
+    public void writeDoubleFieldPrimitive(double val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE);
@@ -1090,7 +1055,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteDouble(@Nullable Double val) {
+    void writeDoubleField(@Nullable Double val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
@@ -1100,14 +1065,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeDoubleField(@Nullable Double val) {
-        doWriteDouble(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeCharFieldPrimitive(char val) {
+    public void writeCharFieldPrimitive(char val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.CHAR);
@@ -1117,7 +1075,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteChar(@Nullable Character val) {
+    void writeCharField(@Nullable Character val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
@@ -1127,14 +1085,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeCharField(@Nullable Character val) {
-        doWriteChar(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeBooleanFieldPrimitive(boolean val) {
+    public void writeBooleanFieldPrimitive(boolean val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN);
@@ -1144,18 +1095,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    public void doWriteBoolean(@Nullable Boolean val) {
+    void writeBooleanField(@Nullable Boolean val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else
             writeBooleanFieldPrimitive(val);
-    }
-
-    /**
-     * @param val Value.
-     */
-    void writeBooleanField(@Nullable Boolean val) {
-        doWriteBoolean(val);
     }
 
     /**
