@@ -261,7 +261,12 @@ public class FullPageIdTable {
         do {
             res = testKeyAt(index, cacheId, pageId, tag);
 
-            if (res == EMPTY || res == OUTDATED) {
+            if (res == OUTDATED) {
+                foundIndex = index;
+
+                break;
+            }
+            else if (res == EMPTY) {
                 if (foundIndex == -1)
                     foundIndex = index;
 
