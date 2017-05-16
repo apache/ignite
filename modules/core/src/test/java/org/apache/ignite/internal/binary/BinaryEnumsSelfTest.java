@@ -513,7 +513,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         }, BinaryObjectException.class, "Conflicting enum values. Name ");
 
         GridTestUtils.assertThrows(log, new Callable<Object> (){
-
             @Override public Object call() throws Exception {
 
                 node2.binary().registerEnum(enumName,

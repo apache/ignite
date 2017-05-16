@@ -977,6 +977,7 @@ public class BinaryUtils {
             boolean changed = false;
 
             Map<String, Integer> mergedEnumMap = null;
+
             if (!F.isEmpty(newMeta.enumMap())) {
                 mergedEnumMap = mergeEnumValues(oldMeta.typeName(), oldMeta.enumMap(), newMeta.enumMap());
 

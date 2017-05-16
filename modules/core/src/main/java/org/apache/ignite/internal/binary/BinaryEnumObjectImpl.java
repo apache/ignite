@@ -194,7 +194,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
         if (name == null)
             throw new BinaryObjectException("Unable to resolve enum constant name [typeId=" +
-                    typeId + ", typeName='" + binTypeImpl.typeName() + "', ordinal=" + ord + "]");
+                typeId + ", typeName='" + binTypeImpl.typeName() + "', ordinal=" + ord + "]");
 
         return name;
     }
