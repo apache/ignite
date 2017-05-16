@@ -23,6 +23,8 @@ public enum SnapshotOperationType {
     CREATE,
     /** Restore. */
     RESTORE,
+    /** Restore 2. */
+    RESTORE_2_PHASE,
     /** Move. */
     MOVE,
     /** Delete. */

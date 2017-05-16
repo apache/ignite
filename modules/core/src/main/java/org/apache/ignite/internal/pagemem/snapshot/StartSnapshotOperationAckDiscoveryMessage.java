@@ -81,6 +81,14 @@ public class StartSnapshotOperationAckDiscoveryMessage implements DiscoveryCusto
     /**
      *
      */
+    public boolean needExchange() {
+        /* exchange for trigger saving cluster state*/
+        return err == null && snapshotOperation.type() == SnapshotOperationType.CREATE;
+    }
+
+    /**
+     *
+     */
     public IgniteUuid operationId() {
         return opId;
     }

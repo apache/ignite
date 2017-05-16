@@ -282,7 +282,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(evt.eventNode(), msg);
                     }
                     else if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage
-                        && !((StartSnapshotOperationAckDiscoveryMessage)customMsg).hasError()) {
+                        && ((StartSnapshotOperationAckDiscoveryMessage)customMsg).needExchange()) {
                         exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
                         exchFut = exchangeFuture(exchId, evt, null, null, null);

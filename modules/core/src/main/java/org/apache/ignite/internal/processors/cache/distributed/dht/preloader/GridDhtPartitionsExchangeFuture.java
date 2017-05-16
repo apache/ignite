@@ -51,9 +51,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperationType;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -64,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -571,31 +568,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchange = CU.clientNode(discoEvt.eventNode()) ?
                         onClientNodeEvent(crdNode) :
                         onServerNodeEvent(crdNode);
-
-                    StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = (StartSnapshotOperationAckDiscoveryMessage)msg;
-
-                    if (!cctx.localNode().isDaemon()) {
-                        SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
-
-                        if (op.type() == SnapshotOperationType.RESTORE) {
-                            if (reqs != null)
-                                reqs = new ArrayList<>(reqs);
-                            else
-                                reqs = new ArrayList<>();
-
-                            List<DynamicCacheChangeRequest> destroyRequests = getStopCacheRequests(
-                                cctx.cache(), op.cacheNames(), cctx.localNodeId());
-
-                            reqs.addAll(destroyRequests);
-
-                            if (!reqs.isEmpty()) { //Emulate destroy cache request
-                                if (op.type() == SnapshotOperationType.RESTORE)
-                                    cctx.cache().onCustomEvent(new DynamicCacheChangeBatch(reqs), topVer);
-
-                                onCacheChangeRequest(crdNode);
-                            }
-                        }
-                    }
                 }
                 else {
                     assert affChangeMsg != null : this;
@@ -645,6 +617,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert false;
             }
 
+            if (cctx.localNode().isClient())
+                startLocalSnasphotOperation();
+
             exchLog.info("Finish exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
@@ -660,36 +635,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (e instanceof Error)
                 throw (Error)e;
         }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cacheNames Cache names.
-     * @param locNodeId Local node id.
-     */
-    @NotNull public static List<DynamicCacheChangeRequest> getStopCacheRequests(GridCacheProcessor cache,
-        Set<String> cacheNames, UUID locNodeId) {
-        List<DynamicCacheChangeRequest> destroyRequests = new ArrayList<>();
-
-        for (String cacheName : cacheNames) {
-            DynamicCacheDescriptor desc = cache.cacheDescriptor(CU.cacheId(cacheName));
-
-            if (desc == null)
-                continue;
-
-            DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, locNodeId);
-
-            t.stop(true);
-            t.destroy(true);
-
-            t.deploymentId(desc.deploymentId());
-
-            t.restart(true);
-
-            destroyRequests.add(t);
-        }
-
-        return destroyRequests;
     }
 
     /**
@@ -930,18 +875,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.database().beforeExchange(this);
 
-        StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = getSnapshotOperationMessage();
-
-        // If it's a snapshot operation request, synchronously wait for backup start.
-        if (snapshotOperationMsg != null) {
-            if (!cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
-
-                if (op.type() != SnapshotOperationType.RESTORE)
-                    startLocalSnasphotOperation(snapshotOperationMsg);
-            }
-        }
-
         if (crd.isLocal()) {
             if (remaining.isEmpty())
                 onAllReceived();
@@ -952,16 +885,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         initDone();
     }
 
-    /**
-     * @param snapOpMsg Snapshot operation message.
-     */
-    private void startLocalSnasphotOperation(StartSnapshotOperationAckDiscoveryMessage snapOpMsg
-    ) throws IgniteCheckedException {
-        IgniteInternalFuture fut = cctx.database()
-            .startLocalSnapshotOperation(snapOpMsg.initiatorNodeId(), snapOpMsg.snapshotOperation());
+    /** */
+    private void startLocalSnasphotOperation() {
+        StartSnapshotOperationAckDiscoveryMessage snapOpMsg = getSnapshotOperationMessage();
 
-        if (fut != null)
-            fut.get();
+        if (snapOpMsg != null) {
+            SnapshotOperation op = snapOpMsg.snapshotOperation();
+
+            try {
+                IgniteInternalFuture fut = cctx.database()
+                    .startLocalSnapshotOperation(snapOpMsg.initiatorNodeId(), snapOpMsg.snapshotOperation());
+
+                if (fut != null)
+                    fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Error while starting snapshot operation", e);
+            }
+        }
     }
 
     /**
@@ -1306,6 +1247,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheValidRes = m;
         }
 
+        startLocalSnasphotOperation();
+
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         cctx.exchange().onExchangeDone(this, err);
@@ -1313,20 +1256,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (!F.isEmpty(reqs) && err == null) {
             for (DynamicCacheChangeRequest req : reqs)
                 cctx.cache().completeStartFuture(req);
-        }
-
-        StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = getSnapshotOperationMessage();
-
-        if (snapshotOperationMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-            SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
-
-            if (op.type() == SnapshotOperationType.RESTORE)
-                try {
-                    startLocalSnasphotOperation(snapshotOperationMsg);
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Error while starting snapshot operation", e);
-                }
         }
 
         if (exchangeOnChangeGlobalState && err == null)

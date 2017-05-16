@@ -1963,6 +1963,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(reqs) && err == null) {
             Collection<IgniteBiTuple<GridCacheContext, Boolean>> stopped = null;
 
+            boolean prepared = false;
+
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
 
@@ -1970,6 +1972,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 boolean destroy = false;
 
                 if (req.stop()) {
+                    if (!prepared) {
+                        sharedCtx.database().prepareCachesStop();
+
+                        prepared = true;
+                    }
+
                     stopGateway(req);
 
                     sharedCtx.database().checkpointReadLock();
@@ -2610,6 +2618,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
         boolean restart) {
+        return dynamicDestroyCaches(cacheNames, checkThreadTx, restart, true);
+    }
+
+    /**
+     * @param cacheNames Collection of cache names to destroy.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when cache is destroyed.
+     */
+    public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
+        boolean restart, boolean destroy) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
@@ -2619,7 +2637,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
             t.stop(true);
-            t.destroy(true);
+            t.destroy(destroy);
 
             t.restart(restart);
 
@@ -2915,7 +2933,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
         if (msg instanceof StartSnapshotOperationAckDiscoveryMessage &&
-            ((StartSnapshotOperationAckDiscoveryMessage)msg).error() == null)
+            ((StartSnapshotOperationAckDiscoveryMessage)msg).needExchange())
             return true;
 
         if (msg instanceof DynamicCacheChangeBatch)
@@ -3395,6 +3413,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
         return jcache == null ? null : jcache.internalProxy();
+    }
+
+    /**
+     * @param name Name.
+     */
+    public void restart(@Nullable String name) {
+        IgniteCacheProxy jcache = (IgniteCacheProxy) jCacheProxies.get(maskNull(name));
+
+        if (jcache != null)
+            jcache.restart();
     }
 
     /**
