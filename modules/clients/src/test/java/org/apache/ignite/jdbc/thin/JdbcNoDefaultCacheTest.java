@@ -19,48 +19,50 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.concurrent.Callable;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Connection test.
+ *
  */
-public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
+public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Custom cache name. */
-    private static final String CUSTOM_CACHE_NAME = "custom-cache";
+    /** First cache name. */
+    private static final String CACHE1_NAME = "cache1";
 
-    /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:ignite:thin://";
+    /** Second cache name. */
+    private static final String CACHE2_NAME = "cache2";
 
-    /** Host. */
-    private static final String HOST = "127.0.0.1";
+    /** URL. */
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(CACHE1_NAME), cacheConfiguration(CACHE2_NAME));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setOdbcConfiguration(new OdbcConfiguration());
 
@@ -72,8 +74,11 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
+    @SuppressWarnings("unchecked")
     private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
+
+        cfg.setIndexedTypes(Integer.class, Integer.class);
 
         cfg.setName(name);
 
@@ -82,9 +87,19 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(2);
+        startGridsMultiThreaded(GRID_CNT);
 
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+
+        Ignite ignite = ignite(0);
+
+        IgniteCache<Integer, Integer> cache1 = ignite.cache(CACHE1_NAME);
+        IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE2_NAME);
+
+        for (int i = 0; i < 10; i++) {
+            cache1.put(i, i * 2);
+            cache2.put(i, i * 3);
+        }
     }
 
     /** {@inheritDoc} */
@@ -96,38 +111,52 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaults() throws Exception {
-        String url = URL_PREFIX + HOST;
+        String url = URL;
 
-        assert DriverManager.getConnection(url) != null;
-        assert DriverManager.getConnection(url + "/") != null;
+        try (Connection conn = DriverManager.getConnection(url)) {
+            assertNotNull(conn);
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + '/')) {
+            assertNotNull(conn);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClose() throws Exception {
-        String url = URL_PREFIX + HOST;
+    public void testNoCacheNameQuery() throws Exception {
+        Statement stmt;
 
-        final Connection conn = DriverManager.getConnection(url);
+        stmt = DriverManager.getConnection(URL).createStatement();
 
-        assert conn != null;
-        assert !conn.isClosed();
+        assertNotNull(stmt);
+        assertFalse(stmt.isClosed());
 
-        conn.close();
+        stmt.execute("select t._key, t._val from \"cache1\".Integer t");
 
-        assert conn.isClosed();
+        ResultSet rs = stmt.getResultSet();
 
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.isValid(2);
+        while(rs.next())
+            assertEquals(rs.getInt(2), rs.getInt(1) * 2);
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed."
-        );
+        stmt.execute("select t._key, t._val from \"cache2\".Integer t");
+
+        rs = stmt.getResultSet();
+
+        while(rs.next())
+            assertEquals(rs.getInt(2), rs.getInt(1) * 3);
+
+        stmt.execute("select t._key, t._val, v._val " +
+            "from \"cache1\".Integer t join \"cache2\".Integer v on t._key = v._key");
+
+        rs = stmt.getResultSet();
+
+        while(rs.next()) {
+            assertEquals(rs.getInt(2), rs.getInt(1) * 2);
+            assertEquals(rs.getInt(3), rs.getInt(1) * 3);
+        }
+
+        stmt.close();
     }
 }

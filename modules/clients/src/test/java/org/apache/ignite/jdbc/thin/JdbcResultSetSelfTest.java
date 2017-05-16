@@ -86,9 +86,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        OdbcConfiguration odbcCfg = new OdbcConfiguration();
-
-        cfg.setOdbcConfiguration(odbcCfg);
+        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }

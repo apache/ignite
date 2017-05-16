@@ -378,7 +378,7 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() throws SQLException {
-        return closed;
+        return conn.isClosed() || closed;
     }
 
     /** {@inheritDoc} */
