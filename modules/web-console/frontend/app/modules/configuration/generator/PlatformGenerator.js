@@ -300,8 +300,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
         // Generate cache queries & Indexing group.
         static cacheQuery(cache, domains, ccfg = this.cacheConfigurationBean(cache)) {
-            ccfg.intProperty('sqlOnheapRowCacheSize')
-                .intProperty('longQueryWarningTimeout');
+            ccfg.intProperty('longQueryWarningTimeout');
 
             return ccfg;
         }

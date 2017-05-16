@@ -35,7 +35,7 @@ namespace ignite
             /**
              * Static class to manage memory visibility semantics. 
              */
-            class Memory
+            class IGNITE_IMPORT_EXPORT Memory
             {
             public:
                 /**

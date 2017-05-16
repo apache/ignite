@@ -24,6 +24,7 @@ import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -136,10 +137,11 @@ public class LUDecompositionTest {
     }
 
     /**
-     * Test for {@link DecompositionSupport} features.
+     * Test for {@link MatrixUtil} features (more specifically, we test matrix which does not have
+     * a native like/copy methods support).
      */
     @Test
-    public void decompositionSupportTest() {
+    public void matrixUtilTest() {
         LUDecomposition dec = new LUDecomposition(new PivotedMatrixView(testMatrix));
         Matrix luDecompositionL = dec.getL();
 

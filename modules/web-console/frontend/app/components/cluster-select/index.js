@@ -16,6 +16,7 @@
  */
 
 import template from './cluster-select.pug';
+import './cluster-select.scss';
 import controller from './cluster-select.controller';
 
 export default [() => {

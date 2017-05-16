@@ -37,7 +37,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -100,6 +102,9 @@ import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTa
  * Hadoop job tracker.
  */
 public class HadoopJobTracker extends HadoopComponent {
+    /** */
+    private static final CachePeekMode[] OFFHEAP_PEEK_MODE = {CachePeekMode.OFFHEAP};
+
     /** */
     private final GridMutex mux = new GridMutex();
 
@@ -679,9 +684,20 @@ public class HadoopJobTracker extends HadoopComponent {
         if (ctx.jobUpdateLeader()) {
             boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
 
+            Iterable<IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>> entries;
+
+            try {
+                entries = jobMetaCache().localEntries(OFFHEAP_PEEK_MODE);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to get local entries", e);
+
+                return;
+            }
+
             // Iteration over all local entries is correct since system cache is REPLICATED.
-            for (Object metaObj : jobMetaCache().values()) {
-                HadoopJobMetadata meta = (HadoopJobMetadata)metaObj;
+            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>  entry : entries) {
+                HadoopJobMetadata meta = entry.getValue();
 
                 HadoopJobId jobId = meta.jobId();
 

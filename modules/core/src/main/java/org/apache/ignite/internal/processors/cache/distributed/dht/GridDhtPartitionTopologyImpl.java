@@ -245,7 +245,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                     ", cache=" + cctx.name() +
                                     ", part=" + part.id() +
                                     ", partState=" + part.state() +
-                                    ", size=" + part.size() +
+                                    ", size=" + part.internalSize() +
                                     ", reservations=" + part.reservations() +
                                     ", grpReservations=" + part.groupReserved() +
                                     ", node=" + cctx.localNodeId() + "]");

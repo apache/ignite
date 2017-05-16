@@ -66,57 +66,57 @@ public class OdbcUtils {
         assert odbcDataType != null;
         switch (odbcDataType.toUpperCase()) {
             case OdbcTypes.SQL_BIGINT:
-                return IgniteTypes.BIGINT;
+                return SqlListenerDataTypes.BIGINT;
 
             case OdbcTypes.SQL_BINARY:
             case OdbcTypes.SQL_LONGVARBINARY:
             case OdbcTypes.SQL_VARBINARY:
-                return IgniteTypes.BINARY;
+                return SqlListenerDataTypes.BINARY;
 
             case OdbcTypes.SQL_BIT:
-                return IgniteTypes.BIT;
+                return SqlListenerDataTypes.BIT;
 
             case OdbcTypes.SQL_CHAR:
-                return IgniteTypes.CHAR;
+                return SqlListenerDataTypes.CHAR;
 
             case OdbcTypes.SQL_DECIMAL:
             case OdbcTypes.SQL_NUMERIC:
-                return IgniteTypes.DECIMAL;
+                return SqlListenerDataTypes.DECIMAL;
 
             case OdbcTypes.SQL_LONGVARCHAR:
             case OdbcTypes.SQL_VARCHAR:
             case OdbcTypes.SQL_WCHAR:
             case OdbcTypes.SQL_WLONGVARCHAR:
             case OdbcTypes.SQL_WVARCHAR:
-                return IgniteTypes.VARCHAR;
+                return SqlListenerDataTypes.VARCHAR;
 
             case OdbcTypes.SQL_DOUBLE:
             case OdbcTypes.SQL_FLOAT:
-                return IgniteTypes.DOUBLE;
+                return SqlListenerDataTypes.DOUBLE;
 
             case OdbcTypes.SQL_REAL:
-                return IgniteTypes.REAL;
+                return SqlListenerDataTypes.REAL;
 
             case OdbcTypes.SQL_GUID:
-                return IgniteTypes.UUID;
+                return SqlListenerDataTypes.UUID;
 
             case OdbcTypes.SQL_SMALLINT:
-                return IgniteTypes.SMALLINT;
+                return SqlListenerDataTypes.SMALLINT;
 
             case OdbcTypes.SQL_INTEGER:
-                return IgniteTypes.INTEGER;
+                return SqlListenerDataTypes.INTEGER;
 
             case OdbcTypes.SQL_DATE:
-                return IgniteTypes.DATE;
+                return SqlListenerDataTypes.DATE;
 
             case OdbcTypes.SQL_TIME:
-                return IgniteTypes.TIME;
+                return SqlListenerDataTypes.TIME;
 
             case OdbcTypes.SQL_TIMESTAMP:
-                return IgniteTypes.TIMESTAMP;
+                return SqlListenerDataTypes.TIMESTAMP;
 
             case OdbcTypes.SQL_TINYINT:
-                return IgniteTypes.TINYINT;
+                return SqlListenerDataTypes.TINYINT;
 
             //No support for interval types
             case OdbcTypes.SQL_INTERVAL_SECOND:
