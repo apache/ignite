@@ -1645,17 +1645,22 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
 
+        /// <summary>
+        /// Tests the enum builder.
+        /// </summary>
         [Test]
         public void TestBuildEnum()
         {
             var binary = _grid.GetBinary();
 
-            int val = (int) TestEnumRegistered.Two;
+            int val = (int)TestEnumRegistered.Two;
+            var typeName = GetTypeName(typeof(TestEnumRegistered));
+            var typeId = BinaryUtils.GetStringHashCode(typeName);
 
             var binEnums = new[]
             {
                 binary.BuildEnum(typeof (TestEnumRegistered), val),
-                binary.BuildEnum(GetTypeName(typeof (TestEnumRegistered)), val)
+                binary.BuildEnum(typeName, val)
             };
 
             foreach (var binEnum in binEnums)
@@ -1664,11 +1669,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 Assert.AreEqual(val, binEnum.EnumValue);
 
-                Assert.AreEqual((TestEnumRegistered) val, binEnum.Deserialize<TestEnumRegistered>());
+                Assert.AreEqual(string.Format("{0} [typeId={1}, enumValue={2}, enumValueName={3}]",
+                    typeName, typeId, val, (TestEnumRegistered) val), binEnum.ToString());
+
+                Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
             }
 
             Assert.AreEqual(binEnums[0], binEnums[1]);
             Assert.AreEqual(binEnums[0].GetHashCode(), binEnums[1].GetHashCode());
+            
+            Assert.IsFalse(binEnums[0].Equals(null));
+            Assert.IsFalse(binEnums[0].Equals(new object()));
+            Assert.IsTrue(binEnums[0].Equals(binEnums[1]));
+
+            var ex = Assert.Throws<NotSupportedException>(() => binEnums[1].ToBuilder());
+            Assert.AreEqual("Builder cannot be created for enum.", ex.Message);
         }
 
         /// <summary>
