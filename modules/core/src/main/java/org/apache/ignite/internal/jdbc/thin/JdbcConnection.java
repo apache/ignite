@@ -37,13 +37,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.jdbc.JdbcStatement;
 import org.apache.ignite.logger.java.JavaLogger;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.IgniteJdbcThinDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_HOST;
@@ -85,8 +83,6 @@ public class JdbcConnection implements Connection {
         assert props != null;
 
         this.url = url;
-
-        cacheName = props.getProperty(PROP_CACHE);
 
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
@@ -182,9 +178,6 @@ public class JdbcConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void setReadOnly(boolean readOnly) throws SQLException {
         ensureNotClosed();
-
-        if (!readOnly)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -197,8 +190,6 @@ public class JdbcConnection implements Connection {
     /** {@inheritDoc} */
     @Override public void setCatalog(String catalog) throws SQLException {
         ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Catalogs are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -212,14 +203,16 @@ public class JdbcConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
+
+        return Connection.TRANSACTION_NONE;
     }
 
     /** {@inheritDoc} */
@@ -403,12 +396,10 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public boolean isValid(int timeout) throws SQLException {
-        ensureNotClosed();
-
         if (timeout < 0)
             throw new SQLException("Invalid timeout: " + timeout);
 
-        return true;
+        return !closed;
     }
 
     /** {@inheritDoc} */
@@ -491,20 +482,6 @@ public class JdbcConnection implements Connection {
     }
 
     /**
-     * @return Cache name.
-     */
-    String cacheName() {
-        return cacheName;
-    }
-
-    /**
-     * @return URL.
-     */
-    String url() {
-        return url;
-    }
-
-    /**
      * Ensures that connection is not closed.
      *
      * @throws SQLException If connection is closed.
@@ -512,13 +489,5 @@ public class JdbcConnection implements Connection {
     private void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Connection is closed.");
-    }
-
-    /**
-     * @return Internal statement.
-     * @throws SQLException In case of error.
-     */
-    JdbcStatement createStatement0() throws SQLException {
-        return (JdbcStatement)createStatement();
     }
 }

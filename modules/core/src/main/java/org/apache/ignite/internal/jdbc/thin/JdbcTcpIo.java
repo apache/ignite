@@ -29,8 +29,6 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlNioListener;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectReader;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectWriter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -67,6 +65,8 @@ public class JdbcTcpIo {
     /** Enforce join order. */
     private boolean enforceJoinOrder;
 
+    private boolean closed;
+
     /**
      * @param endpointAddr Endpoint.
      * @param distributedJoins Distributed joins flag.
@@ -92,7 +92,11 @@ public class JdbcTcpIo {
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());
 
-        handshake();
+        try {
+            handshake();
+        } catch(Throwable e) {
+            close();
+        }
     }
 
     /**
@@ -190,11 +194,16 @@ public class JdbcTcpIo {
      * Close the client IO.
      */
     public void close() {
+        if (closed)
+            return;
+
         // Clean up resources.
         U.closeQuiet(out);
         U.closeQuiet(in);
 
         if (endpoint != null)
             endpoint.close();
+
+        closed = true;
     }
 }

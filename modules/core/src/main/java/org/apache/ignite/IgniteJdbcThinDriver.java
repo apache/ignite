@@ -152,9 +152,6 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Port number property name. */
     public static final String PROP_PORT = PROP_PREFIX + "port";
 
-    /** Cache name property name. */
-    public static final String PROP_CACHE = PROP_PREFIX + PARAM_CACHE;
-
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
@@ -206,7 +203,6 @@ public class IgniteJdbcThinDriver implements Driver {
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
-            new JdbcDriverPropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
         );
@@ -274,9 +270,6 @@ public class IgniteJdbcThinDriver implements Driver {
 
         if (parts.length > 2)
             return false;
-
-        if (parts.length == 2 && !parts[1].isEmpty())
-            props.setProperty(PROP_CACHE, parts[1]);
 
         url = parts[0];
 

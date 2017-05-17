@@ -160,7 +160,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private SqlListenerProcessor odbcProc;
+    private SqlListenerProcessor sqlListenerProc;
 
     /** */
     @GridToStringInclude
@@ -568,7 +568,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
         else if (comp instanceof SqlListenerProcessor)
-            odbcProc = (SqlListenerProcessor)comp;
+            sqlListenerProc = (SqlListenerProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -824,8 +824,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProcessor odbc() {
-        return odbcProc;
+    @Override public SqlListenerProcessor sqlListener() {
+        return sqlListenerProc;
     }
 
     /** {@inheritDoc} */

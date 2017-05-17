@@ -330,11 +330,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridQueryProcessor query();
 
     /**
-     * Gets ODBC processor.
+     * Gets SQL listener (ODBC / JDBC) processor.
      *
-     * @return ODBC processor.
+     * @return SQL listener processor.
      */
-    public SqlListenerProcessor odbc();
+    public SqlListenerProcessor sqlListener();
 
     /**
      * @return Plugin processor.
