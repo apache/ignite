@@ -926,7 +926,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 AtomicLong size = cacheSizes.get(cacheId);
 
                 if (size == null) {
-                    AtomicLong old = cacheSizes.put(cacheId, size = new AtomicLong());
+                    AtomicLong old = cacheSizes.putIfAbsent(cacheId, size = new AtomicLong());
 
                     if (old != null)
                         size = old;
@@ -947,11 +947,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 if (size == null)
                     return;
-
-                AtomicLong old = cacheSizes.put(cacheId, size = new AtomicLong());
-
-                if (old != null)
-                    size = old;
 
                 size.decrementAndGet();
             }
