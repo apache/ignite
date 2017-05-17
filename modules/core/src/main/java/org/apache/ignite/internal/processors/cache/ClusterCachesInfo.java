@@ -146,7 +146,10 @@ class ClusterCachesInfo {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
                 "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
-            if (CU.affinityNode(ctx.discovery().localNode(), locCfg.getNodeFilter())) {
+            ClusterNode rmtNode = ctx.discovery().node(rmt);
+
+            if (CU.affinityNode(ctx.discovery().localNode(), locCfg.getNodeFilter())
+                && rmtNode != null && CU.affinityNode(rmtNode, rmtCfg.getNodeFilter())) {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
                     locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
             }
