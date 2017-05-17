@@ -1498,8 +1498,8 @@ public class GridSqlQuerySplitter {
         if (from instanceof GridSqlTable) {
             GridSqlTable tbl = (GridSqlTable)from;
 
-            String schemaName = tbl.schema();
-            String tblName = tbl.dataTable().identifier();
+            String schemaName = tbl.dataTable().identifier().schema();
+            String tblName = tbl.dataTable().identifier().table();
 
             tbls.add(new QueryTable(schemaName, tblName));
 

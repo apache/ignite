@@ -569,7 +569,7 @@ public class GridMapQueryExecutor {
                 snapshotedTbls = new ArrayList<>(tbls.size());
 
                 for (QueryTable tbl : tbls) {
-                    GridH2Table h2Tbl = h2.dataTable(tbl.schema(), tbl.table());
+                    GridH2Table h2Tbl = h2.dataTable(tbl);
 
                     Objects.requireNonNull(h2Tbl, tbl.toString());
 

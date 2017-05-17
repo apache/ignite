@@ -399,7 +399,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private DdlStatementsProcessor ddlProc;
 
     /** */
-    private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap8<>();
 
     /** Statement cache. */
     private final ConcurrentHashMap<Thread, StatementCache> stmtCache = new ConcurrentHashMap<>();
@@ -2010,7 +2010,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             addInitialUserIndex(spaceName, tbl, usrIdx);
 
         if (dataTables.putIfAbsent(h2Tbl.identifier(), h2Tbl) != null)
-            throw new IllegalStateException("Table already exists: " + h2Tbl.identifier());
+            throw new IllegalStateException("Table already exists: " + h2Tbl.identifierString());
     }
 
     /**
@@ -2021,12 +2021,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Table or {@code null} if none found.
      */
     public GridH2Table dataTable(String schemaName, String tblName) {
-        for (GridH2Table tbl : dataTables.values()) {
-            if (tbl.getSchema().getName().equals(schemaName) && tbl.getName().equals(tblName))
-                return tbl;
-        }
+        return dataTable(new QueryTable(schemaName, tblName));
+    }
 
-        return null;
+    /**
+     * Find table by it's identifier.
+     *
+     * @param tbl Identifier.
+     * @return Table or {@code null} if none found.
+     */
+    public GridH2Table dataTable(QueryTable tbl) {
+        return dataTables.get(tbl);
     }
 
     /**
