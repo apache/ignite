@@ -74,14 +74,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -92,7 +90,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -104,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.database.file.FilePageStoreMa
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.database.wal.crc.PureJavaCrc32;
@@ -134,7 +130,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 
 /**
  *
@@ -1307,7 +1302,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             final int cId = destroyRec.cacheId();
                             final int pId = destroyRec.partitionId();
 
-                            PageMemoryEx pageMem = (PageMemoryEx)cctx.cacheContext(cId).memoryPolicy().pageMemory();
+                            PageMemoryEx pageMem = getPageMemoryForCacheId(cId);
 
                             pageMem.clearAsync(new P3<Integer, Long, Integer>() {
                                 @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
