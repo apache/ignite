@@ -111,7 +111,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** */
     @GridToStringInclude
-    @GridDirectCollection(QueryTable.class)
+    @GridDirectCollection(Message.class)
     private Collection<QueryTable> tbls;
 
     /** */
@@ -435,7 +435,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.STRING))
+                if (!writer.writeCollection("tbls", tbls, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -528,7 +528,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 7:
-                tbls = reader.readCollection("tbls", MessageCollectionItemType.STRING);
+                tbls = reader.readCollection("tbls", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

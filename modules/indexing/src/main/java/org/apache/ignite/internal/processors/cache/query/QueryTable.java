@@ -19,21 +19,31 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
  * Query table descriptor.
  */
-public class QueryTable implements Serializable {
+public class QueryTable implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Schema. */
-    private final String schema;
+    private String schema;
 
     /** Table. */
-    private final String tbl;
+    private String tbl;
+
+    /**
+     * Defalt constructor.
+     */
+    public QueryTable() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -58,6 +68,77 @@ public class QueryTable implements Serializable {
      */
     public String table() {
         return tbl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeString("schema", schema))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeString("tbl", tbl))
+                    return false;
+
+                writer.incrementState();
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                schema = reader.readString("schema");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                tbl = reader.readString("tbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+        }
+
+        return reader.afterMessageRead(QueryTable.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -54;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
