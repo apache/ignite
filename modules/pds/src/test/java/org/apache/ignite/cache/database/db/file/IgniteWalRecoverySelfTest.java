@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -76,6 +77,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Assert;
 import sun.nio.ch.DirectBuffer;
+
+import static org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE;
 
 /**
  *
@@ -406,7 +409,7 @@ public class IgniteWalRecoverySelfTest extends GridCommonAbstractTest {
      */
     public void testHugeCheckpointRecord() throws Exception {
         try {
-            System.setProperty("GRIDGAIN_DB_WAL_MODE", "LOG_ONLY");
+            System.setProperty(IGNITE_PDS_WAL_MODE, "LOG_ONLY");
 
             final IgniteEx ignite = startGrid(1);
 
@@ -446,7 +449,7 @@ public class IgniteWalRecoverySelfTest extends GridCommonAbstractTest {
             fut.get();
         }
         finally {
-            System.clearProperty("GRIDGAIN_DB_WAL_MODE");
+            System.clearProperty(IGNITE_PDS_WAL_MODE);
 
             stopAllGrids();
         }
@@ -457,7 +460,7 @@ public class IgniteWalRecoverySelfTest extends GridCommonAbstractTest {
      */
     private void checkWalRolloverMultithreaded(boolean logOnly) throws Exception {
         if (logOnly)
-            System.setProperty("GRIDGAIN_DB_WAL_MODE", "LOG_ONLY");
+            System.setProperty(IGNITE_PDS_WAL_MODE, "LOG_ONLY");
 
         walSegmentSize = 2 * 1024 * 1024;
 
@@ -480,7 +483,7 @@ public class IgniteWalRecoverySelfTest extends GridCommonAbstractTest {
             }, 16, "put-thread");
         }
         finally {
-            System.clearProperty("GRIDGAIN_DB_WAL_MODE");
+            System.clearProperty(IGNITE_PDS_WAL_MODE);
 
             stopAllGrids();
         }
