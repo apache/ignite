@@ -94,6 +94,7 @@
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\CacheTestKey.cs" />
+    <Compile Include="Cache\MemoryMetricsTest.cs" />
     <Compile Include="Cache\NonSerializableCacheEntryProcessor.cs" />
     <Compile Include="Cache\NonSerializableException.cs" />
     <Compile Include="Cache\PartitionLossTest.cs" />
