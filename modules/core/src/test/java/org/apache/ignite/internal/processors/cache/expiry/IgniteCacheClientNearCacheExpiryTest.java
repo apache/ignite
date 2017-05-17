@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
+import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -83,6 +83,13 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
     public void testExpirationOnClient() throws Exception {
         Ignite ignite = grid(NODES - 1);
 
+        // Check size of near entries via reflection because entries is filtered for size() API call.
+        IgniteEx igniteEx = (IgniteEx)ignite;
+
+        GridCacheAdapter internalCache = igniteEx.context().cache().internalCache(DEFAULT_CACHE_NAME);
+
+        GridCacheLocalConcurrentMap map = GridTestUtils.getFieldValue(internalCache, GridCacheAdapter.class, "map");
+
         assertTrue(ignite.configuration().isClientMode());
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -102,14 +109,9 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
             assertEquals(i, cacheWithExpiry.localPeek(i));
         }
 
+        assertEquals(KEYS_COUNT * 2, map.publicSize(internalCache.context().cacheId()));
+
         U.sleep(1000);
-
-        // Check size of near entries via reflection because entries is filtered for size() API call.
-        IgniteEx igniteEx = (IgniteEx)ignite;
-
-        GridCacheAdapter internalCache = igniteEx.context().cache().internalCache(DEFAULT_CACHE_NAME);
-
-        GridCacheConcurrentMap map = GridTestUtils.getFieldValue(internalCache, GridCacheAdapter.class, "map");
 
         assertEquals(KEYS_COUNT, map.publicSize(internalCache.context().cacheId()));
 

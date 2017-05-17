@@ -44,6 +44,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     private boolean eagerTtlEnabled;
 
     /** */
+    private GridCacheContext dhtCtx;
+
+    /** */
     private final IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> expireC =
         new IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion>() {
             @Override public void applyx(GridCacheEntryEx entry, GridCacheVersion obsoleteVer) {
@@ -73,6 +76,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        dhtCtx = cctx.isNear() ? cctx.near().dht().context() : cctx;
+
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
             CU.isAtomicsCache(cctx.name()) ||
@@ -189,7 +194,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
-            boolean more = cctx.offheap().expire(cctx, expireC, amount);
+            boolean more = cctx.offheap().expire(dhtCtx, expireC, amount);
 
             if (more)
                 return true;

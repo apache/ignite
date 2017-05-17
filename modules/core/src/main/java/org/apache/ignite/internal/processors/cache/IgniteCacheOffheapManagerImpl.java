@@ -826,6 +826,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
+        assert !cctx.isNear() : cctx.name();
+
         if (hasPendingEntries && pendingEntries != null) {
             GridCacheVersion obsoleteVer = null;
 
