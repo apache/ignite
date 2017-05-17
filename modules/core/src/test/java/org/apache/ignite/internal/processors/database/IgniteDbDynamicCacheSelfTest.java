@@ -44,7 +44,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName("dfltPlc");
-        plc.setMaxSize(200 * 1024 * 1024);
 
         dbCfg.setDefaultMemoryPolicyName("dfltPlc");
         dbCfg.setMemoryPolicies(plc);
