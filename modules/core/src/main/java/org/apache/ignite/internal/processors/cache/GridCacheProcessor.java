@@ -812,8 +812,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CacheConfiguration c = desc.cacheConfiguration();
                         IgnitePredicate filter = c.getNodeFilter();
 
-                        // TODO IGNITE-5075.
-                        if (c.getName().equals(conf.getName()) && ((CU.affinityNode(locNode, filter)) || CU.isSystemCache(c.getName()))) {
+                        if (c.getName().equals(conf.getName()) &&
+                            ((desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) ||
+                                CU.isSystemCache(c.getName()))) {
+
                             tmpCacheCfg.add(c);
 
                             break;
@@ -840,7 +842,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.query().onCacheKernalStart();
 
-            // Must call onKernalStart on shared managers after creation of fetched caches.
             for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers()) {
                 if (sharedCtx.database() != mgr)
                     mgr.onKernalStart(false);

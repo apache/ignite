@@ -642,6 +642,8 @@ class ClusterCachesInfo {
                 cacheData.deploymentId(),
                 cacheData.schema());
 
+            desc.receivedOnDiscovery(true);
+
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
             ctx.discovery().setCacheFilter(
