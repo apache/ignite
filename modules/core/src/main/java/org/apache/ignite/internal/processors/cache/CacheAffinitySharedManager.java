@@ -613,7 +613,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 CacheGroupDescriptor desc = registeredGrps.get(aff.groupId());
 
-                assert desc != null : aff.groupName();
+                assert desc != null : aff.cacheOrGroupName();
 
                 IgniteUuid deploymentId = desc.deploymentId();
 
@@ -638,7 +638,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
 
                         assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
-                            "[cacheGrp=" + aff.groupName() +
+                            "[cacheGrp=" + aff.cacheOrGroupName() +
                             ", part=" + part +
                             ", cur=" + F.nodeIds(assignment.get(part)) +
                             ", new=" + F.nodeIds(nodes) +
@@ -897,7 +897,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         CacheGroupDescriptor grpDesc = registeredGrps.get(aff.groupId());
 
-        assert grpDesc != null : aff.groupName();
+        assert grpDesc != null : aff.cacheOrGroupName();
 
         return fut.cacheGroupAddedOnExchange(aff.groupId(), grpDesc.receivedFrom()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
@@ -1749,7 +1749,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             U.startLifecycleAware(F.asList(affFunc));
 
             GridAffinityAssignmentCache aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-                grpDesc.groupName(),
+                grpDesc.cacheOrGroupName(),
                 grpDesc.groupId(),
                 affFunc,
                 ccfg.getNodeFilter(),

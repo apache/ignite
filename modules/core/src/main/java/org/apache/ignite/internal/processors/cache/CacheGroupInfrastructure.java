@@ -597,7 +597,7 @@ public class CacheGroupInfrastructure {
      */
     public void start() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(ctx.kernalContext(),
-            name(),
+            cacheOrGroupName(),
             grpId,
             ccfg.getAffinity(),
             ccfg.getNodeFilter(),

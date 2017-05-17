@@ -124,6 +124,10 @@ public class CacheGroupDescriptor {
         return grpName != null;
     }
 
+    public String cacheOrGroupName() {
+        return grpName != null ? grpName : cacheCfg.getName();
+    }
+
     public String groupName() {
         return grpName;
     }
