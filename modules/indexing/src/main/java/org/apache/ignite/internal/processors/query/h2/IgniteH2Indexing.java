@@ -1684,7 +1684,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (tblCnt > 0) {
                     caches0.add(cctx.cacheId());
 
-                    for (QueryTable table : twoStepQry.tables0()) {
+                    for (QueryTable table : twoStepQry.tables()) {
                         String cacheName = cacheNameForSchemaAndTable(table.schema(), table.table());
 
                         int cacheId = CU.cacheId(cacheName);
@@ -2011,14 +2011,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (dataTables.putIfAbsent(h2Tbl.identifier(), h2Tbl) != null)
             throw new IllegalStateException("Table already exists: " + h2Tbl.identifier());
-    }
-
-    /**
-     * @param identifier Table identifier.
-     * @return Data table.
-     */
-    public GridH2Table dataTable(String identifier) {
-        return dataTables.get(identifier);
     }
 
     /**

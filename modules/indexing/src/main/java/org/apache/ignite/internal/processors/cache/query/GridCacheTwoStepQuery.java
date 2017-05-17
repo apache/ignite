@@ -250,11 +250,7 @@ public class GridCacheTwoStepQuery {
     /**
      * @return Tables.
      */
-    public Set<String> tables() {
-        return tbls;
-    }
-
-    public Set<QueryTable> tables0() {
+    public Set<QueryTable> tables() {
         return tbls;
     }
 
