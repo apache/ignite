@@ -37,10 +37,10 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
     private final IgniteLogger log;
 
     /** Object reader. */
-    AbstractSqlObjectReader objReader;
+    private AbstractSqlObjectReader objReader;
 
     /** Object writer. */
-    AbstractSqlObjectWriter objWriter;
+    private AbstractSqlObjectWriter objWriter;
 
     /**
      * @param ctx Context.
