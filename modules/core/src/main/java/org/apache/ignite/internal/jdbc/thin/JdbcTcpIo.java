@@ -88,6 +88,8 @@ public class JdbcTcpIo {
     /** Object writer. */
     private final JdbcObjectWriter objWriter = new JdbcObjectWriter();
 
+    private boolean closed;
+
     /**
      * @param endpointAddr Endpoint.
      * @param distributedJoins Distributed joins flag.
@@ -113,7 +115,11 @@ public class JdbcTcpIo {
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());
 
-        handshake();
+        try {
+            handshake();
+        } catch(Throwable e) {
+            close();
+        }
     }
 
     /**
@@ -359,11 +365,16 @@ public class JdbcTcpIo {
      * Close the client IO.
      */
     public void close() {
+        if (closed)
+            return;
+
         // Clean up resources.
         U.closeQuiet(out);
         U.closeQuiet(in);
 
         if (endpoint != null)
             endpoint.close();
+
+        closed = true;
     }
 }

@@ -117,17 +117,20 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         assert conn.isClosed();
 
+        assert !conn.isValid(2): "Connection must be closed";
+
+
         GridTestUtils.assertThrows(
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    conn.isValid(2);
+                    conn.isValid(-2);
 
                     return null;
                 }
             },
             SQLException.class,
-            "Connection is closed."
+            "Invalid timeout"
         );
     }
 }
