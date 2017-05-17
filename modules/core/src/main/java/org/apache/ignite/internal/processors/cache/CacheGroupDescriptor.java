@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -49,6 +50,12 @@ public class CacheGroupDescriptor {
     /** */
     private final UUID rcvdFrom;
 
+    /** */
+    private AffinityTopologyVersion startTopVer;
+
+    /** */
+    private AffinityTopologyVersion rcvdFromVer;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -62,6 +69,7 @@ public class CacheGroupDescriptor {
         @Nullable String grpName,
         int grpId,
         UUID rcvdFrom,
+        AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
@@ -70,6 +78,7 @@ public class CacheGroupDescriptor {
         this.grpName = grpName;
         this.grpId = grpId;
         this.rcvdFrom = rcvdFrom;
+        this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
         this.cacheCfg = cacheCfg;
         this.caches = caches;
@@ -127,8 +136,29 @@ public class CacheGroupDescriptor {
         return cacheCfg;
     }
 
-    Map<String, Integer> caches() {
+    public Map<String, Integer> caches() {
         return caches;
+    }
+
+    /**
+     * @return Topology version when node provided cache configuration was started.
+     */
+    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
+        return rcvdFromVer;
+    }
+
+    /**
+     * @param rcvdFromVer Topology version when node provided cache configuration was started.
+     */
+    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+        this.rcvdFromVer = rcvdFromVer;
+    }
+
+    /**
+     * @return Start topology version.
+     */
+    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+        return startTopVer;
     }
 
     @Override public String toString() {

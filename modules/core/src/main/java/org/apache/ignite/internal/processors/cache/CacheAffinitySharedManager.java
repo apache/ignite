@@ -133,7 +133,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             lastAffVer = null;
 
-            for (CacheGroupDescriptor desc : cctx.cache().cacheGroupDescriptors())
+            for (CacheGroupDescriptor desc : cctx.cache().cacheGroupDescriptors().values())
                 registeredGrps.put(desc.groupId(), desc);
         }
 

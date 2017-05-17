@@ -860,6 +860,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         return topology(cache);
     }
 
+    public GridDhtCacheAdapter dhtCache() {
+        GridCacheAdapter<K, V> cache = this.cache;
+
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
+
+        return isNear() ? ((GridNearCacheAdapter<K, V>)cache).dht() : dht();
+    }
+
     /**
      * @return Topology version future.
      */

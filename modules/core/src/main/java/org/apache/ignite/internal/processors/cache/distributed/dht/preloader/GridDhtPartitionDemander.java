@@ -740,7 +740,7 @@ public class GridDhtPartitionDemander {
             try {
                 GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
-                cached = cctx.dht().entryEx(entry.key());
+                cached = cctx.dhtCache().entryEx(entry.key());
 
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');

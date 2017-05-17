@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -78,6 +79,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private CacheConfiguration[] ccfgs;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -89,6 +93,12 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         cfg.setMarshaller(null);
+
+        if (ccfgs != null) {
+            cfg.setCacheConfiguration(ccfgs);
+
+            ccfgs = null;
+        }
 
         return cfg;
     }
@@ -155,6 +165,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void createDestroyCaches(int srvs) throws Exception {
         startGridsMultiThreaded(srvs);
 
+        checkCacheDiscoveryDataConsistent();
+
         Ignite srv0 = ignite(0);
 
         for (int i = 0; i < srvs; i++)
@@ -165,6 +177,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             srv0.createCache(cacheConfiguration(GROUP1, "cache1", PARTITIONED, ATOMIC, 2, false));
 
+            checkCacheDiscoveryDataConsistent();
+
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
 
@@ -172,6 +186,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
 
             srv0.createCache(cacheConfiguration(GROUP1, "cache2", PARTITIONED, ATOMIC, 2, false));
+
+            checkCacheDiscoveryDataConsistent();
 
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
@@ -181,6 +197,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             srv0.destroyCache("cache1");
 
+            checkCacheDiscoveryDataConsistent();
+
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
 
@@ -188,6 +206,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
 
             srv0.destroyCache("cache2");
+
+            checkCacheDiscoveryDataConsistent();
 
             for (int i = 0; i < srvs; i++)
                 checkCacheGroup(i, GROUP1, false);
@@ -213,66 +233,154 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * @return Cache configurations.
      */
-    public void testCreateCache1() throws Exception {
-        Ignite srv0 = startGrid(0);
+    private CacheConfiguration[] staticConfigurations1(boolean cache3) {
+        CacheConfiguration[] ccfgs = new CacheConfiguration[cache3 ? 3 : 2];
 
-        {
-            IgniteCache<Object, Object> cache1 =
-                srv0.createCache(cacheConfiguration("grp1", "cache1", PARTITIONED, ATOMIC, 2, false));
-            IgniteCache<Object, Object> cache2 =
-                srv0.createCache(cacheConfiguration("grp1", "cache2", PARTITIONED, ATOMIC, 2, false));
+        ccfgs[0] = cacheConfiguration(null, "cache1", PARTITIONED, ATOMIC, 2, false);
+        ccfgs[1] = cacheConfiguration(GROUP1, "cache2", PARTITIONED, ATOMIC, 2, false);
 
-            cache1.put(new Key1(1), 1);
-            assertEquals(1, cache1.get(new Key1(1)));
+        if (cache3)
+            ccfgs[2] = cacheConfiguration(GROUP1, "cache3", PARTITIONED, ATOMIC, 2, false);
 
-            assertEquals(1, cache1.size());
-            assertEquals(0, cache2.size());
-            //assertFalse(cache2.iterator().hasNext());
-
-            cache2.put(new Key2(1), 2);
-            assertEquals(2, cache2.get(new Key2(1)));
-
-            assertEquals(1, cache1.size());
-            assertEquals(1, cache2.size());
-        }
-
-        Ignite srv1 = startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Object, Object> cache1 = srv1.cache("cache1");
-        IgniteCache<Object, Object> cache2 = srv1.cache("cache2");
-
-        assertEquals(1, cache1.localPeek(new Key1(1)));
-        assertEquals(2, cache2.localPeek(new Key2(1)));
-
-        assertEquals(1, cache1.localSize());
-        assertEquals(1, cache2.localSize());
+        return ccfgs;
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testCreateCache2() throws Exception {
+    public void testDiscoveryDataConsistency1() throws Exception {
+        ccfgs = staticConfigurations1(true);
         Ignite srv0 = startGrid(0);
 
-        {
-            IgniteCache<Object, Object> cache1 =
-                srv0.createCache(cacheConfiguration(GROUP1, "cache1", PARTITIONED, ATOMIC, 0, false));
-            IgniteCache<Object, Object> cache2 =
-                srv0.createCache(cacheConfiguration(GROUP1, "cache2", PARTITIONED, ATOMIC, 0, false));
+        ccfgs = staticConfigurations1(true);
+        startGrid(1);
 
-            for (int i = 0; i < 10; i++) {
-                cache1.put(new Key1(i), 1);
-                cache2.put(new Key2(i), 2);
-            }
-        }
+        checkCacheDiscoveryDataConsistent();
+
+        ccfgs = null;
+        startGrid(2);
+
+        checkCacheDiscoveryDataConsistent();
+
+        srv0.createCache(cacheConfiguration(null, "cache4", PARTITIONED, ATOMIC, 2, false));
+
+        checkCacheDiscoveryDataConsistent();
+
+        ccfgs = staticConfigurations1(true);
+        startGrid(3);
+
+        checkCacheDiscoveryDataConsistent();
+
+        srv0.createCache(cacheConfiguration(GROUP1, "cache5", PARTITIONED, ATOMIC, 2, false));
+
+        ccfgs = staticConfigurations1(true);
+        startGrid(4);
+
+        checkCacheDiscoveryDataConsistent();
+
+        for (int i = 0; i < 5; i++)
+            checkCacheGroup(i, GROUP1, true);
+
+        srv0.destroyCache("cache1");
+        srv0.destroyCache("cache2");
+        srv0.destroyCache("cache3");
+
+        checkCacheDiscoveryDataConsistent();
+
+        ccfgs = staticConfigurations1(true);
+        startGrid(5);
+
+        checkCacheDiscoveryDataConsistent();
+
+        for (int i = 0; i < 6; i++)
+            checkCacheGroup(i, GROUP1, true);
+
+        srv0.destroyCache("cache1");
+        srv0.destroyCache("cache2");
+        srv0.destroyCache("cache3");
+        srv0.destroyCache("cache4");
+        srv0.destroyCache("cache5");
+
+        ccfgs = staticConfigurations1(true);
+        startGrid(6);
+
+        checkCacheDiscoveryDataConsistent();
+
+        srv0.createCache(cacheConfiguration(null, "cache4", PARTITIONED, ATOMIC, 2, false));
+        srv0.createCache(cacheConfiguration(GROUP1, "cache5", PARTITIONED, ATOMIC, 2, false));
+
+        checkCacheDiscoveryDataConsistent();
+
+        ccfgs = staticConfigurations1(false);
+        startGrid(7);
+
+        checkCacheDiscoveryDataConsistent();
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRebalance1() throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        IgniteCache<Object, Object> srv0Cache1 =
+            srv0.createCache(cacheConfiguration(GROUP1, "cache1", PARTITIONED, ATOMIC, 2, false));
+        IgniteCache<Object, Object> srv0Cache2 =
+            srv0.createCache(cacheConfiguration(GROUP1, "cache2", PARTITIONED, ATOMIC, 2, false));
+
+        for (int i = 0; i < 10; i++)
+            srv0Cache1.put(new Key1(i), i);
+
+        assertEquals(10, srv0Cache1.size());
+        assertEquals(10, srv0Cache1.localSize());
+        assertEquals(0, srv0Cache2.size());
 
         Ignite srv1 = startGrid(1);
 
         awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> srv1Cache1 = srv1.cache("cache1");
+        IgniteCache<Object, Object> srv1Cache2 = srv1.cache("cache2");
+
+        assertEquals(20, srv0Cache1.size(CachePeekMode.ALL));
+        assertEquals(10, srv0Cache1.localSize(CachePeekMode.ALL));
+        assertEquals(0, srv0Cache2.size(CachePeekMode.ALL));
+        assertEquals(0, srv0Cache2.localSize(CachePeekMode.ALL));
+
+        assertEquals(20, srv1Cache1.size(CachePeekMode.ALL));
+        assertEquals(10, srv1Cache1.localSize(CachePeekMode.ALL));
+        assertEquals(0, srv1Cache2.size(CachePeekMode.ALL));
+        assertEquals(0, srv1Cache2.localSize(CachePeekMode.ALL));
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals(i, srv0Cache1.localPeek(new Key1(i)));
+            assertEquals(i, srv1Cache1.localPeek(new Key1(i)));
+        }
+
+        for (int i = 0; i < 20; i++)
+            srv0Cache2.put(new Key1(i), i + 1);
+
+        Ignite srv2 = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> srv2Cache1 = srv2.cache("cache1");
+        IgniteCache<Object, Object> srv2Cache2 = srv2.cache("cache2");
+
+        assertEquals(30, srv2Cache1.size(CachePeekMode.ALL));
+        assertEquals(10, srv2Cache1.localSize(CachePeekMode.ALL));
+        assertEquals(60, srv2Cache2.size(CachePeekMode.ALL));
+        assertEquals(20, srv1Cache2.localSize(CachePeekMode.ALL));
+
+        for (int i = 0; i < 10; i++)
+            assertEquals(i, srv2Cache1.localPeek(new Key1(i)));
+
+        for (int i = 0; i < 20; i++)
+            assertEquals(i + 1, srv2Cache2.localPeek(new Key1(i)));
     }
 
     /**

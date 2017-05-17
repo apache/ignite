@@ -2422,7 +2422,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Collection<ClusterNode> allNodes = ctx.discovery().cacheNodes(topVer0);
 
-        for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors()) {
+        for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors().values()) {
             if (assignments.get(cacheDesc.cacheId()) != null)
                 continue;
 

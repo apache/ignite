@@ -827,7 +827,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (CacheConfiguration conf : ctx.config().getCacheConfiguration()) {
                     assert conf.getName() != null;
 
-                    for (DynamicCacheDescriptor desc : cacheDescriptors()) {
+                    for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                         CacheConfiguration c = desc.cacheConfiguration();
                         IgnitePredicate filter = c.getNodeFilter();
 
@@ -1217,8 +1217,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
-        if (log.isInfoEnabled())
-            log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", memoryPolicyName=" + cfg.getMemoryPolicyName() + ", mode=" + cfg.getCacheMode() + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Started cache [name=" + cfg.getName() +
+                (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
+                ", memoryPolicyName=" + cfg.getMemoryPolicyName() +
+                ", mode=" + cfg.getCacheMode() + ']');
+        }
     }
 
     /**
@@ -1684,7 +1688,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of started cache names.
      */
     public Collection<String> cacheNames() {
-        return F.viewReadOnly(cacheDescriptors(), new IgniteClosure<DynamicCacheDescriptor, String>() {
+        return F.viewReadOnly(cacheDescriptors().values(), new IgniteClosure<DynamicCacheDescriptor, String>() {
             @Override public String apply(DynamicCacheDescriptor desc) {
                 return desc.cacheConfiguration().getName();
             }
@@ -1733,7 +1737,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of currently started public cache names
      */
     public Collection<String> publicCacheNames() {
-        return F.viewReadOnly(cacheDescriptors(),
+        return F.viewReadOnly(cacheDescriptors().values(),
             new IgniteClosure<DynamicCacheDescriptor, String>() {
                 @Override public String apply(DynamicCacheDescriptor desc) {
                     return desc.cacheConfiguration().getName();
@@ -2809,7 +2813,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
-            for (DynamicCacheDescriptor desc : cacheDescriptors()) {
+            for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 
                 if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
@@ -3086,12 +3090,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Cache descriptors.
      */
-    public Collection<DynamicCacheDescriptor> cacheDescriptors() {
-        return cachesInfo.registeredCaches().values();
+    public Map<String, DynamicCacheDescriptor> cacheDescriptors() {
+        return cachesInfo.registeredCaches();
     }
 
-    public Collection<CacheGroupDescriptor> cacheGroupDescriptors() {
-        return cachesInfo.registeredCacheGroups().values();
+    public Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors() {
+        return cachesInfo.registeredCacheGroups();
     }
 
     /**
@@ -3099,7 +3103,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     @Nullable public DynamicCacheDescriptor cacheDescriptor(int cacheId) {
-        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors()) {
+        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors().values()) {
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
             assert ccfg != null : cacheDesc;

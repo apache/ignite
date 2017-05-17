@@ -139,24 +139,20 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (cacheMsg.partitionExchangeMessage()) {
                 if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
+                    GridDhtAffinityAssignmentRequest msg0 = (GridDhtAffinityAssignmentRequest)cacheMsg;
+
                     assert cacheMsg.topologyVersion() != null : cacheMsg;
 
-                    // TODO IGNITE-5075.
-                    AffinityTopologyVersion startTopVer = null;//cctx.affinity().localStartVersion(((GridDhtAffinityAssignmentRequest) cacheMsg).groupId());
+                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
-                    if (startTopVer == null)
-                        startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
+                    CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptors().get(msg0.groupId());
 
-//                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
-//
-//                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
-//
-//                    if (cacheDesc != null) {
-//                        if (cacheDesc.startTopologyVersion() != null)
-//                            startTopVer = cacheDesc.startTopologyVersion();
-//                        else if (cacheDesc.receivedFromStartVersion() != null)
-//                            startTopVer = cacheDesc.receivedFromStartVersion();
-//                    }
+                    if (desc != null) {
+                        if (desc.startTopologyVersion() != null)
+                            startTopVer = desc.startTopologyVersion();
+                        else if (desc.receivedFromStartVersion() != null)
+                            startTopVer = desc.receivedFromStartVersion();
+                    }
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
                     fut = cctx.exchange().affinityReadyFuture(startTopVer);

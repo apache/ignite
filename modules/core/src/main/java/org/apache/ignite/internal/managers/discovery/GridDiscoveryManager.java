@@ -304,6 +304,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     *
+     */
+    public void onLocalNodeJoin() {
+        registeredCacheGrps.clear();
+        registeredCaches.clear();
+    }
+
+    /**
      * @param grpDesc Cache group descriptor.
      * @param filter Node filter.
      * @param cacheMode Cache mode.

@@ -58,6 +58,9 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     /** */
     private ThreadLocal<Integer> staticCaches = new ThreadLocal<>();
 
+    /** */
+    private boolean withCacheGrp;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -159,8 +162,19 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
                 }
             }
 
+            checkCacheDiscoveryDataConsistent();
+
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentJoinCacheWithGroup() throws Exception {
+        withCacheGrp = true;
+
+        testConcurrentJoin();
     }
 
     /**
@@ -186,6 +200,9 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
         ccfg.setName(cacheName);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        if (withCacheGrp)
+            ccfg.setGroupName("group1");
 
         return ccfg;
     }

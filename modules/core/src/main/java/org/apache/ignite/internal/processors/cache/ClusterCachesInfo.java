@@ -144,6 +144,9 @@ class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
+        CU.checkAttributeMismatch(log, rmtCfg.getGroupName(), rmt, "groupName", "Group name",
+            locCfg.getGroupName(), rmtCfg.getGroupName(), true);
+
         if (rmtAttr.cacheMode() != LOCAL) {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
                 locAttr.interceptorClassName(), rmtAttr.interceptorClassName(), true);
@@ -294,6 +297,7 @@ class ClusterCachesInfo {
                         int cacheId = CU.cacheId(req.cacheName());
 
                         CacheGroupDescriptor grpDesc = registerCacheGroup(exchangeActions,
+                            topVer,
                             ccfg,
                             cacheId,
                             req.initiatingNodeId(),
@@ -574,6 +578,11 @@ class ClusterCachesInfo {
      */
     void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
         if (type == EVT_NODE_JOINED && !ctx.isDaemon()) {
+            for (CacheGroupDescriptor desc : registeredCacheGrps.values()) {
+                if (node.id().equals(desc.receivedFrom()))
+                    desc.receivedFromStartVersion(topVer);
+            }
+
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (node.id().equals(desc.receivedFrom()))
                     desc.receivedFromStartVersion(topVer);
@@ -609,6 +618,20 @@ class ClusterCachesInfo {
      * @return Information about started caches.
      */
     private CacheNodeCommonDiscoveryData collectCommonDiscoveryData() {
+        Map<Integer, CacheGroupData> cacheGrps = new HashMap<>();
+
+        for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
+            CacheGroupData grpData = new CacheGroupData(grpDesc.config(),
+                grpDesc.groupName(),
+                grpDesc.groupId(),
+                grpDesc.receivedFrom(),
+                grpDesc.startTopologyVersion(),
+                grpDesc.deploymentId(),
+                grpDesc.caches());
+
+            cacheGrps.put(grpDesc.groupId(), grpData);
+        }
+
         Map<String, CacheData> caches = new HashMap<>();
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -624,19 +647,6 @@ class ClusterCachesInfo {
                 (byte)0);
 
             caches.put(desc.cacheName(), cacheData);
-        }
-
-        Map<Integer, CacheGroupData> cacheGrps = new HashMap<>();
-
-        for (CacheGroupDescriptor grpDesc : registeredCacheGrps.values()) {
-            CacheGroupData grpData = new CacheGroupData(grpDesc.config(),
-                grpDesc.groupName(),
-                grpDesc.groupId(),
-                grpDesc.receivedFrom(),
-                grpDesc.deploymentId(),
-                grpDesc.caches());
-
-            cacheGrps.put(grpDesc.groupId(), grpData);
         }
 
         Map<String, CacheData> templates = new HashMap<>();
@@ -679,12 +689,17 @@ class ClusterCachesInfo {
 
         assert cacheGrpIdGen > 0 : cacheGrpIdGen;
 
+        registeredCaches.clear();
+        registeredCacheGrps.clear();
+        ctx.discovery().onLocalNodeJoin();
+
         for (CacheGroupData grpData : cachesData.cacheGroups().values()) {
             CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
                 grpData.config(),
                 grpData.groupName(),
                 grpData.groupId(),
                 grpData.receivedFrom(),
+                grpData.startTopologyVersion(),
                 grpData.deploymentId(),
                 grpData.caches());
 
@@ -780,6 +795,7 @@ class ClusterCachesInfo {
                     DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
                             locCfg.config(),
                             desc.cacheType(),
+                            desc.groupDescriptor(),
                             desc.template(),
                             desc.receivedFrom(),
                             desc.staticallyConfigured(),
@@ -872,10 +888,16 @@ class ClusterCachesInfo {
                 int cacheId = CU.cacheId(cfg.getName());
 
                 CacheGroupDescriptor grpDesc = registerCacheGroup(null,
+                    null,
                     cfg,
                     cacheId,
                     nodeId,
                     joinData.cacheDeploymentId());
+
+                ctx.discovery().setCacheFilter(
+                    grpDesc.groupId(),
+                    cfg.getName(),
+                    cfg.getNearConfiguration() != null);
 
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
                     cfg,
@@ -890,11 +912,6 @@ class ClusterCachesInfo {
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
                 assert old == null : old;
-
-                ctx.discovery().setCacheFilter(
-                    grpDesc.groupId(),
-                    cfg.getName(),
-                    cfg.getNearConfiguration() != null);
             }
 
             ctx.discovery().addClientNode(cfg.getName(), nodeId, cfg.getNearConfiguration() != null);
@@ -939,8 +956,17 @@ class ClusterCachesInfo {
         return null;
     }
 
+    /**
+     * @param exchActions
+     * @param startedCacheCfg
+     * @param cacheId
+     * @param rcvdFrom
+     * @param deploymentId
+     * @return
+     */
     private CacheGroupDescriptor registerCacheGroup(
-        ExchangeActions exchActions,
+        @Nullable ExchangeActions exchActions,
+        @Nullable AffinityTopologyVersion curTopVer,
         CacheConfiguration startedCacheCfg,
         Integer cacheId,
         UUID rcvdFrom,
@@ -964,6 +990,7 @@ class ClusterCachesInfo {
             startedCacheCfg.getGroupName(),
             grpId,
             rcvdFrom,
+            curTopVer != null ? curTopVer.nextMinorVersion() : null,
             deploymentId,
             caches);
 
