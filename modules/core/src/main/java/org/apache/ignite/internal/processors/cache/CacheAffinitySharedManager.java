@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -453,7 +452,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        for (ExchangeActions.ActionData action : exchActions.stopRequests())
+        for (ExchangeActions.ActionData action : exchActions.cacheStopRequests())
             cctx.cache().blockGateway(action.request());
 
         Set<Integer> stoppedGrps = null;
@@ -696,7 +695,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 });
             }
             else
-                initCachesAffinity(fut);
+                initAffinityNoLateAssignment(fut);
         }
     }
 
@@ -811,7 +810,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Initialized affinity started on this exchange.
+     * Initialized affinity for cache received from node joining on this exchange.
      *
      * @param crd Coordinator flag.
      * @param fut Exchange future.
@@ -864,7 +863,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridDhtPartitionsExchangeFuture fut,
         boolean fetch)
         throws IgniteCheckedException {
-        if (!fetch && canCalculateAffinity(aff, fut)) {
+        assert desc != null;
+
+        if (!fetch && canCalculateAffinity(desc, aff, fut)) {
             List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
 
             aff.initialize(fut.topologyVersion(), assignment);
@@ -882,11 +883,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param desc Cache group descriptor.
      * @param aff Affinity.
      * @param fut Exchange future.
      * @return {@code True} if local node can calculate affinity on it's own for this partition map exchange.
      */
-    private boolean canCalculateAffinity(GridAffinityAssignmentCache aff, GridDhtPartitionsExchangeFuture fut) {
+    private boolean canCalculateAffinity(CacheGroupDescriptor desc,
+        GridAffinityAssignmentCache aff,
+        GridDhtPartitionsExchangeFuture fut) {
+        assert desc != null : aff.cacheOrGroupName();
+
         // Do not request affinity from remote nodes if affinity function is not centralized.
         if (!aff.centralizedAffinityFunction())
             return true;
@@ -895,11 +901,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Collection<ClusterNode> affNodes =
             cctx.discovery().cacheGroupAffinityNodes(aff.groupId(), fut.topologyVersion());
 
-        CacheGroupDescriptor grpDesc = registeredGrps.get(aff.groupId());
-
-        assert grpDesc != null : aff.cacheOrGroupName();
-
-        return fut.cacheGroupAddedOnExchange(aff.groupId(), grpDesc.receivedFrom()) ||
+        return fut.cacheGroupAddedOnExchange(aff.groupId(), desc.receivedFrom()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
@@ -942,7 +944,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
         }
         else
-            initCachesAffinity(fut);
+            initAffinityNoLateAssignment(fut);
 
         synchronized (mux) {
             affCalcVer = fut.topologyVersion();
@@ -1089,7 +1091,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             centralizedAff = true;
         }
         else {
-            initCachesAffinity(fut);
+            initAffinityNoLateAssignment(fut);
 
             centralizedAff = false;
         }
@@ -1107,7 +1109,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    private void initCachesAffinity(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+    private void initAffinityNoLateAssignment(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         assert !lateAffAssign;
 
         for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {

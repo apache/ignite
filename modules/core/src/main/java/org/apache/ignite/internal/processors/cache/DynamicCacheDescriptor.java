@@ -73,6 +73,9 @@ public class DynamicCacheDescriptor {
     private volatile CacheObjectContext objCtx;
 
     /** */
+    private boolean rcvdOnDiscovery;
+
+    /** */
     private AffinityTopologyVersion startTopVer;
 
     /** */
@@ -98,6 +101,7 @@ public class DynamicCacheDescriptor {
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.
      * @param deploymentId Deployment ID.
+     * @param schema Query schema.
      */
     @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,
@@ -200,6 +204,7 @@ public class DynamicCacheDescriptor {
      * Creates and caches cache object context if needed.
      *
      * @param proc Object processor.
+     * @return Cache object context.
      */
     public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
         if (objCtx == null) {
@@ -234,6 +239,20 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @return {@code True} if received in discovery data.
+     */
+    boolean receivedOnDiscovery() {
+        return rcvdOnDiscovery;
+    }
+
+    /**
+     * @param rcvdOnDiscovery {@code True} if received in discovery data.
+     */
+    void receivedOnDiscovery(boolean rcvdOnDiscovery) {
+        this.rcvdOnDiscovery = rcvdOnDiscovery;
+    }
+
+    /**
      * @return ID of node provided cache configuration in discovery data.
      */
     @Nullable public UUID receivedFrom() {
@@ -243,14 +262,14 @@ public class DynamicCacheDescriptor {
     /**
      * @return Topology version when node provided cache configuration was started.
      */
-    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
+    @Nullable AffinityTopologyVersion receivedFromStartVersion() {
         return rcvdFromVer;
     }
 
     /**
      * @param rcvdFromVer Topology version when node provided cache configuration was started.
      */
-    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+    void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
         this.rcvdFromVer = rcvdFromVer;
     }
 
@@ -279,7 +298,7 @@ public class DynamicCacheDescriptor {
     /**
      * @param clientCacheStartVer Version when client cache on local node was started.
      */
-    public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
+    void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
         this.clientCacheStartVer = clientCacheStartVer;
     }
 

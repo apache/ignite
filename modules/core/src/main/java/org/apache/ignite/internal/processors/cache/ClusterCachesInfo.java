@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -54,7 +55,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 
 /**
- *
+ * Logic related to cache discovery date processing.
  */
 class ClusterCachesInfo {
     /** */
@@ -137,7 +138,8 @@ class ClusterCachesInfo {
      * @param rmt Remote node.
      * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, UUID rmt) throws IgniteCheckedException {
+    private void checkCache(CacheConfiguration<?, ?> locCfg, CacheConfiguration<?, ?> rmtCfg, UUID rmt)
+        throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtCfg);
         GridCacheAttributes locAttr = new GridCacheAttributes(locCfg);
 
@@ -289,7 +291,7 @@ class ClusterCachesInfo {
                             "client cache (a cache with the given name is not started): " + req.cacheName()));
                     }
                     else {
-                        CacheConfiguration ccfg = req.startCacheConfiguration();
+                        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
                         assert req.cacheType() != null : req;
                         assert F.eq(ccfg.getName(), req.cacheName()) : req;
@@ -732,7 +734,7 @@ class ClusterCachesInfo {
 
             assert grpDesc != null : cacheData.cacheConfiguration().getName();
 
-            CacheConfiguration cfg = cacheData.cacheConfiguration();
+            CacheConfiguration<?, ?> cfg = cacheData.cacheConfiguration();
 
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                 ctx,
@@ -744,6 +746,8 @@ class ClusterCachesInfo {
                 cacheData.staticallyConfigured(),
                 cacheData.deploymentId(),
                 cacheData.schema());
+
+            desc.receivedOnDiscovery(true);
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
@@ -783,7 +787,7 @@ class ClusterCachesInfo {
                 if (firstNode && !joinDiscoData.caches().containsKey(desc.cacheName()))
                     continue;
 
-                CacheConfiguration cfg = desc.cacheConfiguration();
+                CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
 
                 CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
@@ -862,7 +866,7 @@ class ClusterCachesInfo {
      */
     private void processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId) {
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
-            CacheConfiguration cfg = cacheInfo.config();
+            CacheConfiguration<?, ?> cfg = cacheInfo.config();
 
             if (!registeredTemplates.containsKey(cfg.getName())) {
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
@@ -882,7 +886,7 @@ class ClusterCachesInfo {
         }
 
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
-            CacheConfiguration cfg = cacheInfo.config();
+            CacheConfiguration<?, ?> cfg = cacheInfo.config();
 
             if (!registeredCaches.containsKey(cfg.getName())) {
                 int cacheId = CU.cacheId(cfg.getName());
