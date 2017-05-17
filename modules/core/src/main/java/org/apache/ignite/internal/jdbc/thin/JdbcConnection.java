@@ -86,7 +86,7 @@ public class JdbcConnection implements Connection {
         assert url != null;
         assert props != null;
 
-        boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
+        boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "false"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
@@ -346,7 +346,12 @@ public class JdbcConnection implements Connection {
         if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        return null;
+        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
+
+        if (timeout > 0)
+            stmt.timeout(timeout);
+
+        return stmt;
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import java.sql.Statement;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -113,8 +112,11 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (stmt != null && !stmt.isClosed())
+        if (stmt != null && !stmt.isClosed()) {
             stmt.close();
+
+            assert stmt.isClosed();
+        }
 
         conn.close();
 

@@ -88,7 +88,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  *     <tr>
  *         <td><b>ignite.jdbc.distributedJoins</b></td>
  *         <td>Flag to enable distributed joins.</td>
- *         <td>{@code true} (distributed joins are enabled)</td>
+ *         <td>{@code false} (distributed joins are disabled)</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>

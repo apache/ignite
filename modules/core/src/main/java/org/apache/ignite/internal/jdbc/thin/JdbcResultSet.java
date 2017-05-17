@@ -79,6 +79,9 @@ public class JdbcResultSet implements ResultSet {
     /** Was {@code NULL} flag. */
     private boolean wasNull;
 
+    /** Count of fetched rows. */
+    private long fetched;
+
     /** Fetch size. */
     private int fetchSize;
 
@@ -116,12 +119,21 @@ public class JdbcResultSet implements ResultSet {
 
         if (fields == null && !finished) {
             try {
-                SqlListenerQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
+
+                int fetchSize0 = fetchSize;
+
+                if (maxRows > 0)
+                    fetchSize0 = Math.min(fetchSize, (int)(maxRows - fetched));
+
+                SqlListenerQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize0);
 
                 assert qryId == res.queryId();
 
                 fields = ((Collection<List<Object>>)res.items()).iterator();
-                finished = (Boolean)res.last();
+
+                fetched += res.items().size();
+
+                finished = res.last() || fetched == maxRows;
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new SQLException("Failed to query Ignite.", e);
@@ -148,6 +160,13 @@ public class JdbcResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
         closed = true;
+
+        try {
+            stmt.connection().cliIo().queryClose(qryId);
+        }
+        catch (IOException | IgniteCheckedException e) {
+            throw new SQLException("Failed to close Ignite query.", e);
+        }
     }
 
     /** {@inheritDoc} */

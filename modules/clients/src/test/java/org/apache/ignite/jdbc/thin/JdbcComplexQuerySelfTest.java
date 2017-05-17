@@ -21,7 +21,9 @@ import java.io.Serializable;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Properties;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -46,7 +48,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/pers";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** Statement. */
     private Statement stmt;
