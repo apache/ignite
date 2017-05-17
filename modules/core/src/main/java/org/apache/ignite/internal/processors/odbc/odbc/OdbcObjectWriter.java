@@ -18,13 +18,8 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterHandles;
-import org.apache.ignite.internal.binary.BinaryWriterSchemaHolder;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..

@@ -62,21 +62,19 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  * </ul>
  * <h1 class="header">SQL Notice</h1>
  * Driver allows to query data from several caches. Cache that driver is connected to is
- * treated as default schema in this case. Other caches can be referenced by their names.
- * <p>
- * Note that cache name is case sensitive and you have to always specify it in quotes.
+ * treated as default schema in this case. Other caches can be referenced by their names.\
+ *
  * <h1 class="header">Dependencies</h1>
  * JDBC driver is located in main Ignite JAR in {@code IGNITE_HOME/libs} folder.
  * <h1 class="header">Configuration</h1>
  *
  * <p>
  * JDBC connection URL has the following pattern:
- * {@code jdbc:ignite://<hostname>:<port>/<cache_name>}<br>
+ * {@code jdbc:ignite://<hostname>:<port>/}<br>
  * Note the following:
  * <ul>
  *     <li>Hostname is required.</li>
  *     <li>If port is not defined, {@code 10800} is used (default for Ignite thin client).</li>
- *     <li>Leave {@code <cache_name>} empty if you are connecting to default cache.</li>
  * </ul>
  * Other properties can be defined in {@link Properties} object passed to
  * {@link DriverManager#getConnection(String, Properties)} method:
@@ -106,7 +104,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  * Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
  *
  * // Open JDBC connection.
- * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//cache=persons@localhost:10800");
+ * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//localhost:10800");
  *
  * // Query persons' names
  * ResultSet rs = conn.createStatement().executeQuery("select name from Person");
@@ -137,14 +135,14 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Prefix for property names. */
     private static final String PROP_PREFIX = "ignite.jdbc";
 
-    /** Cache parameter name. */
-    private static final String PARAM_CACHE = "cache";
-
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
     /** Enforce join order parameter name. */
     private static final String ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+
+    /** Transactions allowed parameter name. */
+    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
@@ -157,6 +155,9 @@ public class IgniteJdbcThinDriver implements Driver {
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + ENFORCE_JOIN_ORDER;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
@@ -204,7 +205,8 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
+        new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);
@@ -268,7 +270,7 @@ public class IgniteJdbcThinDriver implements Driver {
 
         assert parts.length > 0;
 
-        if (parts.length > 2)
+        if (parts.length > 1)
             return false;
 
         url = parts[0];

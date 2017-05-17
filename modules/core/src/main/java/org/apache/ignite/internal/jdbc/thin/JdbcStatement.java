@@ -84,8 +84,8 @@ public class JdbcStatement implements Statement {
             throw new SQLException("SQL query is empty");
 
         try {
-            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.cacheName(), sql, args);
 
+            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), sql, args);
             assert res != null;
 
             qryId = res.getQueryId();
