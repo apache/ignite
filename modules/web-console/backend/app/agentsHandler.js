@@ -81,7 +81,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
     }
 
     class Cluster {
-        constructor(nids) {
+        constructor(top) {
             let d = new Date().getTime();
 
             this.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -92,15 +92,19 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
             });
 
-            this.nids = nids;
+            this.nids = top.nids;
+
+            this.clusterVersion = top.clusterVersion;
         }
 
-        same(nids) {
-            return _.intersection(this.nids, nids).length > 0;
+        isSameCluster(top) {
+            return _.intersection(this.nids, top.nids).length > 0;
         }
 
-        updateTopology(nids) {
-            this.nids = nids;
+        update(top) {
+            this.clusterVersion = top.clusterVersion;
+
+            this.nids = top.nids;
         }
     }
 
@@ -187,11 +191,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 });
         }
 
-        getOrCreateCluster(nids) {
-            const cluster = _.find(this.clusters, (c) => c.same(nids));
+        getOrCreateCluster(top) {
+            const cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
 
             if (_.isNil(cluster))
-                this.clusters.push(new Cluster(nids));
+                this.clusters.push(new Cluster(top));
 
             return cluster;
         }
@@ -216,8 +220,8 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 });
             });
 
-            sock.on('cluster:topology', (nids) => {
-                const cluster = this.getOrCreateCluster(nids);
+            sock.on('cluster:topology', (top) => {
+                const cluster = this.getOrCreateCluster(top);
 
                 if (_.isNil(agentSocket.cluster)) {
                     agentSocket.cluster = cluster;
@@ -227,7 +231,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                     });
                 }
                 else
-                    cluster.updateTopology(nids);
+                    cluster.update(top);
             });
 
             sock.on('cluster:collector', (top) => {
