@@ -42,6 +42,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.IgniteJdbcThinDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_HOST;
@@ -54,10 +55,16 @@ import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
  */
 public class JdbcConnection implements Connection {
     /** Cache name. */
-    private String cacheName;
+    private String schemaName;
 
     /** Closed flag. */
     private boolean closed;
+
+    /** Transactions allowed flag. */
+    private boolean txAllowed;
+
+    /** Current transaction isolation. */
+    private int txIsolation;
 
     /** Timeout. */
     private int timeout;
@@ -81,6 +88,8 @@ public class JdbcConnection implements Connection {
 
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
+        txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
+
 
         try {
             cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
@@ -138,14 +147,16 @@ public class JdbcConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (!txAllowed)
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (!txAllowed)
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -199,6 +210,9 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         LOG.warning("Transactions are not supported.");
+
+        if (txAllowed)
+            txIsolation = level;
     }
 
     /** {@inheritDoc} */
@@ -207,7 +221,10 @@ public class JdbcConnection implements Connection {
 
         LOG.warning("Transactions are not supported.");
 
-        return Connection.TRANSACTION_NONE;
+        if (txAllowed)
+            return txIsolation;
+        else
+            return Connection.TRANSACTION_NONE;
     }
 
     /** {@inheritDoc} */
@@ -259,7 +276,7 @@ public class JdbcConnection implements Connection {
     @Override public void setHoldability(int holdability) throws SQLException {
         ensureNotClosed();
 
-        if (holdability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && holdability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
     }
 
@@ -274,28 +291,28 @@ public class JdbcConnection implements Connection {
     @Override public Savepoint setSavepoint() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Savepoint setSavepoint(String name) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -309,7 +326,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         return null;
@@ -326,7 +343,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         return null;
@@ -436,6 +453,7 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -450,12 +468,12 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schema) throws SQLException {
-        cacheName = schema;
+        schemaName = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
-        return cacheName;
+        return schemaName;
     }
 
     /** {@inheritDoc} */
