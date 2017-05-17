@@ -852,18 +852,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param grpDesc Cache group descriptor.
+     * @param desc Cache group descriptor.
      * @param aff Affinity.
      * @param fut Exchange future.
      * @param fetch Force fetch flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void initAffinity(CacheGroupDescriptor grpDesc,
+    private void initAffinity(CacheGroupDescriptor desc,
         GridAffinityAssignmentCache aff,
         GridDhtPartitionsExchangeFuture fut,
         boolean fetch)
         throws IgniteCheckedException {
-        assert desc != null;
+        assert desc != null : aff.cacheOrGroupName();
 
         if (!fetch && canCalculateAffinity(desc, aff, fut)) {
             List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
@@ -872,7 +872,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
         else {
             GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                grpDesc,
+                desc,
                 fut.topologyVersion(),
                 fut.discoCache());
 
