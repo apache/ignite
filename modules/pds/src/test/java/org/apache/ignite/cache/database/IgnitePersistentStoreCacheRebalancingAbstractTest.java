@@ -440,7 +440,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
-    public void testTopologyChangesWithConstantLoad() throws Exception {
+    public void _testTopologyChangesWithConstantLoad() throws Exception {
         final int entriesCnt = 10_000;
         int maxNodesCount = 4;
         int topChanges = 20;
