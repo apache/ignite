@@ -103,6 +103,9 @@ public class CacheGroupInfrastructure {
     /** ReuseList instance this group is associated with */
     private final ReuseList reuseList;
 
+    /** */
+    private final CacheType cacheType;
+
     /** IO policy. */
     private final byte ioPlc;
 
@@ -152,6 +155,7 @@ public class CacheGroupInfrastructure {
         this.freeList = freeList;
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
+        this.cacheType = cacheType;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -213,6 +217,9 @@ public class CacheGroupInfrastructure {
      * @param cctx Cache context.
      */
     private void addCacheContext(GridCacheContext cctx) {
+        assert cacheType.userCache() == cctx.userCache() : cctx.name();
+        assert grpId == cctx.groupId() : cctx.name();
+
         synchronized (caches) {
             assert sharedGroup() || caches.isEmpty();
 
@@ -264,11 +271,11 @@ public class CacheGroupInfrastructure {
      * @return {@code True} if given event type should be recorded.
      */
     public boolean eventRecordable(int type) {
-        return ctx.gridEvents().isRecordable(type);
+        return cacheType.userCache() && ctx.gridEvents().isRecordable(type);
     }
 
     /**
-     * Adds preloading event.
+     * Adds rebalancing event.
      *
      * @param part Partition.
      * @param type Event type.
