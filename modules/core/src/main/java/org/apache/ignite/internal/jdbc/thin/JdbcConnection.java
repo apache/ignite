@@ -59,9 +59,6 @@ public class JdbcConnection implements Connection {
     /** Closed flag. */
     private boolean closed;
 
-    /** URL. */
-    private String url;
-
     /** Timeout. */
     private int timeout;
 
@@ -81,8 +78,6 @@ public class JdbcConnection implements Connection {
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
-
-        this.url = url;
 
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
