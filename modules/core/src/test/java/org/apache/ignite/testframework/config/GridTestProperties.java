@@ -79,7 +79,7 @@ public final class GridTestProperties {
     /** Binary marshaller compact footers property. */
     public static final String BINARY_COMPACT_FOOTERS = "binary.marshaller.compact.footers";
 
-    /** Enables {@link BinaryBasicNameMapper} with usage of simple (canonical) name of class. */
+    /** Enables {@link BinaryBasicNameMapper} with usage of simple (w/o package) name of class. */
     public static final String BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER = "binary.marshaller.use.simple.name.mapper";
 
     /** */
