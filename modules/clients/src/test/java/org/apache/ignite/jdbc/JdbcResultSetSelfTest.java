@@ -35,6 +35,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -89,12 +90,22 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        //todo why it fixes test: with binary marshaller results to full version of toString()
-        // org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=392066768, hash=11433031, a=100, b=AAAA]
-
-        cfg.setMarshaller(new JdkMarshaller());
+        patchMarshaller(cfg);
         return cfg;
+    }
+
+    /**
+     * This method changes default marshaller from Binary to JDK because this test requires toString() to be executed at <br>
+     * {@link org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
+     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br>
+     *     and then strings are compared in assertions
+     *
+     * And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected by this test: <br>
+     * <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582, hash=11433031, a=100, b=AAAA]</code> <br>
+     * @param cfg configuration for bypassing org.apache.ignite.internal.binary.BinaryObjectImpl calling toString() (SQL false)
+     */
+    private void patchMarshaller(IgniteConfiguration cfg) {
+        cfg.setMarshaller(new JdkMarshaller());
     }
 
     /** {@inheritDoc} */
