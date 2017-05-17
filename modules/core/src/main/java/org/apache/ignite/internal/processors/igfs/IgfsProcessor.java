@@ -26,6 +26,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import javax.management.JMException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -123,6 +125,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 mgr.start(igfsCtx);
 
             igfsCache.put(cfg0.getName(), igfsCtx);
+
+            registerMetricsMBeans(igniteCfg, cfg, igfsCtx);
         }
 
         if (log.isDebugEnabled())
@@ -174,6 +178,24 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         }
 
         ctx.addNodeAttribute(ATTR_IGFS, attrVals.toArray(new IgfsAttributes[attrVals.size()]));
+    }
+
+    /**
+     * Registers IGFS metrics MBeans.
+     *
+     * @param igniteCfg The Ignite configuration.
+     * @param fsCfg The file system configuration.
+     * @param igfsCtx The IGFS context.
+     */
+    private void registerMetricsMBeans(IgniteConfiguration igniteCfg, FileSystemConfiguration fsCfg,
+        IgfsContext igfsCtx) throws IgniteCheckedException {
+        try {
+            U.registerMBean(igniteCfg.getMBeanServer(), igniteCfg.getIgniteInstanceName(), "IgfsMetricsGroup",
+                fsCfg.getName(), new IgfsMetricsMXBeanImpl(igfsCtx.igfs()), IgfsMetricsMXBean.class);
+
+        } catch (JMException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /** {@inheritDoc} */
