@@ -54,6 +54,8 @@ public class IgnitePersistentStoreTxCacheRebalancingTest extends IgnitePersisten
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoadExplicitTx() throws Exception {
+        fail("only for one run, must be removed soon");
+
         explicitTx = true;
 
         testTopologyChangesWithConstantLoad();
