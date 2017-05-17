@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,7 +54,7 @@ public class ExchangeActions {
     /**
      * @return {@code True} if server nodes should not participate in exchange.
      */
-    public boolean clientOnlyExchange() {
+    boolean clientOnlyExchange() {
         return F.isEmpty(cachesToStart) &&
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cachesToResetLostParts);
@@ -65,7 +64,7 @@ public class ExchangeActions {
      * @param nodeId Local node ID.
      * @return Close cache requests.
      */
-    public List<DynamicCacheChangeRequest> closeRequests(UUID nodeId) {
+    List<DynamicCacheChangeRequest> closeRequests(UUID nodeId) {
         List<DynamicCacheChangeRequest> res = null;
 
         if (cachesToClose != null) {
@@ -80,6 +79,13 @@ public class ExchangeActions {
         }
 
         return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
+    }
+
+    /**
+     * @return New caches start requests.
+     */
+    Collection<ActionData> cacheStartRequests() {
+        return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
     }
 
     /**
@@ -104,8 +110,8 @@ public class ExchangeActions {
     /**
      * @return Stop cache requests.
      */
-    Collection<ActionData> stopRequests() {
-        return cachesToStop != null ? cachesToStop.values() : Collections.EMPTY_LIST;
+    Collection<ActionData> cacheStopRequests() {
+        return cachesToStop != null ? cachesToStop.values() : Collections.<ActionData>emptyList();
     }
 
     /**
@@ -194,7 +200,10 @@ public class ExchangeActions {
         return false;
     }
 
-    public void newClusterState(ClusterState state) {
+    /**
+     * @param state New cluster state.
+     */
+    void newClusterState(ClusterState state) {
         assert state != null;
 
         newState = state;

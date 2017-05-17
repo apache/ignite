@@ -641,9 +641,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
 
-            registerCacheFromConfig(caches, templates);
+            addCacheOnJoinFromConfig(caches, templates);
 
-            registerCacheFromPersistentStore(caches, templates);
+            addCacheOnJoinFromPersistentStore(caches, templates);
 
             CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(IgniteUuid.randomUuid(),
                 caches,
@@ -669,7 +669,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCache(CacheConfiguration cfg,
+    private void addCacheOnJoin(CacheConfiguration cfg,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates) throws IgniteCheckedException {
         CU.validateCacheName(cfg.getName());
@@ -717,7 +717,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCacheFromConfig(
+    private void addCacheOnJoinFromConfig(
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates
     ) throws IgniteCheckedException {
@@ -730,7 +730,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cfgs[i] = cfg; // Replace original configuration value.
 
-            registerCache(cfg, caches, templates);
+            addCacheOnJoin(cfg, caches, templates);
         }
     }
 
@@ -739,7 +739,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCacheFromPersistentStore(
+    private void addCacheOnJoinFromPersistentStore(
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates
     ) throws IgniteCheckedException {
@@ -760,7 +760,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
                     if (cfg != null)
-                        registerCache(cfg, caches, templates);
+                        addCacheOnJoin(cfg, caches, templates);
                 }
             }
         }
@@ -791,12 +791,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ClusterNode locNode = ctx.discovery().localNode();
 
         try {
-            boolean check = !ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
+            boolean checkConsistency =
+                !ctx.config().isDaemon() && !getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
 
-            if (check)
+            if (checkConsistency)
                 checkConsistency();
 
-            cachesInfo.onKernalStart(check);
+            cachesInfo.onKernalStart(checkConsistency);
 
             boolean currStatus = ctx.state().active();
 
@@ -1917,7 +1918,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (exchActions != null && err == null) {
-            for (ExchangeActions.ActionData action : exchActions.stopRequests()) {
+            for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
                 stopGateway(action.request());
 
                 prepareCacheStop(action.request());

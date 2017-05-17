@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.Map;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-
-import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Discovery data sent from client reconnecting to cluster.
@@ -37,7 +36,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
     /**
      * @param clientCaches Information about caches started on re-joining client node.
      */
-    public CacheClientReconnectDiscoveryData(Map<String, CacheInfo> clientCaches) {
+    CacheClientReconnectDiscoveryData(Map<String, CacheInfo> clientCaches) {
         this.clientCaches = clientCaches;
     }
 
@@ -77,7 +76,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
          * @param nearCache Near cache flag.
          * @param flags Flags (for future usage).
          */
-        public CacheInfo(CacheConfiguration ccfg,
+        CacheInfo(CacheConfiguration ccfg,
             CacheType cacheType,
             IgniteUuid deploymentId,
             boolean nearCache,
@@ -94,7 +93,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
         }
 
         /**
-         * @return Cache configuraiton.
+         * @return Cache configuration.
          */
         CacheConfiguration config() {
             return ccfg;
