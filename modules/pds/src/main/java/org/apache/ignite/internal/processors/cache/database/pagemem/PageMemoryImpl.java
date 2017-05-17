@@ -138,7 +138,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Page relative pointer. Does not change once a page is allocated. */
     public static final int RELATIVE_PTR_OFFSET = 8;
 
-    /** Page ID offset  */
+    /** Page ID offset */
     public static final int PAGE_ID_OFFSET = 16;
 
     /** Page cache ID offset. */
@@ -794,7 +794,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         try {
             tag = seg.partTag(fullId.cacheId(), PageIdUtils.partId(fullId.pageId()));
 
-            relPtr= seg.loadedPages.get(
+            relPtr = seg.loadedPages.get(
                 fullId.cacheId(),
                 PageIdUtils.effectivePageId(fullId.pageId()),
                 tag,
@@ -806,7 +806,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (relPtr == INVALID_REL_PTR)
                 return null;
 
-            if (relPtr != OUTDATED_REL_PTR){
+            if (relPtr != OUTDATED_REL_PTR) {
                 absPtr = seg.absolute(relPtr);
 
                 // Pin the page until page will not be copied.
@@ -837,24 +837,25 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (relPtr == INVALID_REL_PTR)
                     return null;
 
-                if (relPtr == OUTDATED_REL_PTR){
-                    refreshOutdatedPage(
+                if (relPtr == OUTDATED_REL_PTR) {
+                    relPtr = refreshOutdatedPage(
                         seg,
                         fullId.cacheId(),
                         PageIdUtils.effectivePageId(fullId.pageId()),
                         true
                     );
+
+                    seg.pool.releaseFreePage(relPtr);
                 }
 
-                //Todo Need to check operation in this case.
-                //seg.pool.releaseFreePage(relPtr);
-
                 return null;
-            }finally {
+            }
+            finally {
                 seg.writeLock().unlock();
             }
 
-        }else {
+        }
+        else {
             copyPageForCheckpoint(absPtr, fullId, tmpBuf);
 
             return tag;
@@ -1081,7 +1082,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (!rwLock.tryWriteLock(absPtr + PAGE_LOCK_OFFSET, tag))
             return 0;
 
-        return doWriteLockPage(absPtr, fullId);
+        return postWriteLockPage(absPtr, fullId);
     }
 
     /**
@@ -1093,14 +1094,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, tag);
 
-        return locked ? doWriteLockPage(absPtr, fullId) : 0;
+        return locked ? postWriteLockPage(absPtr, fullId) : 0;
     }
 
     /**
      * @param absPtr Absolute pointer.
      * @return Pointer to the page write buffer.
      */
-    private long doWriteLockPage(long absPtr, FullPageId fullId) {
+    private long postWriteLockPage(long absPtr, FullPageId fullId) {
         PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
 
         // Create a buffer copy if the page is scheduled for a checkpoint.
@@ -1112,7 +1113,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 throw new IgniteException(
                     "Failed to allocate temporary buffer for checkpoint " +
-                    "(increase checkpointPageBufferSize configuration property)");
+                        "(increase checkpointPageBufferSize configuration property)");
             }
 
             // Pin the page until checkpoint is not finished.
@@ -1354,9 +1355,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         /**
          * Allocates a new free page.
          *
+         * @param pageId Page ID to to initialize.
          * @return Relative pointer to the allocated page.
          * @throws GridOffHeapOutOfMemoryException If failed to allocate new free page.
-         * @param pageId Page ID to to initialize.
          */
         private long borrowOrAllocateFreePage(long pageId) throws GridOffHeapOutOfMemoryException {
             long relPtr = borrowFreePage();
@@ -1392,9 +1393,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
+         * @param pageId Page ID.
          * @return Relative pointer of the allocated page.
          * @throws GridOffHeapOutOfMemoryException If failed to allocate new free page.
-         * @param pageId Page ID.
          */
         private long allocateFreePage(long pageId) throws GridOffHeapOutOfMemoryException {
             long limit = region.address() + region.size();
@@ -1580,8 +1581,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * @return Page relative pointer.
          * @param pageId Page ID.
+         * @return Page relative pointer.
          */
         private long borrowOrAllocateFreePage(long pageId) {
             return pool.borrowOrAllocateFreePage(pageId);
@@ -1765,6 +1766,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         /**
          * Will scan all segment pages to find one to evict it
+         *
          * @param cap Capacity.
          */
         private long tryToFindSequentially(int cap) throws IgniteCheckedException {
