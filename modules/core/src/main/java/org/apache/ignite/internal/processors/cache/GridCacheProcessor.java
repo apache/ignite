@@ -3416,16 +3416,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param name Name.
-     */
-    public void restart(@Nullable String name) {
-        IgniteCacheProxy jcache = (IgniteCacheProxy) jCacheProxies.get(maskNull(name));
-
-        if (jcache != null)
-            jcache.restart();
-    }
-
-    /**
      * @param name Cache name.
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.

@@ -300,6 +300,8 @@ public class GridCacheGateway<K, V> {
             else {
                 try {
                     U.sleep(200);
+
+                    ctx.affinity().cancelFutures();
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
                     interrupted = true;
