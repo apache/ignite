@@ -575,6 +575,7 @@ public class GridReduceQueryExecutor {
             if (cctx.isReplicated() && parts != null) {
                 boolean failIfReplicatedOnly = true;
 
+                // TOD: Use normal caches
                 for (Integer cacheId : extraSpaces) {
                     if (!cacheContext(cacheId).isReplicated()) {
                         failIfReplicatedOnly = false;
@@ -590,10 +591,13 @@ public class GridReduceQueryExecutor {
             if (qry.isLocal())
                 nodes = singletonList(ctx.discovery().localNode());
             else {
+                // TODO: Use normal caches
                 if (isPreloadingActive(cctx, extraSpaces)) {
                     if (isReplicatedOnly)
+                        // TODO: Use normal caches
                         nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
                     else {
+                        // TODO: Use normal caches
                         partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
 
                         if (partsMap != null) {
@@ -632,6 +636,7 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
+            // TODO: Use normal caches
             final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
                 findFirstPartitioned(cctx, extraSpaces).config().getQueryParallelism();
 

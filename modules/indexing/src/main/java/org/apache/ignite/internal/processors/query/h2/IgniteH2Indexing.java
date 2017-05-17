@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -88,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -289,7 +291,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
-    /**
+    /*
      * Command in H2 prepared statement.
      */
     static {
@@ -1672,8 +1674,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
                 }
 
-                List<Integer> caches;
-                List<Integer> extraCaches = null;
+                LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
 
                 // Setup spaces from schemas.
                 assert twoStepQry != null;
@@ -1681,41 +1682,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 int tblCnt = twoStepQry.tablesCount();
 
                 if (tblCnt > 0) {
-                    Collection<String> spaces = new ArrayList<>(tblCnt);
+                    caches0.add(cctx.cacheId());
 
-                    caches = new ArrayList<>(tblCnt + 1);
+                    for (QueryTable table : twoStepQry.tables0()) {
+                        String cacheName = cacheNameForSchemaAndTable(table.schema(), table.table());
 
-                    caches.add(cctx.cacheId());
+                        int cacheId = CU.cacheId(cacheName);
 
-                    for (String schema : twoStepQry.schemas()) {
-                        String space0 = space(schema);
-
-                        spaces.add(space0);
-
-                        if (!F.eq(space0, space)) {
-                            int cacheId = CU.cacheId(space0);
-
-                            caches.add(cacheId);
-
-                            if (extraCaches == null)
-                                extraCaches = new ArrayList<>();
-
-                            extraCaches.add(cacheId);
-                        }
+                        caches0.add(cacheId);
                     }
-
-                    twoStepQry.spaces(spaces);
                 }
-                else {
-                    caches = Collections.singletonList(cctx.cacheId());
-                    extraCaches = null;
-                }
+                else
+                    caches0.add(cctx.cacheId());
 
                 //Prohibit usage indices with different numbers of segments in same query.
+                List<Integer> caches = new ArrayList<>(caches0);
+
                 checkCacheIndexSegmentation(caches);
 
                 twoStepQry.caches(caches);
-                twoStepQry.extraCaches(extraCaches);
                 twoStepQry.local(qry.isLocal());
 
                 meta = meta(stmt.getMetaData());
@@ -1753,6 +1738,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
+    }
+
+    /**
+     * Get cache for schema and table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Cache name.
+     */
+    private String cacheNameForSchemaAndTable(String schemaName, String tblName) {
+        // TODO: This need to be changed.
+        return space(schemaName);
     }
 
     /**
