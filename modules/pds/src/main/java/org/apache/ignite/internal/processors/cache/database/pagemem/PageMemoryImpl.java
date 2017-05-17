@@ -426,8 +426,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                     trackingIO.initNewPage(pageAddr, pageId, pageSize());
 
                     if (!sharedCtx.wal().isAlwaysWriteFullPages())
-                        sharedCtx.wal().log(new InitNewPageRecord(cacheId, pageId, trackingIO.getType(),
-                            trackingIO.getVersion(), pageId));
+                        sharedCtx.wal().log(
+                            new InitNewPageRecord(
+                                cacheId,
+                                pageId,
+                                trackingIO.getType(),
+                                trackingIO.getVersion(), pageId
+                            )
+                        );
                     else
                         sharedCtx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
                 }
@@ -771,77 +777,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.segCheckpointPages = null;
     }
 
-    /**
-     * Checks if the page represented by the given full ID and absolute pointer has a temp buffer. If it has, this
-     * method will flush temp buffer data to the main page buffer as well as temp buffer dirty flag, release the
-     * temp buffer to segment pool and clear full page ID from checkpoint set.
-     * <p>
-     * This method must be called wither from segment write lock while page is not pinned (thus, no other thread has
-     * access to the page's write buffer, or when this page is pinned and locked for write.
-     *
-     * @param fullId Full page ID.
-     * @param absPtr Page absolute pointer.
-     */
-    private void flushPageTempBuffer(FullPageId fullId, long absPtr) {
-        long tmpRelPtr = PageHeader.tempBufferPointer(absPtr);
-
-        // The page has temp buffer, need to flush it to the main memory.
-        if (tmpRelPtr != INVALID_REL_PTR) {
-            long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
-
-            boolean tmpDirty = PageHeader.tempDirty(absPtr, false);
-
-            // Page could have a temp write buffer, but be not dirty because
-            // it was not modified after getForWrite.
-            if (tmpDirty)
-                GridUnsafe.copyMemory(tmpAbsPtr + PAGE_OVERHEAD, absPtr + PAGE_OVERHEAD,
-                    sysPageSize - PAGE_OVERHEAD);
-
-            setDirty(fullId, absPtr, tmpDirty, true);
-
-            PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
-
-            checkpointPool.releaseFreePage(tmpRelPtr);
-
-            // We pinned the page when allocated the temp buffer, release it now.
-            int updated = PageHeader.releasePage(absPtr);
-
-            assert updated > 0 : "Checkpoint page should not be released by flushCheckpoint()";
-        }
-        else {
-            // We can get here in two cases.
-            // 1) Page was not modified since the checkpoint started.
-            // 2) Page was dirty and was written to the store by evictPage(). Then it was loaded to memory again
-            //    and may have already modified by a writer.
-            // In both cases we should just set page header dirty flag based on dirtyPages collection.
-            PageHeader.dirty(absPtr, segment(fullId.cacheId(), fullId.pageId()).dirtyPages.contains(fullId));
-        }
-
-        // It is important to clear checkpoint status before the write lock is released.
-        clearCheckpoint(fullId);
-    }
-
-    /**
-     * If page was concurrently modified during the checkpoint phase, this method will flush all changes from the
-     * temporary location to main memory.
-     * This method must be called outside of the segment write lock because we can ask for another pages
-     *      while holding a page read or write lock.
-     */
-    private void flushCheckpoint(long absPtr) {
-        rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
-
-        try {
-            assert PageHeader.isAcquired(absPtr);
-
-            FullPageId fullId = PageHeader.fullPageId(absPtr);
-
-            flushPageTempBuffer(fullId, absPtr);
-        }
-        finally {
-            rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public Integer getForCheckpoint(FullPageId fullId, ByteBuffer tmpBuf) {
         assert tmpBuf.remaining() == pageSize();
@@ -864,7 +799,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 PageIdUtils.effectivePageId(fullId.pageId()),
                 tag,
                 INVALID_REL_PTR,
-                INVALID_REL_PTR
+                OUTDATED_REL_PTR
             );
 
             // Page may have been cleared during eviction. We have nothing to do in this case.
@@ -874,6 +809,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (relPtr != OUTDATED_REL_PTR){
                 absPtr = seg.absolute(relPtr);
 
+                // Pin the page until page will not be copied.
                 if (PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR)
                     PageHeader.acquirePage(absPtr);
             }
@@ -882,16 +818,11 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.readLock().unlock();
         }
 
-        assert absPtr != 0;
-
-        if (relPtr != OUTDATED_REL_PTR) {
-            copyPageForCheckpoint(absPtr, fullId, tmpBuf);
-
-            return tag;
-        }else {
+        if (relPtr == OUTDATED_REL_PTR) {
             seg.writeLock().lock();
 
             try {
+                // Double-check.
                 relPtr = seg.loadedPages.get(
                     fullId.cacheId(),
                     PageIdUtils.effectivePageId(fullId.pageId()),
@@ -915,12 +846,18 @@ public class PageMemoryImpl implements PageMemoryEx {
                     );
                 }
 
-                seg.pool.releaseFreePage(relPtr);
+                //Todo Need to check operation in this case.
+                //seg.pool.releaseFreePage(relPtr);
 
                 return null;
             }finally {
                 seg.writeLock().unlock();
             }
+
+        }else {
+            copyPageForCheckpoint(absPtr, fullId, tmpBuf);
+
+            return tag;
         }
     }
 
@@ -1183,6 +1120,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
 
+            assert !PageHeader.tempDirty(tmpAbsPtr);
+
             GridUnsafe.copyMemory(
                 null,
                 absPtr + PAGE_OVERHEAD,
@@ -1192,8 +1131,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             );
 
             PageHeader.dirty(absPtr, false);
-
-            PageHeader.tempDirty(absPtr, false);
             PageHeader.tempBufferPointer(absPtr, tmpRelPtr);
 
             assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
@@ -1296,33 +1233,6 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     boolean isDirty(long absPtr) {
         return PageHeader.dirty(absPtr);
-    }
-
-    /**
-     * @param absPtr Absolute pointer.
-     * @return {@code True} if page is dirty in temporary buffer.
-     */
-    @Deprecated
-    boolean isTempDirty(long absPtr) {
-        return PageHeader.tempDirty(absPtr);
-    }
-
-    /**
-     * @param absPtr Absolute page pointer.
-     * @param fullId Full page ID.
-     * @return If page is visible to memory user as dirty.
-     */
-    @Deprecated
-    boolean isDirtyVisible(long absPtr, FullPageId fullId) {
-        Collection<FullPageId> cp = segment(fullId.cacheId(), fullId.pageId()).segCheckpointPages;
-
-        if (cp == null || !cp.contains(fullId))
-            return isDirty(absPtr);
-        else {
-            long tmpPtr = PageHeader.tempBufferPointer(absPtr);
-
-            return tmpPtr != INVALID_REL_PTR && PageHeader.tempDirty(absPtr);
-        }
     }
 
     /**
