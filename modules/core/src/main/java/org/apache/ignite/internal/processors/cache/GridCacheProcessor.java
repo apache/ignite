@@ -1207,7 +1207,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheCtx.onStarted();
 
         if (log.isInfoEnabled())
-            log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", mode=" + cfg.getCacheMode() + ']');
+            log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", mode=" + cfg.getCacheMode()
+                + ", affinity=" + cfg.getAffinity().getClass().getSimpleName() + ", partitions=" + cfg.getAffinity().partitions() + ']');
     }
 
     /**
