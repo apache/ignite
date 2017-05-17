@@ -339,6 +339,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     req.startCacheConfiguration(),
                     req.cacheType(),
                     false,
+                    action.descriptor().receivedFrom(),
+                    action.descriptor().staticallyConfigured(),
                     req.deploymentId(),
                     req.schema());
 

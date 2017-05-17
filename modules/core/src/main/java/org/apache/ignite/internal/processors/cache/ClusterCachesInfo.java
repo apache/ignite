@@ -244,10 +244,10 @@ class ClusterCachesInfo {
                         ccfg,
                         req.cacheType(),
                         true,
+                        req.initiatingNodeId(),
+                        false,
                         req.deploymentId(),
                         req.schema());
-
-                    templateDesc.receivedFrom(req.initiatingNodeId());
 
                     DynamicCacheDescriptor old = registeredTemplates().put(ccfg.getName(), templateDesc);
 
@@ -283,10 +283,10 @@ class ClusterCachesInfo {
                             ccfg,
                             req.cacheType(),
                             false,
+                            req.initiatingNodeId(),
+                            false,
                             req.deploymentId(),
                             req.schema());
-
-                        startDesc.receivedFrom(req.initiatingNodeId());
 
                         DynamicCacheDescriptor old = registeredCaches.put(ccfg.getName(), startDesc);
 
@@ -618,11 +618,10 @@ class ClusterCachesInfo {
                 cacheData.cacheConfiguration(),
                 cacheData.cacheType(),
                 true,
+                cacheData.receivedFrom(),
+                cacheData.staticallyConfigured(),
                 cacheData.deploymentId(),
                 cacheData.schema());
-
-            desc.receivedFrom(cacheData.receivedFrom());
-            desc.staticallyConfigured(cacheData.staticallyConfigured());
 
             registeredTemplates.put(cacheData.cacheConfiguration().getName(), desc);
         }
@@ -635,11 +634,10 @@ class ClusterCachesInfo {
                 cacheData.cacheConfiguration(),
                 cacheData.cacheType(),
                 false,
+                cacheData.receivedFrom(),
+                cacheData.staticallyConfigured(),
                 cacheData.deploymentId(),
                 cacheData.schema());
-
-            desc.receivedFrom(cacheData.receivedFrom());
-            desc.staticallyConfigured(cacheData.staticallyConfigured());
 
             registeredCaches.put(cacheData.cacheConfiguration().getName(), desc);
 
@@ -663,6 +661,8 @@ class ClusterCachesInfo {
 
         if (!disconnectedState())
             initStartCachesForLocalJoin(false);
+        else
+            locJoinStartCaches = Collections.emptyList();
     }
 
     /**
@@ -691,14 +691,14 @@ class ClusterCachesInfo {
                             locCfg.config(),
                             desc.cacheType(),
                             desc.template(),
+                            desc.receivedFrom(),
+                            desc.staticallyConfigured(),
                             desc.deploymentId(),
                             desc.schema());
 
                     desc0.startTopologyVersion(desc.startTopologyVersion());
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
                     desc0.clientCacheStartVersion(desc.clientCacheStartVersion());
-                    desc0.receivedFrom(desc.receivedFrom());
-                    desc0.staticallyConfigured(desc.staticallyConfigured());
 
                     desc = desc0;
                 }
@@ -763,11 +763,10 @@ class ClusterCachesInfo {
                     cfg,
                     cacheInfo.cacheType(),
                     true,
+                    nodeId,
+                    true,
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
-
-                desc.staticallyConfigured(true);
-                desc.receivedFrom(nodeId);
 
                 DynamicCacheDescriptor old = registeredTemplates.put(cfg.getName(), desc);
 
@@ -783,11 +782,10 @@ class ClusterCachesInfo {
                     cfg,
                     cacheInfo.cacheType(),
                     false,
+                    nodeId,
+                    true,
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
-
-                desc.staticallyConfigured(true);
-                desc.receivedFrom(nodeId);
 
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
