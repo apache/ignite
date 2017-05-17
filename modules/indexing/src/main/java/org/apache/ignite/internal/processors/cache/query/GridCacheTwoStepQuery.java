@@ -228,7 +228,6 @@ public class GridCacheTwoStepQuery {
         GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, tbls);
 
         cp.caches = caches;
-        cp.extraCaches = extraCaches;
         cp.rdc = rdc.copy();
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;

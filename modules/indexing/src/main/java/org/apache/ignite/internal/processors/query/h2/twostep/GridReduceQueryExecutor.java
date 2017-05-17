@@ -536,8 +536,6 @@ public class GridReduceQueryExecutor {
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
         // Fail if all caches are replicated and explicit partitions are set.
-
-
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -571,19 +569,18 @@ public class GridReduceQueryExecutor {
             Map<ClusterNode, IntArray> qryMap = null;
 
             // Partitions are not supported for queries over all replicated caches.
-            if (cctx.isReplicated() && parts != null) {
-                boolean failIfReplicatedOnly = true;
+            if (parts != null) {
+                boolean replicatedOnly = true;
 
-                // TOD: Use normal caches
-                for (Integer cacheId : extraSpaces) {
+                for (Integer cacheId : qry.caches()) {
                     if (!cacheContext(cacheId).isReplicated()) {
-                        failIfReplicatedOnly = false;
+                        replicatedOnly = false;
 
                         break;
                     }
                 }
 
-                if (failIfReplicatedOnly)
+                if (replicatedOnly)
                     throw new CacheException("Partitions are not supported for replicated caches");
             }
 
