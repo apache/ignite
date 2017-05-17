@@ -883,11 +883,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param upper Upper bound.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(null, upper);
+    private GridCursor<T> findLowerUnbounded(L upper, Object x) throws IgniteCheckedException {
+        ForwardCursor cursor = new ForwardCursor(null, upper, x);
 
         long firstPageId;
 
@@ -932,14 +933,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    @Override public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+        return find(lower, upper, null);
+    }
+
+    /**
+     * @param lower Lower bound inclusive or {@code null} if unbounded.
+     * @param upper Upper bound inclusive or {@code null} if unbounded.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
             if (lower == null)
-                return findLowerUnbounded(upper);
+                return findLowerUnbounded(upper, x);
 
-            ForwardCursor cursor = new ForwardCursor(lower, upper);
+            ForwardCursor cursor = new ForwardCursor(lower, upper, x);
 
             cursor.find();
 
@@ -4376,6 +4388,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private final L upperBound;
 
+        /** */
+        private final Object x;
+
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
@@ -4383,6 +4398,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ForwardCursor(L lowerBound, L upperBound) {
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
+            this.x = null;
+        }
+
+        /**
+         * @param lowerBound Lower bound.
+         * @param upperBound Upper bound.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         */
+        ForwardCursor(L lowerBound, L upperBound, Object x) {
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+            this.x = x;
         }
 
         /**
@@ -4495,7 +4522,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 rows = (T[])new Object[cnt];
 
             for (int i = 0; i < cnt; i++) {
-                T r = getRow(io, pageAddr, startIdx + i);
+                T r = getRow(io, pageAddr, startIdx + i, x);
 
                 rows = GridArrays.set(rows, i, r);
             }

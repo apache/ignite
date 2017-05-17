@@ -209,10 +209,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (pendingEntries != null) {
                     PendingRow row = new PendingRow(cacheId);
 
-                    boolean removex = pendingEntries.removex(row);
+                    GridCursor<PendingRow> cursor = pendingEntries.find(row, row, PendingEntriesTree.WITHOUT_KEY);
 
-                    while (removex)
-                        removex = pendingEntries.removex(row);
+                    while (cursor.next()) {
+                        boolean res = pendingEntries.removex(cursor.get());
+
+                        assert res;
+                    }
                 }
             }
         }
@@ -848,7 +851,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                if (pendingEntries.remove(row) != null) {
+                if (pendingEntries.removex(row)) {
                     if (obsoleteVer == null)
                         obsoleteVer = ctx.versions().next();
 
@@ -1352,17 +1355,23 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             Exception ex = null;
 
-            SearchRow row = new SearchRow(cacheId);
+            SearchRow bound = new SearchRow(cacheId);
 
-            CacheDataRow removed = dataTree.remove(row);
+            GridCursor<? extends CacheDataRow> cursor = dataTree.find(bound, bound, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-            while (removed != null) {
+            while (cursor.next()) {
+                CacheDataRow row = cursor.get();
+
+                assert row.link() != 0 : row;
+
                 try {
-                    rowStore.removeRow(removed.link());
+                    boolean res = dataTree.removex(row);
+
+                    assert res : row;
+
+                    rowStore.removeRow(row.link());
 
                     decrementSize(cacheId);
-
-                    removed = dataTree.remove(row);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Fail remove row [link=" + row.link() + "]");
@@ -2180,22 +2189,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /**
          * @param grp Cache group.
-         * @param cacheId Cache ID.
-         * @param expireTime Expire time.
-         * @param link Link.
          * @return Row.
          * @throws IgniteCheckedException If failed.
          */
-        static PendingRow createRowWithKey(CacheGroupInfrastructure grp, int cacheId, long expireTime, long link)
-            throws IgniteCheckedException {
-            PendingRow row = new PendingRow(cacheId, expireTime, link);
-
+        PendingRow initKey(CacheGroupInfrastructure grp) throws IgniteCheckedException {
             CacheDataRowAdapter rowData = new CacheDataRowAdapter(link);
             rowData.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-            row.key = rowData.key();
+            key = rowData.key();
 
-            return row;
+            return this;
         }
 
         /** {@inheritDoc} */
@@ -2208,6 +2211,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      *
      */
     protected static class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
+        /** */
+        private final static Object WITHOUT_KEY = new Object();
+
         /** */
         private final CacheGroupInfrastructure grp;
 
@@ -2284,9 +2290,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override protected PendingRow getRow(BPlusIO<PendingRow> io, long pageAddr, int idx, Object ignore)
+        @Override protected PendingRow getRow(BPlusIO<PendingRow> io, long pageAddr, int idx, Object flag)
             throws IgniteCheckedException {
-            return io.getLookupRow(this, pageAddr, idx);
+            PendingRow row = io.getLookupRow(this, pageAddr, idx);
+
+            return flag == WITHOUT_KEY ? row : row.initKey(grp);
         }
     }
 
@@ -2369,10 +2377,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingRow getLookupRow(BPlusTree<PendingRow, ?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return PendingRow.createRowWithKey(((PendingEntriesTree)tree).grp,
-                getCacheId(pageAddr, idx),
-                getExpireTime(pageAddr, idx),
-                getLink(pageAddr, idx));
+            return new PendingRow(getCacheId(pageAddr, idx), getExpireTime(pageAddr, idx), getLink(pageAddr, idx));
         }
 
         /** {@inheritDoc} */
@@ -2443,10 +2448,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PendingRow getLookupRow(BPlusTree<PendingRow, ?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return PendingRow.createRowWithKey(((PendingEntriesTree)tree).grp,
-                getCacheId(pageAddr, idx),
-                getExpireTime(pageAddr, idx),
-                getLink(pageAddr, idx));
+            return new PendingRow(getCacheId(pageAddr, idx), getExpireTime(pageAddr, idx), getLink(pageAddr, idx));
         }
 
         /** {@inheritDoc} */
@@ -2532,7 +2534,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param ver Page format version.
          */
         CacheIdAwarePendingEntryInnerIO(int ver) {
-            super(T_PENDING_REF_INNER, ver, true, 20);
+            super(T_CACHE_ID_AWARE_PENDING_REF_INNER, ver, true, 20);
         }
 
         /** {@inheritDoc} */
@@ -2559,7 +2561,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param ver Page format version.
          */
         CacheIdAwarePendingEntryLeafIO(int ver) {
-            super(T_PENDING_REF_LEAF, ver, 20);
+            super(T_CACHE_ID_AWARE_PENDING_REF_LEAF, ver, 20);
         }
 
         /** {@inheritDoc} */
