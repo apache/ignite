@@ -3776,12 +3776,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
                     try {
-                        for (GridCacheContext cacheCtx : sharedCtx.cacheContexts()) {
-                            if (!cacheCtx.isLocal() && cacheCtx.affinityNode()) {
+                        for (CacheGroupInfrastructure grp : sharedCtx.cache().cacheGroups()) {
+                            if (!grp.isLocal() && grp.affinityNode()) {
                                 GridDhtPartitionTopology top = null;
 
                                 try {
-                                    top = cacheCtx.topology();
+                                    top = grp.topology();
                                 }
                                 catch (IllegalStateException ignore) {
                                     // Cache stopped.

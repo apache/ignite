@@ -400,23 +400,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Dumps debug information.
-     */
-    public void dumpDebugInfo() {
-        GridAffinityAssignmentCache aff0 = aff;
-
-        if (aff0 != null)
-            aff0.dumpDebugInfo();
-    }
-
-    /**
-     * @return Affinity cache.
-     */
-    public GridAffinityAssignmentCache affinityCache() {
-        return aff;
-    }
-
-    /**
      * @param part Partition.
      * @param startVer Start version.
      * @param endVer End version.

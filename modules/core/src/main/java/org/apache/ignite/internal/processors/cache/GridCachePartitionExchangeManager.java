@@ -424,14 +424,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     try {
                         fut.get();
 
-                        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                            cacheCtx.preloader().onInitialExchangeComplete(null);
+                        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups())
+                            grp.preloader().onInitialExchangeComplete(null);
 
                         reconnectExchangeFut.onDone();
                     }
                     catch (IgniteCheckedException e) {
-                        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                            cacheCtx.preloader().onInitialExchangeComplete(e);
+                        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups())
+                            grp.preloader().onInitialExchangeComplete(e);
 
                         reconnectExchangeFut.onDone(e);
                     }
@@ -476,9 +476,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             AffinityTopologyVersion nodeStartVer = new AffinityTopologyVersion(discoEvt.topologyVersion(), 0);
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (nodeStartVer.equals(cacheCtx.startTopologyVersion()))
-                    cacheCtx.preloader().onInitialExchangeComplete(null);
+            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                if (nodeStartVer.equals(grp.localStartVersion()))
+                    grp.preloader().onInitialExchangeComplete(null);
             }
 
             if (log.isDebugEnabled())
@@ -1395,8 +1395,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         dumpPendingObjects(exchTopVer);
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts())
-            cacheCtx.preloader().dumpDebugInfo();
+        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups())
+            grp.preloader().dumpDebugInfo();
 
         cctx.affinity().dumpDebugInfo();
 
@@ -1559,21 +1559,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        for (GridCacheContext ctx : cctx.cacheContexts()) {
-            if (ctx.isLocal())
+        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal())
                 continue;
 
-            GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
-
-            GridCachePreloader preloader = ctx0.preloader();
+            GridCachePreloader preloader = grp.preloader();
 
             if (preloader != null)
                 preloader.dumpDebugInfo();
 
-            GridCacheAffinityManager affMgr = ctx0.affinity();
+            GridAffinityAssignmentCache aff = grp.affinity();
 
-            if (affMgr != null)
-                affMgr.dumpDebugInfo();
+            if (aff != null)
+                aff.dumpDebugInfo();
         }
     }
 
