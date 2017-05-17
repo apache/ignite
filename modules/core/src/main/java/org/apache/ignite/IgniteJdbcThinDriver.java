@@ -71,12 +71,11 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  *
  * <p>
  * JDBC connection URL has the following pattern:
- * {@code jdbc:ignite://<hostname>:<port>/<cache_name>}<br>
+ * {@code jdbc:ignite://<hostname>:<port>/}<br>
  * Note the following:
  * <ul>
  *     <li>Hostname is required.</li>
  *     <li>If port is not defined, {@code 10800} is used (default for Ignite thin client).</li>
- *     <li>Leave {@code <cache_name>} empty if you are connecting to default cache.</li>
  * </ul>
  * Other properties can be defined in {@link Properties} object passed to
  * {@link DriverManager#getConnection(String, Properties)} method:
@@ -106,7 +105,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  * Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
  *
  * // Open JDBC connection.
- * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//cache=persons@localhost:10800");
+ * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//localhost:10800");
  *
  * // Query persons' names
  * ResultSet rs = conn.createStatement().executeQuery("select name from Person");
@@ -136,9 +135,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
 public class IgniteJdbcThinDriver implements Driver {
     /** Prefix for property names. */
     private static final String PROP_PREFIX = "ignite.jdbc";
-
-    /** Cache parameter name. */
-    private static final String PARAM_CACHE = "cache";
 
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
@@ -268,7 +264,7 @@ public class IgniteJdbcThinDriver implements Driver {
 
         assert parts.length > 0;
 
-        if (parts.length > 2)
+        if (parts.length > 1)
             return false;
 
         url = parts[0];
