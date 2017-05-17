@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
@@ -36,14 +35,9 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     /**
      * @param ctx Cache context.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header ID.
      */
-    public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key, int hash, CacheObject val,
-        GridCacheMapEntry next, int hdrId) {
-        super(ctx, key, hash, val);
+    public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key) {
+        super(ctx, key);
     }
 
     /**

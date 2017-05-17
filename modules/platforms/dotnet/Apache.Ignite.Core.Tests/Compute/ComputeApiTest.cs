@@ -1532,7 +1532,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum PlatformComputeEnum
+    public enum PlatformComputeEnum : ushort
     {
         Foo,
         Bar,
