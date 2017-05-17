@@ -162,7 +162,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             log.debug("Wait for exchange before processing message [msg=" + msg +
                                 ", node=" + nodeId +
                                 ", waitVer=" + startTopVer +
-                                ", cacheDesc=" + cacheDescriptor(cacheMsg) + ']');
+                                ", cacheDesc=" + descriptorForMessage(cacheMsg) + ']');
                         }
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -251,8 +251,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
     };
 
-    private DynamicCacheDescriptor cacheDescriptor(GridCacheMessage msg) {
-        return null; // TODO IGNITE-5075.
+    /**
+     * @param msg Message.
+     * @return Cache or group descriptor.
+     */
+    private Object descriptorForMessage(GridCacheMessage msg) {
+        if (msg instanceof GridCacheIdMessage)
+            return cctx.cache().cacheDescriptor(((GridCacheIdMessage)msg).cacheId());
+        else if (msg instanceof GridCacheGroupIdMessage)
+            return cctx.cache().cacheGroupDescriptors().get(((GridCacheGroupIdMessage)msg).groupId());
+
+        return null;
     }
 
     /**
@@ -296,7 +305,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             msg0.append(", locTopVer=").append(cctx.exchange().readyAffinityVersion()).
                 append(", msgTopVer=").append(cacheMsg.topologyVersion()).
-                append(", cacheDesc=").append(cacheDescriptor(cacheMsg)).
+                append(", desc=").append(descriptorForMessage(cacheMsg)).
                 append(']');
 
             msg0.append(U.nl()).append("Registered listeners:");

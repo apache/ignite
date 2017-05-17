@@ -134,8 +134,6 @@ public interface GridDhtPartitionTopology {
     public void releasePartitions(int... parts);
 
     /**
-     * @param key Cache key.
-     * @param create If {@code true}, then partition will be created if it's not there.
      * @return Local partition.
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,6 +42,7 @@ public class CacheGroupDescriptor {
     private final IgniteUuid deploymentId;
 
     /** */
+    @GridToStringExclude
     private final CacheConfiguration cacheCfg;
 
     /** */
@@ -166,6 +168,6 @@ public class CacheGroupDescriptor {
     }
 
     @Override public String toString() {
-        return S.toString(CacheGroupDescriptor.class, this);
+        return S.toString(CacheGroupDescriptor.class, this, "cacheName", cacheCfg.getName());
     }
 }

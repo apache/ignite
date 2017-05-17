@@ -140,6 +140,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param dupDataCache Optional ID of cache with the same partition state map.
      */
     public void addFullPartitionsMap(int grpId, GridDhtPartitionFullMap fullMap, @Nullable Integer dupDataCache) {
+        assert fullMap != null;
+
         if (parts == null)
             parts = new HashMap<>();
 

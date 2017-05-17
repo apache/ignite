@@ -919,12 +919,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
             GridDhtPartitionFullMap map = top.partitionMap(true);
 
-            addFullPartitionsMap(m,
-                dupData,
-                compress,
-                top.groupId(),
-                map,
-                top.similarAffinityKey());
+            if (map != null) {
+                addFullPartitionsMap(m,
+                    dupData,
+                    compress,
+                    top.groupId(),
+                    map,
+                    top.similarAffinityKey());
+            }
 
             if (exchId != null)
                 m.addPartitionUpdateCounters(top.groupId(), top.updateCounters(true));
@@ -947,6 +949,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Integer grpId,
         GridDhtPartitionFullMap map,
         Object affKey) {
+        assert map != null;
         Integer dupDataCache = null;
 
         if (compress && affKey != null && !m.containsGroup(grpId)) {

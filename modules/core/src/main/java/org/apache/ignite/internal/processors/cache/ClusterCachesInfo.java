@@ -498,7 +498,7 @@ class ClusterCachesInfo {
             for (CacheGroupInfrastructure grp : ctx.cache().cacheGroups()) {
                 CacheGroupDescriptor desc = grps.get(grp.groupId());
 
-                assert desc != null : grp.nameForLog();
+                assert desc != null : grp.cacheOrGroupName();
 
                 cacheGrpsInfo.put(grp.groupId(), new CacheClientReconnectDiscoveryData.CacheGroupInfo(desc.config(),
                     desc.deploymentId(),
@@ -1068,6 +1068,9 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceOrder", "Rebalance order",
             cfg.getRebalanceOrder(), startCfg.getRebalanceOrder(), false);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
+            cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);
     }
 
     /**

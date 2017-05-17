@@ -234,9 +234,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             boolean rebalanced = true;
 
             if (partWait != null) {
-                CacheGroupHolder cache = grpHolders.get(checkGrpId);
+                CacheGroupHolder grpHolder = grpHolders.get(checkGrpId);
 
-                if (cache != null) {
+                if (grpHolder != null) {
                     for (Iterator<Map.Entry<Integer, UUID>> it = partWait.entrySet().iterator(); it.hasNext(); ) {
                         Map.Entry<Integer, UUID> e = it.next();
 
@@ -325,7 +325,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         for (CacheGroupDescriptor stopDesc : exchActions.cacheGroupsToStop()) {
             CacheGroupDescriptor rmvd = registeredGrps.remove(stopDesc.groupId());
 
-            assert rmvd != null : stopDesc.groupName();
+            assert rmvd != null : stopDesc.cacheOrGroupName();
         }
 
         for (CacheGroupDescriptor startDesc : exchActions.cacheGroupsToStart()) {
@@ -392,14 +392,24 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
 
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
-            if (grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE))
-                initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut, false);
-        }
+        Set<Integer> gprs = new HashSet<>();
 
-        if (crd) {
-            for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests())
-                initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());
+        for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
+            Integer grpId = action.descriptor().groupDescriptor().groupId();
+
+            if (gprs.add(grpId)) {
+                if (crd && lateAffAssign)
+                    initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());
+                else {
+                    CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+
+                    if (grp != null && grp.localStartVersion().equals(fut.topologyVersion())) {
+                        assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
+
+                        initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut);
+                    }
+                }
+            }
         }
 
         List<ExchangeActions.ActionData> closeReqs = exchActions.closeRequests(cctx.localNodeId());
@@ -801,7 +811,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             grpHolder.affinity().initialize(fut.topologyVersion(), newAff);
         }
         else if (grpHolder.client() && grp != null) {
-            assert grp.affinity().idealAssignment() != null;
+            assert grpHolder.affinity().idealAssignment() != null;
 
             grpHolder = new CacheGroupHolder1(grp, grpHolder.affinity());
 
@@ -845,7 +855,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
                 @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                     if (aff.lastVersion().equals(AffinityTopologyVersion.NONE))
-                        initAffinity(registeredGrps.get(aff.groupId()), aff, fut, false);
+                        initAffinity(registeredGrps.get(aff.groupId()), aff, fut);
                 }
             });
         }
@@ -855,17 +865,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param desc Cache group descriptor.
      * @param aff Affinity.
      * @param fut Exchange future.
-     * @param fetch Force fetch flag.
      * @throws IgniteCheckedException If failed.
      */
     private void initAffinity(CacheGroupDescriptor desc,
         GridAffinityAssignmentCache aff,
-        GridDhtPartitionsExchangeFuture fut,
-        boolean fetch)
+        GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
         assert desc != null : aff.cacheOrGroupName();
 
-        if (!fetch && canCalculateAffinity(desc, aff, fut)) {
+        if (canCalculateAffinity(desc, aff, fut)) {
             List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(), fut.discoveryEvent(), fut.discoCache());
 
             aff.initialize(fut.topologyVersion(), assignment);
@@ -894,16 +902,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert desc != null : aff.cacheOrGroupName();
 
         // Do not request affinity from remote nodes if affinity function is not centralized.
-        if (!aff.centralizedAffinityFunction())
+        if (!lateAffAssign && !aff.centralizedAffinityFunction())
             return true;
 
         // If local node did not initiate exchange or local node is the only cache node in grid.
-        Collection<ClusterNode> affNodes =
-            cctx.discovery().cacheGroupAffinityNodes(aff.groupId(), fut.topologyVersion());
+        Collection<ClusterNode> affNodes = fut.discoCache().cacheGroupAffinityNodes(aff.groupId());
 
         return fut.cacheGroupAddedOnExchange(aff.groupId(), desc.receivedFrom()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
-            (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
+            (affNodes.isEmpty() || (affNodes.size() == 1 && affNodes.contains(cctx.localNode())));
     }
 
     /**
@@ -970,7 +977,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         StringBuilder names = new StringBuilder();
 
         for (Integer grpId : grpIds) {
-            String name = registeredGrps.get(grpId).groupName();
+            String name = registeredGrps.get(grpId).cacheOrGroupName();
 
             if (names.length() != 0)
                 names.append(", ");
@@ -1004,7 +1011,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             else {
                 CacheGroupDescriptor grpDesc = registeredGrps.get(grp.groupId());
 
-                assert grpDesc != null : grp.nameForLog();
+                assert grpDesc != null : grp.cacheOrGroupName();
 
                 GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                     grpDesc,
@@ -1116,7 +1123,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (grp.isLocal())
                 continue;
 
-            initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut, false);
+            initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut);
         }
     }
 
@@ -1127,6 +1134,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     private IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
+        assert lateAffAssign;
+
         final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
@@ -1169,7 +1178,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     if (log.isDebugEnabled()) {
                         log.debug("Need initialize affinity on coordinator [" +
-                            "cacheGrp=" + desc.groupName() +
+                            "cacheGrp=" + desc.cacheOrGroupName() +
                             "prevAff=" + prev.topologyVersion() + ']');
                     }
 
@@ -1266,6 +1275,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd)
         throws IgniteCheckedException {
+        assert lateAffAssign;
+
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
@@ -1320,7 +1331,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         AffinityTopologyVersion affTopVer = aff.lastVersion();
 
-        assert affTopVer.topologyVersion() > 0 : "Affinity is not initialized [grp=" + aff.groupId() +
+        assert affTopVer.topologyVersion() > 0 : "Affinity is not initialized [grp=" + aff.cacheOrGroupName() +
             ", topVer=" + affTopVer + ", node=" + cctx.localNodeId() + ']';
 
         List<List<ClusterNode>> curAff = aff.assignments(affTopVer);
@@ -1454,6 +1465,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     private Map<Integer, Map<Integer, List<UUID>>> initAffinityOnNodeLeft0(final GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
+        assert lateAffAssign;
+
         final AffinityTopologyVersion topVer = fut.topologyVersion();
 
         final WaitRebalanceInfo waitRebalanceInfo = new WaitRebalanceInfo(topVer);
@@ -1472,7 +1485,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 AffinityTopologyVersion affTopVer = grpHolder.affinity().lastVersion();
 
                 assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer) : "Invalid affinity version " +
-                    "[last=" + affTopVer + ", futVer=" + topVer + ", grp=" + desc.groupName() + ']';
+                    "[last=" + affTopVer + ", futVer=" + topVer + ", grp=" + desc.cacheOrGroupName() + ']';
 
                 List<List<ClusterNode>> curAssignment = grpHolder.affinity().assignments(affTopVer);
                 List<List<ClusterNode>> newAssignment = grpHolder.affinity().idealAssignment();
@@ -1493,7 +1506,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     List<ClusterNode> newNodes0 = null;
 
                     assert newPrimary == null || aliveNodes.contains(newPrimary) : "Invalid new primary [" +
-                        "grp=" + desc.groupName() +
+                        "grp=" + desc.cacheOrGroupName() +
                         ", node=" + newPrimary +
                         ", topVer=" + topVer + ']';
 
@@ -1568,7 +1581,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             if (log.isDebugEnabled()) {
                 log.debug("Computed new affinity after node left [topVer=" + topVer +
-                    ", waitCaches=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
+                    ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
             }
         }
 

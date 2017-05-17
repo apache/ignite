@@ -1152,7 +1152,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param cacheId Cache ID.
      */
     void onCacheStopped(int cacheId) {
-        assert grp.sharedGroup() : grp.nameForLog();
+        assert grp.sharedGroup() : grp.cacheOrGroupName();
 
         for (Iterator<RemovedEntryHolder> it = rmvQueue.iterator(); it.hasNext();) {
             RemovedEntryHolder e = it.next();
