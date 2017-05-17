@@ -46,7 +46,7 @@ public class DynamicCacheDescriptor {
     private CacheConfiguration cacheCfg;
 
     /** Statically configured flag. */
-    private boolean staticCfg;
+    private final boolean staticCfg;
 
     /** Cache type. */
     private CacheType cacheType;
@@ -64,7 +64,7 @@ public class DynamicCacheDescriptor {
     private Integer cacheId;
 
     /** */
-    private UUID rcvdFrom;
+    private final UUID rcvdFrom;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -95,6 +95,8 @@ public class DynamicCacheDescriptor {
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
      * @param template {@code True} if this is template configuration.
+     * @param rcvdFrom ID of node provided cache configuration
+     * @param staticCfg {@code True} if cache statically configured.
      * @param deploymentId Deployment ID.
      */
     @SuppressWarnings("unchecked")
@@ -103,6 +105,8 @@ public class DynamicCacheDescriptor {
         CacheType cacheType,
         CacheGroupDescriptor grpDesc,
         boolean template,
+        UUID rcvdFrom,
+        boolean staticCfg,
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
@@ -119,6 +123,8 @@ public class DynamicCacheDescriptor {
         this.cacheType = cacheType;
         this.grpDesc = grpDesc;
         this.template = template;
+        this.rcvdFrom = rcvdFrom;
+        this.staticCfg = staticCfg;
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
@@ -175,13 +181,6 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @param staticCfg {@code True} if statically configured.
-     */
-    public void staticallyConfigured(boolean staticCfg) {
-        this.staticCfg = staticCfg;
-    }
-
-    /**
      * @return Cache name.
      */
     public String cacheName() {
@@ -232,15 +231,6 @@ public class DynamicCacheDescriptor {
      */
     public void updatesAllowed(boolean updatesAllowed) {
         this.updatesAllowed = updatesAllowed;
-    }
-
-    /**
-     * @param nodeId ID of node provided cache configuration in discovery data.
-     */
-    public void receivedFrom(UUID nodeId) {
-        assert nodeId != null;
-
-        rcvdFrom = nodeId;
     }
 
     /**

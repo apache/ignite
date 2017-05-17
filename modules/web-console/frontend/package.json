@@ -60,6 +60,7 @@
     "nvd3": "1.8.4",
     "raleway-webfont": "3.0.1",
     "roboto-font": "0.1.0",
+    "rxjs": "5.4.0",
     "socket.io-client": "1.7.3",
     "ui-router-metatags": "1.0.3"
   },
