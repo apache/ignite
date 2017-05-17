@@ -494,11 +494,18 @@ public class CacheGroupInfrastructure {
     /**
      * @return Group name.
      */
-    @Nullable public String nameForLog() {
+    public String nameForLog() {
         if (ccfg.getGroupName() == null)
             return "[cache, name=" + ccfg.getName() + ']';
 
         return "[cacheGroup, name=" + ccfg.getGroupName() + ']';
+    }
+
+    /**
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public String cacheOrGroupName() {
+        return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
     }
 
     /**

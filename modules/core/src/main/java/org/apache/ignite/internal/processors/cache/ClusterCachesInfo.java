@@ -1058,6 +1058,12 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "memoryPolicyName", "Memory policy",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceDelay", "Rebalance delay",
+            cfg.getRebalanceDelay(), startCfg.getRebalanceDelay(), false);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceOrder", "Rebalance order",
+            cfg.getRebalanceOrder(), startCfg.getRebalanceOrder(), false);
     }
 
     /**

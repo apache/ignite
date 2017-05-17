@@ -812,18 +812,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
             // Check rebalance state & send CacheAffinityChangeMessage if need.
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (!cacheCtx.isLocal()) {
-                    if (cacheCtx == null)
-                        continue;
-
-                    GridDhtPartitionTopology top = null;
-
-                    if (!cacheCtx.isLocal())
-                        top = cacheCtx.topology();
+            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                if (!grp.isLocal()) {
+                    GridDhtPartitionTopology top = grp.topology();
 
                     if (top != null)
-                        cctx.affinity().checkRebalanceState(top, cacheCtx.cacheId());
+                        cctx.affinity().checkRebalanceState(top, grp.groupId());
                 }
             }
 
@@ -851,9 +845,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param nodes Nodes.
-     * @return {@code True} if message was sent, {@code false} if node left grid.
      */
-    private boolean sendAllPartitions(Collection<ClusterNode> nodes) {
+    private void sendAllPartitions(Collection<ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, true);
 
         if (log.isDebugEnabled())
@@ -874,8 +867,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
             }
         }
-
-        return true;
     }
 
     /**
@@ -1725,8 +1716,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 try {
                     boolean preloadFinished = true;
 
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        preloadFinished &= cacheCtx.preloader() != null && cacheCtx.preloader().syncFuture().isDone();
+                    for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                        if (grp.isLocal())
+                            continue;
+
+                        preloadFinished &= grp.preloader() != null && grp.preloader().syncFuture().isDone();
 
                         if (!preloadFinished)
                             break;
@@ -1833,11 +1827,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             boolean changed = false;
 
-                            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                                if (cacheCtx.isLocal())
+                            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                                if (grp.isLocal())
                                     continue;
 
-                                changed |= cacheCtx.topology().afterExchange(exchFut);
+                                changed |= grp.topology().afterExchange(exchFut);
                             }
 
                             if (!cctx.kernalContext().clientNode() && changed && !hasPendingExchange())
@@ -1857,16 +1851,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (!exchFut.skipPreload() && cctx.kernalContext().state().active()) {
                             assignsMap = new HashMap<>();
 
-                            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                                long delay = cacheCtx.config().getRebalanceDelay();
+                            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                                long delay = grp.config().getRebalanceDelay();
 
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
                                 if (delay == 0 || forcePreload)
-                                    assigns = cacheCtx.preloader().assign(exchFut);
+                                    assigns = grp.preloader().assign(exchFut);
 
-                                assignsMap.put(cacheCtx.cacheId(), assigns);
+                                assignsMap.put(grp.groupId(), assigns);
                             }
                         }
                     }
@@ -1881,16 +1875,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
 
                         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-                            int cacheId = e.getKey();
+                            int grpId = e.getKey();
 
-                            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+                            CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
-                            int order = cacheCtx.config().getRebalanceOrder();
+                            int order = grp.config().getRebalanceOrder();
 
                             if (orderMap.get(order) == null)
                                 orderMap.put(order, new ArrayList<Integer>(size));
 
-                            orderMap.get(order).add(cacheId);
+                            orderMap.get(order).add(grpId);
                         }
 
                         Runnable r = null;
@@ -1900,35 +1894,27 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         boolean assignsCancelled = false;
 
                         for (Integer order : orderMap.descendingKeySet()) {
-                            for (Integer cacheId : orderMap.get(order)) {
-                                GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+                            for (Integer grpId : orderMap.get(order)) {
+                                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
-                                GridDhtPreloaderAssignments assigns = assignsMap.get(cacheId);
+                                GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
-
-                                List<String> waitList = new ArrayList<>(size - 1);
-
-                                for (List<Integer> cIds : orderMap.headMap(order).values()) {
-                                    for (Integer cId : cIds)
-                                        waitList.add(cctx.cacheContext(cId).name());
-                                }
 
                                 // Cancels previous rebalance future (in case it's not done yet).
                                 // Sends previous rebalance stopped event (if necessary).
                                 // Creates new rebalance future.
                                 // Sends current rebalance started event (if necessary).
                                 // Finishes cache sync future (on empty assignments).
-                                Runnable cur = cacheCtx.preloader().addAssignments(assigns,
+                                Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
-                                    waitList,
                                     cnt,
                                     r,
                                     exchFut.forcedRebalanceFuture());
 
                                 if (cur != null) {
-                                    rebList.add(U.maskName(cacheCtx.name()));
+                                    rebList.add(grp.cacheOrGroupName());
 
                                     r = cur;
                                 }
