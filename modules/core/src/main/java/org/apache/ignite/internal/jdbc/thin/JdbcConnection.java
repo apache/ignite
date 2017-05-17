@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.jdbc.JdbcStatement;
 import org.apache.ignite.logger.java.JavaLogger;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -55,13 +54,10 @@ import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
  */
 public class JdbcConnection implements Connection {
     /** Cache name. */
-    private String cacheName;
+    private String schema;
 
     /** Closed flag. */
     private boolean closed;
-
-    /** URL. */
-    private String url;
 
     /** Timeout. */
     private int timeout;
@@ -82,8 +78,6 @@ public class JdbcConnection implements Connection {
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
-
-        this.url = url;
 
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "true"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
@@ -456,12 +450,12 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schema) throws SQLException {
-        cacheName = schema;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
-        return cacheName;
+        return schema;
     }
 
     /** {@inheritDoc} */
@@ -486,7 +480,7 @@ public class JdbcConnection implements Connection {
      * @return Cache name.
      */
     String cacheName() {
-        return cacheName;
+        return schema;
     }
 
     /**
