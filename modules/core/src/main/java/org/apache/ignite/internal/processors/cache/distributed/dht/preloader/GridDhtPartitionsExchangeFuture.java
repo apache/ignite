@@ -757,9 +757,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (updateTop) {
                         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                             if (top.groupId() == grp.groupId()) {
-                                grp.topology().update(exchId,
-                                    top.partitionMap(true),
-                                    top.updateCounters(false));
+                                GridDhtPartitionFullMap fullMap = top.partitionMap(true);
+
+                                assert fullMap != null;
+
+                                grp.topology().update(exchId, fullMap, top.updateCounters(false));
 
                                 break;
                             }

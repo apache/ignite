@@ -1087,7 +1087,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            assert node2part != null && node2part.valid() : "Invalid node2part [node2part=" + node2part +
+            if (node2part == null || stopping)
+                return null;
+
+            assert node2part.valid() : "Invalid node2part [node2part=" + node2part +
                 ", grp=" + grp.nameForLog() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + ctx.localNode().id() +
