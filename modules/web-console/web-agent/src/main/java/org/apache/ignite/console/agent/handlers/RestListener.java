@@ -18,6 +18,8 @@
 package org.apache.ignite.console.agent.handlers;
 
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 
 /**
@@ -32,6 +34,11 @@ public class RestListener extends AbstractListener {
      */
     public RestListener(RestExecutor restExecutor) {
         this.restExecutor = restExecutor;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ExecutorService newThreadPool() {
+        return Executors.newCachedThreadPool();
     }
 
     /** {@inheritDoc} */

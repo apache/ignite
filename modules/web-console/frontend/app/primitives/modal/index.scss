@@ -32,18 +32,18 @@
 .modal-header {
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
-}
 
-// Close icon
-.modal-header .close {
-    margin-right: -2px;
-}
+    // Close icon
+    .close {
+        margin-right: -2px;
+    }
 
-// Modal icon
-.modal-header h4 > i.fa {
-    cursor: default;
-    float: left;
-    line-height: $modal-title-line-height;
+    // Modal icon
+    h4 > i {
+        cursor: default;
+        float: left;
+        line-height: $modal-title-line-height;
+    }
 }
 
 .modal .modal-dialog {
@@ -95,6 +95,7 @@
 
 .modal-body-with-scroll {
     max-height: 420px;
+    overflow-y: auto;
     overflow-y: overlay;
     margin: 0;
 }
