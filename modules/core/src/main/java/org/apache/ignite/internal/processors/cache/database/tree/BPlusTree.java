@@ -944,7 +944,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
+    public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
