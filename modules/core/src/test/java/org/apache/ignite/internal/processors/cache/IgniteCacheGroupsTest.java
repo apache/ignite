@@ -34,11 +34,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -55,6 +58,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -766,6 +770,23 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < data.length; i++)
             data[i] = rnd.nextInt();
+
+        return data;
+    }
+
+    /**
+     * Creates a map with random integers.
+     *
+     * @param cnt Map size length.
+     * @return Map with random integers.
+     */
+    private Map<Integer, Integer> generateDataMap(int cnt) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Map<Integer, Integer> data = U.newHashMap(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            data.put(i, rnd.nextInt());
 
         return data;
     }
@@ -1494,61 +1515,230 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param backups Number of backups.
      * @param heapCache On heap cache flag.
      */
-    private void cacheApiTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int backups, boolean heapCache) {
-        for (int i = 0; i < 2; i++)
-            ignite(0).createCache(cacheConfiguration(GROUP1, "cache-" + i, cacheMode, atomicityMode, backups, heapCache));
+    private void cacheApiTest(final CacheMode cacheMode,
+        final CacheAtomicityMode atomicityMode,
+        final int backups,
+        final boolean heapCache) throws Exception {
+        Ignite srv0 = ignite(0);
+
+        srv0.createCache(cacheConfiguration(GROUP1, "cache-0", cacheMode, atomicityMode, backups, heapCache));
+        srv0.createCache(cacheConfiguration(GROUP1, "cache-1", cacheMode, atomicityMode, backups, heapCache));
+        srv0.createCache(cacheConfiguration(GROUP2, "cache-2", cacheMode, atomicityMode, backups, heapCache));
+        srv0.createCache(cacheConfiguration(null, "cache-3", cacheMode, atomicityMode, backups, heapCache));
+
+        awaitPartitionMapExchange();
 
         try {
-            for (Ignite node : Ignition.allGrids()) {
-                for (int i = 0; i < 2; i++) {
-                    IgniteCache cache = node.cache("cache-" + i);
+            for (final Ignite node : Ignition.allGrids()) {
+                List<Callable<?>> ops = new ArrayList<>();
 
-                    log.info("Test cache [node=" + node.name() +
-                        ", cache=" + cache.getName() +
-                        ", mode=" + cacheMode +
-                        ", atomicity=" + atomicityMode +
-                        ", backups=" + backups +
-                        ", heapCache=" + heapCache +
-                        ']');
+                for (int i = 0; i < 4; i++)
+                    ops.add(testSet(node.cache("cache-" + i), cacheMode, atomicityMode, backups, heapCache, node));
 
-                    cacheApiTest(cache);
-                }
+                // sync operations
+                for (Callable<?> op : ops)
+                    op.call();
+
+                // async operations
+                GridTestUtils.runMultiThreaded(ops, "cacheApiTest");
             }
         }
         finally {
-            for (int i = 0; i < 2; i++)
-                ignite(0).destroyCache("cache-" + i);
+            for (int i = 0; i < 4; i++)
+                srv0.destroyCache("cache-" + i);
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     * @param backups Number of backups.
+     * @param heapCache On heap cache flag.
+     * @param node Ignite node.
+     * @return Callable for the test operations.
+     */
+    private Callable<?> testSet(
+        final IgniteCache<Object, Object> cache,
+        final CacheMode cacheMode,
+        final CacheAtomicityMode atomicityMode,
+        final int backups,
+        final boolean heapCache,
+        final Ignite node) {
+        return new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                log.info("Test cache [node=" + node.name() +
+                    ", cache=" + cache.getName() +
+                    ", mode=" + cacheMode +
+                    ", atomicity=" + atomicityMode +
+                    ", backups=" + backups +
+                    ", heapCache=" + heapCache +
+                    ']');
+
+                cacheApiTest(cache);
+
+                return null;
+            }
+        };
     }
 
     /**
      * @param cache Cache.
      */
     private void cacheApiTest(IgniteCache cache) {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        cachePutAllGetAll(cache);
+        cachePutRemove(cache);
+        cachePutGet(cache);
+        cachePutGetAndPut(cache);
+        cacheQuery(cache);
+        cacheInvokeAll(cache);
+        cacheInvoke(cache);
+    }
 
-        for (int i = 0; i < 10; i++) {
-            Integer key = rnd.nextInt(10_000);
+    private void tearDown(IgniteCache cache) {
+        cache.clear();
+        cache.removeAll();
+    }
 
-            assertNull(cache.get(key));
-            assertFalse(cache.containsKey(key));
+    private void cachePutAllGetAll(IgniteCache cache) {
+        Map<Integer, Integer> data = generateDataMap(10000);
 
-            Integer val = key + 1;
+        cache.putAll(data);
 
-            cache.put(key, val);
+        Map data0 = cache.getAll(data.keySet());
 
-            assertEquals(val, cache.get(key));
-            assertTrue(cache.containsKey(key));
+        assertEquals(data.size(), data0.size());
 
-            cache.remove(key);
-
-            assertNull(cache.get(key));
-            assertFalse(cache.containsKey(key));
+        for (Map.Entry<Integer, Integer> entry : data.entrySet()) {
+            assertEquals(entry.getValue(), data0.get(entry.getKey()));
         }
 
-        cache.clear();
+        tearDown(cache);
+    }
 
-        cache.removeAll();
+    private void cachePutRemove(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        assertTrue(cache.remove(key));
+
+        assertNull(cache.get(key));
+
+        tearDown(cache);
+    }
+
+    private void cachePutGet(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        Object val0 = cache.get(key);
+
+        assertEquals(val, val0);
+
+        tearDown(cache);
+    }
+
+    private void cachePutGetAndPut(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        cache.put(key, val1);
+
+        Object val0 = cache.getAndPut(key, val2);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val2, val0);
+
+        tearDown(cache);
+    }
+
+    private void cacheQuery(IgniteCache cache) {
+        Map<Integer, Integer> data = generateDataMap(10000);
+
+        cache.putAll(data);
+
+        ScanQuery<Integer, Integer> qry = new ScanQuery<>(new IgniteBiPredicate<Integer, Integer>() {
+            @Override public boolean apply(Integer integer, Integer integer2) {
+                return integer % 2 == 0;
+            }
+        });
+
+        List<Cache.Entry<Integer, Integer>> all = cache.query(qry).getAll();
+
+        assertEquals(all.size(), data.size() / 2);
+
+        for (Cache.Entry<Integer, Integer> entry : all) {
+            assertEquals(0, entry.getKey() % 2);
+            assertEquals(entry.getValue(), data.get(entry.getKey()));
+        }
+
+        tearDown(cache);
+    }
+
+    private void cacheInvokeAll(IgniteCache cache) {
+        Map<Integer, Integer> data = generateDataMap(10000);
+
+        cache.putAll(data);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        int one = rnd.nextInt();
+        int two = rnd.nextInt();
+
+        Map<Integer, CacheInvokeResult<Integer>> res = cache.invokeAll(data.keySet(), new CacheEntryProcessor<Integer, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) throws EntryProcessorException {
+                Object removed = ((Map)arguments[0]).remove(entry.getKey());
+
+                assertEquals(removed, entry.getValue());
+
+                // Some calculation
+                return (Integer)arguments[1] + (Integer)arguments[2];
+            }
+        }, data, one, two);
+
+        assertEquals(10000, res.size());
+        assertEquals(one + two, (Object)res.get(0).get());
+
+        tearDown(cache);
+    }
+
+    private void cacheInvoke(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        int one = rnd.nextInt();
+        int two = rnd.nextInt();
+
+        Object res = cache.invoke(key, new CacheEntryProcessor<Integer, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) throws EntryProcessorException {
+                assertEquals(arguments[0], entry.getValue());
+
+                // Some calculation
+                return (Integer)arguments[1] + (Integer)arguments[2];
+            }
+        }, val, one, two);
+
+        assertEquals(one + two, res);
+
+        tearDown(cache);
     }
 
     /**
