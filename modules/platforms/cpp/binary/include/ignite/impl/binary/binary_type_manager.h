@@ -52,7 +52,7 @@ namespace ignite
                  * @param typeName Type name.
                  * @param typeId Type ID.
                  */
-                ignite::common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName, int32_t typeId);
+                common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName, int32_t typeId);
 
                 /**
                  * Submit handler for processing.
@@ -104,13 +104,13 @@ namespace ignite
 
             private:
                 /** Current snapshots. */
-                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap> > snapshots;
+                std::map<int32_t, SPSnap>* snapshots;
 
                 /** Pending snapshots. */
                 std::vector<SPSnap>* pending;
 
                 /** Critical section. */
-                ignite::common::concurrent::CriticalSection cs;
+                common::concurrent::CriticalSection cs;
 
                 /** Type updater */
                 BinaryTypeUpdater* updater;
