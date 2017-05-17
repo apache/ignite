@@ -2122,6 +2122,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return schema.spaceName;
     }
 
+    /** {@inheritDoc} */
+    @Override public String space(String schemaName, String tblName) {
+        GridH2Table tbl = dataTable(schemaName, tblName);
+
+        if (tbl == null)
+            throw new IgniteSQLException("Table not found [schemaName=" + schemaName + ",tblName=" + tblName + ']',
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+        return tbl.spaceName();
+    }
+
     /**
      * Rebuild indexes from hash index.
      *

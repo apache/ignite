@@ -55,6 +55,9 @@ public class DynamicCacheDescriptor {
     /** Started flag. */
     private boolean started;
 
+    /** SQL flag - whether the change is triggered by an SQL command such as {@code CREATE TABLE}. */
+    private boolean sql;
+
     /** Cache type. */
     private CacheType cacheType;
 
@@ -206,6 +209,20 @@ public class DynamicCacheDescriptor {
      */
     public void staticallyConfigured(boolean staticCfg) {
         this.staticCfg = staticCfg;
+    }
+
+    /**
+     * @return SQL flag.
+     */
+    public boolean sql() {
+        return sql;
+    }
+
+    /**
+     * @param sql New SQL flag.
+     */
+    public void sql(boolean sql) {
+        this.sql = sql;
     }
 
     /**

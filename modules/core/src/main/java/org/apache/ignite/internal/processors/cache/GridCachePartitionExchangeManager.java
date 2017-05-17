@@ -248,11 +248,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     fut = affinityReadyFuture(req.cacheFutureTopologyVersion());
 
                                 if (fut == null || fut.isDone())
-                                    cctx.cache().completeStartFuture(req);
+                                    cctx.cache().completeStartFuture(req, false);
                                 else {
                                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> fut) {
-                                            cctx.cache().completeStartFuture(req);
+                                            cctx.cache().completeStartFuture(req, false);
                                         }
                                     });
                                 }

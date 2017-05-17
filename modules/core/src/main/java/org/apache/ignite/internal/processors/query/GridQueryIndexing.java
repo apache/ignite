@@ -287,6 +287,15 @@ public interface GridQueryIndexing {
     public String space(String schemaName);
 
     /**
+     * Get space name by database schema and table name.
+     *
+     * @param schemaName Schema name. Could not be null. Could be empty.
+     * @param tblName Table name, non-empty.
+     * @return Space name. Could be null.
+     */
+    public String space(String schemaName, String tblName);
+
+    /**
      * Collect queries that already running more than specified duration.
      *
      * @param duration Duration to check.

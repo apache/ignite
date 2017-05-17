@@ -1209,7 +1209,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (!F.isEmpty(reqs) && err == null) {
             for (DynamicCacheChangeRequest req : reqs)
-                cctx.cache().completeStartFuture(req);
+                cctx.cache().completeStartFuture(req, true);
         }
 
         if (exchangeOnChangeGlobalState && err == null)

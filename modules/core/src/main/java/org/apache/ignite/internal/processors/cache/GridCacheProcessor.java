@@ -119,6 +119,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2065,19 +2066,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Request to complete future for.
      */
-    public void completeStartFuture(DynamicCacheChangeRequest req) {
+    public void completeStartFuture(DynamicCacheChangeRequest req, boolean success) {
         DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
         assert req.deploymentId() != null || req.globalStateChange() || req.resetLostPartitions();
         assert fut == null || fut.deploymentId != null || req.globalStateChange() || req.resetLostPartitions();
 
         if (fut != null && F.eq(fut.deploymentId(), req.deploymentId()) &&
-            F.eq(req.initiatingNodeId(), ctx.localNodeId())) {
-
-            GridCacheContext cctx = ctx.cache().context().cacheContext(CU.cacheId(req.cacheName()));
-
-            fut.onDone(cctx != null ? F.eq(cctx.dynamicDeploymentId(), req.deploymentId()) : null);
-        }
+            F.eq(req.initiatingNodeId(), ctx.localNodeId()))
+            fut.onDone(success);
     }
 
     /**
@@ -2372,6 +2369,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 req.deploymentId(),
                                 req.schema());
 
+                        desc.sql(req.sql());
+
                         // Received statically configured cache.
                         if (req.initiatingNodeId() == null)
                             desc.staticallyConfigured(true);
@@ -2579,9 +2578,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheName,
             nearCfg,
             CacheType.USER,
+            false,
             failIfExists,
             failIfNotStarted,
             checkThreadTx);
+    }
+
+    /**
+     * Dynamically starts cache as a result of SQL {@code CREATE TABLE} command.
+     *
+     * @param ccfg Cache configuration.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public IgniteInternalFuture<Boolean> dynamicStartSqlCache(
+        CacheConfiguration ccfg
+    ) {
+        A.notNull(ccfg, "ccfg");
+
+        return dynamicStartCache(ccfg,
+            ccfg.getName(),
+            ccfg.getNearConfiguration(),
+            CacheType.USER,
+            true,
+            false,
+            true,
+            true);
     }
 
     /**
@@ -2591,6 +2612,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param nearCfg Near cache configuration.
      * @param cacheType Cache type.
+     * @param sql If the cache needs to be created as the resukt of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
@@ -2602,6 +2624,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
         CacheType cacheType,
+        boolean sql,
         boolean failIfExists,
         boolean failIfNotStarted,
         boolean checkThreadTx
@@ -2620,8 +2643,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 failIfExists,
                 failIfNotStarted);
 
-            if (req != null)
+            if (req != null) {
+                req.sql(sql);
+
                 return F.first(initiateCacheChanges(F.asList(req), failIfExists));
+            }
             else
                 return new GridFinishedFuture<>();
         }
@@ -2701,7 +2727,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<Boolean> dynamicDestroyCache(String cacheName, boolean checkThreadTx) {
         assert cacheName != null;
 
         if (checkThreadTx)
@@ -3104,6 +3130,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false,
                             req.deploymentId(), req.schema());
+
+                        startDesc.sql(req.sql());
 
                         if (newTopVer == null) {
                             newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
