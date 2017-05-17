@@ -62,9 +62,8 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  * </ul>
  * <h1 class="header">SQL Notice</h1>
  * Driver allows to query data from several caches. Cache that driver is connected to is
- * treated as default schema in this case. Other caches can be referenced by their names.
- * <p>
- * Note that cache name is case sensitive and you have to always specify it in quotes.
+ * treated as default schema in this case. Other caches can be referenced by their names.\
+ *
  * <h1 class="header">Dependencies</h1>
  * JDBC driver is located in main Ignite JAR in {@code IGNITE_HOME/libs} folder.
  * <h1 class="header">Configuration</h1>
