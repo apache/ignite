@@ -2152,7 +2152,14 @@ public class GridNioServer<T> {
                     // This exception will be handled in bodyInternal() method.
                     throw e;
                 }
-                catch (Exception e) {
+                catch (Exception | Error e) { // TODO IGNITE-2659.
+                    try {
+                        U.sleep(1000);
+                    }
+                    catch (IgniteInterruptedCheckedException ignore) {
+                        // No-op.
+                    }
+
                     U.warn(log, "Failed to process selector key (will close): " + ses, e);
 
                     close(ses, new GridNioException(e));
@@ -2197,7 +2204,14 @@ public class GridNioServer<T> {
                     // This exception will be handled in bodyInternal() method.
                     throw e;
                 }
-                catch (Exception e) {
+                catch (Exception | Error e) { // TODO IGNITE-2659.
+                    try {
+                        U.sleep(1000);
+                    }
+                    catch (IgniteInterruptedCheckedException ignore) {
+                        // No-op.
+                    }
+
                     if (!closed)
                         U.warn(log, "Failed to process selector key (will close): " + ses, e);
 

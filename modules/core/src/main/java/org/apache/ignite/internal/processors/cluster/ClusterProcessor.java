@@ -187,7 +187,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
                         try {
                             ctx.io().send(node, GridTopic.TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
                         }
-                        catch (ClusterTopologyCheckedException e) {
+                        catch (ClusterTopologyCheckedException ignore) {
                             if (diagnosticLog.isDebugEnabled()) {
                                 diagnosticLog.debug("Failed to send diagnostic response, node left " +
                                     "[node=" + nodeId + ", msg=" + msg + ']');

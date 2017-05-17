@@ -113,6 +113,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
 
+    /** */
     public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
 
     /** */
@@ -551,6 +552,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             exchLog.info("Start exchange init [topVer=" + topVer +
                 ", crd=" + crdNode +
                 ", evt=" + discoEvt.type() +
+                ", node=" + discoEvt.node() +
+                ", evtNode=" + discoEvt.node() +
                 ", customEvt=" + (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)discoEvt).customMessage() : null) +
                 ']');
 

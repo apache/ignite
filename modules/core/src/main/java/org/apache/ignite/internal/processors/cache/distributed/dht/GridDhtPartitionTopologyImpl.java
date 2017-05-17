@@ -90,6 +90,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Time logger. */
+    private final IgniteLogger timeLog;
+
     /** */
     private final AtomicReferenceArray<GridDhtLocalPartition> locParts;
 
@@ -146,6 +149,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         this.entryFactory = entryFactory;
 
         log = cctx.logger(getClass());
+        timeLog = cctx.logger(GridDhtPartitionsExchangeFuture.EXCHANGE_LOG);
 
         locParts = new AtomicReferenceArray<>(cctx.config().getAffinity().partitions());
     }
@@ -1262,9 +1266,19 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             return null;
         }
 
+        long now = U.currentTimeMillis();
+
         lock.writeLock().lock();
 
         try {
+            long acquired = U.currentTimeMillis();
+
+            if (acquired - now >= 100) {
+                if (timeLog.isInfoEnabled())
+                    timeLog.info("Waited too long to acquire topology write lock " +
+                        "[cache=" + cctx.cacheId() + ", waitTime=" + (acquired - now) + ']');
+            }
+
             if (stopping)
                 return null;
 
@@ -1316,7 +1330,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             long updateSeq = this.updateSeq.incrementAndGet();
 
-            node2part = new GridDhtPartitionFullMap(node2part, updateSeq);
+            node2part.updateSequence(updateSeq);
 
             boolean changed = false;
 

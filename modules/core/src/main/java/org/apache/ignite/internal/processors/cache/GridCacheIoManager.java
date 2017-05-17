@@ -319,6 +319,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             else
                 U.error(log, msg0.toString());
 
+            try {
+                cacheMsg.onClassError(new IgniteCheckedException("Failed to find message handler for message: " + cacheMsg));
+
+                processFailedMessage(nodeId, cacheMsg, c);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to process failed message: " + e, e);
+            }
+
             return;
         }
 

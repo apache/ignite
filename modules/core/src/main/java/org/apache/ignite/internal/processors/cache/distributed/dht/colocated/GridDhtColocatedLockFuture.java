@@ -1444,6 +1444,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /** */
         private boolean rcvRes;
 
+        /** Remap topology version for debug purpose. */
+        private AffinityTopologyVersion remapTopVer;
+
         /**
          * @param node Node.
          * @param keys Keys.
@@ -1515,6 +1518,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     return;
 
                 rcvRes = true;
+
+                remapTopVer = res.clientRemapVersion();
             }
 
             if (res.error() != null) {
