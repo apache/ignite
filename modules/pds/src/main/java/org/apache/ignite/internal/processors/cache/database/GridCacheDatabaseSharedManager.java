@@ -437,7 +437,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        onKernalStop0(true);
+        onKernalStop0(false);
 
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
@@ -477,6 +477,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
         fileLockHolder.tryLock(lockWaitTime);
+
+        System.out.println("Lock: " + fileLockHolder.lockPath() + " node " + cctx.igniteInstanceName());
     }
 
     /** {@inheritDoc} */
