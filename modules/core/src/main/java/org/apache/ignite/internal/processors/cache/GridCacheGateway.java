@@ -304,8 +304,11 @@ public class GridCacheGateway<K, V> {
             try {
                 if (rwLock.writeLock().tryLock(200, TimeUnit.MILLISECONDS))
                     break;
-                else
+                else {
                     U.sleep(200);
+
+                    ctx.affinity().cancelFutures();
+                }
             }
             catch (IgniteInterruptedCheckedException | InterruptedException ignore) {
                 interrupted = true;
