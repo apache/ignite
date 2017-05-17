@@ -477,8 +477,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
         fileLockHolder.tryLock(lockWaitTime);
-
-        System.out.println("Lock: " + fileLockHolder.lockPath() + " node " + cctx.igniteInstanceName());
     }
 
     /** {@inheritDoc} */
