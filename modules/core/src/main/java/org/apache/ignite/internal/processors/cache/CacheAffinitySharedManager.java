@@ -462,7 +462,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             cctx.cache().blockGateway(action.request());
 
-            if (crd && desc.cacheConfiguration().getCacheMode() != LOCAL) {
+            if (crd && lateAffAssign && desc.cacheConfiguration().getCacheMode() != LOCAL) {
                 CacheHolder cache = caches.remove(desc.cacheId());
 
                 assert cache != null : action.request();
@@ -1743,7 +1743,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assert ccfg != null : cacheDesc;
             assert ccfg.getCacheMode() != LOCAL : ccfg.getName();
 
-            assert !cctx.discovery().cacheAffinityNodes(ccfg.getName(), fut.topologyVersion()).contains(cctx.localNode());
+            assert !cctx.discovery().cacheAffinityNodes(ccfg.getName(),
+                fut.topologyVersion()).contains(cctx.localNode()) : cacheDesc.cacheName();
 
             AffinityFunction affFunc = cctx.cache().clone(ccfg.getAffinity());
 
