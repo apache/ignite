@@ -1700,7 +1700,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 checkCacheIndexSegmentation(caches);
 
-                twoStepQry.caches(caches);
+                twoStepQry.cacheIds(caches);
                 twoStepQry.local(qry.isLocal());
 
                 meta = meta(stmt.getMetaData());

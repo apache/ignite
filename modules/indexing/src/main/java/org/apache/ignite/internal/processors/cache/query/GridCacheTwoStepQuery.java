@@ -57,10 +57,7 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /** */
-    private List<Integer> caches;
-
-    /** */
-    private List<Integer> extraCaches;
+    private List<Integer> cacheIds;
 
     /** */
     private boolean local;
@@ -148,8 +145,8 @@ public class GridCacheTwoStepQuery {
     public boolean isReplicatedOnly() {
         assert !mapQrys.isEmpty();
 
-        for (int i = 0; i < mapQrys.size(); i++) {
-            if (mapQrys.get(i).isPartitioned())
+        for (GridCacheSqlQuery mapQry : mapQrys) {
+            if (mapQry.isPartitioned())
                 return false;
         }
 
@@ -178,24 +175,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Caches.
+     * @return Cache IDs.
      */
-    public List<Integer> caches() {
-        return caches;
+    public List<Integer> cacheIds() {
+        return cacheIds;
     }
 
     /**
-     * @param caches Caches.
+     * @param cacheIds Cache IDs.
      */
-    public void caches(List<Integer> caches) {
-        this.caches = caches;
-    }
-
-    /**
-     * @return Caches.
-     */
-    public List<Integer> extraCaches() {
-        return extraCaches;
+    public void cacheIds(List<Integer> cacheIds) {
+        this.cacheIds = cacheIds;
     }
 
     /**
@@ -227,7 +217,7 @@ public class GridCacheTwoStepQuery {
 
         GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, tbls);
 
-        cp.caches = caches;
+        cp.cacheIds = cacheIds;
         cp.rdc = rdc.copy();
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
