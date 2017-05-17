@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
@@ -168,6 +169,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
+                }
+
+                @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+                    return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
                 }
 
                 @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
@@ -564,6 +569,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);
@@ -575,6 +582,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+        A.notNullOrEmpty(name, "enum name");
+
         int typeId = binaryCtx.typeId(typeName);
 
         BinaryMetadata metadata = metadata0(typeId);
@@ -596,6 +606,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);

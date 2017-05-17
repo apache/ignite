@@ -37,9 +37,6 @@ public class BinaryTypeImpl implements BinaryType {
     /** Type metadata. */
     private final BinaryMetadata meta;
 
-    /** Enum values cached */
-    private Collection<BinaryObject> enumValues;
-
     /**
      * Constructor.
      *
@@ -88,11 +85,10 @@ public class BinaryTypeImpl implements BinaryType {
 
     /** {@inheritDoc} */
     @Override public Collection<BinaryObject> enumValues() {
-        if (enumValues != null)
-            return enumValues;
-
         Collection<Integer> ordinals = meta.enumMap().values();
-        enumValues = new ArrayList<>(ordinals.size());
+
+        ArrayList<BinaryObject> enumValues = new ArrayList<>(ordinals.size());
+
         for (Integer ord: ordinals)
             enumValues.add(new BinaryEnumObjectImpl(ctx, typeId(), typeName(), ord));
 

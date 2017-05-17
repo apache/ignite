@@ -650,7 +650,7 @@ public class BinaryContext {
                         desc0.fieldsMeta(),
                         desc0.affFieldKeyName(),
                         schemas, desc0.isEnum(),
-                        desc0.enumMap());
+                        cls.isEnum() ? enumMap(cls) : null);
 
                     metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
 
@@ -801,7 +801,7 @@ public class BinaryContext {
 
         if (!deserialize)
             metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,
-                desc.isEnum(), desc.enumMap()).wrap(this));
+                desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -1225,6 +1225,16 @@ public class BinaryContext {
     }
 
     /**
+     *
+     * @param typeId Type ID
+     * @return Meta data.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata0(typeId) : null;
+    }
+
+    /**
      * @param typeId Type ID.
      * @param schemaId Schema ID.
      * @return Meta data.
@@ -1351,6 +1361,24 @@ public class BinaryContext {
         }
 
         U.clearClassCache(ldr);
+    }
+
+    /**
+     *
+     * @param cls Class
+     * @return Enum name to ordinal mapping.
+     */
+    private static Map<String, Integer> enumMap(Class<?> cls) {
+        assert cls.isEnum();
+
+        Object[] enumVals = cls.getEnumConstants();
+
+        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+        for (Object enumVal : enumVals)
+            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
+
+        return enumMap;
     }
 
     /**

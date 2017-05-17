@@ -981,7 +981,7 @@ public class BinaryUtils {
             if (!F.isEmpty(newMeta.enumMap())) {
                 mergedEnumMap = mergeEnumValues(oldMeta.typeName(), oldMeta.enumMap(), newMeta.enumMap());
 
-                changed = true;
+                changed = mergedEnumMap.size() > oldMeta.enumMap().size();
             }
 
             for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {

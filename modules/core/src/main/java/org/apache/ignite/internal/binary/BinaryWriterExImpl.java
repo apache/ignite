@@ -820,15 +820,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         int typeId = val.typeId();
 
-        out.unsafeEnsure(1 + 4);
+        if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            out.unsafeEnsure(1 + 4 + 4);
 
-        out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
-        out.unsafeWriteInt(typeId);
+            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
+            out.unsafeWriteInt(typeId);
+            out.unsafeWriteInt(val.enumOrdinal());
+        }
+        else {
+            out.unsafeEnsure(1 + 4);
 
-        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
+            out.unsafeWriteInt(typeId);
+
             doWriteString(val.className());
 
-        out.writeInt(val.enumOrdinal());
+            out.writeInt(val.enumOrdinal());
+        }
     }
 
     /**
