@@ -865,11 +865,14 @@ public class GridReduceQueryExecutor {
      * @return The first partitioned cache context.
      */
     private GridCacheContext<?,?> findFirstPartitioned(List<Integer> cacheIds) {
-        for (Integer cacheId : cacheIds) {
-            GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
+        for (int i = 0; i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 
-            if (!extraCctx.isReplicated() && !extraCctx.isLocal())
-                return extraCctx;
+            if (i == 0 && cctx.isLocal())
+                throw new CacheException("Cache is LOCAL: " + cctx.name());
+
+            if (!cctx.isReplicated() && !cctx.isLocal())
+                return cctx;
         }
 
         throw new IllegalStateException("Failed to find partitioned cache.");
@@ -982,9 +985,9 @@ public class GridReduceQueryExecutor {
      * @return Collection of all data nodes owning all the caches or {@code null} for retry.
      */
     private Collection<ClusterNode> replicatedUnstableDataNodes(List<Integer> cacheIds) {
-        GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
-
         int i = 0;
+
+        GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i++));
 
         // The main cache is allowed to be partitioned.
         if (!cctx.isReplicated()) {
@@ -1001,28 +1004,26 @@ public class GridReduceQueryExecutor {
         if (F.isEmpty(nodes))
             return null; // Retry.
 
-        if (cacheIds.size() > 1) {
-            for (;i < cacheIds.size(); i++) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(cacheIds.get(i));
+        for (;i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> extraCctx = cacheContext(cacheIds.get(i));
 
-                if (extraCctx.isLocal())
-                    continue;
+            if (extraCctx.isLocal())
+                continue;
 
-                if (!extraCctx.isReplicated())
-                    throw new CacheException("Queries running on replicated cache should not contain JOINs " +
-                        "with tables in partitioned caches [replicatedCache=" + cctx.name() + ", " +
-                        "partitionedCache=" + extraCctx.name() + "]");
+            if (!extraCctx.isReplicated())
+                throw new CacheException("Queries running on replicated cache should not contain JOINs " +
+                    "with tables in partitioned caches [replicatedCache=" + cctx.name() + ", " +
+                    "partitionedCache=" + extraCctx.name() + "]");
 
-                Set<ClusterNode> extraOwners = replicatedUnstableDataNodes(extraCctx);
+            Set<ClusterNode> extraOwners = replicatedUnstableDataNodes(extraCctx);
 
-                if (F.isEmpty(extraOwners))
-                    return null; // Retry.
+            if (F.isEmpty(extraOwners))
+                return null; // Retry.
 
-                nodes.retainAll(extraOwners);
+            nodes.retainAll(extraOwners);
 
-                if (nodes.isEmpty())
-                    return null; // Retry.
-            }
+            if (nodes.isEmpty())
+                return null; // Retry.
         }
 
         return nodes;
