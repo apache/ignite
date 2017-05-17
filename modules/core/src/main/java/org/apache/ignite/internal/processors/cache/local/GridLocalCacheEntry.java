@@ -214,7 +214,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             val = this.val;
         }
 
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, false);
     }
 
     /** {@inheritDoc} */
@@ -239,8 +239,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
                     // so we check for null.
                     if (e != null)
                         e.recheck();
-
-                    break;
+                    else
+                        break;
                 }
             }
         }
