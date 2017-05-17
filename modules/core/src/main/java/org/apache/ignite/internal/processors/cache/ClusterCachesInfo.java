@@ -1055,6 +1055,9 @@ class ClusterCachesInfo {
             CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "backups", "Backups",
                 cfg.getBackups(), startCfg.getBackups(), true);
         }
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "memoryPolicyName", "Memory policy",
+            cfg.getCacheMode(), startCfg.getCacheMode(), true);
     }
 
     /**
