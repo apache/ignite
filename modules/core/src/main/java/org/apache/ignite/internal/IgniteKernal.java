@@ -2791,13 +2791,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
-        return getOrCreateCache0(cacheCfg, false).get1();
+        return getOrCreateCache0(cacheCfg).get1();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
-        CacheConfiguration<K, V> cacheCfg, boolean sql) {
+        CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
         CU.validateCacheName(cacheCfg.getName());
 
@@ -3017,11 +3017,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        destroyCache0(cacheName, false);
+        destroyCache0(cacheName);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
+    @Override public boolean destroyCache0(String cacheName) throws CacheException {
         CU.validateCacheName(cacheName);
 
         IgniteInternalFuture<Boolean> stopFut = destroyCacheAsync(cacheName, true);

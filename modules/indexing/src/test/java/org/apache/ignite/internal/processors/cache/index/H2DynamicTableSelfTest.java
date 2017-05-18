@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -31,23 +32,18 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.engine.Session;
-import org.h2.jdbc.JdbcConnection;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Zzz
+ * Tests for CREATE/DROP TABLE.
  */
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
@@ -136,6 +132,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
+    public void testCreateExistingTable() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"tplCache=cache\""));
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                    ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+                    "\"tplCache=cache\""));
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Table already exists [tblName=Person]");
+    }
+
+    /** */
     public void testDropTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -157,6 +170,17 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** */
     public void testDropTableIfExists() throws Exception {
         cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache\".\"City\""));
+    }
+
+    /** */
+    public void testDropMissingTable() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                cache().query(new SqlFieldsQuery("DROP TABLE \"cache\".\"City\""));
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Table not found [schemaName=cache,tblName=City]");
     }
 
     /** */

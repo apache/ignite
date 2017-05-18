@@ -27,7 +27,7 @@ public class GridSqlDropTable extends GridSqlStatement {
     /** Table name. */
     private String tblName;
 
-    /** Quietly ignore this command if table already exists. */
+    /** Quietly ignore this command if table does not exist. */
     private boolean ifExists;
 
     /**
@@ -59,14 +59,14 @@ public class GridSqlDropTable extends GridSqlStatement {
     }
 
     /**
-     * @return Quietly ignore this command if table already exists.
+     * @return Quietly ignore this command if table does not exist.
      */
     public boolean ifExists() {
         return ifExists;
     }
 
     /**
-     * @param ifExists Quietly ignore this command if table already exists.
+     * @param ifExists Quietly ignore this command if table does not exist.
      */
     public void ifExists(boolean ifExists) {
         this.ifExists = ifExists;

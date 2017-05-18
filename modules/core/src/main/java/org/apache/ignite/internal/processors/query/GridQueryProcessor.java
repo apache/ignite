@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -1290,9 +1289,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // We want to preserve user specified names as they are
         newCfg.setSqlEscapeAll(true);
 
-        IgniteBiTuple<? extends IgniteCache<?, ?>, Boolean> res = ctx.grid().getOrCreateCache0(newCfg, true);
+        boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
 
-        if (!ifNotExists && F.eq(res.get2(), false))
+        if (!res && !ifNotExists)
             throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
                 IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
     }
@@ -1306,27 +1305,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
-        String spaceName = getIndexing().space(schemaName, tblName);
+        boolean res = ctx.grid().destroyCache0(tblName);
 
-        QueryTypeDescriptorImpl type = type(spaceName, tblName);
-
-        if (type == null || !F.eq(schemaName, spaceName)) {
-            if (!ifExists)
-                throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
-                    ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-            return;
-        }
-
-        if (!F.eq(schemaName, tblName))
-            throw new IgniteSQLException("Only dynamically created table can be dropped [schemaName=" + schemaName +
-                ",tblName=" + tblName +']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        IgniteCache cache = ctx.grid().cache(spaceName);
-
-        assert cache != null;
-
-        cache.destroy();
+        if (!res && !ifExists)
+            throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
+                ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
     }
 
     /**

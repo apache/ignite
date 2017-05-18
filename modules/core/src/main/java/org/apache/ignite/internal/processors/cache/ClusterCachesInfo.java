@@ -272,7 +272,7 @@ class ClusterCachesInfo {
             if (req.start()) {
                 if (desc == null) {
                     if (req.clientStartOnly()) {
-                        ctx.cache().completeCacheStartFuture(req, new IgniteCheckedException("Failed to start " +
+                        ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException("Failed to start " +
                             "client cache (a cache with the given name is not started): " + req.cacheName()));
                     }
                     else {
@@ -327,7 +327,7 @@ class ClusterCachesInfo {
                     }
                     else {
                         if (req.failIfExists()) {
-                            ctx.cache().completeCacheStartFuture(req,
+                            ctx.cache().completeCacheStartFuture(req, false,
                                 new CacheExistsException("Failed to start cache " +
                                     "(a cache with the same name is already started): " + req.cacheName()));
                         }
@@ -418,11 +418,11 @@ class ClusterCachesInfo {
                             ctx.cache().context().exchange().affinityReadyFuture(waitTopVer) : null;
 
                         if (fut == null || fut.isDone())
-                            ctx.cache().completeCacheStartFuture(req, null);
+                            ctx.cache().completeCacheStartFuture(req, false, null);
                         else {
                             fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                                 @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    ctx.cache().completeCacheStartFuture(req, null);
+                                    ctx.cache().completeCacheStartFuture(req, false, null);
                                 }
                             });
                         }

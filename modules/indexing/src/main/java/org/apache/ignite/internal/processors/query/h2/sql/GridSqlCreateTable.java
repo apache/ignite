@@ -20,10 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.h2.command.Parser;
 
 /**
  * CREATE TABLE statement.
@@ -52,137 +48,106 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Extra WITH-params. */
     private List<String> params;
 
+    /**
+     * @return Cache name upon which new cache configuration for this table must be based.
+     */
     public String templateCacheName() {
         return tplCacheName;
     }
 
+    /**
+     * @param tplCacheName Cache name upon which new cache configuration for this table must be based.
+     */
     public void templateCacheName(String tplCacheName) {
         this.tplCacheName = tplCacheName;
     }
 
+    /**
+     * @return Columns.
+     */
     public LinkedHashMap<String, GridSqlColumn> columns() {
         return cols;
     }
 
+    /**
+     * @param cols Columns.
+     */
     public void columns(LinkedHashMap<String, GridSqlColumn> cols) {
         this.cols = cols;
     }
 
+    /**
+     * @return Primary key columns.
+     */
     public LinkedHashSet<String> primaryKeyColumns() {
         return pkCols;
     }
 
+    /**
+     * @param pkCols Primary key columns.
+     */
     public void primaryKeyColumns(LinkedHashSet<String> pkCols) {
         this.pkCols = pkCols;
     }
 
+    /**
+     * @return Schema name upon which this statement has been issued.
+     */
     public String schemaName() {
         return schemaName;
     }
 
+    /**
+     * @param schemaName Schema name upon which this statement has been issued.
+     */
     public void schemaName(String schemaName) {
         this.schemaName = schemaName;
     }
 
+    /**
+     * @return Table name.
+     */
     public String tableName() {
         return tblName;
     }
 
+    /**
+     * @param tblName Table name.
+     */
     public void tableName(String tblName) {
         this.tblName = tblName;
     }
 
+    /**
+     * @return Quietly ignore this command if table already exists.
+     */
     public boolean ifNotExists() {
         return ifNotExists;
     }
 
+    /**
+     * @param ifNotExists Quietly ignore this command if table already exists.
+     */
     public void ifNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
     }
 
+    /**
+     * @return Extra WITH-params.
+     */
     public List<String> params() {
         return params;
     }
 
+    /**
+     * @param params Extra WITH-params.
+     */
     public void params(List<String> params) {
         this.params = params;
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        GridStringBuilder b = new SB("CREATE TABLE ")
-            .a(ifNotExists ? "IF NOT EXISTS " : "")
-            .a("\n")
-            .a(Parser.quoteIdentifier(schemaName))
-            .a('.')
-            .a(Parser.quoteIdentifier(tblName))
-            .a("\n(");
-
-        boolean singleColPk = false;
-
-        boolean first = true;
-
-        for (GridSqlColumn col : cols.values()) {
-            if (!first)
-                b.a(",\n");
-            else
-                first = false;
-
-            if (col.column().isPrimaryKey()) {
-                // Only one column may be marked PRIMARY KEY - multi-col PK is defined separately
-                assert !singleColPk;
-
-                singleColPk = true;
-            }
-
-            b.a('\t')
-                .a(col.getSQL())
-                .a(' ')
-                .a(col.resultType().sql())
-                .a(col.column().isPrimaryKey() ? " PRIMARY KEY" : "");
-        }
-
-        first = true;
-
-        if (!singleColPk && !F.isEmpty(pkCols)) {
-            b.a(",\n")
-                .a('\t')
-                .a("PRIMARY KEY (\n");
-
-            for (String col : pkCols) {
-                GridSqlColumn pkCol = cols.get(col);
-
-                assert pkCol != null;
-
-                if (!first)
-                    b.a(",\n");
-                else
-                    first = false;
-
-                b.a("\t\t")
-                    .a(pkCol.getSQL());
-            }
-
-            b.a("\n\t)");
-        }
-
-        b.a("\n)");
-
-        if (!F.isEmpty(params)) {
-            b.a("\nWITH ");
-
-            first = true;
-
-            for (String p : params) {
-                if (!first)
-                    b.a(',');
-                else
-                    first = false;
-
-                b.a(Parser.quoteIdentifier(p));
-            }
-        }
-
-        return b.toString();
+        return null;
     }
 }

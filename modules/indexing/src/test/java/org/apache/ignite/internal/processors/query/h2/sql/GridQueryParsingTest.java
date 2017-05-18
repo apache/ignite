@@ -40,14 +40,18 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.command.Parser;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.CreateTable;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
@@ -547,7 +551,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** */
     public void testParseCreateTable() throws Exception {
-        checkQuery("CREATE TABLE IF NOT EXISTS sch1.\"Person\" (\"id\" integer, \"city\" varchar," +
+        checkCreateTable("CREATE TABLE IF NOT EXISTS sch1.\"Person\" (\"id\" integer, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" integer, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"tplCache=cache\"");
     }
@@ -730,6 +734,87 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param createTbl {@code CREATE TABLE} command.
+     * @return Corresponding SQL.
+     */
+    private static String createTableToSql(GridSqlCreateTable createTbl) {
+        GridStringBuilder b = new SB("CREATE TABLE ")
+            .a(createTbl.ifNotExists() ? "IF NOT EXISTS " : "")
+            .a("\n")
+            .a(Parser.quoteIdentifier(createTbl.schemaName()))
+            .a('.')
+            .a(Parser.quoteIdentifier(createTbl.tableName()))
+            .a("\n(");
+
+        boolean singleColPk = false;
+
+        boolean first = true;
+
+        for (GridSqlColumn col : createTbl.columns().values()) {
+            if (!first)
+                b.a(",\n");
+            else
+                first = false;
+
+            if (col.column().isPrimaryKey()) {
+                // Only one column may be marked PRIMARY KEY - multi-col PK is defined separately
+                assert !singleColPk;
+
+                singleColPk = true;
+            }
+
+            b.a('\t')
+                .a(col.getSQL())
+                .a(' ')
+                .a(col.resultType().sql())
+                .a(col.column().isPrimaryKey() ? " PRIMARY KEY" : "");
+        }
+
+        first = true;
+
+        if (!singleColPk && !F.isEmpty(createTbl.primaryKeyColumns())) {
+            b.a(",\n")
+                .a('\t')
+                .a("PRIMARY KEY (\n");
+
+            for (String col : createTbl.primaryKeyColumns()) {
+                GridSqlColumn pkCol = createTbl.columns().get(col);
+
+                assert pkCol != null;
+
+                if (!first)
+                    b.a(",\n");
+                else
+                    first = false;
+
+                b.a("\t\t")
+                    .a(pkCol.getSQL());
+            }
+
+            b.a("\n\t)");
+        }
+
+        b.a("\n)");
+
+        if (!F.isEmpty(createTbl.params())) {
+            b.a("\nWITH ");
+
+            first = true;
+
+            for (String p : createTbl.params()) {
+                if (!first)
+                    b.a(',');
+                else
+                    first = false;
+
+                b.a(Parser.quoteIdentifier(p));
+            }
+        }
+
+        return b.toString();
+    }
+
+    /**
      * @param qry Query.
      */
     private void checkQuery(String qry) throws Exception {
@@ -738,6 +823,23 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         GridSqlStatement gQry = new GridSqlQueryParser(false).parse(prepared);
 
         String res = gQry.getSQL();
+
+        System.out.println(normalizeSql(res));
+
+        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
+    }
+
+    /**
+     * @param qry Query.
+     */
+    private void checkCreateTable(String qry) throws Exception {
+        Prepared prepared = parse(qry);
+
+        assertTrue(prepared instanceof CreateTable);
+
+        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(prepared);
+
+        String res = createTableToSql((GridSqlCreateTable)gridStmt);
 
         System.out.println(normalizeSql(res));
 

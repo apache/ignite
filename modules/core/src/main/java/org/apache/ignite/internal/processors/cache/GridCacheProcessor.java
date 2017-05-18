@@ -2257,11 +2257,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 failIfExists,
                 failIfNotStarted);
 
-            if (req != null) {
-                req.sql(sql);
-
+            if (req != null)
                 return F.first(initiateCacheChanges(F.asList(req), failIfExists));
-            }
             else
                 return new GridFinishedFuture<>();
         }
@@ -2543,7 +2540,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (desc == null)
                         // No-op.
-                        fut.onDone();
+                        fut.onDone(false);
                     else {
                         assert desc.cacheConfiguration() != null : desc;
 
@@ -3478,7 +3475,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
+    private class DynamicCacheStartFuture extends GridFutureAdapter<Boolean> {
         /** Cache name. */
         private String cacheName;
 
