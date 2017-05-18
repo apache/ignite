@@ -1736,18 +1736,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         int partitions[] = qry.getPartitions();
+
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
                 partitions = calculateQryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
             } catch (IgniteCheckedException e) {
                 throw new CacheException("Failed to calculate derived partitions: [qry=" + sqlQry + ", params=" +
-                        Arrays.deepToString(qry.getArgs()) + "]", e);
+                    Arrays.deepToString(qry.getArgs()) + "]", e);
             }
         }
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel,
-                    qry.getArgs(), partitions),
+            qry.getArgs(), partitions),
             cancel);
 
         cursor.fieldsMeta(meta);
@@ -2665,16 +2666,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Partitions.
      */
     private int[] calculateQryPartitions(CacheQryPartitionInfo[] partInfoList, Object[] params)
-            throws IgniteCheckedException {
+        throws IgniteCheckedException {
 
         ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
 
         for (CacheQryPartitionInfo partInfo: partInfoList) {
             int partId = partInfo.partition() < 0 ?
-                    kernalContext().affinity().partition(partInfo.cacheName(), params[partInfo.paramIdx()]) :
-                    partInfo.partition();
+                kernalContext().affinity().partition(partInfo.cacheName(), params[partInfo.paramIdx()]) :
+                partInfo.partition();
 
             int i = 0;
+
             while (i < list.size() && list.get(i) < partId) i++;
 
             if (i < list.size()) {

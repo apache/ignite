@@ -244,7 +244,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.explain(explain);
         twoStepQry.distributedJoins(distributedJoins);
 
-        //all map queries must have non-empty derivedPartitions to use this feature.
+        // all map queries must have non-empty derivedPartitions to use this feature.
         CacheQryPartitionInfo[] derivedPartitions = null;
 
         for (GridCacheSqlQuery mapSqlQry : twoStepQry.mapQueries()) {
@@ -2021,14 +2021,14 @@ public class GridSqlQuerySplitter {
      * @return Array of partitions, or {@code null} if none identified
      */
     private static CacheQryPartitionInfo[] derivePartitionsFromQry(GridSqlQuery qry, GridKernalContext ctx)
-            throws IgniteCheckedException {
+        throws IgniteCheckedException {
 
         if (!(qry instanceof GridSqlSelect))
             return null;
 
         GridSqlSelect select = (GridSqlSelect)qry;
 
-        //no joins support yet
+        // no joins support yet
         if (select.from() == null || select.from().size() != 1)
             return null;
 
@@ -2041,7 +2041,7 @@ public class GridSqlQuerySplitter {
      * @return Array of partition info objects, or {@code null} if none identified
      */
     private static CacheQryPartitionInfo[] extractPartition(GridSqlAst el, GridKernalContext ctx)
-            throws IgniteCheckedException {
+        throws IgniteCheckedException {
 
         if (!(el instanceof GridSqlOperation))
             return null;
@@ -2049,12 +2049,14 @@ public class GridSqlQuerySplitter {
         GridSqlOperation op = (GridSqlOperation)el;
 
         switch (op.operationType()) {
-            case EQUAL:
+            case EQUAL: {
                 CacheQryPartitionInfo partInfo = extractPartitionFromEquality(op, ctx);
+
                 if (partInfo != null)
                     return new CacheQryPartitionInfo[] { partInfo };
 
                 return null;
+            }
 
             case AND: {
                 assert op.size() == 2;
@@ -2117,11 +2119,13 @@ public class GridSqlQuerySplitter {
         assert column.column().getTable() instanceof GridH2Table;
 
         GridH2Table tbl = (GridH2Table) column.column().getTable();
+
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         IndexColumn affKeyCol = tbl.getAffinityKeyColumn();
 
         int colId = column.column().getColumnId();
+
         if ((affKeyCol == null || colId != affKeyCol.column.getColumnId()) && !desc.isKeyColumn(colId))
             return null;
 
@@ -2129,7 +2133,7 @@ public class GridSqlQuerySplitter {
             GridSqlConst constant = (GridSqlConst)right;
 
             return new CacheQryPartitionInfo(ctx.affinity().partition(tbl.spaceName(),
-                    constant.value().getObject()), null, -1);
+                constant.value().getObject()), null, -1);
         }
 
         assert right instanceof GridSqlParameter;
@@ -2158,11 +2162,13 @@ public class GridSqlQuerySplitter {
         }
 
         ArrayList<CacheQryPartitionInfo> list = new ArrayList<>(a.length + b.length);
+
         for (CacheQryPartitionInfo part: a)
             list.add(part);
 
         for (CacheQryPartitionInfo part: b) {
             int i = 0;
+
             while (i < list.size() && !list.get(i).equals(part)) i++;
 
             if (i == list.size())
@@ -2170,6 +2176,7 @@ public class GridSqlQuerySplitter {
         }
 
         CacheQryPartitionInfo[] result = new CacheQryPartitionInfo[list.size()];
+
         for (int i = 0; i < list.size(); i++)
             result[i] = list.get(i);
 

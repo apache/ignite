@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -33,7 +32,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -83,7 +81,9 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         c.setMarshaller(new BinaryMarshaller());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
+
         CacheConfiguration ccfg = buildCacheConfiguration(gridName);
+
         if (ccfg != null)
             ccfgs.add(ccfg);
 
@@ -103,7 +103,9 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
         startGrids(NODE_COUNT);
+
         startGrid(NODE_CLIENT);
 
         fillCaches();
@@ -111,20 +113,24 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
         stopAllGrids();
     }
 
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(CACHE_PERSON)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_PERSON);
+
             ccfg.setCacheMode(CacheMode.PARTITIONED);
 
             QueryEntity entity = new QueryEntity();
 
             entity.setKeyType(Integer.class.getName());
+
             entity.setValueType(Person.class.getName());
 
             LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
             fields.put("name", String.class.getName());
             fields.put("age", Integer.class.getName());
 
@@ -137,16 +143,20 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         if (name.equals(CACHE_CALL)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_CALL);
+
             ccfg.setCacheMode(CacheMode.PARTITIONED);
 
             QueryEntity entity = new QueryEntity(CallKey.class.getName(), Call.class.getName());
 
             Set<String> keyFields = new HashSet<>();
+
             keyFields.add("personId");
             keyFields.add("id");
+
             entity.setKeyFields(keyFields);
 
             LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
             fields.put("personId", Integer.class.getName());
             fields.put("id", Integer.class.getName());
             fields.put("name", String.class.getName());
@@ -169,6 +179,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
                 new SqlFieldsQuery("select id, name, duration from Call where personId=100 order by id"), 1);
 
         assertEquals(2, result.size());
+
         checkResultsRow(result, 0, 1, "caller1", 100);
         checkResultsRow(result, 1, 2, "caller2", 200);
     }
@@ -181,6 +192,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
                 new SqlFieldsQuery("select id, name, duration from Call where personId=? order by id").setArgs(100), 1);
 
         assertEquals(2, result.size());
+
         checkResultsRow(result, 0, 1, "caller1", 100);
         checkResultsRow(result, 1, 2, "caller2", 200);
     }
@@ -196,13 +208,13 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
             assertEquals(1, result.size());
 
             Person person = cache.get(key);
+
             checkResultsRow(result, 0, person.name, person.age);
         }
     }
 
     /** */
     public void testUnicastQrySelectKeyEqualParam() throws Exception {
-        //get single row querying by key
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
@@ -230,15 +242,17 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
                 "order by name";
 
         final int personId = 10;
+
         List<List<?>> result = runQryEnsureUnicast(cache, new SqlFieldsQuery(qry).setArgs(personId), 1);
+
         assertEquals(2, result.size());
+
         checkResultsRow(result, 0, "caller1", 1L);
         checkResultsRow(result, 1, "caller2", 1L);
     }
 
     /** */
     public void testUnicastQrySelectKeyEqualAndFieldParam() throws Exception {
-        //get single row querying by key
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
@@ -256,7 +270,6 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
     /** */
     public void testUnicastQrySelect2KeyEqualsAndFieldParam() throws Exception {
-        //get single row querying by key
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey1 = new CallKey(5, 1);
@@ -296,10 +309,12 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Person> personCache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
         int count = affinity(personCache).partitions();
+
         String[] names = {"John", "Bob", "James", "David", "Chuck"};
 
         for (int i = 0; i < count; i++) {
             Person person = new Person(names[i % names.length], 20 + (i % names.length));
+
             personCache.put(i, person);
 
             //each person gets 2 calls
@@ -313,6 +328,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         assertTrue(rowId < results.size());
 
         List<?> row = results.get(rowId);
+
         assertEquals(expected.length, row.size());
 
         for(int col = 0; col < expected.length; ++col)
@@ -382,7 +398,9 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
                 CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                 String cacheName = qe.cacheName();
+
                 assert cacheName != null;
+
                 if (!cacheName.equals(CACHE_PERSON) &&
                     !cacheName.equals(CACHE_CALL))
                     return true;
@@ -390,14 +408,18 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
                 assertNotNull(qe.clause());
 
                 Object[] args = qe.arguments();
+
                 if ((args != null) && (args.length > 0) && (args[0] instanceof String)) {
                     String strParam = (String)args[0];
+
                     if (FINAL_QRY_PARAM.equals(strParam)) {
                         execLatch.countDown();
+
                         return true;
                     }
                 }
                 cnt.decrementAndGet();
+
                 return true;
             }
         };
@@ -405,6 +427,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         /** */
         private EvtCounter(int cnt) {
             this.cnt = new AtomicInteger(cnt);
+
             this.execLatch = new CountDownLatch(NODE_COUNT);
 
             for (int i = 0; i < NODE_COUNT; i++)
@@ -414,6 +437,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         /** */
         public void await() throws Exception {
             assertTrue(execLatch.await(5000, MILLISECONDS));
+
             assertEquals(0, cnt.get());
         }
 
@@ -502,6 +526,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         /** */
         public Call(String name, int duration) {
             this.name = name;
+
             this.duration = duration;
         }
 
