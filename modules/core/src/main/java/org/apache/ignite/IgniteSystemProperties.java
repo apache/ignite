@@ -503,7 +503,7 @@ public final class IgniteSystemProperties {
     /**
      * Whether Ignite can access unaligned memory addresses.
      * <p>
-     * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
+     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
      */
     public static final String IGNITE_UNALIGNED_MEMORY_ACCESS = "IGNITE_UNALIGNED_MEMORY_ACCESS";
 
@@ -514,6 +514,16 @@ public final class IgniteSystemProperties {
      * @deprecated Should be removed in Apache Ignite 2.0.
      */
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
+    /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
+     * support service security permissions. In this case security permissions will be ignored
+     * (if they set).
+     * <p>
+     *     Default is {@code false}, which means that service security permissions will be respected.
+     * </p>
+     */
+    public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
 
     /**
      * Enforces singleton.
