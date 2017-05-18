@@ -17,30 +17,17 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
 public class JdbcObjectWriter extends AbstractSqlObjectWriter {
-    /** Jdk marshaller. */
-    private JdkMarshaller jdkMars = new JdkMarshaller();
-
     /** {@inheritDoc} */
-    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
-        writer.writeByte(SqlListenerMessageParser.JDK_MARSH);
-
-        try {
-            writer.writeByteArray(U.marshal(jdkMars, obj));
-        }
-        catch (IgniteCheckedException e) {
-            throw new BinaryObjectException(e);
-        }
+    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj)
+        throws BinaryObjectException {
+        throw new BinaryObjectException("JDBC doesn't support not embedded objects.");
     }
 }

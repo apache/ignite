@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -71,8 +70,8 @@ public abstract class AbstractSqlObjectWriter {
             writer.writeTime((Time)obj);
         else if (cls == Timestamp.class)
             writer.writeTimestamp((Timestamp)obj);
-        else if (cls == Date.class)
-            writer.writeDate((Date)obj);
+        else if (cls == java.sql.Date.class || cls == java.util.Date.class)
+            writer.writeDate((java.util.Date)obj);
         else if (cls == boolean[].class)
             writer.writeBooleanArray((boolean[])obj);
         else if (cls == byte[].class)
@@ -97,8 +96,8 @@ public abstract class AbstractSqlObjectWriter {
             writer.writeTimeArray((Time[])obj);
         else if (cls == Timestamp[].class)
             writer.writeTimestampArray((Timestamp[])obj);
-        else if (cls == Date[].class)
-            writer.writeDateArray((Date[])obj);
+        else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
+            writer.writeDateArray((java.util.Date[])obj);
         else
             writeNotEmbeddedObject(writer, obj);
     }
