@@ -894,22 +894,24 @@ public class GridSqlQueryParser {
 
         Map<String, String> params = new HashMap<>();
 
-        for (String p : extraParams) {
-            String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
+        if (!F.isEmpty(extraParams)) {
+            for (String p : extraParams) {
+                String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
-            if (parts.length > 2)
-                throw new IgniteSQLException("Invalid param syntax: key[=value] expected [paramStr=" + p + ']',
-                    IgniteQueryErrorCode.PARSING);
+                if (parts.length > 2)
+                    throw new IgniteSQLException("Invalid param syntax: key[=value] expected [paramStr=" + p + ']',
+                        IgniteQueryErrorCode.PARSING);
 
-            String name = parts[0];
+                String name = parts[0];
 
-            String val = parts.length > 1 ? parts[1] : null;
+                String val = parts.length > 1 ? parts[1] : null;
 
-            if (F.isEmpty(name))
-                throw new IgniteSQLException("Invalid param syntax: no name given [paramStr=" + p + ']',
-                    IgniteQueryErrorCode.PARSING);
+                if (F.isEmpty(name))
+                    throw new IgniteSQLException("Invalid param syntax: no name given [paramStr=" + p + ']',
+                        IgniteQueryErrorCode.PARSING);
 
-            params.put(name, val);
+                params.put(name, val);
+            }
         }
 
         for (String mandParamName : MANDATORY_CREATE_TABLE_PARAMS) {
