@@ -42,12 +42,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             var ignite = StartIgniteWithTwoPolicies();
 
             // Verify metrics.
-            var metrics = ignite.GetMemoryMetrics().ToArray();
+            var metrics = ignite.GetMemoryMetrics().OrderBy(x => x.Name).ToArray();
             Assert.AreEqual(3, metrics.Length);  // two defined plus system.
 
-            var sysMetrics = metrics[0];
-            Assert.AreEqual("sysMemPlc", sysMetrics.Name);
-            AssertMetricsAreEmpty(sysMetrics);
+            var emptyMetrics = metrics[0];
+            Assert.AreEqual(MemoryPolicyNoMetrics, emptyMetrics.Name);
+            AssertMetricsAreEmpty(emptyMetrics);
 
             var memMetrics = metrics[1];
             Assert.AreEqual(MemoryPolicyWithMetrics, memMetrics.Name);
@@ -57,9 +57,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
 
-            var emptyMetrics = metrics[2];
-            Assert.AreEqual(MemoryPolicyNoMetrics, emptyMetrics.Name);
-            AssertMetricsAreEmpty(emptyMetrics);
+            var sysMetrics = metrics[2];
+            Assert.AreEqual("sysMemPlc", sysMetrics.Name);
+            AssertMetricsAreEmpty(sysMetrics);
         }
 
         /// <summary>

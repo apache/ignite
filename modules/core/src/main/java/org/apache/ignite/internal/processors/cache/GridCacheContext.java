@@ -234,8 +234,11 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private CountDownLatch startLatch = new CountDownLatch(1);
 
-    /** Start topology version. */
-    private AffinityTopologyVersion startTopVer;
+    /** Topology version when cache was started on local node. */
+    private AffinityTopologyVersion locStartTopVer;
+
+    /** */
+    private UUID rcvdFrom;
 
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
@@ -289,6 +292,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
+        AffinityTopologyVersion locStartTopVer,
+        UUID rcvdFrom,
         boolean affNode,
         boolean updatesAllowed,
         MemoryPolicy memPlc,
@@ -316,6 +321,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
+        assert locStartTopVer != null : cacheCfg.getName();
 
         assert evtMgr != null;
         assert storeMgr != null;
@@ -333,6 +339,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
+        this.locStartTopVer = locStartTopVer;
+        this.rcvdFrom = rcvdFrom;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
@@ -452,17 +460,19 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Start topology version.
+     * @return Node ID cache was received from.
      */
-    public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
+    public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     /**
-     * @param startTopVer Start topology version.
+     * @return Topology version when cache was started on local node.
      */
-    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
-        this.startTopVer = startTopVer;
+    public AffinityTopologyVersion startTopologyVersion() {
+        assert locStartTopVer != null : name();
+
+        return locStartTopVer;
     }
 
     /**

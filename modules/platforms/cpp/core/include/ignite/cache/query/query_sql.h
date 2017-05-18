@@ -245,6 +245,14 @@ namespace ignite
                 }
 
                 /**
+                 * Remove all added arguments.
+                 */
+                void ClearArguments()
+                {
+                    args.clear();
+                }
+
+                /**
                  * Write query info to the stream.
                  *
                  * @param writer Writer.

@@ -1232,8 +1232,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * No-op entry processor.
      */
     private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
-        @Override
-        public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
+        @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
             TestObject obj = entry.getValue();
 
             entry.setValue(new TestObject(obj.val));
