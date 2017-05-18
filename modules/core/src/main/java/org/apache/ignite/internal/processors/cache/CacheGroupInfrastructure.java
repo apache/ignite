@@ -242,11 +242,13 @@ public class CacheGroupInfrastructure {
      */
     private void removeCacheContext(GridCacheContext cctx) {
         synchronized (caches) {
-            assert sharedGroup() || caches.size() == 1 : caches.size();
+            if (caches.contains(cctx)) { // It is possible cache is not added in case of errors on cache start.
+                assert sharedGroup() || caches.size() == 1 : caches.size();
 
-            boolean rmv = caches.remove(cctx);
+                boolean rmv = caches.remove(cctx);
 
-            assert rmv : cctx.name();
+                assert rmv : cctx.name();
+            }
         }
     }
 
