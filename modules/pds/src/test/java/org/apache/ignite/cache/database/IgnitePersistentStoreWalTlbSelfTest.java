@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.database;
 
 import javax.cache.CacheException;
-import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -118,13 +118,9 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
         boolean locked = true;
 
         try {
-            IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(null);
-            for (int i = 0; i < 100_000; i++) {
-                streamer.addData(i, 1);
+            IgniteCache<Integer, Integer> cache = ig.getOrCreateCache("cache");
 
-                if (i > 0 && i % 10_000 == 0)
-                    info("Done put: " + i);
-            }
+            cache.put(1, 1);
         }
         catch (CacheException ignore) {
             // expected
