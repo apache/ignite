@@ -328,16 +328,22 @@ h1, h2, h3, h4, h5, h6 {
     height: #{"calc(100vh - 300px)"};
 }
 
+body {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 body > .wrapper,
     // Nested ui-view, like on password reset state
 body > .wrapper > ui-view {
     display: flex;
     flex-direction: column;
     min-height: 100%;
-    flex: 1;
+    flex: 1 0 auto;
 
     .body-container {
-        flex: 1;
+        flex: 1 0 auto;
         padding-bottom: 30px;
     }
 }
