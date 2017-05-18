@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -166,6 +167,13 @@ public class CacheGroupInfrastructure {
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
+    }
+
+    /**
+     * @return {@code True} if this is cache group for one of system caches.
+     */
+    public boolean systemCache() {
+        return !sharedGroup() && CU.isSystemCache(ccfg.getName());
     }
 
     /**

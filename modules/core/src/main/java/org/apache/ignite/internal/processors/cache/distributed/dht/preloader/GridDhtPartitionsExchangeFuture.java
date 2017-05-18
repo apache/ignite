@@ -194,8 +194,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private CacheAffinityChangeMessage affChangeMsg;
 
-    /** Cache validation results. */
-    private volatile Map<Integer, CacheValidation> cacheValidRes;
+    /** Cache groups validation results. */
+    private volatile Map<Integer, CacheValidation> grpValidRes;
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -1164,21 +1164,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 discoEvt.type() == EVT_NODE_JOINED)
                 detectLostPartitions();
 
-            Map<Integer, CacheValidation> m = new HashMap<>(cctx.cacheContexts().size());
+            Map<Integer, CacheValidation> m = new HashMap<>(cctx.cache().cacheGroups().size());
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                Collection<Integer> lostParts = cacheCtx.isLocal() ?
-                    Collections.<Integer>emptyList() : cacheCtx.topology().lostPartitions();
+            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                Collection<Integer> lostParts = grp.isLocal() ?
+                    Collections.<Integer>emptyList() : grp.topology().lostPartitions();
 
                 boolean valid = true;
 
-                if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name()))
-                    valid = cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes());
+                if (grp.config().getTopologyValidator() != null && !grp.systemCache())
+                    valid = grp.config().getTopologyValidator().validate(discoEvt.topologyNodes());
 
-                m.put(cacheCtx.cacheId(), new CacheValidation(valid, lostParts));
+                m.put(grp.groupId(), new CacheValidation(valid, lostParts));
             }
 
-            cacheValidRes = m;
+            grpValidRes = m;
         }
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), exchActions, err);
@@ -1235,16 +1235,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
-        PartitionLossPolicy partLossPlc = cctx.config().getPartitionLossPolicy();
+        CacheGroupInfrastructure grp = cctx.group();
 
-        if (cctx.needsRecovery() && !recovery) {
+        PartitionLossPolicy partLossPlc = grp.config().getPartitionLossPolicy();
+
+        if (grp.needsRecovery() && !recovery) {
             if (!read && (partLossPlc == READ_ONLY_SAFE || partLossPlc == READ_ONLY_ALL))
                 return new IgniteCheckedException("Failed to write to cache (cache is moved to a read-only state): " +
                     cctx.name());
         }
 
-        if (cctx.needsRecovery() || cctx.config().getTopologyValidator() != null) {
-            CacheValidation validation = cacheValidRes.get(cctx.cacheId());
+        if (grp.needsRecovery() || grp.config().getTopologyValidator() != null) {
+            CacheValidation validation = grpValidRes.get(grp.groupId());
 
             if (validation == null)
                 return null;
@@ -1253,7 +1255,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return new IgniteCheckedException("Failed to perform cache operation " +
                     "(cache topology is not valid): " + cctx.name());
 
-            if (recovery || !cctx.needsRecovery())
+            if (recovery || !grp.needsRecovery())
                 return null;
 
             if (key != null) {
