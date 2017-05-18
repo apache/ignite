@@ -288,8 +288,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         }, GridClientException.class, null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return singleNodePrj.projection(targetFilter);
             }
         }, GridClientException.class, null);

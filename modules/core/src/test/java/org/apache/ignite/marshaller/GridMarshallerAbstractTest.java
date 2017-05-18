@@ -481,8 +481,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         final Ignite ignite = grid();
 
         GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override
-            public boolean apply(ClusterNode n) {
+            @Override public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));
@@ -661,8 +660,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             IgniteCompute compute = compute(grid().cluster().forNode(g1.cluster().localNode()));
 
             compute.run(new IgniteRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     // No-op.
                 }
             });

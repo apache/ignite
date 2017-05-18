@@ -342,7 +342,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             if (grp.cacheMode == CacheMode.REPLICATED)
                 nearEnabled = false;
-            
+
             registeredCaches.put(cacheName, new CachePredicate(grp, nearEnabled));
         }
     }
