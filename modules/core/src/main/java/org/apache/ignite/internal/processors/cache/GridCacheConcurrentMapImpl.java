@@ -67,13 +67,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         KeyCacheObject key,
         final boolean create,
         final boolean touch) {
-        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), create);
-
-        if (map == null) {
-            assert !create;
-
-            return null;
-        }
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
 
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
@@ -86,7 +80,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         try {
             while (!done) {
-                GridCacheMapEntry entry = map.get(key);
+                GridCacheMapEntry entry = map != null ? map.get(key) : null;
                 created = null;
                 doomed = null;
 
@@ -99,6 +93,9 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
                                 reserved = true;
                             }
+
+                            if (map == null)
+                                map = entriesMap(ctx.cacheId(), true);
 
                             created0 = factory.create(ctx, topVer, key);
                         }
