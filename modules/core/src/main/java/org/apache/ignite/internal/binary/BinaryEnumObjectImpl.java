@@ -97,9 +97,18 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
-        assert arr[0] == GridBinaryMarshaller.BINARY_ENUM || arr[0] == GridBinaryMarshaller.ENUM;
 
-        valBytes = arr;
+        if (arr[0] == GridBinaryMarshaller.ENUM)
+            valBytes = arr;
+        else {
+            assert arr[0] == GridBinaryMarshaller.BINARY_ENUM;
+
+            valBytes = new byte[arr.length];
+
+            valBytes[0] = GridBinaryMarshaller.ENUM;
+
+            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+        }
 
         this.ctx = ctx;
 
