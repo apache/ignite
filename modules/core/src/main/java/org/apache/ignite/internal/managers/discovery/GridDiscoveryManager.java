@@ -164,7 +164,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private static final String PREFIX = "Topology snapshot";
 
     /** Discovery cached history size. */
-    static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
+    private static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
 
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_DAEMON = new P1<ClusterNode>() {
@@ -1977,7 +1977,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean reconnectSupported() {
         DiscoverySpi spi = getSpi();
 
-        return ctx.clientNode() && (spi instanceof TcpDiscoverySpi) &&
+        return ctx.discovery().localNode().isClient() && (spi instanceof TcpDiscoverySpi) &&
             !(((TcpDiscoverySpi) spi).isClientReconnectDisabled());
     }
 
