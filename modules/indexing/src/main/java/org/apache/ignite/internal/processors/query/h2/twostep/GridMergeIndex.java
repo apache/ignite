@@ -28,10 +28,7 @@ import java.util.List;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,7 +43,6 @@ import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -65,10 +61,6 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** */
     private static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
-
-    /** */
-    private static final AtomicReferenceFieldUpdater<GridMergeIndex, ConcurrentMap> lastPagesUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(GridMergeIndex.class, ConcurrentMap.class, "lastPages");
 
     static {
         if (!U.isPow2(PREFETCH_SIZE)) {
@@ -103,9 +95,6 @@ public abstract class GridMergeIndex extends BaseIndex {
     /** Row source nodes. */
     private Set<UUID> sources;
 
-    /** */
-    private int pageSize;
-
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
@@ -119,9 +108,6 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** */
     private final GridKernalContext ctx;
-
-    /** */
-    private volatile ConcurrentMap<SourceKey, Integer> lastPages;
 
     /**
      * @param ctx Context.
@@ -213,13 +199,6 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @param pageSize Page size.
-     */
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    /**
      * @param queue Queue to poll.
      * @return Next page.
      */
@@ -295,63 +274,13 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void initLastPages(UUID nodeId, GridQueryNextPageResponse res) {
-        int allRows = res.allRows();
-
-        // If the old protocol we send all rows number in the page 0, other pages have -1.
-        // In the new protocol we do not know it and always have -1, except terminating page,
-        // which has -2. Thus we have to init page counters only when we receive positive value
-        // in the first page.
-        if (allRows < 0 || res.page() != 0)
-            return;
-
-        ConcurrentMap<SourceKey,Integer> lp = lastPages;
-
-        if (lp == null && !lastPagesUpdater.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
-            lp = lastPages;
-
-        assert pageSize > 0: pageSize;
-
-        int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
-
-        assert lastPage >= 0: lastPage;
-
-        if (lp.put(new SourceKey(nodeId, res.segmentId()), lastPage) != null)
-            throw new IllegalStateException();
-    }
-
-    /**
      * @param page Page.
      */
     private void markLastPage(GridResultPage page) {
         GridQueryNextPageResponse res = page.response();
 
-        if (res.allRows() != -2) { // -2 means the last page.
-            UUID nodeId = page.source();
-
-            initLastPages(nodeId, res);
-
-            ConcurrentMap<SourceKey,Integer> lp = lastPages;
-
-            if (lp == null)
-                return; // It was not initialized --> wait for -2.
-
-            Integer lastPage = lp.get(new SourceKey(nodeId, res.segmentId()));
-
-            if (lastPage == null)
-                return; // This node may use the new protocol --> wait for -2.
-
-            if (lastPage != res.page()) {
-                assert lastPage > res.page();
-
-                return; // This is not the last page.
-            }
-        }
-
-        page.setLast(true);
+        if (res.allRows() == -2) // -2 means the last page.
+            page.setLast(true);
     }
 
     /**
@@ -677,11 +606,6 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
     }
 
-    /** */
-    enum State {
-        UNINITIALIZED, INITIALIZED, FINISHED
-    }
-
     /**
      */
     private static final class BlockList<Z> extends AbstractList<Z> implements RandomAccess {
@@ -770,41 +694,5 @@ public abstract class GridMergeIndex extends BaseIndex {
          * @throws InterruptedException If interrupted.
          */
         E poll(long timeout, TimeUnit unit) throws InterruptedException;
-    }
-
-    /**
-     */
-    private static class SourceKey {
-        final UUID nodeId;
-
-        /** */
-        final int segment;
-
-        /**
-         * @param nodeId Node ID.
-         * @param segment Segment.
-         */
-        SourceKey(UUID nodeId, int segment) {
-            this.nodeId = nodeId;
-            this.segment = segment;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            SourceKey sourceKey = (SourceKey)o;
-
-            if (segment != sourceKey.segment) return false;
-            return nodeId.equals(sourceKey.nodeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = nodeId.hashCode();
-            result = 31 * result + segment;
-            return result;
-        }
     }
 }

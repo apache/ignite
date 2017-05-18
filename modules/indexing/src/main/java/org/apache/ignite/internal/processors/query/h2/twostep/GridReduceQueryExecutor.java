@@ -535,7 +535,6 @@ public class GridReduceQueryExecutor {
 
         // Fail if all caches are replicated and explicit partitions are set.
 
-
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -671,8 +670,6 @@ public class GridReduceQueryExecutor {
                 }
                 else
                     idx.setSources(nodes, segmentsPerIndex);
-
-                idx.setPageSize(r.pageSize);
 
                 r.idxs.add(idx);
             }
