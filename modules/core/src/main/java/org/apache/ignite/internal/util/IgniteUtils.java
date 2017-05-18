@@ -122,8 +122,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -177,8 +179,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -10121,6 +10121,179 @@ public abstract class IgniteUtils {
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * @param lock Lock.
+     */
+    public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
+        return new ReentrantReadWriteLockTracer(lock);
+    }
+
+    /**
+     * @param lock Lock.
+     */
+    public static LockTracer lockTracer(Lock lock) {
+        return new LockTracer(lock);
+    }
+
+    /**
+     *
+     */
+    public static class ReentrantReadWriteLockTracer implements ReadWriteLock {
+        /** Read lock. */
+        private final LockTracer readLock;
+
+        /** Write lock. */
+        private final LockTracer writeLock;
+
+        /**
+         * @param delegate Delegate.
+         */
+        public ReentrantReadWriteLockTracer(ReadWriteLock delegate) {
+            readLock = new LockTracer(delegate.readLock());
+            writeLock = new LockTracer(delegate.writeLock());
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Lock readLock() {
+            return readLock;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Lock writeLock() {
+            return writeLock;
+        }
+
+        /**
+         *
+         */
+        public LockTracer getReadLock() {
+            return readLock;
+        }
+
+        /**
+         *
+         */
+        public LockTracer getWriteLock() {
+            return writeLock;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class LockTracer implements Lock {
+        /** Delegate. */
+        private final Lock delegate;
+
+        private final AtomicLong cnt = new AtomicLong();
+
+        /** Count. */
+        private final ConcurrentMap<String, AtomicLong> cntMap = new ConcurrentHashMap8<>();
+
+        /**
+         * @param delegate Delegate.
+         */
+        public LockTracer(Lock delegate) {
+            this.delegate = delegate;
+        }
+
+        /**
+         *
+         */
+        private void inc(){
+            cnt.incrementAndGet();
+
+            String name = Thread.currentThread().getName();
+
+            AtomicLong cnt = cntMap.get(name);
+
+            if (cnt == null) {
+                AtomicLong cnt0 = cntMap.putIfAbsent(name, cnt = new AtomicLong());
+
+                if (cnt0 != null)
+                    cnt = cnt0;
+            }
+
+            cnt.incrementAndGet();
+        }
+
+        /**
+         *
+         */
+        private void dec(){
+            cnt.decrementAndGet();
+
+            String name = Thread.currentThread().getName();
+
+            AtomicLong cnt = cntMap.get(name);
+
+            cnt.decrementAndGet();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void lock() {
+            delegate.lock();
+
+            inc();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void lockInterruptibly() throws InterruptedException {
+            delegate.lockInterruptibly();
+
+            inc();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryLock() {
+            if (delegate.tryLock()) {
+                inc();
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
+            if (delegate.tryLock(time, unit)) {
+                inc();
+
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void unlock() {
+            delegate.unlock();
+
+            dec();
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Condition newCondition() {
+            // Wrapper for condition not supported.
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         *
+         */
+        public Map<String, AtomicLong> getLockUnlockCounters() {
+            return new HashMap<>(cntMap);
+        }
+
+        /**
+         *
+         */
+        public long getLockUnlockCounter() {
+            return cnt.get();
         }
     }
 }

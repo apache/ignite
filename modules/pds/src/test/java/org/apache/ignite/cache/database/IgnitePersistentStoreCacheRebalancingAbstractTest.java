@@ -108,7 +108,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath("db");
+        memPlcCfg.setSwapFilePath("work/swap");
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
@@ -142,8 +142,6 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE, "LOG_ONLY");
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-        U.delete(new File(U.getIgniteHome(), "db"));
     }
 
     /** {@inheritDoc} */
@@ -151,8 +149,6 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         G.stopAll(true);
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-        U.delete(new File(U.getIgniteHome(), "db"));
     }
 
     /** {@inheritDoc} */
