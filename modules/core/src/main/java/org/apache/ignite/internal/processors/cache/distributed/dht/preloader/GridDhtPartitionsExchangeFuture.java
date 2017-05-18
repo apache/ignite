@@ -955,19 +955,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void warnNoAffinityNodes() {
         List<String> cachesWithoutNodes = null;
 
-        for (GridCacheContext ctx : cctx.cacheContexts()) {
-            if (discoCache.cacheGroupAffinityNodes(ctx.groupId()).isEmpty()) {
+        for (DynamicCacheDescriptor cacheDesc : cctx.cache().cacheDescriptors().values()) {
+            if (discoCache.cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty()) {
                 if (cachesWithoutNodes == null)
                     cachesWithoutNodes = new ArrayList<>();
 
-                cachesWithoutNodes.add(ctx.name());
+                cachesWithoutNodes.add(cacheDesc.cacheName());
 
                 // Fire event even if there is no client cache started.
-                if (ctx.gridEvents().isRecordable(EventType.EVT_CACHE_NODES_LEFT)) {
+                if (cctx.gridEvents().isRecordable(EventType.EVT_CACHE_NODES_LEFT)) {
                     Event evt = new CacheEvent(
-                        ctx.name(),
-                        ctx.localNode(),
-                        ctx.localNode(),
+                        cacheDesc.cacheName(),
+                        cctx.localNode(),
+                        cctx.localNode(),
                         "All server nodes have left the cluster.",
                         EventType.EVT_CACHE_NODES_LEFT,
                         0,
@@ -984,7 +984,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         null
                     );
 
-                    ctx.gridEvents().record(evt);
+                    cctx.gridEvents().record(evt);
                 }
             }
         }

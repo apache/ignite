@@ -399,9 +399,9 @@ class ClusterCachesInfo {
 
                     exchangeActions.addCacheToStop(req, desc);
 
-                    CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupDescriptor().groupId());
+                    CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupId());
 
-                    assert grpDesc != null && grpDesc.groupId() == desc.groupDescriptor().groupId() : desc;
+                    assert grpDesc != null && grpDesc.groupId() == desc.groupId() : desc;
 
                     grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
 
@@ -639,7 +639,7 @@ class ClusterCachesInfo {
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheData cacheData = new CacheData(desc.cacheConfiguration(),
                 desc.cacheId(),
-                desc.groupDescriptor().groupId(),
+                desc.groupId(),
                 desc.cacheType(),
                 desc.deploymentId(),
                 desc.schema(),

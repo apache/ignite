@@ -386,7 +386,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
                 if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                    if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupDescriptor().groupId()).isEmpty())
+                    if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
                         U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
                 }
             }
@@ -395,7 +395,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Set<Integer> gprs = new HashSet<>();
 
         for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
-            Integer grpId = action.descriptor().groupDescriptor().groupId();
+            Integer grpId = action.descriptor().groupId();
 
             if (gprs.add(grpId)) {
                 if (crd && lateAffAssign)
@@ -403,7 +403,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else {
                     CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
-                    if (grp != null && grp.localStartVersion().equals(fut.topologyVersion())) {
+                    if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.topologyVersion())) {
                         assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
 
                         initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut);
@@ -418,7 +418,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             cctx.cache().blockGateway(req.request());
 
             if (crd) {
-                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(req.descriptor().groupDescriptor().groupId());
+                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(req.descriptor().groupId());
 
                 assert grp != null;
 
@@ -1755,7 +1755,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assert ccfg.getCacheMode() != LOCAL : ccfg.getName();
 
             assert !cctx.discovery().cacheGroupAffinityNodes(grpDesc.groupId(),
-                fut.topologyVersion()).contains(cctx.localNode()) : cacheDesc.cacheName();
+                fut.topologyVersion()).contains(cctx.localNode()) : grpDesc.cacheOrGroupName();
 
             AffinityFunction affFunc = cctx.cache().clone(ccfg.getAffinity());
 

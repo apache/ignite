@@ -143,6 +143,15 @@ public class DynamicCacheDescriptor {
     /**
      * @return Cache group ID.
      */
+    public int groupId() {
+        assert grpDesc != null : this;
+
+        return grpDesc.groupId();
+    }
+
+    /**
+     * @return Cache group descriptor.
+     */
     public CacheGroupDescriptor groupDescriptor() {
         assert grpDesc != null : this;
 
@@ -205,6 +214,7 @@ public class DynamicCacheDescriptor {
      *
      * @param proc Object processor.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
     public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
         if (objCtx == null) {
