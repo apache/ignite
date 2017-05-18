@@ -155,7 +155,7 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
         aff.setPartitions(3000);
 
-        CacheConfiguration<Object, Object> parentCfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> parentCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         parentCfg.setAffinity(aff);
         parentCfg.setAtomicityMode(TRANSACTIONAL);
         parentCfg.setCacheMode(PARTITIONED);

@@ -138,7 +138,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
+    public void affinityRun(String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes given job asynchronously on the node where data for provided affinity key is located
@@ -151,7 +151,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity run.
      * @throws IgniteException If job failed.
      */
-    public IgniteFuture<Void> affinityRunAsync(@Nullable String cacheName, Object affKey, IgniteRunnable job)
+    public IgniteFuture<Void> affinityRunAsync(String cacheName, Object affKey, IgniteRunnable job)
         throws IgniteException;
 
     /**
@@ -231,7 +231,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
+    public <R> R affinityCall(String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes given job asynchronously on the node where data for provided affinity key is located
@@ -244,7 +244,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return a Future representing pending completion of the affinity call.
      * @throws IgniteException If job failed.
      */
-    public <R> IgniteFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey, IgniteCallable<R> job)
+    public <R> IgniteFuture<R> affinityCallAsync(String cacheName, Object affKey, IgniteCallable<R> job)
         throws IgniteException;
 
     /**

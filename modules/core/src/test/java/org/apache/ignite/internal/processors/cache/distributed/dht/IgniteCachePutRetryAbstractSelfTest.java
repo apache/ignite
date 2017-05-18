@@ -89,7 +89,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(boolean evict, boolean store) throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -157,7 +157,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             checkInternalCleanup();
         }
         finally {
-            ignite(0).destroyCache(null);
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 
@@ -261,7 +261,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             }
         });
 
-        final IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         int iter = 0;
 
@@ -507,7 +507,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             boolean eThrown = false;
 
-            IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
+            IgniteCache<Object, Object> cache = ignite(0).cache(DEFAULT_CACHE_NAME).withNoRetries();
 
             long stopTime = System.currentTimeMillis() + 60_000;
 

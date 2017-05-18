@@ -397,6 +397,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
+        GridH2RowDescriptor desc = getTable().rowDescriptor();
 
         int affColId = -1;
         boolean ucast = false;
@@ -407,13 +408,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                    (masks[KEY_COL] & IndexCondition.EQUALITY) != 0;
+                        desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
             }
         }
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
         return new DistributedLookupBatch(cctx, ucast, affColId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeChildrenAndResources(Session session) {
+        // The sole purpose of this override is to pass session to table.removeIndex
+        assert table instanceof GridH2Table;
+
+        ((GridH2Table)table).removeIndex(session, this);
+        remove(session);
+        database.removeMeta(session, getId());
     }
 
     /**
@@ -1130,7 +1141,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
                 return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
 
-            if (affColId == KEY_COL)
+            if (getTable().rowDescriptor().isKeyColumn(affColId))
                 return null;
 
             // Try to extract affinity key from primary key.

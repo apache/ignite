@@ -30,12 +30,12 @@ import org.jetbrains.annotations.Nullable;
  * Task to cancel queries.
  */
 @GridInternal
-public class VisorQueryCancelTask extends VisorOneNodeTask<Long, Void> {
+public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelQueriesJob job(Long arg) {
+    @Override protected VisorCancelQueriesJob job(VisorQueryCancelTaskArg arg) {
         return new VisorCancelQueriesJob(arg, debug);
     }
 
@@ -47,7 +47,7 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<Long, Void> {
     /**
      * Job to cancel queries on node.
      */
-    private static class VisorCancelQueriesJob extends VisorJob<Long, Void> {
+    private static class VisorCancelQueriesJob extends VisorJob<VisorQueryCancelTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -57,13 +57,13 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<Long, Void> {
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCancelQueriesJob(@Nullable Long arg, boolean debug) {
+        protected VisorCancelQueriesJob(@Nullable VisorQueryCancelTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable Long queries) throws IgniteException {
-            ignite.context().query().cancelQueries(Collections.singleton(queries));
+        @Override protected Void run(@Nullable VisorQueryCancelTaskArg arg) throws IgniteException {
+            ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
 
             return null;
         }

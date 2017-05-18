@@ -103,7 +103,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite(0).cache(null).removeAll();
+        ignite(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /**
@@ -119,7 +119,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * Correct affinity.
      */
     public void testColocatedQueryRight() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(null);
+        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 
@@ -146,7 +146,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * Correct affinity.
      */
     public void testColocatedQueryWrong() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(null);
+        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 

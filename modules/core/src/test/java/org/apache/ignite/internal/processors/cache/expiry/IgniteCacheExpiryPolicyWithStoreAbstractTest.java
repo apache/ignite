@@ -296,7 +296,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
+            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
             GridCacheEntryEx e = null;
 
@@ -317,9 +317,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             if (e == null) {
                 if (primaryOnly)
-                    assertTrue("Not found " + key, !grid.affinity(null).isPrimary(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), key));
                 else
-                    assertTrue("Not found " + key, !grid.affinity(null).isPrimaryOrBackup(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid.localNode(), key));
             }
             else {
                 found = true;

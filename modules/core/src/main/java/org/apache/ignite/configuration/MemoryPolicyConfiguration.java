@@ -39,18 +39,19 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *                 <list>
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="Default_Region"/>
- *                          <property name="size" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
- *                          <property name="size" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
- *                          <property name="size" value="#{25 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
  *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
  *                      </bean>
  *                  </list>
@@ -62,11 +63,17 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default metrics enabled flag. */
+    public static final boolean DFLT_METRICS_ENABLED = false;
+
     /** Memory policy name. */
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
+    /** Memory policy start size. */
+    private long initialSize = MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
+
     /** Memory policy maximum size. */
-    private long size;
+    private long maxSize = MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 
     /** An optional path to a memory mapped file for this memory policy. */
     private String swapFilePath;
@@ -83,6 +90,9 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Minimum number of empty pages in reuse lists. */
     private int emptyPagesPoolSize = 100;
 
+    /** */
+    private boolean metricsEnabled = DFLT_METRICS_ENABLED;
+
     /**
      * Gets memory policy name.
      *
@@ -98,6 +108,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * If not specified, {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} value is used.
      *
      * @param name Memory policy name.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setName(String name) {
         this.name = name;
@@ -111,26 +122,52 @@ public final class MemoryPolicyConfiguration implements Serializable {
      *
      * @return Size in bytes.
      */
-    public long getSize() {
-        return size;
+    public long getMaxSize() {
+        return maxSize;
     }
 
     /**
      * Sets maximum memory region size defined by this memory policy. The total size should not be less than 10 MB
      * due to the internal data structures overhead.
+     *
+     * @param maxSize Maximum memory policy size in bytes.
+     * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setSize(long size) {
-        this.size = size;
+    public MemoryPolicyConfiguration setMaxSize(long maxSize) {
+        this.maxSize = maxSize;
 
         return this;
     }
 
     /**
-     * A path to the memory-mapped file the memory region defined by this memory policy will be mapped to. Having
+     * Gets initial memory region size defined by this memory policy. When the used memory size exceeds this value,
+     * new chunks of memory will be allocated.
+     *
+     * @return Memory policy start size.
+     */
+    public long getInitialSize() {
+        return initialSize;
+    }
+
+    /**
+     * Sets initial memory region size defined by this memory policy. When the used memory size exceeds this value,
+     * new chunks of memory will be allocated.
+     *
+     * @param initialSize Memory policy initial size.
+     * @return {@code this} for chaining.
+     */
+    public MemoryPolicyConfiguration setInitialSize(long initialSize) {
+        this.initialSize = initialSize;
+
+        return this;
+    }
+
+    /**
+     * A path to the memory-mapped files the memory region defined by this memory policy will be mapped to. Having
      * the path set, allows relying on swapping capabilities of an underlying operating system for the memory region.
      *
-     * @return A path to the memory-mapped file or {@code null} if this feature is not used for the memory region defined
-     *         by this memory policy.
+     * @return A path to the memory-mapped files or {@code null} if this feature is not used for the memory region
+     *         defined by this memory policy.
      */
     public String getSwapFilePath() {
         return swapFilePath;
@@ -140,6 +177,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets a path to the memory-mapped file.
      *
      * @param swapFilePath A Path to the memory mapped file.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
@@ -150,7 +188,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /**
      * Gets memory pages eviction mode. If {@link DataPageEvictionMode#DISABLED} is used (default) then an out of
      * memory exception will be thrown if the memory region usage, defined by this memory policy, goes beyond its
-     * capacity which is {@link #getSize()}.
+     * capacity which is {@link #getMaxSize()}.
      *
      * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
      */
@@ -162,6 +200,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets memory pages eviction mode.
      *
      * @param evictionMode Eviction mode.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
         pageEvictionMode = evictionMode;
@@ -183,6 +222,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets memory pages eviction threshold.
      *
      * @param evictionThreshold Eviction threshold.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setEvictionThreshold(double evictionThreshold) {
         this.evictionThreshold = evictionThreshold;
@@ -213,9 +253,33 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
      *
      * @param emptyPagesPoolSize Empty pages pool size.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setEmptyPagesPoolSize(int emptyPagesPoolSize) {
         this.emptyPagesPoolSize = emptyPagesPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
+     * at runtime via memory metrics MX bean.
+     *
+     * @return Metrics enabled flag.
+     */
+    public boolean isMetricsEnabled() {
+        return metricsEnabled;
+    }
+
+    /**
+     * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics MX bean.
+     *
+     * @param metricsEnabled Metrics enabled flag.
+     * @return {@code this} for chaining.
+     */
+    public MemoryPolicyConfiguration setMetricsEnabled(boolean metricsEnabled) {
+        this.metricsEnabled = metricsEnabled;
 
         return this;
     }

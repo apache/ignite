@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -84,12 +85,13 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
      * @param keyType Key type.
      * @param val Value.
      * @param valType Value type.
+     * @param ver Version.
      * @param expirationTime Expiration time.
      * @throws IgniteCheckedException If failed.
      */
     public GridH2KeyValueRowOffheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
-        long expirationTime) throws IgniteCheckedException {
-        super(desc, key, keyType, val, valType, expirationTime);
+                                    GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+        super(desc, key, keyType, val, valType, ver, expirationTime);
     }
 
     /** {@inheritDoc} */

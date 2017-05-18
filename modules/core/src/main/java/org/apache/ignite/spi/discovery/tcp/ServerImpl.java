@@ -126,6 +126,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -1584,6 +1585,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public void checkRingLatency(int maxHops) {
+        TcpDiscoveryRingLatencyCheckMessage msg = new TcpDiscoveryRingLatencyCheckMessage(getLocalNodeId(), maxHops);
+
+        if (log.isInfoEnabled())
+            log.info("Latency check initiated: " + msg.id());
+
+        msgWorker.addMessage(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
@@ -2505,6 +2516,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to process.
          */
         @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            spi.startMessageProcess(msg);
+
             sendMetricsUpdateMessage();
 
             DebugLogger log = messageLogger(msg);
@@ -2572,6 +2585,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
+
+            else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage)
+                processRingLatencyCheckMessage((TcpDiscoveryRingLatencyCheckMessage)msg);
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
@@ -2971,11 +2987,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
                                 }
 
+                                boolean latencyCheck = msg instanceof TcpDiscoveryRingLatencyCheckMessage;
+
+                                if (latencyCheck && log.isInfoEnabled())
+                                    log.info("Latency check message has been written to socket: " + msg.id());
+
                                 spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 long tstamp0 = U.currentTimeMillis();
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                if (latencyCheck && log.isInfoEnabled())
+                                    log.info("Latency check message has been acked: " + msg.id());
 
                                 spi.stats.onMessageSent(msg, tstamp0 - tstamp);
 
@@ -4097,6 +4121,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
+                    assert dataPacket != null : msg;
+
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
@@ -4368,6 +4394,33 @@ class ServerImpl extends TcpDiscoveryImpl {
                 sendMessageAcrossRing(msg);
 
             checkPendingCustomMessages();
+        }
+
+        /**
+         * Processes latency check message.
+         *
+         * @param msg Latency check message.
+         */
+        private void processRingLatencyCheckMessage(TcpDiscoveryRingLatencyCheckMessage msg) {
+            assert msg != null;
+
+            if (msg.maxHopsReached()) {
+                if (log.isInfoEnabled())
+                    log.info("Latency check has been discarded (max hops reached) [id=" + msg.id() +
+                        ", maxHops=" + msg.maxHops() + ']');
+
+                return;
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Latency check processing: " + msg.id());
+
+            if (sendMessageToRemotes(msg))
+                sendMessageAcrossRing(msg);
+            else {
+                if (log.isInfoEnabled())
+                    log.info("Latency check has been discarded (no remote nodes): " + msg.id());
+            }
         }
 
         /**
@@ -5952,7 +6005,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             continue;
                         }
-                        if (msg instanceof TcpDiscoveryPingResponse) {
+                        else if (msg instanceof TcpDiscoveryPingResponse) {
                             assert msg.client() : msg;
 
                             ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
@@ -5961,6 +6014,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 clientWorker.pingResult(true);
 
                             continue;
+                        }
+                        else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
+                            if (log.isInfoEnabled())
+                                log.info("Latency check message has been read: " + msg.id());
+
+                            ((TcpDiscoveryRingLatencyCheckMessage)msg).onRead();
                         }
 
                         TcpDiscoveryClientMetricsUpdateMessage metricsUpdateMsg = null;

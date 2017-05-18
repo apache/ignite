@@ -252,7 +252,8 @@ namespace Apache.Ignite.Core
         IgniteConfiguration GetConfiguration();
 
         /// <summary>
-        /// Starts a near cache on local node if cache with specified was previously started.
+        /// Starts a near cache on local client node if cache with specified was previously started.
+        /// This method does not work on server nodes.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
@@ -329,5 +330,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="cacheNames">Names of caches to reset partitions for.</param>
         void ResetLostPartitions(params string[] cacheNames);
+
+        /// <summary>
+        /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
+        /// <para />
+        /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
+        /// </summary>
+        ICollection<IMemoryMetrics> GetMemoryMetrics();
     }
 }

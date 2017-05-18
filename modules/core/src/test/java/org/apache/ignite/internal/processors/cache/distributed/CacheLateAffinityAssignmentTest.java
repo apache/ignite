@@ -1422,7 +1422,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(srvName, ++topVer, false);
 
@@ -1468,7 +1468,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(clientName, ++topVer, true);
 
@@ -1573,7 +1573,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         log.info("Start server: " + srvName);
 
-        cacheClosure(rnd, caches, null, srvs, srvIdx);
+        cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
         startNode(srvName, ++topVer, false);
 
@@ -1938,7 +1938,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param srvIdx Current servers index.
      */
     private void cacheClosure(Random rnd, List<String> caches, String cacheName, List<String> srvs, int srvIdx) {
-        if (cacheName != null) {
+        if (!DEFAULT_CACHE_NAME.equals(cacheName)) {
             final CacheConfiguration ccfg = randomCacheConfiguration(rnd, cacheName, srvs, srvIdx);
 
             cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
@@ -1972,7 +1972,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         ccfg.setBackups(rnd.nextInt(10));
         ccfg.setRebalanceMode(rnd.nextBoolean() ? SYNC : ASYNC);
         ccfg.setAffinity(affinityFunction(rnd.nextInt(2048) + 10));
-        ccfg.setStartSize(128);
 
         if (rnd.nextBoolean()) {
             Set<String> exclude = new HashSet<>();
@@ -2166,7 +2165,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
 
         for (Ignite node : nodes) {
-            log.info("Check node: " + node.name());
+            log.info("Check affinity [node=" + node.name() + ", topVer=" + topVer + ", expIdeal=" + expIdeal + ']');
 
             IgniteKernal node0 = (IgniteKernal)node;
 
@@ -2176,7 +2175,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 fut.get();
 
             for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
-                if (cctx.startTopologyVersion() != null && cctx.startTopologyVersion().compareTo(topVer) > 0)
+                if (cctx.startTopologyVersion().compareTo(topVer) > 0)
                     continue;
 
                 List<List<ClusterNode>> aff1 = aff.get(cctx.name());

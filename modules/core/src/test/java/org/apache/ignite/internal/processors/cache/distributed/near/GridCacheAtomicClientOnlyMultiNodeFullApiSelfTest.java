@@ -196,7 +196,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         long ttl = 500;
 
-        grid(0).cache(null).
+        grid(0).cache(DEFAULT_CACHE_NAME).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
@@ -221,7 +221,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         // Force reload on primary node.
         for (int i = 0; i < gridCount(); i++) {
-            if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
+            if (ignite(i).affinity(DEFAULT_CACHE_NAME).isPrimary(ignite(i).cluster().localNode(), key))
                 load(jcache(i), key, true);
         }
 
@@ -294,7 +294,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         long ttl = 500;
 
-        grid(0).cache(null).
+        grid(0).cache(DEFAULT_CACHE_NAME).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
         Thread.sleep(ttl + 100);

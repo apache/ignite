@@ -71,7 +71,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(IP_FINDER);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setIndexedTypes(Byte.class, Byte.class);

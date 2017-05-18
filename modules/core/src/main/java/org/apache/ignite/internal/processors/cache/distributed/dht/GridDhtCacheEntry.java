@@ -76,17 +76,13 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     public GridDhtCacheEntry(
         GridCacheContext ctx,
         AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key);
 
         // Record this entry with partition.
         int p = cctx.affinity().partition(key);

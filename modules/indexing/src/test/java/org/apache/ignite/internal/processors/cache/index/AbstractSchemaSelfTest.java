@@ -82,6 +82,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Field 3. */
     protected static final String FIELD_NAME_3 = "field3";
 
+    /** Key alias */
+    protected static final String FIELD_KEY_ALIAS = "key";
+
     /**
      * Get type on the given node for the given cache and table name. Type must exist.
      *

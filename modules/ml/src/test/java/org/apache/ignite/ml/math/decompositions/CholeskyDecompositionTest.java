@@ -25,6 +25,7 @@ import org.apache.ignite.ml.math.exceptions.NonSymmetricMatrixException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -43,10 +44,11 @@ public class CholeskyDecompositionTest {
     }
 
     /**
-     * Test for {@link DecompositionSupport} features.
+     * Test for {@link MatrixUtil} features (more specifically, we test matrix which does not have
+     * a native like/copy methods support).
      */
     @Test
-    public void decompositionSupportTest() {
+    public void matrixUtilTest() {
         basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][] {
             {2.0d, -1.0d, 0.0d},
             {-1.0d, 2.0d, -1.0d},

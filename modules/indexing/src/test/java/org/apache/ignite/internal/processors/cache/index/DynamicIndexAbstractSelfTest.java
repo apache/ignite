@@ -138,7 +138,11 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         MemoryConfiguration memCfg = new MemoryConfiguration()
             .setDefaultMemoryPolicyName("default")
-            .setMemoryPolicies(new MemoryPolicyConfiguration().setName("default").setSize(32 * 1024 * 1024L)
+            .setMemoryPolicies(
+                new MemoryPolicyConfiguration()
+                    .setName("default")
+                    .setMaxSize(32 * 1024 * 1024L)
+                    .setInitialSize(32 * 1024 * 1024L)
         );
 
         cfg.setMemoryConfiguration(memCfg);
@@ -156,6 +160,9 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         entity.setKeyType(KeyClass.class.getName());
         entity.setValueType(ValueClass.class.getName());
+
+        entity.setKeyFieldName(FIELD_KEY_ALIAS);
+        entity.addQueryField(FIELD_KEY_ALIAS, entity.getKeyType(), null);
 
         entity.addQueryField(FIELD_KEY, Long.class.getName(), null);
         entity.addQueryField(FIELD_NAME_1, Long.class.getName(), null);

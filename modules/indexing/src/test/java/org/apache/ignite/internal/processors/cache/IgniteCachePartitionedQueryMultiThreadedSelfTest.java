@@ -113,7 +113,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll();
+            grid(i).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -140,7 +140,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         final PersonObj p3 = new PersonObj("Mike", 1800, "Bachelor");
         final PersonObj p4 = new PersonObj("Bob", 1900, "Bachelor");
 
-        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(null);
+        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);

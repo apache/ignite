@@ -45,5 +45,49 @@ namespace Apache.Ignite.Core.Impl
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, 
             ThrowOnUnmappableChar = true)]
         internal static extern IntPtr LoadLibrary(string path);
+
+        /// <summary>
+        /// Gets the total physical memory.
+        /// </summary>
+        internal static ulong GetTotalPhysicalMemory()
+        {
+            var status = new MEMORYSTATUSEX();
+            status.Init();
+
+            GlobalMemoryStatusEx(ref status);
+
+            return status.ullTotalPhys;
+        }
+
+        /// <summary>
+        /// Globals the memory status.
+        /// </summary>
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern bool GlobalMemoryStatusEx([In, Out] ref MEMORYSTATUSEX lpBuffer);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        // ReSharper disable InconsistentNaming
+        // ReSharper disable MemberCanBePrivate.Local
+        private struct MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public readonly uint dwMemoryLoad;
+            public readonly ulong ullTotalPhys;
+            public readonly ulong ullAvailPhys;
+            public readonly ulong ullTotalPageFile;
+            public readonly ulong ullAvailPageFile;
+            public readonly ulong ullTotalVirtual;
+            public readonly ulong ullAvailVirtual;
+            public readonly ulong ullAvailExtendedVirtual;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="MEMORYSTATUSEX"/> struct.
+            /// </summary>
+            public void Init()
+            {
+                dwLength = (uint) Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            }
+        }
     }
 }

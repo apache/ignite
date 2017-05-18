@@ -124,7 +124,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     private IgniteCache<Integer, String> near(Ignite g) {
-        return g.cache(null);
+        return g.cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -133,7 +133,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -302,7 +302,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        Affinity<Integer> aff = grid(0).affinity(null);
+        Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         int part = aff.partition(key);
 

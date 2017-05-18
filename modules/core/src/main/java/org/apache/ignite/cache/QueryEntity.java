@@ -45,6 +45,12 @@ public class QueryEntity implements Serializable {
     /** Value type. */
     private String valType;
 
+    /** Key name. Can be used in field list to denote the key as a whole. */
+    private String keyFieldName;
+
+    /** Value name. Can be used in field list to denote the entire value. */
+    private String valueFieldName;
+
     /** Fields available for query. A map from field name to type name. */
     @GridToStringInclude
     private LinkedHashMap<String, String> fields = new LinkedHashMap<>();
@@ -80,6 +86,9 @@ public class QueryEntity implements Serializable {
         keyType = other.keyType;
         valType = other.valType;
 
+        keyFieldName = other.keyFieldName;
+        valueFieldName = other.valueFieldName;
+
         fields = new LinkedHashMap<>(other.fields);
         keyFields = other.keyFields != null ? new HashSet<>(other.keyFields) : null;
 
@@ -110,6 +119,21 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Attempts to get key type from fields in case it was not set directly.
+     *
+     * @return Key type.
+     */
+    public String findKeyType() {
+        if (keyType != null)
+            return keyType;
+
+        if (fields != null && keyFieldName != null)
+            return fields.get(keyFieldName);
+
+        return null;
+    }
+
+    /**
      * Sets key type for this query pair.
      *
      * @param keyType Key type.
@@ -128,6 +152,21 @@ public class QueryEntity implements Serializable {
      */
     public String getValueType() {
         return valType;
+    }
+
+    /**
+     * Attempts to get value type from fields in case it was not set directly.
+     *
+     * @return Value type.
+     */
+    public String findValueType() {
+        if (valType != null)
+            return valType;
+
+        if (fields != null && valueFieldName != null)
+            return fields.get(valueFieldName);
+
+        return null;
     }
 
     /**
@@ -186,6 +225,48 @@ public class QueryEntity implements Serializable {
      */
     public QueryEntity setKeyFields(Set<String> keyFields) {
         this.keyFields = keyFields;
+
+        return this;
+    }
+
+    /**
+     * Gets key field name.
+     *
+     * @return Key name.
+     */
+    public String getKeyFieldName() {
+        return keyFieldName;
+    }
+
+    /**
+     * Sets key field name.
+     *
+     * @param keyFieldName Key name.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setKeyFieldName(String keyFieldName) {
+        this.keyFieldName = keyFieldName;
+
+        return this;
+    }
+
+    /**
+     * Get value field name.
+     *
+     * @return Value name.
+     */
+    public String getValueFieldName() {
+        return valueFieldName;
+    }
+
+    /**
+     * Sets value field name.
+     *
+     * @param valueFieldName value name.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setValueFieldName(String valueFieldName) {
+        this.valueFieldName = valueFieldName;
 
         return this;
     }

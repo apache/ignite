@@ -63,6 +63,18 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /** */
     private static final int JOB_ARG_IDX = 3;
 
+    /** Array with additional length in arguments for specific nested types */
+    private static final Map<Class, Integer> TYPE_ARG_LENGTH = new HashMap<>(4);
+
+    static {
+        TYPE_ARG_LENGTH.put(Collection.class, 2);
+        TYPE_ARG_LENGTH.put(Set.class, 2);
+        TYPE_ARG_LENGTH.put(List.class, 2);
+        TYPE_ARG_LENGTH.put(Map.class, 3);
+        TYPE_ARG_LENGTH.put(IgniteBiTuple.class, 4);
+        TYPE_ARG_LENGTH.put(GridTuple3.class, 6);
+    }
+
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
     protected transient IgniteEx ignite;
@@ -140,16 +152,19 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * Construct job argument.
          *
          * @param cls Class.
+         * @param startIdx Index of first value argument.
          */
-        @Nullable private Object toJobArgument(Class cls) throws ClassNotFoundException {
-            String arg = argument(JOB_ARG_IDX);
+        @Nullable private Object toJobArgument(Class cls, int startIdx) throws ClassNotFoundException {
+            String arg = argument(startIdx);
 
-            if (cls == Collection.class || cls == Set.class) {
+            boolean isList = cls == Collection.class || cls == List.class;
+
+            if (isList || cls == Set.class) {
                 Class<?> itemsCls = Class.forName(arg);
 
-                Collection<Object> res = cls == Collection.class ? new ArrayList<>() : new HashSet<>();
+                Collection<Object> res = isList ? new ArrayList<>() : new HashSet<>();
 
-                String items = argument(JOB_ARG_IDX + 1);
+                String items = argument(startIdx + 1);
 
                 if (items != null) {
                     for (String item : items.split(";"))
@@ -162,20 +177,20 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (cls == IgniteBiTuple.class) {
                 Class<?> keyCls = Class.forName(arg);
 
-                String valClsName = argument(JOB_ARG_IDX + 1);
+                String valClsName = argument(startIdx + 1);
 
                 assert valClsName != null;
 
                 Class<?> valCls = Class.forName(valClsName);
 
-                return new IgniteBiTuple<>(toObject(keyCls, (String)argument(JOB_ARG_IDX + 2)),
-                    toObject(valCls, (String)argument(JOB_ARG_IDX + 3)));
+                return new IgniteBiTuple<>(toObject(keyCls, (String)argument(startIdx + 2)),
+                    toObject(valCls, (String)argument(startIdx + 3)));
             }
 
             if (cls == Map.class) {
                 Class<?> keyCls = Class.forName(arg);
 
-                String valClsName = argument(JOB_ARG_IDX + 1);
+                String valClsName = argument(startIdx + 1);
 
                 assert valClsName != null;
 
@@ -183,7 +198,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 Map<Object, Object> res = new HashMap<>();
 
-                String entries = argument(JOB_ARG_IDX + 2);
+                String entries = argument(startIdx + 2);
 
                 if (entries != null) {
                     for (String entry : entries.split(";")) {
@@ -202,8 +217,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             }
 
             if (cls == GridTuple3.class) {
-                String v2ClsName = argument(JOB_ARG_IDX + 1);
-                String v3ClsName = argument(JOB_ARG_IDX + 2);
+                String v2ClsName = argument(startIdx + 1);
+                String v3ClsName = argument(startIdx + 2);
 
                 assert v2ClsName != null;
                 assert v3ClsName != null;
@@ -212,8 +227,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 Class<?> v2Cls = Class.forName(v2ClsName);
                 Class<?> v3Cls = Class.forName(v3ClsName);
 
-                return new GridTuple3<>(toObject(v1Cls, (String)argument(JOB_ARG_IDX + 3)), toObject(v2Cls,
-                    (String)argument(JOB_ARG_IDX + 4)), toObject(v3Cls, (String)argument(JOB_ARG_IDX + 5)));
+                return new GridTuple3<>(toObject(v1Cls, (String)argument(startIdx + 3)), toObject(v2Cls,
+                    (String)argument(startIdx + 4)), toObject(v3Cls, (String)argument(startIdx + 5)));
             }
 
             return toObject(cls, arg);
@@ -299,6 +314,17 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 IgniteUuid.class == cls || IgniteBiTuple.class == cls || GridTuple3.class == cls;
         }
 
+        /**
+         * Extract Class object from arguments.
+         *
+         * @param idx Index of argument.
+         */
+        private Class toClass(int idx) throws ClassNotFoundException {
+            Object arg = argument(idx);  // Workaround generics: extract argument as Object to use in String.valueOf().
+
+            return Class.forName(String.valueOf(arg));
+        }
+
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object execute() throws IgniteException {
@@ -321,20 +347,41 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                     if (argCls == Void.class)
                         jobArgs = null;
                     else if (isBuildInObject(argCls))
-                        jobArgs = toJobArgument(argCls);
+                        jobArgs = toJobArgument(argCls, JOB_ARG_IDX);
                     else {
                         int beanArgsCnt = argsCnt - JOB_ARG_IDX;
 
                         for (Constructor ctor : argCls.getDeclaredConstructors()) {
                             Class[] types = ctor.getParameterTypes();
 
-                            if (types.length == beanArgsCnt) {
-                                Object[] initArgs = new Object[beanArgsCnt];
+                            int args = types.length;
 
-                                for (int i = 0; i < beanArgsCnt; i++) {
-                                    String val = argument(i + JOB_ARG_IDX);
+                            // Length of arguments that required to constructor by influence of nested complex objects.
+                            int needArgs = args;
 
-                                    initArgs[i] = toObject(types[i], val);
+                            for (Class type: types)
+                                // When constructor required specified types increase length of required arguments.
+                                if (TYPE_ARG_LENGTH.containsKey(type))
+                                    needArgs += TYPE_ARG_LENGTH.get(type);
+
+                            if (needArgs == beanArgsCnt) {
+                                Object[] initArgs = new Object[args];
+
+                                for (int i = 0, ctrIdx = 0; i < beanArgsCnt; i++, ctrIdx++) {
+                                    Class type = types[ctrIdx];
+
+                                    // Parse nested complex objects from arguments for specified types.
+                                    if (TYPE_ARG_LENGTH.containsKey(type)) {
+                                        initArgs[ctrIdx] = toJobArgument(toClass(JOB_ARG_IDX + i), JOB_ARG_IDX + 1 + i);
+
+                                        i += TYPE_ARG_LENGTH.get(type);
+                                    }
+                                    // In common case convert value to object.
+                                    else {
+                                        String val = argument(JOB_ARG_IDX + i);
+
+                                        initArgs[ctrIdx] = toObject(type, val);
+                                    }
                                 }
 
                                 jobArgs = ctor.newInstance(initArgs);

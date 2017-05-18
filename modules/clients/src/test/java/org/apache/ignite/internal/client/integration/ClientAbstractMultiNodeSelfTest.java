@@ -73,6 +73,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -189,7 +190,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         c.setCommunicationSpi(spi);
 
-        c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
+        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
         c.setPublicThreadPoolSize(40);
@@ -204,20 +205,24 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
-        if (cacheName == null)
-            cfg.setCacheMode(LOCAL);
-        else if (PARTITIONED_CACHE_NAME.equals(cacheName)) {
-            cfg.setCacheMode(PARTITIONED);
+        switch (cacheName) {
+            case DEFAULT_CACHE_NAME:
+                cfg.setCacheMode(LOCAL);
+                break;
+            case PARTITIONED_CACHE_NAME:
+                cfg.setCacheMode(PARTITIONED);
 
-            cfg.setBackups(0);
+                cfg.setBackups(0);
+                break;
+            default:
+                cfg.setCacheMode(REPLICATED);
+                break;
         }
-        else
-            cfg.setCacheMode(REPLICATED);
 
         cfg.setName(cacheName);
 

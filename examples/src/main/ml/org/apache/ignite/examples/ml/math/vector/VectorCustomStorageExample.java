@@ -53,8 +53,6 @@ public final class VectorCustomStorageExample {
         System.out.println("\n>>> Dot product of vectors: [" + dotProduct
             + "], it is 0 as expected: [" + dotProductIsAsExp + "].");
 
-        assert dotProductIsAsExp : "Expect dot product of perpendicular vectors to be 0.";
-
         Vector hypotenuse = v1.plus(v2);
 
         System.out.println("\n>>> Hypotenuse (sum of vectors): " + Arrays.toString(hypotenuse.getStorage().data()));
@@ -70,8 +68,6 @@ public final class VectorCustomStorageExample {
         System.out.println(">>> Squared length of hypotenuse: [" + lenSquaredHypotenuse
             + "], equals sum of squared lengths of two original vectors as expected: ["
             + lenSquaredHypotenuseIsAsExp + "].");
-
-        assert lenSquaredHypotenuseIsAsExp : "Expect squared length of hypotenuse to be as per Pythagorean theorem.";
 
         System.out.println("\n>>> Vector custom storage API usage example completed.");
     }

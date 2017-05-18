@@ -203,7 +203,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     private void startTxAndPutKeys(final TransactionConcurrency mode, final boolean prepare) throws Exception {
         Ignite ignite = grid(0);
 
-        final Collection<Integer> keys = nearKeys(ignite.cache(null), KEY_CNT, 0);
+        final Collection<Integer> keys = nearKeys(ignite.cache(DEFAULT_CACHE_NAME), KEY_CNT, 0);
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl;
 
     /// <summary>
     /// Defines page memory policy configuration. See <see cref="MemoryConfiguration.MemoryPolicies"/>.
@@ -36,6 +37,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const int DefaultEmptyPagesPoolSize = 100;
 
         /// <summary>
+        /// The default initial size.
+        /// </summary>
+        public const long DefaultInitialSize = 256 * 1024 * 1024;
+
+        /// <summary>
+        /// The default maximum size, equals to 80% of total RAM.
+        /// </summary>
+        public static readonly long DefaultMaxSize = (long) ((long) NativeMethods.GetTotalPhysicalMemory() * 0.8);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MemoryPolicyConfiguration"/> class.
         /// </summary>
         public MemoryPolicyConfiguration()
@@ -43,6 +54,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionThreshold = DefaultEvictionThreshold;
             EmptyPagesPoolSize = DefaultEmptyPagesPoolSize;
             Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName;
+            InitialSize = DefaultInitialSize;
+            MaxSize = DefaultMaxSize;
         }
 
         /// <summary>
@@ -52,11 +65,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         internal MemoryPolicyConfiguration(IBinaryRawReader reader)
         {
             Name = reader.ReadString();
-            Size = reader.ReadLong();
+            InitialSize = reader.ReadLong();
+            MaxSize = reader.ReadLong();
             SwapFilePath = reader.ReadString();
             PageEvictionMode = (DataPageEvictionMode) reader.ReadInt();
             EvictionThreshold = reader.ReadDouble();
             EmptyPagesPoolSize = reader.ReadInt();
+            MetricsEnabled = reader.ReadBoolean();
         }
 
         /// <summary>
@@ -65,11 +80,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         internal void Write(IBinaryRawWriter writer)
         {
             writer.WriteString(Name);
-            writer.WriteLong(Size);
+            writer.WriteLong(InitialSize);
+            writer.WriteLong(MaxSize);
             writer.WriteString(SwapFilePath);
             writer.WriteInt((int) PageEvictionMode);
             writer.WriteDouble(EvictionThreshold);
             writer.WriteInt(EmptyPagesPoolSize);
+            writer.WriteBoolean(MetricsEnabled);
         }
 
         /// <summary>
@@ -80,10 +97,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum memory region size defined by this memory policy.
-        /// If the whole data can not fit into the memory region an out of memory exception will be thrown.
+        /// Gets or sets initial memory region size defined by this memory policy.
+        /// When the used memory size exceeds this value, new chunks of memory will be allocated.
         /// </summary>
-        public long Size { get; set; }
+        [DefaultValue(DefaultInitialSize)]
+        public long InitialSize { get; set; }
+
+        /// <summary>
+        /// Sets maximum memory region size defined by this memory policy. The total size should not be less
+        /// than 10 MB due to internal data structures overhead.
+        /// </summary>
+        public long MaxSize { get; set; }
 
         /// <summary>
         /// Gets or sets the the path to the memory-mapped file the memory region defined by this memory policy
@@ -97,7 +121,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the page eviction mode. If <see cref="DataPageEvictionMode.Disabled"/> is used (default)
         /// then an out of memory exception will be thrown if the memory region usage,
-        /// defined by this memory policy, goes beyond <see cref="Size"/>.
+        /// defined by this memory policy, goes beyond <see cref="MaxSize"/>.
         /// </summary>
         public DataPageEvictionMode PageEvictionMode { get; set; }
 
@@ -118,5 +142,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultEmptyPagesPoolSize)]
         public int EmptyPagesPoolSize { get;set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether memory metrics should be enabled.
+        /// <para />
+        /// Metrics can be retrieved with <see cref="IIgnite.GetMemoryMetrics"/> method.
+        /// </summary>
+        public bool MetricsEnabled { get; set; }
     }
 }

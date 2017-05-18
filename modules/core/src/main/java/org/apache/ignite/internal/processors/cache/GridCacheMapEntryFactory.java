@@ -27,15 +27,11 @@ public interface GridCacheMapEntryFactory {
      * @param ctx Cache registry.
      * @param topVer Topology version.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      * @return New cache entry.
      */
     public GridCacheMapEntry create(
         GridCacheContext ctx,
         AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     );
 }

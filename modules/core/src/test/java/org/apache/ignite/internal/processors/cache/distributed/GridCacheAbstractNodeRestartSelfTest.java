@@ -810,7 +810,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                             int cnt = 0;
 
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                stopGrid(gridIdx);
+                                stopGrid(getTestIgniteInstanceName(gridIdx), false, false);
                                 startGrid(gridIdx);
 
                                 int c = ++cnt;

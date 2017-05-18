@@ -211,7 +211,7 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);

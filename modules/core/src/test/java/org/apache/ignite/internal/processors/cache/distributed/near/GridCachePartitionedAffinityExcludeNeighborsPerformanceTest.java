@@ -93,7 +93,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @return Affinity.
      */
     static Affinity<Object> affinity(Ignite ignite) {
-        return ignite.affinity(null);
+        return ignite.affinity(DEFAULT_CACHE_NAME);
     }
 
     /**

@@ -386,7 +386,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
         CacheAtomicityMode atomicityMode,
         int backups,
         boolean nearEnabled) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);

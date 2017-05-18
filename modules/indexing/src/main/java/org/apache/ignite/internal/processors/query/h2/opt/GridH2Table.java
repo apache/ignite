@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -41,6 +42,7 @@ import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
+import org.h2.index.SpatialIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -151,6 +153,14 @@ public class GridH2Table extends TableBase {
         idxs = idxsFactory.createSystemIndexes(this);
 
         assert idxs != null;
+
+        List<Index> clones = new ArrayList<>(idxs.size());
+        for (Index index: idxs) {
+            Index clone = createDuplicateIndexIfNeeded(index);
+            if (clone != null)
+               clones.add(clone);
+        }
+        idxs.addAll(clones);
 
         // Add scan index at 0 which is required by H2.
         if (idxs.size() >= 2 && index(0).getIndexType().isHash())
@@ -365,6 +375,9 @@ public class GridH2Table extends TableBase {
 
             boolean reuseExisting = s != null;
 
+            if (!(idxs.get(i) instanceof GridH2IndexBase))
+                continue;
+
             s = index(i).takeSnapshot(s, qctx);
 
             if (reuseExisting && s == null) { // Existing snapshot was invalidated before we were able to reserve it.
@@ -373,7 +386,8 @@ public class GridH2Table extends TableBase {
                     qctx.clearSnapshots();
 
                 for (int j = 2; j < i; j++)
-                    index(j).releaseSnapshot();
+                    if ((idxs.get(j) instanceof GridH2IndexBase))
+                        index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
                 actualSnapshot.compareAndSet(snapshots, null);
@@ -406,7 +420,8 @@ public class GridH2Table extends TableBase {
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
-                index(i).destroy();
+                if (idxs.get(i) instanceof GridH2IndexBase)
+                    index(i).destroy();
         }
         finally {
             unlock(true);
@@ -561,6 +576,8 @@ public class GridH2Table extends TableBase {
                 // Put row if absent to all indexes sequentially.
                 // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                 while (++i < len) {
+                    if (!(idxs.get(i) instanceof GridH2IndexBase))
+                        continue;
                     GridH2IndexBase idx = index(i);
 
                     addToIndex(idx, pk, row, old, false);
@@ -577,6 +594,8 @@ public class GridH2Table extends TableBase {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                     for (int i = 3, len = idxs.size(); i < len; i++) {
+                        if (!(idxs.get(i) instanceof GridH2IndexBase))
+                            continue;
                         Row res = index(i).remove(old);
 
                         assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
@@ -650,7 +669,8 @@ public class GridH2Table extends TableBase {
         ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
 
         for (int i = 2, len = idxs.size(); i < len; i++)
-            res.add(index(i));
+            if (idxs.get(i) instanceof GridH2IndexBase)
+                res.add(index(i));
 
         return res;
     }
@@ -721,15 +741,23 @@ public class GridH2Table extends TableBase {
 
             assert idx != null;
 
-            ArrayList<Index> newIdxs = new ArrayList<>(idxs.size() + 1);
+            Index cloneIdx = createDuplicateIndexIfNeeded(idx);
+
+            ArrayList<Index> newIdxs = new ArrayList<>(
+                    idxs.size() + ((cloneIdx == null) ? 1 : 2));
 
             newIdxs.addAll(idxs);
 
             newIdxs.add(idx);
+            if (cloneIdx != null)
+                newIdxs.add(cloneIdx);
 
             idxs = newIdxs;
 
             database.addSchemaObject(ses, idx);
+
+            if (cloneIdx != null)
+                database.addSchemaObject(ses, cloneIdx);
 
             setModified();
 
@@ -762,23 +790,42 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void removeIndex(Index h2Idx) {
+        throw DbException.getUnsupportedException("must use removeIndex(session, idx)");
+    }
+
+    /**
+     * Remove the given index from the list.
+     *
+     * @param h2Idx the index to remove
+     */
+    public void removeIndex(Session session, Index h2Idx) {
         lock(true);
 
         try {
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
 
-            for (int i = 2; i < idxs.size(); i++) {
-                GridH2IndexBase idx = (GridH2IndexBase)idxs.get(i);
+            Index targetIdx = (h2Idx instanceof GridH2ProxyIndex)?
+                    ((GridH2ProxyIndex)h2Idx).underlyingIndex(): h2Idx;
 
-                if (idx != h2Idx)
+            for (int i = 2; i < idxs.size(); ) {
+                Index idx = idxs.get(i);
+
+                if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
+                   ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
+
+                    idxs.remove(i);
+
+                    if (idx instanceof GridH2ProxyIndex &&
+                        idx.getSchema().findIndex(session, idx.getName()) != null)
+                        database.removeSchemaObject(session, idx);
+
                     continue;
+                }
 
-                idxs.remove(i);
-
-                this.idxs = idxs;
-
-                return;
+                i++;
             }
+
+            this.idxs = idxs;
         }
         finally {
             unlock(true);
@@ -912,4 +959,47 @@ public class GridH2Table extends TableBase {
         return rowFactory;
     }
 
+    /**
+     * Creates proxy index for given target index.
+     * Proxy index refers to alternative key and val columns.
+     *
+     * @param target Index to clone.
+     * @return Proxy index.
+     */
+    public Index createDuplicateIndexIfNeeded(Index target) {
+        if (!(target instanceof H2TreeIndex) &&
+            !(target instanceof SpatialIndex))
+            return null;
+
+        IndexColumn[] cols = target.getIndexColumns();
+        List<IndexColumn> proxyCols = new ArrayList<>(cols.length);
+        boolean modified = false;
+        for (int i = 0; i < cols.length; i++) {
+            IndexColumn col = cols[i];
+            IndexColumn proxyCol = new IndexColumn();
+            proxyCol.columnName = col.columnName;
+            proxyCol.column = col.column;
+            proxyCol.sortType = col.sortType;
+
+            int altColId = desc.getAlternativeColumnId(proxyCol.column.getColumnId());
+            if (altColId != proxyCol.column.getColumnId()) {
+                proxyCol.column = getColumn(altColId);
+                proxyCol.columnName = proxyCol.column.getName();
+                modified = true;
+            }
+
+            proxyCols.add(proxyCol);
+        }
+
+        if (modified) {
+            String proxyName = target.getName() + "_proxy";
+
+            if (target.getIndexType().isSpatial())
+                return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
+
+            return new GridH2ProxyIndex(this, proxyName, proxyCols, target);
+        }
+
+        return null;
+    }
 }
