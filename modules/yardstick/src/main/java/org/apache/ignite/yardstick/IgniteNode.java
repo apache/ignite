@@ -107,6 +107,8 @@ public class IgniteNode implements BenchmarkServer {
                     cc.setNearConfiguration(nearCfg);
                 }
 
+                cc.setGroupName(args.cacheGroup());
+
                 cc.setWriteSynchronizationMode(args.syncMode());
 
                 cc.setBackups(args.backups());

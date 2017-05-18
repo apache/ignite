@@ -26,6 +26,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Input arguments for Ignite benchmarks.
@@ -177,6 +178,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-ps", "--pageSize"}, description = "Page size")
     private int pageSize = MemoryConfiguration.DFLT_PAGE_SIZE;
+
+    /** */
+    @Parameter(names = {"-cg", "--cacheGrp"}, description = "Cache group for caches")
+    private String cacheGrp;
 
     /**
      * @return List of enabled load test operations.
@@ -419,6 +424,13 @@ public class IgniteBenchmarkArguments {
      */
     public String additionalCachesName() {
         return additionalCachesName;
+    }
+
+    /**
+     * @return Name of cache group to be set for caches.
+     */
+    @Nullable public String cacheGroup() {
+        return cacheGrp;
     }
 
     /**
