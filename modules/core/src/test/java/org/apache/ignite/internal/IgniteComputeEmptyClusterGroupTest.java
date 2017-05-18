@@ -102,8 +102,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         final IgniteCompute comp = ignite(0).compute(empty);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 comp.affinityRun(DEFAULT_CACHE_NAME, 1, new FailRunnable());
 
                 return null;
@@ -119,8 +118,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         }, ClusterGroupEmptyException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 comp.affinityCall(DEFAULT_CACHE_NAME, 1, new FailCallable());
 
                 return null;
