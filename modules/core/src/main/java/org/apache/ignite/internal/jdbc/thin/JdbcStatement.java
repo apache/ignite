@@ -92,7 +92,12 @@ public class JdbcStatement implements Statement {
 
             return new JdbcResultSet(this, qryId, res.getColumnsMetadata(), fetchSize, maxRows);
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IOException e) {
+            conn.close();
+
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        catch (IgniteCheckedException e) {
             throw new SQLException("Failed to query Ignite.", e);
         }
     }

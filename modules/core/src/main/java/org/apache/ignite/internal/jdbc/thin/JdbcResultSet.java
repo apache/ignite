@@ -134,7 +134,12 @@ public class JdbcResultSet implements ResultSet {
 
                 finished = res.last() || fetched == maxRows;
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (IOException e) {
+                stmt.connection().close();
+
+                throw new SQLException("Failed to query Ignite.", e);
+            }
+            catch (IgniteCheckedException e) {
                 throw new SQLException("Failed to query Ignite.", e);
             }
         }
@@ -163,7 +168,12 @@ public class JdbcResultSet implements ResultSet {
         try {
             stmt.connection().cliIo().queryClose(qryId);
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IOException e) {
+            stmt.connection().close();
+
+            throw new SQLException("Failed to close Ignite query.", e);
+        }
+        catch (IgniteCheckedException e) {
             throw new SQLException("Failed to close Ignite query.", e);
         }
     }
