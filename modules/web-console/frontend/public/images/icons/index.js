@@ -15,32 +15,8 @@
  * limitations under the License.
  */
 
-@import '../../../public/stylesheets/variables';
-
-.dropdown--ignite {
-    font-style: normal;
-
-    ul.dropdown-menu {
-        margin-top: 2px;
-        padding: 0;
-
-        border-color: #c5c5c5;
-        box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
-
-        a {
-            padding-left: 15px;
-            padding-right: 15px;
-
-            color: $text-color;
-            line-height: 26px;
-
-            &:hover {
-                color: #a8110f;
-            }
-        }
-
-        li:not(:last-child) {
-            border-bottom: 1px solid $table-border-color;
-        }
-    }
-}
+export csv from './csv.svg';
+export cross from './cross.svg';
+export gear from './gear.svg';
+export clock from './clock.svg';
+export manual from './manual.svg';
