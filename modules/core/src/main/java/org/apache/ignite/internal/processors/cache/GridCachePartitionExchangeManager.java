@@ -2123,9 +2123,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private class AffinityReadyFuture extends GridFutureAdapter<AffinityTopologyVersion> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         @GridToStringInclude
         private AffinityTopologyVersion topVer;
 

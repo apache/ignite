@@ -713,26 +713,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Gets public name for cache.
-     *
-     * @return Public name of the cache.
-     */
-    public String namex() {
-        return isDht() ? dht().near().name() : name();
-    }
-
-    /**
-     * Gets public cache name substituting null name by {@code 'default'}.
-     *
-     * @return Public cache name substituting null name by {@code 'default'}.
-     */
-    public String namexx() {
-        String name = namex();
-
-        return name == null ? "default" : name;
-    }
-
-    /**
      * @param key Key to construct tx key for.
      * @return Transaction key.
      */
@@ -2089,7 +2069,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, igniteInstanceName());
-        U.writeString(out, namex());
+        U.writeString(out, name());
     }
 
     /** {@inheritDoc} */

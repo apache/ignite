@@ -1375,9 +1375,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private static class MultiUpdateFuture extends GridFutureAdapter<IgniteUuid> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Topology version. */
         private AffinityTopologyVersion topVer;
 
