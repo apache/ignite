@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
@@ -340,8 +341,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 updateCntr,
                 topVer);
 
-            CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
-                cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
+            IgniteCacheProxy jcache = cctx.kernalContext().cache().jcacheProxy(cctx.name());
+
+            assert jcache != null : "Failed to get cache proxy [name=" + cctx.name() +
+                ", locStart=" + cctx.startTopologyVersion() +
+                ", locNode=" + cctx.localNode() +
+                ", stopping=" + cctx.kernalContext().isStopping();
+
+            CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(jcache, cctx, e0);
 
             lsnr.onEntryUpdated(evt, primary, recordIgniteEvt, fut);
         }

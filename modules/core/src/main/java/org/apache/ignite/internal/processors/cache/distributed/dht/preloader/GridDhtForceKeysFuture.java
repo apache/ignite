@@ -382,7 +382,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             mappedKeys.add(key);
 
             if (log.isDebugEnabled())
-                log.debug("Will rebalance key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
+                log.debug("Will rebalance key from node [cacheName=" + cctx.name() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
         else if (locPart.state() != OWNING)
@@ -414,9 +414,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Mini-future ID. */
         private IgniteUuid miniId = IgniteUuid.randomUuid();
 
@@ -565,7 +562,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     catch (GridCacheEntryRemovedException ignore) {
                         if (log.isDebugEnabled())
                             log.debug("Trying to rebalance removed entry (will ignore) [cacheName=" +
-                                cctx.namex() + ", entry=" + entry + ']');
+                                cctx.name() + ", entry=" + entry + ']');
                     }
                     finally {
                         locPart.release();

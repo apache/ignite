@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheLoaderException;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -169,18 +171,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         cacheCfg.setRebalanceMode(SYNC);
 
-        if (igniteInstanceName.endsWith("1"))
-            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_1));
-        else if (igniteInstanceName.endsWith("2"))
-            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_2));
-        else if (igniteInstanceName.endsWith("3"))
-            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_3));
-        else if (igniteInstanceName.endsWith("4"))
-            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_4));
-        else if (igniteInstanceName.endsWith("5"))
-            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_5));
-        else
-            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_6));
+        cacheCfg.setCacheStoreFactory(new StoreFactory());
 
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
@@ -838,6 +829,32 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
          */
         public void clear(){
             map.clear();
+        }
+    }
+
+    /**
+     *
+     */
+    static class StoreFactory implements Factory<CacheStore> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite node;
+
+        @Override public CacheStore create() {
+            String igniteInstanceName = node.configuration().getIgniteInstanceName();
+
+            if (igniteInstanceName.endsWith("1"))
+                return LOCAL_STORE_1;
+            else if (igniteInstanceName.endsWith("2"))
+                return LOCAL_STORE_2;
+            else if (igniteInstanceName.endsWith("3"))
+                return LOCAL_STORE_3;
+            else if (igniteInstanceName.endsWith("4"))
+                return LOCAL_STORE_4;
+            else if (igniteInstanceName.endsWith("5"))
+                return LOCAL_STORE_5;
+            else
+                return LOCAL_STORE_6;
         }
     }
 }

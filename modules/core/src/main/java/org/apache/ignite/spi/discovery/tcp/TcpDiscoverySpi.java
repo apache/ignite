@@ -1981,7 +1981,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      *
      */
     void printStopInfo() {
-        if (log.isDebugEnabled())
+        IgniteLogger log = this.log;
+
+        if (log != null && log.isDebugEnabled())
             log.debug(stopInfo());
     }
 
