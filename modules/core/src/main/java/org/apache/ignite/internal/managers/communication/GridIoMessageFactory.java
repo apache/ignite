@@ -173,7 +173,7 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -46:
+            case -52: // -46 ... -51 - snapshot messages!
                 msg = new IgniteDiagnosticMessage();
 
                 break;
