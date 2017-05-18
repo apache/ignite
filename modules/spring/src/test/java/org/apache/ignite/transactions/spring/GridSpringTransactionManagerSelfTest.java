@@ -43,11 +43,8 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
     /** */
     private GridSpringTransactionService service;
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -66,45 +63,30 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getTestIgniteInstanceName() {
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
         return "testGrid";
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void beforeTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         ApplicationContext applicationContext = new GenericXmlApplicationContext("config/spring-transactions.xml");
 
         service = (GridSpringTransactionService)applicationContext.getBean("gridSpringTransactionService");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void afterTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         grid().cache(CACHE_NAME).removeAll();
     }
 

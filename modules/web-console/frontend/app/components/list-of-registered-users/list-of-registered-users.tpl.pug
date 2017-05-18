@@ -18,7 +18,7 @@ include /app/helpers/jade/mixins
 
 mixin grid-settings()
     .grid-settings
-        i.fa.gear-icon(data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
+        svg(ignite-icon='gear' data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
         ul.select.dropdown-menu(role='menu')
             li
                 a(ng-click='$ctrl.gridOptions.selectedAll ? $ctrl.clearAllColumns() : $ctrl.selectAllColumns()')
@@ -53,8 +53,8 @@ mixin grid-settings()
         .panel-heading.ui-grid-settings
             .panel-title
                 +ignite-form-field-bsdropdown('Actions', '$ctrl.action', 'action', '!$ctrl.selected.length', false, '$ctrl.actionOptions')
-                button.btn.btn--stroke(ng-click='$ctrl.exportCsv()' bs-tooltip='' data-title='Export table to csv' data-placement='top')
-                    i.fa.export-icon
+                button.btn-ignite.btn-ignite--primary-outline(ng-click='$ctrl.exportCsv()' bs-tooltip='' data-title='Export table to csv' data-placement='top')
+                    svg(ignite-icon='csv')
                 form.ui-grid-settings-dateperiod(name=form novalidate)
                     -var form = 'admin'
                     +ignite-form-field-datepicker('Period: from', '$ctrl.params.startDate', '"startDate"', null, '$ctrl.params.endDate')

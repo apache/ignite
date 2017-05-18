@@ -895,7 +895,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Invalid dateTime
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<InvalidOperationException>(() =>
+            var ex = Assert.Throws<BinaryObjectException>(() =>
                 roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
             Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.", 
                 ex.Message);

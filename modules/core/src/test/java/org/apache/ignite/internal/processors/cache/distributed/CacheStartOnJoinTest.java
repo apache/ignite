@@ -34,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -210,6 +211,8 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
                 Collection<ClusterNode> nodes = node.cluster().forCacheNodes("cache-" + c).nodes();
 
                 assertEquals(NODES, nodes.size());
+
+                checkCache(node, "cache-" + c);
             }
 
             for (int c = 0; c < 5; c++) {
@@ -246,5 +249,12 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
 
         return ccfg;
+    }
+    /**
+     * @param node Node.
+     * @param cacheName Cache name.
+     */
+    private void checkCache(Ignite node, final String cacheName) {
+        assertNotNull(((IgniteKernal)node).context().cache().cache(cacheName));
     }
 }

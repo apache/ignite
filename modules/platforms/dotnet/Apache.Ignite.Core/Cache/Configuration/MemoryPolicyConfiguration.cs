@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             PageEvictionMode = (DataPageEvictionMode) reader.ReadInt();
             EvictionThreshold = reader.ReadDouble();
             EmptyPagesPoolSize = reader.ReadInt();
+            MetricsEnabled = reader.ReadBoolean();
         }
 
         /// <summary>
@@ -85,6 +86,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) PageEvictionMode);
             writer.WriteDouble(EvictionThreshold);
             writer.WriteInt(EmptyPagesPoolSize);
+            writer.WriteBoolean(MetricsEnabled);
         }
 
         /// <summary>
@@ -140,5 +142,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultEmptyPagesPoolSize)]
         public int EmptyPagesPoolSize { get;set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether memory metrics should be enabled.
+        /// <para />
+        /// Metrics can be retrieved with <see cref="IIgnite.GetMemoryMetrics"/> method.
+        /// </summary>
+        public bool MetricsEnabled { get; set; }
     }
 }
