@@ -4021,9 +4021,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      */
     private static class ConnectFuture extends GridFutureAdapter<GridCommunicationClient> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         // No-op.
     }
 

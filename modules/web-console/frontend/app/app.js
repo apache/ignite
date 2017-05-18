@@ -118,6 +118,7 @@ import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
+import igniteIcon from './components/ignite-icon';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
@@ -178,7 +179,8 @@ angular
     'ignite-console.modules',
     // Components
     webConsoleHeader.name,
-    webConsoleFooter.name
+    webConsoleFooter.name,
+    igniteIcon.name
 ])
 // Directives.
 .directive(...igniteAutoFocus)

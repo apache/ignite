@@ -871,6 +871,20 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAllIter(cursor, 1, "A1", 10);
 
+    // Test resetting query arguments.
+    qry.ClearArguments();
+    qry.AddArgument<int>(30);
+    qry.AddArgument<std::string>("A2");
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAll(cursor, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 2, "A2", 20);
+
     // Test query returning multiple entries.
     qry = SqlQuery("QueryPerson", "age < 30");
 
@@ -1150,6 +1164,14 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
+
+    // Test resetting query arguments.
+    qry.ClearArguments();
+    qry.AddArgument<int>(30);
+    qry.AddArgument<std::string>("A2");
+
+    cursor = cache.Query(qry);
+    CheckSingle(cursor, 2, "A2", 20);
 }
 
 /**

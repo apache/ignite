@@ -25,6 +25,7 @@ web-console-header {
     font-size: 16px;
     border-bottom: 4px solid red;
     background: white;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
 
     .wch-slot {
         &>* {
@@ -49,9 +50,7 @@ web-console-header {
         flex-direction: row;
         flex-wrap: wrap;
         align-items: center;
-        justify-content: center;
-        min-height: 80px;
-        padding: 10px 0;
+        padding: 18.5px 0;
     }
 
     .wch-logo {
