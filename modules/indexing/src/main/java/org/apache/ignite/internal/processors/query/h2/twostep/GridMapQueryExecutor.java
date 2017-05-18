@@ -208,12 +208,12 @@ public class GridMapQueryExecutor {
 
         NodeResults nodeRess = resultsForNode(node.id());
 
-        boolean clear = GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+        boolean clear = GridH2QueryContext.clearGlobal(ctx.localNodeId(), node.id(), qryReqId, MAP);
 
         if (!clear) {
             nodeRess.onCancel(qryReqId);
 
-            GridH2QueryContext.clear(ctx.localNodeId(), node.id(), qryReqId, MAP);
+            GridH2QueryContext.clearGlobal(ctx.localNodeId(), node.id(), qryReqId, MAP);
         }
 
         nodeRess.cancelRequest(qryReqId);
@@ -558,18 +558,14 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            H2Connection conn = h2.takeConnectionForSpace(mainCctx.name());
+            GridH2QueryContext.setGlobal(qctx);
 
-            conn.setupConnection(distributedJoinMode != OFF, enforceJoinOrder);
-
-            GridH2QueryContext.set(conn, qctx);
-
-            // qctx is set, we have to release reservations inside of it.
+            // We have to release reservations inside of qctx.
             reserved = null; // TODO lazy
 
             try {
                 if (nodeRess.cancelled(reqId)) {
-                    GridH2QueryContext.clear(ctx.localNodeId(), node.id(), reqId, qctx.type());
+                    GridH2QueryContext.clearGlobal(ctx.localNodeId(), node.id(), reqId, qctx.type());
 
                     nodeRess.cancelRequest(reqId);
 
@@ -582,11 +578,21 @@ public class GridMapQueryExecutor {
                 boolean evt = ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
                 for (GridCacheSqlQuery qry : qrys) {
+                    H2Connection conn = null;
                     H2ResultSet rs = null;
 
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
+                        // Setup a separate connection for each MAP query because we have
+                        // to be able lazily traverse each result set independently.
+                        // Now in H2 connection can not be reused if it has alive lazy result set.
+                        conn = h2.takeConnectionForSpace(mainCctx.name());
+
+                        conn.setupConnection(distributedJoinMode != OFF, enforceJoinOrder);
+
+                        GridH2QueryContext.set(conn, qctx);
+
                         rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
                             qry.parameters(params),
                             timeout,
@@ -621,11 +627,11 @@ public class GridMapQueryExecutor {
                     sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
                     qryIdx++;
+
+                    h2.returnToPool(conn); // TODO lazy
                 }
             }
             finally {
-                h2.returnToPool(conn); // TODO lazy
-
                 if (distributedJoinMode == OFF)
                     qctx.clearContext(false);
 

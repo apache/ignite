@@ -362,8 +362,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Take a pooled connection. Pooled connection must be returned
+     * back by {@link H2Connection#returnToPool()} method.
+     *
      * @param space Space.
-     * @return Connection.
+     * @return Pooled H2 connection.
      */
     public H2Connection takeConnectionForSpace(String space) {
         try {

@@ -35,6 +35,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 
 /**
  * Thread local SQL query context which is intended to be accessible from everywhere.
@@ -367,15 +368,34 @@ public class GridH2QueryContext {
     }
 
     /**
-     * Sets current session local query context. This method must be called when all the
-     * non-volatile properties are already set to ensure visibility for other threads.
+     * Makes the given query context globally available by ID.
      *
      * @param x Query context.
      */
+    public static void setGlobal(GridH2QueryContext x) {
+        // We need MAP query context to be available to other threads to run distributed joins.
+        if (x.key.type != MAP) {
+            assert x.key.type == REPLICATED: x.key.type;
+
+            return;
+        }
+
+        if (x.distributedJoinMode() == OFF)
+            return; // No distributed joins needed.
+
+        if (qctxs.putIfAbsent(x.key, x) != null)
+            throw new IllegalStateException("Query context is already set.");
+    }
+
+    /**
+     * Sets current session local query context. This method must be called when all the
+     * non-volatile properties are already set to ensure visibility for other threads.
+     *
+     * @param c Connection.
+     * @param x Query context.
+     */
      public static void set(H2Connection c, GridH2QueryContext x) {
-         // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
-             throw new IllegalStateException("Query context is already set.");
+         assert x != null;
 
          c.setQueryContextForSession(x);
     }
@@ -387,9 +407,10 @@ public class GridH2QueryContext {
      * @param type Query type.
      * @return {@code True} if context was found.
      */
-    public static boolean clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+    public static boolean clearGlobal(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
+        // TODO optimize iteration over all running queries
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
                 res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
