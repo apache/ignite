@@ -43,7 +43,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/" + CACHE_NAME;
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** Statement. */
     private Statement stmt;

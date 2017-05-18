@@ -65,6 +65,12 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
+    /** SQL query. */
+    private static final String SQL_PART =
+        "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal " +
+            "from TestObject ";
+
     /** Connection. */
     private Connection conn;
 
@@ -160,7 +166,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoolean() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where boolVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
 
         stmt.setBoolean(1, true);
 
@@ -197,7 +203,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testByte() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where byteVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where byteVal is not distinct from ?");
 
         stmt.setByte(1, (byte)1);
 
@@ -234,7 +240,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testShort() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where shortVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where shortVal is not distinct from ?");
 
         stmt.setShort(1, (short)1);
 
@@ -271,7 +277,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInteger() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where intVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where intVal is not distinct from ?");
 
         stmt.setInt(1, 1);
 
@@ -308,7 +314,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLong() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where longVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where longVal is not distinct from ?");
 
         stmt.setLong(1, 1L);
 
@@ -345,7 +351,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFloat() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where floatVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where floatVal is not distinct from ?");
 
         stmt.setFloat(1, 1.0f);
 
@@ -382,7 +388,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDouble() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where doubleVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where doubleVal is not distinct from ?");
 
         stmt.setDouble(1, 1.0d);
 
@@ -419,7 +425,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBigDecimal() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where bigVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where bigVal is not distinct from ?");
 
         stmt.setBigDecimal(1, new BigDecimal(1));
 
@@ -456,7 +462,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testString() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where strVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where strVal is not distinct from ?");
 
         stmt.setString(1, "str");
 
@@ -493,7 +499,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testArray() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where arrVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where arrVal is not distinct from ?");
 
         stmt.setBytes(1, new byte[] {1});
 
@@ -530,7 +536,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDate() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where dateVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where dateVal is not distinct from ?");
 
         stmt.setObject(1, new Date(1));
 
@@ -567,7 +573,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTime() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where timeVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where timeVal is not distinct from ?");
 
         stmt.setTime(1, new Time(1));
 
@@ -604,7 +610,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTimestamp() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where tsVal is not distinct from ?");
+        stmt = conn.prepareStatement(SQL_PART + " where tsVal is not distinct from ?");
 
         stmt.setTimestamp(1, new Timestamp(1));
 
@@ -622,43 +628,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         assert cnt == 1;
 
         stmt.setNull(1, TIMESTAMP);
-
-        rs = stmt.executeQuery();
-
-        cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0)
-                assert rs.getInt("id") == 2;
-
-            cnt++;
-        }
-
-        assert cnt == 1;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUrl() throws Exception {
-        stmt = conn.prepareStatement("select * from TestObject where urlVal is not distinct from ?");
-
-        stmt.setURL(1, new URL("http://abc.com/"));
-
-        ResultSet rs = stmt.executeQuery();
-
-        int cnt = 0;
-
-        while (rs.next()) {
-            if (cnt == 0)
-                assert rs.getInt("id") == 1;
-
-            cnt++;
-        }
-
-        assert cnt == 1;
-
-        stmt.setNull(1, DATALINK);
 
         rs = stmt.executeQuery();
 

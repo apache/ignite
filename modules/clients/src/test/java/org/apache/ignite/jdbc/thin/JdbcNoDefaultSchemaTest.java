@@ -36,7 +36,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
+public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

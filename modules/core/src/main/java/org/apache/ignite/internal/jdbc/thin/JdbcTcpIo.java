@@ -21,6 +21,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -259,7 +260,7 @@ public class JdbcTcpIo {
 
         int rowsSize = reader.readInt();
 
-        List<List<Object>> rows = null;
+        List<List<Object>> rows;
 
         if (rowsSize > 0) {
             rows = new ArrayList<>(rowsSize);
@@ -271,11 +272,12 @@ public class JdbcTcpIo {
                 List<Object> col = new ArrayList<>(colsSize);
 
                 for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(objReader.readObject(reader));
+                    col.add(objReader.readSqlObject(reader));
 
                 rows.add(col);
             }
-        }
+        } else
+            rows = Collections.emptyList();
 
         return new SqlListenerQueryFetchResult(qryId, rows, last);
     }

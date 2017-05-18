@@ -77,9 +77,6 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
-    /** Keep binary flag. */
-    private final boolean keppBinary;
-
     /**
      * Constructor.
      *  @param ctx Context.
@@ -87,16 +84,14 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param keppBinary Keep binary flag.
      */
     public SqlListenerRequestHandlerImpl(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean keppBinary) {
+        boolean distributedJoins, boolean enforceJoinOrder) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.keppBinary = keppBinary;
 
         log = ctx.log(getClass());
     }
@@ -181,7 +176,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
                     "Cache doesn't exist (did you configure it?): " + req.cacheName());
 
-            IgniteCache<Object, Object> cache = keppBinary ? cache0.withKeepBinary() : cache0;
+            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
 
             if (cache == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,

@@ -119,7 +119,6 @@ public class JdbcResultSet implements ResultSet {
 
         if (fields == null && !finished) {
             try {
-
                 int fetchSize0 = fetchSize;
 
                 if (maxRows > 0)

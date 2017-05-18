@@ -31,10 +31,12 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -59,7 +61,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /** SQL query. */
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
+            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal " +
             "from TestObject where id = 1";
 
     /** Statement. */
@@ -87,6 +89,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setOdbcConfiguration(new OdbcConfiguration());
+
+        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }
@@ -422,51 +426,17 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testUrl() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
+    public void testObjectNotSupported() throws Exception {
+        final ResultSet rs = stmt.executeQuery("select f1 from TestObject where id = 1");
 
-        int cnt = 0;
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                rs.next();
 
-        while (rs.next()) {
-            if (cnt == 0) {
-                assertTrue("http://abc.com/".equals(rs.getURL("urlVal").toString()));
-                assertTrue("http://abc.com/".equals(rs.getURL(15).toString()));
+                return null;
             }
-
-            cnt++;
-        }
-
-        assert cnt == 1;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testObject() throws Exception {
-        ResultSet rs = stmt.executeQuery(SQL);
-
-        TestObjectField f1 = new TestObjectField(100, "AAAA");
-        TestObjectField f2 = new TestObjectField(500, "BBBB");
-
-        TestObject o = createObjectWithData(1);
-
-        assertTrue(rs.next());
-
-        assertEquals(f1, rs.getObject("f1"));
-        assertEquals(f1, rs.getObject(16));
-
-        assertEquals(f2, rs.getObject("f2"));
-        assertEquals(f2, rs.getObject(17));
-
-        assertNull(rs.getObject("f3"));
-        assertTrue(rs.wasNull());
-        assertNull(rs.getObject(18));
-        assertTrue(rs.wasNull());
-
-        assertEquals(o, rs.getObject("_val"));
-        assertEquals(o, rs.getObject(19));
-
-        assertFalse(rs.next());
+        }, IgniteCheckedException.class, "Query execute error: " +
+            "class org.apache.ignite.binary.BinaryObjectException: JDBC doesn't support not embedded objects");
     }
 
 
@@ -474,7 +444,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNavigation() throws Exception {
-        ResultSet rs = stmt.executeQuery("select * from TestObject where id > 0");
+        ResultSet rs = stmt.executeQuery("select id from TestObject where id > 0");
 
         assert rs.isBeforeFirst();
         assert !rs.isAfterLast();

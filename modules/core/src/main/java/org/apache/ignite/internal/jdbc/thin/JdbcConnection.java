@@ -90,7 +90,6 @@ public class JdbcConnection implements Connection {
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
-
         try {
             cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
                 distributedJoins, enforceJoinOrder, LOG);

@@ -80,7 +80,7 @@ public abstract class AbstractSqlObjectReader {
                 return BinaryUtils.doReadTimestamp(reader.in());
 
             case GridBinaryMarshaller.DATE:
-                return BinaryUtils.doReadSqlDate(reader.in());
+                return BinaryUtils.doReadDate(reader.in());
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
                 return BinaryUtils.doReadBooleanArray(reader.in());
@@ -119,7 +119,7 @@ public abstract class AbstractSqlObjectReader {
                 return BinaryUtils.doReadTimestampArray(reader.in());
 
             case GridBinaryMarshaller.DATE_ARR:
-                return BinaryUtils.doReadSqlDateArray(reader.in());
+                return BinaryUtils.doReadDateArray(reader.in());
 
             default:
                 reader.in().position(reader.in().position() - 1);
