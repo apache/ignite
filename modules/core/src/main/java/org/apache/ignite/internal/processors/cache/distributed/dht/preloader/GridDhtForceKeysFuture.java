@@ -117,6 +117,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     ) {
         assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
+        assert cctx.isDht();
 
         this.cctx = cctx;
         this.keys = keys;

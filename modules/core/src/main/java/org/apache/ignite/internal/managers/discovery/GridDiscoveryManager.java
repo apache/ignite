@@ -318,7 +318,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
-            new CacheGroupAffinity(grpDesc.groupName(), filter, cacheMode));
+            new CacheGroupAffinity(filter, cacheMode));
 
         assert old == null : old;
     }
@@ -1814,10 +1814,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             snap.discoCache : discoCacheHist.get(topVer);
 
         if (cache == null) {
-            CacheGroupAffinity grpAff = registeredCacheGrps.get(grpId);
+            CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
 
             throw new IgniteException("Failed to resolve nodes topology [" +
-                "cacheGrp=" + (grpAff != null ? grpAff.grpName : "N/A") +
+                "cacheGrp=" + (desc != null ? desc.cacheOrGroupName() : "N/A") +
                 ", topVer=" + topVer +
                 ", history=" + discoCacheHist.keySet() +
                 ", snap=" + snap +
@@ -2704,24 +2704,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      */
     private static class CacheGroupAffinity {
-        /** */
-        private final String grpName;
-
-        /** Cache filter. */
+        /** Nodes filter. */
         private final IgnitePredicate<ClusterNode> cacheFilter;
 
         /** Cache mode. */
         private final CacheMode cacheMode;
 
         /**
-         * @param grpName Group name.
          * @param cacheFilter Node filter.
          * @param cacheMode Cache mode.
          */
-        CacheGroupAffinity(String grpName,
-            IgnitePredicate<ClusterNode> cacheFilter,
+        CacheGroupAffinity(IgnitePredicate<ClusterNode> cacheFilter,
             CacheMode cacheMode) {
-            this.grpName = grpName;
             this.cacheFilter = cacheFilter;
             this.cacheMode = cacheMode;
         }

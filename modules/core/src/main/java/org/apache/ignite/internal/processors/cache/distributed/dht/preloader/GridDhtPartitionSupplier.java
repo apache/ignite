@@ -239,7 +239,7 @@ class GridDhtPartitionSupplier {
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Starting supplying rebalancing [grp=" + grp.name() +
+                    log.debug("Starting supplying rebalancing [cache=" + grp.cacheOrGroupName() +
                         ", fromNode=" + node.id() + ", partitionsCount=" + d.partitions().size() +
                         ", topology=" + d.topologyVersion() + ", updateSeq=" + d.updateSequence() +
                         ", idx=" + idx + "]");
@@ -408,7 +408,7 @@ class GridDhtPartitionSupplier {
             reply(node, d, s, scId);
 
             if (log.isDebugEnabled())
-                log.debug("Finished supplying rebalancing [grp=" + grp.name() +
+                log.debug("Finished supplying rebalancing [cache=" + grp.cacheOrGroupName() +
                     ", fromNode=" + node.id() +
                     ", topology=" + d.topologyVersion() + ", updateSeq=" + d.updateSequence() +
                     ", idx=" + idx + "]");

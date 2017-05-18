@@ -109,6 +109,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param sharedCtx Shared context.
      * @param pageMem Page memory.
      * @param rowData Row data.
+     * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(
         @Nullable CacheGroupInfrastructure grp,
@@ -184,6 +185,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
      * @param buf Buffer.
      * @param keyOnly {@code true} If need to read only key object.
@@ -250,6 +252,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
      * @param addr Address.
      * @param rowData Required row data.

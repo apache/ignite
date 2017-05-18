@@ -173,6 +173,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private GridCacheSharedContext<?, ?> sharedCtx;
 
     /** */
+    private final ConcurrentMap<Integer, CacheGroupInfrastructure> cacheGrps = new ConcurrentHashMap<>();
+
+    /** */
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
     /** Caches stopped from onKernalStop callback. */
@@ -207,9 +210,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Internal cache names. */
     private final Set<String> internalCaches;
-
-    /** */
-    private ConcurrentMap<Integer, CacheGroupInfrastructure> cacheGrps = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -904,8 +904,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (int i = 0, size = syncFuts.size(); i < size; i++)
             syncFuts.get(i).get();
 
-        // TODO IGNITE-5075.
-        // assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
+        assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
 
         if (!ctx.clientNode() && !ctx.isDaemon())
             addRemovedItemsCleanupTask(Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000));
@@ -1290,8 +1289,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 
-        if (log.isInfoEnabled())
-            log.info("Stopped cache: " + cache.name());
+        if (log.isInfoEnabled()) {
+            if (ctx.group().sharedGroup())
+                log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() + ']');
+            else
+                log.info("Stopped cache [cacheName=" + cache.name() + ']');
+        }
 
         if (sharedCtx.pageStore() != null) {
             try {
@@ -1390,7 +1393,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Cache configuration to use to create cache.
-     * @param grp Cache group infrastructure.
+     * @param grp Cache group.
      * @param pluginMgr Cache plugin manager.
      * @param desc Cache descriptor.
      * @param locStartTopVer Current topology version.
@@ -1463,7 +1466,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
-        IgniteCacheOffheapManager offheapMgr = pluginMgr.createComponent(IgniteCacheOffheapManager.class);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1474,10 +1476,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             grp,
             desc.cacheType(),
             locStartTopVer,
-            desc.receivedFrom(),
             affNode,
             updatesAllowed,
-
             /*
              * Managers in starting order!
              * ===========================
@@ -1490,7 +1490,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            offheapMgr,
             rslvrMgr,
             pluginMgr,
             affMgr
@@ -1605,10 +1604,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 grp,
                 desc.cacheType(),
                 locStartTopVer,
-                desc.receivedFrom(),
                 affNode,
                 true,
-
                 /*
                  * Managers in starting order!
                  * ===========================
@@ -1621,7 +1618,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                offheapMgr,
                 rslvrMgr,
                 pluginMgr,
                 affMgr
@@ -1843,6 +1839,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param grpDesc Cache group descriptor.
      * @param startCfg Start configuration.
      * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param desc Cache descriptor.
@@ -1932,6 +1929,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         onKernalStart(cache);
     }
 
+    /**
+     * @param desc Group descriptor.
+     * @param cacheType Cache type.
+     * @param affNode Affinity node flag.
+     * @param cacheObjCtx Cache object context.
+     * @param exchTopVer Current topology version.
+     * @return Started cache group.
+     * @throws IgniteCheckedException If failed.
+     */
     private CacheGroupInfrastructure startCacheGroup(
         CacheGroupDescriptor desc,
         CacheType cacheType,
@@ -1963,7 +1969,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheGroupInfrastructure old = cacheGrps.put(desc.groupId(), grp);
 
-        assert old == null;
+        assert old == null : old.name();
 
         return grp;
     }
@@ -2798,7 +2804,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             else if (rebalanceOrder < 0)
                 throw new IgniteCheckedException("Rebalance order cannot be negative for cache (fix configuration and restart " +
-                    "the node) [cacheName=" + U.maskName(cfg.getName()) + ", rebalanceOrder=" + rebalanceOrder + ']');
+                    "the node) [cacheName=" + cfg.getName() + ", rebalanceOrder=" + rebalanceOrder + ']');
         }
 
         return maxOrder;
@@ -2829,11 +2835,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
                             String errMsg = "Failed to add node to topology because it has the same hash code for " +
                                 "partitioned affinity as one of existing nodes [cacheName=" +
-                                U.maskName(cfg.getName()) + ", existingNodeId=" + topNode.id() + ']';
+                                cfg.getName() + ", existingNodeId=" + topNode.id() + ']';
 
                             String sndMsg = "Failed to add node to topology because it has the same hash code for " +
                                 "partitioned affinity as one of existing nodes [cacheName=" +
-                                U.maskName(cfg.getName()) + ", existingNodeId=" + topNode.id() + ']';
+                                cfg.getName() + ", existingNodeId=" + topNode.id() + ']';
 
                             return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
                         }
@@ -3096,6 +3102,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return cachesInfo.registeredCaches();
     }
 
+    /**
+     * @return Cache group descriptors.
+     */
     public Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors() {
         return cachesInfo.registeredCacheGroups();
     }

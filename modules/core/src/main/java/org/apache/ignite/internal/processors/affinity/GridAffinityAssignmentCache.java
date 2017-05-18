@@ -60,7 +60,7 @@ public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
 
-    /** Group name. */
+    /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
 
     /** Group ID. */
@@ -134,7 +134,7 @@ public class GridAffinityAssignmentCache {
         assert ctx != null;
         assert aff != null;
         assert nodeFilter != null;
-        assert grpId != 0;
+        assert grpId > 0;
 
         this.ctx = ctx;
         this.aff = aff;
@@ -463,7 +463,7 @@ public class GridAffinityAssignmentCache {
             if (cache == null) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
-                    ", group=" + cacheOrGrpName +
+                    ", grp=" + cacheOrGrpName +
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +

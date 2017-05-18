@@ -91,7 +91,7 @@ public class DiscoCache {
      * @param allNodesWithCaches All nodes with at least one cache configured.
      * @param rmtNodesWithCaches Remote nodes with at least one cache configured.
      * @param allCacheNodes Cache nodes by cache name.
-     * @param cacheGrpAffNodes Affinity cache nodes by cache group ID.
+     * @param cacheGrpAffNodes Affinity nodes by cache group ID.
      * @param nodeMap Node map.
      * @param nearEnabledCaches Caches where at least one node has near cache enabled.
      * @param alives Alive nodes.

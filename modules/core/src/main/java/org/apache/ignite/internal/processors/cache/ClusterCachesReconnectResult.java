@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -38,6 +37,7 @@ class ClusterCachesReconnectResult {
     /**
      * @param stoppedCacheGrps Stopped cache groups.
      * @param stoppedCaches Stopped caches.
+     * @param newCacheGrpIds New cache group IDs.
      */
     ClusterCachesReconnectResult(Set<Integer> stoppedCacheGrps,
         Set<String> stoppedCaches,
@@ -47,14 +47,23 @@ class ClusterCachesReconnectResult {
         this.newCacheGrpIds = newCacheGrpIds;
     }
 
+    /**
+     * @return New cache group IDs.
+     */
     Map<Integer, Integer> newCacheGroupIds() {
         return newCacheGrpIds;
     }
 
+    /**
+     * @return Stopped cache groups.
+     */
     Set<Integer> stoppedCacheGroups() {
         return stoppedCacheGrps;
     }
 
+    /**
+     * @return Stopped caches.
+     */
     Set<String> stoppedCaches() {
         return stoppedCaches;
     }

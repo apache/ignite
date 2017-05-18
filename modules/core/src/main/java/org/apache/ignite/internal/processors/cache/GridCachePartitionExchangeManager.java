@@ -94,7 +94,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
@@ -555,22 +554,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param exchFut Exchange future.
      * @return Topology.
      */
-    public GridDhtPartitionTopology clientTopology(int cacheId, GridDhtPartitionsExchangeFuture exchFut) {
-        GridClientPartitionTopology top = clientTops.get(cacheId);
+    public GridDhtPartitionTopology clientTopology(int grpId, GridDhtPartitionsExchangeFuture exchFut) {
+        GridClientPartitionTopology top = clientTops.get(grpId);
 
         if (top != null)
             return top;
 
         Object affKey = null;
 
-        DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(cacheId);
+        CacheGroupDescriptor grpDesc = cctx.cache().cacheGroupDescriptors().get(grpId);
 
-        if (desc != null) {
-            CacheConfiguration ccfg = desc.cacheConfiguration();
+        if (grpDesc != null) {
+            CacheConfiguration<?, ?> ccfg = grpDesc.config();
 
             AffinityFunction aff = ccfg.getAffinity();
 
@@ -580,8 +579,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 aff.partitions());
         }
 
-        GridClientPartitionTopology old = clientTops.putIfAbsent(cacheId,
-            top = new GridClientPartitionTopology(cctx, cacheId, exchFut, affKey));
+        GridClientPartitionTopology old = clientTops.putIfAbsent(grpId,
+            top = new GridClientPartitionTopology(cctx, grpId, exchFut, affKey));
 
         return old != null ? old : top;
     }
@@ -594,11 +593,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @return Client partition topology.
      */
-    public GridClientPartitionTopology clearClientTopology(int cacheId) {
-        return clientTops.remove(cacheId);
+    public GridClientPartitionTopology clearClientTopology(int grpId) {
+        return clientTops.remove(grpId);
     }
 
     /**
@@ -950,6 +949,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionFullMap map,
         Object affKey) {
         assert map != null;
+
         Integer dupDataCache = null;
 
         if (compress && affKey != null && !m.containsGroup(grpId)) {

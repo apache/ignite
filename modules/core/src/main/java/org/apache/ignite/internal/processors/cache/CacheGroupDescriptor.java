@@ -33,27 +33,27 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupDescriptor {
     /** */
+    private final int grpId;
+
+    /** */
     private final String grpName;
 
     /** */
-    private final int grpId;
+    private final AffinityTopologyVersion startTopVer;
+
+    /** */
+    private final UUID rcvdFrom;
 
     /** */
     private final IgniteUuid deploymentId;
 
     /** */
     @GridToStringExclude
-    private final CacheConfiguration cacheCfg;
+    private final CacheConfiguration<?, ?> cacheCfg;
 
     /** */
     @GridToStringInclude
     private Map<String, Integer> caches;
-
-    /** */
-    private final UUID rcvdFrom;
-
-    /** */
-    private AffinityTopologyVersion startTopVer;
 
     /** */
     private AffinityTopologyVersion rcvdFromVer;
@@ -63,6 +63,7 @@ public class CacheGroupDescriptor {
      * @param grpName Group name.
      * @param grpId  Group ID.
      * @param rcvdFrom Node ID cache group received from.
+     * @param startTopVer Start version for dynamically started group.
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
      */
@@ -71,7 +72,7 @@ public class CacheGroupDescriptor {
         @Nullable String grpName,
         int grpId,
         UUID rcvdFrom,
-        AffinityTopologyVersion startTopVer,
+        @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
@@ -86,17 +87,27 @@ public class CacheGroupDescriptor {
         this.caches = caches;
     }
 
+    /**
+     * @return Node ID group was received from.
+     */
     public UUID receivedFrom() {
         return rcvdFrom;
     }
 
+    /**
+     * @return Deployment ID.
+     */
     public IgniteUuid deploymentId() {
         return deploymentId;
     }
 
+    /**
+     * @param cacheName Cache name
+     * @param cacheId Cache ID.
+     */
     void onCacheAdded(String cacheName, int cacheId) {
         assert cacheName != null;
-        assert cacheId != 0;
+        assert cacheId != 0 : cacheName;
 
         Map<String, Integer> caches = new HashMap<>(this.caches);
 
@@ -105,6 +116,10 @@ public class CacheGroupDescriptor {
         this.caches = caches;
     }
 
+    /**
+     * @param cacheName Cache name
+     * @param cacheId Cache ID.
+     */
     void onCacheStopped(String cacheName, int cacheId) {
         assert cacheName != null;
         assert cacheId != 0;
@@ -118,30 +133,51 @@ public class CacheGroupDescriptor {
         this.caches = caches;
     }
 
+    /**
+     * @return {@code True} if group contains cache.
+     */
     boolean hasCaches() {
         return caches != null && !caches.isEmpty();
     }
 
+    /**
+     * @return {@code True} if group can contain multiple caches.
+     */
     public boolean sharedGroup() {
         return grpName != null;
     }
 
+    /**
+     * @return Group name if it is specified, otherwise cache name.
+     */
     public String cacheOrGroupName() {
         return grpName != null ? grpName : cacheCfg.getName();
     }
 
-    public String groupName() {
+    /**
+     * @return Group name or {@code null} if group name was not specified for cache.
+     */
+    @Nullable public String groupName() {
         return grpName;
     }
 
+    /**
+     * @return Group ID.
+     */
     public int groupId() {
         return grpId;
     }
 
-    public CacheConfiguration config() {
+    /**
+     * @return Configuration.
+     */
+    public CacheConfiguration<?, ?> config() {
         return cacheCfg;
     }
 
+    /**
+     * @return Group caches.
+     */
     public Map<String, Integer> caches() {
         return caches;
     }
@@ -149,24 +185,25 @@ public class CacheGroupDescriptor {
     /**
      * @return Topology version when node provided cache configuration was started.
      */
-    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
+    @Nullable AffinityTopologyVersion receivedFromStartVersion() {
         return rcvdFromVer;
     }
 
     /**
      * @param rcvdFromVer Topology version when node provided cache configuration was started.
      */
-    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+    void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
         this.rcvdFromVer = rcvdFromVer;
     }
 
     /**
-     * @return Start topology version.
+     * @return Start version for dynamically started group.
      */
     @Nullable public AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheGroupDescriptor.class, this, "cacheName", cacheCfg.getName());
     }

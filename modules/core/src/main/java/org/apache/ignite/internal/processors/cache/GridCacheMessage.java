@@ -280,6 +280,7 @@ public abstract class GridCacheMessage implements Message {
     /**
      * @param info Entry to marshal.
      * @param ctx Context.
+     * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
     protected final void marshalInfo(GridCacheEntryInfo info,

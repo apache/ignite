@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -691,6 +690,7 @@ class ClusterCachesInfo {
 
         assert cacheGrpIdGen > 0 : cacheGrpIdGen;
 
+        // Replace locally registered data with actual data received from cluster.
         registeredCaches.clear();
         registeredCacheGrps.clear();
         ctx.discovery().onLocalNodeJoin();
@@ -932,7 +932,7 @@ class ClusterCachesInfo {
 
     /**
      * @param grpName Group name.
-     * @return Group descriptor.
+     * @return Group descriptor if group found.
      */
     @Nullable private CacheGroupDescriptor cacheGroupByName(String grpName) {
         assert grpName != null;
@@ -961,17 +961,18 @@ class ClusterCachesInfo {
     }
 
     /**
-     * @param exchActions
-     * @param startedCacheCfg
-     * @param cacheId
-     * @param rcvdFrom
-     * @param deploymentId
-     * @return
+     * @param exchActions Optional exchange actions to update if new group was added.
+     * @param curTopVer Current topology version if dynamic cache started.
+     * @param startedCacheCfg Cache configuration.
+     * @param cacheId Cache ID.
+     * @param rcvdFrom Node ID cache was recived from.
+     * @param deploymentId Deployment ID.
+     * @return Group descriptor.
      */
     private CacheGroupDescriptor registerCacheGroup(
         @Nullable ExchangeActions exchActions,
         @Nullable AffinityTopologyVersion curTopVer,
-        CacheConfiguration startedCacheCfg,
+        CacheConfiguration<?, ?> startedCacheCfg,
         Integer cacheId,
         UUID rcvdFrom,
         IgniteUuid deploymentId) {

@@ -108,7 +108,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private final GridFutureAdapter<?> rent;
 
-    /** Context. */
+    /** */
     private final GridCacheSharedContext ctx;
 
     /** */
@@ -188,7 +188,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         };
 
-        int delQueueSize = CU.isSystemCache(grp.config().getName()) ? 100 :
+        int delQueueSize = grp.systemCache() ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / grp.affinity().partitions(), 20);
 
         rmvQueueMaxSize = U.ceilPow2(delQueueSize);
@@ -977,16 +977,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                                 grp.addCacheEvent(cached.partition(),
                                     cached.key(),
                                     ctx.localNodeId(),
-                                    null,
-                                    null,
                                     EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
                                     null,
                                     false,
                                     cached.rawGet(),
                                     cached.hasValue(),
-                                    null,
-                                    null,
-                                    null,
                                     false);
                             }
                         }
@@ -1031,7 +1026,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
                             grp.affinity().lastVersion(),
-                            row.key(),  true, false);
+                            row.key(),
+                            true,
+                            false);
 
                         if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                             if (rec) {

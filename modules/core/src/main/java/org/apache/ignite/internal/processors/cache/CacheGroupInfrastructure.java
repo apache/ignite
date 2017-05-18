@@ -59,6 +59,42 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  *
  */
 public class CacheGroupInfrastructure {
+    /** Group ID (can be changed after client reconnect). */
+    private int grpId;
+
+    /** Node ID cache group was received from. */
+    private final UUID rcvdFrom;
+
+    /** */
+    private final AffinityTopologyVersion locStartVer;
+
+    /** */
+    private final CacheConfiguration<?, ?> ccfg;
+
+    /** */
+    private final GridCacheSharedContext ctx;
+
+    /** */
+    private final boolean affNode;
+
+    /** */
+    private final CacheType cacheType;
+
+    /** IO policy. */
+    private final byte ioPlc;
+
+    /** */
+    private final boolean depEnabled;
+
+    /** */
+    private final boolean storeCacheId;
+
+    /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
+    private boolean needsRecovery;
+
+    /** */
+    private final List<GridCacheContext> caches;
+
     /** */
     private final IgniteLogger log;
 
@@ -66,33 +102,15 @@ public class CacheGroupInfrastructure {
     private GridAffinityAssignmentCache aff;
 
     /** */
-    private int grpId;
-
-    /** */
-    private UUID rcvdFrom;
-
-    /** */
-    private final AffinityTopologyVersion locStartVer;
-
-    /** */
-    private final CacheConfiguration ccfg;
-
-    /** */
-    private final GridCacheSharedContext ctx;
-
-    /** */
     private GridDhtPartitionTopologyImpl top;
 
     /** */
     private IgniteCacheOffheapManager offheapMgr;
 
-    /** Preloader. */
+    /** */
     private GridCachePreloader preldr;
 
     /** */
-    private final boolean affNode;
-
-    /** Memory policy. */
     private final MemoryPolicy memPlc;
 
     /** */
@@ -104,34 +122,21 @@ public class CacheGroupInfrastructure {
     /** ReuseList instance this group is associated with */
     private final ReuseList reuseList;
 
-    /** */
-    private final CacheType cacheType;
-
-    /** IO policy. */
-    private final byte ioPlc;
-
-    /** */
-    private boolean depEnabled;
-
-    /** */
-    private boolean storeCacheId;
-
-    /** Flag indicating that this cache is in a recovery mode. */
-    // TODO IGNITE-5075 see GridCacheContext#needsRecovery
-    private boolean needsRecovery;
-
-    /** */
-    private final List<GridCacheContext> caches;
-
     /**
      * @param grpId Group ID.
      * @param ctx Context.
+     * @param rcvdFrom Node ID cache group was received from.
      * @param cacheType Cache type.
      * @param ccfg Cache configuration.
      * @param affNode Affinity node flag.
+     * @param memPlc Memory policy.
      * @param cacheObjCtx Cache object context.
+     * @param freeList Free list.
+     * @param reuseList Reuse list.
+     * @param locStartVer Topology version when group was started on local node.
      */
-    CacheGroupInfrastructure(GridCacheSharedContext ctx,
+    CacheGroupInfrastructure(
+        GridCacheSharedContext ctx,
         int grpId,
         UUID rcvdFrom,
         CacheType cacheType,
@@ -142,7 +147,7 @@ public class CacheGroupInfrastructure {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer) {
-        assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
+        assert grpId > 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
         assert memPlc != null || !affNode;
 
@@ -215,10 +220,25 @@ public class CacheGroupInfrastructure {
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+    void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
         addCacheContext(cctx);
 
         offheapMgr.onCacheStarted(cctx);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if group contains cache with given name.
+     */
+    public boolean hasCache(String cacheName) {
+        synchronized (caches) {
+            for (int i = 0; i < caches.size(); i++) {
+                if (caches.get(i).name().equals(cacheName))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     /**
@@ -345,20 +365,26 @@ public class CacheGroupInfrastructure {
         }
     }
 
+    /**
+     * @param part Partition.
+     * @param key Key.
+     * @param evtNodeId Event node ID.
+     * @param type Event type.
+     * @param newVal New value.
+     * @param hasNewVal Has new value flag.
+     * @param oldVal Old values.
+     * @param hasOldVal Has old value flag.
+     * @param keepBinary Keep binary flag.
+     */
     public void addCacheEvent(
         int part,
         KeyCacheObject key,
         UUID evtNodeId,
-        @Nullable IgniteUuid xid,
-        @Nullable Object lockId,
         int type,
         @Nullable CacheObject newVal,
         boolean hasNewVal,
         @Nullable CacheObject oldVal,
         boolean hasOldVal,
-        UUID subjId,
-        @Nullable String cloClsName,
-        @Nullable String taskName,
         boolean keepBinary
     ) {
         synchronized (caches) {
@@ -368,24 +394,34 @@ public class CacheGroupInfrastructure {
                 cctx.events().addEvent(part,
                     key,
                     evtNodeId,
-                    xid,
-                    lockId,
+                    (IgniteUuid)null,
+                    null,
                     type,
                     newVal,
                     hasNewVal,
                     oldVal,
                     hasOldVal,
-                    subjId,
-                    cloClsName,
-                    taskName,
+                    null,
+                    null,
+                    null,
                     keepBinary);
             }
         }
     }
 
-    // TODO IGNITE-5075: need separate caches with/without queries?
+    // TODO IGNITE-5075
     public boolean queriesEnabled() {
         return QueryUtils.isEnabled(ccfg);
+    }
+
+    // TODO IGNITE-5075 see GridCacheContext#allowFastEviction
+    public boolean allowFastEviction() {
+        return false;
+    }
+
+    // TODO IGNITE-5075.
+    public boolean isDrEnabled() {
+        return false;
     }
 
     /**
@@ -461,11 +497,6 @@ public class CacheGroupInfrastructure {
         this.needsRecovery = needsRecovery;
     }
 
-    public boolean allowFastEviction() {
-        // TODO IGNITE-5075 see GridCacheContext#allowFastEviction
-        return false;
-    }
-
     /**
      * @return Topology version when group was started on local node.
      */
@@ -495,7 +526,7 @@ public class CacheGroupInfrastructure {
     }
 
     /**
-     * @return Group name.
+     * @return Group name or {@code null} if group name was not specified for cache.
      */
     @Nullable public String name() {
         return ccfg.getGroupName();
@@ -520,11 +551,6 @@ public class CacheGroupInfrastructure {
      */
     public boolean sharedGroup() {
         return ccfg.getGroupName() != null;
-    }
-
-    // TODO IGNITE-5075.
-    public boolean isDrEnabled() {
-        return false;
     }
 
     /**

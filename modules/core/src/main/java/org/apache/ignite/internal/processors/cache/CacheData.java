@@ -64,6 +64,7 @@ public class CacheData implements Serializable {
     /**
      * @param cacheCfg Cache configuration.
      * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param cacheType Cache ID.
      * @param deploymentId Cache deployment ID.
      * @param schema Query schema.
@@ -86,7 +87,7 @@ public class CacheData implements Serializable {
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
         assert template || cacheId != 0 : cacheCfg.getName();
-        assert template || grpId != 0 : cacheCfg.getName();
+        assert template || grpId > 0 : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
         this.cacheId = cacheId;

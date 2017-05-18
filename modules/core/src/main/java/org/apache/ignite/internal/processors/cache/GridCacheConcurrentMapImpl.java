@@ -69,8 +69,11 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         final boolean touch) {
         ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), create);
 
-        if (map == null)
+        if (map == null) {
+            assert !create;
+
             return null;
+        }
 
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
@@ -205,7 +208,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         }
     }
 
-    protected abstract ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(int cacheId, boolean create);
+    /**
+     * @param cacheId Cache ID.
+     * @param create Create flag.
+     * @return Map for given cache ID.
+     */
+    @Nullable protected abstract ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(
+        int cacheId,
+        boolean create);
 
     /**
      *
@@ -238,7 +248,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
 
-        boolean rmv = map.remove(entry.key(), entry);
+        boolean rmv = map != null ? map.remove(entry.key(), entry) : null;
 
         if (rmv) {
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED)) {

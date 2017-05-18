@@ -205,7 +205,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     /**
      * @param p Partition.
      * @param info Entry to add.
-     * @param ctx Cache context.
+     * @param ctx Cache shared context.
+     * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
     void addEntry0(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
@@ -237,8 +238,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         super.finishUnmarshal(ctx, ldr);
 
         CacheGroupInfrastructure grp = ctx.cache().cacheGroup(grpId);
-
-        assert grp != null : grpId;
 
         for (CacheEntryInfoCollection col : infos().values()) {
             List<GridCacheEntryInfo> entries = col.infos();

@@ -167,10 +167,16 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         }
     }
 
+    /**
+     * @return Cache context.
+     */
     protected GridCacheContext cacheContext() {
         return ((IgniteCacheProxy)grid(0).cache(DEFAULT_CACHE_NAME)).context();
     }
 
+    /**
+     * @return IO manager.
+     */
     protected GridCacheIoManager cacheIoManager() {
         return grid(0).context().cache().context().io();
     }

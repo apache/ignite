@@ -63,6 +63,8 @@ public class ExchangeActions {
     boolean clientOnlyExchange() {
         return F.isEmpty(cachesToStart) &&
             F.isEmpty(cachesToStop) &&
+            F.isEmpty(cacheGrpsToStart) &&
+            F.isEmpty(cacheGroupsToStop()) &&
             F.isEmpty(cachesToResetLostParts);
     }
 
@@ -294,17 +296,29 @@ public class ExchangeActions {
         cachesToResetLostParts = add(cachesToResetLostParts, req, desc);
     }
 
+    /**
+     * @param grpDesc Group descriptor.
+     */
     void addCacheGroupToStart(CacheGroupDescriptor grpDesc) {
+        assert grpDesc != null;
+
         if (cacheGrpsToStart == null)
             cacheGrpsToStart = new ArrayList<>();
 
         cacheGrpsToStart.add(grpDesc);
     }
 
+    /**
+     * @return Cache groups to start.
+     */
     public List<CacheGroupDescriptor> cacheGroupsToStart() {
         return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupDescriptor>emptyList();
     }
 
+    /**
+     * @param grpId Group ID.
+     * @return {@code True} if given cache group starting.
+     */
     public boolean cacheGroupStarting(int grpId) {
         if (cacheGrpsToStart != null) {
             for (CacheGroupDescriptor grp : cacheGrpsToStart) {
@@ -316,17 +330,29 @@ public class ExchangeActions {
         return false;
     }
 
+    /**
+     * @param grpDesc Group descriptor.
+     */
     void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
+        assert grpDesc != null;
+
         if (cacheGrpsToStop == null)
             cacheGrpsToStop = new ArrayList<>();
 
         cacheGrpsToStop.add(grpDesc);
     }
 
+    /**
+     * @return Cache groups to start.
+     */
     public List<CacheGroupDescriptor> cacheGroupsToStop() {
         return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupDescriptor>emptyList();
     }
 
+    /**
+     * @param grpId Group ID.
+     * @return {@code True} if given cache group stopping.
+     */
     public boolean cacheGroupStopping(int grpId) {
         if (cacheGrpsToStop != null) {
             for (CacheGroupDescriptor grp : cacheGrpsToStop) {

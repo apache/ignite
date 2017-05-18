@@ -279,6 +279,9 @@ public class GridCacheAttributes implements Serializable {
         return className(ccfg.getNodeFilter());
     }
 
+    /**
+     * @return Topology validator class name.
+     */
     String topologyValidatorClassName() {
         return className(ccfg.getTopologyValidator());
     }

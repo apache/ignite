@@ -100,7 +100,7 @@ public interface IgniteCacheOffheapManager {
     @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
-     * @param cctx Context.
+     * @param cctx Cache context.
      * @param key Key.
      * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
@@ -128,6 +128,7 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param p Partition ID.
      * @param store Data store.
+     * @throws IgniteCheckedException If failed.
      */
     public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException;
 
@@ -137,6 +138,7 @@ public interface IgniteCacheOffheapManager {
     public boolean containsKey(GridCacheMapEntry entry);
 
     /**
+     * @param cctx Cache context.
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
      */
@@ -151,6 +153,7 @@ public interface IgniteCacheOffheapManager {
     public long expiredSize() throws IgniteCheckedException;
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param part Partition.
      * @param c Tree update closure.
@@ -160,6 +163,7 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * @param cctx Cache context.
      * @param key  Key.
      * @param val  Value.
      * @param ver  Version.
@@ -181,6 +185,7 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param partId Partition number.
      * @param part Partition.
@@ -200,6 +205,7 @@ public interface IgniteCacheOffheapManager {
     public int onUndeploy(ClassLoader ldr);
 
     /**
+     * @param cacheId Cache ID.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
@@ -213,12 +219,18 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * @param cacheId Cache ID.
      * @param part Partition.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> iteratorForCache(int cacheId, final int part) throws IgniteCheckedException;
 
+    /**
+     * @param part Partition number.
+     * @return Iterator for given partition.
+     * @throws IgniteCheckedException
+     */
     public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
 
     /**
@@ -265,11 +277,13 @@ public interface IgniteCacheOffheapManager {
     /**
      * Clears offheap entries.
      *
+     * @param cctx Cache context.
      * @param readers {@code True} to clear readers.
      */
     public void clear(GridCacheContext cctx, boolean readers);
 
     /**
+     * @param cacheId Cache ID.
      * @param part Partition.
      * @return Number of entries in given partition.
      */
@@ -304,7 +318,7 @@ public interface IgniteCacheOffheapManager {
     public ReuseList reuseListForIndex(String idxName) throws IgniteCheckedException;
 
     /**
-     *
+     * @param cacheId Cache ID.
      * @return Number of entries.
      */
     public long cacheEntriesCount(int cacheId);
@@ -345,6 +359,9 @@ public interface IgniteCacheOffheapManager {
          */
         int cacheSize(int cacheId);
 
+        /**
+         * @return Total size.
+         */
         int fullSize();
 
         /**
@@ -368,6 +385,7 @@ public interface IgniteCacheOffheapManager {
         public Long initialUpdateCounter();
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @param val Value.
          * @param ver Version.
@@ -385,6 +403,7 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @param part Partition.
          * @param val Value.
@@ -433,6 +452,7 @@ public interface IgniteCacheOffheapManager {
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
 
         /**
+         * @param cacheId Cache ID.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
@@ -458,6 +478,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * Clears all the records associated with logical cache with given ID.
          *
+         * @param cacheId Cache ID.
          * @throws IgniteCheckedException If failed.
          */
         public void clear(int cacheId) throws IgniteCheckedException;

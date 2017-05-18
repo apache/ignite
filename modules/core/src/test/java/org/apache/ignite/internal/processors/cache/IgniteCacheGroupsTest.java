@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -142,23 +143,23 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         checkCacheGroup(0, GROUP1, true);
         checkCacheGroup(0, GROUP1, true);
 
-        checkCache(0, "c1");
-        checkCache(1, "c1");
+        checkCache(0, "c1", 10);
+        checkCache(1, "c1", 10);
 
         c1.close();
 
         checkCacheGroup(0, GROUP1, true);
         checkCacheGroup(1, GROUP1, false);
 
-        checkCache(0, "c1");
+        checkCache(0, "c1", 10);
 
         assertNotNull(client.cache("c1"));
 
         checkCacheGroup(0, GROUP1, true);
         checkCacheGroup(1, GROUP1, true);
 
-        checkCache(0, "c1");
-        checkCache(1, "c1");
+        checkCache(0, "c1", 10);
+        checkCache(1, "c1", 10);
     }
 
     /**
@@ -856,7 +857,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
 
-                checkCache(i, CACHE1);
+                checkCache(i, CACHE1, 10);
             }
 
             srv0.createCache(cacheConfiguration(GROUP1, CACHE2, PARTITIONED, ATOMIC, 2, false));
@@ -866,7 +867,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
 
-                checkCache(i, CACHE2);
+                checkCache(i, CACHE2, 10);
             }
 
             srv0.destroyCache(CACHE1);
@@ -876,7 +877,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             for (int i = 0; i < srvs; i++) {
                 checkCacheGroup(i, GROUP1, true);
 
-                checkCache(i, CACHE2);
+                checkCache(i, CACHE2, 10);
             }
 
             srv0.destroyCache(CACHE2);
@@ -891,13 +892,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @param idx Node index.
      * @param cacheName Cache name.
+     * @param ops Number of operations to execute.
      */
-    private void checkCache(int idx, String cacheName) {
+    private void checkCache(int idx, String cacheName, int ops) {
         IgniteCache cache = ignite(idx).cache(cacheName);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < ops; i++) {
             Integer key = rnd.nextInt();
 
             cache.put(key, i);
@@ -907,6 +909,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cache3 {@code True} if add last cache.
      * @return Cache configurations.
      */
     private CacheConfiguration[] staticConfigurations1(boolean cache3) {
@@ -993,6 +996,65 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         checkCacheDiscoveryDataConsistent();
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     * @param cnt Caches number.
+     * @param grp Cache groups.
+     * @param baseName Caches name prefix.
+     * @return Cache configurations.
+     */
+    private CacheConfiguration[] cacheConfigurations(int cnt, String grp, String baseName) {
+        CacheConfiguration[] ccfgs = new CacheConfiguration[cnt];
+
+        for (int i = 0; i < cnt; i++) {
+            ccfgs[i] = cacheConfiguration(grp,
+                baseName + i, PARTITIONED,
+                i % 2 == 0 ? TRANSACTIONAL : ATOMIC,
+                2,
+                false);
+        }
+
+        return ccfgs;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartManyCaches() throws Exception {
+        final int CACHES = 5_000;
+
+        final int NODES = 4;
+
+        for (int i = 0; i < NODES; i++) {
+            ccfgs = cacheConfigurations(CACHES, GROUP1, "testCache1-");
+
+            client = i == NODES - 1;
+
+            startGrid(i);
+        }
+
+        Ignite client = ignite(NODES - 1);
+
+        client.createCaches(Arrays.asList(cacheConfigurations(CACHES, GROUP2, "testCache2-")));
+
+        checkCacheDiscoveryDataConsistent();
+
+        for (int i = 0; i < NODES; i++) {
+            for (int c = 0; c < CACHES; c++) {
+                if (c % 100 == 0)
+                    log.info("Check node: " + i);
+
+                checkCache(i, "testCache1-" + c, 1);
+                checkCache(i, "testCache2-" + c, 1);
+            }
+        }
+
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer idx) {
+                stopGrid(idx);
+            }
+        }, NODES, "stopThread");
     }
 
     /**

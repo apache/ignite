@@ -30,14 +30,14 @@ public interface GridCacheConcurrentMap {
      * HashMap. Returns null if the HashMap contains no mapping
      * for this key.
      *
-     * @param ctx Context.
+     * @param ctx Cache context.
      * @param key Key.
      * @return Entry.
      */
     @Nullable public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key);
 
     /**
-     * @param ctx Context.
+     * @param ctx Cache context.
      * @param topVer Topology version.
      * @param key Key.
      * @param create Create flag.

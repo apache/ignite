@@ -201,7 +201,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
-    /** */
+    /** Cache group name. */
     private String grpName;
 
     /** Name of {@link MemoryPolicyConfiguration} for this cache */
@@ -456,6 +456,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeSync = cc.getWriteSynchronizationMode();
     }
 
+    // TODO IGNTIE-5075.
     public String getGroupName() {
         return grpName;
     }

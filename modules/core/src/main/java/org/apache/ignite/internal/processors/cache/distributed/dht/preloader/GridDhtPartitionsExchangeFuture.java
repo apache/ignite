@@ -1028,7 +1028,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param grpId Cache group ID to check.
-     * @return {@code True} if cache group us stopping by this exchange/
+     * @return {@code True} if cache group us stopping by this exchange.
      */
     private boolean cacheGroupStopping(int grpId) {
         return exchActions != null && exchActions.cacheGroupStopping(grpId);
@@ -1557,17 +1557,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     *
+     * @param cacheNames Cache names.
      */
     private void resetLostPartitions(Collection<String> cacheNames) {
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
                 return;
 
-            // TODO: IGNITE-5075.
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (!cacheCtx.isLocal() && cacheNames.contains(cacheCtx.name()))
-                    cacheCtx.topology().resetLostPartitions();
+            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                if (grp.isLocal())
+                    continue;
+
+                for (String cacheName : cacheNames) {
+                    if (grp.hasCache(cacheName)) {
+                        grp.topology().resetLostPartitions();
+
+                        break;
+                    }
+                }
             }
         }
     }

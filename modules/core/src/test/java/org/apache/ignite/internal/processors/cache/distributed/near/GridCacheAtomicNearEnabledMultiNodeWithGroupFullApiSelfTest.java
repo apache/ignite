@@ -22,7 +22,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  *
  */
-public class GridCacheAtomicNearEnabledMultiNodeWithGroupFullApiSelfTest extends GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest {
+public class GridCacheAtomicNearEnabledMultiNodeWithGroupFullApiSelfTest extends
+    GridCacheAtomicNearEnabledMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);

@@ -136,10 +136,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private volatile boolean treatAllPartAsLoc;
 
     /**
-     * @param ctx Context.
+     * @param ctx Cache shared context.
+     * @param grp Cache group.
      * @param entryFactory Entry factory.
      */
-    public GridDhtPartitionTopologyImpl(GridCacheSharedContext ctx, CacheGroupInfrastructure grp, GridCacheMapEntryFactory entryFactory) {
+    public GridDhtPartitionTopologyImpl(GridCacheSharedContext ctx,
+        CacheGroupInfrastructure grp,
+        GridCacheMapEntryFactory entryFactory) {
         assert ctx != null;
         assert grp != null;
         assert entryFactory != null;
@@ -597,6 +600,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         waitForRent();
     }
 
+    /**
+     * @param p Partition number.
+     * @param topVer Topology version.
+     * @return {@code True} if given partition belongs to local node.
+     */
     private boolean partitionLocalNode(int p, AffinityTopologyVersion topVer) {
         return grp.affinity().nodes(p, topVer).contains(ctx.localNode());
     }

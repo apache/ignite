@@ -135,6 +135,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache shared context. */
     private GridCacheSharedContext<K, V> sharedCtx;
 
+    /** Cache group. */
+    private CacheGroupInfrastructure grp;
+
     /** Logger. */
     private IgniteLogger log;
 
@@ -201,9 +204,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache type. */
     private CacheType cacheType;
 
-    /** */
-    private CacheGroupInfrastructure grp;
-
     /** IO policy. */
     private byte plc;
 
@@ -227,9 +227,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Topology version when cache was started on local node. */
     private AffinityTopologyVersion locStartTopVer;
-
-    /** */
-    private UUID rcvdFrom;
 
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
@@ -263,6 +260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ctx Kernal context.
      * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
+     * @param grp Cache group.
      * @param cacheType Cache type.
      * @param affNode {@code True} if local node is affinity node.
      * @param updatesAllowed Updates allowed flag.
@@ -286,7 +284,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheGroupInfrastructure grp,
         CacheType cacheType,
         AffinityTopologyVersion locStartTopVer,
-        UUID rcvdFrom,
         boolean affNode,
         boolean updatesAllowed,
 
@@ -303,7 +300,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
-        IgniteCacheOffheapManager offheapMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
         GridCacheAffinityManager affMgr
@@ -324,7 +320,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ttlMgr != null;
         assert rslvrMgr != null;
         assert pluginMgr != null;
-        assert offheapMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
@@ -332,7 +327,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.grp = grp;
         this.cacheType = cacheType;
         this.locStartTopVer = locStartTopVer;
-        this.rcvdFrom = rcvdFrom;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
@@ -373,12 +367,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
 
+    /**
+     * @return Cache group ID.
+     */
     public int groupId() {
         return grp.groupId();
     }
 
     /**
-     * @return Cache group infrastructure.
+     * @return Cache group.
      */
     public CacheGroupInfrastructure group() {
         return grp;
@@ -455,13 +452,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void onStarted() {
         startLatch.countDown();
-    }
-
-    /**
-     * @return Node ID cache was received from.
-     */
-    public UUID receivedFrom() {
-        return rcvdFrom;
     }
 
     /**
@@ -857,6 +847,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         return topology(cache);
     }
 
+    /**
+     * @return DHT cache.
+     */
     public GridDhtCacheAdapter dhtCache() {
         GridCacheAdapter<K, V> cache = this.cache;
 

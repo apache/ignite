@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Message related to particular cache.
  */
 public abstract class GridCacheIdMessage extends GridCacheMessage {
     /** Cache ID. */

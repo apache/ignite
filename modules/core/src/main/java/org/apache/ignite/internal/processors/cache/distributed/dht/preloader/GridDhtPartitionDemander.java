@@ -123,7 +123,7 @@ public class GridDhtPartitionDemander {
 
         boolean enabled = grp.rebalanceEnabled() && !ctx.kernalContext().clientNode();
 
-        rebalanceFut = new RebalanceFuture();//Dummy.
+        rebalanceFut = new RebalanceFuture(); //Dummy.
 
         if (!enabled) {
             // Calling onDone() immediately since preloading is disabled.
@@ -235,17 +235,6 @@ public class GridDhtPartitionDemander {
         return
             !grp.affinity().lastVersion().equals(fut.topologyVersion()) || // Topology already changed.
                 fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
-    }
-
-    /**
-     * @param part Partition.
-     * @param type Type.
-     * @param discoEvt Discovery event.
-     */
-    private void rebalanceEvent(int part, int type, DiscoveryEvent discoEvt) {
-        assert discoEvt != null;
-
-        grp.addRebalanceEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
     }
 
     /**
@@ -469,7 +458,7 @@ public class GridDhtPartitionDemander {
 
                     initD.topic(rebalanceTopics.get(cnt));
                     initD.updateSequence(fut.updateSeq);
-                    initD.timeout(grp.config().getRebalanceTimeout());
+                    initD.timeout(cfg.getRebalanceTimeout());
 
                     synchronized (fut) {
                         if (fut.isDone())
@@ -625,7 +614,7 @@ public class GridDhtPartitionDemander {
                         boolean reserved = part.reserve();
 
                         assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                            ctx.igniteInstanceName() + ", grp=" + grp.name() + ", part=" + part + ']';
+                            ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
                         part.lock();
 
@@ -835,8 +824,8 @@ public class GridDhtPartitionDemander {
         private final long updateSeq;
 
         /**
-         * @param assigns Assigns.
          * @param grp Cache group.
+         * @param assigns Assigns.
          * @param log Logger.
          * @param updateSeq Update sequence.
          */
@@ -923,7 +912,7 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return;
 
-                U.log(log, ("Cancelled rebalancing [grp=" + grp.name() +
+                U.log(log, ("Cancelled rebalancing [cache=" + grp.cacheOrGroupName() +
                     ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
                     ", time=" + (U.currentTimeMillis() - remaining.get(nodeId).get1()) + " ms]"));
 

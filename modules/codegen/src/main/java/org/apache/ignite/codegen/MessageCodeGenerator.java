@@ -44,25 +44,8 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
-import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -187,34 +170,7 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-        gen.generateAndWrite(GridCacheIdMessage.class);
-        gen.generateAndWrite(GridCacheGroupIdMessage.class);
-
-        gen.generateAndWrite(GridCacheEntryInfo.class);
-
-        gen.generateAndWrite(GridCacheMessage.class);
-
-        gen.generateAndWrite(GridDhtPartitionSupplyMessage.class);
-        gen.generateAndWrite(GridDhtPartitionDemandMessage.class);
-
-        gen.generateAndWrite(TxLocksRequest.class);
-        gen.generateAndWrite(TxLocksResponse.class);
-
-        gen.generateAndWrite(GridDhtTxOnePhaseCommitAckRequest.class);
-        gen.generateAndWrite(GridChangeGlobalStateMessageResponse.class);
-
-        gen.generateAndWrite(GridDhtPartitionsFullMessage.class);
-        gen.generateAndWrite(GridDhtPartitionsSingleMessage.class);
-        gen.generateAndWrite(GridDhtPartitionsSingleRequest.class);
-
-        gen.generateAndWrite(GridDhtAffinityAssignmentRequest.class);
-        gen.generateAndWrite(GridDhtAffinityAssignmentResponse.class);
-
-        gen.generateAndWrite(GridDistributedTxFinishResponse.class);
-        gen.generateAndWrite(GridDhtTxFinishResponse.class);
-        gen.generateAndWrite(GridNearTxFinishResponse.class);
-
-        gen.generateAndWrite(GridDhtPartitionsAbstractMessage.class);
+//        gen.generateAndWrite(GridChangeGlobalStateMessageResponse.class);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
 

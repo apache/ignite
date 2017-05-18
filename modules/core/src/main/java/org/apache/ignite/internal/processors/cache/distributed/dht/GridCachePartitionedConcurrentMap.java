@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * An implementation of GridCacheConcurrentMap that will delegate all method calls to corresponding local partition.
  */
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
-    /** Context. */
+    /** Cache group. */
     private final CacheGroupInfrastructure grp;
 
     /**

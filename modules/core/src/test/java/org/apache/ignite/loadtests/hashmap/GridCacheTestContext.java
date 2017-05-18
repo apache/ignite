@@ -82,7 +82,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             null,
             CacheType.USER,
             AffinityTopologyVersion.ZERO,
-            UUID.randomUUID(),
             true,
             true,
             new GridCacheEventManager(),
@@ -93,7 +92,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new CacheDataStructuresManager(),
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
-            null,
             new CacheOsConflictResolutionManager<K, V>(),
             new CachePluginManager(ctx, new CacheConfiguration()),
             new GridCacheAffinityManager()

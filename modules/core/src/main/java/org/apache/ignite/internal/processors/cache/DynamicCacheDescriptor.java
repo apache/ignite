@@ -97,6 +97,7 @@ public class DynamicCacheDescriptor {
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
+     * @param grpDesc Group descriptor.
      * @param template {@code True} if this is template configuration.
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.

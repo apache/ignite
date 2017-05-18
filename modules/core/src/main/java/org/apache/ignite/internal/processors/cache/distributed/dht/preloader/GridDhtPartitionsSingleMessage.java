@@ -392,7 +392,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return 47;
     }
 
-    //todo add ex
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 10;

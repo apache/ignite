@@ -35,13 +35,13 @@ public class CacheGroupData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final String grpName;
-
-    /** */
     private final int grpId;
 
     /** */
-    private AffinityTopologyVersion startTopVer;
+    private final String grpName;
+
+    /** */
+    private final AffinityTopologyVersion startTopVer;
 
     /** */
     private final UUID rcvdFrom;
@@ -50,7 +50,7 @@ public class CacheGroupData implements Serializable {
     private final IgniteUuid deploymentId;
 
     /** */
-    private final CacheConfiguration cacheCfg;
+    private final CacheConfiguration<?, ?> cacheCfg;
 
     /** */
     @GridToStringInclude
@@ -61,6 +61,7 @@ public class CacheGroupData implements Serializable {
      * @param grpName Group name.
      * @param grpId  Group ID.
      * @param rcvdFrom Node ID cache group received from.
+     * @param startTopVer Start version for dynamically started group.
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
      */
@@ -69,7 +70,7 @@ public class CacheGroupData implements Serializable {
         @Nullable String grpName,
         int grpId,
         UUID rcvdFrom,
-        AffinityTopologyVersion startTopVer,
+        @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
@@ -85,34 +86,56 @@ public class CacheGroupData implements Serializable {
         this.caches = caches;
     }
 
-    public AffinityTopologyVersion startTopologyVersion() {
+    /**
+     * @return Start version for dynamically started group.
+     */
+    @Nullable public AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
     }
 
+    /**
+     * @return Node ID group was received from.
+     */
     public UUID receivedFrom() {
         return rcvdFrom;
     }
 
-    public String groupName() {
+    /**
+     * @return Group name.
+     */
+    @Nullable public String groupName() {
         return grpName;
     }
 
+    /**
+     * @return Group ID.
+     */
     public int groupId() {
         return grpId;
     }
 
+    /**
+     * @return Deployment ID.
+     */
     public IgniteUuid deploymentId() {
         return deploymentId;
     }
 
-    public CacheConfiguration config() {
+    /**
+     * @return Configuration.
+     */
+    public CacheConfiguration<?, ?> config() {
         return cacheCfg;
     }
 
+    /**
+     * @return Group caches.
+     */
     Map<String, Integer> caches() {
         return caches;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheGroupData.class, this);
     }

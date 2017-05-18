@@ -51,6 +51,8 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
+     * @param cacheGrps Started cache groups.
+     * @param cacheGrpIdGen Current counter for group ID assignment.
      * @param clientNodesMap Information about cache client nodes.
      */
     CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
@@ -71,10 +73,16 @@ class CacheNodeCommonDiscoveryData implements Serializable {
         this.clientNodesMap = clientNodesMap;
     }
 
+    /**
+     * @return Current counter for group ID assignment.
+     */
     int currentCacheGroupId() {
         return cacheGrpIdGen;
     }
 
+    /**
+     * @return Started cache groups.
+     */
     Map<Integer, CacheGroupData> cacheGroups() {
         return cacheGrps;
     }

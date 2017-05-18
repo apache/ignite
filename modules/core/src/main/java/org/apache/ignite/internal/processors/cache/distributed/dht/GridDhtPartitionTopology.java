@@ -88,7 +88,7 @@ public interface GridDhtPartitionTopology {
     public boolean stopping();
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
     public int groupId();
 
@@ -134,6 +134,7 @@ public interface GridDhtPartitionTopology {
     public void releasePartitions(int... parts);
 
     /**
+     * @param part Partition number.
      * @return Local partition.
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
