@@ -81,17 +81,16 @@
 }
 
 .btn-ignite {
-    $content-padding: 12px;
+    $content-padding: 10px 12px;
     $icon-margin: 8px;
 
-    min-height: 36px;
     display: inline-flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
     margin: 0;
-    padding: 0 $content-padding;
+    padding: $content-padding;
 
     border: none;
     border-radius: 4px;
