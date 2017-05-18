@@ -2603,9 +2603,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Discovery topology future. */
     private static class DiscoTopologyFuture extends GridFutureAdapter<Long> implements GridLocalEventListener {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private GridKernalContext ctx;
 
         /** Topology await version. */

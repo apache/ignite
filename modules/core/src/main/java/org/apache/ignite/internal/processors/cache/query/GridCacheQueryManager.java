@@ -597,7 +597,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
                             CacheQueryType.SCAN.name(),
-                            cctx.namex(),
+                            cctx.name(),
                             null,
                             null,
                             qry.scanFilter(),
@@ -618,7 +618,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
                             CacheQueryType.FULL_TEXT.name(),
-                            cctx.namex(),
+                            cctx.name(),
                             qry.queryClassName(),
                             qry.clause(),
                             null,
@@ -692,7 +692,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
                     CacheQueryType.SQL_FIELDS.name(),
-                    cctx.namex(),
+                    cctx.name(),
                     null,
                     qry.clause(),
                     null,
@@ -724,7 +724,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
                     CacheQueryType.SPI.name(),
-                    cctx.namex(),
+                    cctx.name(),
                     null,
                     null,
                     null,
@@ -1020,7 +1020,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
                             CacheQueryType.SQL_FIELDS.name(),
-                            cctx.namex(),
+                            cctx.name(),
                             null,
                             qry.clause(),
                             null,
@@ -1255,7 +1255,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
                                     CacheQueryType.SQL.name(),
-                                    cctx.namex(),
+                                    cctx.name(),
                                     qry.queryClassName(),
                                     qry.clause(),
                                     null,
@@ -1276,7 +1276,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
                                     CacheQueryType.FULL_TEXT.name(),
-                                    cctx.namex(),
+                                    cctx.name(),
                                     qry.queryClassName(),
                                     qry.clause(),
                                     null,
@@ -1297,7 +1297,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
                                     CacheQueryType.SCAN.name(),
-                                    cctx.namex(),
+                                    cctx.name(),
                                     null,
                                     null,
                                     qry.scanFilter(),
@@ -1420,7 +1420,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         long startTime = U.currentTimeMillis();
 
-        final String namex = cctx.namex();
+        final String namex = cctx.name();
 
         try {
             assert qry.type() == SCAN;
