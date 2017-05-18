@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -672,7 +673,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Check exception with non-UTC date
             var stream = new BinaryHeapStream(128);
             var writer = _marsh.StartMarshal(stream);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
+            Assert.Throws<BinaryObjectException>(() => writer.WriteTimestamp(DateTime.Now));
         }
 
         /**
@@ -1128,6 +1129,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj, marsh.Unmarshal<CollectionsType>(marsh.Marshal(obj)));
 
             obj.Col2 = new TestList();
+            obj.Hashtable = new TestHashTable();
+
+            Assert.AreEqual(obj, marsh.Unmarshal<CollectionsType>(marsh.Marshal(obj)));
+
+            // Test custom collections.
+            obj.Col3 = new TestList {1, "2"};
+            obj.Hashtable2 = new TestHashTable {{1, "2"}};
 
             Assert.AreEqual(obj, marsh.Unmarshal<CollectionsType>(marsh.Marshal(obj)));
         }
@@ -1697,8 +1705,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             public ICollection Col1 { get; set; }
 
             public ArrayList Col2 { get; set; }
+            
+            public TestList Col3 { get; set; }
 
             public Hashtable Hashtable { get; set; }
+
+            public TestHashTable Hashtable2 { get; set; }
 
             public Dictionary<int, string> Dict { get; set; }
 
@@ -1767,7 +1779,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         public class TestList : ArrayList
         {
+            // No-op.
+        }
 
+        public class TestHashTable : Hashtable
+        {
+            public TestHashTable()
+            {
+                // No-op.
+            }
+
+            // ReSharper disable once UnusedMember.Global
+            protected TestHashTable(SerializationInfo info, StreamingContext context) : base(info, context)
+            {
+                // No-op.
+            }
         }
 
         private static bool CompareCollections(ICollection col1, ICollection col2)
@@ -2436,12 +2462,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
-        public enum TestEnum
-        {
-            Val1, Val2, Val3 = 10
-        }
-
-        public enum TestEnum2
+        public enum TestEnum : short
         {
             Val1, Val2, Val3 = 10
         }

@@ -116,6 +116,9 @@ import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
+import webConsoleHeader from './components/web-console-header';
+import webConsoleFooter from './components/web-console-footer';
+import igniteIcon from './components/ignite-icon';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
@@ -173,7 +176,11 @@ angular
     // Ignite configuration module.
     'ignite-console.config',
     // Ignite modules.
-    'ignite-console.modules'
+    'ignite-console.modules',
+    // Components
+    webConsoleHeader.name,
+    webConsoleFooter.name,
+    igniteIcon.name
 ])
 // Directives.
 .directive(...igniteAutoFocus)
