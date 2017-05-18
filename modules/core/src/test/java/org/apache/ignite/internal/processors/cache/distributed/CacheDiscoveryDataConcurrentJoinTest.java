@@ -17,25 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -50,7 +44,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  *
  */
 @SuppressWarnings("unchecked")
-public class CacheStartOnJoinTest extends GridCommonAbstractTest {
+public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -60,6 +54,9 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
+    /** */
+    private ThreadLocal<Integer> staticCaches = new ThreadLocal<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -68,16 +65,12 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
             /** */
             private boolean delay = true;
 
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-                super.writeToSocket(sock, out, msg, timeout);
-            }
-
             @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                 if (getTestIgniteInstanceName(0).equals(ignite.name())) {
                     if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                         TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
 
-                        if (msg0.client() && delay) {
+                        if (delay) {
                             log.info("Delay join processing: " + msg0);
 
                             delay = false;
@@ -96,13 +89,15 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(testSpi);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(50 * 1024 * 1024);
-
-        cfg.setMemoryConfiguration(memCfg);
-
         cfg.setClientMode(client);
+
+        Integer caches = staticCaches.get();
+
+        if (caches != null) {
+            cfg.setCacheConfiguration(cacheConfigurations(caches).toArray(new CacheConfiguration[caches]));
+
+            staticCaches.remove();
+        }
 
         return cfg;
     }
@@ -113,125 +108,68 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN);
-
-        super.afterTestsStopped();
+        super.afterTest();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentClientsStart1() throws Exception {
-        concurrentClientsStart(false);
-    }
+    public void testConcurrentJoin() throws Exception {
+        for (int iter = 0; iter < ITERATIONS; iter++) {
+            log.info("Iteration: " + iter);
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConcurrentClientsStart2() throws Exception {
-        concurrentClientsStart(true);
-    }
+            final int NODES = 6;
+            final int MAX_CACHES = 10;
 
-    /**
-     * @param createCache If {@code true} concurrently calls getOrCreateCaches.
-     * @throws Exception If failed.
-     */
-    private void concurrentClientsStart(boolean createCache) throws Exception {
-        for (int i = 0; i < ITERATIONS; i++) {
-            try {
-                log.info("Iteration: " + (i + 1) + '/' + ITERATIONS);
+            final GridAtomicInteger caches = new GridAtomicInteger();
 
-                doTest(createCache);
+            startGrid(0);
+
+            final AtomicInteger idx = new AtomicInteger(1);
+
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    int c = ThreadLocalRandom.current().nextInt(MAX_CACHES) + 1;
+
+                    staticCaches.set(c);
+
+                    startGrid(idx.getAndIncrement());
+
+                    caches.setIfGreater(c);
+
+                    return null;
+                }
+            }, NODES - 1, "start-node");
+
+            assertTrue(caches.get() > 0);
+
+            for (int i = 0; i < NODES; i++) {
+                Ignite node = ignite(i);
+
+                for (int c = 0; c < caches.get(); c++) {
+                    Collection<ClusterNode> nodes = node.cluster().forCacheNodes("cache-" + c).nodes();
+
+                    assertEquals(NODES, nodes.size());
+
+                    checkCache(node, "cache-" + c);
+                }
             }
-            finally {
-                stopAllGrids(true);
-            }
+
+            stopAllGrids();
         }
     }
 
     /**
-     * @param createCache If {@code true} concurrently calls getOrCreateCaches.
-     * @throws Exception If failed.
-     */
-    private void doTest(final boolean createCache) throws Exception {
-        client = false;
-
-        final int CLIENTS = 5;
-        final int SRVS = 4;
-
-        Ignite srv = startGrids(SRVS);
-
-        srv.getOrCreateCaches(cacheConfigurations());
-
-        final CyclicBarrier b = new CyclicBarrier(CLIENTS);
-
-        client = true;
-
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer idx) {
-                try {
-                    b.await();
-
-                    Ignite node = startGrid(idx + SRVS);
-
-                    if (createCache) {
-                        for (int c = 0; c < 5; c++) {
-                            for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                                cache.put(c, c);
-
-                                assertEquals(c, cache.get(c));
-                            }
-                        }
-                    }
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            }
-        }, CLIENTS, "start-client");
-
-        final int NODES = CLIENTS + SRVS;
-
-        for (int i = 0; i < CLIENTS + 1; i++) {
-            Ignite node = ignite(i);
-
-            log.info("Check node: " + node.name());
-
-            assertEquals((Boolean)(i >= SRVS), node.configuration().isClientMode());
-
-            for (int c = 0; c < 5; c++) {
-                Collection<ClusterNode> nodes = node.cluster().forCacheNodes("cache-" + c).nodes();
-
-                assertEquals(NODES, nodes.size());
-
-                checkCache(node, "cache-" + c);
-            }
-
-            for (int c = 0; c < 5; c++) {
-                for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                    cache.put(c, c);
-
-                    assertEquals(c, cache.get(c));
-                }
-            }
-        }
-    }
-
-    /**
+     * @param caches Number of caches.
      * @return Cache configurations.
      */
-    private Collection<CacheConfiguration> cacheConfigurations() {
+    private Collection<CacheConfiguration> cacheConfigurations(int caches) {
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < caches; i++)
             ccfgs.add(cacheConfiguration("cache-" + i));
 
         return ccfgs;

@@ -78,13 +78,13 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
                 Map<String, Integer> backupAssignedAttribute = getAttributeStatistic(assigned);
 
-                String nodeAttributeValue = node.attribute(SPLIT_ATTRIBUTE_NAME);
+                String nodeAttributeVal = node.attribute(SPLIT_ATTRIBUTE_NAME);
 
-                if (FIRST_NODE_GROUP.equals(nodeAttributeValue)
+                if (FIRST_NODE_GROUP.equals(nodeAttributeVal)
                     && backupAssignedAttribute.get(FIRST_NODE_GROUP) < 2)
                     return true;
 
-                return backupAssignedAttribute.get(nodeAttributeValue).equals(0);
+                return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
             }
         };
 
@@ -107,10 +107,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
             String val = assignedNode.attribute(SPLIT_ATTRIBUTE_NAME);
 
-            Integer count = backupAssignedAttribute.get(val);
+            Integer cnt = backupAssignedAttribute.get(val);
 
-            backupAssignedAttribute.put(val, count + 1);
+            backupAssignedAttribute.put(val, cnt + 1);
         }
+
         return backupAssignedAttribute;
     }
 
@@ -157,6 +158,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     public void testPartitionDistribution() throws Exception {
         backups = 1;
+
         try {
             for (int i = 0; i < 3; i++) {
                 splitAttrVal = "A";
@@ -205,6 +207,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     public void testPartitionDistributionWithAffinityBackupFilter() throws Exception {
         backups = 3;
+
         try {
             for (int i = 0; i < 2; i++) {
                 splitAttrVal = FIRST_NODE_GROUP;
