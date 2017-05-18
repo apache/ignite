@@ -194,15 +194,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
-        return new GridCacheMapEntryFactory() {
-            @Override public GridCacheMapEntry create(
-                GridCacheContext ctx,
-                AffinityTopologyVersion topVer,
-                KeyCacheObject key
-            ) {
-                return new GridDhtAtomicCacheEntry(ctx, topVer, key);
-            }
-        };
+        assert false : ctx.name();
+
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
