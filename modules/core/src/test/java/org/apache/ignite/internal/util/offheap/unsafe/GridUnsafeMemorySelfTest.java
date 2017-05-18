@@ -275,8 +275,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
         guard.begin();
 
         guard.finalizeLater(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 i.incrementAndGet();
             }
         });
