@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | 
         AttributeTargets.Class | AttributeTargets.Struct)]
-    public class TimestampAttribute : Attribute
+    public sealed class TimestampAttribute : Attribute
     {
         // No-op.
     }
