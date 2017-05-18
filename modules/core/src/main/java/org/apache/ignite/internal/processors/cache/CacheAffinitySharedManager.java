@@ -467,7 +467,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> stoppedGrps = null;
 
-        if (crd) {
+        if (crd && lateAffAssign) {
             for (CacheGroupDescriptor grpDesc : exchActions.cacheGroupsToStop()) {
                 if (grpDesc.config().getCacheMode() != LOCAL) {
                     CacheGroupHolder cacheGrp = grpHolders.remove(grpDesc.groupId());
@@ -1754,7 +1754,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assert ccfg != null : grpDesc;
             assert ccfg.getCacheMode() != LOCAL : ccfg.getName();
 
-            assert !cctx.discovery().cacheGroupAffinityNodes(grpDesc.groupId(), fut.topologyVersion()).contains(cctx.localNode());
+            assert !cctx.discovery().cacheGroupAffinityNodes(grpDesc.groupId(),
+                fut.topologyVersion()).contains(cctx.localNode()) : cacheDesc.cacheName();
 
             AffinityFunction affFunc = cctx.cache().clone(ccfg.getAffinity());
 
