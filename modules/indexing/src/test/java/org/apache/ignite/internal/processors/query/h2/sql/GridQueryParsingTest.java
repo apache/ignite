@@ -588,6 +588,24 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             "CREATE TABLE sch1.\"Person\" (\"id\" integer PRIMARY KEY, \"city\" varchar," +
                 " \"name\" varchar, \"surname\" varchar, \"age\" integer) WITH " +
                 "\"tplCache=cache\"");
+
+        assertParseThrows("create table Person (id int)",
+            IgniteSQLException.class, "No PRIMARY KEY columns specified");
+
+        assertParseThrows("create table Person (id int) AS SELECT 2 * 2",
+            IgniteSQLException.class, "CREATE TABLE ... AS ... syntax is not supported");
+
+        assertParseThrows("create table Person (id int primary key)",
+            IgniteSQLException.class, "No cache value related columns found");
+
+        assertParseThrows("create table Person (id int primary key, age int null)",
+            IgniteSQLException.class, "Mandatory param is missing [paramName=tplCache]");
+
+        assertParseThrows("create table Person (id int primary key, age int not null) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "Non nullable columns are forbidden");
+
+        assertParseThrows("create table Int (_key int primary key, _val int) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
     }
 
     /**

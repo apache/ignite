@@ -855,12 +855,15 @@ public class GridSqlQueryParser {
             cols.put(col.getName(), gridCol);
         }
 
-        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME) ||
-            cols.containsKey(QueryUtils.VAL_FIELD_NAME))
+        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+            cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
             throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
                 IgniteQueryErrorCode.PARSING);
 
         IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
+
+        if (F.isEmpty(pkIdxCols))
+            throw new IgniteSQLException("No PRIMARY KEY columns specified");
 
         LinkedHashSet<String> pkCols = new LinkedHashSet<>();
 
@@ -871,9 +874,6 @@ public class GridSqlQueryParser {
 
             pkCols.add(gridCol.columnName());
         }
-
-        if (F.isEmpty(pkCols))
-            throw new IgniteSQLException("No PRIMARY KEY columns specified");
 
         int valColsNum = cols.size() - pkCols.size();
 
