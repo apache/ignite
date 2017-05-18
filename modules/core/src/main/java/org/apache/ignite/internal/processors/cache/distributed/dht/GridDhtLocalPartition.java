@@ -299,8 +299,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         // Make sure to remove exactly this entry.
         map.removeEntry(entry);
 
-        // Attempt to evict.
-        tryEvict();
+        // Attempt to evict in async way as multiple-threads can compete for same partition.
+        tryEvictAsync(true);
     }
 
     /**

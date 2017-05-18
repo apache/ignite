@@ -1081,7 +1081,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.exchange().onExchangeDone(this, err);
 
-        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
+        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err, false);
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
