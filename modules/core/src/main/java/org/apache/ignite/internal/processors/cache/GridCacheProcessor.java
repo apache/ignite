@@ -1107,8 +1107,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         final List<GridCacheAdapter> stoppedCaches = new ArrayList<>();
 
-        Set<String> stoppedCaches = cachesInfo.onReconnected();
-
         for (final GridCacheAdapter cache : caches.values()) {
             boolean stopped = reconnectRes.stoppedCacheGroups().contains(cache.context().groupId())
                 || reconnectRes.stoppedCaches().contains(cache.name());
