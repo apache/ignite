@@ -299,8 +299,12 @@ public final class FileInput implements ByteBufferBackedDataInput {
             int writtenCrc =  this.readInt();
 
             if ((val ^ writtenCrc) != 0 && !skipCheck) {
-                ensure(5); //if it last message we will skip it (EOF will be thrown)
-                throw new IgniteDataIntegrityViolationException();
+                // If it last message we will skip it (EOF will be thrown).
+                ensure(5);
+
+                throw new IgniteDataIntegrityViolationException(
+                    "val: " + val + " writtenCrc: " + writtenCrc
+                );
             }
         }
 
