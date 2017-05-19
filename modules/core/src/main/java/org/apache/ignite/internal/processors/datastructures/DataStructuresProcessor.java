@@ -998,7 +998,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 null,
                 CacheType.INTERNAL,
                 false,
-                false,
                 true,
                 true).get();
         }

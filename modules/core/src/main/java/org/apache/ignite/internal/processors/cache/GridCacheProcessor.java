@@ -119,7 +119,6 @@ import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -2192,31 +2191,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheName,
             nearCfg,
             CacheType.USER,
-            false,
             failIfExists,
             failIfNotStarted,
             checkThreadTx);
-    }
-
-    /**
-     * Dynamically starts cache as a result of SQL {@code CREATE TABLE} command.
-     *
-     * @param ccfg Cache configuration.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    public IgniteInternalFuture<Boolean> dynamicStartSqlCache(
-        CacheConfiguration ccfg
-    ) {
-        A.notNull(ccfg, "ccfg");
-
-        return dynamicStartCache(ccfg,
-            ccfg.getName(),
-            ccfg.getNearConfiguration(),
-            CacheType.USER,
-            true,
-            false,
-            true,
-            true);
     }
 
     /**
@@ -2226,7 +2203,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param nearCfg Near cache configuration.
      * @param cacheType Cache type.
-     * @param sql If the cache needs to be created as the resukt of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
@@ -2238,7 +2214,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
         CacheType cacheType,
-        boolean sql,
         boolean failIfExists,
         boolean failIfNotStarted,
         boolean checkThreadTx
