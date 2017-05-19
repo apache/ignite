@@ -17,21 +17,29 @@
 
 package org.apache.ignite.cache.spring;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
 import org.jsr166.ConcurrentHashMap8;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentMap;
+
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 
 /**
  * Implementation of Spring cache abstraction based on Ignite cache.
@@ -158,6 +166,10 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
 
     /** Ignite instance. */
     private Ignite ignite;
+
+    /** IGNITE-2786 : Added Grid logger for the purpose of logging. */
+    @LoggerResource
+    private IgniteLogger log;
 
     /** Spring context. */
     private ApplicationContext springCtx;
@@ -296,6 +308,24 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
             ignite = IgniteSpring.start(cfg, springCtx);
         else
             ignite = Ignition.ignite(igniteInstanceName);
+
+        //Handles the reconnect event, on server crashes OR network failure, client connects to server and
+        // destroy the cache
+        IgnitePredicate<DiscoveryEvent> lsnr = iEvt -> {
+            U.warn(log,"Received discovery event [iEvt=" + iEvt.name() + ", discovery=" + iEvt.shortDisplay() + ']');
+
+            caches.keySet().forEach(key -> {
+                ignite.destroyCache(key);
+                caches.remove(key);
+            } );
+
+
+            return true; // Return true to continue listening.
+        };
+
+        // Register event listener for all local task execution events.
+        ignite.events().localListen(lsnr, EVT_CLIENT_NODE_RECONNECTED);
+
     }
 
     /** {@inheritDoc} */
