@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public abstract class AbstractSqlObjectWriter {
+public abstract class SqlListenerAbstractObjectWriter {
     /**
      * @param writer Writer.
      * @param obj Object to write.

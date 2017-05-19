@@ -39,9 +39,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Custom cache name. */
-    private static final String CUSTOM_CACHE_NAME = "custom-cache";
-
     /** URL prefix. */
     private static final String URL_PREFIX = "jdbc:ignite:thin://";
 
@@ -52,7 +49,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

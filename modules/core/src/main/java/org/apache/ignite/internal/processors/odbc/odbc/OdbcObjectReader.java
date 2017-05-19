@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectReader;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReader;
 
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
 @SuppressWarnings("unchecked")
-public class OdbcObjectReader extends AbstractSqlObjectReader {
+public class OdbcObjectReader extends SqlListenerAbstractObjectReader {
     /** {@inheritDoc} */
     @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
         return reader.readObjectDetached();

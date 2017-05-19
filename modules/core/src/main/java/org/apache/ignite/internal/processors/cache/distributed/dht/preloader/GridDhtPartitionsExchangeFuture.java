@@ -837,6 +837,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * The main purpose of this method is to wait for all ongoing updates (transactional and atomic), initiated on
+     * the previous topology version, to finish to prevent inconsistencies during rebalancing and to prevent two
+     * different simultaneous owners of the same lock.
+     * For the exact list of the objects being awaited for see
+     * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
+     *
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease() throws IgniteCheckedException {

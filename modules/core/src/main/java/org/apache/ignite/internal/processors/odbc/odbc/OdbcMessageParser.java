@@ -23,12 +23,12 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractMessageParser;
 
 /**
  * JDBC message parser.
  */
-public class OdbcMessageParser extends SqlListenerMessageParserImpl {
+public class OdbcMessageParser extends SqlListenerAbstractMessageParser {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
