@@ -26,10 +26,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -49,8 +49,7 @@ public class PageMemoryImplNoLoadSelfTest extends PageMemoryNoLoadSelfTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 5 * 1024 * 1024;
 
-        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir, true,
-            sizes);
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             new GridTestKernalContext(log),
@@ -70,7 +69,11 @@ public class PageMemoryImplNoLoadSelfTest extends PageMemoryNoLoadSelfTest {
             null
         );
 
-        return new PageMemoryImpl(provider, sharedCtx, PAGE_SIZE,
+        return new PageMemoryImpl(
+            provider,
+            sizes,
+            sharedCtx,
+            PAGE_SIZE,
             new CIX3<FullPageId, ByteBuffer, Integer>() {
                 @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuffer, Integer tag) {
                     assert false : "No evictions should happen during the test";
@@ -79,11 +82,12 @@ public class PageMemoryImplNoLoadSelfTest extends PageMemoryNoLoadSelfTest {
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
                 }
-            }, new CheckpointLockStateChecker() {
-            @Override public boolean checkpointLockIsHeldByThread() {
-                return true;
-            }
-        });
+            },
+            new CheckpointLockStateChecker() {
+                @Override public boolean checkpointLockIsHeldByThread() {
+                    return true;
+                }
+            });
     }
 
     /** {@inheritDoc} */

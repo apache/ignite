@@ -59,7 +59,7 @@ public class BPlusTreeSelfTestPageMemoryImplSelfTest extends BPlusTreeSelfTest {
 
         sizes[CPUS] = 10 * MB;
 
-        DirectMemoryProvider provider = new UnsafeMemoryProvider(sizes);
+        DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             new GridTestKernalContext(log),
@@ -79,19 +79,24 @@ public class BPlusTreeSelfTestPageMemoryImplSelfTest extends BPlusTreeSelfTest {
             null
         );
 
-        PageMemory mem = new PageMemoryImpl(provider, sharedCtx, PAGE_SIZE,
+        PageMemory mem = new PageMemoryImpl(
+            provider, sizes,
+            sharedCtx,
+            PAGE_SIZE,
             new CIX3<FullPageId, ByteBuffer, Integer>() {
-            @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
-                assert false : "No evictions should happen during the test";
-            }
-        }, new CIX3<Long, FullPageId, PageMemoryEx>(){
-            @Override public void applyx(Long aLong, FullPageId fullPageId, PageMemoryEx ex) {
-            }
-        }, new CheckpointLockStateChecker() {
-            @Override public boolean checkpointLockIsHeldByThread() {
-                return true;
-            }
-        });
+                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
+                    assert false : "No evictions should happen during the test";
+                }
+            },
+            new CIX3<Long, FullPageId, PageMemoryEx>(){
+                @Override public void applyx(Long aLong, FullPageId fullPageId, PageMemoryEx ex) {
+                }
+            },
+            new CheckpointLockStateChecker() {
+                @Override public boolean checkpointLockIsHeldByThread() {
+                    return true;
+                }
+            });
 
         mem.start();
 

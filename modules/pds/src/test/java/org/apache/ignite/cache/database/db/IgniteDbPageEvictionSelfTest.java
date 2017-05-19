@@ -63,7 +63,8 @@ public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(50 * 1024 * 1024);
+        memPlcCfg.setInitialSize(50 * 1024 * 1024);
+        memPlcCfg.setMaxSize(50 * 1024 * 1024);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");

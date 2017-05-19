@@ -262,7 +262,7 @@ public class ExchangeActions {
      * @param req Request.
      * @param desc Cache descriptor.
      */
-    void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+    public void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
         assert req.stop() : req;
 
         cachesToStop = add(cachesToStop, req, desc);

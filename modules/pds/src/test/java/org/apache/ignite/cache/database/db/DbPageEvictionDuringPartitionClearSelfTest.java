@@ -63,7 +63,8 @@ public class DbPageEvictionDuringPartitionClearSelfTest extends GridCommonAbstra
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
-        memPlcCfg.setSize(70 * 1024 * 1024);
+        memPlcCfg.setInitialSize(70 * 1024 * 1024);
+        memPlcCfg.setMaxSize(70 * 1024 * 1024);
 
         memPlcCfg.setName("dfltMemPlc");
 

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.database.pagemem.FullPageIdTable;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -44,8 +45,11 @@ public class FullPageIdTableTest extends GridCommonAbstractTest {
     public void testRandomOperations() throws Exception {
         long mem = FullPageIdTable.requiredMemory(CACHE_ID_RANGE * PAGE_ID_RANGE);
 
-        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new long[] {mem});
-        prov.start();
+        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new JavaLogger());
+
+        prov.initialize(new long[] {mem});
+
+        DirectMemoryRegion region = prov.nextRegion();
 
         try {
             long seed = U.currentTimeMillis();
@@ -53,8 +57,6 @@ public class FullPageIdTableTest extends GridCommonAbstractTest {
             info("Seed: " + seed + "L; //");
 
             Random rnd = new Random(seed);
-
-            DirectMemoryRegion region = prov.memory().regions().get(0);
 
             FullPageIdTable tbl = new FullPageIdTable(region.address(), region.size(), true);
 
@@ -86,7 +88,7 @@ public class FullPageIdTableTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            prov.stop();
+            prov.shutdown();
         }
     }
 

@@ -527,7 +527,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected long[] calculateFragmentSizes(int concLvl, long cacheSize) {
+    protected long[] calculateFragmentSizes(int concLvl, long cacheSize) {
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();
 
@@ -549,11 +549,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        int pageSize,
-        MemoryPolicyConfiguration cfg,
+        MemoryConfiguration memCfg,
+        MemoryPolicyConfiguration plcCfg,
         MemoryMetricsImpl memMetrics
     ) {
-        return new PageMemoryImpl(memProvider, cctx, pageSize,
+        return new PageMemoryImpl(
+            memProvider,
+            calculateFragmentSizes(memCfg.getConcurrencyLevel(), plcCfg.getMaxSize()),
+            cctx,
+            memCfg.getPageSize(),
             new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
                 @Override public void applyx(
                     FullPageId fullId,
@@ -659,7 +663,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
-                if (fut.isCacheAdded(cacheCtx.cacheId(), fut.topologyVersion()) &&
+                if (fut.cacheAddedOnExchange(cacheCtx.cacheId(), cacheCtx.receivedFrom()) &&
                     !cctx.pageStore().hasIndexStore(cacheCtx.cacheId()) && cacheCtx.affinityNode()) {
                     final int cacheId = cacheCtx.cacheId();
 
@@ -876,7 +880,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition part : cacheCtx.topology().currentLocalPartitions()) {
-                if (part.state() != GridDhtPartitionState.OWNING || part.size() <= ggWalRebalanceThreshold)
+                if (part.state() != GridDhtPartitionState.OWNING || part.publicSize() <= ggWalRebalanceThreshold)
                     continue;
 
                 for (Long cpTs : checkpointHist.checkpoints()) {

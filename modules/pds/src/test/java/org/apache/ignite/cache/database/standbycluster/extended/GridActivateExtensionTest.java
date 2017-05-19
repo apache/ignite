@@ -73,7 +73,8 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
-        memPlcCfg.setSize(5 * 1024 * 1024);
+        memPlcCfg.setInitialSize(5 * 1024 * 1024);
+        memPlcCfg.setMaxSize(5 * 1024 * 1024);
 
         memPlcCfg.setName("dfltMemPlc");
 

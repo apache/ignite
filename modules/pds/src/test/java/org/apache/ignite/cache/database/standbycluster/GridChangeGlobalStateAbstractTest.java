@@ -344,7 +344,8 @@ public abstract class GridChangeGlobalStateAbstractTest extends GridCommonAbstra
         memCfg.setConcurrencyLevel(64);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        memPlcCfg.setSize(5 * 1024 * 1024);
+        memPlcCfg.setInitialSize(5 * 1024 * 1024);
+        memPlcCfg.setMaxSize(5 * 1024 * 1024);
         memPlcCfg.setName("dfltMemPlc");
 
         memCfg.setMemoryPolicies(memPlcCfg);

@@ -21,10 +21,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -38,7 +40,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -220,6 +221,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**  */
     private boolean pageEvictWarned;
 
+    /** */
+    private long[] sizes;
+
     /**
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
@@ -229,6 +233,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
+        long[] sizes,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
         GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage,
@@ -238,8 +243,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         assert sharedCtx != null;
 
         log = sharedCtx.logger(PageMemoryImpl.class);
+
         this.sharedCtx = sharedCtx;
         this.directMemoryProvider = directMemoryProvider;
+        this.sizes = sizes;
         this.flushDirtyPage = flushDirtyPage;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
@@ -257,18 +264,26 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (directMemoryProvider instanceof LifecycleAware)
-            ((LifecycleAware)directMemoryProvider).start();
+        directMemoryProvider.initialize(sizes);
 
-        DirectMemory memory = directMemoryProvider.memory();
+        List<DirectMemoryRegion> regions = new ArrayList<>(sizes.length);
+
+        while (true) {
+            DirectMemoryRegion reg = directMemoryProvider.nextRegion();
+
+            if (reg == null)
+                break;
+
+            regions.add(reg);
+        }
 
         nioAccess = SharedSecrets.getJavaNioAccess();
 
-        int regs = memory.regions().size();
+        int regs = regions.size();
 
         segments = new Segment[regs - 1];
 
-        DirectMemoryRegion cpReg = memory.regions().get(regs - 1);
+        DirectMemoryRegion cpReg = regions.get(regs - 1);
 
         checkpointPool = new PagePool(regs - 1, cpReg);
 
@@ -281,11 +296,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         for (int i = 0; i < regs - 1; i++) {
             assert i < segments.length;
 
-            DirectMemoryRegion reg = memory.regions().get(i);
+            DirectMemoryRegion reg = regions.get(i);
 
             totalAllocated += reg.size();
 
-            segments[i] = new Segment(i, memory.regions().get(i), checkpointPool.pages() / segments.length);
+            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length);
 
             pages += segments[i].pages();
             totalTblSize += segments[i].tableSize();
@@ -304,6 +319,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     @Override public void stop() throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
+
+        directMemoryProvider.shutdown();
 
         if (directMemoryProvider instanceof LifecycleAware)
             ((LifecycleAware)directMemoryProvider).stop();

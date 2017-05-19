@@ -60,7 +60,7 @@ public class MetadataStoragePageMemoryImplSelfTest extends MetadataStorageSelfTe
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * 1024;
 
-        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             new GridTestKernalContext(log),
@@ -80,18 +80,22 @@ public class MetadataStoragePageMemoryImplSelfTest extends MetadataStorageSelfTe
             null
         );
 
-        return new PageMemoryImpl(provider, sharedCtx, PAGE_SIZE,
+        return new PageMemoryImpl(
+            provider, sizes,
+            sharedCtx,
+            PAGE_SIZE,
             new CIX3<FullPageId, ByteBuffer, Integer>() {
-            @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
-                assert false : "No evictions should happen during the test";
-            }
-        }, new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-            @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
-            }
-        }, new CheckpointLockStateChecker() {
-            @Override public boolean checkpointLockIsHeldByThread() {
-                return true;
-            }
-        });
+                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
+                    assert false : "No evictions should happen during the test";
+                }
+            },
+            new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
+                @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
+                }
+            }, new CheckpointLockStateChecker() {
+                @Override public boolean checkpointLockIsHeldByThread() {
+                    return true;
+                }
+            });
     }
 }

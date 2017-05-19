@@ -77,7 +77,8 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
         final MemoryConfiguration dbCfg = new MemoryConfiguration();
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        memPlcCfg.setSize(MEMORY_LIMIT);
+        memPlcCfg.setInitialSize(MEMORY_LIMIT);
+        memPlcCfg.setMaxSize(MEMORY_LIMIT);
         memPlcCfg.setName("dfltMemPlc");
 
         dbCfg.setPageSize(PAGE_SIZE);

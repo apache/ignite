@@ -72,7 +72,8 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(1024 * 1024 * 1024);
+        memPlcCfg.setInitialSize(1024 * 1024 * 1024);
+        memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");

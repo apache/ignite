@@ -174,7 +174,8 @@ public class RebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(200 * 1024 * 1024);
+        memPlcCfg.setInitialSize(200 * 1024 * 1024);
+        memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
         memCfg.setMemoryPolicies(memPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");

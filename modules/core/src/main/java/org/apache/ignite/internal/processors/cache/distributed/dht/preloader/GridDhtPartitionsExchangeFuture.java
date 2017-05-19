@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -47,21 +46,22 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperationType;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -546,19 +546,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
 
                         if (op.type() == SnapshotOperationType.RESTORE) {
-                            if (reqs != null)
-                                reqs = new ArrayList<>(reqs);
-                            else
-                                reqs = new ArrayList<>();
+                            assert exchActions == null;
+
+                            exchActions = new ExchangeActions();
 
                             List<DynamicCacheChangeRequest> destroyRequests = getStopCacheRequests(
                                 cctx.cache(), op.cacheNames(), cctx.localNodeId());
 
-                            reqs.addAll(destroyRequests);
+                            if (!F.isEmpty(destroyRequests)) { //Emulate destroy cache request
+                                for (DynamicCacheChangeRequest req : destroyRequests) {
+                                    exchActions.addCacheToStop(req, cctx.cache()
+                                        .cacheDescriptor(CU.cacheId(req.cacheName())));
+                                }
 
-                            if (!reqs.isEmpty()) { //Emulate destroy cache request
                                 if (op.type() == SnapshotOperationType.RESTORE)
-                                    cctx.cache().onCustomEvent(new DynamicCacheChangeBatch(reqs), topVer);
+                                    cctx.cache().onCustomEvent(new DynamicCacheChangeBatch(destroyRequests), topVer);
 
                                 onCacheChangeRequest(crdNode);
                             }
@@ -590,9 +592,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
 
             updateTopologies(crdNode);
-
-            if (exchActions != null && exchActions.hasStop())
-                cctx.cache().context().database().beforeCachesStop();
 
             switch (exchange) {
                 case ALL: {

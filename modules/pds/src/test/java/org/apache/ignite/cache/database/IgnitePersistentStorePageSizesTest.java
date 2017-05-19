@@ -49,7 +49,8 @@ public class IgnitePersistentStorePageSizesTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(100 * 1024 * 1024);
+        memPlcCfg.setInitialSize(100 * 1024 * 1024);
+        memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
         memCfg.setMemoryPolicies(memPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");

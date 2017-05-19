@@ -64,7 +64,8 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(100 * 1024 * 1024);
+        memPlcCfg.setInitialSize(100 * 1024 * 1024);
+        memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
         dbCfg.setMemoryPolicies(memPlcCfg);
