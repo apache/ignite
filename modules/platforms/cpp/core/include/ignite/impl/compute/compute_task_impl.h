@@ -73,6 +73,7 @@ namespace ignite
             };
 
             /**
+             * @tparam R Result type.
              */
             template<typename R>
             class ComputeTaskImpl
@@ -85,6 +86,20 @@ namespace ignite
                 {
                     // No-op.
                 }
+
+                /**
+                 * Get result promise.
+                 *
+                 * @return Reference to result promise.
+                 */
+                common::Promise<R>& GetPromise()
+                {
+                    return promise;
+                }
+
+            private:
+                /** Task result promise. */
+                common::Promise<R> promise;
             };
         }
     }

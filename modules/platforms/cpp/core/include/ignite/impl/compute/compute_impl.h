@@ -44,6 +44,17 @@ namespace ignite
             {
             public:
                 /**
+                 * Operation type.
+                 */
+                struct Operation
+                {
+                    enum Type
+                    {
+                        Unicast = 5
+                    };
+                };
+
+                /**
                  * Constructor.
                  *
                  * @param env Environment.
@@ -68,14 +79,6 @@ namespace ignite
                 template<typename F, typename R>
                 Future<R> CallAsync(const F& func)
                 {
-                    struct Operation
-                    {
-                        enum Type
-                        {
-                            Unicast = 5
-                        };
-                    };
-
                     common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
                     interop::InteropOutputStream out(mem.Get());
                     binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
@@ -94,9 +97,9 @@ namespace ignite
 
                     out.Synchronize();
 
-                    jobject target = InStreamOutObject(Operation::Unicast, mem);
+                    jobject target = InStreamOutObject(Operation::Unicast, *mem.Get());
 
-                    common::Promise<R>& promise = task.GetPromise();
+                    common::Promise<R>& promise = task.Get()->GetPromise();
 
                     promise.SetTarget(target);
 
