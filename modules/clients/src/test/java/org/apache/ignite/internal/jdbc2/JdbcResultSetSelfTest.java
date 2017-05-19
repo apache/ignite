@@ -30,11 +30,14 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -47,6 +50,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.jdbc.JdbcResultSetSelfTest.assertEqualsToStringRepresentation;
 
 /**
  * Result set test.
@@ -56,17 +60,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /**
-     * JDBC URL.
-     * This field changes points to patcher configuration that default marshaller from Binary to JDK because this test requires toString() to be executed at <br>
-     * org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute(),  <br>
-     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br>
-     *     and then strings are compared in assertions
-     *
-     * And for binary marshaller result of such toString call at BinaryObjectImpl will be unexpected by this test <br>
-     * <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582, hash=11433031, a=100, b=AAAA]</code> <br>
-     */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc2-config-jdk-marshaller.xml";
+    /** JDBC URL. */
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** SQL query. */
     private static final String SQL =
@@ -100,22 +95,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
-        patchMarshaller(cfg);
         return cfg;
-    }
-
-    /**
-     * This method changes default marshaller from Binary to JDK because this test requires toString() to be executed at <br>
-     * org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute(),  <br>
-     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br>
-     *     and then strings are compared in assertions
-     *
-     * And for binary marshaller result of such toString call at BinaryObjectImpl will be unexpected by this test <br>
-     * <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582, hash=11433031, a=100, b=AAAA]</code> <br>
-     * @param cfg configuration for bypassing org.apache.ignite.internal.binary.BinaryObjectImpl calling toString() (SQL false)
-     */
-    private void patchMarshaller(IgniteConfiguration cfg) {
-        cfg.setMarshaller(new JdkMarshaller());
     }
 
     /** {@inheritDoc} */
@@ -534,6 +514,9 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObject() throws Exception {
+        final Ignite ignite = ignite(0);
+        final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
+        final IgniteBinary binary = binaryMarshaller ? ignite.binary() : null;
         ResultSet rs = stmt.executeQuery(SQL);
 
         TestObjectField f1 = new TestObjectField(100, "AAAA");
@@ -543,19 +526,19 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         assertTrue(rs.next());
 
-        assertEquals(f1.toString(), rs.getObject("f1"));
-        assertEquals(f1.toString(), rs.getObject(16));
+        assertEqualsToStringRepresentation(f1, binary, rs.getObject("f1"));
+        assertEqualsToStringRepresentation(f1, binary, rs.getObject(16));
 
-        assertEquals(f2.toString(), rs.getObject("f2"));
-        assertEquals(f2.toString(), rs.getObject(17));
+        assertEqualsToStringRepresentation(f2, binary, rs.getObject("f2"));
+        assertEqualsToStringRepresentation(f2, binary, rs.getObject(17));
 
         assertNull(rs.getObject("f3"));
         assertTrue(rs.wasNull());
         assertNull(rs.getObject(18));
         assertTrue(rs.wasNull());
 
-        assertEquals(o.toString(), rs.getObject("_val"));
-        assertEquals(o.toString(), rs.getObject(19));
+        assertEqualsToStringRepresentation(o, binary, rs.getObject("_val"));
+        assertEqualsToStringRepresentation(o, binary, rs.getObject(19));
 
         assertFalse(rs.next());
     }
