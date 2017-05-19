@@ -663,7 +663,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
-                if (fut.cacheAddedOnExchange(cacheCtx.cacheId(), cacheCtx.receivedFrom()) &&
+                if (cacheCtx.startTopologyVersion().equals(fut.topologyVersion()) &&
                     !cctx.pageStore().hasIndexStore(cacheCtx.cacheId()) && cacheCtx.affinityNode()) {
                     final int cacheId = cacheCtx.cacheId();
 
@@ -880,7 +880,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition part : cacheCtx.topology().currentLocalPartitions()) {
-                if (part.state() != GridDhtPartitionState.OWNING || part.publicSize() <= ggWalRebalanceThreshold)
+                if (part.state() != GridDhtPartitionState.OWNING || part.dataStore().size() <= ggWalRebalanceThreshold)
                     continue;
 
                 for (Long cpTs : checkpointHist.checkpoints()) {

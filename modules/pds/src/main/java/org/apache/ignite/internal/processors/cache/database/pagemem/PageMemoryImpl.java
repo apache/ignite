@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database.pagemem;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -72,7 +70,6 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.nio.ch.DirectBuffer;
@@ -321,18 +318,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             log.debug("Stopping page memory.");
 
         directMemoryProvider.shutdown();
-
-        if (directMemoryProvider instanceof LifecycleAware)
-            ((LifecycleAware)directMemoryProvider).stop();
-
-        if (directMemoryProvider instanceof Closeable) {
-            try {
-                ((Closeable)directMemoryProvider).close();
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
-            }
-        }
     }
 
     /** {@inheritDoc} */
