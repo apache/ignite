@@ -125,7 +125,7 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        return null;
+        return new JdbcStatement(this);
     }
 
     /** {@inheritDoc} */
@@ -146,7 +146,12 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        return null;
+        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
+
+        if (timeout > 0)
+            stmt.timeout(timeout);
+
+        return stmt;
     }
 
     /**
