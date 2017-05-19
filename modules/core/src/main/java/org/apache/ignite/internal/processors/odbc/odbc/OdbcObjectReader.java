@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReade
 @SuppressWarnings("unchecked")
 public class OdbcObjectReader extends SqlListenerAbstractObjectReader {
     /** {@inheritDoc} */
-    @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override protected Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException {
         return reader.readObjectDetached();
     }
 }

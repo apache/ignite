@@ -124,7 +124,7 @@ public abstract class SqlListenerAbstractObjectReader {
             default:
                 reader.in().position(reader.in().position() - 1);
 
-                return readNotEmbeddedObject(reader);
+                return readCustomObject(reader);
         }
     }
 
@@ -133,5 +133,5 @@ public abstract class SqlListenerAbstractObjectReader {
      * @return An object is unmarshaled by marshaller.
      * @throws BinaryObjectException On error.
      */
-    protected abstract Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException;
+    protected abstract Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException;
 }

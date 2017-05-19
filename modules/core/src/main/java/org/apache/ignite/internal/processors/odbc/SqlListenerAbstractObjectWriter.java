@@ -99,7 +99,7 @@ public abstract class SqlListenerAbstractObjectWriter {
         else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
         else
-            writeNotEmbeddedObject(writer, obj);
+            writeCustomObject(writer, obj);
     }
 
     /**
@@ -107,5 +107,5 @@ public abstract class SqlListenerAbstractObjectWriter {
      * @param obj Object to marshal with marshaller and write to binary stream.
      * @throws BinaryObjectException On error.
      */
-    protected abstract void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException;
+    protected abstract void writeCustomObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException;
 }

@@ -23,8 +23,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 
 /**
  * ODBC message parser.
@@ -32,6 +30,9 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 public abstract class SqlListenerAbstractMessageParser implements SqlListenerMessageParser {
     /** Initial output stream capacity. */
     protected static final int INIT_CAP = 1024;
+
+    /** Kernal context. */
+    protected GridKernalContext ctx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -49,6 +50,8 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
      */
     protected SqlListenerAbstractMessageParser(final GridKernalContext ctx, SqlListenerAbstractObjectReader objReader,
         SqlListenerAbstractObjectWriter objWriter) {
+        this.ctx = ctx;
+
         log = ctx.log(getClass());
 
         this.objReader = objReader;
@@ -59,9 +62,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
     @Override public SqlListenerRequest decode(byte[] msg) {
         assert msg != null;
 
-        BinaryInputStream stream = new BinaryHeapInputStream(msg);
-
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
+        BinaryReaderExImpl reader = createReader(msg);
 
         byte cmd = reader.readByte();
 
@@ -142,7 +143,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
         assert msg != null;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = createBinaryWriter(INIT_CAP);
+        BinaryWriterExImpl writer = createWriter(INIT_CAP);
 
         // Writing status.
         writer.writeByte((byte) msg.status());
@@ -247,8 +248,18 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
     }
 
     /**
+     * Create reader.
+     *
+     * @param msg Input message.
+     * @return Reader.
+     */
+    protected abstract BinaryReaderExImpl createReader(byte[] msg);
+
+    /**
+     * Create writer.
+     *
      * @param cap Initial capacity.
      * @return Binary writer instance.
      */
-    protected abstract BinaryWriterExImpl createBinaryWriter(int cap);
+    protected abstract BinaryWriterExImpl createWriter(int cap);
 }

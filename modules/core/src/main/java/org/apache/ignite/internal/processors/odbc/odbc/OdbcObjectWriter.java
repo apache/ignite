@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWrite
  */
 public class OdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
-    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+    @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
         writer.writeObjectDetached(obj);
     }
 }
