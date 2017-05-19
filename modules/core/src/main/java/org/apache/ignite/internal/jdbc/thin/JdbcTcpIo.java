@@ -116,11 +116,7 @@ public class JdbcTcpIo {
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());
 
-        try {
-            handshake();
-        } catch(Throwable e) {
-            close();
-        }
+        handshake();
     }
 
     /**

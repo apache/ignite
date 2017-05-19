@@ -105,6 +105,27 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testInvalidUrls() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:80");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to start Ignite client");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection("q");
+
+                return null;
+            }
+        }, SQLException.class, "URL is invalid");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClose() throws Exception {
         String url = URL_PREFIX + HOST;
 
