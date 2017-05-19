@@ -29,7 +29,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 /**
  * ODBC message parser.
  */
-public abstract class SqlListenerMessageParserImpl implements SqlListenerMessageParser {
+public abstract class SqlListenerAbstractMessageParser implements SqlListenerMessageParser {
     /** Initial output stream capacity. */
     protected static final int INIT_CAP = 1024;
 
@@ -37,18 +37,18 @@ public abstract class SqlListenerMessageParserImpl implements SqlListenerMessage
     private final IgniteLogger log;
 
     /** Object reader. */
-    private AbstractSqlObjectReader objReader;
+    private SqlListenerAbstractObjectReader objReader;
 
     /** Object writer. */
-    private AbstractSqlObjectWriter objWriter;
+    private SqlListenerAbstractObjectWriter objWriter;
 
     /**
      * @param ctx Context.
      * @param objReader Object reader.
      * @param objWriter Object writer.
      */
-    protected SqlListenerMessageParserImpl(final GridKernalContext ctx, AbstractSqlObjectReader objReader,
-        AbstractSqlObjectWriter objWriter) {
+    protected SqlListenerAbstractMessageParser(final GridKernalContext ctx, SqlListenerAbstractObjectReader objReader,
+        SqlListenerAbstractObjectWriter objWriter) {
         log = ctx.log(getClass());
 
         this.objReader = objReader;

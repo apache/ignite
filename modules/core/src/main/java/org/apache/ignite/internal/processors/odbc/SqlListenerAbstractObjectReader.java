@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
 @SuppressWarnings("unchecked")
-public abstract class AbstractSqlObjectReader {
+public abstract class SqlListenerAbstractObjectReader {
     /**
      * @param reader Reader.
      * @return Read object.

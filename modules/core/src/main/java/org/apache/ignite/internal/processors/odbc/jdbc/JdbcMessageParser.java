@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParserImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractMessageParser;
 
 /**
  * JDBC message parser.
  */
-public class JdbcMessageParser extends SqlListenerMessageParserImpl {
+public class JdbcMessageParser extends SqlListenerAbstractMessageParser {
     /**
      * @param ctx Context.
      */

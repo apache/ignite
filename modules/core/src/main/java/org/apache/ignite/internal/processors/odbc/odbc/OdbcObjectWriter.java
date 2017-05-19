@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.AbstractSqlObjectWriter;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWriter;
 
 /**
  * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class OdbcObjectWriter extends AbstractSqlObjectWriter {
+public class OdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
     @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
         writer.writeObjectDetached(obj);
