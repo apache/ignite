@@ -35,8 +35,7 @@ public class GridLog4j2InitializedTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @Override
-    protected void setUp() throws Exception {
+    @Override protected void setUp() throws Exception {
 
     }
 
