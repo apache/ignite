@@ -373,8 +373,18 @@ class ClusterCachesInfo {
                 if (!needExchange && desc != null) {
                     if (desc.clientCacheStartVersion() != null)
                         waitTopVer = desc.clientCacheStartVersion();
-                    else
-                        waitTopVer = desc.startTopologyVersion();
+                    else {
+                        AffinityTopologyVersion nodeStartVer =
+                            new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
+
+                        if (desc.startTopologyVersion() != null)
+                            waitTopVer = desc.startTopologyVersion();
+                        else
+                            waitTopVer = desc.receivedFromStartVersion();
+
+                        if (waitTopVer == null || nodeStartVer.compareTo(waitTopVer) > 0)
+                            waitTopVer = nodeStartVer;
+                    }
                 }
             }
             else if (req.globalStateChange())
