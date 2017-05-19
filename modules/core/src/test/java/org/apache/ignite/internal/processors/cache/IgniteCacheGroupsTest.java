@@ -426,13 +426,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            cache1 = ignite(local ? 0 : 1).cache(CACHE1);
-            cache2 = ignite(local ? 0 : 2).cache(CACHE2);
+            // async put ops
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
         ScanQuery<Integer, Integer> qry = new ScanQuery<>();
@@ -499,13 +503,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            cache1 = ignite(1).cache(CACHE1);
-            cache2 = ignite(2).cache(CACHE2);
+            // async put ops
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
 
@@ -594,13 +602,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            IgniteCache cache1 = ignite(local ? 0 : 1).cache(CACHE1);
-            IgniteCache cache2 = ignite(local ? 0 : 2).cache(CACHE2);
+            // async put ops
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
 
@@ -674,13 +686,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            IgniteCache cache1 = ignite(local ? 0 : 1).cache(CACHE1);
-            IgniteCache cache2 = ignite(local ? 0 : 2).cache(CACHE2);
+            // async put ops
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
         checkData(local ? 0 : 3, CACHE1, data1);
