@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWrite
  */
 public class JdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
-    @Override protected void writeNotEmbeddedObject(BinaryWriterExImpl writer, Object obj)
+    @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj)
         throws BinaryObjectException {
         throw new BinaryObjectException("JDBC doesn't support not embedded objects.");
     }

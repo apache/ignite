@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReade
 @SuppressWarnings("unchecked")
 public class JdbcObjectReader extends SqlListenerAbstractObjectReader {
     /** {@inheritDoc} */
-    @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+    @Override protected Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException {
         throw new BinaryObjectException("JDBC doesn't support not embedded objects.");
     }
 }

@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractMessageParser;
 
 /**
@@ -32,8 +35,16 @@ public class JdbcMessageParser extends SqlListenerAbstractMessageParser {
     public JdbcMessageParser(GridKernalContext ctx) {
         super(ctx, new JdbcObjectReader(), new JdbcObjectWriter());
     }
+
     /** {@inheritDoc} */
-    @Override protected BinaryWriterExImpl createBinaryWriter(int cap) {
+    @Override protected BinaryReaderExImpl createReader(byte[] msg) {
+        BinaryInputStream stream = new BinaryHeapInputStream(msg);
+
+        return new BinaryReaderExImpl(null, stream, ctx.config().getClassLoader(), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected BinaryWriterExImpl createWriter(int cap) {
         return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
     }
 }
