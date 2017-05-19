@@ -24,6 +24,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -284,6 +285,15 @@ public interface GridQueryIndexing {
      * @return Space name. Could be null.
      */
     public String space(String schemaName);
+
+    /**
+     * Get space name by database schema and table name.
+     *
+     * @param schemaName Schema name. Could not be null. Could be empty.
+     * @param tblName Table name, non-empty.
+     * @return Space name. Could be null.
+     */
+    public String space(String schemaName, String tblName);
 
     /**
      * Collect queries that already running more than specified duration.
