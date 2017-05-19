@@ -61,6 +61,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core.Tests." +
                             "Binary.BinaryNameMapperTest+Foo[]]][]", 
                             mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
+
+            // Open generics.
+            Assert.AreEqual("System.Collections.Generic.List`1",
+                mapper.GetTypeName(typeof(List<>).AssemblyQualifiedName));
+
+            Assert.AreEqual("System.Collections.Generic.Dictionary`2",
+                mapper.GetTypeName(typeof(Dictionary<,>).AssemblyQualifiedName));
         }
 
         /// <summary>

@@ -2885,22 +2885,27 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
 
-        for (InetSocketAddress addr : addrs)
-            allInetAddrs.add(addr.getAddress());
+        for (InetSocketAddress addr : addrs) {
+            // Skip unresolved as addr.getAddress() can return null.
+            if(!addr.isUnresolved())
+                allInetAddrs.add(addr.getAddress());
+        }
 
         List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
 
         if (reachableInetAddrs.size() < allInetAddrs.size()) {
             LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
 
+            List<InetSocketAddress> unreachableInetAddr = new ArrayList<>(allInetAddrs.size() - reachableInetAddrs.size());
+
             for (InetSocketAddress addr : addrs) {
                 if (reachableInetAddrs.contains(addr.getAddress()))
                     addrs0.add(addr);
+                else
+                    unreachableInetAddr.add(addr);
             }
-            for (InetSocketAddress addr : addrs) {
-                if (!reachableInetAddrs.contains(addr.getAddress()))
-                    addrs0.add(addr);
-            }
+
+            addrs0.addAll(unreachableInetAddr);
 
             addrs = addrs0;
         }
@@ -4016,9 +4021,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      *
      */
     private static class ConnectFuture extends GridFutureAdapter<GridCommunicationClient> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         // No-op.
     }
 

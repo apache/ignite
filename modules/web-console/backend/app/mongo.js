@@ -105,6 +105,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
+        tableName: String,
         databaseSchema: String,
         databaseTable: String,
         keyType: String,
@@ -266,10 +267,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
         sqlEscapeAll: Boolean,
         sqlSchema: String,
-        sqlOnheapRowCacheSize: Number,
         longQueryWarningTimeout: Number,
         sqlFunctionClasses: [String],
-        snapshotableIndex: Boolean,
         queryDetailMetricsSize: Number,
         queryParallelism: Number,
         statisticsEnabled: Boolean,
@@ -355,7 +354,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             threadCount: Number
         },
         ipcEndpointEnabled: Boolean,
-        maxSpaceSize: Number,
         maximumTaskRangeLength: Number,
         managementPort: Number,
         pathModes: [{path: String, mode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']}}],

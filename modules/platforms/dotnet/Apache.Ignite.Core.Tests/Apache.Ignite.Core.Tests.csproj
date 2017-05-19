@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
+    <Compile Include="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
@@ -80,6 +81,7 @@
     <Compile Include="Binary\Serializable\CallbacksTest.cs" />
     <Compile Include="Binary\Serializable\DelegatesTest.cs" />
     <Compile Include="Binary\Serializable\BasicSerializableObjectsTest.cs" />
+    <Compile Include="Binary\EnumsTest.cs" />
     <Compile Include="Binary\Serializable\ObjectReferenceTests.cs" />
     <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
     <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\CacheTestKey.cs" />
+    <Compile Include="Cache\MemoryMetricsTest.cs" />
     <Compile Include="Cache\NonSerializableCacheEntryProcessor.cs" />
     <Compile Include="Cache\NonSerializableException.cs" />
     <Compile Include="Cache\PartitionLossTest.cs" />
@@ -256,6 +259,7 @@
     <ProjectReference Include="..\Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
       <Name>Apache.Ignite.ExamplesDll</Name>
+      <Aliases>ExamplesDll</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
       <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>

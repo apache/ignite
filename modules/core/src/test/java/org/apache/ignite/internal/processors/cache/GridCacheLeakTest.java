@@ -127,10 +127,10 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
                     for (int g = 0; g < 3; g++) {
                         GridCacheConcurrentMap map = ((IgniteKernal)grid(g)).internalCache(CACHE_NAME).map();
 
-                        info("Map size for cache [g=" + g + ", size=" + map.size() +
+                        info("Map size for cache [g=" + g + ", size=" + map.internalSize() +
                             ", pubSize=" + map.publicSize() + ']');
 
-                        assertTrue("Wrong map size: " + map.size(), map.size() <= 8192);
+                        assertTrue("Wrong map size: " + map.internalSize(), map.internalSize() <= 8192);
                     }
                 }
 

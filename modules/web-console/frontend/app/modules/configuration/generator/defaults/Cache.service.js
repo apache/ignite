@@ -26,9 +26,7 @@ const DFLT_CACHE = {
         clsName: 'org.apache.ignite.cache.PartitionLossPolicy',
         value: 'IGNORE'
     },
-    sqlOnheapRowCacheSize: 10240,
     longQueryWarningTimeout: 3000,
-    snapshotableIndex: false,
     sqlEscapeAll: false,
     storeKeepBinary: false,
     loadPreviousValue: false,

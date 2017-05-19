@@ -62,6 +62,15 @@ void CheckValidProtocolVersion(const char* connectStr, ignite::odbc::ProtocolVer
     BOOST_CHECK(cfg.GetProtocolVersion() == version);
 }
 
+void CheckSupportedProtocolVersion(const char* connectStr)
+{
+    Configuration cfg;
+
+    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+
+    BOOST_CHECK(cfg.GetProtocolVersion().IsSupported());
+}
+
 void CheckInvalidProtocolVersion(const char* connectStr)
 {
     Configuration cfg;
@@ -69,6 +78,15 @@ void CheckInvalidProtocolVersion(const char* connectStr)
     cfg.FillFromConnectString(connectStr);
 
     BOOST_CHECK_THROW(cfg.GetProtocolVersion(), ignite::IgniteError);
+}
+
+void CheckUnsupportedProtocolVersion(const char* connectStr)
+{
+    Configuration cfg;
+
+    cfg.FillFromConnectString(connectStr);
+
+    BOOST_CHECK(!cfg.GetProtocolVersion().IsSupported());
 }
 
 void CheckValidBoolValue(const std::string& connectStr, const std::string& key, bool val)
@@ -269,15 +287,27 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidVersion)
     CheckInvalidProtocolVersion("Protocol_Version=0;");
     CheckInvalidProtocolVersion("Protocol_Version=1;");
     CheckInvalidProtocolVersion("Protocol_Version=2;");
-    CheckInvalidProtocolVersion("Protocol_Version=1.6.1;");
-    CheckInvalidProtocolVersion("Protocol_Version=1.7.0;");
-    CheckInvalidProtocolVersion("Protocol_Version=1.8.1;");
+    CheckInvalidProtocolVersion("Protocol_Version=2.1;");
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringUnsupportedVersion)
+{
+    CheckUnsupportedProtocolVersion("Protocol_Version=1.6.1;");
+    CheckUnsupportedProtocolVersion("Protocol_Version=1.7.0;");
+    CheckUnsupportedProtocolVersion("Protocol_Version=1.8.1;");
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidVersion)
 {
-    CheckValidProtocolVersion("Protocol_Version=1.6.0;", ignite::odbc::ProtocolVersion::VERSION_1_6_0);
-    CheckValidProtocolVersion("Protocol_Version=1.8.0;", ignite::odbc::ProtocolVersion::VERSION_1_8_0);
+    CheckValidProtocolVersion("Protocol_Version=2.1.0;", ignite::odbc::ProtocolVersion::VERSION_2_1_0);
+    CheckValidProtocolVersion("Protocol_Version=1.6.1;", ignite::odbc::ProtocolVersion(1, 6, 1));
+    CheckValidProtocolVersion("Protocol_Version=1.7.0;", ignite::odbc::ProtocolVersion(1, 7, 0));
+    CheckValidProtocolVersion("Protocol_Version=1.8.1;", ignite::odbc::ProtocolVersion(1, 8, 1));
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringSupportedVersion)
+{
+    CheckSupportedProtocolVersion("Protocol_Version=2.1.0;");
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)

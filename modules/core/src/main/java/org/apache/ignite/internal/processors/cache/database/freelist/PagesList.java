@@ -89,8 +89,7 @@ public abstract class PagesList extends DataStructure {
      *
      */
     private final class CutTail extends PageHandler<Void, Boolean> {
-        @Override
-        public Boolean run(
+        @Override public Boolean run(
             int cacheId,
             long pageId,
             long page,

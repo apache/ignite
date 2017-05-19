@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheVariableTopologySelf
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheIncrementTxTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheNoSyncForGetTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
 import org.apache.ignite.internal.processors.cache.IgniteOnePhaseCommitInvokeTest;
@@ -266,6 +267,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridNearCacheStoreUpdateTest.class));
 
         suite.addTest(new TestSuite(IgniteOnePhaseCommitInvokeTest.class));
+
+        suite.addTest(new TestSuite(IgniteCacheNoSyncForGetTest.class));
 
         return suite;
     }

@@ -378,14 +378,9 @@ BOOST_AUTO_TEST_CASE(TestLegacyConnection)
     Connect("DRIVER={Apache Ignite};SERVER=127.0.0.1;PORT=11110;CACHE=cache");
 }
 
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_6_0)
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_1_0)
 {
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.6.0");
-}
-
-BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_1_8_0)
-{
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=1.8.0");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;PROTOCOL_VERSION=2.1.0");
 }
 
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
@@ -950,7 +945,6 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
-
 BOOST_AUTO_TEST_CASE(TestDistributedJoins)
 {
     // Starting additional node.
@@ -1023,58 +1017,6 @@ BOOST_AUTO_TEST_CASE(TestDistributedJoins)
     rowsNum = CountRows(stmt);
 
     BOOST_CHECK_EQUAL(rowsNum, entriesNum);
-}
-
-BOOST_AUTO_TEST_CASE(TestDistributedJoinsWithOldVersion)
-{
-    // Starting additional node.
-    Ignite node1 = StartAdditionalNode("Node1");
-    Ignite node2 = StartAdditionalNode("Node2");
-
-    const int entriesNum = 1000;
-
-    // Filling cache with data.
-    for (int i = 0; i < entriesNum; ++i)
-    {
-        TestType entry;
-
-        entry.i32Field = i;
-        entry.i64Field = entriesNum - i - 1;
-
-        cache1.Put(i, entry);
-    }
-
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache;DISTRIBUTED_JOINS=true;PROTOCOL_VERSION=1.6.0");
-
-    SQLRETURN ret;
-
-    const size_t columnsCnt = 2;
-
-    SQLBIGINT columns[columnsCnt] = { 0 };
-
-    // Binding colums.
-    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
-    {
-        ret = SQLBindCol(stmt, i + 1, SQL_C_SLONG, &columns[i], 0, 0);
-
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-    }
-
-    SQLCHAR request[] =
-        "SELECT T0.i32Field, T1.i64Field FROM TestType AS T0 "
-        "INNER JOIN TestType AS T1 "
-        "ON (T0.i32Field = T1.i64Field)";
-
-    ret = SQLExecDirect(stmt, request, SQL_NTS);
-
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-    int rowsNum = CountRows(stmt);
-
-    BOOST_CHECK_GT(rowsNum, 0);
-    BOOST_CHECK_LT(rowsNum, entriesNum);
 }
 
 BOOST_AUTO_TEST_CASE(TestInsertSelect)

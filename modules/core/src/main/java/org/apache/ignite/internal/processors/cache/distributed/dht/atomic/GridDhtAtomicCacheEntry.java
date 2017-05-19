@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -33,17 +32,13 @@ public class GridDhtAtomicCacheEntry extends GridDhtCacheEntry {
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
-    public GridDhtAtomicCacheEntry(
+    GridDhtAtomicCacheEntry(
         GridCacheContext ctx,
         AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, topVer, key, hash, val);
+        super(ctx, topVer, key);
     }
 
     /** {@inheritDoc} */
