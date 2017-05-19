@@ -180,7 +180,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
 
         // Topology validator.
-        suite.addTest(IgniteTopologyValidatorTestSuit.suite());
+        suite.addTest(IgniteTopologyValidatorTestSuite.suite());
 
         // Eviction.
         suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());

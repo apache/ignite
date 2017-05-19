@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTes
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefaultTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheContainsKeyAtomicTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDynamicStopSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughSingleNodeTest;
@@ -325,6 +326,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheNearOnlyTxTest.class);
 
         suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
+
+        suite.addTestSuite(IgniteCacheContainsKeyAtomicTest.class);
 
         return suite;
     }
