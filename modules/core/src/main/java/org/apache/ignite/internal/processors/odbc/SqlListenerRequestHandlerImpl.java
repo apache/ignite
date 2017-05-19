@@ -79,7 +79,8 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
 
     /**
      * Constructor.
-     *  @param ctx Context.
+     *
+     * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.

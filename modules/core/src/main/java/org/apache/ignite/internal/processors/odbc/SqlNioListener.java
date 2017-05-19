@@ -40,10 +40,10 @@ import org.jetbrains.annotations.Nullable;
  * ODBC message listener.
  */
 public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
-    /** The value  corresponds to ODBC driver of the parser field of the handshake request. */
+    /** The value corresponds to ODBC driver of the parser field of the handshake request. */
     public static final byte ODBC_CLIENT = 0;
 
-    /** The value  corresponds to JDBC driver of the parser field of the handshake request. */
+    /** The value corresponds to JDBC driver of the parser field of the handshake request. */
     public static final byte JDBC_CLIENT = 1;
 
     /** Current version. */
@@ -248,6 +248,7 @@ public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
                 parser = new OdbcMessageParser(ctx);
 
                 break;
+
             case JDBC_CLIENT:
                 parser = new JdbcMessageParser(ctx);
 

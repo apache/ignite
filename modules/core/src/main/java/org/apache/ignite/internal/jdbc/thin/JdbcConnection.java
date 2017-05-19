@@ -107,14 +107,65 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareStatement(String sql) throws SQLException {
+    @Override public Statement createStatement(int resSetType, int resSetConcurrency) throws SQLException {
+        return createStatement(resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Statement createStatement(int resSetType, int resSetConcurrency,
+        int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
+        if (resSetType != TYPE_FORWARD_ONLY)
+            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
+
+        if (resSetConcurrency != CONCUR_READ_ONLY)
+            throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
+
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PreparedStatement prepareStatement(String sql) throws SQLException {
         return prepareStatement(sql, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
     }
 
     /** {@inheritDoc} */
+    @Override public PreparedStatement prepareStatement(String sql, int resSetType,
+        int resSetConcurrency) throws SQLException {
+        return prepareStatement(sql, resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PreparedStatement prepareStatement(String sql, int resSetType, int resSetConcurrency,
+        int resSetHoldability) throws SQLException {
+        ensureNotClosed();
+
+        if (resSetType != TYPE_FORWARD_ONLY)
+            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
+
+        if (resSetConcurrency != CONCUR_READ_ONLY)
+            throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
+
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public CallableStatement prepareCall(String sql) throws SQLException {
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Callable functions are not supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public CallableStatement prepareCall(String sql, int resSetType, int resSetConcurrency)
+        throws SQLException {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Callable functions are not supported.");
@@ -239,27 +290,6 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @Override public Statement createStatement(int resSetType, int resSetConcurrency) throws SQLException {
-        return createStatement(resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PreparedStatement prepareStatement(String sql, int resSetType,
-        int resSetConcurrency) throws SQLException {
-        ensureNotClosed();
-
-        return prepareStatement(sql, resSetType, resSetConcurrency, HOLD_CURSORS_OVER_COMMIT);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CallableStatement prepareCall(String sql, int resSetType,
-        int resSetConcurrency) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Callable functions are not supported.");
-    }
-
-    /** {@inheritDoc} */
     @Override public Map<String, Class<?>> getTypeMap() throws SQLException {
         throw new SQLFeatureNotSupportedException("Types mapping is not supported.");
     }
@@ -312,40 +342,6 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Statement createStatement(int resSetType, int resSetConcurrency,
-        int resSetHoldability) throws SQLException {
-        ensureNotClosed();
-
-        if (resSetType != TYPE_FORWARD_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
-
-        if (resSetConcurrency != CONCUR_READ_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
-
-        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PreparedStatement prepareStatement(String sql, int resSetType, int resSetConcurrency,
-        int resSetHoldability) throws SQLException {
-        ensureNotClosed();
-
-        if (resSetType != TYPE_FORWARD_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
-
-        if (resSetConcurrency != CONCUR_READ_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
-
-        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
-
-        return null;
     }
 
     /** {@inheritDoc} */
