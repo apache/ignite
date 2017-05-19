@@ -17,13 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorGridSplitCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorNearPartitionedTxCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorPartitionedTxCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedAtomicCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteTopologyValidatorReplicatedTxCacheTest;
 
 /**
  * Topology validator test suite.
  */
-public class IgniteTopologyValidatorTestSuit extends TestSuite {
+public class IgniteTopologyValidatorTestSuite extends TestSuite {
     /**
      * @return Topology validator tests suite.
      * @throws Exception If failed.

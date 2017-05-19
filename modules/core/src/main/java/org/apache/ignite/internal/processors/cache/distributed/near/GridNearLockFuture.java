@@ -1493,9 +1493,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final int futId;
 
         /** Node ID. */

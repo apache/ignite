@@ -70,6 +70,12 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     /** Errors count. */
     private long errCnt;
 
+    /** Topology version of latest completed partition exchange. */
+    private VisorAffinityTopologyVersion readyTopVer;
+
+    /** Whether pending exchange future exists. */
+    private boolean hasPendingExchange;
+
     /**
      * Default constructor.
      */
@@ -203,6 +209,34 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         this.errCnt = errCnt;
     }
 
+    /**
+     * @return Topology version of latest completed partition exchange.
+     */
+    public VisorAffinityTopologyVersion getReadyAffinityVersion() {
+        return readyTopVer;
+    }
+
+    /**
+     * @param readyTopVer Topology version of latest completed partition exchange.
+     */
+    public void setReadyAffinityVersion(VisorAffinityTopologyVersion readyTopVer) {
+        this.readyTopVer = readyTopVer;
+    }
+
+    /**
+     * @return Whether pending exchange future exists.
+     */
+    public boolean isHasPendingExchange() {
+        return hasPendingExchange;
+    }
+
+    /**
+     * @param hasPendingExchange Whether pending exchange future exists.
+     */
+    public void setHasPendingExchange(boolean hasPendingExchange) {
+        this.hasPendingExchange = hasPendingExchange;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, gridName);
@@ -216,6 +250,8 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         U.writeCollection(out, igfsEndpoints);
         out.writeObject(igfssEx);
         out.writeLong(errCnt);
+        out.writeObject(readyTopVer);
+        out.writeBoolean(hasPendingExchange);
     }
 
     /** {@inheritDoc} */
@@ -231,6 +267,8 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         igfsEndpoints = U.readList(in);
         igfssEx = (Throwable)in.readObject();
         errCnt = in.readLong();
+        readyTopVer = (VisorAffinityTopologyVersion)in.readObject();
+        hasPendingExchange = in.readBoolean();
     }
 
     /** {@inheritDoc} */
