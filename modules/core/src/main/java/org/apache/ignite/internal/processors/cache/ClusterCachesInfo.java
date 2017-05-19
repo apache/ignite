@@ -145,7 +145,7 @@ class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
-        CU.checkAttributeMismatch(log, rmtCfg.getGroupName(), rmt, "groupName", "Group name",
+        CU.checkAttributeMismatch(log, rmtCfg.getGroupName(), rmt, "groupName", "Cache group name",
             locCfg.getGroupName(), rmtCfg.getGroupName(), true);
 
         if (rmtAttr.cacheMode() != LOCAL) {
@@ -157,6 +157,9 @@ class ClusterCachesInfo {
 
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
                 "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
+
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator",
+                "Cache topology validator", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
 
             ClusterNode rmtNode = ctx.discovery().node(rmt);
 

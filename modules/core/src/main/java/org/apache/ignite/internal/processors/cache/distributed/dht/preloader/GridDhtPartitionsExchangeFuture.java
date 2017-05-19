@@ -1178,8 +1178,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 boolean valid = true;
 
-                if (grp.config().getTopologyValidator() != null && !grp.systemCache())
-                    valid = grp.config().getTopologyValidator().validate(discoEvt.topologyNodes());
+                if (grp.topologyValidator() != null && !grp.systemCache())
+                    valid = grp.topologyValidator().validate(discoEvt.topologyNodes());
 
                 m.put(grp.groupId(), new CacheValidation(valid, lostParts));
             }
@@ -1206,7 +1206,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (exchId.isLeft()) {
                 for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups())
-                    grp.config().getAffinity().removeNode(exchId.nodeId());
+                    grp.affinityFunction().removeNode(exchId.nodeId());
             }
 
             exchActions = null;
@@ -1251,7 +1251,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cctx.name());
         }
 
-        if (grp.needsRecovery() || grp.config().getTopologyValidator() != null) {
+        if (grp.needsRecovery() || grp.topologyValidator() != null) {
             CacheValidation validation = grpValidRes.get(grp.groupId());
 
             if (validation == null)

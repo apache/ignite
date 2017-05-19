@@ -63,12 +63,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        CacheConfiguration ccfg = cctx.config();
-
-        if (ccfg == null)
-            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
-
-        return ccfg.getAffinity().partitions();
+        return cctx.group().affinityFunction().partitions();
     }
 
     /** {@inheritDoc} */

@@ -539,11 +539,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
-        prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
-        prepare(cfg, cfg.getTopologyValidator(), false);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -577,11 +575,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = cctx.config();
 
         cleanup(cfg, cfg.getEvictionPolicy(), false);
-        cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cfg.getEvictionFilter(), false);
         cleanup(cfg, cfg.getInterceptor(), false);
-        cleanup(cfg, cfg.getTopologyValidator(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
         if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
@@ -595,6 +591,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cleanup(cfg, nearCfg.getNearEvictionPolicy(), true);
 
         cctx.cleanup();
+    }
+
+    /**
+     * @param grp Cache group.
+     */
+    private void cleanup(CacheGroupInfrastructure grp) {
+        CacheConfiguration cfg = grp.config();
+
+        for (Object obj : grp.configuredUserObjects())
+            cleanup(cfg, obj, false);
     }
 
     /**
@@ -1159,7 +1165,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         stopCache(cache, true, false);
 
                         if (!grp.hasCaches())
-                            grp.stopGroup();
+                            stopCacheGroup(grp);
                     }
                 }
             });
@@ -1965,6 +1971,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             reuseList,
             exchTopVer);
 
+        for (Object obj : grp.configuredUserObjects())
+            prepare(cfg, obj, false);
+
+        U.startLifecycleAware(grp.configuredUserObjects());
+
         grp.start();
 
         CacheGroupInfrastructure old = cacheGrps.put(desc.groupId(), grp);
@@ -2099,7 +2110,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheGroupInfrastructure grp = cacheGrps.remove(grpId);
 
         if (grp != null)
-            grp.stopGroup();
+            stopCacheGroup(grp);
+    }
+
+    /**
+     * @param grp Cache group.
+     */
+    private void stopCacheGroup(CacheGroupInfrastructure grp) {
+        grp.stopGroup();
+
+        U.stopLifecycleAware(log, grp.configuredUserObjects());
+
+        cleanup(grp);
     }
 
     /**
@@ -3415,12 +3437,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Iterable<Object> lifecycleAwares(CacheConfiguration ccfg, Object... objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);
 
-        ret.add(ccfg.getAffinity());
         ret.add(ccfg.getAffinityMapper());
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
         ret.add(ccfg.getInterceptor());
-        ret.add(ccfg.getTopologyValidator());
 
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
 

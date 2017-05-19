@@ -153,7 +153,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         log = ctx.logger(getClass());
 
-        locParts = new AtomicReferenceArray<>(grp.config().getAffinity().partitions());
+        locParts = new AtomicReferenceArray<>(grp.affinityFunction().partitions());
     }
 
     /** {@inheritDoc} */

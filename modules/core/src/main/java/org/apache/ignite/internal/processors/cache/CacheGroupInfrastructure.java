@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -516,6 +520,27 @@ public class CacheGroupInfrastructure {
      */
     public CacheConfiguration config() {
         return ccfg;
+    }
+
+    /**
+     * @return Configured user objects which should be initialized/stopped on group start/stop.
+     */
+    Collection<?> configuredUserObjects() {
+        return Arrays.asList(ccfg.getAffinity(), ccfg.getNodeFilter(), ccfg.getTopologyValidator());
+    }
+
+    /**
+     * @return Configured topology validator.
+     */
+    @Nullable public TopologyValidator topologyValidator() {
+        return ccfg.getTopologyValidator();
+    }
+
+    /**
+     * @return Configured affinity function.
+     */
+    public AffinityFunction affinityFunction() {
+        return ccfg.getAffinity();
     }
 
     /**
