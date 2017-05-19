@@ -10278,8 +10278,7 @@ public abstract class IgniteUtils {
 
         /** {@inheritDoc} */
         @NotNull @Override public Condition newCondition() {
-            // Wrapper for condition not supported.
-            throw new UnsupportedOperationException();
+            return delegate.newCondition();
         }
 
         /**
