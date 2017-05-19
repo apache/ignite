@@ -89,6 +89,7 @@ public class JdbcTcpIo {
     /** Object writer. */
     private final JdbcObjectWriter objWriter = new JdbcObjectWriter();
 
+    /** Closed. */
     private boolean closed;
 
     /**
@@ -339,7 +340,8 @@ public class JdbcTcpIo {
         if (readLen != 4) {
             close();
 
-            throw new IgniteCheckedException("IO error. Cannot receive message len. lenSize = " + readLen);
+            throw new IgniteCheckedException("IO error. Cannot receive the length of message (4 bytes expect) " +
+                "[received = " + readLen + ']');
         }
 
         int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
@@ -352,7 +354,7 @@ public class JdbcTcpIo {
         if (readLen != size) {
             close();
 
-            throw new IgniteCheckedException("IO error. Cannot receive massage. [received=" + readLen + ", size="
+            throw new IgniteCheckedException("IO error. Cannot receive massage [received=" + readLen + ", expected="
                 + size + ']');
         }
 
