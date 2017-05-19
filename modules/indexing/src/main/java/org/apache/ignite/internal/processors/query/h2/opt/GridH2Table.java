@@ -154,6 +154,9 @@ public class GridH2Table extends TableBase {
 
         this.rowFactory = rowFactory;
 
+        identifier = new QueryTable(getSchema().getName(), getName());
+        identifierStr = identifier.schema() + "." + identifier.table();
+
         // Indexes must be created in the end when everything is ready.
         idxs = idxsFactory.createSystemIndexes(this);
 
@@ -176,9 +179,6 @@ public class GridH2Table extends TableBase {
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
         lock = new ReentrantReadWriteLock();
-
-        identifier = new QueryTable(getSchema().getName(), getName());
-        identifierStr = identifier.schema() + "." + identifier.table();
     }
 
     /**
