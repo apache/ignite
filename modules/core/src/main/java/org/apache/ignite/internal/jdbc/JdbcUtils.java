@@ -47,7 +47,11 @@ import static java.sql.Types.VARCHAR;
 
 /**
  * Utility methods for JDBC driver.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 class JdbcUtils {
     /** Marshaller. */
     private static final Marshaller MARSHALLER = new JdkMarshaller();

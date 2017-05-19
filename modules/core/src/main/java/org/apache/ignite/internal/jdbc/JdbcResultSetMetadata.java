@@ -23,7 +23,11 @@ import java.util.List;
 
 /**
  * JDBC result set metadata implementation.
+ *
+ * @deprecated Using Ignite client node based JDBC driver is preferable.
+ * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
  */
+@Deprecated
 public class JdbcResultSetMetadata implements ResultSetMetaData {
     /** Column width. */
     private static final int COL_WIDTH = 30;
