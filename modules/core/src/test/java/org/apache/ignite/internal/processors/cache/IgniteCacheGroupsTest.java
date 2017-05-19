@@ -1870,9 +1870,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Map<Integer, CacheInvokeResult<Integer>> res = cache.invokeAll(data.keySet(), new CacheEntryProcessor<Integer, Integer, Integer>() {
             @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) throws EntryProcessorException {
-                Object removed = ((Map)arguments[0]).remove(entry.getKey());
+                Object expected = ((Map)arguments[0]).get(entry.getKey());
 
-                assertEquals(removed, entry.getValue());
+                assertEquals(expected, entry.getValue());
 
                 // Some calculation
                 return (Integer)arguments[1] + (Integer)arguments[2];
