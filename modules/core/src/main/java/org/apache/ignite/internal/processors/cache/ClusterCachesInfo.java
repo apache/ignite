@@ -1060,22 +1060,23 @@ class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceMode", "Rebalance mode",
-            cfg.getRebalanceMode(), startCfg.getRebalanceMode(), true);
-
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "affinity", "Affinity function",
             attr1.cacheAffinityClassName(), attr2.cacheAffinityClassName(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "nodeFilter", "Node filter",
             attr1.nodeFilterClassName(), attr2.nodeFilterClassName(), true);
 
-        if (cfg.getCacheMode() == PARTITIONED) {
-            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "backups", "Backups",
-                cfg.getBackups(), startCfg.getBackups(), true);
-        }
-
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "memoryPolicyName", "Memory policy",
-            cfg.getCacheMode(), startCfg.getCacheMode(), true);
+            cfg.getMemoryPolicyName(), startCfg.getMemoryPolicyName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+            attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
+            cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceMode", "Rebalance mode",
+            cfg.getRebalanceMode(), startCfg.getRebalanceMode(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceDelay", "Rebalance delay",
             cfg.getRebalanceDelay(), startCfg.getRebalanceDelay(), false);
@@ -1083,8 +1084,10 @@ class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "rebalanceOrder", "Rebalance order",
             cfg.getRebalanceOrder(), startCfg.getRebalanceOrder(), false);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
-            cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);
+        if (cfg.getCacheMode() == PARTITIONED) {
+            CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "backups", "Backups",
+                cfg.getBackups(), startCfg.getBackups(), true);
+        }
     }
 
     /**
