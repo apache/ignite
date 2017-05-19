@@ -59,9 +59,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        OdbcConfiguration odbcCfg = new OdbcConfiguration();
-
-        cfg.setOdbcConfiguration(odbcCfg);
+        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }
@@ -99,6 +97,27 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         assert DriverManager.getConnection(url) != null;
         assert DriverManager.getConnection(url + "/") != null;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidUrls() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:80");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to start Ignite client");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection("q");
+
+                return null;
+            }
+        }, SQLException.class, "URL is invalid");
     }
 
     /**

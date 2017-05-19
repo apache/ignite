@@ -96,7 +96,9 @@ public class JdbcConnection implements Connection {
 
             cliIo.start();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
+            cliIo.close();
+
             throw new SQLException("Failed to start Ignite client.", e);
         }
     }

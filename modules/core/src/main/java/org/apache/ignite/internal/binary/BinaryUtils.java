@@ -1276,16 +1276,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @param in Binary input stream.
-     * @return Value.
-     */
-    public static java.sql.Date doReadSqlDate(BinaryInputStream in) {
-        long time = in.readLong();
-
-        return new java.sql.Date(time);
-    }
-
-    /**
      * @return Value.
      */
     public static Timestamp doReadTimestamp(BinaryInputStream in) {
@@ -1402,32 +1392,6 @@ public class BinaryUtils {
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
                 arr[i] = doReadDate(in);
-            }
-        }
-
-        return arr;
-    }
-
-    /**
-     * @param in Binary input stream.
-     * @return Value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public static java.sql.Date[] doReadSqlDateArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
-
-        java.sql.Date[] arr = new java.sql.Date[len];
-
-        for (int i = 0; i < len; i++) {
-            byte flag = in.readByte();
-
-            if (flag == GridBinaryMarshaller.NULL)
-                arr[i] = null;
-            else {
-                if (flag != GridBinaryMarshaller.DATE)
-                    throw new BinaryObjectException("Invalid flag value: " + flag);
-
-                arr[i] = doReadSqlDate(in);
             }
         }
 
