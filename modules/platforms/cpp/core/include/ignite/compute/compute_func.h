@@ -38,6 +38,7 @@ namespace ignite
         template<typename R>
         class ComputeFunc
         {
+        public:
             /**
              * Destructor.
              */

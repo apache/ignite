@@ -26,8 +26,10 @@
 #include <ignite/common/common.h>
 #include <ignite/common/promise.h>
 #include <ignite/impl/interop/interop_target.h>
+#include <ignite/impl/compute/compute_task_impl.h>
 
 #include <ignite/ignite_error.h>
+#include "ignite/compute/compute_func.h"
 
 namespace ignite
 {
@@ -48,6 +50,58 @@ namespace ignite
                  * @param javaRef Java object reference.
                  */
                 ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+
+                /**
+                 * Asyncronuously calls provided ComputeFunc on a node within
+                 * the underlying cluster group.
+                 *
+                 * @tparam F Compute function type. Should implement ComputeFunc
+                 *  class.
+                 * @tparam R Call return type. BinaryType should be specialized for
+                 *  the type if it is not primitive. Should not be void. For
+                 *  non-returning methods see Compute::Run().
+                 * @param func Compute function to call.
+                 * @return Future that can be used to acess computation result once
+                 *  it's ready.
+                 * @throw IgniteError in case of error.
+                 */
+                template<typename F, typename R>
+                Future<R> CallAsync(const F& func)
+                {
+                    struct Operation
+                    {
+                        enum Type
+                        {
+                            Unicast = 5
+                        };
+                    };
+
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropOutputStream out(mem.Get());
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                    common::concurrent::SharedPointer<ignite::compute::ComputeFunc<R> > job(new F(func));
+
+                    common::concurrent::SharedPointer<ComputeTaskImpl<R> > task(new ComputeTaskImpl<R>(job));
+
+                    int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+                    int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
+
+                    writer.WriteInt64(taskHandle);
+                    writer.WriteInt32(1);
+                    writer.WriteInt32(jobHandle);
+                    writer.WriteObject<F>(func);
+
+                    out.Synchronize();
+
+                    jobject target = InStreamOutObject(Operation::Unicast, mem);
+
+                    common::Promise<R>& promise = task.GetPromise();
+
+                    promise.SetTarget(target);
+
+                    return promise.GetFuture();
+                }
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);

@@ -29,6 +29,8 @@
 #include <ignite/future.h>
 #include <ignite/compute/compute_func.h>
 
+#include <ignite/impl/compute/compute_impl.h>
+
 namespace ignite
 {
     namespace compute
@@ -102,6 +104,8 @@ namespace ignite
              * Calls provided ComputeFunc on a node within the underlying
              * cluster group.
              *
+             * @tparam F Compute function type. Should implement ComputeFunc
+             *  class.
              * @tparam R Call return type. BinaryType should be specialized for
              *  the type if it is not primitive. Should not be void. For
              *  non-returning methods see Compute::Run().
@@ -109,16 +113,18 @@ namespace ignite
              * @return Computation result.
              * @throw IgniteError in case of error.
              */
-            template<typename R>
-            R Call(const ComputeFunc<R>& func)
+            template<typename F, typename R>
+            R Call(const F& func)
             {
-                return R();
+                return impl.Get()->CallAsync<F, R>(func).template GetValue();
             }
 
             /**
              * Asyncronuously calls provided ComputeFunc on a node within
              * the underlying cluster group.
              *
+             * @tparam F Compute function type. Should implement ComputeFunc
+             *  class.
              * @tparam R Call return type. BinaryType should be specialized for
              *  the type if it is not primitive. Should not be void. For
              *  non-returning methods see Compute::Run().
@@ -127,14 +133,15 @@ namespace ignite
              *  it's ready.
              * @throw IgniteError in case of error.
              */
-            template<typename R>
-            Future<R> CallAsync(const ComputeFunc<R>& func)
+            template<typename F, typename R>
+            Future<R> CallAsync(const F& func)
             {
-                common::Promise<R> promise;
-                return promise.GetFuture();
+                return impl.Get()->CallAsync<F, R>(func);
             }
 
         private:
+            /** Implementation. */
+            common::concurrent::SharedPointer<impl::compute::ComputeImpl> impl;
         };
     }
 }

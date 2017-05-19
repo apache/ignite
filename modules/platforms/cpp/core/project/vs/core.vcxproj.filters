@@ -222,6 +222,9 @@
     <ClInclude Include="..\..\include\ignite\compute\compute_func.h">
       <Filter>Code\compute</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_task_impl.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
