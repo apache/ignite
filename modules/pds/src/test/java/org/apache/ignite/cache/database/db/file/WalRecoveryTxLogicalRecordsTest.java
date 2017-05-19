@@ -71,6 +71,9 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
+    /** Cache 2 name. */
+    private static final String CACHE2_NAME = "cache2";
+
     /** */
     public static final int PARTS = 32;
 
@@ -297,7 +300,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testRebalanceIterator() throws Exception {
-        extraCcfg = new CacheConfiguration(CACHE_NAME + "2");
+        extraCcfg = new CacheConfiguration(CACHE2_NAME);
         extraCcfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         Ignite ignite = startGrid();
@@ -312,7 +315,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             int entries = 25;
 
             IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
-            IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE_NAME + "2");
+            IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE2_NAME);
 
             for (int i = 0; i < entries; i++) {
                 // Put to partition 0.

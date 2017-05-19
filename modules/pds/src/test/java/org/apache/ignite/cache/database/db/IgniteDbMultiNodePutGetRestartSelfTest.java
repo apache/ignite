@@ -55,6 +55,9 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
     /** */
     private static final int GRID_CNT = 3;
 
+    /** */
+    private static final String CACHE_NAME = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -72,7 +75,7 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
         ccfg.setIndexedTypes(Integer.class, DbValue.class);
 
@@ -161,10 +164,10 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
      * @param write Write.
      */
     private void checkPutGetSql(IgniteEx ig, boolean write) {
-        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+        IgniteCache<Integer, DbValue> cache = ig.cache(CACHE_NAME);
 
         if (write) {
-            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(null)) {
+            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(CACHE_NAME)) {
                 for (int i = 0; i < 10_000; i++)
                     streamer.addData(i, new DbValue(i, "value-" + i, i));
             }

@@ -56,6 +56,9 @@ public class IgniteCachePageStoreIntegrationSelfTest extends GridCommonAbstractT
     /** */
     private static final int GRID_CNT = 3;
 
+    /** */
+    private static final String CACHE_NAME = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -77,7 +80,7 @@ public class IgniteCachePageStoreIntegrationSelfTest extends GridCommonAbstractT
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
         ccfg.setIndexedTypes(Integer.class, DbValue.class);
 
@@ -167,7 +170,7 @@ public class IgniteCachePageStoreIntegrationSelfTest extends GridCommonAbstractT
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < 1000; i++)
-                        grid.cache(null).put(i, i);
+                        grid.cache(CACHE_NAME).put(i, i);
 
                     return null;
                 }
@@ -183,12 +186,12 @@ public class IgniteCachePageStoreIntegrationSelfTest extends GridCommonAbstractT
      * @param write Write flag.
      */
     private void checkPutGetSql(Ignite ig, boolean write) {
-        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+        IgniteCache<Integer, DbValue> cache = ig.cache(CACHE_NAME);
 
         int entryCnt = 50_000;
 
         if (write) {
-            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(null)) {
+            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 for (int i = 0; i < entryCnt; i++)
@@ -199,12 +202,12 @@ public class IgniteCachePageStoreIntegrationSelfTest extends GridCommonAbstractT
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx ignite = grid(i);
 
-            GridCacheAdapter<Object, Object> cache0 = ignite.context().cache().internalCache(null);
+            GridCacheAdapter<Object, Object> cache0 = ignite.context().cache().internalCache(CACHE_NAME);
 
             for (int k = 0; k < entryCnt; k++)
                 assertNull(cache0.peekEx(i));
 
-            assertEquals(entryCnt, ignite.cache(null).size());
+            assertEquals(entryCnt, ignite.cache(CACHE_NAME).size());
         }
 
         for (int i = 0; i < entryCnt; i++)

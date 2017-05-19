@@ -49,6 +49,9 @@ public class RebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
     /** Cluster size. */
     private static final int CLUSTER_SIZE = 5;
 
+    /** */
+    private static final String CACHE_NAME = "cache1";
+
     /**
      * @throws Exception When fails.
      */
@@ -76,7 +79,7 @@ public class RebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
 
                     startLatch.countDown();
 
-                    IgniteCache<Object, Object> cache1 = ex1.cache("cache1");
+                    IgniteCache<Object, Object> cache1 = ex1.cache(CACHE_NAME);
 
                     int key = keyCnt.get();
 
@@ -136,7 +139,7 @@ public class RebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
 
         checkTopology(CLUSTER_SIZE);
 
-        IgniteCache<Object, Object> cache1 = ex.cache("cache1");
+        IgniteCache<Object, Object> cache1 = ex.cache(CACHE_NAME);
 
         assert keyCnt.get() > 0;
 
@@ -152,9 +155,8 @@ public class RebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
 
         cfg.setActiveOnStart(false);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setName("cache1");
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
