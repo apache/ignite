@@ -2075,7 +2075,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected final int groupIdForCache(Ignite node, String cacheName) {
         for (CacheGroupInfrastructure grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
-            if (!grp.sharedGroup() && cacheName.equals(grp.cacheOrGroupName()))
+            if (grp.hasCache(cacheName))
                 return grp.groupId();
         }
 
