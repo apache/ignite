@@ -14,32 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.ml.math;
 
-package org.apache.ignite.ml.math.exceptions;
+import java.io.Externalizable;
+
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * Interface for distance measures of n-dimensional vectors.
  */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
-
+public interface DistanceMeasure extends Externalizable {
     /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("Arithmetic exception.");
-    }
-
-    /**
-     * Constructor with a specific message.
+     * Compute the distance between two n-dimensional vectors.
+     * <p>
+     * The two vectors are required to have the same dimension.
      *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
+     * @param a the first vector
+     * @param b the second vector
+     * @return the distance between the two vectors
+     * @throws CardinalityException if the array lengths differ.
      */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
-    }
-
+    double compute(Vector a, Vector b) throws CardinalityException;
 }

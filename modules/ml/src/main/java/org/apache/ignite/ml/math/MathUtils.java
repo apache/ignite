@@ -15,31 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math;
+
+import org.apache.ignite.ml.math.exceptions.NullArgumentException;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * Miscellaneous utility functions.
  */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
-
-    /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("Arithmetic exception.");
+public final class MathUtils {
+    public static void checkNotNull(Object o)
+        throws NullArgumentException {
+        if (o == null)
+            throw new NullArgumentException();
     }
-
-    /**
-     * Constructor with a specific message.
-     *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
-     */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
-    }
-
 }

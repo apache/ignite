@@ -15,31 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.clustering;
+
+import java.util.List;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.exceptions.ConvergenceException;
+import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * Support of clusterization with given weights.
  */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
-
+public interface WeightedClusterer<P, M extends Model> extends Clusterer<P, M> {
     /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("Arithmetic exception.");
-    }
-
-    /**
-     * Constructor with a specific message.
+     * Perform clusterization of given points weighted by given weights.
      *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
+     * @param points Points.
+     * @param k count of centers.
+     * @param weights Weights.
      */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
-    }
-
+    public KMeansModel cluster(P points, int k, List<Double> weights) throws
+        MathIllegalArgumentException, ConvergenceException;
 }

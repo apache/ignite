@@ -14,32 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.ml.math.exceptions;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * Base class for exceptions raised by a wrong number.
+ * This class is not intended to be instantiated directly: it should serve
+ * as a base class to create all the exceptions that are raised because some
+ * precondition is violated by a number argument.
  */
-public class MathArithmeticException extends MathRuntimeException {
+public class MathIllegalNumberException extends MathIllegalArgumentException {
     /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+    private static final long serialVersionUID = -7447085893598031110L;
+
+    /** Requested. */
+    private final Number argument;
 
     /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("Arithmetic exception.");
-    }
-
-    /**
-     * Constructor with a specific message.
+     * Construct an exception.
      *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
+     * @param msg Localizable pattern.
+     * @param wrong Wrong number.
+     * @param arguments Arguments.
      */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
+    protected MathIllegalNumberException(String msg, Number wrong, Object... arguments) {
+        super(msg, wrong, arguments);
+        argument = wrong;
     }
 
+    /**
+     * @return the requested value.
+     */
+    public Number getArgument() {
+        return argument;
+    }
 }
