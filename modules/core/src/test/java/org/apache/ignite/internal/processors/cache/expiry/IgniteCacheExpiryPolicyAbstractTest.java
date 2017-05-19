@@ -146,7 +146,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals(0, pSize);
     }
 
-    /**     * @throws Exception If failed.
+    /**
+     * @throws Exception If failed.
      */
     public void testZeroOnCreate() throws Exception {
         factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
@@ -834,9 +835,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void _testNearCreateUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
+    public void testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -959,9 +958,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void _testNearAccess() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
+    public void testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -1009,10 +1006,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpiresOnClient() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
-        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 2));
 
         nearCache = true;
 

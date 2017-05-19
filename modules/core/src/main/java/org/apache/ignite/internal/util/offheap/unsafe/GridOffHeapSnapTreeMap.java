@@ -4450,8 +4450,7 @@ public class GridOffHeapSnapTreeMap<K extends GridOffHeapSmartPointer, V extends
          * @param key Key.
          * @return Taken lock.
          */
-        @Nullable
-        public Lock lock(Object key) {
+        @Nullable public Lock lock(Object key) {
             Thread th = Thread.currentThread();
 
             Lock l = new Lock(key, th);

@@ -91,7 +91,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             object res;
             var ctx = GetStreamingContext(reader);
-            var callbackPushed = false;
 
             // Read additional information from raw part, if flag is set.
             IEnumerable<string> fieldNames;
@@ -129,7 +128,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     reader.AddHandle(pos, res);
 
                     DeserializationCallbackProcessor.Push(res);
-                    callbackPushed = true;
                 }
                 else
                 {
@@ -138,7 +136,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _serializableTypeDesc.OnDeserializing(res, ctx);
 
                     DeserializationCallbackProcessor.Push(res);
-                    callbackPushed = true;
 
                     reader.AddHandle(pos, res);
 
@@ -148,11 +145,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 _serializableTypeDesc.OnDeserialized(res, ctx);
+                DeserializationCallbackProcessor.Pop();
             }
-            finally
+            catch (Exception)
             {
-                if (callbackPushed)
-                    DeserializationCallbackProcessor.Pop();
+                DeserializationCallbackProcessor.Clear();
+                throw;
             }
 
             return (T) res;

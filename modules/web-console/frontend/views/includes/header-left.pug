@@ -1,0 +1,64 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+.wch-nav-item(ignite-sidebar)
+    div(ng-click='$event.stopPropagation()'
+        ng-class='{active: $state.includes("base.configuration")}'
+        bs-dropdown='sidebar.items'
+        data-placement='bottom-left'
+        data-trigger='hover focus'
+        data-container='self'
+        data-animation=''
+    )
+        span Configure
+            span.caret
+
+.wch-nav-item(ng-controller='notebookController')
+    div(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ng-class='{active: $state.includes("base.sql")}')
+        span Queries
+
+    div(ng-if='!IgniteDemoMode')
+        div(ng-if='!notebooks.length' ng-class='{active: $state.includes("base.sql")}')
+            a(ng-click='createNotebook()') Queries
+
+        div(ng-if='notebooks.length'
+            ng-click='$event.stopPropagation()'
+            ng-class='{active: $state.includes("base.sql")}'
+            bs-dropdown='notebooks'
+            data-placement='bottom-left'
+            data-trigger='hover focus'
+            data-container='self'
+            data-animation=''
+            aria-haspopup='true'
+            aria-expanded='false'
+        )
+            span Queries
+                span.caret
+
+.wch-nav-item(ignite-navbar)
+    div(ng-click='$event.stopPropagation()'
+        ng-class='{active: $state.includes("base.monitoring")}'
+        ng-repeat='item in navbar.items'
+        bs-dropdown='item.children'
+        data-placement='bottom-left'
+        data-trigger='hover focus'
+        data-container='self'
+        data-animation=''
+        aria-haspopup='true'
+        aria-expanded='false'
+    )
+        span {{::item.text}}
+            span.caret

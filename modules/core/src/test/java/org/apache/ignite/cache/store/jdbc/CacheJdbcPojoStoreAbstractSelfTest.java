@@ -337,6 +337,55 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     }
 
     /**
+     * Checks that data was loaded correctly with prepared statement.
+     */
+    protected void checkCacheLoadWithStatement() throws SQLException {
+        Connection conn = null;
+
+        PreparedStatement stmt = null;
+
+        try {
+            conn = getConnection();
+
+            conn.setAutoCommit(true);
+
+            String qry = "select id, org_id, name, birthday, gender from Person";
+
+            stmt = conn.prepareStatement(qry);
+
+            IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
+
+            c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", stmt);
+
+            assertEquals(PERSON_CNT, c1.size());
+        }
+        finally {
+            U.closeQuiet(stmt);
+
+            U.closeQuiet(conn);
+        }
+
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheWithStatement() throws Exception {
+        startTestGrid(false, false, false, false, 512);
+
+        checkCacheLoadWithStatement();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheWithStatementTx() throws Exception {
+        startTestGrid(false, false, false, true, 512);
+
+        checkCacheLoadWithStatement();
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {

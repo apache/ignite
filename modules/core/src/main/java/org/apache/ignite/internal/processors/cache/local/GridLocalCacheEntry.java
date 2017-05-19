@@ -38,16 +38,12 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     GridLocalCacheEntry(
         GridCacheContext ctx,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key);
     }
 
     /** {@inheritDoc} */
