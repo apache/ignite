@@ -39,6 +39,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -51,6 +52,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
@@ -59,6 +61,7 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -1501,12 +1504,38 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         int[] backups = cacheMode == REPLICATED ? new int[]{Integer.MAX_VALUE} : new int[]{0, 1, 2, 3};
 
         for (int backups0 : backups)
-            cacheApiTest(cacheMode, atomicityMode, backups0, false);
+            cacheApiTest(cacheMode, atomicityMode, backups0, false, false, false);
 
         int backups0 = cacheMode == REPLICATED ? Integer.MAX_VALUE :
             backups[ThreadLocalRandom.current().nextInt(backups.length)];
 
-        cacheApiTest(cacheMode, atomicityMode, backups0, true);
+        cacheApiTest(cacheMode, atomicityMode, backups0, true, false, false);
+
+        if (cacheMode == PARTITIONED) {
+            // Hire the f variable is used as a bit set where 2 last bits
+            // determine whether a near cache is used on server/client side.
+            // The case without near cache is already tested at this point.
+            for (int f : new int[]{1, 2, 3}) {
+                cacheApiTest(cacheMode, atomicityMode, backups0, false, nearSrv(f), nearClient(f));
+                cacheApiTest(cacheMode, atomicityMode, backups0, true, nearSrv(f), nearClient(f));
+            }
+        }
+    }
+
+    /**
+     * @param flag Flag.
+     * @return {@code True} if near cache should be used on a client side.
+     */
+    private boolean nearClient(int flag) {
+        return (flag & 0b01) == 0b01;
+    }
+
+    /**
+     * @param flag Flag.
+     * @return {@code True} if near cache should be used on a server side.
+     */
+    private boolean nearSrv(int flag) {
+        return (flag & 0b10) == 0b10;
     }
 
     /**
@@ -1514,19 +1543,36 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param atomicityMode Atomicity mode.
      * @param backups Number of backups.
      * @param heapCache On heap cache flag.
+     * @param nearSrv {@code True} if near cache should be used on a server side.
+     * @param nearClient {@code True} if near cache should be used on a client side.
      */
-    private void cacheApiTest(final CacheMode cacheMode,
-        final CacheAtomicityMode atomicityMode,
-        final int backups,
-        final boolean heapCache) throws Exception {
+    private void cacheApiTest(CacheMode cacheMode,
+                              CacheAtomicityMode atomicityMode,
+                              int backups,
+                              boolean heapCache,
+                              boolean nearSrv,
+                              boolean nearClient) throws Exception {
         Ignite srv0 = ignite(0);
 
-        srv0.createCache(cacheConfiguration(GROUP1, "cache-0", cacheMode, atomicityMode, backups, heapCache));
+        NearCacheConfiguration nearCfg = nearSrv ? new NearCacheConfiguration() : null;
+
+        srv0.createCache(cacheConfiguration(GROUP1, "cache-0", cacheMode, atomicityMode, backups, heapCache)
+                .setNearConfiguration(nearCfg));
+
         srv0.createCache(cacheConfiguration(GROUP1, "cache-1", cacheMode, atomicityMode, backups, heapCache));
-        srv0.createCache(cacheConfiguration(GROUP2, "cache-2", cacheMode, atomicityMode, backups, heapCache));
+        srv0.createCache(cacheConfiguration(GROUP2, "cache-2", cacheMode, atomicityMode, backups, heapCache)
+                .setNearConfiguration(nearCfg));
+
         srv0.createCache(cacheConfiguration(null, "cache-3", cacheMode, atomicityMode, backups, heapCache));
 
         awaitPartitionMapExchange();
+
+        if(nearClient) {
+            Ignite clientNode = ignite(4);
+
+            clientNode.createNearCache("cache-0", new NearCacheConfiguration());
+            clientNode.createNearCache("cache-2", new NearCacheConfiguration());
+        }
 
         try {
             for (final Ignite node : Ignition.allGrids()) {
@@ -1534,10 +1580,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                 for (int i = 0; i < 4; i++)
                     ops.add(testSet(node.cache("cache-" + i), cacheMode, atomicityMode, backups, heapCache, node));
-
-                // sync operations
-                for (Callable<?> op : ops)
-                    op.call();
 
                 // async operations
                 GridTestUtils.runMultiThreaded(ops, "cacheApiTest");
@@ -1585,7 +1627,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @param cache Cache.
      */
-    private void cacheApiTest(IgniteCache cache) {
+    private void cacheApiTest(IgniteCache cache) throws Exception {
         cachePutAllGetAll(cache);
         cachePutRemove(cache);
         cachePutGet(cache);
@@ -1593,15 +1635,77 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         cacheQuery(cache);
         cacheInvokeAll(cache);
         cacheInvoke(cache);
+        cacheDataStreamer(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void tearDown(IgniteCache cache) {
         cache.clear();
         cache.removeAll();
     }
 
+    /**
+     * @param cache Cache.
+     */
+    private void cacheDataStreamer(final IgniteCache cache) throws Exception {
+        final int keys = 1000;
+        final int loaders = 4;
+
+        final Integer[] data = generateData(keys * loaders);
+
+        // stream through a client node
+        Ignite clientNode = ignite(4);
+
+        List<Callable<?>> cls = new ArrayList<>(loaders);
+
+        for (final int i : sequence(loaders)) {
+            final IgniteDataStreamer ldr = clientNode.dataStreamer(cache.getName());
+            ldr.autoFlushFrequency(0);
+
+            cls.add(new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    List<IgniteFuture> futs = new ArrayList<>(keys);
+
+                    for (int j = 0, size = keys * loaders; j < size; j++) {
+                        if (j % loaders == i)
+                            futs.add(ldr.addData(j, data[j]));
+
+                        if(j % (100 * loaders) == 0)
+                            ldr.flush();
+                    }
+
+                    ldr.flush();
+
+                    for (IgniteFuture fut : futs)
+                        fut.get();
+
+                    return null;
+                }
+            });
+        }
+
+        GridTestUtils.runMultiThreaded(cls, "loaders");
+
+        Set<Integer> keysSet = sequence(data.length);
+
+        for (Cache.Entry<Integer, Integer> entry : (IgniteCache<Integer, Integer>)cache) {
+            assertTrue(keysSet.remove(entry.getKey()));
+            assertEquals(data[entry.getKey()], entry.getValue());
+        }
+
+        assertTrue(keysSet.isEmpty());
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
     private void cachePutAllGetAll(IgniteCache cache) {
-        Map<Integer, Integer> data = generateDataMap(10000);
+        Map<Integer, Integer> data = generateDataMap(1000);
 
         cache.putAll(data);
 
@@ -1616,6 +1720,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         tearDown(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void cachePutRemove(IgniteCache cache) {
         Random rnd = ThreadLocalRandom.current();
 
@@ -1631,6 +1738,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         tearDown(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void cachePutGet(IgniteCache cache) {
         Random rnd = ThreadLocalRandom.current();
 
@@ -1646,6 +1756,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         tearDown(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void cachePutGetAndPut(IgniteCache cache) {
         Random rnd = ThreadLocalRandom.current();
 
@@ -1666,8 +1779,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         tearDown(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void cacheQuery(IgniteCache cache) {
-        Map<Integer, Integer> data = generateDataMap(10000);
+        Map<Integer, Integer> data = generateDataMap(1000);
 
         cache.putAll(data);
 
@@ -1689,8 +1805,12 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         tearDown(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void cacheInvokeAll(IgniteCache cache) {
-        Map<Integer, Integer> data = generateDataMap(10000);
+        int keys = 1000;
+        Map<Integer, Integer> data = generateDataMap(keys);
 
         cache.putAll(data);
 
@@ -1710,12 +1830,15 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }, data, one, two);
 
-        assertEquals(10000, res.size());
+        assertEquals(keys, res.size());
         assertEquals(one + two, (Object)res.get(0).get());
 
         tearDown(cache);
     }
 
+    /**
+     * @param cache Cache.
+     */
     private void cacheInvoke(IgniteCache cache) {
         Random rnd = ThreadLocalRandom.current();
 
