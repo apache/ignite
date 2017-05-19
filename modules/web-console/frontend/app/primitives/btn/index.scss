@@ -15,43 +15,242 @@
  * limitations under the License.
  */
 
-.btn.btn--stroke {
-    min-width: 36px;
-    height: 36px;
+@import "./../../../public/stylesheets/variables.scss";
 
-    line-height: 34px;
+@mixin active-focus-shadows(
+    $focus: (0 0 5px #095d9a, 0 0 5px #095d9a),
+    $active: (inset 0 1px 3px 0 rgba(0, 0, 0, 0.5))
+) {
+    &.focus, &:focus {
+        box-shadow: $focus;
+    }
+
+    &.active, &:active {
+        box-shadow: $active;
+    }
+
+    &:active, &.active {
+        &:focus, &.focus {
+            &:not([disabled]) {
+                box-shadow: $focus, $active;
+            }
+        }
+    }
+}
+
+.btn-ignite {
+    $content-padding: 10px 12px;
+    $icon-margin: 8px;
+
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    margin: 0;
+    padding: $content-padding;
+
+    border: none;
+    border-radius: $ignite-button-border-radius;
     text-align: center;
+    outline: none;
+    font-family: Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 16px;
+    text-decoration: none;
 
-    color: #ee2b27;
-    border: 1px solid #ee2b27;
-    background: initial;
-
-    i {
-        margin: 0;
-
-        &.export-icon {
-            display: block;
-            width: 16px;
+    .icon {
+        &, &-right, &-left {
             height: 16px;
-            margin: auto;
+        }
 
-            background-image: url('/images/icons/export.svg');
-            background-repeat: no-repeat;
-            background-position: center;
+        &-right {
+            margin-left: $icon-margin;
+        }
+
+        &-left {
+            margin-right: $icon-margin;
         }
     }
 
-    &:hover, &:focus {
-        color: #a8110f;
-        border-color: #a8110f;
+    // Icon tweaks
+    .icon.fa-caret-down {
+        margin: 0 -3px;
+    }
 
-        i {
-            filter: hue-rotate(1deg) saturate(85) brightness(.66);
+    .fa {
+        line-height: inherit !important;
+        font-size: 16px;
+    }
+}
+
+.btn-ignite--primary {
+    $accent-color: $ignite-brand-primary;
+    $text-color: white;
+
+    background-color: $accent-color;
+    color: white;
+
+    &:hover, &.hover,
+    &:active, &.active {
+        &:not([disabled]) {
+            color: white !important;
+            background-color: change-color($accent-color, $lightness: 41%);
+            text-decoration: none !important;
         }
     }
 
+    // Override <a> styles
     &:focus {
-        outline: none;
+        color: white !important;
+        text-decoration: none !important;
     }
 
+    @include active-focus-shadows();
+
+    &[disabled] {
+        color: transparentize($text-color, 0.5);
+        background-color: change-color($accent-color, $lightness: 77%);
+    }
+}
+
+.btn-ignite--primary-outline {
+    $accent-color: $ignite-brand-primary;
+    $hover-color: change-color($accent-color, $lightness: 36%);
+    $disabled-color: #c5c5c5;
+
+    border: 1px solid $accent-color;
+    background: white;
+    color: $accent-color;
+
+    &:hover, &.hover,
+    &:active, &.active {
+        &:not([disabled]) {
+            color: $hover-color;
+            border-color: $hover-color;
+        }
+    }
+
+    @include active-focus-shadows($active: inset 0 1px 3px 0 $hover-color);
+
+    &[disabled] {
+        color: $disabled-color;
+        border-color: $disabled-color;
+    }
+}
+
+.btn-ignite--success {
+    $accent-color: $ignite-brand-success;
+    $text-color: white;
+
+    background-color: $accent-color;
+    color: white;
+
+    &:hover, &.hover,
+    &:active, &.active {
+        &:not([disabled]) {
+            color: white;
+            background-color: change-color($accent-color, $lightness: 26%);
+        }
+    }
+
+    @include active-focus-shadows();
+
+    &[disabled] {
+        color: transparentize($text-color, 0.5);
+        background-color: change-color($accent-color, $saturation: 57%, $lightness: 68%);
+    }
+}
+
+.btn-ignite--link-success {
+    $accent-color: $ignite-brand-success;
+
+    background: transparent;
+    color: $accent-color;
+    text-decoration: underline;
+
+    &:hover, &.hover,
+    &:active, &.active {
+        &:not([disabled]) {
+            color: change-color($accent-color, $lightness: 26%);
+        }
+    }
+
+    @include active-focus-shadows($active: ());
+
+    &[disabled] {
+        color: change-color($accent-color, $saturation: 57%, $lightness: 68%);
+    }
+}
+
+.btn-ignite--secondary {
+    background-color: white;
+    color: #424242;
+    border: 1px solid #dedede;
+
+    &:hover, &.hover,
+    &:active, &.active {
+        &:not([disabled]) {
+            border-color: #c5c5c5;
+            background-color: #eeeeee;
+        }
+    }
+
+    @include active-focus-shadows();
+
+    &[disabled] {
+        opacity: 0.5;
+    }
+}
+
+.btn-ignite-group {
+    display: inline-flex;
+
+    .btn-ignite:not(:first-of-type):not(:last-of-type) {
+        border-radius: 0;
+    }
+
+    .btn-ignite:not(:last-of-type) {
+        border-right-width: 1px;
+        border-right-style: solid;
+    }
+
+    .btn-ignite:first-of-type:not(:only-child) {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .btn-ignite:last-of-type:not(:only-child) {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .btn-ignite.btn-ignite--primary {
+        $line-color: $ignite-brand-primary;
+        border-right-color: change-color($line-color, $lightness: 41%);
+    }
+}
+
+@mixin ignite-link($color, $color-hover) {
+    color: $color;
+
+    &:hover, &.hover,
+    &:focus, &.focus {
+        color: $color-hover;
+        text-decoration: none;
+    }
+}
+
+.link-primary {
+    @include ignite-link(
+        $color: $ignite-brand-primary,
+        $color-hover: change-color($ignite-brand-primary, $lightness: 41%)
+    );
+}
+
+.link-success {
+    @include ignite-link(
+        $color: $ignite-brand-success,
+        $color-hover: change-color($ignite-brand-success, $lightness: 26%)
+    );
 }

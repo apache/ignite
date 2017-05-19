@@ -63,7 +63,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all local tests located in org.apache.ignite.math.impls.* package.
+ * Test suite for all local tests located in org.apache.ignite.ml.math.impls.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -111,7 +111,7 @@ import org.junit.runners.Suite;
     DiagonalMatrixTest.class,
     MatrixAttributeTest.class,
     TransposedMatrixViewTest.class,
-    // Decomposes
+    // Decompositions.
     LUDecompositionTest.class,
     EigenDecompositionTest.class,
     CholeskyDecompositionTest.class,

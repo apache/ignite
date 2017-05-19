@@ -769,19 +769,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pageMem Page memory.
      */
     private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
-        if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
-            return new FairFifoPageEvictionTracker((PageMemoryNoStoreImpl)pageMem, plc, cctx);
-
         if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return new NoOpPageEvictionTracker();
 
-        PageMemoryNoStoreImpl pageMemoryNoStore = (PageMemoryNoStoreImpl)pageMem;
+        assert pageMem instanceof PageMemoryNoStoreImpl : pageMem.getClass();
+
+        PageMemoryNoStoreImpl pageMem0 = (PageMemoryNoStoreImpl)pageMem;
+
+        if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
+            return new FairFifoPageEvictionTracker(pageMem0, plc, cctx);
 
         switch (plc.getPageEvictionMode()) {
             case RANDOM_LRU:
-                return new RandomLruPageEvictionTracker(pageMemoryNoStore, plc, cctx);
+                return new RandomLruPageEvictionTracker(pageMem0, plc, cctx);
             case RANDOM_2_LRU:
-                return new Random2LruPageEvictionTracker(pageMemoryNoStore, plc, cctx);
+                return new Random2LruPageEvictionTracker(pageMem0, plc, cctx);
             default:
                 return new NoOpPageEvictionTracker();
         }

@@ -77,7 +77,7 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
                 }
                 return null;
             }
-        }, IgniteException.class, "Failed to load bean in application context");
+        }, IgniteException.class, "Spring bean with provided name doesn't exist");
     }
 
     /**

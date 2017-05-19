@@ -71,6 +71,13 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
+     * @param key Key.
+     * @return Cached row, if available, null otherwise.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheDataRow read(KeyCacheObject key) throws IgniteCheckedException;
+
+    /**
      * @param p Partition.
      * @return Data store.
      * @throws IgniteCheckedException If failed.

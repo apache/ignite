@@ -107,7 +107,6 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
         KeyCacheObject key,
-        @Nullable final CacheObject val,
         final boolean create,
         final boolean touch) {
         GridCacheMapEntry cur = null;
@@ -135,7 +134,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                 reserved = true;
                             }
 
-                            created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            created0 = factory.create(ctx, topVer, key);
                         }
 
                         cur = created = created0;
@@ -158,7 +157,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                     reserved = true;
                                 }
 
-                                created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                                created0 = factory.create(ctx, topVer, key);
                             }
 
                             cur = created = created0;
@@ -288,36 +287,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         return map.size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
-        final IgnitePredicate<KeyCacheObject> p = new IgnitePredicate<KeyCacheObject>() {
-            @Override public boolean apply(KeyCacheObject key) {
-                GridCacheMapEntry entry = map.get(key);
-
-                return entry != null && entry.visitable(filter);
-            }
-        };
-
-        return new AbstractSet<KeyCacheObject>() {
-            @Override public Iterator<KeyCacheObject> iterator() {
-                return F.iterator0(map.keySet(), true, p);
-            }
-
-            @Override public int size() {
-                return F.size(iterator());
-            }
-
-            @Override public boolean contains(Object o) {
-                if (!(o instanceof KeyCacheObject))
-                    return false;
-
-                return map.keySet().contains(o) && p.apply((KeyCacheObject)o);
-            }
-        };
     }
 
     /** {@inheritDoc} */

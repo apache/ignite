@@ -15,92 +15,32 @@
  * limitations under the License.
  */
 
-.ignite-form-field {
-    & &__control {
-        &:first-child:last-child {
-          width: 100% !important;
-        }
-    }
-}
+@import '../../../public/stylesheets/variables';
 
 .dropdown--ignite {
     font-style: normal;
 
-    .ignite-form-field__control {
-        outline: none;
+    ul.dropdown-menu {
+        margin-top: 2px;
+        padding: 0;
 
-        font-size: 14px;
+        border-color: #c5c5c5;
+        box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
 
-        & > a {
-            display: inline-block;
-            height: 36px;
+        a {
+            padding-left: 15px;
+            padding-right: 15px;
 
-            padding: 0 15px;
+            color: $text-color;
+            line-height: 26px;
 
-            border: 1px solid #ee2b27;
-            border-radius: 4px;
-
-            color: #de4538;
-            line-height: 34px;
-
-            .caret {
-                margin-left: 9px;
-                margin-right: -6px;
-            }
-        }
-
-        &:hover, &:focus {
-            & > a {
-                border-color: #a8110f;
-
+            &:hover {
                 color: #a8110f;
-                text-decoration: none;
             }
         }
 
-        ul {
-            padding: 0;
-
-            border-color: #c5c5c5;
-            box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
-
-            a {
-                padding-left: 15px;
-                padding-right: 15px;
-
-                color: #393939;
-                line-height: 26px;
-
-                &:hover {
-                    color: #a8110f;
-                }
-            }
-
-            li:not(:last-child) {
-                border-bottom: 1px solid #dddddd;
-            }
-        }
-
-        &[disabled='disabled'] {
-            opacity: .5;
-
-            & > a {
-                border-color: #c5c5c5;
-
-                color: #393939;
-            }
-
-            &:hover, &:focus {
-                & > a {
-                    border-color: #c5c5c5;
-
-                    color: #393939;
-                }
-            }
-
-            ul {
-                display: none !important;
-            }
+        li:not(:last-child) {
+            border-bottom: 1px solid $table-border-color;
         }
     }
 }

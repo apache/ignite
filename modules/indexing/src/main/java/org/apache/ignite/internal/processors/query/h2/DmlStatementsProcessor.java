@@ -120,6 +120,15 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Handle cache stop.
+     *
+     * @param spaceName Cache name.
+     */
+    public void onCacheStop(String spaceName) {
+        planCache.remove(spaceName);
+    }
+
+    /**
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
      * @param spaceName Space name.
@@ -244,7 +253,7 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, null);
 
-        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().namex()))
+        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().name()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
                 " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -341,7 +350,7 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) idx.queryTwoStep(cctx, newFieldsQry, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.queryDistributedSqlFields(cctx, newFieldsQry, cancel);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,

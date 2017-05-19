@@ -323,6 +323,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
+     * Atomic cache deferred update timeout.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT = "IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT";
+
+    /**
      * One phase commit deferred ack request timeout.
      */
     public static final String IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -590,6 +595,9 @@ public final class IgniteSystemProperties {
 
     /** Cache start size for on-heap maps. Defaults to 4096. */
     public static final String IGNITE_CACHE_START_SIZE = "IGNITE_CACHE_START_SIZE";
+
+    /** */
+    public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
 
     /**
      * Skip CRC calculation flag.

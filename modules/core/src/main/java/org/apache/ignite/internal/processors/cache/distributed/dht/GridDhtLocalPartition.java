@@ -240,9 +240,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public boolean isEmpty() {
         if (cctx.allowFastEviction())
-            return size() == 0;
+            return internalSize() == 0;
 
-        return store.size() == 0 && size() == 0;
+        return store.size() == 0 && internalSize() == 0;
     }
 
     /**
@@ -896,7 +896,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         CacheDataRow row = it0.next();
 
                         GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx.affinity().affinityTopologyVersion(),
-                            row.key(), null, true, false);
+                            row.key(),
+                            true,
+                            false);
 
                         cctx.shared().database().checkpointReadLock();
 

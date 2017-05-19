@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cache.ClusterState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
@@ -279,9 +280,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
                 DynamicCacheChangeRequest changeGlobalStateReq = new DynamicCacheChangeRequest(
-                    requestId, null, ctx.localNodeId());
-
-                changeGlobalStateReq.state(activate ? ACTIVE : INACTIVE);
+                    requestId, activate ? ACTIVE : INACTIVE, ctx.localNodeId());
 
                 reqs.add(changeGlobalStateReq);
 
@@ -329,26 +328,25 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param reqs Requests.
+     * @param exchActions Requests.
+     * @param topVer Exchange topology version.
      */
     public boolean changeGlobalState(
-        Collection<DynamicCacheChangeRequest> reqs,
+        ExchangeActions exchActions,
         AffinityTopologyVersion topVer
     ) {
-        assert !F.isEmpty(reqs);
+        assert exchActions != null;
         assert topVer != null;
 
-        for (DynamicCacheChangeRequest req : reqs)
-            if (req.globalStateChange()) {
-                ChangeGlobalStateContext cgsCtx = lastCgsCtx;
+        if (exchActions.newClusterState() != null) {
+            ChangeGlobalStateContext cgsCtx = lastCgsCtx;
 
-                assert cgsCtx != null : "reqs: " + Arrays.toString(reqs.toArray());
+            assert cgsCtx != null : exchActions;
 
-                cgsCtx.topologyVersion(topVer);
+            cgsCtx.topologyVersion(topVer);
 
-                return true;
-            }
-
+            return true;
+        }
 
         return false;
     }
