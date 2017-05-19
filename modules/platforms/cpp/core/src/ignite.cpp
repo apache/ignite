@@ -57,7 +57,7 @@ namespace ignite
 
     compute::Compute Ignite::GetCompute()
     {
-        return compute::Compute();
+        return compute::Compute(impl.Get()->GetCompute());
     }
 
     IgniteBinding Ignite::GetBinding()

@@ -77,7 +77,7 @@ namespace ignite
                  *  it's ready.
                  * @throw IgniteError in case of error.
                  */
-                template<typename F, typename R>
+                template<typename R, typename F>
                 Future<R> CallAsync(const F& func)
                 {
                     common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
@@ -86,15 +86,18 @@ namespace ignite
 
                     common::concurrent::SharedPointer<ignite::compute::ComputeFunc<R> > job(new F(func));
 
-                    common::concurrent::SharedPointer<ComputeTaskImpl<R> > task(new ComputeTaskImpl<R>(job));
+                    common::concurrent::SharedPointer<ComputeTaskImpl<R> > task(new ComputeTaskImpl<R>());
 
                     int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
                     int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
 
                     writer.WriteInt64(taskHandle);
                     writer.WriteInt32(1);
-                    writer.WriteInt32(jobHandle);
+                    writer.WriteInt64(jobHandle);
                     writer.WriteObject<F>(func);
+
+                    std::cout << "taskHandle: " << taskHandle << std::endl;
+                    std::cout << "jobHandle: " << jobHandle << std::endl;
 
                     out.Synchronize();
 

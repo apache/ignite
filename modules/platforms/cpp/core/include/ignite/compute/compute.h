@@ -101,6 +101,17 @@ namespace ignite
         {
         public:
             /**
+             * Constructor.
+             *
+             * @param impl Implementation.
+             */
+            Compute(common::concurrent::SharedPointer<impl::compute::ComputeImpl> impl) :
+                impl(impl)
+            {
+                // No-op.
+            }
+
+            /**
              * Calls provided ComputeFunc on a node within the underlying
              * cluster group.
              *
@@ -113,10 +124,10 @@ namespace ignite
              * @return Computation result.
              * @throw IgniteError in case of error.
              */
-            template<typename F, typename R>
+            template<typename R, typename F>
             R Call(const F& func)
             {
-                return impl.Get()->CallAsync<F, R>(func).template GetValue();
+                return impl.Get()->CallAsync<R, F>(func).GetValue();
             }
 
             /**
@@ -133,10 +144,10 @@ namespace ignite
              *  it's ready.
              * @throw IgniteError in case of error.
              */
-            template<typename F, typename R>
+            template<typename R, typename F>
             Future<R> CallAsync(const F& func)
             {
-                return impl.Get()->CallAsync<F, R>(func);
+                return impl.Get()->CallAsync<R, F>(func);
             }
 
         private:

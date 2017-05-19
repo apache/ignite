@@ -23,7 +23,6 @@
 
 #include <ignite/binary/binary.h>
 #include <ignite/cache/query/continuous/continuous_query.h>
-#include <ignite/ignite_binding.h>
 #include <ignite/ignite_binding_context.h>
 
 #include <ignite/impl/ignite_environment.h>
@@ -47,6 +46,8 @@ namespace ignite
             enum Type
             {
                 CACHE_INVOKE = 8,
+                COMPUTE_TASK_REDUCE = 11,
+                COMPUTE_TASK_COMPLETE = 12,
                 CONTINUOUS_QUERY_LISTENER_APPLY = 18,
                 CONTINUOUS_QUERY_FILTER_CREATE = 19,
                 CONTINUOUS_QUERY_FILTER_APPLY = 20,
@@ -69,8 +70,17 @@ namespace ignite
             int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
+            std::cout << type << std::endl;
+
             switch (type)
             {
+                case OperationCallback::COMPUTE_TASK_REDUCE:
+                {
+                    std::cout << "COMPUTE_TASK_REDUCE" << std::endl;
+                    std::cout << "handle: " << val << std::endl;
+                    break;
+                }
+
                 case OperationCallback::ON_STOP:
                 {
                     delete env;
@@ -144,8 +154,18 @@ namespace ignite
         {
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
+            std::cout << type << std::endl;
+
             switch (type)
             {
+                case OperationCallback::COMPUTE_TASK_COMPLETE:
+                {
+                    std::cout << "COMPUTE_TASK_COMPLETE" << std::endl;
+                    std::cout << "val1: " << val1 << std::endl;
+                    std::cout << "val2: " << val2 << std::endl;
+                    break;
+                }
+
                 case OperationCallback::ON_START:
                 {
                     env->Get()->OnStartCallback(val1, reinterpret_cast<jobject>(arg));

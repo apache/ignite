@@ -79,6 +79,12 @@ namespace ignite
             class ComputeTaskImpl
             {
             public:
+
+                ComputeTaskImpl()
+                {
+                    // No-op.
+                }
+
                 /**
                  * Destructor.
                  */
