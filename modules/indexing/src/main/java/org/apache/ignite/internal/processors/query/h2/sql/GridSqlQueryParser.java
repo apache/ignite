@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.AlterTableAddConstraint;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
@@ -53,6 +54,7 @@ import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
+import org.h2.engine.Constants;
 import org.h2.engine.FunctionAlias;
 import org.h2.expression.Aggregate;
 import org.h2.expression.Alias;
@@ -382,6 +384,12 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<DropTable, String> DROP_TABLE_NAME = getter(DropTable.class, "tableName");
+
+    /** */
+    private static final Getter<Column, Boolean> COLUMN_IS_COMPUTED = getter(Column.class, "isComputed");
+
+    /** */
+    private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
     /** */
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
@@ -836,6 +844,28 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("CREATE TABLE ... AS ... syntax is not supported",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+        List<DefineCommand> constraints = CREATE_TABLE_CONSTRAINTS.get(createTbl);
+
+        if (constraints.size() == 0)
+            throw new IgniteSQLException("No PRIMARY KEY defined for CREATE TABLE",
+                IgniteQueryErrorCode.PARSING);
+
+        if (constraints.size() > 1)
+            throw new IgniteSQLException("Too many constraints - only PRIMARY KEY is supported for CREATE TABLE",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        DefineCommand constraint = constraints.get(0);
+
+        if (!(constraint instanceof AlterTableAddConstraint))
+            throw new IgniteSQLException("Unsupported type of constraint for CREATE TABLE - only PRIMARY KEY " +
+                "is supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        AlterTableAddConstraint alterTbl = (AlterTableAddConstraint)constraint;
+
+        if (alterTbl.getType() != Command.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY)
+            throw new IgniteSQLException("Unsupported type of constraint for CREATE TABLE - only PRIMARY KEY " +
+                "is supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         Schema schema = SCHEMA_COMMAND_SCHEMA.get(createTbl);
 
         res.schemaName(schema.getName());
@@ -845,8 +875,33 @@ public class GridSqlQueryParser {
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
         for (Column col : data.columns) {
+            if (col.isAutoIncrement())
+                throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
             if (!col.isNullable())
-                throw new IgniteSQLException("Non nullable columns are forbidden", IgniteQueryErrorCode.PARSING);
+                throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.PARSING);
+
+            if (COLUMN_IS_COMPUTED.get(col))
+                throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (col.getDefaultExpression() != null)
+                throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (col.getSequence() != null)
+                throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
+                throw new IgniteSQLException("SELECTIVITY column attr is not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
+                throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
+                    ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
 
@@ -863,7 +918,7 @@ public class GridSqlQueryParser {
         IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
 
         if (F.isEmpty(pkIdxCols))
-            throw new IgniteSQLException("No PRIMARY KEY columns specified");
+            throw new AssertionError("No PRIMARY KEY columns specified");
 
         LinkedHashSet<String> pkCols = new LinkedHashSet<>();
 
