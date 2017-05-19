@@ -14,31 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
 
-/**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
- */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+package org.apache.ignite.ml;
 
-    /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("arithmetic exception");
-    }
+import java.util.function.BiFunction;
+
+
+/** Basic interface for all models. */
+@FunctionalInterface
+public interface Model<T, V> {
+    /** Predict a result for value. */
+    public V predict(T val);
 
     /**
-     * Constructor with a specific message.
+     * Combines this model with other model via specified combiner
      *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
+     * @param other Other model.
+     * @param combiner Combiner.
+     * @return Combination of models.
      */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
+    public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
+        return v -> combiner.apply(predict(v), other.predict(v));
     }
-
 }

@@ -14,31 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
+
+package org.apache.ignite.ml.math.statistics;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * This class encapsulates calculating variance.
  */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+public class Variance {
+    /** */
+    private double mean;
 
-    /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("arithmetic exception");
+    /** */
+    private long n;
+
+    /** */
+    private double m2;
+
+    public Variance() {
+        mean = 0;
+        n = 0;
+        m2 = 0;
     }
 
-    /**
-     * Constructor with a specific message.
-     *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
-     */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
+    /** */
+    public Variance update(Double x) {
+        n++;
+        double delta = x - mean;
+        mean += delta / n;
+        double delta2 = x - mean;
+        m2 += delta * delta2;
+        return this;
     }
 
+    /** */
+    public double getResult() {
+        return m2;
+    }
 }

@@ -18,27 +18,32 @@ package org.apache.ignite.ml.math.exceptions;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * Base class for all exceptions that signal that the process
+ * throwing the exception is in a state that does not comply with
+ * the set of states that it is designed to be in.
  */
-public class MathArithmeticException extends MathRuntimeException {
+public class MathIllegalStateException extends MathRuntimeException {
     /** Serializable version Id. */
     private static final long serialVersionUID = -6024911025449780478L;
+
+    /** */
+    private static final String ILLEGAL_STATE= "illegal state";
+
+    /**
+     * Simple constructor.
+     *
+     * @param msg Message pattern explaining the cause of the error.
+     * @param args Arguments.
+     */
+    public MathIllegalStateException(String msg, Object ... args) {
+        super(msg, args);
+    }
 
     /**
      * Default constructor.
      */
-    public MathArithmeticException() {
-        this("arithmetic exception");
-    }
-
-    /**
-     * Constructor with a specific message.
-     *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
-     */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
+    public MathIllegalStateException() {
+        this(ILLEGAL_STATE);
     }
 
 }

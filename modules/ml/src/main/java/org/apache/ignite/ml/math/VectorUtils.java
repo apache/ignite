@@ -14,31 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
 
-/**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
- */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+package org.apache.ignite.ml.math;
 
-    /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("arithmetic exception");
+import java.util.Map;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
+
+public class VectorUtils {
+    /** */
+    public static Vector zeroesLike(Vector v) {
+        return v.like(v.size()).assign(0.0);
     }
 
-    /**
-     * Constructor with a specific message.
-     *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
-     */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
+    /** */
+    public static Vector zeroes(int n) {
+        return new DenseLocalOnHeapVector(n).assign(0.0);
     }
 
+    public static Vector fromMap(Map<Integer, Double> value, boolean copy) {
+        return new SparseLocalVector(value, copy);
+    }
 }

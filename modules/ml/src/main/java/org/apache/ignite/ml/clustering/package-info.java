@@ -14,31 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * <!-- Package description. -->
+ * Contains clustering algorithms.
  */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
-
-    /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("arithmetic exception");
-    }
-
-    /**
-     * Constructor with a specific message.
-     *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
-     */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
-    }
-
-}
+package org.apache.ignite.ml.clustering;

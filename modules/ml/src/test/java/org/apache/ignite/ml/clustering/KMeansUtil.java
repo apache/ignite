@@ -14,31 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
 
-/**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
- */
-public class MathArithmeticException extends MathRuntimeException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+package org.apache.ignite.ml.clustering;
 
-    /**
-     * Default constructor.
-     */
-    public MathArithmeticException() {
-        this("arithmetic exception");
+import java.util.Comparator;
+import org.apache.ignite.ml.math.Vector;
+
+import static org.junit.Assert.assertTrue;
+
+/** Base test for k-means algorithms. */
+public class KMeansUtil {
+    /** */
+    public static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
+        for (int i = 0; i < v1s.length; i++) {
+            assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
+                v1s[i].minus(v2s[i]).kNorm(2) < epsilon);
+        }
     }
-
-    /**
-     * Constructor with a specific message.
-     *
-     * @param format Message pattern providing the specific context of the error.
-     * @param args Arguments.
-     */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
-    }
-
 }

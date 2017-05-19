@@ -18,27 +18,31 @@ package org.apache.ignite.ml.math.exceptions;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
- * Base class for arithmetic exceptions.
+ * Error thrown when a numerical computation can not be performed because the
+ * numerical result failed to converge to a finite value.
  */
-public class MathArithmeticException extends MathRuntimeException {
+public class ConvergenceException extends MathIllegalStateException {
     /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+    private static final long serialVersionUID = 4330003017885151975L;
+
+    /** */
+    private static final String CONVERGENCE_FAILED = "convergence failed";
 
     /**
-     * Default constructor.
+     * Construct the exception.
      */
-    public MathArithmeticException() {
-        this("arithmetic exception");
+    public ConvergenceException() {
+        this(CONVERGENCE_FAILED);
     }
 
     /**
-     * Constructor with a specific message.
+     * Construct the exception with a specific context and arguments.
      *
-     * @param format Message pattern providing the specific context of the error.
+     * @param msg Message pattern providing the specific context of
+     * the error.
      * @param args Arguments.
      */
-    public MathArithmeticException(String format, Object... args) {
-        super(format, args);
+    public ConvergenceException(String msg, Object ... args) {
+        super(msg, args);
     }
-
 }
