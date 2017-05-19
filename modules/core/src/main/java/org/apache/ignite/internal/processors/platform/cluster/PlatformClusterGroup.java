@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -103,6 +104,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_CACHE_METRICS = 24;
+
+    /** */
+    private static final int OP_RESET_LOST_PARTITIONS = 25;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -222,6 +226,19 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         switch (type) {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
+
+            case OP_RESET_LOST_PARTITIONS:
+                int cnt = reader.readInt();
+
+                Collection<String> cacheNames = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    cacheNames.add(reader.readString());
+                }
+
+                platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
+
+                return TRUE;
 
             default:
                 return super.processInStreamOutLong(type, reader);

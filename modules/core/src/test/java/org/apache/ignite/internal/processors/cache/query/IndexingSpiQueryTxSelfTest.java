@@ -148,15 +148,5 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
             // No-op.
         }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-            // No-op.
-        }
     }
 }

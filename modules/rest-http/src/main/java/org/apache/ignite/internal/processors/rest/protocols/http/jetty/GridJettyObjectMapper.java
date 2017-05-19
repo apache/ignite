@@ -77,14 +77,6 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
     };
 
-    /** Custom {@code null} string serializer. */
-    private static final JsonSerializer<Object> NULL_STRING_VALUE_SERIALIZER = new JsonSerializer<Object>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(Object val, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeString("");
-        }
-    };
-
     /**
      * Custom serializers provider that provide special serializers for {@code null} values.
      */
@@ -108,7 +100,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
 
         /** {@inheritDoc} */
-        public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
+        @Override public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
             return new CustomSerializerProvider(this, cfg, jsf);
         }
 
@@ -120,9 +112,6 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
         /** {@inheritDoc} */
         @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) throws JsonMappingException {
-            if (prop.getType().getRawClass() == String.class)
-                return NULL_STRING_VALUE_SERIALIZER;
-
             return NULL_VALUE_SERIALIZER;
         }
     }

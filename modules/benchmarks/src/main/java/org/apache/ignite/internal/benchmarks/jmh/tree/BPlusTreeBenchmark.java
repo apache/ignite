@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -209,12 +210,14 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+
         PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+            new UnsafeMemoryProvider(new JavaLogger()),
             null,
             PAGE_SIZE,
-            null,
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             false);
 
         pageMem.start();
@@ -281,8 +284,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
@@ -318,8 +320,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }

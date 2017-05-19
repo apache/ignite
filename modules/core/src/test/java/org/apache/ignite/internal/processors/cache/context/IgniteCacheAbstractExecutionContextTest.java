@@ -67,7 +67,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
 
         Object val = testClassLdr.loadClass(TEST_VALUE).newInstance();
 
-        IgniteCache<Object, Object> jcache = grid(0).cache(null);
+        IgniteCache<Object, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ITER_CNT; i++)
             jcache.put(i, val);
@@ -80,7 +80,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
                 assertEquals(testClassLdr, jcache.get(i).getClass().getClassLoader());
             else
                 assertEquals(grid(idx).configuration().getClassLoader(),
-                    grid(idx).cache(null).get(i).getClass().getClassLoader());
+                    grid(idx).cache(DEFAULT_CACHE_NAME).get(i).getClass().getClassLoader());
         }
     }
 

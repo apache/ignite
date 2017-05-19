@@ -355,54 +355,55 @@ public class AbstractVectorTest {
      * @param storage {@link VectorStorage}
      * @return AbstractVector.
      */
+    @SuppressWarnings("ClassWithoutNoArgConstructor")
     private AbstractVector getAbstractVector(VectorStorage storage) {
         return new AbstractVector(storage) { // TODO: find out how to fix warning about missing constructor
-            /** */
+            /** {@inheritDoc} */
             @Override public boolean isDense() {
                 return false;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public boolean isSequentialAccess() {
                 return false;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector copy() {
                 return getAbstractVector(this.getStorage());
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector like(int crd) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector normalize() {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector normalize(double power) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector logNormalize() {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector logNormalize(double power) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
             }
@@ -426,52 +427,52 @@ public class AbstractVectorTest {
      */
     private AbstractVector getAbstractVector() {
         return new AbstractVector() { // TODO: find out how to fix warning about missing constructor
-            /** */
+            /** {@inheritDoc} */
             @Override public boolean isDense() {
                 return false;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public boolean isSequentialAccess() {
                 return false;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector copy() {
                 return getAbstractVector(this.getStorage());
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector like(int crd) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector normalize() {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector normalize(double power) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector logNormalize() {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector logNormalize(double power) {
                 return null;
             }
 
-            /** */
+            /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
             }

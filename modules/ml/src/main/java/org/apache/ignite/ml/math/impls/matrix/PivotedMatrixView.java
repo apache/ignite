@@ -63,7 +63,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx  Parent matrix.
+     * @param mtx Parent matrix.
      * @param pivot Pivot array for rows and columns.
      */
     public PivotedMatrixView(Matrix mtx, int[] pivot) {

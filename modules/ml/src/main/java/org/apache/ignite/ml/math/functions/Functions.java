@@ -78,15 +78,14 @@ public final class Functions {
     /** Function that returns {@code (a - b) * (a - b)} */
     public static final IgniteBiFunction<Double, Double, Double> MINUS_SQUARED = (a, b) -> (a - b) * (a - b);
 
-    /**
-     * Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}.
-     */
+    /** Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}. */
     public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
 
     /**
      * Function that returns {@code a + b}. {@code a} is a variable, {@code b} is fixed.
      *
      * @param b Value to add.
+     * @return Function for this operation.
      */
     public static IgniteDoubleFunction<Double> plus(final double b) {
         return (a) -> a + b;
@@ -96,12 +95,18 @@ public final class Functions {
      * Function that returns {@code a * b}. {@code a} is a variable, {@code b} is fixed.
      *
      * @param b Value to multiply to.
+     * @return Function for this operation.
      */
     public static IgniteDoubleFunction<Double> mult(final double b) {
         return (a) -> a * b;
     }
 
-    /** Function that returns {@code a / b}. {@code a} is a variable, {@code b} is fixed. */
+    /**
+     * Function that returns {@code a / b}. {@code a} is a variable, {@code b} is fixed.
+     *
+     * @param b Value to divide to.
+     * @return Function for this operation.
+     */
     public static IgniteDoubleFunction<Double> div(double b) {
         return mult(1 / b);
     }
@@ -109,6 +114,9 @@ public final class Functions {
     /**
      * Function that returns {@code a + b*constant}. {@code a} and {@code b} are variables,
      * {@code constant} is fixed.
+     *
+     * @param constant Value to use in multiply.
+     * @return Function for this operation.
      */
     public static IgniteBiFunction<Double, Double, Double> plusMult(double constant) {
         return (a, b) -> a + b * constant;
@@ -117,12 +125,17 @@ public final class Functions {
     /**
      * Function that returns {@code a - b*constant}. {@code a} and {@code b} are variables,
      * {@code constant} is fixed.
+     *
+     * @param constant Value to use in multiply.
+     * @return Function for this operation.
      */
     public static IgniteBiFunction<Double, Double, Double> minusMult(double constant) {
         return (a, b) -> a - b * constant;
     }
 
     /**
+     * Function that returns {@code Math.pow(a, b)}.
+     *
      * @param b Power value.
      * @return Function for given power.
      */

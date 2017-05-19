@@ -102,9 +102,7 @@ import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNSWAPPED;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -4103,8 +4101,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         assertNull(cache.localPeek("key"));
 
-        cache.localPromote(Collections.singleton(key));
-
         assertNull(cache.localPeek(key, ONHEAP));
 
         assertTrue(cache.localSize() == 0);
@@ -6419,47 +6415,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             e.remove();
 
             return null;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class SwapEvtsLocalListener implements IgnitePredicate<Event> {
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Swap events. */
-        private final AtomicInteger swapEvts;
-
-        /** Unswap events. */
-        private final AtomicInteger unswapEvts;
-
-        /**
-         * @param swapEvts Swap events.
-         * @param unswapEvts Unswap events.
-         */
-        public SwapEvtsLocalListener(AtomicInteger swapEvts, AtomicInteger unswapEvts) {
-            this.swapEvts = swapEvts;
-            this.unswapEvts = unswapEvts;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Event evt) {
-            log.info("Received event: " + evt);
-
-            switch (evt.type()) {
-                case EVT_CACHE_OBJECT_SWAPPED:
-                    swapEvts.incrementAndGet();
-
-                    break;
-                case EVT_CACHE_OBJECT_UNSWAPPED:
-                    unswapEvts.incrementAndGet();
-
-                    break;
-            }
-
-            return true;
         }
     }
 

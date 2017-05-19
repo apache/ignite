@@ -27,9 +27,12 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
  * Vector storage holding a single non-zero value at some index.
  */
 public class SingleElementVectorStorage implements VectorStorage {
-    /** */ private int idx;
-    /** */ private double val;
-    /** */ private int size;
+    /** */
+    private int idx;
+    /** */
+    private double val;
+    /** */
+    private int size;
 
     /**
      *
@@ -53,7 +56,6 @@ public class SingleElementVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Index of the element in the parent vector.
      */
     public int index() {

@@ -127,7 +127,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             final Random rnd = new Random();
 
@@ -182,7 +182,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -212,7 +212,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             Collection<Integer> keys = new ArrayList<>(100);
 
@@ -247,7 +247,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 10000; i++)
                 load(cache, i, true);

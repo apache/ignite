@@ -86,6 +86,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 
 /**
  *
@@ -587,9 +588,12 @@ public class DmlStatementsProcessor {
             if (newVal == null)
                 throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-            // Skip key and value - that's why we start off with 2nd column
-            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                Column c = plan.tbl.getColumn(i + 2);
+            // Skip key and value - that's why we start off with 3rd column
+            for (int i = 0; i < plan.tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
+                Column c = plan.tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
+
+                if (desc.isKeyValueOrVersionColumn(c.getColumnId()))
+                    continue;
 
                 GridQueryProperty prop = desc.type().property(c.getName());
 
@@ -965,8 +969,11 @@ public class DmlStatementsProcessor {
         // column order preserves their precedence for correct update of nested properties.
         Column[] cols = plan.tbl.getColumns();
 
-        // First 2 columns are _key and _val, skip 'em.
-        for (int i = 2; i < cols.length; i++) {
+        // First 3 columns are _key, _val and _ver. Skip 'em.
+        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+            if (plan.tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
+                continue;
+
             String colName = cols[i].getName();
 
             if (!newColVals.containsKey(colName))

@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
@@ -91,7 +92,7 @@ public class VisorIgfsMetrics extends VisorDataTransferObject {
 
         IgfsMetrics m = igfs.metrics();
 
-        totalSpaceSz = igfs.configuration().getMaxSpaceSize();
+        totalSpaceSz = ((IgfsEx)igfs).context().data().maxSpaceSize();
         usedSpaceSz = m.localSpaceSize();
         foldersCnt = m.directoriesCount();
         filesCnt = m.filesCount();

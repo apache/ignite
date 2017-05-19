@@ -71,7 +71,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT + 1];
 
-        ccfgs[0] = createCacheConfiguration(null);
+        ccfgs[0] = createCacheConfiguration(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < CACHES_CNT; i++)
             ccfgs[i + 1] = createCacheConfiguration(CACHE_PREFIX + i);
@@ -86,7 +86,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      */
     private CacheConfiguration createCacheConfiguration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);
@@ -112,7 +112,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
             final String key = "key";
 
-            IgniteCache<Object, Object> cache = g.cache(null);
+            IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
             ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100_000));
 
@@ -141,7 +141,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
         final int cnt = 1_000;
 
         try (final Ignite g = startGrid(0)) {
-            final IgniteCache<Object, Object> cache = g.cache(null);
+            final IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
             g.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {

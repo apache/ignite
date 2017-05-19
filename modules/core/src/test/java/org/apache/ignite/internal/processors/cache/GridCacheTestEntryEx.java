@@ -376,14 +376,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer)
-        throws IgniteCheckedException {
-        assert false;
-
-        return null;
-    }
-
     /** @inheritDoc */
     @Override public boolean isNew() {
         assert false; return false;
@@ -657,13 +649,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         GridDrType drType,
         boolean fromStore
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert false;
-
-        return false;
-    }
-
-    /** @inheritDoc */
-    @Override public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped) {
         assert false;
 
         return false;

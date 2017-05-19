@@ -50,7 +50,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
      * @param c Closure.
      */
     private void doTest(Callable<Object> c) {
-        GridTestUtils.assertThrows(log, c, CacheException.class, "Indexing is disabled for cache: null");
+        GridTestUtils.assertThrows(log, c, CacheException.class, "Indexing is disabled for cache: default");
     }
 
     /**

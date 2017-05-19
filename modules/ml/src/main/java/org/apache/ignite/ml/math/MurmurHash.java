@@ -22,8 +22,8 @@ import java.nio.ByteOrder;
 
 /**
  * This is a very fast, non-cryptographic hash suitable for general hash-based lookup.
- *
- * See http://murmurhash.googlepages.com/ for mre details.
+ * <p>
+ * See http://murmurhash.googlepages.com/ for mre details.</p>
  */
 public class MurmurHash {
     /** Hide it. */
@@ -33,13 +33,13 @@ public class MurmurHash {
     /**
      * This produces exactly the same hash values as the final C+ version of MurmurHash3 and is
      * thus suitable for producing the same hash values across platforms.
-     *
-     * The 32 bit x86 version of this hash should be the fastest variant for relatively short keys like IDs.
-     *
+     * <p>
+     * The 32 bit x86 version of this hash should be the fastest variant for relatively short keys like IDs.</p>
+     * <p>
      * Note - The x86 and x64 versions do _not_ produce the same results, as the algorithms are
-     * optimized for their respective platforms.
-     *
-     * See also http://github.com/yonik/java_util for future updates to this method.
+     * optimized for their respective platforms.</p>
+     * <p>
+     * See also http://github.com/yonik/java_util for future updates to this method.</p>
      *
      * @param data Data to hash.
      * @param off Where to start munging.

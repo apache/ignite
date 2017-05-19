@@ -116,9 +116,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromPrimaryNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + grid(i).localNode().id());
 
                 c.get(KEY);
@@ -135,9 +135,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromBackupNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isBackup(grid(i).localNode(), KEY)) {
                 info("Backup node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -166,9 +166,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromNearNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
+            if (!grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
                 info("Near node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -214,11 +214,11 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + g.cluster().localNode().id());
 
                 // Put value.
-                g.cache(null).put(KEY, VAL);
+                g.cache(DEFAULT_CACHE_NAME).put(KEY, VAL);
 
                 // Register listener.
                 ((IgniteKernal)g).context().io().addMessageListener(

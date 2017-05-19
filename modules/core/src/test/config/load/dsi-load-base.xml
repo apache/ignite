@@ -48,9 +48,10 @@
 
                 <property name="ackTimeout" value="4000"/>
                 <property name="socketTimeout" value="4000"/>
-                <property name="heartbeatFrequency" value="6000"/>
             </bean>
         </property>
+
+        <property name="metricsUpdateFrequency" value="6000"/>
 
         <property name="lifecycleBeans" ref="lifecycleBeans"/>
 

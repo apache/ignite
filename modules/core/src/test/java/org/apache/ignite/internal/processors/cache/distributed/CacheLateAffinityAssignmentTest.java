@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -157,10 +158,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         discoSpi.setForceServerMode(forceSrvMode);
         discoSpi.setIpFinder(ipFinder);
-        discoSpi.setMaxMissedClientHeartbeats(100);
         discoSpi.setNetworkTimeout(60_000);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        cfg.setClientFailureDetectionTimeout(100000);
 
         CacheConfiguration[] ccfg;
 
@@ -1082,12 +1084,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             TestRecordingCommunicationSpi spi =
                     (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
-            spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    Message msg0 = msg.message();
-
-                    return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg0.getClass().equals(GridDhtPartitionsFullMessage.class);
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
+                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
                 }
             });
         }
@@ -1422,7 +1422,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(srvName, ++topVer, false);
 
@@ -1468,7 +1468,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(clientName, ++topVer, true);
 
@@ -1573,7 +1573,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         log.info("Start server: " + srvName);
 
-        cacheClosure(rnd, caches, null, srvs, srvIdx);
+        cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
         startNode(srvName, ++topVer, false);
 
@@ -1710,14 +1710,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             @Override public TestRecordingCommunicationSpi apply(String s) {
                 TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-                spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                    @Override public boolean apply(GridIoMessage msg) {
-                        Message msg0 = msg.message();
-
-                        if (msg0 instanceof GridDhtForceKeysRequest || msg0 instanceof GridDhtForceKeysResponse) {
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg instanceof GridDhtForceKeysRequest || msg instanceof GridDhtForceKeysResponse) {
                             fail.set(true);
 
-                            U.dumpStack(log, "Unexpected message: " + msg0);
+                            U.dumpStack(log, "Unexpected message: " + msg);
                         }
 
                         return false;
@@ -1940,7 +1938,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param srvIdx Current servers index.
      */
     private void cacheClosure(Random rnd, List<String> caches, String cacheName, List<String> srvs, int srvIdx) {
-        if (cacheName != null) {
+        if (!DEFAULT_CACHE_NAME.equals(cacheName)) {
             final CacheConfiguration ccfg = randomCacheConfiguration(rnd, cacheName, srvs, srvIdx);
 
             cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
@@ -1974,7 +1972,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         ccfg.setBackups(rnd.nextInt(10));
         ccfg.setRebalanceMode(rnd.nextBoolean() ? SYNC : ASYNC);
         ccfg.setAffinity(affinityFunction(rnd.nextInt(2048) + 10));
-        ccfg.setStartSize(128);
 
         if (rnd.nextBoolean()) {
             Set<String> exclude = new HashSet<>();
@@ -2011,14 +2008,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      */
     private void blockSupplySend(TestRecordingCommunicationSpi spi, final String cacheName) {
-        spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage ioMsg) {
-                if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessage.class))
+        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                     return false;
 
-                GridDhtPartitionSupplyMessage msg = (GridDhtPartitionSupplyMessage)ioMsg.message();
-
-                return msg.cacheId() == CU.cacheId(cacheName);
+                return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(cacheName);
             }
         });
     }

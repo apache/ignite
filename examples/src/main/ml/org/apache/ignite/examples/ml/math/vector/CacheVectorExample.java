@@ -28,16 +28,27 @@ import org.apache.ignite.ml.math.impls.vector.CacheVector;
 
 /**
  * This example shows how to use {@link CacheVector} API.
+ * <p>
+ * Basically CacheVector is a view over existing data in cache. So we have {@link VectorKeyMapper} and
+ * {@link ValueMapper} for this purpose. A {@link VectorKeyMapper} allows us to map vector indices to cache keys.
+ * And a {@link ValueMapper} allows us map cache object to vector elements - doubles.</p>
+ * <p>
+ * In this example we use simple flat mapping for keys and {@link IdentityValueMapper} for cache
+ * objects because they are Doubles.</p>
  */
 public class CacheVectorExample {
-    /** */ private static final String CACHE_NAME = CacheVectorExample.class.getSimpleName();
-    /** */ private static final int CARDINALITY = 10;
+    /** */
+    private static final String CACHE_NAME = CacheVectorExample.class.getSimpleName();
+
+    /** */
+    private static final int CARDINALITY = 10;
 
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
      */
+    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
@@ -92,10 +103,6 @@ public class CacheVectorExample {
                 System.out.println(">>> Finished executing Ignite \"CacheVector\" example.");
                 System.out.println(">>> Dot product is 0.0 for orthogonal vectors.");
                 System.out.println(">>>");
-            }
-            finally {
-                // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

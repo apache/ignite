@@ -82,7 +82,6 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             cc.setNearConfiguration(null);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setStartSize(ENTRY_CNT / GRID_CNT);
 
             cc.setBackups(1);
 
@@ -137,7 +136,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid();
 
-            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(null);
+            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
             ldr.perNodeBufferSize(8192);
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());

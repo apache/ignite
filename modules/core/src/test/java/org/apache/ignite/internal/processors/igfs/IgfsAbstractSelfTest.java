@@ -852,7 +852,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only access time.
-            igfs.setTimes(path, info.accessTime() + 1000, -1);
+            igfs.setTimes(path, -1, info.accessTime() + 1000);
 
             newInfo = igfs.info(path);
 
@@ -864,12 +864,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
-                assertEquals(secondaryTimes.get2(), newSecondaryTimes.get2());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
+                assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
             }
 
             // Change only modification time.
-            igfs.setTimes(path, -1, info.modificationTime() + 1000);
+            igfs.setTimes(path, info.modificationTime() + 1000, -1);
 
             newInfo = igfs.info(path);
 
@@ -881,12 +881,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
-                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get2());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
             }
 
             // Change both.
-            igfs.setTimes(path, info.accessTime() + 2000, info.modificationTime() + 2000);
+            igfs.setTimes(path, info.modificationTime() + 2000, info.accessTime() + 2000);
 
             newInfo = igfs.info(path);
 
@@ -898,8 +897,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
-                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get2());
+                assertEquals(newInfo.modificationTime(), (long) newSecondaryTimes.get1());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
             }
         }
     }

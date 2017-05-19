@@ -44,7 +44,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName("dfltPlc");
-        plc.setSize(200 * 1024 * 1024);
 
         dbCfg.setDefaultMemoryPolicyName("dfltPlc");
         dbCfg.setMemoryPolicies(plc);
@@ -86,7 +85,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName("cache1");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -119,7 +118,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = ignite(0);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

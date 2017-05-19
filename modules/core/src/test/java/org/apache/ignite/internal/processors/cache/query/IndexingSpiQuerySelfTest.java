@@ -74,11 +74,11 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         return cfg;
     }
@@ -290,16 +290,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
             // No-op.
         }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-            // No-op.
-        }
     }
 
     /**
@@ -320,18 +310,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            assertTrue(key instanceof BinaryObject);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-            assertTrue(key instanceof BinaryObject);
-
-            assertTrue(val instanceof BinaryObject);
         }
     }
 

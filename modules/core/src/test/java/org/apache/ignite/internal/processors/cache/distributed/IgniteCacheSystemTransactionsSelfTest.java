@@ -56,7 +56,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (String cacheName : new String[] {null, CU.UTILITY_CACHE_NAME}) {
+        for (String cacheName : new String[] {DEFAULT_CACHE_NAME, CU.UTILITY_CACHE_NAME}) {
             IgniteKernal kernal = (IgniteKernal)ignite(0);
 
             GridCacheAdapter<Object, Object> cache = kernal.context().cache().internalCache(cacheName);
@@ -71,7 +71,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     public void testSystemTxInsideUserTx() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
-        IgniteCache<Object, Object> jcache = ignite.cache(null);
+        IgniteCache<Object, Object> jcache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             jcache.get("1");
@@ -98,7 +98,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
         checkTransactionsCommitted();
 
-        checkEntries(null,                  "1", "11", "2", "22", "3", null);
+        checkEntries(DEFAULT_CACHE_NAME,                  "1", "11", "2", "22", "3", null);
         checkEntries(CU.UTILITY_CACHE_NAME, "1", null, "2", "2",  "3", "3");
     }
 

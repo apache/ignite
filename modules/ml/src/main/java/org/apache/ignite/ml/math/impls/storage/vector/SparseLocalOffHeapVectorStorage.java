@@ -33,8 +33,10 @@ import org.apache.ignite.ml.math.impls.vector.SparseLocalOffHeapVector;
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** Assume 10% density. */
     private static final int INIT_DENSITY = 10;
+
     /** Storage capacity. */
     private int size;
+
     /** Local off heap map. */
     private GridOffHeapMap gridOffHeapMap;
 

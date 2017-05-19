@@ -122,6 +122,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: IgniteUuid. */
         private const int EchoTypeIgniteUuid = 22;
 
+        /** */
+        private const string DefaultCacheName = "default";
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -192,21 +195,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             // Check that default Compute projection excludes client nodes.
             CollectionAssert.AreEquivalent(prj.ForServers().GetNodes(), prj.GetCompute().ClusterGroup.GetNodes());
-        }
-
-        /// <summary>
-        /// Test getting cache with default (null) name.
-        /// </summary>
-        [Test]
-        public void TestCacheDefaultName()
-        {
-            var cache = _grid1.GetCache<int, int>(null);
-
-            Assert.IsNotNull(cache);
-
-            cache.GetAndPut(1, 1);
-
-            Assert.AreEqual(1, cache.Get(1));
         }
 
         /// <summary>
@@ -954,7 +942,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumFromCache()
         {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum>(null);
+            var cache = _grid1.GetCache<int, PlatformComputeEnum>(DefaultCacheName);
 
             foreach (PlatformComputeEnum val in Enum.GetValues(typeof(PlatformComputeEnum)))
             {
@@ -988,7 +976,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArrayFromCache()
         {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(null);
+            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(DefaultCacheName);
 
             foreach (var val in new[]
             {
@@ -1015,7 +1003,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var enumVal = PlatformComputeEnum.Baz;
 
-            _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
+            _grid1.GetCache<int, InteropComputeEnumFieldTest>(DefaultCacheName)
                 .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
 
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
@@ -1037,7 +1025,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var guid = Guid.NewGuid();
 
-            _grid1.GetCache<int, object>(null)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
+            _grid1.GetCache<int, object>(DefaultCacheName)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
 
             var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
 
@@ -1161,7 +1149,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAffinityRun()
         {
-            const string cacheName = null;
+            const string cacheName = DefaultCacheName;
 
             // Test keys for non-client nodes
             var nodes = new[] {_grid1, _grid2}.Select(x => x.GetCluster().GetLocalNode());
@@ -1188,7 +1176,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAffinityCall()
         {
-            const string cacheName = null;
+            const string cacheName = DefaultCacheName;
 
             // Test keys for non-client nodes
             var nodes = new[] { _grid1, _grid2 }.Select(x => x.GetCluster().GetLocalNode());

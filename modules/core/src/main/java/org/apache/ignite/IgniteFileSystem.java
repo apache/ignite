@@ -202,13 +202,13 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * corresponding time will not be changed.
      *
      * @param path Path to update.
-     * @param accessTime Optional last access time to set. Value {@code -1} does not update access time.
      * @param modificationTime Optional last modification time to set. Value {@code -1} does not update
      *      modification time.
+     * @param accessTime Optional last access time to set. Value {@code -1} does not update access time.
      * @throws IgfsPathNotFoundException If target was not found.
      * @throws IgniteException If error occurred.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException;
 
     /**
      * Gets affinity block locations for data blocks of the file, i.e. the nodes, on which the blocks

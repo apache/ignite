@@ -83,7 +83,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
 
@@ -128,7 +128,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         try {
             IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
                 @Override public void apply(Ignite grid) {
-                    try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
+                    try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
                         dataStreamer.allowOverwrite(allowOverwrite);
 
                         for (int i = 0; i < KEYS_CNT; i++)
@@ -154,7 +154,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         loadCache(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
-                grid.cache(null).loadCache(null);
+                grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
             }
         });
     }
@@ -261,7 +261,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         IgniteInClosure<Ignite> f = new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
-                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(null)) {
+                try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
                     dataStreamer.allowOverwrite(allowOverwrite);
 
                     for (int i = 0; i < KEYS_CNT; i++) {
@@ -286,7 +286,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         for (IgniteFuture res : set)
             assertNull(res.get());
 
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         long size = cache.size(CachePeekMode.PRIMARY);
 
@@ -303,11 +303,11 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                         log.info("Missed key info:" +
                             igniteEx.localNode().id() +
                             " primary=" +
-                            ignite.affinity(null).isPrimary(igniteEx.localNode(), i) +
+                            ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(igniteEx.localNode(), i) +
                             " backup=" +
-                            ignite.affinity(null).isBackup(igniteEx.localNode(), i) +
+                            ignite.affinity(DEFAULT_CACHE_NAME).isBackup(igniteEx.localNode(), i) +
                             " local peek=" +
-                            ignite.cache(null).localPeek(i, CachePeekMode.ONHEAP));
+                            ignite.cache(DEFAULT_CACHE_NAME).localPeek(i, CachePeekMode.ONHEAP));
                     }
 
                     for (int j = i; j < i + 10000; j++) {
@@ -353,7 +353,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void assertCacheSize() throws Exception {
-        final IgniteCache<Integer, String> cache = grid(0).cache(null);
+        final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -371,7 +371,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         int total = 0;
 
         for (int i = 0; i < GRIDS_CNT; i++)
-            total += grid(i).cache(null).localSize(CachePeekMode.PRIMARY);
+            total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
 
         assertEquals("Data lost.", KEYS_CNT, total);
     }

@@ -46,7 +46,10 @@ import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,8 +63,15 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Utility methods for queries.
  */
 public class QueryUtils {
-    /** */
-    public static final String _VAL = "_val";
+
+    /** Field name for key. */
+    public static final String KEY_FIELD_NAME = "_key";
+
+    /** Field name for value. */
+    public static final String VAL_FIELD_NAME = "_val";
+
+    /** Version field name. */
+    public static final String VER_FIELD_NAME = "_ver";
 
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
@@ -98,7 +108,7 @@ public class QueryUtils {
         String res = entity.getTableName();
 
         if (res == null)
-            res = typeName(entity.getValueType());
+            res = typeName(entity.findValueType());
 
         return res;
     }
@@ -176,8 +186,8 @@ public class QueryUtils {
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
-        Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
-        Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
+        Class<?> keyCls = U.classForName(qryEntity.findKeyType(), null);
+        Class<?> valCls = U.classForName(qryEntity.findValueType(), null);
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -188,7 +198,7 @@ public class QueryUtils {
         if (keyCls == null)
             keyCls = Object.class;
 
-        String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
+        String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
 
         desc.name(simpleValType);
 
@@ -209,14 +219,17 @@ public class QueryUtils {
         else {
             if (valCls == null)
                 throw new IgniteCheckedException("Failed to find value class in the node classpath " +
-                    "(use default marshaller to enable binary objects) : " + qryEntity.getValueType());
+                    "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
 
             desc.valueClass(valCls);
             desc.keyClass(keyCls);
         }
 
-        desc.keyTypeName(qryEntity.getKeyType());
-        desc.valueTypeName(qryEntity.getValueType());
+        desc.keyTypeName(qryEntity.findKeyType());
+        desc.valueTypeName(qryEntity.findValueType());
+
+        desc.keyFieldName(qryEntity.getKeyFieldName());
+        desc.valueFieldName(qryEntity.getValueFieldName());
 
         if (binaryEnabled && keyOrValMustDeserialize) {
             if (keyMustDeserialize)
@@ -232,14 +245,14 @@ public class QueryUtils {
         if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
             processBinaryMeta(ctx, qryEntity, desc);
 
-            typeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.getValueType()));
+            typeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.findValueType()));
 
             if (valCls != null)
                 altTypeId = new QueryTypeIdKey(space, valCls);
 
-            if (!cctx.customAffinityMapper() && qryEntity.getKeyType() != null) {
+            if (!cctx.customAffinityMapper() && qryEntity.findKeyType() != null) {
                 // Need to setup affinity key for distributed joins.
-                String affField = ctx.cacheObjects().affinityField(qryEntity.getKeyType());
+                String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
 
                 if (affField != null)
                     desc.affinityKey(affField);
@@ -259,7 +272,7 @@ public class QueryUtils {
             }
 
             typeId = new QueryTypeIdKey(space, valCls);
-            altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.getValueType()));
+            altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.findValueType()));
         }
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
@@ -310,7 +323,7 @@ public class QueryUtils {
 
         processIndexes(qryEntity, d);
     }
-    
+
     /**
      * Processes declarative metadata for binary object.
      *
@@ -321,9 +334,11 @@ public class QueryUtils {
     public static void processClassMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            QueryClassProperty prop = buildClassProperty(
+            GridQueryProperty prop = buildProperty(
                 d.keyClass(),
                 d.valueClass(),
+                d.keyFieldName(),
+                d.valueFieldName(),
                 entry.getKey(),
                 U.classForName(entry.getValue(), Object.class),
                 d.aliases(),
@@ -429,7 +444,7 @@ public class QueryUtils {
         else
             throw new IllegalArgumentException("Index type is not set: " + idx.getName());
     }
-    
+
     /**
      * Builds binary object property.
      *
@@ -443,7 +458,7 @@ public class QueryUtils {
      * @return Binary property.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField) throws IgniteCheckedException {
+                                     Map<String, String> aliases, @Nullable Boolean isKeyField) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -464,7 +479,7 @@ public class QueryUtils {
 
         return res;
     }
-    
+
     /**
      * @param keyCls Key class.
      * @param valCls Value class.
@@ -494,6 +509,33 @@ public class QueryUtils {
     }
 
     /**
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @param keyFieldName Key Field.
+     * @param valueFieldName Value Field.
+     * @param pathStr Path string.
+     * @param resType Result type.
+     * @param aliases Aliases.
+     * @return Class property.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName, String valueFieldName, String pathStr,
+                                                  Class<?> resType, Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
+        if (pathStr.equals(keyFieldName))
+            return new KeyOrValProperty(true, pathStr, keyCls);
+
+        if (pathStr.equals(valueFieldName))
+            return new KeyOrValProperty(false, pathStr, valCls);
+
+        return buildClassProperty(keyCls,
+                valCls,
+                pathStr,
+                resType,
+                aliases,
+                coCtx);
+    }
+
+    /**
      * Exception message to compare in tests.
      *
      * @param keyCls key class
@@ -508,7 +550,7 @@ public class QueryUtils {
             resType.getName() + "' for key class '" + keyCls + "' and value class '" + valCls + "'. " +
             "Make sure that one of these classes contains respective getter method or field.";
     }
-    
+
     /**
      * @param key If this is a key property.
      * @param cls Source type class.
@@ -553,7 +595,7 @@ public class QueryUtils {
 
         return res;
     }
-    
+
     /**
      * Find a member (either a getter method or a field) with given name of given class.
      * @param prop Property name.
@@ -807,7 +849,7 @@ public class QueryUtils {
 
         if (!F.isEmpty(entities)) {
             for (QueryEntity entity : entities) {
-                if (F.isEmpty(entity.getValueType()))
+                if (F.isEmpty(entity.findValueType()))
                     continue;
 
                 Collection<QueryIndex> idxs = entity.getIndexes();
@@ -839,7 +881,7 @@ public class QueryUtils {
 
         if (!F.isEmpty(entities)) {
             for (QueryEntity entity : entities) {
-                if (F.isEmpty(entity.getValueType()))
+                if (F.isEmpty(entity.findValueType()))
                     throw new IgniteCheckedException("Value type cannot be null or empty [cacheName=" +
                         ccfg.getName() + ", queryEntity=" + entity + ']');
 
@@ -874,5 +916,54 @@ public class QueryUtils {
      */
     private QueryUtils() {
         // No-op.
+    }
+
+    /** Property used for keyFieldName or valueFieldName */
+    public static class KeyOrValProperty implements GridQueryProperty {
+        /** */
+        boolean isKey;
+
+        /** */
+        String name;
+
+        /** */
+        Class<?> cls;
+
+        /** */
+        public KeyOrValProperty(boolean key, String name, Class<?> cls) {
+            this.isKey = key;
+            this.name = name;
+            this.cls = cls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+            return isKey ? key : val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            //No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> type() {
+            return cls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return isKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty parent() {
+            return null;
+        }
     }
 }

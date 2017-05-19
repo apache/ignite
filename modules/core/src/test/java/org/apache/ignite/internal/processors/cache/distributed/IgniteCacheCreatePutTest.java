@@ -72,7 +72,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(marsh);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName("cache*");
         ccfg.setCacheMode(PARTITIONED);
@@ -198,7 +198,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
                 while (System.currentTimeMillis() < stopTime) {
                     String cacheName = "dynamic-cache-" + nodeIdx;
 
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(cacheName);
 
@@ -240,7 +240,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setCacheMode(REPLICATED);

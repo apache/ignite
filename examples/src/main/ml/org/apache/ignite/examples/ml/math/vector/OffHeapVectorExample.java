@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 
 /**
- * This example shows how to use off-heap {@link Vector} API.
+ * This example shows how to create and use off-heap versions of {@link Vector}.
  */
 public final class OffHeapVectorExample {
     /**

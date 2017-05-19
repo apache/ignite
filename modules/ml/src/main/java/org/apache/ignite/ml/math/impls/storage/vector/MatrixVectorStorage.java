@@ -28,15 +28,21 @@ import org.apache.ignite.ml.math.exceptions.IndexException;
  * Row, column or diagonal vector-based view of the matrix
  */
 public class MatrixVectorStorage implements VectorStorage {
-    /** */ private Matrix parent;
+    /** */
+    private Matrix parent;
 
-    /** */ private int row;
-    /** */ private int col;
+    /** */
+    private int row;
+    /** */
+    private int col;
 
-    /** */ private int rowStride;
-    /** */  private int colStride;
+    /** */
+    private int rowStride;
+    /** */
+    private int colStride;
 
-    /** */ private int size;
+    /** */
+    private int size;
 
     /**
      *

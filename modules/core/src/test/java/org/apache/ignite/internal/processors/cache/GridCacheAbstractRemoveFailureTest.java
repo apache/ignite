@@ -190,9 +190,9 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         final TransactionIsolation txIsolation) throws Exception {
         assertEquals(testClientNode(), (boolean) grid(0).configuration().isClientMode());
 
-        grid(0).destroyCache(null);
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -446,7 +446,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = grid(i);
 
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             for (Map.Entry<Integer, GridTuple<Integer>> expVal : expVals.entrySet()) {
                 Integer val = cache.get(expVal.getKey());

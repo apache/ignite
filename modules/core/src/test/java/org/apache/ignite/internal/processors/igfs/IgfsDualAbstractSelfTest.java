@@ -1562,7 +1562,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         final long MAX_ALIGN_ON_SECOND = (long)Integer.MAX_VALUE * 1000;
 
-        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND - 1000, MAX_ALIGN_ON_SECOND);
+        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND - 1000);
 
         IgfsFile info = igfs.info(FILE);
 
@@ -1573,8 +1573,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
 
-        assertEquals(info.accessTime(), (long) secondaryTimes.get1());
-        assertEquals(info.modificationTime(), (long) secondaryTimes.get2());
+        assertEquals(info.modificationTime(), (long) secondaryTimes.get1());
+        assertEquals(info.accessTime(), (long) secondaryTimes.get2());
 
         try {
             igfs.setTimes(FILE2, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND);

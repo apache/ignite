@@ -146,6 +146,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 GridCacheVersion enqueueVer = null;
 
                 try {
+                    ClusterNode primaryNode = cctx.affinity().primaryByKey(key, topVer);
+
                     synchronized (this) {
                         checkObsolete();
 
@@ -163,8 +165,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                         enqueueVer = e.version();
                                 }
                             }
-
-                            ClusterNode primaryNode = cctx.affinity().primaryByKey(key, topVer);
 
                             if (primaryNode == null)
                                 this.topVer = AffinityTopologyVersion.NONE;
