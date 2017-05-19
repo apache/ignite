@@ -20,41 +20,12 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReader;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
 @SuppressWarnings("unchecked")
 public class JdbcObjectReader extends SqlListenerAbstractObjectReader {
-    /**
-     * @param reader Binary reader,
-     * @return SQL object.
-     * @throws BinaryObjectException On error.
-     */
-    @Nullable public Object readSqlObject(BinaryReaderExImpl reader) throws BinaryObjectException {
-        Object obj = readObject(reader);
-
-        if (obj == null)
-            return null;
-
-        if (obj.getClass() == java.util.Date.class)
-            return new java.sql.Date(((java.util.Date)obj).getTime());
-
-        if (obj.getClass() == java.util.Date[].class) {
-            java.util.Date[] arr = (java.util.Date[])obj;
-
-            java.sql.Date[] sqlArr = new java.sql.Date[arr.length];
-
-            for (int i = 0; i < arr.length; ++i)
-                sqlArr[i] = new java.sql.Date(arr[i].getTime());
-
-            return sqlArr;
-        }
-
-        return obj;
-    }
-
     /** {@inheritDoc} */
     @Override protected Object readNotEmbeddedObject(BinaryReaderExImpl reader) throws BinaryObjectException {
         throw new BinaryObjectException("JDBC doesn't support not embedded objects.");
