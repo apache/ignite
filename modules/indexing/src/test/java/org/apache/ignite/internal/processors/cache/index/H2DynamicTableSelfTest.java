@@ -184,6 +184,18 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
+    public void testDropNonDynamicTable() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                cache().query(new SqlFieldsQuery("DROP TABLE \"cache\""));
+
+                return null;
+            }
+        }, IgniteSQLException.class,
+            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache]");
+    }
+
+    /** */
     private void assertProperty(QueryTypeDescriptorImpl desc, String name, Class<?> type, boolean isKey) {
         GridQueryProperty p = desc.property(name);
 

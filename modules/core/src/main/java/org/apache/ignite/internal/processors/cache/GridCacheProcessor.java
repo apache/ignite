@@ -2226,7 +2226,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param nearCfg Near cache configuration.
      * @param cacheType Cache type.
-     * @param sql If the cache needs to be created as the resukt of SQL {@code CREATE TABLE} command.
+     * @param sql If the cache needs to be created as the result of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
@@ -2254,6 +2254,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheName,
                 nearCfg,
                 cacheType,
+                sql,
                 failIfExists,
                 failIfNotStarted);
 
@@ -2307,6 +2308,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.getName(),
                     null,
                     cacheType,
+                    false,
                     failIfExists,
                     true
                 );
@@ -2338,13 +2340,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<Boolean> dynamicDestroyCache(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<Boolean> dynamicDestroyCache(String cacheName, boolean sql, boolean checkThreadTx) {
         assert cacheName != null;
 
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, true);
+        DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, sql, true);
 
         return F.first(initiateCacheChanges(F.asList(req), false));
     }
@@ -2361,7 +2363,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
-            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, true);
+            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false, true);
 
             reqs.add(req);
         }
@@ -2471,7 +2473,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
         for (String cacheName : cacheNames()) {
-            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false);
+            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false, false);
 
             reqs.add(req);
         }
@@ -3375,12 +3377,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
         CacheType cacheType,
+        boolean sql,
         boolean failIfExists,
         boolean failIfNotStarted
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.sql(sql);
 
         req.failIfExists(failIfExists);
 

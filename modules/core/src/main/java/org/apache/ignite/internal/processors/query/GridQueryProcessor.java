@@ -1289,7 +1289,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // We want to preserve user specified names as they are
         newCfg.setSqlEscapeAll(true);
 
-        boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
+        boolean res = ctx.grid().getOrCreateCache0(newCfg, true).get2();
 
         if (!res && !ifNotExists)
             throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
@@ -1305,7 +1305,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
-        boolean res = ctx.grid().destroyCache0(tblName);
+        boolean res = ctx.grid().destroyCache0(tblName, true);
 
         if (!res && !ifExists)
             throw new IgniteSQLException("Table not found [schemaName=" + schemaName +

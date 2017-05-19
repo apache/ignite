@@ -31,6 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -52,7 +53,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 
 /**
- * Logic related to cache discovery date processing.
+ * Logic related to cache discovery data processing.
  */
 class ClusterCachesInfo {
     /** */
@@ -248,6 +249,7 @@ class ClusterCachesInfo {
                         true,
                         req.initiatingNodeId(),
                         false,
+                        false,
                         req.deploymentId(),
                         req.schema());
 
@@ -287,6 +289,7 @@ class ClusterCachesInfo {
                             false,
                             req.initiatingNodeId(),
                             false,
+                            req.sql(),
                             req.deploymentId(),
                             req.schema());
 
@@ -377,6 +380,11 @@ class ClusterCachesInfo {
                 assert req.stop() ^ req.close() : req;
 
                 if (desc != null) {
+                    if (req.sql() && !desc.sql())
+                        ctx.cache().completeCacheStartFuture(req, false,
+                            new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
+                            "DROP TABLE [cacheName=" + req.cacheName() + ']'));
+
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
                     assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
@@ -587,6 +595,7 @@ class ClusterCachesInfo {
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
+                desc.sql(),
                 false,
                 (byte)0);
 
@@ -603,6 +612,7 @@ class ClusterCachesInfo {
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
+                false,
                 true,
                 (byte)0);
 
@@ -632,6 +642,7 @@ class ClusterCachesInfo {
                 true,
                 cacheData.receivedFrom(),
                 cacheData.staticallyConfigured(),
+                false,
                 cacheData.deploymentId(),
                 cacheData.schema());
 
@@ -648,6 +659,7 @@ class ClusterCachesInfo {
                 false,
                 cacheData.receivedFrom(),
                 cacheData.staticallyConfigured(),
+                cacheData.sql(),
                 cacheData.deploymentId(),
                 cacheData.schema());
 
@@ -707,6 +719,7 @@ class ClusterCachesInfo {
                             desc.template(),
                             desc.receivedFrom(),
                             desc.staticallyConfigured(),
+                            desc.sql(),
                             desc.deploymentId(),
                             desc.schema());
 
@@ -779,6 +792,7 @@ class ClusterCachesInfo {
                     true,
                     nodeId,
                     true,
+                    false,
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
 
@@ -798,6 +812,7 @@ class ClusterCachesInfo {
                     false,
                     nodeId,
                     true,
+                    false,
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
 
