@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
@@ -41,9 +42,14 @@ public class OdbcMessageParser extends SqlListenerAbstractMessageParser {
     public OdbcMessageParser(GridKernalContext ctx) {
         super(ctx, new OdbcObjectReader(), new OdbcObjectWriter());
 
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+        if (ctx.cacheObjects() instanceof CacheObjectBinaryProcessorImpl) {
+            CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
-        marsh = cacheObjProc.marshaller();
+            marsh = cacheObjProc.marshaller();
+        } else {
+            throw new IgniteException("ODBC can only be used with BinaryMarshaller (please set it " +
+                "through IgniteConfiguration.setMarshaller())");
+        }
     }
 
     /** {@inheritDoc} */

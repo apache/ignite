@@ -88,7 +88,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
  *     <tr>
  *         <td><b>ignite.jdbc.distributedJoins</b></td>
  *         <td>Flag to enable distributed joins.</td>
- *         <td>{@code true} (distributed joins are enabled)</td>
+ *         <td>{@code false} (distributed joins are disabled)</td>
  *         <td>Yes</td>
  *     </tr>
  *     <tr>
@@ -141,9 +141,6 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Enforce join order parameter name. */
     private static final String ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
-    /** Transactions allowed parameter name. */
-    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
-
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -155,9 +152,6 @@ public class IgniteJdbcThinDriver implements Driver {
 
     /** Transactions allowed property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + ENFORCE_JOIN_ORDER;
-
-    /** Transactions allowed property name. */
-    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
 
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
@@ -205,8 +199,7 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
-        new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);

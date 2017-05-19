@@ -42,7 +42,6 @@ import org.apache.ignite.logger.java.JavaLogger;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.IgniteJdbcThinDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcThinDriver.PROP_HOST;
@@ -60,11 +59,14 @@ public class JdbcConnection implements Connection {
     /** Closed flag. */
     private boolean closed;
 
-    /** Transactions allowed flag. */
-    private boolean txAllowed;
-
     /** Current transaction isolation. */
     private int txIsolation;
+
+    /** Auto commit flag. */
+    private boolean autoCommit;
+
+    /** Current transaction holdability. */
+    private int holdability;
 
     /** Timeout. */
     private int timeout;
@@ -86,9 +88,12 @@ public class JdbcConnection implements Connection {
         assert url != null;
         assert props != null;
 
+        holdability = HOLD_CURSORS_OVER_COMMIT;
+        autoCommit = true;
+        txIsolation = Connection.TRANSACTION_NONE;
+
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "false"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
-        txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         try {
             cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
@@ -118,14 +123,7 @@ public class JdbcConnection implements Connection {
         int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
-        if (resSetType != TYPE_FORWARD_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
-
-        if (resSetConcurrency != CONCUR_READ_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
-
-        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
+        checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
         return null;
     }
@@ -146,16 +144,27 @@ public class JdbcConnection implements Connection {
         int resSetHoldability) throws SQLException {
         ensureNotClosed();
 
+        checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
+
+        return null;
+    }
+
+    /**
+     * @param resSetType Cursor option.
+     * @param resSetConcurrency Cursor option.
+     * @param resSetHoldability Cursor option.
+     * @throws SQLException If options unsupported.
+     */
+    private void checkCursorOptions(int resSetType, int resSetConcurrency,
+        int resSetHoldability) throws SQLException {
         if (resSetType != TYPE_FORWARD_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
 
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
-
-        return null;
+        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+            LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -184,31 +193,34 @@ public class JdbcConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
+        this.autoCommit = autoCommit;
+
         if (!autoCommit)
-            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+            LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
 
-        return true;
+        if (!autoCommit)
+            LOG.warning("Transactions are not supported.");
+
+        return autoCommit;
     }
 
     /** {@inheritDoc} */
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed)
-            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed)
-            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -263,8 +275,7 @@ public class JdbcConnection implements Connection {
 
         LOG.warning("Transactions are not supported.");
 
-        if (txAllowed)
-            txIsolation = level;
+        txIsolation = level;
     }
 
     /** {@inheritDoc} */
@@ -273,10 +284,7 @@ public class JdbcConnection implements Connection {
 
         LOG.warning("Transactions are not supported.");
 
-        if (txAllowed)
-            return txIsolation;
-        else
-            return Connection.TRANSACTION_NONE;
+        return txIsolation;
     }
 
     /** {@inheritDoc} */
@@ -307,15 +315,17 @@ public class JdbcConnection implements Connection {
     @Override public void setHoldability(int holdability) throws SQLException {
         ensureNotClosed();
 
-        if (!txAllowed && holdability != HOLD_CURSORS_OVER_COMMIT)
-            throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
+        if (holdability != HOLD_CURSORS_OVER_COMMIT)
+            LOG.warning("Transactions are not supported.");
+
+        this.holdability = holdability;
     }
 
     /** {@inheritDoc} */
     @Override public int getHoldability() throws SQLException {
         ensureNotClosed();
 
-        return HOLD_CURSORS_OVER_COMMIT;
+        return holdability;
     }
 
     /** {@inheritDoc} */
