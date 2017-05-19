@@ -590,7 +590,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
                 "\"tplCache=cache\"");
 
         assertParseThrows("create table Person (id int)",
-            IgniteSQLException.class, "No PRIMARY KEY columns specified");
+            IgniteSQLException.class, "No PRIMARY KEY defined for CREATE TABLE");
 
         assertParseThrows("create table Person (id int) AS SELECT 2 * 2",
             IgniteSQLException.class, "CREATE TABLE ... AS ... syntax is not supported");
@@ -603,6 +603,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertParseThrows("create table Person (id int primary key, age int not null) WITH \"tplCache=cache\"",
             IgniteSQLException.class, "Non nullable columns are forbidden");
+
+        assertParseThrows("create table Person (id int primary key, age int unique) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");
+
+        assertParseThrows("create table Person (id int auto_increment primary key, age int) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "AUTO_INCREMENT columns are not supported");
+
+        assertParseThrows("create table Person (id int primary key check id > 0, age int) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "Column CHECK constraints are is not supported [colName=ID]");
+
+        assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "Computed columns are not supported [colName=ID]");
+
+        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"tplCache=cache\"",
+            IgniteSQLException.class, "DEFAULT expressions are not supported [colName=AGE]");
 
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"tplCache=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
