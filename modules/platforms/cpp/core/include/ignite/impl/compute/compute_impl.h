@@ -27,6 +27,7 @@
 #include <ignite/common/promise.h>
 #include <ignite/impl/interop/interop_target.h>
 #include <ignite/impl/compute/compute_task_impl.h>
+#include <ignite/impl/compute/cancelable_impl.h>
 
 #include <ignite/ignite_error.h>
 #include "ignite/compute/compute_func.h"
@@ -101,7 +102,9 @@ namespace ignite
 
                     common::Promise<R>& promise = task.Get()->GetPromise();
 
-                    promise.SetTarget(target);
+                    std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
+
+                    promise.SetCancelTarget(cancelable);
 
                     return promise.GetFuture();
                 }

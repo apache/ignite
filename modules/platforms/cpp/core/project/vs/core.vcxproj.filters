@@ -58,6 +58,9 @@
     <ClCompile Include="..\..\src\impl\compute\compute_impl.cpp">
       <Filter>Code\impl\compute</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\compute\cancelable_impl.cpp">
+      <Filter>Code\impl\compute</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -223,6 +226,9 @@
       <Filter>Code\compute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_task_impl.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\cancelable_impl.h">
       <Filter>Code\impl\compute</Filter>
     </ClInclude>
   </ItemGroup>

@@ -227,6 +227,7 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\compute\cancelable_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_task_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\helpers.h" />
@@ -255,6 +256,7 @@
     <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\compute\cancelable_impl.cpp" />
     <ClCompile Include="..\..\src\impl\compute\compute_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />

@@ -62,7 +62,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~InteropTarget();
+                virtual ~InteropTarget();
 
                 /**
                  * Internal out operation.

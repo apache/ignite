@@ -25,6 +25,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
+#include <ignite/common/cancelable.h>
 #include <ignite/ignite_error.h>
 
 namespace ignite
@@ -161,9 +162,33 @@ namespace ignite
 
                 throw error;
             }
+            
+            /**
+             * Set cancel target.
+             */
+            void SetCancelTarget(std::auto_ptr<Cancelable>& target)
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                cancelTarget = target;
+            }
+
+            /**
+             * Cancel related operation.
+             */
+            void Cancel()
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                if (cancelTarget.get())
+                    cancelTarget->Cancel();
+            }
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(SharedState);
+
+            /** Cancel target. */
+            std::auto_ptr<Cancelable> cancelTarget;
 
             /** Value. */
             std::auto_ptr<ValueType> value;
@@ -309,9 +334,33 @@ namespace ignite
 
                 throw error;
             }
+            
+            /**
+             * Set cancel target.
+             */
+            void SetCancelTarget(std::auto_ptr<Cancelable>& target)
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                cancelTarget = target;
+            }
+
+            /**
+             * Cancel related operation.
+             */
+            void Cancel()
+            {
+                concurrent::CsLockGuard guard(mutex);
+
+                if (cancelTarget.get())
+                    cancelTarget->Cancel();
+            }
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(SharedState);
+
+            /** Cancel target. */
+            std::auto_ptr<Cancelable> cancelTarget;
 
             /** Marker. */
             bool done;

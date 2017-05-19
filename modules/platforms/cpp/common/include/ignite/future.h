@@ -85,7 +85,7 @@ namespace ignite
 
             assert(state0 != 0);
 
-            state.Get()->Wait();
+            state0->Wait();
         }
 
         /**
@@ -101,7 +101,7 @@ namespace ignite
 
             assert(state0 != 0);
 
-            return state.Get()->WaitFor(msTimeout);
+            return state0->WaitFor(msTimeout);
         }
 
         /**
@@ -117,7 +117,19 @@ namespace ignite
 
             assert(state0 != 0);
 
-            return state.Get()->GetValue();
+            return state0->GetValue();
+        }
+
+        /**
+         * Cancel related operation.
+         */
+        void Cancel()
+        {
+            common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->Cancel();
         }
 
     private:
@@ -182,7 +194,7 @@ namespace ignite
 
             assert(state0 != 0);
 
-            state.Get()->Wait();
+            state0->Wait();
         }
 
         /**
@@ -198,7 +210,7 @@ namespace ignite
 
             assert(state0 != 0);
 
-            return state.Get()->WaitFor(msTimeout);
+            return state0->WaitFor(msTimeout);
         }
 
         /**
@@ -213,7 +225,19 @@ namespace ignite
 
             assert(state0 != 0);
 
-            state.Get()->GetValue();
+            state0->GetValue();
+        }
+
+        /**
+         * Cancel related operation.
+         */
+        void Cancel()
+        {
+            common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->Cancel();
         }
 
     private:
