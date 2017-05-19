@@ -780,4 +780,9 @@ public class CacheGroupInfrastructure {
 
         preldr.onReconnected();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "CacheGroupInfrastructure [grp=" + cacheOrGroupName() + ']';
+    }
 }

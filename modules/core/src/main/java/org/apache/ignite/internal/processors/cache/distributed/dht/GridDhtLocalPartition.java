@@ -109,9 +109,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private final GridFutureAdapter<?> rent;
 
     /** */
+    @GridToStringExclude
     private final GridCacheSharedContext ctx;
 
     /** */
+    @GridToStringExclude
     private final CacheGroupInfrastructure grp;
 
     /** Create time. */
@@ -119,30 +121,39 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private final long createTime = U.currentTimeMillis();
 
     /** Eviction history. */
+    @GridToStringExclude
     private volatile Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
 
     /** Lock. */
+    @GridToStringExclude
     private final ReentrantLock lock = new ReentrantLock();
 
     /** */
+    @GridToStringExclude
     private final ConcurrentMap<Integer, ConcurrentMap<KeyCacheObject, GridCacheMapEntry>> cachesEntryMaps;
 
     /** */
+    @GridToStringExclude
     private final ConcurrentMap<Integer, AtomicInteger> cacheSizes;
 
     /** */
+    @GridToStringExclude
     private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> singleCacheEntryMap;
 
     /** Remove queue. */
+    @GridToStringExclude
     private final ConcurrentLinkedDeque8<RemovedEntryHolder> rmvQueue = new ConcurrentLinkedDeque8<>();
 
     /** Group reservations. */
+    @GridToStringExclude
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
     /** */
+    @GridToStringExclude
     private final CacheDataStore store;
 
     /** Partition updates. */
+    @GridToStringExclude
     private final ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
 
     /** Last applied update. */
@@ -1103,6 +1114,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtLocalPartition.class, this,
+            "grp", grp.cacheOrGroupName(),
             "state", state(),
             "reservations", reservations(),
             "empty", isEmpty(),
