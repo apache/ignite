@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
@@ -64,6 +65,12 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
 
     /** Errors count. */
     private long errCnt;
+
+    /** Topology version of latest completed partition exchange. */
+    private VisorAffinityTopologyVersion readyTopVer;
+
+    /** Whether pending exchange future exists. */
+    private boolean hasPendingExchange;
 
     /**
      * @return Grid name.
@@ -189,5 +196,38 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      */
     public void errorCount(long errCnt) {
         this.errCnt = errCnt;
+    }
+
+    /**
+     * @return Topology version of latest completed partition exchange.
+     */
+    public VisorAffinityTopologyVersion readyAffinityVersion() {
+        return readyTopVer;
+    }
+
+    /**
+     * @param readyTopVer Topology version of latest completed partition exchange.
+     */
+    public void readyAffinityVersion(VisorAffinityTopologyVersion readyTopVer) {
+        this.readyTopVer = readyTopVer;
+    }
+
+    /**
+     * @return Whether pending exchange future exists.
+     */
+    public boolean hasPendingExchange() {
+        return hasPendingExchange;
+    }
+
+    /**
+     * @param hasPendingExchange Whether pending exchange future exists.
+     */
+    public void hasPendingExchange(boolean hasPendingExchange) {
+        this.hasPendingExchange = hasPendingExchange;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorNodeDataCollectorJobResult.class, this);
     }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
@@ -77,6 +78,13 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
     /** Exceptions caught during collecting IGFS from nodes. */
     private final Map<UUID, VisorExceptionWrapper> igfssEx = new HashMap<>();
 
+    /** Topology version of latest completed partition exchange from nodes. */
+    private Map<UUID, VisorAffinityTopologyVersion> readyTopVers = new HashMap<>();
+
+    /** Whether pending exchange future exists from nodes. */
+    private Map<UUID, Boolean> pendingExchanges = new HashMap<>();
+
+
     /**
      * @return {@code true} If no data was collected.
      */
@@ -92,7 +100,9 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
             cachesEx.isEmpty() &&
             igfss.isEmpty() &&
             igfsEndpoints.isEmpty() &&
-            igfssEx.isEmpty();
+            igfssEx.isEmpty() &&
+            readyTopVers.isEmpty() &&
+            pendingExchanges.isEmpty();
     }
 
     /**
@@ -191,5 +201,24 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
      */
     public Map<UUID, Long> errorCounts() {
         return errCnts;
+    }
+
+    /**
+     * @return Topology version of latest completed partition exchange from nodes.
+     */
+    public Map<UUID, VisorAffinityTopologyVersion> readyAffinityVersions() {
+        return readyTopVers;
+    }
+
+    /**
+     * @return Whether pending exchange future exists from nodes.
+     */
+    public Map<UUID, Boolean> pendingExchanges() {
+        return pendingExchanges;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorNodeDataCollectorTaskResult.class, this);
     }
 }
