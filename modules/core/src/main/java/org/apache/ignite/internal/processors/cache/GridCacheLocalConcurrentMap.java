@@ -75,7 +75,7 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
 
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        assert e == null || cacheId == e.context().cacheId();
+        assert cacheId == e.context().cacheId();
 
         pubSize.decrementAndGet();
     }

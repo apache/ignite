@@ -198,8 +198,9 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             else {
                 if (sizeChange != 0) {
                     assert sizeChange == -1;
+                    assert doomed != null;
 
-                    decrementPublicSize(cur);
+                    decrementPublicSize(doomed);
                 }
             }
         }
