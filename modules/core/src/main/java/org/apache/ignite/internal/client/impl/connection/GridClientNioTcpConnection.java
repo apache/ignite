@@ -57,6 +57,9 @@ import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheQueryCloseRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheQueryExecuteRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheQueryFetchRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
@@ -71,6 +74,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridRouterRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridRouterResponse;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryResult;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -932,6 +936,39 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridClientFutureAdapter<CacheQueryResult> cacheQuery(String cacheName, int pageSize,
+        boolean distributedJoins, String sql,
+        Object... args)
+        throws GridClientConnectionResetException, GridClientClosedException {
+        GridClientCacheQueryExecuteRequest msg = new GridClientCacheQueryExecuteRequest(cacheName, sql, args,
+            pageSize, distributedJoins);
+
+        TcpClientFuture<CacheQueryResult> res = new TcpClientFuture<>();
+
+        return makeRequest(msg, res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFutureAdapter<CacheQueryResult> queryFetch(long curId, int pageSize)
+        throws GridClientConnectionResetException, GridClientClosedException {
+        GridClientCacheQueryFetchRequest msg = new GridClientCacheQueryFetchRequest(curId, pageSize);
+
+        TcpClientFuture<CacheQueryResult> res = new TcpClientFuture<>();
+
+        return makeRequest(msg, res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFutureAdapter<Boolean> queryClose(long curId)
+        throws GridClientConnectionResetException, GridClientClosedException {
+        GridClientCacheQueryCloseRequest msg = new GridClientCacheQueryCloseRequest(curId);
+
+        TcpClientFuture<Boolean> res = new TcpClientFuture<>();
+
+        return makeRequest(msg, res);
+    }
+
     /**
      * Creates client node instance from message.
      *
@@ -1074,6 +1111,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
          * Creates new future with the given {@code forward} flag value.
          *
          * @param forward Flag value.
+         * @param keepBinaries Keep binaries flag.
          */
         private TcpClientFuture(boolean forward, boolean keepBinaries) {
             this.forward = forward;

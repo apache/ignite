@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,8 +37,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
@@ -62,6 +62,7 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
+import org.apache.ignite.internal.client.impl.GridClientQueryCursor;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -302,6 +303,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         if (cfg.getCacheMode() == PARTITIONED)
             cfg.setBackups(1);
+
+        cfg.setIndexedTypes(Integer.class, String.class);
 
         return cfg;
     }
@@ -562,6 +565,40 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNull(node.metrics());
         assertNotNull(node.tcpAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQuery() throws Exception {
+        final List<List<Object>> cacheContent = Arrays.asList(
+            Arrays.<Object>asList(1, "val1"),
+            Arrays.<Object>asList(2, "val2"),
+            Arrays.<Object>asList(3, "val3")
+        );
+
+        for (List<Object> keyVal : cacheContent)
+            grid().cache(CACHE_NAME).put(keyVal.get(0), keyVal.get(1));
+
+        GridClientData data = client.data(CACHE_NAME);
+
+        {
+            GridClientQueryCursor c = data.query(100, true, "select _key, _val from String");
+
+            assertEqualsCollectionsIgnoreSequence(cacheContent, c.getAll());
+        }
+
+        {
+            GridClientQueryCursor c = data.query(1, true, "select _key, _val from String");
+
+            assertEqualsCollectionsIgnoreSequence(cacheContent, c.getAll());
+        }
+
+        {
+            GridClientQueryCursor c = data.query(100, true, "select _key, _val from String where _key > ?", 2);
+
+            assertEqualsCollectionsIgnoreSequence(Arrays.asList(Arrays.<Object>asList(3, "val3")), c.getAll());
+        }
     }
 
     /**

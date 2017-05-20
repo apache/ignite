@@ -34,6 +34,7 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.impl.GridClientDataMetricsAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureCallback;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryResult;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -389,6 +390,43 @@ public abstract class GridClientConnection {
      * @throws GridClientException If message forwarding failed.
      */
     public abstract GridClientFutureAdapter<?> forwardMessage(Object body) throws GridClientException;
+
+    /**
+     * SQL queries cache.
+     *
+     * @param cacheName Cache name.
+     * @param pageSize Page size.
+     * @param distributedJoins Distributed joins enabled.
+     * @param sql SQL query.
+     * @param args Query arguments
+     * @return Future query results.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFutureAdapter<CacheQueryResult> cacheQuery(String cacheName, int pageSize,
+        boolean distributedJoins, String sql,
+        Object... args)
+        throws GridClientConnectionResetException, GridClientClosedException;
+
+    /**
+     * @param curId Cursor ID.
+     * @param pageSize Page size.
+     * @return Future fetch results.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFutureAdapter<CacheQueryResult> queryFetch(long curId, int pageSize)
+        throws GridClientConnectionResetException, GridClientClosedException;
+
+    /**
+     * @param curId Cursor ID.
+     * @return Future fetch results.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFutureAdapter<Boolean> queryClose(long curId)
+        throws GridClientConnectionResetException, GridClientClosedException;
+
 
     /**
      * @return {@code True} if connection is closed.

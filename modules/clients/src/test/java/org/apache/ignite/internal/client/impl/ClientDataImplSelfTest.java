@@ -264,4 +264,15 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
             }
         }, NullPointerException.class, "Ouch! Argument cannot be null: key");
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQuery() throws Exception {
+        assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return data.query(0, true, null);
+            }
+        }, NullPointerException.class, "Ouch! Argument cannot be null: sql");
+    }
 }

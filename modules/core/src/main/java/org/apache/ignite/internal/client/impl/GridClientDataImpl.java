@@ -39,6 +39,7 @@ import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.util.GridClientUtils;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryResult;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
@@ -349,6 +350,22 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
                 return conn.cachePrepend(cacheName, key, val, flags, destNodeId);
             }
         }, cacheName, key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientQueryCursor query(final int pageSize, final boolean distributedJoins, final String sql,
+        final Object... args) throws GridClientException {
+        A.notNull(sql, "sql");
+
+        CacheQueryResult res = withReconnectHandling(
+            new ClientProjectionClosure<CacheQueryResult>() {
+            @Override public GridClientFuture<CacheQueryResult> apply(GridClientConnection conn,
+                UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException {
+                return conn.cacheQuery(cacheName, pageSize, distributedJoins, sql, args);
+            }
+        }).get();
+
+        return new GridClientQueryCursor(client, nodes, filter, balancer, res, pageSize);
     }
 
     /** {@inheritDoc} */

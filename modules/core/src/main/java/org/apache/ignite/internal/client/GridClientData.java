@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.client.impl.GridClientQueryCursor;
 
 /**
  * A data projection of grid client. Contains various methods for cache operations and metrics retrieval.
@@ -418,6 +419,20 @@ public interface GridClientData {
      * @throws GridClientException In case of error.
      */
     public <K, V> GridClientFuture<Boolean> prependAsync(K key, V val) throws GridClientException;
+
+    /**
+     * SQL queries cache.
+     *
+     * @param pageSize Page size.
+     * @param distributedJoins Distributed joins enabled.
+     * @param sql SQL query.
+     * @param args Query arguments
+     * @return Cursor.
+     * @throws GridClientException If message forwarding failed.
+     */
+    public GridClientQueryCursor query(int pageSize, boolean distributedJoins, String sql,
+        Object... args)
+        throws GridClientException;
 
     /**
      * Gets cache flags enabled on this data projection.
