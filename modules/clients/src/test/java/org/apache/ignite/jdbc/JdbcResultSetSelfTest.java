@@ -53,32 +53,22 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("FloatingPointEquality")
 public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
-    /**
-     * IP finder.
-     */
+    /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /**
-     * URL.
-     */
+    /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/";
 
-    /**
-     * SQL query.
-     */
+    /** SQL query. */
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
             "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
             "from TestObject where id = 1";
 
-    /**
-     * Statement.
-     */
+    /** Statement. */
     private Statement stmt;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -104,9 +94,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
@@ -123,17 +111,13 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void beforeTest() throws Exception {
         stmt = DriverManager.getConnection(URL).createStatement();
@@ -142,9 +126,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         assert !stmt.isClosed();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void afterTest() throws Exception {
         if (stmt != null) {
