@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -35,6 +36,9 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
 
     /** Starting flag. */
     protected final AtomicBoolean starting = new AtomicBoolean(false);
+
+    /** First eviction flag. */
+    private volatile boolean firstEvictWarn;
 
     /** {@inheritDoc} */
     @Override public final void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {
@@ -136,6 +140,26 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
+    }
+
+    /**
+     * Warns on first eviction.
+     */
+    void warnFirstEvict() {
+        if (firstEvictWarn)
+            return;
+
+        // Do not move warning output to synchronized block (it causes warning in IDE).
+        synchronized (this) {
+            if (firstEvictWarn)
+                return;
+
+            firstEvictWarn = true;
+        }
+
+        U.warn(log, "Evictions started (cache may have reached its capacity)." +
+                " You may wish to increase 'maxSize' on eviction policy being used for cache: " + cctx.name(),
+            "Evictions started (cache may have reached its capacity): " + cctx.name());
     }
 
     /**
