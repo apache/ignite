@@ -75,7 +75,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
-    private static final boolean JVM_32_BIT = System.getProperty("sun.arch.data.model").equals("64");
+    private static final boolean JVM_32_BIT = System.getProperty("sun.arch.data.model").equals("32");
 
     /** */
     protected Map<String, MemoryPolicy> memPlcMap;
