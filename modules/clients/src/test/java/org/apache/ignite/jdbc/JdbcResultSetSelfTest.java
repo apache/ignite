@@ -17,23 +17,10 @@
 
 package org.apache.ignite.jdbc;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -41,13 +28,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -57,32 +53,43 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("FloatingPointEquality")
 public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
+    /**
+     * IP finder.
+     */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** URL. */
+    /**
+     * URL.
+     */
     private static final String URL = "jdbc:ignite://127.0.0.1/";
 
-    /** SQL query. */
+    /**
+     * SQL query.
+     */
     private static final String SQL =
-        "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
-            "from TestObject where id = 1";
+            "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+                    "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
+                    "from TestObject where id = 1";
 
-    /** Statement. */
+    /**
+     * Statement.
+     */
     private Statement stmt;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setIndexedTypes(
-            Integer.class, TestObject.class
+                Integer.class, TestObject.class
         );
 
         cfg.setCacheConfiguration(cache);
@@ -97,8 +104,11 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
         IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -113,21 +123,30 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void beforeTest() throws Exception {
         stmt = DriverManager.getConnection(URL).createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
             stmt.close();
@@ -154,7 +173,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         o.doubleVal = 1.0d;
         o.bigVal = new BigDecimal(1);
         o.strVal = "str";
-        o.arrVal = new byte[] {1};
+        o.arrVal = new byte[]{1};
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
         o.tsVal = new Timestamp(1);
@@ -353,8 +372,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert Arrays.equals(rs.getBytes("arrVal"), new byte[] {1});
-                assert Arrays.equals(rs.getBytes(11), new byte[] {1});
+                assert Arrays.equals(rs.getBytes("arrVal"), new byte[]{1});
+                assert Arrays.equals(rs.getBytes(11), new byte[]{1});
             }
 
             cnt++;
@@ -448,29 +467,61 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
     /**
      * This does extended toString compare. <br>
-     *     Actual toString in case binary is enabled is called at
+     * Actual toString in case binary is enabled is called at
      * {@link org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
      * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br>
-     *     and then strings are compared in assertions
-     *
+     * and then strings are compared in assertions
+     * <p>
      * And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected by this test: <br>
      * <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582, hash=11433031, a=100, b=AAAA]</code> <br>
      *
      * @param originalObj object initially placed to cache
-     * @param binary optional parameter, if absent, direct toString compare is used
-     * @param resSetObj object returned by result set
+     * @param binary      optional parameter, if absent, direct toString compare is used
+     * @param resSetObj   object returned by result set
      */
     public static void assertEqualsToStringRepresentation(
-        final Object originalObj,
-        @Nullable final IgniteBinary binary,
-        final Object resSetObj) {
+            final Object originalObj,
+            @Nullable final IgniteBinary binary,
+            final Object resSetObj) {
         if (binary != null) {
-            assertEquals(
-                removeIdHash(binary.toBinary(originalObj).toString()),
-                removeIdHash(Objects.toString(resSetObj)));
-        }
-        else
+            final BinaryObject origObjAsBinary = binary.toBinary(originalObj);
+            final String strFromResSet = Objects.toString(resSetObj);
+            for (Field declaredField : originalObj.getClass().getDeclaredFields()) {
+                checkFieldPresenceInToString(origObjAsBinary, strFromResSet, declaredField.getName());
+            }
+        } else
             assertEquals(originalObj.toString(), Objects.toString(resSetObj));
+    }
+
+    /**
+     * Checks particular field from original binary object
+     * @param original binary object representation of original object
+     * @param strToCheck string from result set, to be checked for presence of all fields
+     * @param fieldName field name have being checked
+     */
+    private static void checkFieldPresenceInToString(final BinaryObject original,
+                                                     final String strToCheck,
+                                                     final String fieldName) {
+        final Object a = original.field(fieldName);
+        String strValToSearch = Objects.toString(a);
+        if (a != null) {
+            Class<?> aClass = a.getClass();
+            if (aClass.isArray()) {
+                Class<?> element = aClass.getComponentType();
+                if (element == Byte.TYPE) {
+                    strValToSearch = Arrays.toString((byte[]) a);
+                }
+            } else if (BinaryObject.class.isAssignableFrom(aClass)) {
+                // hack to avoid searching unpredictable toString representation like
+                // JdbcResultSetSelfTest$TestObjectField [idHash=1518952510, hash=11433031, a=100, b=AAAA]
+                // in toString
+                strValToSearch = "";
+            }
+        }
+        assertTrue("Expected to find field "
+                        + fieldName + " having value " + strValToSearch
+                        + " in toString representation [" + strToCheck + "]",
+                strToCheck.contains(fieldName + "=" + strValToSearch));
     }
 
     /**
@@ -564,16 +615,17 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         assert rs.findColumn("id") == 1;
 
         GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    rs.findColumn("wrong");
+                log,
+                new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        rs.findColumn("wrong");
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Column not found: wrong"
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Column not found: wrong"
         );
     }
 
@@ -661,18 +713,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             this.id = id;
         }
 
-        /** {@inheritDoc} */
-        @Override public String toString() {
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String toString() {
             return S.toString(TestObject.class, this);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @SuppressWarnings({"BigDecimalEquals", "EqualsHashCodeCalledOnUrl", "RedundantIfStatement"})
-        @Override public boolean equals(Object o) {
+        @Override
+        public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            TestObject that = (TestObject)o;
+            TestObject that = (TestObject) o;
 
             if (id != that.id) return false;
             if (!Arrays.equals(arrVal, that.arrVal)) return false;
@@ -696,9 +754,12 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             return true;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @SuppressWarnings("EqualsHashCodeCalledOnUrl")
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             int res = id;
 
             res = 31 * res + (boolVal != null ? boolVal.hashCode() : 0);
@@ -745,18 +806,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             this.b = b;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            TestObjectField that = (TestObjectField)o;
+            TestObjectField that = (TestObjectField) o;
 
             return a == that.a && !(b != null ? !b.equals(that.b) : that.b != null);
         }
 
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public int hashCode() {
             int res = a;
 
             res = 31 * res + (b != null ? b.hashCode() : 0);
@@ -764,8 +831,11 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             return res;
         }
 
-        /** {@inheritDoc} */
-        @Override public String toString() {
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String toString() {
             return S.toString(TestObjectField.class, this);
         }
     }
