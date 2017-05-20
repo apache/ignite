@@ -67,9 +67,9 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * SQL query.
      */
     private static final String SQL =
-            "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-                    "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
-                    "from TestObject where id = 1";
+        "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
+            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
+            "from TestObject where id = 1";
 
     /**
      * Statement.
@@ -89,7 +89,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setIndexedTypes(
-                Integer.class, TestObject.class
+            Integer.class, TestObject.class
         );
 
         cfg.setCacheConfiguration(cache);
@@ -173,7 +173,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         o.doubleVal = 1.0d;
         o.bigVal = new BigDecimal(1);
         o.strVal = "str";
-        o.arrVal = new byte[]{1};
+        o.arrVal = new byte[] {1};
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
         o.tsVal = new Timestamp(1);
@@ -372,8 +372,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert Arrays.equals(rs.getBytes("arrVal"), new byte[]{1});
-                assert Arrays.equals(rs.getBytes(11), new byte[]{1});
+                assert Arrays.equals(rs.getBytes("arrVal"), new byte[] {1});
+                assert Arrays.equals(rs.getBytes(11), new byte[] {1});
             }
 
             cnt++;
@@ -464,44 +464,43 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         assert cnt == 1;
     }
 
-
     /**
-     * This does extended toString compare. <br>
-     * Actual toString in case binary is enabled is called at
-     * {@link org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
-     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br>
-     * and then strings are compared in assertions
-     * <p>
-     * And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected by this test: <br>
-     * <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582, hash=11433031, a=100, b=AAAA]</code> <br>
+     * This does extended toString compare. <br> Actual toString in case binary is enabled is called at {@link
+     * org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
+     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br> and then strings are
+     * compared in assertions <p> And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected
+     * by this test: <br> <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582,
+     * hash=11433031, a=100, b=AAAA]</code> <br>
      *
      * @param originalObj object initially placed to cache
-     * @param binary      optional parameter, if absent, direct toString compare is used
-     * @param resSetObj   object returned by result set
+     * @param binary optional parameter, if absent, direct toString compare is used
+     * @param resSetObj object returned by result set
      */
     public static void assertEqualsToStringRepresentation(
-            final Object originalObj,
-            @Nullable final IgniteBinary binary,
-            final Object resSetObj) {
+        final Object originalObj,
+        @Nullable final IgniteBinary binary,
+        final Object resSetObj) {
         if (binary != null) {
             final BinaryObject origObjAsBinary = binary.toBinary(originalObj);
             final String strFromResSet = Objects.toString(resSetObj);
             for (Field declaredField : originalObj.getClass().getDeclaredFields()) {
                 checkFieldPresenceInToString(origObjAsBinary, strFromResSet, declaredField.getName());
             }
-        } else
+        }
+        else
             assertEquals(originalObj.toString(), Objects.toString(resSetObj));
     }
 
     /**
      * Checks particular field from original binary object
+     *
      * @param original binary object representation of original object
      * @param strToCheck string from result set, to be checked for presence of all fields
      * @param fieldName field name have being checked
      */
     private static void checkFieldPresenceInToString(final BinaryObject original,
-                                                     final String strToCheck,
-                                                     final String fieldName) {
+        final String strToCheck,
+        final String fieldName) {
         final Object a = original.field(fieldName);
         String strValToSearch = Objects.toString(a);
         if (a != null) {
@@ -509,9 +508,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             if (aClass.isArray()) {
                 Class<?> element = aClass.getComponentType();
                 if (element == Byte.TYPE) {
-                    strValToSearch = Arrays.toString((byte[]) a);
+                    strValToSearch = Arrays.toString((byte[])a);
                 }
-            } else if (BinaryObject.class.isAssignableFrom(aClass)) {
+            }
+            else if (BinaryObject.class.isAssignableFrom(aClass)) {
                 // hack to avoid searching unpredictable toString representation like
                 // JdbcResultSetSelfTest$TestObjectField [idHash=1518952510, hash=11433031, a=100, b=AAAA]
                 // in toString
@@ -519,9 +519,9 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             }
         }
         assertTrue("Expected to find field "
-                        + fieldName + " having value " + strValToSearch
-                        + " in toString representation [" + strToCheck + "]",
-                strToCheck.contains(fieldName + "=" + strValToSearch));
+                + fieldName + " having value " + strValToSearch
+                + " in toString representation [" + strToCheck + "]",
+            strToCheck.contains(fieldName + "=" + strValToSearch));
     }
 
     /**
@@ -564,7 +564,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         assertFalse(rs.next());
     }
-
 
     /**
      * @throws Exception If failed.
@@ -615,17 +614,17 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         assert rs.findColumn("id") == 1;
 
         GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        rs.findColumn("wrong");
+            log,
+            new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    rs.findColumn("wrong");
 
-                        return null;
-                    }
-                },
-                SQLException.class,
-                "Column not found: wrong"
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Column not found: wrong"
         );
     }
 
@@ -727,29 +726,49 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         @SuppressWarnings({"BigDecimalEquals", "EqualsHashCodeCalledOnUrl", "RedundantIfStatement"})
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
-            TestObject that = (TestObject) o;
+            TestObject that = (TestObject)o;
 
-            if (id != that.id) return false;
-            if (!Arrays.equals(arrVal, that.arrVal)) return false;
-            if (bigVal != null ? !bigVal.equals(that.bigVal) : that.bigVal != null) return false;
-            if (boolVal != null ? !boolVal.equals(that.boolVal) : that.boolVal != null) return false;
-            if (byteVal != null ? !byteVal.equals(that.byteVal) : that.byteVal != null) return false;
-            if (dateVal != null ? !dateVal.equals(that.dateVal) : that.dateVal != null) return false;
-            if (doubleVal != null ? !doubleVal.equals(that.doubleVal) : that.doubleVal != null) return false;
-            if (f1 != null ? !f1.equals(that.f1) : that.f1 != null) return false;
-            if (f2 != null ? !f2.equals(that.f2) : that.f2 != null) return false;
-            if (f3 != null ? !f3.equals(that.f3) : that.f3 != null) return false;
-            if (floatVal != null ? !floatVal.equals(that.floatVal) : that.floatVal != null) return false;
-            if (intVal != null ? !intVal.equals(that.intVal) : that.intVal != null) return false;
-            if (longVal != null ? !longVal.equals(that.longVal) : that.longVal != null) return false;
-            if (shortVal != null ? !shortVal.equals(that.shortVal) : that.shortVal != null) return false;
-            if (strVal != null ? !strVal.equals(that.strVal) : that.strVal != null) return false;
-            if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null) return false;
-            if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null) return false;
-            if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null) return false;
+            if (id != that.id)
+                return false;
+            if (!Arrays.equals(arrVal, that.arrVal))
+                return false;
+            if (bigVal != null ? !bigVal.equals(that.bigVal) : that.bigVal != null)
+                return false;
+            if (boolVal != null ? !boolVal.equals(that.boolVal) : that.boolVal != null)
+                return false;
+            if (byteVal != null ? !byteVal.equals(that.byteVal) : that.byteVal != null)
+                return false;
+            if (dateVal != null ? !dateVal.equals(that.dateVal) : that.dateVal != null)
+                return false;
+            if (doubleVal != null ? !doubleVal.equals(that.doubleVal) : that.doubleVal != null)
+                return false;
+            if (f1 != null ? !f1.equals(that.f1) : that.f1 != null)
+                return false;
+            if (f2 != null ? !f2.equals(that.f2) : that.f2 != null)
+                return false;
+            if (f3 != null ? !f3.equals(that.f3) : that.f3 != null)
+                return false;
+            if (floatVal != null ? !floatVal.equals(that.floatVal) : that.floatVal != null)
+                return false;
+            if (intVal != null ? !intVal.equals(that.intVal) : that.intVal != null)
+                return false;
+            if (longVal != null ? !longVal.equals(that.longVal) : that.longVal != null)
+                return false;
+            if (shortVal != null ? !shortVal.equals(that.shortVal) : that.shortVal != null)
+                return false;
+            if (strVal != null ? !strVal.equals(that.strVal) : that.strVal != null)
+                return false;
+            if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null)
+                return false;
+            if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null)
+                return false;
+            if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null)
+                return false;
 
             return true;
         }
@@ -790,12 +809,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PackageVisibleField")
     private static class TestObjectField implements Serializable {
         /** */
-        @GridToStringInclude
-        final int a;
+        @GridToStringInclude final int a;
 
         /** */
-        @GridToStringInclude
-        final String b;
+        @GridToStringInclude final String b;
 
         /**
          * @param a A.
@@ -811,10 +828,12 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
          */
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
-            TestObjectField that = (TestObjectField) o;
+            TestObjectField that = (TestObjectField)o;
 
             return a == that.a && !(b != null ? !b.equals(that.b) : that.b != null);
         }
