@@ -1439,6 +1439,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(2, res);
             Assert.AreEqual(Enumerable.Range(3, 8), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 
+            // TODO: Test with joins and selects and so on.
             // TODO: Test with predicate
         }
 
