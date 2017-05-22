@@ -687,7 +687,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 2000, x => true);
+            PopulateCache(cache, false, 20000, x => true);
 
             var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
             {
@@ -706,9 +706,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlFieldsQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 2000, x => true);
+            PopulateCache(cache, false, 20000, x => true);
 
-            var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500 AND name like '%1%'")
+            var fieldsQry = new SqlFieldsQuery("SELECT * FROM QueryPerson WHERE age < 5000 AND name like '%0%'")
             {
                 Timeout = TimeSpan.FromMilliseconds(3)
             };
@@ -891,8 +891,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public QueryPerson(string name, int age)
         {
             Name = name;
-            Age = age;
-            Birthday = DateTime.UtcNow.AddYears(-age);
+            Age = age % 2000;
+            Birthday = DateTime.UtcNow.AddYears(-Age);
         }
 
         /// <summary>
