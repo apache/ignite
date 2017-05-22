@@ -73,13 +73,7 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration(ccfg1);
 
-        PersistenceConfiguration pstCfg = new PersistenceConfiguration();
-
-        pstCfg.setPersistenceStorePath("/ramdisk/ignite/db/database");
-        pstCfg.setWalStorePath("/ramdisk/ignite/db/wal");
-        pstCfg.setWalArchivePath("/ramdisk/ignite/db/wal_archive");
-
-        cfg.setPersistenceConfiguration(pstCfg);
+        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
 
         return cfg;
     }
