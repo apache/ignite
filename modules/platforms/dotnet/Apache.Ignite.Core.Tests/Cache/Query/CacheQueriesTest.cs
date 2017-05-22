@@ -688,14 +688,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 20000, x => true);
+            PopulateCache(cache, false, 10000, x => true);
 
             var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
             {
                 Timeout = TimeSpan.FromMilliseconds(2)
             };
 
-            var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).GetAll());
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).ToArray());
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
@@ -706,14 +707,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlFieldsQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 20000, x => true);
+            PopulateCache(cache, false, 10000, x => true);
 
             var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500 AND name like '%1%'")
             {
-                Timeout = TimeSpan.FromMilliseconds(1)
+                Timeout = TimeSpan.FromMilliseconds(3)
             };
 
-            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).GetAll());
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).ToArray());
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
