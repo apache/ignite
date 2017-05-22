@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -111,11 +112,18 @@ namespace Apache.Ignite.Linq.Impl
         {
             _aliases.Push();
 
-            // SELECT
-            _builder.Append("select ");
+            if (IsDeleteAll(queryModel))
+            {
+                _builder.Append("delete ");
+            }
+            else
+            {
+                // SELECT
+                _builder.Append("select ");
 
-            // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, includeAllFields);
+                // TOP 1 FLD1, FLD2
+                VisitSelectors(queryModel, includeAllFields);
+            }
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
@@ -515,6 +523,15 @@ namespace Apache.Ignite.Linq.Impl
         private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
         {
             new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
+        }
+
+        /// <summary>
+        /// Determines whether specified model describes a Delete All operation.
+        /// </summary>
+        private static bool IsDeleteAll(QueryModel queryModel)
+        {
+            return queryModel.ResultOperators.Count == 1 &&
+                   queryModel.ResultOperators[0] is DeleteAllResultOperator;
         }
     }
 }
