@@ -76,7 +76,7 @@ public interface IgniteEx extends Ignite {
      * @throws CacheException If error occurs.
      */
     public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg,
-                                                                              boolean sql) throws CacheException;
+        boolean sql) throws CacheException;
 
     /**
      * Stops dynamically started cache.

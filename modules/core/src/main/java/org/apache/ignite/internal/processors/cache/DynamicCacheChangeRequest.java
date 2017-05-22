@@ -70,7 +70,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Close flag. */
     private boolean close;
 
-    /** SQL flag - whether the change is triggered by an SQL command such as {@code CREATE TABLE}. */
+    /** SQL flag - whether the cache whose change is requested should be created by SQL command {@code CREATE TABLE}. */
     private boolean sql;
 
     /** Fail if exists flag. */
@@ -168,6 +168,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @param ctx Context.
      * @param cacheName Cache name.
+     * @param sql {@code true} if the cache must be stopped only if it was created by SQL command {@code CREATE TABLE}.
      * @param destroy Destroy flag.
      * @return Cache stop request.
      */

@@ -48,7 +48,7 @@ public class DynamicCacheDescriptor {
     /** Statically configured flag. */
     private final boolean staticCfg;
 
-    /** SQL flag - whether the change is triggered by an SQL command such as {@code CREATE TABLE}. */
+    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
     private boolean sql;
 
     /** Cache type. */
@@ -100,7 +100,7 @@ public class DynamicCacheDescriptor {
      * @param template {@code True} if this is template configuration.
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.
-     * @param sql
+     * @param sql SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}.
      * @param deploymentId Deployment ID.
      * @param schema Query schema.
      */
