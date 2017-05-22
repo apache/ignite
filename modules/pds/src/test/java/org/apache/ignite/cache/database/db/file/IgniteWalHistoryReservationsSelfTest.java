@@ -39,6 +39,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_REBALANCE_THRESHOLD;
+
 /**
  *
  */
@@ -71,7 +73,13 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
+        PersistenceConfiguration pstCfg = new PersistenceConfiguration();
+
+        pstCfg.setPersistenceStorePath("/ramdisk/ignite/db/database");
+        pstCfg.setWalStorePath("/ramdisk/ignite/db/wal");
+        pstCfg.setWalArchivePath("/ramdisk/ignite/db/wal_archive");
+
+        cfg.setPersistenceConfiguration(pstCfg);
 
         return cfg;
     }
@@ -85,6 +93,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        System.clearProperty(IGNITE_WAL_REBALANCE_THRESHOLD);
+
         client = false;
 
         stopAllGrids();
@@ -96,6 +106,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testReservedOnExchange() throws Exception {
+        System.setProperty(IGNITE_WAL_REBALANCE_THRESHOLD, "0");
+
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
@@ -179,6 +191,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
+        System.setProperty(IGNITE_WAL_REBALANCE_THRESHOLD, "0");
+
         int entryCnt = 10_000;
 
         Ignite ig0 = startGrids(2);
@@ -268,6 +282,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testNodeLeftDuringExchange() throws Exception {
+        System.setProperty(IGNITE_WAL_REBALANCE_THRESHOLD, "0");
+
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
