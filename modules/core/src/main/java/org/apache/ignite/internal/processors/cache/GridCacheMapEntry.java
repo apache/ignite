@@ -3231,7 +3231,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param oldRow Old row if available.
      * @throws IgniteCheckedException If update failed.
      */
-    protected void storeValue(@Nullable CacheObject val,
+    protected void storeValue(CacheObject val,
         long expireTime,
         GridCacheVersion ver,
         @Nullable CacheDataRow oldRow) throws IgniteCheckedException {

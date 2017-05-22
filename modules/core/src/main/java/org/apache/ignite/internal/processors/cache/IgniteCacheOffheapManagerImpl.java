@@ -441,7 +441,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param readers {@code True} to clear readers.
      */
     @SuppressWarnings("unchecked")
-    @Override public void clear(GridCacheContext cctx, boolean readers) {
+    @Override public void clearCache(GridCacheContext cctx, boolean readers) {
         GridCacheVersion obsoleteVer = null;
 
         GridIterator<CacheDataRow> it = iterator(cctx.cacheId(), cacheDataStores().iterator());
@@ -493,13 +493,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(
+    @Override public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         final GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
         final boolean keepBinary) throws IgniteCheckedException {
-        final Iterator<CacheDataRow> it = iteratorForCache(cctx.cacheId(), primary, backup, topVer);
+        final Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
             /** */
@@ -540,13 +540,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<KeyCacheObject> keysIterator(final int part) throws IgniteCheckedException {
+    @Override public GridCloseableIterator<KeyCacheObject> cacheKeysIterator(int cacheId, final int part) throws IgniteCheckedException {
         CacheDataStore data = partitionData(part);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        final GridCursor<? extends CacheDataRow> cur = data.cursor();
+        final GridCursor<? extends CacheDataRow> cur =
+            data.cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY);
 
         return new GridCloseableIteratorAdapter<KeyCacheObject>() {
             /** */
@@ -576,7 +577,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> iteratorForCache(
+    @Override public GridIterator<CacheDataRow> cacheIterator(
         int cacheId,
         boolean primary,
         boolean backups,
@@ -586,7 +587,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> iteratorForCache(int cacheId, int part) throws IgniteCheckedException {
+    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part) throws IgniteCheckedException {
         CacheDataStore data = partitionData(part);
 
         if (data == null)
@@ -1375,6 +1376,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper) throws IgniteCheckedException {
+            return cursor(cacheId, lower, upper, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
+            KeyCacheObject upper, Object x) throws IgniteCheckedException {
             SearchRow lowerRow;
             SearchRow upperRow;
 
@@ -1389,7 +1396,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 upperRow = upper != null ? new SearchRow(UNDEFINED_CACHE_ID, upper) : null;
             }
 
-            return dataTree.find(lowerRow, upperRow);
+            return dataTree.find(lowerRow, upperRow, x);
         }
 
         /** {@inheritDoc} */
@@ -1427,12 +1434,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             Exception ex = null;
 
-            SearchRow bound = new SearchRow(cacheId);
+            GridCursor<? extends CacheDataRow> cur =
+                cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-            GridCursor<? extends CacheDataRow> cursor = dataTree.find(bound, bound, CacheDataRowAdapter.RowData.KEY_ONLY);
-
-            while (cursor.next()) {
-                CacheDataRow row = cursor.get();
+            while (cur.next()) {
+                CacheDataRow row = cur.get();
 
                 assert row.link() != 0 : row;
 

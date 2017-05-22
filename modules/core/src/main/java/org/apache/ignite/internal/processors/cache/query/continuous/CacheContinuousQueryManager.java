@@ -655,7 +655,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         if (notifyExisting) {
-            final Iterator<CacheDataRow> it = cctx.offheap().iteratorForCache(cctx.cacheId(),
+            final Iterator<CacheDataRow> it = cctx.offheap().cacheIterator(cctx.cacheId(),
                 true,
                 true,
                 AffinityTopologyVersion.NONE);

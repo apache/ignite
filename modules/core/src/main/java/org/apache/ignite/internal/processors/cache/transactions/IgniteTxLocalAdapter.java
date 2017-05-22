@@ -660,6 +660,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             txEntry.updateCounter())));
 
                                     if (op == CREATE || op == UPDATE) {
+                                        assert val != null : txEntry;
+
                                         GridCacheUpdateTxResult updRes = cached.innerSet(
                                             this,
                                             eventNodeId(),
