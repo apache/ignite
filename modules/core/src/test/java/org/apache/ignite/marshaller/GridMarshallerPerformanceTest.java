@@ -17,10 +17,6 @@
 
 package org.apache.ignite.marshaller;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoSerializable;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
@@ -34,7 +30,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoSerializable;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -115,11 +120,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     public void testGridMarshaller() throws Exception {
         final GridTuple<byte[]> tuple = new GridTuple<>();
 
-        // Test marshaller context.
-        final MarshallerContext marshCtx = new MarshallerContextTestImpl();
-
-        final OptimizedMarshaller marsh = new OptimizedMarshaller();
-        marsh.setContext(marshCtx);
+        final BinaryMarshaller marsh = createStandaloneBinaryMarshaller();
 
         IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
             @Override public void applyx(TestObject obj) throws IgniteCheckedException {

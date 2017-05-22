@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteSpringBean;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
@@ -36,7 +37,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Marshaller. */
-    private static final Marshaller MARSHALLER = new OptimizedMarshaller();
+    private Marshaller marsh;
 
     /** Attribute key. */
     private static final String ATTR_KEY = "checkAttr";
@@ -46,11 +47,13 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MARSHALLER.setContext(new MarshallerContextTestImpl());
+        IgniteConfiguration cfg = config();
+
+        marsh = createStandaloneBinaryMarshaller(cfg);
 
         bean = new IgniteSpringBean();
 
-        bean.setConfiguration(config());
+        bean.setConfiguration(cfg);
 
         bean.afterPropertiesSet();
     }
@@ -73,6 +76,8 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
         cfg.setIgniteInstanceName(getTestIgniteInstanceName());
 
+        cfg.setBinaryConfiguration(new BinaryConfiguration());
+
         return cfg;
     }
 
@@ -87,7 +92,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     public void testSerialization() throws Exception {
         assert bean != null;
 
-        IgniteSpringBean bean0 = MARSHALLER.unmarshal(MARSHALLER.marshal(bean), null);
+        IgniteSpringBean bean0 = marsh.unmarshal(marsh.marshal(bean), null);
 
         assert bean0 != null;
         assert bean0.log() != null;
