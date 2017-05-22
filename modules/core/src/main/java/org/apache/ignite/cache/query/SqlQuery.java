@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -61,7 +62,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     private int[] parts;
 
     /** Schema. */
-    private String schema = SqlFieldsQuery.DFLT_SCHEMA;
+    private String schema = CacheConfiguration.DFLT_SQL_SCHEMA;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -291,12 +292,14 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Set schema.
      * <p>
-     * Defaults to {@link SqlFieldsQuery#DFLT_SCHEMA}.
+     * Defaults to {@link CacheConfiguration#DFLT_SQL_SCHEMA}.
      *
      * @param schema Schema.
      * @return {@code this} for chaining.
      */
     public SqlQuery setSchema(String schema) {
+        A.notNullOrEmpty(schema, "schema");
+
         this.schema = schema;
 
         return this;

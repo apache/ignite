@@ -20,6 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -49,9 +50,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default schema name. */
-    public static final String DFLT_SCHEMA = "default";
-
     /** SQL Query. */
     private String sql;
 
@@ -78,7 +76,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private int[] parts;
 
     /** Schema. */
-    private String schema = DFLT_SCHEMA;
+    private String schema = CacheConfiguration.DFLT_SQL_SCHEMA;
 
     /**
      * Constructs SQL fields query.
@@ -305,13 +303,13 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Set schema.
      * <p>
-     * Defaults to {@link #DFLT_SCHEMA}.
+     * Defaults to {@link CacheConfiguration#DFLT_SQL_SCHEMA}.
      *
      * @param schema Schema.
      * @return {@code this} for chaining.
      */
     public SqlFieldsQuery setSchema(String schema) {
-        A.notNull(schema, "schema");
+        A.notNullOrEmpty(schema, "schema");
 
         this.schema = schema;
 

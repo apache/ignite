@@ -58,8 +58,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -200,6 +198,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
+    /** Default SQL schema name. */
+    public static final String DFLT_SQL_SCHEMA = "default";
+
     /** Cache name. */
     private String name;
 
@@ -337,7 +338,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** */
-    private String sqlSchema = SqlFieldsQuery.DFLT_SCHEMA;
+    private String sqlSchema = DFLT_SQL_SCHEMA;
 
     /** */
     private boolean sqlEscapeAll;
@@ -1618,8 +1619,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
-        A.ensure((sqlSchema != null), "Schema could not be null.");
-        A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+        A.notNullOrEmpty(sqlSchema, "sqlSchema");
 
         this.sqlSchema = sqlSchema;
 
