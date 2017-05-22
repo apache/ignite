@@ -139,6 +139,9 @@ namespace Apache.Ignite.Linq
 
         /// <summary>
         /// Deletes all rows that are matched by the specified query.
+        /// <para />
+        /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete 
+        /// (as opposed to fetching all rows locally).
         /// </summary>
         /// <typeparam name="TKey">Key type.</typeparam>
         /// <typeparam name="TValue">Value type.</typeparam>
@@ -148,8 +151,8 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            // TODO
-            return 0;
+            // TODO: Some ResultOperator like Single() or Count().
+            return query.ToArray().Length;
         }
     }
 }
