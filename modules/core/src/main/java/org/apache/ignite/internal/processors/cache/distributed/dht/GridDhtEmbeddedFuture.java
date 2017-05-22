@@ -28,9 +28,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
  * Embedded DHT future.
  */
 public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implements GridDhtFuture<A> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * @param c Closure.
      * @param embedded Embedded.

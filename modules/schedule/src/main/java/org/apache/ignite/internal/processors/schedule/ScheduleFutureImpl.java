@@ -581,7 +581,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+        final GridFutureAdapter<T> fut = new GridFutureAdapter() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
             }

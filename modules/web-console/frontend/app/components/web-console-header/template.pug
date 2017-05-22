@@ -23,3 +23,12 @@
         
     .wch-slot.wch-slot-left(ng-transclude='slotLeft')
     .wch-slot.wch-slot-right(ng-transclude='slotRight')
+
+    .wch-web-agent-download
+        a.btn-ignite.btn-ignite--primary(
+            ng-if='$ctrl.isWebAgentDownloadVisible'
+            href='/api/v1/downloads/agent'
+            target='_self'
+        )
+            svg.icon-left(ignite-icon='download')
+            | Download Web Agent
