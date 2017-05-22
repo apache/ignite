@@ -382,7 +382,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", loc)
             {
                 EnableDistributedJoins = distrJoin,
-                EnforceJoinOrder = enforceJoinOrder
+                EnforceJoinOrder = enforceJoinOrder,
+                Colocated = !distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(2)
             };
 
             using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
