@@ -222,7 +222,7 @@ public class RecordV1Serializer implements RecordSerializer {
                     buf.putInt(walPtr.length());
                 }
 
-                putCacheStates(buf, cpRec.cacheStates());
+                putCacheStates(buf, cpRec.cacheGroupStates());
 
                 buf.put(cpRec.end() ? (byte)1 : 0);
 
@@ -730,7 +730,7 @@ public class RecordV1Serializer implements RecordSerializer {
 
                 CheckpointRecord cpRec = new CheckpointRecord(new UUID(msb, lsb), walPtr, end);
 
-                cpRec.cacheStates(states);
+                cpRec.cacheGroupStates(states);
 
                 res = cpRec;
 
@@ -1234,7 +1234,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
                     "Invalid WAL record: " + cpRec;
 
-                int cacheStatesSize = cacheStatesSize(cpRec.cacheStates());
+                int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
                 FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
 

@@ -71,7 +71,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Partition topology.
  */
 @GridToStringExclude
-publicclass GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -152,7 +152,7 @@ publicclass GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         locParts = new AtomicReferenceArray<>(grp.affinityFunction().partitions());
 
-        part2node = new HashMap<>(cctx.config().getAffinity().partitions(), 1.0f);
+        part2node = new HashMap<>(grp.affinityFunction().partitions(), 1.0f);
     }
 
     /** {@inheritDoc} */
@@ -1571,7 +1571,7 @@ publicclass GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         locPart.reload(true);
 
-                        result.add(cctx.localNodeId());
+                        result.add(ctx.localNodeId());
                     }
 
                 }

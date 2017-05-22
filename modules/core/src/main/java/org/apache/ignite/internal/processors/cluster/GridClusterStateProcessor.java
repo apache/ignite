@@ -452,16 +452,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 sharedCtx.database().initDataBase();
 
+                // TODO IGNITE-5075 group descriptors.
                 for (CacheConfiguration cfg : cfgs) {
                     if (CU.isSystemCache(cfg.getName()))
                         if (pageStore != null)
-                            pageStore.initializeForCache(cfg);
+                            pageStore.initializeForCache(ctx.cache().cacheDescriptors().get(cfg.getName()).groupDescriptor(), cfg);
                 }
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (!CU.isSystemCache(cfg.getName()))
                         if (pageStore != null)
-                            pageStore.initializeForCache(cfg);
+                            pageStore.initializeForCache(ctx.cache().cacheDescriptors().get(cfg.getName()).groupDescriptor(), cfg);
                 }
 
                 sharedCtx.database().onActivate(ctx);

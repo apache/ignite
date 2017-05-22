@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 
 /**
@@ -31,10 +32,15 @@ public class RowStore {
     private final FreeList freeList;
 
     /** */
+    private final GridCacheSharedContext ctx;
+
+    /** */
     protected final PageMemory pageMem;
 
     /** */
     protected final CacheObjectContext coctx;
+
+
 
     /**
      * @param grp Cache group.
@@ -46,6 +52,7 @@ public class RowStore {
 
         this.freeList = freeList;
 
+        ctx = grp.shared();
         coctx = grp.cacheObjectContext();
         pageMem = grp.memoryPolicy().pageMemory();
     }
@@ -56,13 +63,13 @@ public class RowStore {
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
-        cctx.shared().database().checkpointReadLock();
+        ctx.database().checkpointReadLock();
 
         try {
             freeList.removeDataRowByLink(link);
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            ctx.database().checkpointReadUnlock();
         }
     }
 
@@ -71,13 +78,13 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
-        cctx.shared().database().checkpointReadLock();
+        ctx.database().checkpointReadLock();
 
         try {
             freeList.insertDataRow(row);
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            ctx.database().checkpointReadUnlock();
         }
     }
 

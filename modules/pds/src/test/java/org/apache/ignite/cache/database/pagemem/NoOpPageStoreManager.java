@@ -19,7 +19,7 @@ package org.apache.ignite.cache.database.pagemem;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +29,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
@@ -52,17 +53,17 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
+    @Override public void initializeForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void shutdownForCache(GridCacheContext cacheCtx, boolean destroy) throws IgniteCheckedException {
+    @Override public void shutdownForCacheGroup(CacheGroupInfrastructure grp, boolean destroy) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionCreated(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -170,17 +171,12 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<String> savedCacheNames() {
-        return Collections.emptySet();
+    @Override public Map<String, CacheConfiguration> readCacheConfigurations() throws IgniteCheckedException {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration readConfiguration(String cacheName) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasIndexStore(int cacheId) {
+    @Override public boolean hasIndexStore(int grpId) {
         return false;
     }
 

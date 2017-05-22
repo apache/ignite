@@ -131,11 +131,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             final long pageId = pageId(nextLink);
 
-            // TODO IGNITE-5075 Here must be "physical" cache ID (aka group ID)
-            final long page = pageMem.acquirePage(cacheId, pageId);
+            assert grp != null || !sharedCtx.database().persistenceEnabled();
+
+            int grpId = grp != null ? grp.groupId() : 0;
+
+            final long page = pageMem.acquirePage(grpId, pageId);
 
             try {
-                long pageAddr = pageMem.readLock(cacheId, pageId, page); // Non-empty data page must not be recycled.
+                long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
 
                 assert pageAddr != 0L : nextLink;
 
@@ -172,11 +175,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         return;
                 }
                 finally {
-                    pageMem.readUnlock(cacheId, pageId, page);
+                    pageMem.readUnlock(grpId, pageId, page);
                 }
             }
             finally {
-                pageMem.releasePage(cacheId, pageId, page);
+                pageMem.releasePage(grpId, pageId, page);
             }
         }
         while(nextLink != 0);

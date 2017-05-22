@@ -238,6 +238,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private volatile IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
 
+    /** */
     private final AtomicBoolean done = new AtomicBoolean();
 
     /**
@@ -1713,7 +1714,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
-        Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.cacheId()) : null;
+        Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.groupId()) : null;
 
         Set<Integer> haveHistory = new HashSet<>();
 
@@ -1734,7 +1735,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (localCntr != null && localCntr <= minCntr &&
                     maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                    partHistSuppliers.put(cctx.localNodeId(), top.cacheId(), p, minCntr);
+                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, minCntr);
 
                     haveHistory.add(p);
 
@@ -1743,10 +1744,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
-                Long histCntr = e0.getValue().partitionHistoryCounters(top.cacheId()).get(p);
+                Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
                 if (histCntr != null && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                    partHistSuppliers.put(e0.getKey(), top.cacheId(), p, minCntr);
+                    partHistSuppliers.put(e0.getKey(), top.groupId(), p, minCntr);
 
                     haveHistory.add(p);
 
@@ -1767,7 +1768,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             Set<UUID> nodesToReload = top.setOwners(p, e.getValue().nodes, haveHistory.contains(p), entryLeft == 0);
 
             for (UUID nodeId : nodesToReload)
-                partsToReload.put(nodeId, top.cacheId(), p);
+                partsToReload.put(nodeId, top.groupId(), p);
         }
     }
 
@@ -2036,7 +2037,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (grp != null)
                 grp.topology().update(this, entry.getValue(), cntrMap,
-                    msg.partsToReload(cctx.localNodeId(), cacheId));
+                    msg.partsToReload(cctx.localNodeId(), grpId));
             else {
                 ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 

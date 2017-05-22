@@ -182,11 +182,13 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
     public void updateIndexes(
+        GridCacheContext cctx,
         KeyCacheObject key,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException;
@@ -331,6 +333,12 @@ public interface IgniteCacheOffheapManager {
     public long cacheEntriesCount(int cacheId);
 
     /**
+     * @param part Partition.
+     * @return Number of entries.
+     */
+    public int totalPartitionEntriesCount(int part);
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -427,10 +435,11 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @throws IgniteCheckedException If failed.
          */
-        void updateIndexes(KeyCacheObject key) throws IgniteCheckedException;
+        void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

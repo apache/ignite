@@ -26,9 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -219,11 +222,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 ClusterNode histSupplier = null;
 
-                if (cctx.shared().database().persistenceEnabled()) {
-                    UUID nodeId = exchFut.partitionHistorySupplier(cctx.cacheId(), p);
+                if (ctx.database().persistenceEnabled()) {
+                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
 
                     if (nodeId != null)
-                        histSupplier = cctx.discovery().node(nodeId);
+                        histSupplier = ctx.discovery().node(nodeId);
                 }
 
                 if (histSupplier != null) {
@@ -234,7 +237,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         continue; // For.
                     }
 
-                    assert cctx.shared().database().persistenceEnabled();
+                    assert ctx.database().persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
                     GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
@@ -243,13 +246,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
                             exchFut.exchangeId().topologyVersion(),
-                            cctx.cacheId()));
+                            grp.groupId()));
                     }
 
                     msg.addPartition(p, true);
                 }
                 else {
-                    if (cctx.shared().database().persistenceEnabled()) {
+                    if (ctx.database().persistenceEnabled()) {
                         if (part.state() == RENTING || part.state() == EVICTED) {
                             try {
                                 part.rent(false).get();

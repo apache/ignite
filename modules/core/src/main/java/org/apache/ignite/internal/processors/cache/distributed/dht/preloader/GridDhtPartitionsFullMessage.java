@@ -213,11 +213,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return partHistSuppliers;
     }
 
-    public Set<Integer> partsToReload(UUID nodeId, int cacheId) {
+    public Set<Integer> partsToReload(UUID nodeId, int grpId) {
         if (partsToReload == null)
             return Collections.emptySet();
 
-        return partsToReload.get(nodeId, cacheId);
+        return partsToReload.get(nodeId, grpId);
     }
 
     /**
@@ -432,13 +432,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeByteArray("partsToReloadBytes", partsToReloadBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -500,7 +500,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 partsToReloadBytes = reader.readByteArray("partsToReloadBytes");
 
                 if (!reader.isLastRead())
@@ -508,7 +508,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -528,7 +528,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 12;
     }
 
     /** {@inheritDoc} */

@@ -3195,7 +3195,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             checkObsolete();
 
-            cctx.offheap().updateIndexes(key, localPartition());
+            if (cctx.queries().enabled())
+                cctx.offheap().updateIndexes(cctx, key, localPartition());
         }
     }
 

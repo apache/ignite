@@ -29,7 +29,7 @@ public interface MetaStore {
      * @param idxName Index name.
      * @return {@link RootPage} that keeps pageId, allocated flag that shows whether the page
      *      was newly allocated, and rootId that is counter which increments each time new page allocated.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public RootPage getOrAllocateForTree(String idxName) throws IgniteCheckedException;
 
@@ -38,14 +38,14 @@ public interface MetaStore {
      *
      * @param idxName Index name.
      * @return Root ID or -1 if no page was removed.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException  If failed.
      */
     public RootPage dropRootPage(String idxName) throws IgniteCheckedException;
 
     /**
      * Destroy this meta store.
      *
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException  If failed.
      */
     public void destroy() throws IgniteCheckedException;
 }

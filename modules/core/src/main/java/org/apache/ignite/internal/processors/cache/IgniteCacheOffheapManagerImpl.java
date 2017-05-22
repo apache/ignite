@@ -96,9 +96,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private CacheDataStore locCacheDataStore;
 
     /** */
-    private boolean indexingEnabled;
-
-    /** */
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
@@ -129,8 +126,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         this.ctx = ctx;
         this.grp = grp;
         this.log = ctx.logger(getClass());
-
-        indexingEnabled = QueryUtils.isEnabled(cctx.config());
 
         updateValSizeThreshold = ctx.database().pageSize() / 2;
 
@@ -176,7 +171,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** {@inheritDoc} */
     @Override public void stopCache(int cacheId, final boolean destroy) {
         if (destroy && grp.affinityNode())
-            destroyCacheDataStructures(cacheId, destroy);
+            removeCacheData(cacheId);
     }
 
     /** {@inheritDoc} */
@@ -201,7 +196,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      *
      */
-    protected void destroyCacheDataStructures(int cacheId, boolean destroy) {
+    private void removeCacheData(int cacheId) {
         assert grp.affinityNode();
 
         try {
@@ -251,6 +246,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             size += store.cacheSize(cacheId);
 
         return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int totalPartitionEntriesCount(int p) {
+        if (grp.isLocal())
+            return locCacheDataStore.fullSize();
+        else {
+            GridDhtLocalPartition part = grp.topology().localPartition(p, AffinityTopologyVersion.NONE, false, true);
+
+            return part != null ? part.dataStore().fullSize() : 0;
+        }
     }
 
     /**
@@ -359,8 +365,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndexes(KeyCacheObject key, GridDhtLocalPartition part) throws IgniteCheckedException {
-        dataStore(part).updateIndexes(key);
+    @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part)
+        throws IgniteCheckedException {
+        dataStore(part).updateIndexes(cctx, key);
     }
 
     /** {@inheritDoc} */
@@ -1261,23 +1268,25 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void updateIndexes(KeyCacheObject key) throws IgniteCheckedException {
-            if (indexingEnabled) {
-                CacheDataRow row = dataTree.findOne(new SearchRow(key));
+        @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : UNDEFINED_CACHE_ID;
+
+            CacheDataRow row = dataTree.findOne(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY);
+
+            if (row != null) {
+                row.key(key);
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
-                if (row != null) {
-                    qryMgr.store(
-                        key,
-                        partId,
-                        null,
-                        null,
-                        row.value(),
-                        row.version(),
-                        row.expireTime(),
-                        row.link());
-                }
+                qryMgr.store(
+                    key,
+                    partId,
+                    null,
+                    null,
+                    row.value(),
+                    row.version(),
+                    row.expireTime(),
+                    row.link());
             }
         }
 

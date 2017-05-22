@@ -298,17 +298,18 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
-
-            if (statsEnabled) {
-                cctx.cache().metrics0().clearRebalanceCounters();
-
-                rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        cctx.cache().metrics0().clearRebalanceCounters();
-                    }
-                });
-            }
+// TODO 5075.
+//            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+//
+//            if (statsEnabled) {
+//                cctx.cache().metrics0().clearRebalanceCounters();
+//
+//                rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+//                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+//                        cctx.cache().metrics0().clearRebalanceCounters();
+//                    }
+//                });
+//            }
 
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -608,14 +609,15 @@ public class GridDhtPartitionDemander {
 
         final GridDhtPartitionTopology top = grp.topology();
 
-        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
-
-        if (statsEnabled) {
-            if (supply.estimatedKeysCount() != -1)
-                cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
-
-            cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
-        }
+// TODO 5075.
+//        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+//
+//        if (statsEnabled) {
+//            if (supply.estimatedKeysCount() != -1)
+//                cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
+//
+//            cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
+//        }
 
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
@@ -659,8 +661,9 @@ public class GridDhtPartitionDemander {
                                     break;
                                 }
 
-                                if (statsEnabled)
-                                    cctx.cache().metrics0().onRebalanceKeyReceived();
+// TODO 5075.
+//                                if (statsEnabled)
+//                                    cctx.cache().metrics0().onRebalanceKeyReceived();
                             }
 
                             // If message was last for this partition,

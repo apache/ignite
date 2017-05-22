@@ -256,7 +256,7 @@ class GridDhtPartitionSupplier {
                     if (loc == null || loc.state() != OWNING)
                         continue;
 
-                    keysCnt += cctx.offheap().entriesCount(part);
+                    keysCnt += grp.offheap().totalPartitionEntriesCount(part);
                 }
 
                 s.estimatedKeysCount(keysCnt);
@@ -304,12 +304,12 @@ class GridDhtPartitionSupplier {
                                 d.isHistorical(part) ? d.partitionCounter(part) : null);
 
                             if (!iter.historical()) {
-                                assert !cctx.shared().database().persistenceEnabled() || !d.isHistorical(part);
+                                assert !grp.shared().database().persistenceEnabled() || !d.isHistorical(part);
 
                                 s.clean(part);
                             }
                             else
-                                assert cctx.shared().database().persistenceEnabled() && d.isHistorical(part);
+                                assert grp.shared().database().persistenceEnabled() && d.isHistorical(part);
                         }
                         else
                             iter = (IgniteRebalanceIterator)sctx.entryIt;

@@ -2129,7 +2129,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-        IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
+        IgniteCacheOffheapManager offheapMgr = cctx.group().offheap();
 
         for (int p = 0; p < cctx.affinity().partitions(); p++) {
             try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.keysIterator(p)) {

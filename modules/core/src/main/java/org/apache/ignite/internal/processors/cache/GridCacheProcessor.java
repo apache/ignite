@@ -758,22 +758,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert !ctx.config().isDaemon();
 
         if (sharedCtx.pageStore() != null && sharedCtx.database().persistenceEnabled()) {
-            Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
+            Map<String, CacheConfiguration> ccfgs = sharedCtx.pageStore().readCacheConfigurations();
 
-            savedCacheNames.removeAll(caches.keySet());
+            for (String cache : caches.keySet())
+                ccfgs.remove(cache);
 
-            savedCacheNames.removeAll(internalCaches);
+            for (String cache : internalCaches)
+                ccfgs.remove(cache);
 
-            if (!F.isEmpty(savedCacheNames)) {
+            if (!F.isEmpty(ccfgs)) {
                 if (log.isInfoEnabled())
-                    log.info("Register persistent caches: " + savedCacheNames);
+                    log.info("Register persistent caches: " + ccfgs.keySet());
 
-                for (String name : savedCacheNames) {
-                    CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
-
-                    if (cfg != null)
-                        addCacheOnJoin(cfg, caches, templates);
-                }
+                for (CacheConfiguration ccfg : ccfgs.values())
+                    addCacheOnJoin(ccfg, caches, templates);
             }
         }
     }
@@ -1177,18 +1175,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param grpDesc Cache group descriptor.
      * @param cache Cache to start.
      * @param schema Cache schema.
      * @throws IgniteCheckedException If failed to start cache.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
+    private void startCache(CacheGroupDescriptor grpDesc, GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         ctx.continuous().onCacheStart(cacheCtx);
 
         if (sharedCtx.pageStore() != null  && !ctx.clientNode())
-            sharedCtx.pageStore().initializeForCache(cacheCtx.config());
+            sharedCtx.pageStore().initializeForCache(grpDesc, cacheCtx.config());
 
         CacheConfiguration cfg = cacheCtx.config();
 
@@ -1926,7 +1925,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         caches.put(cacheCtx.name(), cache);
 
-        startCache(cache, schema != null ? schema : new QuerySchema());
+        startCache(grpDesc, cache, schema != null ? schema : new QuerySchema());
 
         grp.onCacheStarted(cacheCtx);
 
@@ -2080,7 +2079,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (exchActions != null && err == null) {
-            Collection<IgniteBiTuple<GridCacheContext, Boolean>> stopped = null;
+            Collection<IgniteBiTuple<CacheGroupInfrastructure, Boolean>> stopped = null;
 
             GridCacheContext<?, ?> stopCtx = null;
             boolean destroy = false;
@@ -2102,7 +2101,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (stopped == null)
                         stopped = new ArrayList<>();
 
-                    stopped.add(F.<GridCacheContext, Boolean>t(stopCtx, destroy));
+                    stopped.add(F.t(stopCtx.group(), destroy));
                 }
             }
 
@@ -2123,7 +2122,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         jCacheProxies.putIfAbsent(cacheName, new IgniteCacheProxy(cache.context(), cache, null, false));
                     }
                     else {
-                        if (req.restart())
+                        if (req.request().restart())
                             proxy.restart();
 
                         proxy.context().gate().onStopped();
@@ -2131,9 +2130,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         sharedCtx.database().checkpointReadLock();
 
                         try {
-                            stopCtx = prepareCacheStop(req);
+                            stopCtx = prepareCacheStop(req.request());
 
-                            destroy = req.destroy();
+                            destroy = req.request().destroy();
 
                             if (stopCtx != null && !stopCtx.group().hasCaches())
                                 stopCacheGroup(stopCtx.groupId());
@@ -2145,16 +2144,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
+                // TODO IGNITE-5075 group descriptors.
                 if (stopCtx != null) {
                     if (stopped == null)
                         stopped = new ArrayList<>();
 
-                    stopped.add(F.<GridCacheContext, Boolean>t(stopCtx, destroy));
+                    stopped.add(F.t(stopCtx.group(), destroy));
                 }
             }
 
             if (stopped != null && !sharedCtx.kernalContext().clientNode())
-                sharedCtx.database().onCachesStopped(stopped);
+                sharedCtx.database().onCacheGroupsStopped(stopped);
         }
     }
 
@@ -2668,17 +2668,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!ctx.config().isDaemon() &&
             sharedCtx.pageStore() != null &&
             sharedCtx.database().persistenceEnabled()) {
-            Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
+            Map<String, CacheConfiguration> savedCaches = sharedCtx.pageStore().readCacheConfigurations();
 
-            for (String name : savedCacheNames) {
-                CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
-
-                if (cfg != null)
-                    reqs.add(createRequest(cfg, false));
-            }
+            for (CacheConfiguration cfg : savedCaches.values())
+                reqs.add(createRequest(cfg, false));
 
             for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
-                if (!savedCacheNames.contains(cfg.getName()))
+                if (!savedCaches.containsKey(cfg.getName()))
                     reqs.add(createRequest(cfg, true));
             }
         }

@@ -97,7 +97,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /**
      * @return {@code True} if eager ttl is enabled for cache.
      */
-    boolean eagerTtlEnabled() {
+    public boolean eagerTtlEnabled() {
         return eagerTtlEnabled;
     }
 
