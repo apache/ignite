@@ -95,16 +95,22 @@ public class JdbcConnection implements Connection {
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "false"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
 
+        String host = props.getProperty(PROP_HOST);
+        String portStr = props.getProperty(PROP_PORT);
+
+        // TODO: Add validation here.
+
+        String endpoint = host + ":" + portStr;
+
         try {
-            cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
-                distributedJoins, enforceJoinOrder);
+            cliIo = new JdbcTcpIo(endpoint, distributedJoins, enforceJoinOrder);
 
             cliIo.start();
         }
         catch (Exception e) {
             cliIo.close();
 
-            throw new SQLException("Failed to start Ignite client.", e);
+            throw new SQLException("Failed to connect to Ignite cluster [host=" + host + ", port=" + portStr + ']', e);
         }
     }
 
