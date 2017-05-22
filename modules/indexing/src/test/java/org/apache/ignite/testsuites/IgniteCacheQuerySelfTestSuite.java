@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoord
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicTableSelfTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
@@ -227,6 +228,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2DynamicIndexAtomicReplicatedSelfTest.class);
         suite.addTestSuite(H2DynamicIndexAtomicPartitionedSelfTest.class);
         suite.addTestSuite(H2DynamicIndexAtomicPartitionedNearSelfTest.class);
+        suite.addTestSuite(H2DynamicTableSelfTest.class);
 
         // Fields queries.
         suite.addTestSuite(SqlFieldsQuerySelfTest.class);

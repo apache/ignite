@@ -1632,7 +1632,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
 
-
                     prepared = GridSqlQueryParser.prepared(stmt);
 
                     if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())

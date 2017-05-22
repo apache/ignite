@@ -395,10 +395,11 @@ public class GridSqlQueryParser {
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
 
     /** */
-    private static final String PARAM_TPL_CACHE = "tplCache";
+    private static final String PARAM_CACHE_TEMPLATE = "cacheTemplate";
 
+    /** Names of the params that need to be present in WITH clause of CREATE TABLE. */
     private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
-        PARAM_TPL_CACHE
+        PARAM_CACHE_TEMPLATE
     };
 
     /** */
@@ -1009,8 +1010,8 @@ public class GridSqlQueryParser {
         assert !F.isEmpty(name);
 
         switch (name) {
-            case PARAM_TPL_CACHE:
-                ensureParamValueNotEmpty(PARAM_TPL_CACHE, val);
+            case PARAM_CACHE_TEMPLATE:
+                ensureParamValueNotEmpty(PARAM_CACHE_TEMPLATE, val);
 
                 res.templateCacheName(val);
 

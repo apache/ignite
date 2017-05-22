@@ -139,8 +139,8 @@ public class DdlStatementsProcessor {
             else if (gridStmt instanceof GridSqlCreateTable) {
                 GridSqlCreateTable createTbl = (GridSqlCreateTable)gridStmt;
 
-                ctx.query().dynamicTableCreate(toQueryEntity(createTbl), createTbl.templateCacheName(),
-                    createTbl.ifNotExists());
+                ctx.query().dynamicTableCreate(createTbl.schemaName(), toQueryEntity(createTbl),
+                    createTbl.templateCacheName(), createTbl.ifNotExists());
 
                 fut = null;
             }
