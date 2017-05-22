@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistenceConfiguration;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -76,6 +77,10 @@ public class IgniteDbWholeClusterRestartSelfTest extends GridCommonAbstractTest 
         ccfg1.setBackups(2);
 
         cfg.setLateAffinityAssignment(false);
+        cfg.setActiveOnStart(false);
+
+        // To avoid hostname lookup on start.
+        cfg.setCheckpointSpi(new NoopCheckpointSpi());
 
         cfg.setCacheConfiguration(ccfg1);
 
@@ -122,6 +127,8 @@ public class IgniteDbWholeClusterRestartSelfTest extends GridCommonAbstractTest 
     public void testRestarts() throws Exception {
         startGrids(GRID_CNT);
 
+        ignite(0).active(true);
+
         awaitPartitionMapExchange();
 
         try (IgniteDataStreamer<Object, Object> ds = ignite(0).dataStreamer(CACHE_NAME)) {
@@ -144,16 +151,21 @@ public class IgniteDbWholeClusterRestartSelfTest extends GridCommonAbstractTest 
             for (Integer idx : idxs)
                 startGrid(idx);
 
-            for (int g = 0; g < GRID_CNT; g++) {
-                Ignite ig = ignite(g);
+            try {
+                ignite(0).active(true);
 
-                for (int k = 0; k < ENTRIES_COUNT; k++)
-                    assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(CACHE_NAME).partition(k) +
-                        ", nodes=" + ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
-                        k, ig.cache(CACHE_NAME).get(k));
+                for (int g = 0; g < GRID_CNT; g++) {
+                    Ignite ig = ignite(g);
+
+                    for (int k = 0; k < ENTRIES_COUNT; k++)
+                        assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(CACHE_NAME).partition(k) +
+                            ", nodes=" + ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
+                            k, ig.cache(CACHE_NAME).get(k));
+                }
             }
-
-            stopAllGrids();
+            finally {
+                stopAllGrids();
+            }
         }
     }
 }
