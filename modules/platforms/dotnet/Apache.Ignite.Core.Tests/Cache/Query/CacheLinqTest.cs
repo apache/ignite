@@ -1273,7 +1273,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 Local = true,
                 PageSize = 999,
-                EnforceJoinOrder = true
+                EnforceJoinOrder = true,
+                Timeout = TimeSpan.FromSeconds(2.5),
+                ReplicatedOnly = true,
+                Colocated = true
             }).Where(x => x.Key > 10);
 
             Assert.AreEqual(cache.Name, query.CacheName);
@@ -1288,12 +1291,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(999, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsTrue(fq.EnforceJoinOrder);
+            Assert.IsTrue(fq.ReplicatedOnly);
+            Assert.IsTrue(fq.Colocated);
+            Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
 
             var str = query.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(_T0._key > ?), Arguments=[10], " +
-                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
+                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                            "Timeout=00:00:02.500, ReplicatedOnly=True, Colocated=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
