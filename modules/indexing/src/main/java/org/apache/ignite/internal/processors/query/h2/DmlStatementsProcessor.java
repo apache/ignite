@@ -202,7 +202,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String spaceName, PreparedStatement stmt,
+    QueryCursorImpl<List<?>> updateDistributedSqlFields(String spaceName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, false, null, cancel);
 

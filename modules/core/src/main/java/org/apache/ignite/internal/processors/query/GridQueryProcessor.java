@@ -1956,14 +1956,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      *
-     * @param space Space name.
+     * @param schema Schema name.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
+    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
         checkxEnabled();
 
-        return idx.prepareNativeStatement(space, sql);
+        return idx.prepareNativeStatement(schema, sql);
     }
 
     /**
@@ -1977,7 +1977,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param nativeStmt Native statement.
      * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
      * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
@@ -1986,9 +1986,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @see IgniteDataStreamer#allowOverwrite
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata.
      */
-    public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+    public IgniteDataStreamer<?, ?> createStreamer(String cacheName, PreparedStatement nativeStmt, long autoFlushFreq,
         int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
-        return idx.createStreamer(spaceName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
+        return idx.createStreamer(cacheName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
     }
 
     /**

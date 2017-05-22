@@ -58,6 +58,8 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -335,7 +337,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** */
-    private String sqlSchema;
+    private String sqlSchema = SqlFieldsQuery.DFLT_SCHEMA;
 
     /** */
     private boolean sqlEscapeAll;

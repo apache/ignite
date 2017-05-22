@@ -396,6 +396,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      */
     private SqlListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
+            // TODO: Request must pass schema name instead.
             PreparedStatement stmt = ctx.query().prepareNativeStatement(req.cacheName(), req.query());
 
             ParameterMetaData pmd = stmt.getParameterMetaData();

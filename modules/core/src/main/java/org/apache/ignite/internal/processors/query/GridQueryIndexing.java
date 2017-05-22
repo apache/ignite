@@ -271,11 +271,11 @@ public interface GridQueryIndexing {
     /**
      * Prepare native statement to retrieve JDBC metadata from.
      *
-     * @param space Schema.
+     * @param schema Schema.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException;
+    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
 
     /**
      * Gets space name from database schema.
@@ -306,7 +306,7 @@ public interface GridQueryIndexing {
     public void cancelAllQueries();
 
     /**
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param nativeStmt Native statement.
      * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
      * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
@@ -315,6 +315,6 @@ public interface GridQueryIndexing {
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
      * {@code null} if given statement is a query.
      */
-    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+    public IgniteDataStreamer<?,?> createStreamer(String cacheName, PreparedStatement nativeStmt, long autoFlushFreq,
         int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }

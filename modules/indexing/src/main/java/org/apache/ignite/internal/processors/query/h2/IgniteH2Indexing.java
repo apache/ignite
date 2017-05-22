@@ -431,9 +431,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space.
      * @return Connection.
      */
+    // TODO: To be removed.
     public Connection connectionForSpace(String space) {
+        return connectionForSchema(schema(space));
+    }
+
+    /**
+     * Get connection for schema.
+     *
+     * @param schema Schema.
+     * @return Connection.
+     */
+    public Connection connectionForSchema(String schema) {
         try {
-            return connectionForThread(schema(space));
+            return connectionForThread(schema);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -483,13 +494,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
-        return prepareStatement(connectionForSpace(space), sql, true);
+    @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+        return prepareStatement(connectionForSchema(schema), sql, true);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
+    @Override public IgniteDataStreamer<?, ?> createStreamer(String cacheName, PreparedStatement nativeStmt,
         long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
         Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
 
@@ -497,7 +508,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        IgniteDataStreamer streamer = ctx.grid().dataStreamer(spaceName);
+        IgniteDataStreamer streamer = ctx.grid().dataStreamer(cacheName);
 
         streamer.autoFlushFrequency(autoFlushFreq);
 
@@ -1571,10 +1582,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
         GridQueryCancel cancel) {
-        final String space = cctx.name();
+        final String schema = qry.getSchema();
         final String sqlQry = qry.getSql();
 
-        Connection c = connectionForSpace(space);
+        Connection c = connectionForSchema(schema);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins();
@@ -1585,8 +1596,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery twoStepQry = null;
         List<GridQueryFieldMetadata> meta;
 
-        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
+        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(schema, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder, qry.isLocal());
+
         TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
@@ -1657,7 +1669,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            return dmlProc.updateSqlFieldsTwoStep(cctx.name(), stmt, qry, cancel);
+                            return dmlProc.updateDistributedSqlFields(cctx.name(), stmt, qry, cancel);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
@@ -2654,7 +2666,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static final class TwoStepCachedQueryKey {
         /** */
-        private final String space;
+        private final String schema;
 
         /** */
         private final String sql;
@@ -2672,20 +2684,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final boolean isLocal;
 
         /**
-         * @param space Space.
+         * Constructor.
+         *
+         * @param schema Schema.
          * @param sql Sql.
          * @param grpByCollocated Collocated GROUP BY.
          * @param distributedJoins Distributed joins enabled.
          * @param enforceJoinOrder Enforce join order of tables.
          * @param isLocal Query is local flag.
          */
-        private TwoStepCachedQueryKey(String space,
+        private TwoStepCachedQueryKey(String schema,
             String sql,
             boolean grpByCollocated,
             boolean distributedJoins,
             boolean enforceJoinOrder,
             boolean isLocal) {
-            this.space = space;
+            this.schema = schema;
             this.sql = sql;
             this.grpByCollocated = grpByCollocated;
             this.distributedJoins = distributedJoins;
@@ -2712,7 +2726,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (enforceJoinOrder != that.enforceJoinOrder)
                 return false;
 
-            if (space != null ? !space.equals(that.space) : that.space != null)
+            if (schema != null ? !schema.equals(that.schema) : that.schema != null)
                 return false;
 
             return isLocal == that.isLocal && sql.equals(that.sql);
@@ -2720,7 +2734,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = space != null ? space.hashCode() : 0;
+            int res = schema != null ? schema.hashCode() : 0;
             res = 31 * res + sql.hashCode();
             res = 31 * res + (grpByCollocated ? 1 : 0);
             res = res + (distributedJoins ? 2 : 0);
