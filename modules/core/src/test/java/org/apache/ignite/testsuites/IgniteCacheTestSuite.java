@@ -28,8 +28,6 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerStor
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinaryWithSqlEscapeSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreMultitreadedSelfTest;
-import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerSelfTest;
-import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerWithSqlEscapeSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
@@ -227,8 +225,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(JdbcTypesDefaultTransformerTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreTest.class);
-        suite.addTestSuite(CacheJdbcPojoStoreOptimizedMarshallerSelfTest.class);
-        suite.addTestSuite(CacheJdbcPojoStoreOptimizedMarshallerWithSqlEscapeSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerSelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinarySelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest.class);
