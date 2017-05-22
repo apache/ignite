@@ -105,8 +105,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (int i = 0; i < GridCnt; i++)
             {
-                for (int j = 0; j < MaxItemCnt; j++)
-                    cache.Remove(j);
+                cache.Clear();
 
                 Assert.IsTrue(cache.IsEmpty());
             }
@@ -688,7 +687,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 10000, x => true);
+            PopulateCache(cache, false, 2000, x => true);
 
             var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
             {
@@ -707,7 +706,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestSqlFieldsQueryTimeout()
         {
             var cache = Cache();
-            PopulateCache(cache, false, 10000, x => true);
+            PopulateCache(cache, false, 2000, x => true);
 
             var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500 AND name like '%1%'")
             {
@@ -867,7 +866,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (var i = 0; i < cnt; i++)
             {
-                var val = rand.Next(100);
+                var val = rand.Next(cnt);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
