@@ -279,6 +279,7 @@ public class BinaryMetadata implements Externalizable {
      */
     public void readFrom(DataInput in) throws IOException {
         in.readByte(); //skip version
+
         typeId = in.readInt();
         typeName = U.readString(in);
 
@@ -362,8 +363,7 @@ public class BinaryMetadata implements Externalizable {
      * @return Enum constant ordinal value.
      */
     public Integer getEnumOrdinalByName(String name) {
-        if (nameToOrdinal == null)
-            return null;
+        assert name != null;
 
         return nameToOrdinal.get(name);
     }
