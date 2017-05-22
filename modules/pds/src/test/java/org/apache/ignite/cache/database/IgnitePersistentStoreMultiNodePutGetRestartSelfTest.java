@@ -75,7 +75,8 @@ public class IgnitePersistentStoreMultiNodePutGetRestartSelfTest extends GridCom
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(100 * 1024 * 1024);
+        memPlcCfg.setInitialSize(100 * 1024 * 1024);
+        memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
         memCfg.setMemoryPolicies(memPlcCfg);

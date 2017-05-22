@@ -32,8 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
-
 /**
  *
  */
@@ -212,7 +210,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
      * @return Read through flag.
      */
     public boolean readThrough() {
-        return (flags & SKIP_STORE_FLAG_MASK) != 0;
+        return (flags & READ_THROUGH_FLAG_MASK) != 0;
     }
 
     /**

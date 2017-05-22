@@ -108,7 +108,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
      */
     public void testEntryProcessorCall() throws Exception {
         {
-            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(1);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(ATOMIC);
@@ -117,7 +117,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         }
 
         {
-            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(0);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(ATOMIC);
@@ -126,7 +126,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         }
 
         {
-            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(1);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -135,7 +135,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         }
 
         {
-            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             ccfg.setBackups(0);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(TRANSACTIONAL);

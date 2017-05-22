@@ -54,7 +54,7 @@ public class CacheQueryBuildValueTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         QueryEntity entity = new QueryEntity();
         entity.setKeyType(Integer.class.getName());
@@ -109,7 +109,7 @@ public class CacheQueryBuildValueTest extends GridCommonAbstractTest {
     public void testBuilderAndQuery() throws Exception {
         Ignite node = ignite(0);
 
-        final IgniteCache<Object, Object> cache = node.cache(null);
+        final IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
         IgniteBinary binary = node.binary();
 

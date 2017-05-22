@@ -27,10 +27,13 @@ import org.apache.ignite.ml.math.VectorStorage;
  * Pivoted (index mapped) view over another vector storage implementation.
  */
 public class PivotedVectorStorage implements VectorStorage {
-    /** */ private VectorStorage sto;
+    /** */
+    private VectorStorage sto;
 
-    /** */ private int[] pivot;
-    /** */ private int[] unpivot;
+    /** */
+    private int[] pivot;
+    /** */
+    private int[] unpivot;
 
     /**
      * @param pivot Pivot array.
@@ -45,16 +48,14 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Pivot array for this vector view.
      */
     public int[] pivot() {
         return pivot;
     }
 
     /**
-     *
-     *
+     * @return Unpivot array for this vector view.
      */
     public int[] unpivot() {
         return unpivot;

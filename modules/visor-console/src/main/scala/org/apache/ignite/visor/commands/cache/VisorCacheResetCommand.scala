@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask
+import org.apache.ignite.internal.visor.cache.{VisorCacheResetMetricsTask, VisorCacheResetMetricsTaskArg}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.visor.visor._
 
@@ -104,7 +104,7 @@ class VisorCacheResetCommand {
         }
 
         try {
-            executeRandom(grp, classOf[VisorCacheResetMetricsTask], cacheName)
+            executeRandom(grp, classOf[VisorCacheResetMetricsTask], new VisorCacheResetMetricsTaskArg(cacheName))
 
             println("Visor successfully reset metrics for cache: " + escapeName(cacheName))
         }

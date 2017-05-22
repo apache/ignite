@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -83,14 +81,14 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final Integer key = 1;
 
         final AtomicInteger idx = new AtomicInteger();
 
-        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(null);
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
@@ -99,7 +97,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
                 @Override public Object call() throws Exception {
                     int val = idx.getAndIncrement();
 
-                    IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < 100; i++)
                         cache.put(key, val);
@@ -135,21 +133,21 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final AtomicInteger idx = new AtomicInteger();
 
         final Integer key = 1;
 
-        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(null);
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                     IgniteTransactions txs = ignite1.transactions();
 
@@ -181,13 +179,13 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final Integer key = 1;
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < 100; i++)
                     cache.put(key, 1);
@@ -198,7 +196,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                 IgniteTransactions txs = ignite1.transactions();
 

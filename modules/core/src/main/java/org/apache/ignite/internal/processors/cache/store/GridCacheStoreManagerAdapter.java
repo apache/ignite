@@ -33,10 +33,11 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -76,8 +77,6 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
-
 /**
  * Store manager.
  */
@@ -112,6 +111,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
     /** */
     private boolean globalSesLsnrs;
+
+    /** Always keep binary. */
+    protected boolean alwaysKeepBinary;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -148,6 +150,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder = sesHolder0;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
+
+        if (cfgStore instanceof CacheJdbcPojoStore)
+            alwaysKeepBinary = true;
     }
 
     /** {@inheritDoc} */
@@ -533,7 +538,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         LT.warn(log, "Calling Cache.loadCache() method will have no effect, " +
-            "CacheConfiguration.getStore() is not defined for cache: " + cctx.namexx());
+            "CacheConfiguration.getStore() is not defined for cache: " + cctx.name());
 
         return false;
     }
@@ -799,7 +804,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         if (e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with binary objects if binary are " +
-                "enabled for cache [cacheName=" + cctx.namex() + ']', e);
+                "enabled for cache [cacheName=" + cctx.name() + ']', e);
         }
         else
             throw e;

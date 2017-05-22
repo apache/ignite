@@ -413,11 +413,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     public void testAffinityRun() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                Affinity<Object> aff = prj.ignite().affinity(null);
+                Affinity<Object> aff = prj.ignite().affinity(DEFAULT_CACHE_NAME);
 
                 ClusterNode node = F.first(prj.nodes());
 
-                return compute(prj).affinityRunAsync((String)null, keyForNode(aff, node), new TestRunnable());
+                return compute(prj).affinityRunAsync(DEFAULT_CACHE_NAME, keyForNode(aff, node), new TestRunnable());
             }
         });
     }
@@ -428,11 +428,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     public void testAffinityCall() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                Affinity<Object> aff = prj.ignite().affinity(null);
+                Affinity<Object> aff = prj.ignite().affinity(DEFAULT_CACHE_NAME);
 
                 ClusterNode node = F.first(prj.nodes());
 
-                return compute(prj).affinityCallAsync((String)null, keyForNode(aff, node), new TestCallable());
+                return compute(prj).affinityCallAsync(DEFAULT_CACHE_NAME, keyForNode(aff, node), new TestCallable());
             }
         });
     }

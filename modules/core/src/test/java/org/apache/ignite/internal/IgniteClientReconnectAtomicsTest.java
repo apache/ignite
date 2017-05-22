@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -363,7 +364,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         BlockTcpCommunicationSpi servCommSpi = commSpi(srv);
 
-        servCommSpi.blockMessage(GridNearLockResponse.class);
+        servCommSpi.blockMessage(GridNearTxPrepareResponse.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -396,8 +397,6 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         assertTrue((Boolean)fut.get(2, TimeUnit.SECONDS));
 
         // Check that after reconnect working.
-        assertEquals("3st value", clientAtomicRef.get());
-        assertTrue(clientAtomicRef.compareAndSet("3st value", "4st value"));
         assertEquals("4st value", clientAtomicRef.get());
 
         assertEquals("4st value", srvAtomicRef.get());
@@ -523,7 +522,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         BlockTcpCommunicationSpi servCommSpi = commSpi(srv);
 
-        servCommSpi.blockMessage(GridNearLockResponse.class);
+        servCommSpi.blockMessage(GridNearTxPrepareResponse.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -556,7 +555,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         assertTrue((Boolean)fut.get(2, TimeUnit.SECONDS));
 
         // Check that after reconnect working.
-        assertEquals(true, clientAtomicStamped.compareAndSet(2, 3, 2, 3));
+        assertEquals(false, clientAtomicStamped.compareAndSet(2, 3, 2, 3));
         assertEquals(3, clientAtomicStamped.value());
         assertEquals(3, clientAtomicStamped.stamp());
 
@@ -655,7 +654,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         final IgniteAtomicLong srvAtomicLong = srv.atomicLong("atomicLongInProggress", 0, false);
 
-        commSpi.blockMessage(GridNearLockResponse.class);
+        commSpi.blockMessage(GridNearTxPrepareResponse.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -688,8 +687,8 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         assertTrue((Boolean)fut.get(2, TimeUnit.SECONDS));
 
         // Check that after reconnect working.
-        assertEquals(1, clientAtomicLong.addAndGet(1));
-        assertEquals(2, srvAtomicLong.addAndGet(1));
+        assertEquals(2, clientAtomicLong.addAndGet(1));
+        assertEquals(3, srvAtomicLong.addAndGet(1));
 
         clientAtomicLong.close();
     }

@@ -190,9 +190,9 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    IgniteCache<Integer, String> cache = ignite.cache(null);
+                    IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                    info("Partition: " + ignite.affinity(null).partition(1));
+                    info("Partition: " + ignite.affinity(DEFAULT_CACHE_NAME).partition(1));
 
                     try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");

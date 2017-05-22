@@ -272,8 +272,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         qryTopVer = cctx.startTopologyVersion();
 
-        if (qryTopVer == null)
-            qryTopVer = new AffinityTopologyVersion(cctx.localNode().order(), 0);
+        assert qryTopVer != null : cctx.name();
     }
 
     /**
@@ -355,70 +354,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Entry for given key unswapped.
-     *
-     * @param key Key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
-        if(!enabled)
-            return;
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            if (isIndexingSpiEnabled()) {
-                Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
-
-                cctx.kernalContext().indexing().onSwap(space, key0);
-            }
-
-            if(qryProcEnabled)
-                qryProc.onSwap(space, key, partId);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
      * Checks if IndexinSPI is enabled.
      * @return IndexingSPI enabled flag.
      */
     private boolean isIndexingSpiEnabled() {
         return cctx.kernalContext().indexing().enabled();
-    }
-
-    /**
-     * Entry for given key unswapped.
-     *
-     * @param key Key.
-     * @param val Value
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
-        if(!enabled)
-            return;
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            if (isIndexingSpiEnabled()) {
-                CacheObjectContext coctx = cctx.cacheObjectContext();
-
-                Object key0 = unwrapIfNeeded(key, coctx);
-
-                Object val0 = unwrapIfNeeded(val, coctx);
-
-                cctx.kernalContext().indexing().onUnswap(space, key0, val0);
-            }
-
-            if(qryProcEnabled)
-                qryProc.onUnswap(space, key, partId, val);
-        }
-        finally {
-            leaveBusy();
-        }
     }
 
     /**
@@ -657,7 +597,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
                             CacheQueryType.SCAN.name(),
-                            cctx.namex(),
+                            cctx.name(),
                             null,
                             null,
                             qry.scanFilter(),
@@ -678,7 +618,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
                             CacheQueryType.FULL_TEXT.name(),
-                            cctx.namex(),
+                            cctx.name(),
                             qry.queryClassName(),
                             qry.clause(),
                             null,
@@ -752,7 +692,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
                     CacheQueryType.SQL_FIELDS.name(),
-                    cctx.namex(),
+                    cctx.name(),
                     null,
                     qry.clause(),
                     null,
@@ -784,7 +724,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
                     CacheQueryType.SPI.name(),
-                    cctx.namex(),
+                    cctx.name(),
                     null,
                     null,
                     null,
@@ -1080,7 +1020,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
                             CacheQueryType.SQL_FIELDS.name(),
-                            cctx.namex(),
+                            cctx.name(),
                             null,
                             qry.clause(),
                             null,
@@ -1315,7 +1255,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
                                     CacheQueryType.SQL.name(),
-                                    cctx.namex(),
+                                    cctx.name(),
                                     qry.queryClassName(),
                                     qry.clause(),
                                     null,
@@ -1336,7 +1276,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
                                     CacheQueryType.FULL_TEXT.name(),
-                                    cctx.namex(),
+                                    cctx.name(),
                                     qry.queryClassName(),
                                     qry.clause(),
                                     null,
@@ -1357,7 +1297,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
                                     CacheQueryType.SCAN.name(),
-                                    cctx.namex(),
+                                    cctx.name(),
                                     null,
                                     null,
                                     qry.scanFilter(),
@@ -1480,7 +1420,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         long startTime = U.currentTimeMillis();
 
-        final String namex = cctx.namex();
+        final String namex = cctx.name();
 
         try {
             assert qry.type() == SCAN;
@@ -2090,6 +2030,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private static final long serialVersionUID = 0L;
 
+        /**
+         * Number of fields to report when no fields defined.
+         * Includes _key and _val columns.
+         */
+        private static final int NO_FIELDS_COLUMNS_COUNT = 2;
+
         /** Grid */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -2132,13 +2078,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.fields().size();
+                        int size = type.fields().isEmpty() ? NO_FIELDS_COLUMNS_COUNT : type.fields().size();
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
                         // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
-                        fieldsMap.put("_KEY", type.keyClass().getName());
-                        fieldsMap.put("_VAL", type.valueClass().getName());
+                        if (type.fields().isEmpty()) {
+                            fieldsMap.put("_KEY", type.keyClass().getName());
+                            fieldsMap.put("_VAL", type.valueClass().getName());
+                        }
 
                         for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());

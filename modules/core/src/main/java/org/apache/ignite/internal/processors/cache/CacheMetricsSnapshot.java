@@ -104,9 +104,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
 
-    /** Off-heap memory maximum size*/
-    private long offHeapMaxSize;
-
     /** Number of non-{@code null} values in the cache. */
     private int size;
 
@@ -264,7 +261,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
-        offHeapMaxSize = m.getOffHeapMaxSize();
 
         size = m.getSize();
         keySize = m.getKeySize();
@@ -334,8 +330,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = loc.isManagementEnabled();
         isReadThrough = loc.isReadThrough();
         isWriteThrough = loc.isWriteThrough();
-
-        offHeapMaxSize = loc.getOffHeapMaxSize();
 
         for (CacheMetrics e : metrics) {
             reads += e.getCacheGets();
@@ -597,11 +591,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return offHeapMaxSize;
-    }
-
-    /** {@inheritDoc} */
     @Override public int getSize() {
         return size;
     }
@@ -828,7 +817,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(offHeapPrimaryEntriesCnt);
         out.writeLong(offHeapBackupEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
-        out.writeLong(offHeapMaxSize);
 
         out.writeInt(dhtEvictQueueCurrSize);
         out.writeInt(txThreadMapSize);
@@ -883,7 +871,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapPrimaryEntriesCnt = in.readLong();
         offHeapBackupEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
-        offHeapMaxSize = in.readLong();
 
         dhtEvictQueueCurrSize = in.readInt();
         txThreadMapSize = in.readInt();

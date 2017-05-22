@@ -370,6 +370,23 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public CacheDataRow read(KeyCacheObject key) throws IgniteCheckedException {
+        CacheDataRow row;
+
+        if (cctx.isLocal())
+            row = locCacheDataStore.find(key);
+        else {
+            GridDhtLocalPartition part = cctx.topology().localPartition(cctx.affinity().partition(key), null, false);
+
+            row = part != null ? dataStore(part).find(key) : null;
+        }
+
+        assert row == null || row.value() != null : row;
+
+        return row;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsKey(GridCacheMapEntry entry) {
         try {
             return read(entry) != null;
@@ -444,11 +461,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override public long offHeapAllocatedSize() {
         // TODO GG-10884.
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
-        // No-op.
     }
 
     /**

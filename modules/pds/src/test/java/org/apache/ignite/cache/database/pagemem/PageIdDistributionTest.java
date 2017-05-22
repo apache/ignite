@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryIm
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -151,16 +152,19 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void _testRealHistory() throws Exception {
-        int cap = CACHE_IDS.length * PARTS * PAGES;
+        int capacity = CACHE_IDS.length * PARTS * PAGES;
 
-        info("Capacity: " + cap);
+        info("Capacity: " + capacity);
 
-        long mem = FullPageIdTable.requiredMemory(cap);
+        long mem = FullPageIdTable.requiredMemory(capacity);
 
         info(U.readableSize(mem, true));
 
-        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new long[] {mem});
-        prov.start();
+        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new JavaLogger());
+
+        prov.initialize(new long[] {mem});
+
+        DirectMemoryRegion region = prov.nextRegion();
 
         try {
             long seed = U.currentTimeMillis();
@@ -169,13 +173,11 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
 
             Random rnd = new Random(seed);
 
-            DirectMemoryRegion region = prov.memory().regions().get(0);
-
             FullPageIdTable tbl = new FullPageIdTable(region.address(), region.size(), true);
 
             Map<T2<Integer, Integer>, Integer> allocated = new HashMap<>();
 
-            for (int i = 0; i < cap; i++) {
+            for (int i = 0; i < capacity; i++) {
                 int cacheId = CACHE_IDS[rnd.nextInt(CACHE_IDS.length)];
                 int partId = rnd.nextInt(PARTS);
 
@@ -196,7 +198,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
                     info("Done: " + i);
             }
 
-            int[] scans = new int[cap];
+            int[] scans = new int[capacity];
 
             int cur = 0;
 
@@ -226,7 +228,7 @@ public class PageIdDistributionTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            prov.stop();
+            prov.shutdown();
         }
     }
 }

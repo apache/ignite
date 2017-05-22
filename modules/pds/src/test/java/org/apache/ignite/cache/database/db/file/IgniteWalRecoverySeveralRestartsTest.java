@@ -85,7 +85,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(500 * 1024 * 1024);
+        memPlcCfg.setInitialSize(500 * 1024 * 1024);
+        memPlcCfg.setMaxSize(500 * 1024 * 1024);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");

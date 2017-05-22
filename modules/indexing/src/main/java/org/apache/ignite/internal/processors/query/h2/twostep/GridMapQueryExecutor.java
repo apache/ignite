@@ -426,8 +426,11 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      */
     private void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
+        int[] qryParts = req.queryPartitions();
+
         final Map<UUID,int[]> partsMap = req.partitions();
-        final int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
+
+        final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
         assert !F.isEmpty(req.caches());
 
@@ -615,7 +618,7 @@ public class GridMapQueryExecutor {
                                 "SQL query executed.",
                                 EVT_CACHE_QUERY_EXECUTED,
                                 CacheQueryType.SQL.name(),
-                                mainCctx.namex(),
+                                mainCctx.name(),
                                 null,
                                 qry.query(),
                                 null,
@@ -1166,7 +1169,7 @@ public class GridMapQueryExecutor {
                         "SQL fields query result set row read.",
                         EVT_CACHE_QUERY_OBJECT_READ,
                         CacheQueryType.SQL.name(),
-                        cctx.namex(),
+                        cctx.name(),
                         null,
                         qry.query(),
                         null,

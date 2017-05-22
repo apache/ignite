@@ -344,6 +344,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    Map<String, ? extends ExecutorService> customExecSvcs;
+
+    /** */
+    @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
@@ -401,6 +405,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
+     * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
      */
     @SuppressWarnings("TypeMayBeWeakened")
@@ -424,6 +429,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
+        @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins
     ) {
         assert grid != null;
@@ -448,6 +454,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.callbackExecSvc = callbackExecSvc;
         this.qryExecSvc = qryExecSvc;
         this.schemaExecSvc = schemaExecSvc;
+        this.customExecSvcs = customExecSvcs;
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -995,6 +1002,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getSchemaExecutorService() {
         return schemaExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    public Map<String, ? extends ExecutorService> customExecutors() {
+        return customExecSvcs;
     }
 
     /** {@inheritDoc} */

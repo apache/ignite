@@ -40,10 +40,6 @@ export default class Cache {
         this.offHeapPrimarySize = cache.offHeapPrimaryEntriesCount || 0;
         this.offHeapBackupSize = cache.offHeapBackupEntriesCount || 0;
 
-        // Swap.
-        this.swapSize = cache.swapSize;
-        this.swapKeys = cache.swapKeys;
-
         const m = cache.metrics;
 
         // Read/write metrics.

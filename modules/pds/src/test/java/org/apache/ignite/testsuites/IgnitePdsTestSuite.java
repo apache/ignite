@@ -32,7 +32,6 @@ import org.apache.ignite.cache.database.pagemem.BPlusTreeReuseListPageMemoryImpl
 import org.apache.ignite.cache.database.pagemem.BPlusTreeSelfTestPageMemoryImplSelfTest;
 import org.apache.ignite.cache.database.pagemem.MetadataStoragePageMemoryImplSelfTest;
 import org.apache.ignite.cache.database.pagemem.PageMemoryImplNoLoadSelfTest;
-import org.apache.ignite.cache.database.pagemem.PageMemoryImplReloadSelfTest;
 import org.apache.ignite.cache.database.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
@@ -56,7 +55,6 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         // Basic PageMemory tests.
         suite.addTestSuite(PageMemoryImplNoLoadSelfTest.class);
-        suite.addTestSuite(PageMemoryImplReloadSelfTest.class);
         suite.addTestSuite(MetadataStoragePageMemoryImplSelfTest.class);
         suite.addTestSuite(PageStoreEvictionSelfTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);

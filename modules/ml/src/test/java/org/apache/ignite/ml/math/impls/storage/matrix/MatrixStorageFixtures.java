@@ -28,12 +28,12 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Fixtures for matrix tests.
  */
 class MatrixStorageFixtures {
     /** */
     private static final List<Supplier<Iterable<MatrixStorage>>> suppliers = Collections.singletonList(
-        (Supplier<Iterable<MatrixStorage>>) SparseLocalMatrixStorageFixture::new
+        (Supplier<Iterable<MatrixStorage>>)SparseLocalMatrixStorageFixture::new
     );
 
     /** */
@@ -57,10 +57,12 @@ class MatrixStorageFixtures {
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         /** */
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
+
         /** */
         private final Integer[] randomAccess = new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null};
         /** */
         private final Integer[] rowStorage = new Integer[] {StorageConstants.ROW_STORAGE_MODE, StorageConstants.COLUMN_STORAGE_MODE, null};
+
         /** */
         private int sizeIdx = 0;
         /** */
@@ -118,19 +120,23 @@ class MatrixStorageFixtures {
                 ", access mode=" + randomAccess[acsModeIdx] + ", storage mode=" + rowStorage[stoModeIdx] + "}";
         }
 
-        /** */ private boolean hasNextRow(int idx) {
+        /** */
+        private boolean hasNextRow(int idx) {
             return rows[idx] != null;
         }
 
-        /** */ private boolean hasNextCol(int idx) {
+        /** */
+        private boolean hasNextCol(int idx) {
             return cols[idx] != null;
         }
 
-        /** */ private boolean hasNextAcsMode(int idx) {
+        /** */
+        private boolean hasNextAcsMode(int idx) {
             return randomAccess[idx] != null;
         }
 
-        /** */ private boolean hasNextStoMode(int idx) {
+        /** */
+        private boolean hasNextStoMode(int idx) {
             return rowStorage[idx] != null;
         }
     }

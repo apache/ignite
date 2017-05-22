@@ -27,10 +27,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -629,7 +632,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int loops = reuseList == null ? 100_000 : 300_000;
+        int loops = reuseList == null ? 20_000 : 60_000;
 
         for (int i = 0 ; i < loops; i++) {
             final Long x = (long)BPlusTree.randomInt(CNT);
@@ -1224,6 +1227,79 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testConcurrentGrowDegenerateTreeAndConcurrentRemove() throws Exception {
+        //calculate tree size when split happens
+        final TestTree t = createTestTree(true);
+        long i = 0;
+
+        for (; ; i++) {
+            t.put(i);
+
+            if (t.rootLevel() > 0)  //split happened
+                break;
+        }
+
+        final long treeStartSize = i;
+
+        final AtomicReference<Throwable> failed = new AtomicReference<>();
+
+        for (int k = 0; k < 100; k++) {
+            final TestTree tree = createTestTree(true);
+
+            final AtomicBoolean start = new AtomicBoolean();
+
+            final AtomicInteger ready = new AtomicInteger();
+
+            Thread first = new Thread(new Runnable() {
+                @Override public void run() {
+                    ready.incrementAndGet();
+
+                    while (!start.get()); //waiting without blocking
+
+                    try {
+                        tree.remove(treeStartSize / 2L);
+                    }
+                    catch (Throwable th) {
+                        failed.set(th);
+                    }
+                }
+            });
+
+            Thread second = new Thread(new Runnable() {
+                @Override public void run() {
+                    ready.incrementAndGet();
+
+                    while (!start.get()); //waiting without blocking
+
+                    try {
+                        tree.put(treeStartSize + 1);
+                    }
+                    catch (Throwable th) {
+                        failed.set(th);
+                    }
+                }
+            });
+
+            for (int j = 0; j < treeStartSize; j++)
+                tree.put((long)j);
+
+            first.start();
+            second.start();
+
+            while (ready.get() != 2);
+
+            start.set(true);
+
+            first.join();
+            second.join();
+
+            assertNull(failed.get());
+        }
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws Exception If failed.
      */
@@ -1232,7 +1308,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final Map<Long,Long> map = new ConcurrentHashMap8<>();
 
-        final int loops = reuseList == null ? 100_000 : 200_000;
+        final int loops = reuseList == null ? 20_000 : 60_000;
 
         final GridStripedLock lock = new GridStripedLock(256);
 
@@ -1272,7 +1348,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
                                 IgniteTree.OperationType opType;
 
-                                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                                @Override public void call(@Nullable Long row) {
                                     opType = PUT;
 
                                     if (row != null)
@@ -1294,7 +1370,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
                                 IgniteTree.OperationType opType;
 
-                                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                                @Override public void call(@Nullable Long row) {
                                     if (row != null) {
                                         assertEquals(x, row);
                                         opType = REMOVE;
@@ -1685,8 +1761,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             Long row = PageUtils.getLong(pageAddr, offset(idx));
 
             checkNotRemoved(row);
@@ -1699,17 +1774,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Page memory.
      */
     protected PageMemory createPageMemory() throws Exception {
-        long[] sizes = new long[CPUS];
-
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(sizes),
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
-            null,
-            new MemoryMetricsImpl(null), true);
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg), true);
 
         pageMem.start();
 
@@ -1754,8 +1826,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }

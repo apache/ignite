@@ -134,7 +134,8 @@ public class TransactionsHangTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
 
         memCfg.setMemoryPolicies(memPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");

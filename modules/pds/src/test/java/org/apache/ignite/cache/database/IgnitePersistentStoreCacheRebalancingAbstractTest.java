@@ -107,8 +107,9 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath("db");
+        memPlcCfg.setMaxSize(100 * 1024 * 1024);
+        memPlcCfg.setInitialSize(100 * 1024 * 1024);
+        memPlcCfg.setSwapFilePath("work/swap");
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
@@ -142,8 +143,6 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE, "LOG_ONLY");
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-        U.delete(new File(U.getIgniteHome(), "db"));
     }
 
     /** {@inheritDoc} */
@@ -151,8 +150,6 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         G.stopAll(true);
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-        U.delete(new File(U.getIgniteHome(), "db"));
     }
 
     /** {@inheritDoc} */
@@ -278,75 +275,6 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
     }
 
     /**
-     * Test that up-to-date partitions aren't rebalanced after cluster restarts gracefully.
-     *
-     * @throws Exception If fails.
-     */
-    public void testNoRebalancingOnRestartDeactivated() throws Exception {
-        fail();
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
-
-        final Collection<Integer> parts = new HashSet<>();
-
-        for (int i = 0; i < 100; i++) {
-            cache1.put(i, i);
-            parts.add(ignite1.affinity(cacheName).partition(i));
-        }
-
-        ignite1.active(false);
-
-        ignite1.close();
-        ignite2.close();
-        ignite3.close();
-        ignite4.close();
-
-        final AtomicInteger evtCnt = new AtomicInteger();
-
-        ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-
-        cache1 = ignite1.cache(cacheName);
-
-        ignite1.active(false);
-
-        ignite1.events().remoteListen(new IgniteBiPredicate<UUID, CacheRebalancingEvent>() {
-            @Override public boolean apply(UUID uuid, CacheRebalancingEvent evt) {
-                if (Objects.equals(evt.cacheName(), cacheName) && parts.contains(evt.partition()))
-                    evtCnt.incrementAndGet();
-
-                return true;
-            }
-        }, null, EventType.EVT_CACHE_REBALANCE_PART_LOADED);
-
-        ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        ignite1.active(true);
-
-        awaitPartitionMapExchange();
-
-        assert evtCnt.get() == 0 : evtCnt.get();
-
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
-
-        for (int i = 0; i < 100; i++) {
-            assert cache1.get(i).equals(i);
-            assert cache2.get(i).equals(i);
-            assert cache3.get(i).equals(i);
-            assert cache4.get(i).equals(i);
-        }
-    }
-
-    /**
      * Test that all data is correctly restored after non-graceful restart.
      *
      * @throws Exception If fails.
@@ -441,6 +369,8 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
+        fail("only for one run, must be removed soon");
+
         final int entriesCnt = 10_000;
         int maxNodesCount = 4;
         int topChanges = 20;

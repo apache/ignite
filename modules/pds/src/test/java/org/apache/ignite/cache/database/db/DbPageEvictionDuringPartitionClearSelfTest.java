@@ -48,7 +48,7 @@ public class DbPageEvictionDuringPartitionClearSelfTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = new CacheConfiguration("cache")
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setAffinity(new RendezvousAffinityFunction(false, 128))
@@ -63,7 +63,8 @@ public class DbPageEvictionDuringPartitionClearSelfTest extends GridCommonAbstra
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
-        memPlcCfg.setSize(70 * 1024 * 1024);
+        memPlcCfg.setInitialSize(70 * 1024 * 1024);
+        memPlcCfg.setMaxSize(70 * 1024 * 1024);
 
         memPlcCfg.setName("dfltMemPlc");
 

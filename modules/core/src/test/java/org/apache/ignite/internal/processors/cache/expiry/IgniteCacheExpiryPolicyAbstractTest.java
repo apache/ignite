@@ -135,18 +135,19 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             info("PUT DONE");
         }
 
-        long pSize = grid(0).context().cache().internalCache(null).context().ttl().pendingSize();
+        long pSize = grid(0).context().cache().internalCache(DEFAULT_CACHE_NAME).context().ttl().pendingSize();
 
         assertTrue("Too many pending entries: " + pSize, pSize <= 1);
 
         cache.remove(key);
 
-        pSize = grid(0).context().cache().internalCache(null).context().ttl().pendingSize();
+        pSize = grid(0).context().cache().internalCache(DEFAULT_CACHE_NAME).context().ttl().pendingSize();
 
         assertEquals(0, pSize);
     }
 
-    /**     * @throws Exception If failed.
+    /**
+     * @throws Exception If failed.
      */
     public void testZeroOnCreate() throws Exception {
         factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
@@ -834,9 +835,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void _testNearCreateUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
+    public void testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -959,9 +958,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void _testNearAccess() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
+    public void testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -996,7 +993,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 60_000L);
 
         IgniteCache<Object, Object> cache =
-            grid(0).affinity(null).isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
+            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
 
         assertEquals(1, cache.get(key));
 
@@ -1009,10 +1006,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpiresOnClient() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
-        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 2));
 
         nearCache = true;
 
@@ -1024,7 +1021,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         Ignite client = startGrid("client", clientCfg);
 
-        IgniteCache<Object, Object> cache = client.cache(null);
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         Integer key = 1;
 
@@ -1194,7 +1191,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
+            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
             if (cache.context().isNear())
                 cache = cache.context().near().dht();

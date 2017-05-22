@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -142,7 +143,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
         int id, GridCacheMapEntryFactory entryFactory) {
-        super(cctx, entryFactory, cctx.config().getStartSize() / cctx.affinity().partitions());
+        super(cctx, entryFactory, Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / cctx.affinity().partitions()));
 
         this.id = id;
         this.cctx = cctx;
@@ -239,9 +240,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public boolean isEmpty() {
         if (cctx.allowFastEviction())
-            return size() == 0;
+            return internalSize() == 0;
 
-        return store.size() == 0 && size() == 0;
+        return store.size() == 0 && internalSize() == 0;
     }
 
     /**
@@ -895,7 +896,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         CacheDataRow row = it0.next();
 
                         GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx.affinity().affinityTopologyVersion(),
-                            row.key(), null, true, false);
+                            row.key(),
+                            true,
+                            false);
 
                         cctx.shared().database().checkpointReadLock();
 

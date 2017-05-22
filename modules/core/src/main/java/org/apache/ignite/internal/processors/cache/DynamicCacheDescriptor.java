@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -44,20 +45,11 @@ public class DynamicCacheDescriptor {
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
-    /** Locally configured flag. */
-    private boolean locCfg;
-
     /** Statically configured flag. */
-    private boolean staticCfg;
-
-    /** Started flag. */
-    private boolean started;
+    private final boolean staticCfg;
 
     /** Cache type. */
     private CacheType cacheType;
-
-    /** */
-    private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
     /** Template configuration flag. */
     private boolean template;
@@ -69,22 +61,28 @@ public class DynamicCacheDescriptor {
     private boolean updatesAllowed = true;
 
     /** */
-    private AffinityTopologyVersion startTopVer;
+    private Integer cacheId;
+
+    /** */
+    private final UUID rcvdFrom;
+
+    /** Mutex. */
+    private final Object mux = new Object();
+
+    /** Cached object context for marshalling issues when cache isn't started. */
+    private volatile CacheObjectContext objCtx;
 
     /** */
     private boolean rcvdOnDiscovery;
 
     /** */
-    private Integer cacheId;
-
-    /** */
-    private UUID rcvdFrom;
+    private AffinityTopologyVersion startTopVer;
 
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
     /** */
-    private transient AffinityTopologyVersion clientCacheStartVer;
+    private AffinityTopologyVersion clientCacheStartVer;
 
     /** Mutex to control schema. */
     private final Object schemaMux = new Object();
@@ -97,21 +95,34 @@ public class DynamicCacheDescriptor {
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
      * @param template {@code True} if this is template configuration.
+     * @param rcvdFrom ID of node provided cache configuration
+     * @param staticCfg {@code True} if cache statically configured.
      * @param deploymentId Deployment ID.
+     * @param schema Query schema.
      */
     @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         boolean template,
+        UUID rcvdFrom,
+        boolean staticCfg,
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
         assert schema != null;
 
+        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
+            cacheCfg = new CacheConfiguration(cacheCfg);
+
+            cacheCfg.setNearConfiguration(null);
+        }
+
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.template = template;
+        this.rcvdFrom = rcvdFrom;
+        this.staticCfg = staticCfg;
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
@@ -128,20 +139,6 @@ public class DynamicCacheDescriptor {
      */
     public Integer cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @return Start topology version.
-     */
-    @Nullable public AffinityTopologyVersion startTopologyVersion() {
-        return startTopVer;
-    }
-
-    /**
-     * @param startTopVer Start topology version.
-     */
-    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
-        this.startTopVer = startTopVer;
     }
 
     /**
@@ -166,27 +163,6 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @param deploymentId Deployment ID.
-     */
-    public void deploymentId(IgniteUuid deploymentId) {
-        this.deploymentId = deploymentId;
-    }
-
-    /**
-     * @return Locally configured flag.
-     */
-    public boolean locallyConfigured() {
-        return locCfg;
-    }
-
-    /**
-     * @param locCfg Locally configured flag.
-     */
-    public void locallyConfigured(boolean locCfg) {
-        this.locCfg = locCfg;
-    }
-
-    /**
      * @return {@code True} if statically configured.
      */
     public boolean staticallyConfigured() {
@@ -194,30 +170,12 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @param staticCfg {@code True} if statically configured.
+     * @return Cache name.
      */
-    public void staticallyConfigured(boolean staticCfg) {
-        this.staticCfg = staticCfg;
-    }
+    public String cacheName() {
+        assert cacheCfg != null : this;
 
-    /**
-     * @return {@code True} if started flag was flipped by this call.
-     */
-    public boolean onStart() {
-        if (!started) {
-            started = true;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return Started flag.
-     */
-    public boolean started() {
-        return started;
+        return cacheCfg.getName();
     }
 
     /**
@@ -228,40 +186,27 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * Creates and caches cache object context if needed.
+     *
+     * @param proc Object processor.
+     * @return Cache object context.
+     */
+    public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
+        if (objCtx == null) {
+            synchronized (mux) {
+                if (objCtx == null)
+                    objCtx = proc.contextForCache(cacheCfg);
+            }
+        }
+
+        return objCtx;
+    }
+
+    /**
      * @return Cache plugin manager.
      */
     public CachePluginManager pluginManager() {
         return pluginMgr;
-    }
-
-    /**
-     * @param nodeId Remote node ID.
-     * @return Configuration.
-     */
-    public CacheConfiguration remoteConfiguration(UUID nodeId) {
-        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
-
-        return cfgs == null ? null : cfgs.get(nodeId);
-    }
-
-    /**
-     * @param nodeId Remote node ID.
-     * @param cfg Remote node configuration.
-     */
-    public void addRemoteConfiguration(UUID nodeId, CacheConfiguration cfg) {
-        Map<UUID, CacheConfiguration> cfgs = rmtCfgs;
-
-        if (cfgs == null)
-            rmtCfgs = cfgs = new HashMap<>();
-
-        cfgs.put(nodeId, cfg);
-    }
-
-    /**
-     *
-     */
-    public void clearRemoteConfigurations() {
-        rmtCfgs = null;
     }
 
     /**
@@ -281,36 +226,15 @@ public class DynamicCacheDescriptor {
     /**
      * @return {@code True} if received in discovery data.
      */
-    public boolean receivedOnDiscovery() {
+    boolean receivedOnDiscovery() {
         return rcvdOnDiscovery;
     }
 
     /**
      * @param rcvdOnDiscovery {@code True} if received in discovery data.
      */
-    public void receivedOnDiscovery(boolean rcvdOnDiscovery) {
+    void receivedOnDiscovery(boolean rcvdOnDiscovery) {
         this.rcvdOnDiscovery = rcvdOnDiscovery;
-    }
-
-    /**
-     * @param nodeId ID of node provided cache configuration in discovery data.
-     */
-    public void receivedFrom(UUID nodeId) {
-        rcvdFrom = nodeId;
-    }
-
-    /**
-     * @return Topology version when node provided cache configuration was started.
-     */
-    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
-        return rcvdFromVer;
-    }
-
-    /**
-     * @param rcvdFromVer Topology version when node provided cache configuration was started.
-     */
-    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
-        this.rcvdFromVer = rcvdFromVer;
     }
 
     /**
@@ -318,6 +242,35 @@ public class DynamicCacheDescriptor {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Topology version when node provided cache configuration was started.
+     */
+    @Nullable AffinityTopologyVersion receivedFromStartVersion() {
+        return rcvdFromVer;
+    }
+
+    /**
+     * @param rcvdFromVer Topology version when node provided cache configuration was started.
+     */
+    void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+        this.rcvdFromVer = rcvdFromVer;
+    }
+
+
+    /**
+     * @return Start topology version.
+     */
+    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+        return startTopVer;
+    }
+
+    /**
+     * @param startTopVer Start topology version.
+     */
+    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        this.startTopVer = startTopVer;
     }
 
     /**
@@ -330,7 +283,7 @@ public class DynamicCacheDescriptor {
     /**
      * @param clientCacheStartVer Version when client cache on local node was started.
      */
-    public void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
+    void clientCacheStartVersion(AffinityTopologyVersion clientCacheStartVer) {
         this.clientCacheStartVer = clientCacheStartVer;
     }
 

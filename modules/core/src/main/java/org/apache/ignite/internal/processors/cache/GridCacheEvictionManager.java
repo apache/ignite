@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
@@ -31,8 +26,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -260,96 +255,24 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /** {@inheritDoc} */
     @Override public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer)
         throws IgniteCheckedException {
-        List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
-
-        Set<GridCacheEntryEx> notRmv = null;
-
-        Collection<GridCacheBatchSwapEntry> swapped = new ArrayList<>(keys.size());
-
         boolean recordable = cctx.events().isRecordable(EVT_CACHE_ENTRY_EVICTED);
 
         GridCacheAdapter cache = cctx.cache();
-
-        Map<Object, GridCacheEntryEx> cached = U.newLinkedHashMap(keys.size());
 
         // Get all participating entries to avoid deadlock.
         for (Object k : keys) {
             KeyCacheObject cacheKey = cctx.toCacheKeyObject(k);
 
-            GridCacheEntryEx e = cache.peekEx(cacheKey);
+            GridCacheEntryEx entry = cache.peekEx(cacheKey);
 
-            if (e != null)
-                cached.put(k, e);
-        }
+            if (entry != null && entry.evictInternal(GridCacheVersionManager.EVICT_VER, null, false)) {
+                if (plcEnabled)
+                    notifyPolicy(entry);
 
-        try {
-            for (GridCacheEntryEx entry : cached.values()) {
-                // Do not evict internal entries.
-                if (entry.key().internal())
-                    continue;
-
-                // Lock entry.
-                GridUnsafe.monitorEnter(entry);
-
-                locked.add(entry);
-
-                if (entry.obsolete()) {
-                    if (notRmv == null)
-                        notRmv = new HashSet<>();
-
-                    notRmv.add(entry);
-
-                    continue;
-                }
-
-                if (obsoleteVer == null)
-                    obsoleteVer = cctx.versions().next();
-
-                GridCacheBatchSwapEntry swapEntry = entry.evictInBatchInternal(obsoleteVer);
-
-                if (swapEntry != null) {
-                    assert entry.obsolete() : entry;
-
-                    swapped.add(swapEntry);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
-                }
-                else if (!entry.obsolete()) {
-                    if (notRmv == null)
-                        notRmv = new HashSet<>();
-
-                    notRmv.add(entry);
-                }
-            }
-
-            // Batch write to swap.
-            if (!swapped.isEmpty())
-                cctx.offheap().writeAll(swapped);
-        }
-        finally {
-            // Unlock entries in reverse order.
-            for (ListIterator<GridCacheEntryEx> it = locked.listIterator(locked.size()); it.hasPrevious(); ) {
-                GridCacheEntryEx e = it.previous();
-
-                GridUnsafe.monitorExit(e);
-            }
-
-            // Remove entries and fire events outside the locks.
-            for (GridCacheEntryEx entry : locked) {
-                if (entry.obsolete() && (notRmv == null || !notRmv.contains(entry))) {
-                    entry.onMarkedObsolete();
-
-                    cache.removeEntry(entry);
-
-                    if (plcEnabled)
-                        notifyPolicy(entry);
-
-                    if (recordable)
-                        cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
-                            EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
-                            false);
-                }
+                if (recordable)
+                    cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
+                        EVT_CACHE_ENTRY_EVICTED, null, false, entry.rawGet(), entry.hasValue(), null, null, null,
+                        false);
             }
         }
     }

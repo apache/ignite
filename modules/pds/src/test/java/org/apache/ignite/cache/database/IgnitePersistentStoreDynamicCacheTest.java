@@ -73,7 +73,8 @@ public class IgnitePersistentStoreDynamicCacheTest extends IgniteDbDynamicCacheS
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(200 * 1024 * 1024);
+        memPlcCfg.setInitialSize(200 * 1024 * 1024);
+        memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");

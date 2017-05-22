@@ -72,7 +72,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         sizes[4] = 10 * MB;
 
-        DirectMemoryProvider provider = new UnsafeMemoryProvider(sizes);
+        DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             new GridTestKernalContext(new GridTestLog4jLogger()),
@@ -92,19 +92,24 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        PageMemoryImpl mem = new PageMemoryImpl(provider, sharedCtx, PAGE_SIZE,
+        PageMemoryImpl mem = new PageMemoryImpl(
+            provider,
+            sizes,
+            sharedCtx,
+            PAGE_SIZE,
             new CIX3<FullPageId, ByteBuffer, Integer>() {
-            @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
-                assert false : "No evictions should happen during the test";
-            }
-        }, new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
-            @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
-            }
-        }, new CheckpointLockStateChecker() {
-            @Override public boolean checkpointLockIsHeldByThread() {
-                return true;
-            }
-        });
+                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
+                    assert false : "No evictions should happen during the test";
+                }
+            },
+            new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
+                @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
+                }
+            }, new CheckpointLockStateChecker() {
+                @Override public boolean checkpointLockIsHeldByThread() {
+                    return true;
+                }
+            });
 
         mem.start();
 

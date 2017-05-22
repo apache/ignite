@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 
 /**
  *
@@ -76,9 +75,7 @@ public class MetaPageInitRecord extends InitNewPageRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        PageMetaIO io = ioType == PageIO.T_META ?
-            PageMetaIO.VERSIONS.forPage(pageAddr) :
-            PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+        PageMetaIO io = PageMetaIO.getPageIO(ioType, ioVer);
 
         io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
 

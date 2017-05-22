@@ -42,11 +42,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class IgniteNoActualWalHistorySelfTest extends GridCommonAbstractTest {
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
@@ -104,7 +107,7 @@ public class IgniteNoActualWalHistorySelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx ignite = startGrid(1);
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
             Random rnd = new Random();
 
@@ -147,7 +150,7 @@ public class IgniteNoActualWalHistorySelfTest extends GridCommonAbstractTest {
 
             ignite = startGrid(1);
 
-            cache = ignite.cache(null);
+            cache = ignite.cache(CACHE_NAME);
 
             // Check.
             for (Integer k : map.keySet())

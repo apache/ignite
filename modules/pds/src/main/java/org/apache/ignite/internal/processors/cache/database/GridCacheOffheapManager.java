@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -313,6 +314,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageMemoryEx pageMemory = (PageMemoryEx)cctx.memoryPolicy().pageMemory();
 
             int tag = pageMemory.invalidate(cctx.cacheId(), p);
+
+            cctx.shared().wal().log(new PartitionDestroyRecord(cctx.cacheId(), p));
 
             cctx.shared().pageStore().onPartitionDestroyed(cctx.cacheId(), p, tag);
         }

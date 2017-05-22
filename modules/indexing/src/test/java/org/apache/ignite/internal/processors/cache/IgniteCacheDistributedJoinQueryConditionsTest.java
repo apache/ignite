@@ -559,7 +559,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
      * @return Configuration.
      */
     private CacheConfiguration cacheConfiguration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

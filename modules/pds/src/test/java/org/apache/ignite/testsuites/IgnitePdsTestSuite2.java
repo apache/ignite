@@ -22,7 +22,6 @@ import org.apache.ignite.cache.database.IgnitePersistentStoreAtomicCacheRebalanc
 import org.apache.ignite.cache.database.IgnitePersistentStoreTxCacheRebalancingTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreContinuousRestartSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStorePageSizesTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreWalTlbSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.cache.database.db.DbPageEvictionDuringPartitionClearSelfTest;
 import org.apache.ignite.cache.database.db.IgniteDbWholeClusterRestartSelfTest;
@@ -49,7 +48,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteDataIntegrityTests.class);
         suite.addTestSuite(IgnitePersistentStoreRecoveryAfterFileCorruptionTest.class);
         suite.addTestSuite(IgnitePersistentStorePageSizesTest.class);
-        suite.addTestSuite(IgnitePersistentStoreWalTlbSelfTest.class);
 
         // WAL recovery test.
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);

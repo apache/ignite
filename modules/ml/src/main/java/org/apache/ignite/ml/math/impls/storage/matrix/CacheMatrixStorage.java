@@ -30,11 +30,16 @@ import org.apache.ignite.ml.math.ValueMapper;
  * Matrix storage based on arbitrary cache and key and value mapping functions.
  */
 public class CacheMatrixStorage<K, V> implements MatrixStorage {
-    /** */ private int rows;
-    /** */  private int cols;
-    /** */ private IgniteCache<K, V> cache;
-    /** */ private MatrixKeyMapper<K> keyMapper;
-    /** */ private ValueMapper<V> valMapper;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
+    /** */
+    private IgniteCache<K, V> cache;
+    /** */
+    private MatrixKeyMapper<K> keyMapper;
+    /** */
+    private ValueMapper<V> valMapper;
 
     /**
      *

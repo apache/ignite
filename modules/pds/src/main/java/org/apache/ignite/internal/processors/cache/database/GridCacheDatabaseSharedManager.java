@@ -74,14 +74,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -92,7 +90,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -104,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.database.file.FilePageStoreMa
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.database.wal.crc.PureJavaCrc32;
@@ -134,7 +130,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.isWalDeltaRecordNeeded;
 
 /**
  *
@@ -442,7 +437,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.debug("DeActivate database manager [id=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
 
-        onKernalStop0(true);
+        onKernalStop0(false);
 
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
@@ -532,7 +527,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected long[] calculateFragmentSizes(int concLvl, long cacheSize) {
+    protected long[] calculateFragmentSizes(int concLvl, long cacheSize) {
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();
 
@@ -554,11 +549,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        int pageSize,
-        MemoryPolicyConfiguration cfg,
+        MemoryConfiguration memCfg,
+        MemoryPolicyConfiguration plcCfg,
         MemoryMetricsImpl memMetrics
     ) {
-        return new PageMemoryImpl(memProvider, cctx, pageSize,
+        return new PageMemoryImpl(
+            memProvider,
+            calculateFragmentSizes(memCfg.getConcurrencyLevel(), plcCfg.getMaxSize()),
+            cctx,
+            memCfg.getPageSize(),
             new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
                 @Override public void applyx(
                     FullPageId fullId,
@@ -664,7 +663,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
-                if (fut.isCacheAdded(cacheCtx.cacheId(), fut.topologyVersion()) &&
+                if (cacheCtx.startTopologyVersion().equals(fut.topologyVersion()) &&
                     !cctx.pageStore().hasIndexStore(cacheCtx.cacheId()) && cacheCtx.affinityNode()) {
                     final int cacheId = cacheCtx.cacheId();
 
@@ -881,7 +880,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition part : cacheCtx.topology().currentLocalPartitions()) {
-                if (part.state() != GridDhtPartitionState.OWNING || part.size() <= ggWalRebalanceThreshold)
+                if (part.state() != GridDhtPartitionState.OWNING || part.dataStore().size() <= ggWalRebalanceThreshold)
                     continue;
 
                 for (Long cpTs : checkpointHist.checkpoints()) {
@@ -1307,7 +1306,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             final int cId = destroyRec.cacheId();
                             final int pId = destroyRec.partitionId();
 
-                            PageMemoryEx pageMem = (PageMemoryEx)cctx.cacheContext(cId).memoryPolicy().pageMemory();
+                            PageMemoryEx pageMem = getPageMemoryForCacheId(cId);
 
                             pageMem.clearAsync(new P3<Integer, Long, Integer>() {
                                 @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {

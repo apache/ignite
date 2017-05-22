@@ -454,18 +454,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.igfsDataSpaceMax();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -856,71 +844,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> keySetx() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.keySetx();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<K> primaryKeySet() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.primaryKeySet();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<V> values() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.values();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             return delegate.entrySet();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.entrySet(part);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.entrySetx(filter);
         }
         finally {
             gate.leave(prev);
@@ -1267,18 +1195,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.removeAllAsync(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.tryGetAndPut(key, val);
         }
         finally {
             gate.leave(prev);

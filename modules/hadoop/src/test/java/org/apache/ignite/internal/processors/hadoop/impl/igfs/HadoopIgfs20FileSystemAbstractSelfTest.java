@@ -305,7 +305,6 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
-        cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
         cfg.setMetaCacheConfiguration(metaCacheConfiguration(igniteInstanceName));
         cfg.setDataCacheConfiguration(dataCacheConfiguration(igniteInstanceName));
@@ -776,8 +775,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         os.close();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 fs.setOwner(file, "aUser", null);
 
                 return null;

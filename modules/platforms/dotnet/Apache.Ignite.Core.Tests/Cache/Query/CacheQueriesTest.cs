@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -442,7 +441,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQuery<BinaryObject>(loc, true);
+            CheckScanQuery<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -460,7 +459,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<BinaryObject>(loc, true);
+            CheckScanQueryPartitions<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -619,6 +618,58 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
             Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
+        }
+
+        /// <summary>
+        /// Tests custom key and value field names.
+        /// </summary>
+        [Test]
+        public void TestCustomKeyValueFieldNames()
+        {
+            // Check select * with default config - does not include _key, _val.
+            var cache = Cache();
+
+            cache[1] = new QueryPerson("Joe", 48);
+
+            var row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(2, row.Count);
+            Assert.AreEqual(48, row[0]);
+            Assert.AreEqual("Joe", row[1]);
+
+            // Check select * with custom names - fields are included.
+            cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("customKeyVal")
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
+                        {
+                            Fields = new[]
+                            {
+                                new QueryField("age", "int"),
+                                new QueryField("FullKey", "int"),
+                                new QueryField("FullVal", "QueryPerson")
+                            },
+                            KeyFieldName = "FullKey",
+                            ValueFieldName = "FullVal"
+                        }
+                    }
+                });
+
+            cache[1] = new QueryPerson("John", 33);
+
+            row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            
+            Assert.AreEqual(3, row.Count);
+            Assert.AreEqual(33, row[0]);
+            Assert.AreEqual(1, row[1]);
+
+            var person = (QueryPerson) row[2];
+            Assert.AreEqual("John", person.Name);
+
+            // Check explicit select.
+            row = cache.QueryFields(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(1, row[0]);
         }
 
         /// <summary>

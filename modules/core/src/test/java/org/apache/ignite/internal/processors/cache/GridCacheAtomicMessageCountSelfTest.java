@@ -66,7 +66,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration cCfg = new CacheConfiguration();
+        CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
@@ -108,7 +108,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
         startGrids(4);
 
-        ignite(0).cache(null);
+        ignite(0).cache(DEFAULT_CACHE_NAME);
 
         try {
             awaitPartitionMapExchange();
@@ -129,7 +129,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < putCnt; i++) {
                 ClusterNode locNode = grid(0).localNode();
 
-                Affinity<Object> affinity = ignite(0).affinity(null);
+                Affinity<Object> affinity = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
                 if (affinity.isPrimary(locNode, i))
                     expDhtCnt++;

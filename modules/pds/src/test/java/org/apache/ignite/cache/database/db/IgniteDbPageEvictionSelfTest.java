@@ -50,27 +50,31 @@ public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
     /** Test entry count. */
     public static final int ENTRY_CNT = 1_000_000;
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        MemoryConfiguration memCfg = new MemoryConfiguration();
 
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+        memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setPageSize(1024);
+        memCfg.setPageSize(1024);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(50 * 1024 * 1024);
+        memPlcCfg.setInitialSize(50 * 1024 * 1024);
+        memPlcCfg.setMaxSize(50 * 1024 * 1024);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setMemoryConfiguration(memCfg);
 
-        CacheConfiguration<DbKey, DbValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<DbKey, DbValue> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
@@ -115,7 +119,7 @@ public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
     public void testPageEvictionSql() throws Exception {
         IgniteEx ig = grid(0);
 
-        try (IgniteDataStreamer<DbKey, DbValue> streamer = ig.dataStreamer(null)) {
+        try (IgniteDataStreamer<DbKey, DbValue> streamer = ig.dataStreamer(CACHE_NAME)) {
             for (int i = 0; i < ENTRY_CNT; i++) {
                 streamer.addData(new DbKey(i), new DbValue(i, "value-" + i, Long.MAX_VALUE - i));
 
@@ -124,7 +128,7 @@ public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        IgniteCache<DbKey, DbValue> cache = ignite(0).cache(null);
+        IgniteCache<DbKey, DbValue> cache = ignite(0).cache(CACHE_NAME);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             assertEquals(Long.MAX_VALUE - i, cache.get(new DbKey(i)).lVal);

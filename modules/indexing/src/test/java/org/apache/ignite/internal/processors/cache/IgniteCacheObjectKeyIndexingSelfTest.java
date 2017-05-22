@@ -49,7 +49,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
 
     /** */
     protected static CacheConfiguration<Object, TestObject> cacheCfg() {
-        return new CacheConfiguration<Object, TestObject>()
+        return new CacheConfiguration<Object, TestObject>(DEFAULT_CACHE_NAME)
             .setIndexedTypes(Object.class, TestObject.class);
     }
 
@@ -104,9 +104,9 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     /** */
     @SuppressWarnings("ConstantConditions")
     private void assertItemsNumber(long num) {
-        assertEquals(num, grid().cachex().size());
+        assertEquals(num, grid().cachex(DEFAULT_CACHE_NAME).size());
 
-        assertEquals(num, grid().cache(null).query(new SqlFieldsQuery("select count(*) from TestObject")).getAll()
+        assertEquals(num, grid().cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select count(*) from TestObject")).getAll()
             .get(0).get(0));
     }
     

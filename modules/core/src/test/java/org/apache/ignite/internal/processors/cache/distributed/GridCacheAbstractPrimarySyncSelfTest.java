@@ -48,7 +48,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -91,9 +91,9 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                IgniteCache<Integer, Integer> cache = grid(j).cache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).cache(DEFAULT_CACHE_NAME);
 
-                if (grid(j).affinity(null).isPrimary(grid(j).localNode(), i)) {
+                if (grid(j).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(j).localNode(), i)) {
                     try (Transaction tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache.put(i, i);
 

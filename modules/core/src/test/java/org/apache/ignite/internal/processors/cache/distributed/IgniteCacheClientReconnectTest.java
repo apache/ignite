@@ -69,7 +69,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
             for (int i = 0; i < CACHES; i++) {
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setCacheMode(PARTITIONED);
                 ccfg.setAtomicityMode(TRANSACTIONAL);

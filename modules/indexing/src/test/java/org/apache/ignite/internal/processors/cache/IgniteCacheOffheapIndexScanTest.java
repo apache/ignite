@@ -53,7 +53,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(LOCAL);
         cacheCfg.setIndexedTypes(
@@ -69,7 +69,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
 
-        cache = grid(0).cache(null);
+        cache = grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */

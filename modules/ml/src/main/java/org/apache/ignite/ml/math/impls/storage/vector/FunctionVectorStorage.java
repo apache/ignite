@@ -29,9 +29,12 @@ import org.apache.ignite.ml.math.functions.IntDoubleToVoidFunction;
  * Read-only or read-write function-based vector storage.
  */
 public class FunctionVectorStorage implements VectorStorage {
-    /** */ private IgniteFunction<Integer, Double> getFunc;
-    /** */ private IntDoubleToVoidFunction setFunc;
-    /** */ private int size;
+    /** */
+    private IgniteFunction<Integer, Double> getFunc;
+    /** */
+    private IntDoubleToVoidFunction setFunc;
+    /** */
+    private int size;
 
     /**
      *
@@ -57,16 +60,14 @@ public class FunctionVectorStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Getter function.
      */
     public IgniteFunction<Integer, Double> getFunction() {
         return getFunc;
     }
 
     /**
-     *
-     *
+     * @return Setter function.
      */
     public IntDoubleToVoidFunction setFunction() {
         return setFunc;
@@ -108,6 +109,7 @@ public class FunctionVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setFunc = (IntDoubleToVoidFunction)in.readObject();
         getFunc = (IgniteFunction<Integer, Double>)in.readObject();

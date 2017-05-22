@@ -1397,7 +1397,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         int backups,
         CacheAtomicityMode atomicityMode,
         boolean store) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("cache-" + UUID.randomUUID()); // TODO GG-11220 (remove setName when fixed).
         ccfg.setAtomicityMode(atomicityMode);

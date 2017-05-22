@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistenceConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -54,7 +54,7 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
     private static final long CHUNK_SIZE = 1024 * 1024;
 
     /** */
-    private static final long MEMORY_LIMIT = 5 * CHUNK_SIZE;
+    private static final long MEMORY_LIMIT = 10 * CHUNK_SIZE;
 
     /** */
     private static final int PAGES_NUM = 128_000;
@@ -77,7 +77,8 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
         final MemoryConfiguration dbCfg = new MemoryConfiguration();
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        memPlcCfg.setSize(MEMORY_LIMIT);
+        memPlcCfg.setInitialSize(MEMORY_LIMIT);
+        memPlcCfg.setMaxSize(MEMORY_LIMIT);
         memPlcCfg.setName("dfltMemPlc");
 
         dbCfg.setPageSize(PAGE_SIZE);

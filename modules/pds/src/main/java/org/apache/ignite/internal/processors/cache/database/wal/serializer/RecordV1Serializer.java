@@ -171,7 +171,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 PartitionDestroyRecord partDestroy = (PartitionDestroyRecord)record;
 
                 buf.putInt(partDestroy.cacheId());
-                buf.putInt(partDestroy.cacheId());
+                buf.putInt(partDestroy.partitionId());
 
                 break;
 

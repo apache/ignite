@@ -106,7 +106,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
      * @throws Exception If failed.
      */
     public void testSession() throws Exception {
-        testCache(null);
+        testCache(DEFAULT_CACHE_NAME);
 
         testCache(CACHE_NAME1);
     }

@@ -95,8 +95,13 @@
                                 <property name="keyType" value="java.lang.Long"/>
                                 <property name="valueType" value="ComplexType"/>
 
+                                <property name="keyFieldName" value="k"/>
+                                <property name="valueFieldName" value="v"/>
+
                                 <property name="fields">
                                     <map>
+                                        <entry key="k" value="java.lang.Long"/>
+                                        <entry key="v" value="ComplexType"/>
                                         <entry key="i32Field" value="java.lang.Integer"/>
                                         <entry key="objField" value="TestObject"/>
                                         <entry key="strField" value="java.lang.String"/>

@@ -206,15 +206,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Indicates object array. */
         public const int ObjTypeId = -1;
 
-        /** Int type. */
-        public static readonly Type TypInt = typeof(int);
-
-        /** Collection type. */
-        public static readonly Type TypCollection = typeof(ICollection);
-
-        /** Dictionary type. */
-        public static readonly Type TypDictionary = typeof(IDictionary);
-
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
@@ -1440,36 +1431,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write enum.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="val">Value.</param>
-        public static void WriteEnum<T>(BinaryWriter writer, T val)
-        {
-            writer.WriteInt(GetEnumTypeId(val.GetType(), writer.Marshaller));
-            writer.WriteInt(TypeCaster<int>.Cast(val));
-        }
-
-        /// <summary>
-        /// Gets the enum type identifier.
-        /// </summary>
-        /// <param name="enumType">The enum type.</param>
-        /// <param name="marshaller">The marshaller.</param>
-        /// <returns>Enum type id.</returns>
-        private static int GetEnumTypeId(Type enumType, Marshaller marshaller)
-        {
-            if (Enum.GetUnderlyingType(enumType) == TypInt)
-            {
-                var desc = marshaller.GetDescriptor(enumType);
-
-                return desc.TypeId;
-            }
-
-            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                                            enumType.Name);
-        }
-
-        /// <summary>
         /// Gets the enum value by type id and int representation.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
@@ -1709,8 +1670,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void ToJavaDate(DateTime date, out long high, out int low)
         {
             if (date.Kind != DateTimeKind.Utc)
-                throw new InvalidOperationException(
+            {
+                throw new BinaryObjectException(
                     "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+            }
 
             long diff = date.Ticks - JavaDateTicks;
 

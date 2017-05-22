@@ -41,11 +41,14 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -54,7 +57,8 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(100 * 1024 * 1024);
+        memPlcCfg.setInitialSize(100 * 1024 * 1024);
+        memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
         memCfg.setMemoryPolicies(memPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
@@ -118,7 +122,8 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
         boolean locked = true;
 
         try {
-            IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(null);
+            IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer(CACHE_NAME);
+
             for (int i = 0; i < 100_000; i++) {
                 streamer.addData(i, 1);
 

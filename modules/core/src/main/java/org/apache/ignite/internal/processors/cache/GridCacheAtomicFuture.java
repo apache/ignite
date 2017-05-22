@@ -25,11 +25,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
  */
 public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
-     * @return Future ID.
-     */
-    public long id();
-
-    /**
      * Gets future that will be completed when it is safe when update is finished on the given version of topology.
      *
      * @param topVer Topology version to finish.

@@ -54,7 +54,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
 
-        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration().setSize(200 * 1024 * 1024).setName("dfltMemPlc"));
+        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration().setInitialSize(200 * 1024 * 1024)
+            .setMaxSize(200 * 1024 * 1024).setName("dfltMemPlc"));
 
         memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 

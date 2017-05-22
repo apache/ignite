@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
 
             // Called on both nodes
-            TestUtils.WaitForCondition(() => RemovedNodes.Count > 0, 3000);
+            TestUtils.WaitForCondition(() => RemovedNodes.Count == 6, 3000);
             Assert.GreaterOrEqual(RemovedNodes.Count, 6);
             Assert.AreEqual(expectedNodeId, RemovedNodes.Distinct().Single());
         }

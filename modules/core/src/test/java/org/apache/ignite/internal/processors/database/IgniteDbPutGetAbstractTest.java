@@ -78,7 +78,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      *
      */
     public void testGradualRandomPutAllRemoveAll() throws Exception {
-        IgniteCache<Integer, DbValue> cache = cache(null);
+        IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         final int cnt = KEYS_COUNT;
 
@@ -138,7 +138,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      *
      */
     public void testRandomRemove() throws Exception {
-        IgniteCache<Integer, DbValue> cache = cache(null);
+        IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         final int cnt = 50_000;
 
@@ -177,7 +177,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     /**
      */
     public void testRandomPut() throws Exception {
-        IgniteCache<Integer, DbValue> cache = cache(null);
+        IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         final int cnt = 1_000;
 
@@ -205,7 +205,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetSimple() throws Exception {
-        IgniteCache<Integer, DbValue> cache = cache(null);
+        IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -229,7 +229,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetLarge() throws Exception {
-        IgniteCache<Integer, byte[]> cache = cache(null);
+        IgniteCache<Integer, byte[]> cache = cache(DEFAULT_CACHE_NAME);
 
         final byte[] val = new byte[2048];
 
@@ -271,7 +271,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGetLargeKeys() throws Exception {
-        IgniteCache<LargeDbKey, Integer> cache = ignite(0).cache(null);
+        IgniteCache<LargeDbKey, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -319,7 +319,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetOverwrite() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -347,7 +347,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testOverwriteNormalSizeAfterSmallerSize() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -371,7 +371,9 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutDoesNotTriggerRead() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         cache.put(0, new DbValue(0, "test-value-0", 0));
     }
@@ -380,7 +382,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetMultipleObjects() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -443,7 +445,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-            assertTrue(plan, plan.contains("iVal_idx"));
+            assertTrue(plan, plan.contains("IVAL_IDX"));
         }
 
         assertTrue(cache.localSize(CachePeekMode.BACKUP) >= 0);
@@ -453,7 +455,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testSizeClear() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -491,13 +493,13 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     public void testBounds() throws Exception {
         IgniteEx ig = ig();
 
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         X.println("Put start");
 
         int cnt = 1000;
 
-        try (IgniteDataStreamer<Integer, DbValue> st = ig.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, DbValue> st = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
             for (int i = 0; i < cnt; i++) {
@@ -549,13 +551,13 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     public void testMultithreadedPut() throws Exception {
         IgniteEx ig = ig();
 
-        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+        final IgniteCache<Integer, DbValue> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         X.println("Put start");
 
         int cnt = 20_000;
 
-        try (IgniteDataStreamer<Integer, DbValue> st = ig.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, DbValue> st = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
             for (int i = 0; i < cnt; i++) {
@@ -603,7 +605,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-            assertTrue(plan, plan.contains("iVal_idx"));
+            assertTrue(plan, plan.contains("IVAL_IDX"));
         }
     }
 
@@ -611,7 +613,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetRandomUniqueMultipleObjects() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -678,7 +680,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutPrimaryUniqueSecondaryDuplicates() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -722,7 +724,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetRandomNonUniqueMultipleObjects() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -768,7 +770,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testPutGetRemoveMultipleForward() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -858,7 +860,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     }
 
     public void testPutGetRemoveMultipleBackward() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 
@@ -902,7 +904,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception if failed.
      */
     public void testIndexOverwrite() throws Exception {
-        final IgniteCache<Integer, DbValue> cache = cache(null);
+        final IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
         GridCacheAdapter<Integer, DbValue> internalCache = internalCache(cache);
 

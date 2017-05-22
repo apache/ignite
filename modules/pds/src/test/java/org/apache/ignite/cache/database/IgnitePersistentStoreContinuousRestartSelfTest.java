@@ -63,7 +63,8 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setSize(400 * 1024 * 1024);
+        memPlcCfg.setMaxSize(400 * 1024 * 1024);
+        memPlcCfg.setInitialSize(400 * 1024 * 1024);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");

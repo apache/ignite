@@ -28,6 +28,7 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
@@ -198,6 +199,10 @@ public class IgniteConfiguration {
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
+
+    /** Default failure detection timeout for client nodes in millis. */
+    @SuppressWarnings("UnnecessaryBoxing")
+    public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -385,6 +390,9 @@ public class IgniteConfiguration {
     /** Failure detection timeout. */
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
+    /** Failure detection timeout for client nodes. */
+    private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
+
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
@@ -436,6 +444,9 @@ public class IgniteConfiguration {
 
     /** */
     private BinaryConfiguration binaryCfg;
+
+    /** Custom executor configurations. */
+    private ExecutorConfiguration[] execCfgs;
 
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
@@ -491,6 +502,7 @@ public class IgniteConfiguration {
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
         classLdr = cfg.getClassLoader();
+        clientFailureDetectionTimeout = cfg.getClientFailureDetectionTimeout();
         clientMode = cfg.isClientMode();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
@@ -498,6 +510,7 @@ public class IgniteConfiguration {
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
+        execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
@@ -1287,20 +1300,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets job metrics update frequency in milliseconds.
+     * Gets Ignite metrics update frequency in milliseconds.
      * <p>
      * Updating metrics too frequently may have negative performance impact.
      * <p>
-     * The following values are accepted:
-     * <ul>
-     *     <li>{@code -1} job metrics are never updated.</li>
-     *     <li>{@code 0} job metrics are updated on each job start and finish.</li>
-     *     <li>Positive value defines the actual update frequency. If not provided, then default value
-     *     {@link #DFLT_METRICS_UPDATE_FREQ} is used.</li>
-     * </ul>
      * If not provided, then default value {@link #DFLT_METRICS_UPDATE_FREQ} is used.
      *
-     * @return Job metrics update frequency in milliseconds.
+     * @return Metrics update frequency in milliseconds.
      * @see #DFLT_METRICS_UPDATE_FREQ
      */
     public long getMetricsUpdateFrequency() {
@@ -1308,15 +1314,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets job metrics update frequency in milliseconds.
+     * Sets Ignite metrics update frequency in milliseconds.
      * <p>
-     * If set to {@code -1} job metrics are never updated.
-     * If set to {@code 0} job metrics are updated on each job start and finish.
      * Positive value defines the actual update frequency.
      * If not provided, then default value
      * {@link #DFLT_METRICS_UPDATE_FREQ} is used.
      *
-     * @param metricsUpdateFreq Job metrics update frequency in milliseconds.
+     * @param metricsUpdateFreq Metrics update frequency in milliseconds.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setMetricsUpdateFrequency(long metricsUpdateFreq) {
@@ -1829,6 +1833,33 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setFailoverSpi(FailoverSpi... failSpi) {
         this.failSpi = failSpi;
+
+        return this;
+    }
+
+    /**
+     * Returns failure detection timeout for client nodes used by {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Default is {@link #DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT}.
+     *
+     * @see #setClientFailureDetectionTimeout(long)
+     * @return Failure detection timeout for client nodes in milliseconds.
+     */
+    public Long getClientFailureDetectionTimeout() {
+        return clientFailureDetectionTimeout;
+    }
+
+    /**
+     * Sets failure detection timeout to use in {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before
+     * considering a remote connection failed.
+     *
+     * @param clientFailureDetectionTimeout Failure detection timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setClientFailureDetectionTimeout(long clientFailureDetectionTimeout) {
+        this.clientFailureDetectionTimeout = clientFailureDetectionTimeout;
 
         return this;
     }
@@ -2686,6 +2717,31 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setLateAffinityAssignment(boolean lateAffAssignment) {
         this.lateAffAssignment = lateAffAssignment;
+
+        return this;
+    }
+
+    /**
+     * Gets custom executors for user compute tasks.
+     * <p>
+     * See {@link #setExecutorConfiguration(ExecutorConfiguration...)} for more information.
+     *
+     * @return Executor configurations.
+     */
+    public ExecutorConfiguration[] getExecutorConfiguration() {
+        return execCfgs;
+    }
+
+    /**
+     * Sets custom executors for user compute tasks.
+     * <p>
+     * See {@link IgniteCompute#withExecutor(String)} for more information.
+     *
+     * @param execCfgs Executor configurations.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setExecutorConfiguration(ExecutorConfiguration... execCfgs) {
+        this.execCfgs = execCfgs;
 
         return this;
     }

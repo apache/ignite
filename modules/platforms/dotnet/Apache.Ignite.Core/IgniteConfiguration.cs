@@ -96,6 +96,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultClientFailureDetectionTimeout = TimeSpan.FromSeconds(30);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -128,6 +133,9 @@ namespace Apache.Ignite.Core
 
         /** */
         private TimeSpan? _failureDetectionTimeout;
+
+        /** */
+        private TimeSpan? _clientFailureDetectionTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -210,6 +218,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
+            writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -350,6 +359,16 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
+            if (MemoryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                MemoryConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -415,6 +434,7 @@ namespace Apache.Ignite.Core
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
+            _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -481,6 +501,11 @@ namespace Apache.Ignite.Core
                 case 2:
                     EventStorageSpi = MemoryEventStorageSpi.Read(r);
                     break;
+            }
+
+            if (r.ReadBoolean())
+            {
+                MemoryConfiguration = new MemoryConfiguration(r);
             }
         }
 
@@ -925,6 +950,17 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
+        /// and <see cref="TcpCommunicationSpi"/> for client nodes.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:30")]
+        public TimeSpan ClientFailureDetectionTimeout
+        {
+            get { return _clientFailureDetectionTimeout ?? DefaultClientFailureDetectionTimeout; }
+            set { _clientFailureDetectionTimeout = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the configurations for plugins to be started.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -937,5 +973,11 @@ namespace Apache.Ignite.Core
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the page memory configuration.
+        /// <see cref="MemoryConfiguration"/> for more details.
+        /// </summary>
+        public MemoryConfiguration MemoryConfiguration { get; set; }
     }
 }

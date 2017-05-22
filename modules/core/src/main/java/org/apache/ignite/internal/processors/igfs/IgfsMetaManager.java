@@ -2800,7 +2800,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param secondaryFs Secondary file system.
      * @throws IgniteCheckedException If failed.
      */
-    public void updateTimes(IgfsPath path, long accessTime, long modificationTime,
+    public void updateTimes(IgfsPath path, long modificationTime, long accessTime,
         IgfsSecondaryFileSystem secondaryFs) throws IgniteCheckedException {
         while (true) {
             if (busyLock.enterBusy()) {
@@ -2829,7 +2829,7 @@ public class IgfsMetaManager extends IgfsManager {
                         if (pathIds.allExists()) {
                             // All files are in place. Update both primary and secondary file systems.
                             if (secondaryFs != null)
-                                secondaryFs.setTimes(path, accessTime, modificationTime);
+                                secondaryFs.setTimes(path, modificationTime, accessTime);
 
                             IgniteUuid targetId = pathIds.lastExistingId();
                             IgfsEntryInfo targetInfo = lockInfos.get(targetId);
@@ -2846,7 +2846,7 @@ public class IgfsMetaManager extends IgfsManager {
                         else {
                             // Propagate call to the secondary FS, as we might haven't cache this part yet.
                             if (secondaryFs != null) {
-                                secondaryFs.setTimes(path, accessTime, modificationTime);
+                                secondaryFs.setTimes(path, modificationTime, accessTime);
 
                                 return;
                             }
