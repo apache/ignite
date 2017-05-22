@@ -158,30 +158,35 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     private  byte[] read() throws IOException, IgniteCheckedException {
-        byte[] sizeBytes = new byte[4];
+        byte[] sizeBytes = read(4);
 
-        int readLen = in.read(sizeBytes);
-
-        if (readLen != 4) {
-            close();
-
-            throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
-        }
-
-        int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
-        byte[] msgData = new byte[size];
+        return read(msgSize);
+    }
 
-        readLen = in.read(msgData);
+    /**
+     * @param size Count of bytes to read from stream.
+     * @return Read bytes.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    private byte [] read(int size) throws IOException, IgniteCheckedException {
+        int off = 0;
 
-        if (readLen != size) {
-            close();
+        byte[] data = new byte[size];
 
-            throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
+        while (off != size) {
+            int res = in.read(data, off, size - off);
+
+            if (res == -1)
+                throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
+
+            off += res;
         }
 
-        return msgData;
+        return data;
     }
 
     /**

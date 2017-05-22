@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -98,7 +99,15 @@ public class JdbcConnection implements Connection {
         String host = props.getProperty(PROP_HOST);
         String portStr = props.getProperty(PROP_PORT);
 
-        // TODO: Add validation here.
+        try {
+            int port = Integer.parseInt(portStr);
+
+            if (port <= 0 || port > 0xFFFF)
+                throw new SQLException("JDBC connection port is invalid: [port=" + portStr + ']');
+        }
+        catch (NumberFormatException e) {
+            throw new SQLException("JDBC connection port is invalid: [port=" + portStr + ']', e);
+        }
 
         String endpoint = host + ":" + portStr;
 
