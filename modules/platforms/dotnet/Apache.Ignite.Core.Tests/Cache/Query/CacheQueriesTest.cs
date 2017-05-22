@@ -681,6 +681,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, row[0]);
         }
 
+        [Test]
+        public void TestTimeout()
+        {
+            // SQL Query.
+            // TODO
+
+            // Fields Query.
+            // TODO
+        }
+
         /// <summary>
         /// Validates the query results.
         /// </summary>
