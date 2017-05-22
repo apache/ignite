@@ -1405,6 +1405,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the query timeout.
+        /// </summary>
+        [Test]
+        public void TestTimeout()
+        {
+            var persons = GetPersonCache().AsCacheQueryable(new QueryOptions
+            {
+                Timeout = TimeSpan.FromMilliseconds(1),
+                EnableDistributedJoins = true
+            });
+
+            var res = persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray();
+            Assert.IsTrue(res.Any());
+        }
+
+        /// <summary>
         /// Gets the person cache.
         /// </summary>
         /// <returns></returns>
