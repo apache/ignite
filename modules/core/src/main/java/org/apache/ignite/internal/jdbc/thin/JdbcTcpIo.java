@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -45,7 +46,7 @@ public class JdbcTcpIo {
     private static final int HANDSHAKE_MSG_SIZE = 10;
 
     /** Logger. */
-    private final IgniteLogger log;
+    private static final Logger log = Logger.getLogger(JdbcTcpIo.class.getName());
 
     /** Server endpoint address. */
     private final String endpointAddr;
@@ -72,15 +73,13 @@ public class JdbcTcpIo {
      * @param endpointAddr Endpoint.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param log Logger to use.
      */
-    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
+    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder= enforceJoinOrder;
-        this.log = log;
     }
 
     /**
@@ -88,7 +87,7 @@ public class JdbcTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws IgniteCheckedException, IOException {
-        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, log);
+        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, null);
 
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());

@@ -36,8 +36,8 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.logger.java.JavaLogger;
+import java.util.logging.Logger;
+import org.apache.ignite.internal.client.impl.GridClientImpl;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
@@ -75,7 +75,7 @@ public class JdbcConnection implements Connection {
     private JdbcTcpIo cliIo;
 
     /** Logger. */
-    private static final IgniteLogger LOG = new JavaLogger();
+    private static final Logger log = Logger.getLogger(JdbcConnection.class.getName());
 
     /**
      * Creates new connection.
@@ -97,11 +97,11 @@ public class JdbcConnection implements Connection {
 
         try {
             cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
-                distributedJoins, enforceJoinOrder, LOG);
+                distributedJoins, enforceJoinOrder);
 
             cliIo.start();
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             cliIo.close();
 
             throw new SQLException("Failed to start Ignite client.", e);
@@ -164,7 +164,7 @@ public class JdbcConnection implements Connection {
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            LOG.warning("Transactions are not supported.");
+            log.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -196,7 +196,7 @@ public class JdbcConnection implements Connection {
         this.autoCommit = autoCommit;
 
         if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+            log.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -204,7 +204,7 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+            log.warning("Transactions are not supported.");
 
         return autoCommit;
     }
@@ -213,14 +213,14 @@ public class JdbcConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        LOG.warning("Transactions are not supported.");
+        log.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        LOG.warning("Transactions are not supported.");
+        log.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -273,7 +273,7 @@ public class JdbcConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        LOG.warning("Transactions are not supported.");
+        log.warning("Transactions are not supported.");
 
         txIsolation = level;
     }
@@ -282,7 +282,7 @@ public class JdbcConnection implements Connection {
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
 
-        LOG.warning("Transactions are not supported.");
+        log.warning("Transactions are not supported.");
 
         return txIsolation;
     }
@@ -316,7 +316,7 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT)
-            LOG.warning("Transactions are not supported.");
+            log.warning("Transactions are not supported.");
 
         this.holdability = holdability;
     }

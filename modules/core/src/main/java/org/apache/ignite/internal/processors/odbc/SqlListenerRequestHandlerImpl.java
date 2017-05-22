@@ -167,11 +167,8 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
 
             if (req.cacheName() != null)
                 cache0 = ctx.grid().cache(req.cacheName());
-            else {
-                boolean start = ctx.config().isClientMode();
-
-                cache0 = (IgniteCache<Object, Object>)ctx.cache().getOrStartPublicCache(start, false);
-            }
+            else
+                cache0 = (IgniteCache<Object, Object>)ctx.cache().getOrStartPublicCache(false, false);
 
             if (cache0 == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,

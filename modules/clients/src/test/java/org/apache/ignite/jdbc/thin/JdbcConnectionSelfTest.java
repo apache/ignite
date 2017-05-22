@@ -18,8 +18,10 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -79,6 +81,15 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        try {
+            Driver drv = DriverManager.getDriver("jdbc:ignite://");
+
+            if (drv != null)
+                DriverManager.deregisterDriver(drv);
+        } catch (SQLException ignored) {
+            // No-op.
+        }
+
         startGridsMultiThreaded(2);
 
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
