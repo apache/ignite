@@ -89,7 +89,7 @@ public class JdbcTcpIo {
     /** Object writer. */
     private final JdbcObjectWriter objWriter = new JdbcObjectWriter();
 
-    /** Closed. */
+    /** Closed flag. */
     private boolean closed;
 
     /**
@@ -158,7 +158,7 @@ public class JdbcTcpIo {
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
         throw new IgniteCheckedException("Ignite node reject handshake message: " +
-            "the protocol version is not supported by Ignite version: "            + ver + (F.isEmpty(err) ? "" : ". " +
+            "the protocol version is not supported by Ignite version: " + ver + (F.isEmpty(err) ? "" : ". " +
             "The driver protocol version introduced in Ignite version: " + CURRENT_VER.toString() + ". " +
             "Error message: " + err));
     }
