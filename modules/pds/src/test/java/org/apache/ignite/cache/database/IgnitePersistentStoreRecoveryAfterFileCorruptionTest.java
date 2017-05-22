@@ -22,8 +22,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -48,20 +50,35 @@ import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryIm
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager.IGNITE_PDS_WAL_ALWAYS_WRITE_FULL_PAGES;
 
 /**
  *
  */
 public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCommonAbstractTest {
+    /** Ip finder. */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** Total pages. */
     private static final int totalPages = 1024;
+
+    /** Cache name. */
+    private final String cacheName = "cache";
+
+    /** Policy name. */
+    private final String policyName = "dfltMemPlc";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = new CacheConfiguration("partitioned");
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
+        ccfg.setAffinity(new RendezvousAffinityFunction(true, 1));
 
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
@@ -71,12 +88,12 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName(policyName);
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDefaultMemoryPolicyName(policyName);
 
         cfg.setMemoryConfiguration(dbCfg);
 
@@ -86,12 +103,14 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
 
         cfg.setPersistenceConfiguration(pCfg);
 
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_ALWAYS_WRITE_FULL_PAGES, "true");
+        System.setProperty(IGNITE_PDS_WAL_ALWAYS_WRITE_FULL_PAGES, "true");
 
         stopAllGrids();
 
@@ -111,42 +130,42 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
      * @throws Exception if failed.
      */
     public void testPageRecoveryAfterFileCorruption() throws Exception {
-        fail(); //todo @Ed
-
         IgniteEx ig = startGrid(0);
 
-        GridCacheSharedContext<Object, Object> shared = ig.context().cache().context();
+        IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)shared.database();
+        // Put for create data store and init meta page.
+        cache.put(1, 1);
 
-        IgnitePageStoreManager pageStore = shared.pageStore();
+        GridCacheSharedContext sharedCtx = ig.context().cache().context();
+
+        GridCacheDatabaseSharedManager psMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
+
+        FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
         U.sleep(1_000);
 
         // Disable integrated checkpoint thread.
-        dbMgr.enableCheckpoints(false).get();
+        psMgr.enableCheckpoints(false).get();
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = sharedCtx.database().memoryPolicy(policyName).pageMemory();
 
-        int cacheId = shared.cache().cache("partitioned").context().cacheId();
+        int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
         FullPageId[] pages = new FullPageId[totalPages];
 
-        for (int i = 0; i < totalPages; i++) {
-            FullPageId fullId = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
-
-            pages[i] = fullId;
-        }
+        for (int i = 0; i < totalPages; i++)
+            pages[i] = new FullPageId(mem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_DATA), cacheId);
 
         generateWal(
             (PageMemoryImpl)mem,
-            pageStore,
-            shared.wal(),
+            sharedCtx.pageStore(),
+            sharedCtx.wal(),
             cacheId,
             pages
         );
 
-        eraseDataFromDisk((FilePageStoreManager)pageStore, cacheId, pages[0]);
+        eraseDataFromDisk(pageStore, cacheId, pages[0]);
 
         stopAllGrids();
 
