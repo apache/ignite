@@ -64,6 +64,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -469,6 +470,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final long sleepDuration = 5000;
         final byte[] payLoad = new byte[payLoadSize];
         final Map<UUID, long[]>[] res = new Map[threads];
+        final ConcurrentMap<UUID, GridAtomicLong> maxLatencies = new ConcurrentHashMap8<>();
 
         boolean failed = true;
 
@@ -542,7 +544,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             }
                         }
 
-                        printIoTestResults(maxLatency / (1000 * rangesCnt), res0);
+                        printIoTestResults(maxLatency / (1000 * rangesCnt), res0, maxLatencies);
                     }
                     catch (InterruptedException | BrokenBarrierException e) {
                         U.error(log, "IO test failed.", e);
@@ -593,8 +595,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                                 if (latencies == null)
                                     res0.put(node.id(), latencies = new long[rangesCnt + 1]);
 
-                                if (latency >= maxLatency)
+                                if (latency >= maxLatency) {
                                     latencies[rangesCnt]++; // Timed out.
+
+                                    GridAtomicLong maxLatency = maxLatencies.get(node.id());
+
+                                    if (maxLatency == null) {
+                                        GridAtomicLong old = maxLatencies.putIfAbsent(node.id(),
+                                            maxLatency = new GridAtomicLong());
+
+                                        if (old != null)
+                                            maxLatency = old;
+                                    }
+
+                                    maxLatency.setIfGreater(latency);
+                                }
                                 else {
                                     int idx = (int)Math.floor((1.0 * latency) / ((1.0 * maxLatency) / rangesCnt));
 
@@ -628,8 +643,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param binLatencyMcs Bin latency in microseconds.
      * @param res Resulting map.
+     * @param maxLatencies Max latency for each node.
      */
-    private void printIoTestResults(long binLatencyMcs, Map<UUID, long[]> res) {
+    private void printIoTestResults(
+        long binLatencyMcs,
+        Map<UUID, long[]> res,
+        ConcurrentMap<UUID, GridAtomicLong> maxLatencies
+    ) {
         StringBuilder b = new StringBuilder(U.nl())
             .append("IO test results (round-trip count per each latency bin) " +
                 "[binLatency=" + binLatencyMcs + "mcs]")
@@ -667,6 +687,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         nodeRes[i], (100.0 * nodeRes[i]) / sum,
                         curSum, (100.0 * curSum) / sum));
             }
+
+            GridAtomicLong maxLatency = maxLatencies.get(e.getKey());
+
+            b.append("Max latency (ns): ").append(maxLatency != null ? maxLatency.get() : -1).append(U.nl());
         }
 
         if (log.isInfoEnabled())
