@@ -460,12 +460,12 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
         Transaction tx = txObj.getTransactionHolder().getTransaction();
 
-        if (tx != null) {
-            if (status.isDebug() && log.isDebugEnabled())
-                log.debug("Setting Ignite transaction rollback-only: " + tx);
+        assert tx != null;
 
-            tx.setRollbackOnly();
-        }
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Setting Ignite transaction rollback-only: " + tx);
+
+        tx.setRollbackOnly();
     }
 
     /**
