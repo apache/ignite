@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
@@ -103,6 +104,12 @@ namespace Apache.Ignite.Core.Cache.Query
         ///   <c>true</c> if join order should be enforced; otherwise, <c>false</c>.
         /// </value>
         public bool EnforceJoinOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
 
         /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.

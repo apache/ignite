@@ -108,6 +108,12 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </value>
         public bool EnableDistributedJoins { get; set; }
 
+        /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
         /** <inheritDoc /> */
         internal override void Write(BinaryWriter writer, bool keepBinary)
         {
@@ -126,6 +132,8 @@ namespace Apache.Ignite.Core.Cache.Query
             WriteQueryArgs(writer, Arguments);
 
             writer.WriteBoolean(EnableDistributedJoins);
+            writer.WriteInt((int) Timeout.TotalMilliseconds);
+            writer.WriteBoolean(false);  // TODO: ReplicatedOnly
         }
 
         /** <inheritDoc /> */
