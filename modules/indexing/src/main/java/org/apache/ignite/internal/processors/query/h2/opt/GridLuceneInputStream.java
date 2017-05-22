@@ -61,11 +61,23 @@ public class GridLuceneInputStream extends IndexInput {
      * @throws IOException If failed.
      */
     public GridLuceneInputStream(String name, GridLuceneFile f) throws IOException {
+        this(name, f, f.getLength());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param name Name.
+     * @param f File.
+     * @param length inputStream length.
+     * @throws IOException If failed.
+     */
+    public GridLuceneInputStream(String name, GridLuceneFile f, final long length) throws IOException {
         super("RAMInputStream(name=" + name + ")");
 
         file = f;
 
-        length = file.getLength();
+        this.length = length;
 
         if (length / BUFFER_SIZE >= Integer.MAX_VALUE)
             throw new IOException("RAMInputStream too large length=" + length + ": " + name);
@@ -77,6 +89,7 @@ public class GridLuceneInputStream extends IndexInput {
         currBufIdx = -1;
         currBuf = 0;
     }
+
 
     /** {@inheritDoc} */
     @Override public void close() {
@@ -149,39 +162,40 @@ public class GridLuceneInputStream extends IndexInput {
     }
 
     /** {@inheritDoc} */
-    @Override public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-        assert numBytes >= 0 : "numBytes=" + numBytes;
-
-        GridLuceneOutputStream gridOut = out instanceof GridLuceneOutputStream ? (GridLuceneOutputStream)out : null;
-
-        long left = numBytes;
-
-        while (left > 0) {
-            if (bufPosition == bufLength) {
-                ++currBufIdx;
-
-                switchCurrentBuffer(true);
-            }
-
-            final int bytesInBuf = bufLength - bufPosition;
-            final int toCp = (int)(bytesInBuf < left ? bytesInBuf : left);
-
-            if (gridOut != null)
-                gridOut.writeBytes(currBuf + bufPosition, toCp);
-            else {
-                byte[] buff = new byte[toCp];
-
-                mem.readBytes(currBuf + bufPosition, buff);
-
-                out.writeBytes(buff, toCp);
-            }
-
-            bufPosition += toCp;
-
-            left -= toCp;
+    @Override
+    public IndexInput slice(final String sliceDescription, final long offset, final long length) throws IOException {
+        if (offset < 0 || length < 0 || offset + length > this.length) {
+            throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
         }
+        final String newResourceDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
+        return new GridLuceneInputStream(newResourceDescription, file, offset + length) {
+            {
+                seek(0L);
+            }
 
-        assert left == 0 : "Insufficient bytes to copy: numBytes=" + numBytes + " copied=" + (numBytes - left);
+            @Override
+            public void seek(long pos) throws IOException {
+                if (pos < 0L) {
+                    throw new IllegalArgumentException("Seeking to negative position: " + this);
+                }
+                super.seek(pos + offset);
+            }
+
+            @Override
+            public long getFilePointer() {
+                return super.getFilePointer() - offset;
+            }
+
+            @Override
+            public long length() {
+                return super.length() - offset;
+            }
+
+            @Override
+            public IndexInput slice(String sliceDescription, long ofs, long len) throws IOException {
+                return super.slice(sliceDescription, offset + ofs, len);
+            }
+        };
     }
 
     /**

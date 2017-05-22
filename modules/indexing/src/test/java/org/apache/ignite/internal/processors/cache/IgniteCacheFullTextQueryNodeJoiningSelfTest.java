@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -61,6 +62,7 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
+        cache.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         QueryEntity qryEntity = new QueryEntity();
 
@@ -121,7 +123,7 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
                     QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(DEFAULT_CACHE_NAME)
                         .query(new TextQuery<AffinityKey<Integer>, IndexedEntity>(IndexedEntity.class, "indexed"));
 
-                    assertEquals(1000, res.getAll().size());
+                    assertEquals("Failed iteration: " + i, 1000, res.getAll().size());
                 }
             }
             finally {
