@@ -120,7 +120,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "Failed to start Ignite client");
+        }, SQLException.class, "Failed to connect to Ignite cluster [host=127.0.0.1, port=80]");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
