@@ -106,6 +106,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         conn = DriverManager.getConnection(URL);
         stmt = conn.createStatement();
 
+        conn.setSchema(DEFAULT_CACHE_NAME);
+
         assert stmt != null;
         assert !stmt.isClosed();
     }
