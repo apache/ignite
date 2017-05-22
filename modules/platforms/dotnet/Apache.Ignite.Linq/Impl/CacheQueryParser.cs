@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Threading;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
     using Remotion.Linq.Parsing.ExpressionVisitors.TreeEvaluation;
     using Remotion.Linq.Parsing.Structure;
@@ -62,8 +63,8 @@ namespace Apache.Ignite.Linq.Impl
         {
             var methodInfoRegistry = MethodInfoBasedNodeTypeRegistry.CreateFromRelinqAssembly();
 
-            // TODO:  Register DeleteAllExpressionNode
-            //methodInfoRegistry.Register(new[]{},);
+            methodInfoRegistry.Register(DeleteAllExpressionNode.GetSupportedMethods(), 
+                typeof(DeleteAllExpressionNode));
 
             return new CompoundNodeTypeProvider(new INodeTypeProvider[]
             {

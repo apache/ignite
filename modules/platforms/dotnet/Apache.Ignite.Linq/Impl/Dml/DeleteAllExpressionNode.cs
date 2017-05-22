@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Linq.Impl.Dml
 {
+    using System.Collections.Generic;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
@@ -51,6 +53,14 @@ namespace Apache.Ignite.Linq.Impl.Dml
         protected override ResultOperatorBase CreateResultOperator(ClauseGenerationContext clauseGenerationContext)
         {
             return new DeleteAllResultOperator();
+        }
+
+        /// <summary>
+        /// Gets the supported methods.
+        /// </summary>
+        public static IEnumerable<MethodInfo> GetSupportedMethods()
+        {
+            yield return typeof(CacheLinqExtensions).GetMethod("DeleteAll");
         }
     }
 }
