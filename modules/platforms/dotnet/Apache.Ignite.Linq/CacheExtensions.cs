@@ -153,8 +153,9 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            return query.Provider.Execute<int>(Expression.Call(
-                null, DeleteAllExpressionNode.DeleteAllMethodInfo, query.Expression));
+            var method = DeleteAllExpressionNode.DeleteAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
+
+            return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression));
         }
     }
 }
