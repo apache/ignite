@@ -159,6 +159,8 @@ namespace Apache.Ignite.Linq
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression));
         }
 
+        // TODO
+        /*
         /// <summary>
         /// Deletes all rows that are matched by the specified query.
         /// <para />
@@ -182,6 +184,6 @@ namespace Apache.Ignite.Linq
 
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
                 Expression.Quote(predicate)));
-        }
+        }*/
     }
 }
