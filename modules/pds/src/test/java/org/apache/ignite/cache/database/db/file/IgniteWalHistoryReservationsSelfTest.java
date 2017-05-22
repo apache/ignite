@@ -114,6 +114,17 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
         forceCheckpoint();
 
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, k * 2);
+
+        forceCheckpoint();
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, k);
+
+        forceCheckpoint();
+
+
         Lock lock = cache.lock(0);
 
         lock.lock();
@@ -329,7 +340,7 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
             assert reserved;
 
-            stopGrid(initGridCnt - 1);
+            stopGrid(Integer.toString(initGridCnt - 1), true, false);
         }
         finally {
             lock.unlock();
