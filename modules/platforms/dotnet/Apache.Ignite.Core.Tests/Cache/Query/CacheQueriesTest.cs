@@ -352,8 +352,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 2. Validate results.
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
             {
-                EnableDistributedJoins = distrJoin
+                EnableDistributedJoins = distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(3)
             };
+
+            Assert.AreEqual(string.Format("SqlQuery [Sql=age < 50, Arguments=[], Local={0}, " +
+                                          "PageSize=1024, EnableDistributedJoins={1}, Timeout={2}, " +
+                                          "ReplicatedOnly=False]", loc, distrJoin, qry.Timeout), qry.ToString());
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
