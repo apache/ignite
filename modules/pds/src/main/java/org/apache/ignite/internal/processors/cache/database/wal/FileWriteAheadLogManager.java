@@ -2012,8 +2012,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.end = end;
             this.log = log;
 
-            int tlbSize0 = 16 * tlbSize;
-            int buffSize0 = tlbSize0 < buffSize ? tlbSize0 : buffSize;
+            int buffSize0 = Math.min(16 * tlbSize, buffSize);
 
             // Do not allocate direct buffer for iterator.
             buf = ByteBuffer.allocate(buffSize0);

@@ -115,7 +115,9 @@ public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMe
         return id;
     }
 
-    /** {@inheritDoc} */
+    /**
+     *
+     */
     public IgniteUuid operationId() {
         return operationId;
     }
