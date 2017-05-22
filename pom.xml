@@ -100,8 +100,8 @@
                 <module>examples</module>
                 <module>modules/benchmarks</module>
                 <module>modules/geospatial</module>
-                <module>modules/hibernate5</module>
-                <module>modules/hibernate</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/ml</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
@@ -191,8 +191,8 @@
         <profile>
             <id>lgpl</id>
             <modules>
-                <module>modules/hibernate</module>
-                <module>modules/hibernate5</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
