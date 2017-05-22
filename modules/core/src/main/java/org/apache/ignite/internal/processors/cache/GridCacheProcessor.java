@@ -1963,8 +1963,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!F.isEmpty(reqs) && err == null) {
             Collection<IgniteBiTuple<GridCacheContext, Boolean>> stopped = null;
 
-            boolean prepared = false;
-
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
 
@@ -1972,12 +1970,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 boolean destroy = false;
 
                 if (req.stop()) {
-                    if (!prepared) {
-                        sharedCtx.database().prepareCachesStop();
-
-                        prepared = true;
-                    }
-
                     stopGateway(req);
 
                     sharedCtx.database().checkpointReadLock();
