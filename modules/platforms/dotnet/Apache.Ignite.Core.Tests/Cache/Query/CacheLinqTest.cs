@@ -1300,7 +1300,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(_T0._key > ?), Arguments=[10], " +
                             "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
-                            "Timeout=00:00:02.500, ReplicatedOnly=True, Colocated=True]]", str);
+                            "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -1318,7 +1318,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             str = fieldsQuery.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                             "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
             
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
@@ -1333,7 +1334,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(((_T0._key > ?) and (_T0.age1 > ?)) " +
                             "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
+                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
         }
 
         /// <summary>
