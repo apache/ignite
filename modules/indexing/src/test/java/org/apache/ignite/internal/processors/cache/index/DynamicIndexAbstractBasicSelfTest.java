@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import javax.cache.CacheException;
@@ -63,6 +64,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
     /** Node index for client with near-only cache. */
     protected static final int IDX_CLI_NEAR_ONLY = 4;
+
+    /** Cache. */
+    protected static final String STATIC_CACHE_NAME = "cache_static";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -889,6 +893,29 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
+     * Test that operations fail on statically configured cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailOnStaticallyConfiguredCache() throws Exception {
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+            }
+        }, IgniteQueryErrorCode.UNKNOWN);
+
+        assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
+            }
+        }, IgniteQueryErrorCode.UNKNOWN);
+    }
+
+    /**
      * Get node which should be used to start operations.
      *
      * @return If failed.
@@ -918,6 +945,28 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             serverConfiguration(IDX_SRV_FILTERED, true),
             clientConfiguration(IDX_CLI_NEAR_ONLY)
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.commonConfiguration(idx);
+
+        if (idx != nodeIndex())
+            return cfg;
+
+        CacheConfiguration staticCacheCfg = cacheConfiguration().setName(STATIC_CACHE_NAME);
+
+        CacheConfiguration[] newCfgs = new CacheConfiguration[F.isEmpty(cfg.getCacheConfiguration()) ? 1 :
+            cfg.getCacheConfiguration().length + 1];
+
+        if (newCfgs.length > 1)
+            System.arraycopy(cfg.getCacheConfiguration(), 0, newCfgs, 0, newCfgs.length - 1);
+
+        newCfgs[newCfgs.length - 1] = staticCacheCfg;
+
+        cfg.setCacheConfiguration(newCfgs);
+
+        return cfg;
     }
 
     /**
