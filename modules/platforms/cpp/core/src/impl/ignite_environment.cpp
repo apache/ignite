@@ -54,7 +54,9 @@ namespace ignite
                 CONTINUOUS_QUERY_FILTER_RELEASE = 21,
                 REALLOC = 36,
                 ON_START = 49,
-                ON_STOP = 50 
+                ON_STOP = 50,
+                COMPUTE_TASK_LOCAL_JOB_RESULT = 60,
+                COMPUTE_JOB_EXECUTE_LOCAL = 61
             };
         };
 
@@ -158,6 +160,22 @@ namespace ignite
 
             switch (type)
             {
+                case OperationCallback::COMPUTE_TASK_LOCAL_JOB_RESULT:
+                {
+                    std::cout << "COMPUTE_TASK_LOCAL_JOB_RESULT" << std::endl;
+                    std::cout << "val1: " << val1 << std::endl;
+                    std::cout << "val2: " << val2 << std::endl;
+                    break;
+                }
+
+                case OperationCallback::COMPUTE_JOB_EXECUTE_LOCAL:
+                {
+                    std::cout << "COMPUTE_JOB_EXECUTE_LOCAL" << std::endl;
+                    std::cout << "val1: " << val1 << std::endl;
+                    std::cout << "val2: " << val2 << std::endl;
+                    break;
+                }
+
                 case OperationCallback::COMPUTE_TASK_COMPLETE:
                 {
                     std::cout << "COMPUTE_TASK_COMPLETE" << std::endl;

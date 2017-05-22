@@ -25,36 +25,207 @@
 
 #include <stdint.h>
 
+#include <cassert>
+#include <memory>
+
+#include <ignite/common/concurrent.h>
+
 namespace ignite
 {
     namespace impl
     {
         namespace compute
         {
-            class ComputeJobResultImpl
+            struct ComputeJobResultPolicy
             {
-            public:
+                enum Type
+                {
+                    /**
+                     * Wait for results if any are still expected. If all results have been received -
+                     * it will start reducing results.
+                     */
+                    WAIT = 0,
+
+                    /**
+                     * Ignore all not yet received results and start reducing results.
+                     */
+                    REDUCE = 1,
+
+                    /**
+                     * Fail-over job to execute on another node.
+                     */
+                    FAILOVER = 2
+                };
             };
 
-            class ComputeJobHolder
+            /**
+             * Used to hold compute job result.
+             */
+            template<typename R>
+            class ComputeJobResult
             {
             public:
-                const ComputeJobResultImpl& GetResult()
+                typedef R ResultType;
+                /**
+                 * Default constructor.
+                 */
+                ComputeJobResult() :
+                    res(),
+                    err()
                 {
-                    return res;
+                    // No-op.
+                }
+
+                /**
+                 * Set result value.
+                 *
+                 * @param val Value to set as a result.
+                 */
+                void SetResult(const ResultType& val)
+                {
+                    res = val;
+                }
+
+                /**
+                 * Set error.
+                 *
+                 * @param error Error to set.
+                 */
+                void SetError(const IgniteError error)
+                {
+                    err = error;
+                }
+
+                /**
+                 * Set promise to a state which corresponds to result.
+                 *
+                 * @param promise Promise, which state to set.
+                 */
+                void SetPromise(common::Promise<ResultType>& promise)
+                {
+                    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+                        promise.SetError(err);
+                    else
+                        promise.SetValue(std::auto_ptr<ResultType>(new ResultType(res)));
                 }
 
             private:
-                ComputeJobResultImpl res;
+                /** Result. */
+                ResultType res;
+
+                /** Erorr. */
+                IgniteError err;
             };
 
-            class ComputeTaskImplBase
+            /**
+             * Compute job holder. Internal helper class.
+             * Used to handle jobs in general way, without specific types.
+             */
+            class ComputeJobHolder
             {
             public:
                 /**
                  * Destructor.
                  */
-                virtual ~ComputeTaskImplBase()
+                virtual ~ComputeJobHolder()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Execute job locally.
+                 */
+                virtual void ExecuteLocal() = 0;
+            };
+
+            /**
+             * Compute job holder. Internal class.
+             *
+             * @tparam F Actual job type.
+             * @tparam R Job return type.
+             */
+            template<typename F, typename R>
+            class ComputeJobHolderImpl : public ComputeJobHolder
+            {
+            public:
+                typedef R ResultType;
+                typedef F JobType;
+
+                /**
+                 * Constructor.
+                 *
+                 * @param job Job.
+                 */
+                ComputeJobHolderImpl(JobType job) :
+                    job(job)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeJobHolderImpl()
+                {
+                    // No-op.
+                }
+
+                const ComputeJobResult<ResultType>& GetResult()
+                {
+                    return res;
+                }
+
+                virtual void ExecuteLocal()
+                {
+                    try
+                    {
+                        res.SetResult(job.Call());
+                    }
+                    catch (const IgniteError& err)
+                    {
+                        res.SetError(err);
+                    }
+                    catch (const std::exception& err)
+                    {
+                        res.SetError(IgniteError(IgniteError::IGNITE_ERR_STD, err.what()));
+                    }
+                    catch (...)
+                    {
+                        res.SetError(IgniteError(IgniteError::IGNITE_ERR_UNKNOWN,
+                            "Unknown error occurred during call."));
+                    }
+                }
+
+            private:
+                /** Result. */
+                ComputeJobResult<ResultType> res;
+
+                /** Job. */
+                JobType job;
+            };
+
+            /**
+             * Compute task holder. Internal helper class.
+             * Used to handle tasks in general way, without specific types.
+             */
+            class ComputeTaskHolder
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param handle Job handle.
+                 */
+                ComputeTaskHolder(int64_t handle) :
+                    handle(handle)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~ComputeTaskHolder()
                 {
                     // No-op.
                 }
@@ -65,22 +236,45 @@ namespace ignite
                  * @param job Job.
                  * @return Policy.
                  */
-                int32_t JobResultLocal(ComputeJobHolder job)
+                virtual int32_t JobResultLocal(common::concurrent::SharedPointer<ComputeJobHolder> job) = 0;
+
+                /**
+                 * Reduce results of related jobs.
+                 */
+                virtual void Reduce() = 0;
+
+                /**
+                 * Get related job handle.
+                 *
+                 * @return Job handle.
+                 */
+                int64_t GetJobHandle()
                 {
-                    return 0;
+                    return handle;
                 }
 
+            private:
+                /** Related job handle. */
+                int64_t handle;
             };
 
             /**
-             * @tparam R Result type.
+             * Compute task holder type-specific implementation.
              */
-            template<typename R>
-            class ComputeTaskImpl
+            template<typename F, typename R>
+            class ComputeTaskHolderImpl : public ComputeTaskHolder
             {
             public:
-
-                ComputeTaskImpl()
+                typedef F JobType;
+                typedef R ResultType;
+                
+                /**
+                 * Constructor.
+                 *
+                 * @param handle Job handle.
+                 */
+                ComputeTaskHolderImpl(int64_t handle) :
+                    ComputeTaskHolder(handle)
                 {
                     // No-op.
                 }
@@ -88,9 +282,38 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~ComputeTaskImpl()
+                virtual ~ComputeTaskHolderImpl()
                 {
                     // No-op.
+                }
+
+                /**
+                 * Process local job result.
+                 *
+                 * @param job Job.
+                 * @return Policy.
+                 */
+                virtual int32_t JobResultLocal(common::concurrent::SharedPointer<ComputeJobHolder> job)
+                {
+                    typedef ComputeJobHolderImpl<JobType, ResultType> ActualComputeJobHolder;
+
+                    ComputeJobHolder* jobPtr = job.Get();
+
+                    assert(jobPtr != 0);
+
+                    ActualComputeJobHolder& job0 = static_cast<ActualComputeJobHolder&>(*jobPtr);
+
+                    res = job0.GetResult();
+
+                    return ComputeJobResultPolicy::WAIT;
+                }
+
+                /**
+                 * Reduce results of related jobs.
+                 */
+                virtual void Reduce()
+                {
+                    res.SetPromise(promise);
                 }
 
                 /**
@@ -98,14 +321,17 @@ namespace ignite
                  *
                  * @return Reference to result promise.
                  */
-                common::Promise<R>& GetPromise()
+                common::Promise<ResultType>& GetPromise()
                 {
                     return promise;
                 }
 
             private:
+                /** Result. */
+                ComputeJobResult<ResultType> res;
+
                 /** Task result promise. */
-                common::Promise<R> promise;
+                common::Promise<ResultType> promise;
             };
         }
     }

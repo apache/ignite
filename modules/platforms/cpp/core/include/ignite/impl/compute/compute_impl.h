@@ -84,11 +84,13 @@ namespace ignite
                     interop::InteropOutputStream out(mem.Get());
                     binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
 
-                    common::concurrent::SharedPointer<ignite::compute::ComputeFunc<R> > job(new F(func));
-
-                    common::concurrent::SharedPointer<ComputeTaskImpl<R> > task(new ComputeTaskImpl<R>());
+                    common::concurrent::SharedPointer<ComputeJobHolder> job(new ComputeJobHolderImpl<F, R>(func));
 
                     int64_t jobHandle = GetEnvironment().GetHandleRegistry().Allocate(job);
+
+                    ComputeTaskHolderImpl<F, R>* taskPtr = new ComputeTaskHolderImpl<F, R>(jobHandle);
+                    common::concurrent::SharedPointer<ComputeTaskHolder> task(taskPtr);
+
                     int64_t taskHandle = GetEnvironment().GetHandleRegistry().Allocate(task);
 
                     writer.WriteInt64(taskHandle);
@@ -102,11 +104,9 @@ namespace ignite
                     out.Synchronize();
 
                     jobject target = InStreamOutObject(Operation::Unicast, *mem.Get());
-
-                    common::Promise<R>& promise = task.Get()->GetPromise();
-
                     std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
 
+                    common::Promise<R>& promise = taskPtr->GetPromise();
                     promise.SetCancelTarget(cancelable);
 
                     return promise.GetFuture();
