@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -743,17 +742,6 @@ public class GridDhtPartitionDemander {
 
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
-
-                if (cctx.dht().isIgfsDataCache() &&
-                    cctx.dht().igfsDataSpaceUsed() > cctx.dht().igfsDataSpaceMax()) {
-                    LT.error(log, null, "Failed to rebalance IGFS data cache (IGFS space size exceeded maximum " +
-                        "value, will ignore rebalance entries)");
-
-                    if (cached.markObsoleteIfEmpty(null))
-                        cached.context().cache().removeEntry(cached);
-
-                    return true;
-                }
 
                 if (preloadPred == null || preloadPred.apply(entry)) {
                     if (cached.initialValue(

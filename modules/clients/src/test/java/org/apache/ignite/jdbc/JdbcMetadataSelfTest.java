@@ -32,7 +32,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -65,7 +67,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
         return cfg;
     }
 
@@ -183,6 +184,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
+        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -195,8 +197,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             names.add("NAME");
             names.add("AGE");
             names.add("ORGID");
-            names.add("_KEY");
-            names.add("_VAL");
 
             int cnt = 0;
 
@@ -212,7 +212,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 } else if ("AGE".equals(name) || "ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
-                    assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt("NULLABLE") == (primitivesInformationIsLostAfterStore ? 1 : 0);
                 }
                 if ("_KEY".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
@@ -229,7 +229,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             }
 
             assert names.isEmpty();
-            assert cnt == 5;
+            assert cnt == 3;
 
             rs = meta.getColumns("", "org", "Organization", "%");
 
@@ -237,8 +237,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             names.add("ID");
             names.add("NAME");
-            names.add("_KEY");
-            names.add("_VAL");
 
             cnt = 0;
 
@@ -271,7 +269,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             }
 
             assert names.isEmpty();
-            assert cnt == 4;
+            assert cnt == 2;
         }
     }
 

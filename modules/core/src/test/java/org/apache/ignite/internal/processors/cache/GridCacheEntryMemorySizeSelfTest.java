@@ -144,7 +144,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Marshaller.
      */
     protected Marshaller createMarshaller() throws IgniteCheckedException {
-        Marshaller marsh = new OptimizedMarshaller();
+        Marshaller marsh = createStandaloneBinaryMarshaller();
 
         marsh.setContext(new MarshallerContext() {
             @Override public boolean registerClassName(byte platformId, int typeId, String clsName) {
@@ -226,7 +226,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).affinity(null).mapKeyToNode(key).equals(grid(0).localNode())) {
+                    if (grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 
@@ -278,7 +278,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).affinity(null).mapKeyToNode(key).equals(grid(0).localNode())) {
+                    if (grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 

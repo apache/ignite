@@ -83,6 +83,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1381,6 +1382,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         IgniteTxEntry txEntry,
         boolean metrics,
         @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
+
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1404,18 +1407,25 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             final boolean keepBinary = txEntry.keepBinary();
 
-            CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
-                txEntry.cached().innerGet(
+            CacheObject cacheVal;
+
+            if (txEntry.hasValue())
+                cacheVal = txEntry.value();
+            else if (txEntry.hasOldValue())
+                cacheVal = txEntry.oldValue();
+            else {
+                cacheVal = txEntry.cached().innerGet(
                     null,
                     this,
                     /*read through*/false,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
                     /*subjId*/subjId,
-                    /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
+                    /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
                     keepBinary);
+            }
 
             boolean modified = false;
 

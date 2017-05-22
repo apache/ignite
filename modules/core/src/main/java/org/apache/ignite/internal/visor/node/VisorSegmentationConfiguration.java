@@ -51,6 +51,9 @@ public class VisorSegmentationConfiguration extends VisorDataTransferObject {
     /** Whether or not all resolvers should succeed for node to be in correct segment. */
     private boolean allResolversPassReq;
 
+    /** Segmentation resolve attempts count. */
+    private int segResolveAttempts;
+
     /**
      * Default constructor.
      */
@@ -69,6 +72,7 @@ public class VisorSegmentationConfiguration extends VisorDataTransferObject {
         checkFreq = c.getSegmentCheckFrequency();
         waitOnStart = c.isWaitForSegmentOnStart();
         allResolversPassReq = c.isAllSegmentationResolversPassRequired();
+        segResolveAttempts = c.getSegmentationResolveAttempts();
     }
 
     /**
@@ -106,6 +110,13 @@ public class VisorSegmentationConfiguration extends VisorDataTransferObject {
         return allResolversPassReq;
     }
 
+    /**
+     * @return Segmentation resolve attempts.
+     */
+    public int getSegmentationResolveAttempts() {
+        return segResolveAttempts;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, plc);
@@ -113,6 +124,7 @@ public class VisorSegmentationConfiguration extends VisorDataTransferObject {
         out.writeLong(checkFreq);
         out.writeBoolean(waitOnStart);
         out.writeBoolean(allResolversPassReq);
+        out.writeInt(segResolveAttempts);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +134,7 @@ public class VisorSegmentationConfiguration extends VisorDataTransferObject {
         checkFreq = in.readLong();
         waitOnStart = in.readBoolean();
         allResolversPassReq = in.readBoolean();
+        segResolveAttempts = in.readInt();
     }
 
     /** {@inheritDoc} */

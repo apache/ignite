@@ -192,16 +192,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
-            try
-            {
-                Ignition.Start(cfg);
-
-                Assert.Fail("Grid has been started with broken configuration.");
-            }
-            catch (IgniteException)
-            {
-
-            }
+            Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
         }
 
         /// <summary>

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
@@ -50,6 +49,7 @@ public class TransformCollectionView<T1, T2> extends GridSerializableCollection<
      * @param clos Transformation closure.
      * @param preds Optional predicated. If predicates are not provided - all elements will be in the view.
      */
+    @SafeVarargs
     public TransformCollectionView(Collection<? extends T2> col,
         IgniteClosure<? super T2, T1> clos, IgnitePredicate<? super T2>... preds) {
         this.col = col;
@@ -70,10 +70,5 @@ public class TransformCollectionView<T1, T2> extends GridSerializableCollection<
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         return F.isEmpty(preds) ? col.isEmpty() : !iterator().hasNext();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TransformCollectionView.class, this);
     }
 }

@@ -1812,29 +1812,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param type Type.
-     * @param bytes Bytes.
-     * @param clsLdrId Class loader ID.
-     * @return Cache object.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public CacheObject unswapCacheObject(byte type, byte[] bytes, @Nullable IgniteUuid clsLdrId)
-        throws IgniteCheckedException {
-        if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
-            ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
-
-            if (ldr == null)
-                return null;
-
-            return ctx.cacheObjects().toCacheObject(cacheObjCtx,
-                ctx.cacheObjects().unmarshal(cacheObjCtx, bytes, ldr),
-                false);
-        }
-
-        return ctx.cacheObjects().toCacheObject(cacheObjCtx, type, bytes);
-    }
-
-    /**
      * @param map Map.
      * @param key Key.
      * @param val Value.

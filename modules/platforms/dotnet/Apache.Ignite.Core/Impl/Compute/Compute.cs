@@ -196,12 +196,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public TJobRes AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return _compute.AffinityCall(cacheName, affinityKey, clo).Get();
         }
 
         /** <inheritDoc /> */
         public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return _compute.AffinityCall(cacheName, affinityKey, clo).Task;
         }
 
@@ -209,6 +213,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo, 
             CancellationToken cancellationToken)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return GetTaskIfAlreadyCancelled<TRes>(cancellationToken) ??
                 _compute.AffinityCall(cacheName, affinityKey, clo).GetTask(cancellationToken);
         }
@@ -341,12 +347,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             _compute.AffinityRun(cacheName, affinityKey, action).Get();
         }
 
         /** <inheritDoc /> */
         public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return _compute.AffinityRun(cacheName, affinityKey, action).Task;
         }
 
@@ -354,6 +364,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action, 
             CancellationToken cancellationToken)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return GetTaskIfAlreadyCancelled<object>(cancellationToken) ??
                 _compute.AffinityRun(cacheName, affinityKey, action).GetTask(cancellationToken);
         }

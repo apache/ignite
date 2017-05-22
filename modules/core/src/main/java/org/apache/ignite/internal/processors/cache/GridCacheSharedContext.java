@@ -22,8 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionMetri
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -293,6 +291,8 @@ public class GridCacheSharedContext<K, V> {
                 mgr.start(this);
         }
 
+        kernalCtx.query().onCacheReconnect();
+
         for (GridCacheSharedManager<?, ?> mgr : mgrs)
             mgr.onKernalStart(true);
     }
@@ -443,6 +443,22 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheContext<K, V> cacheContext(int cacheId) {
         return ctxMap.get(cacheId);
+    }
+
+    /**
+     * Returns cache object context if created or creates new and caches it until cache started.
+     *
+     * @param cacheId Cache id.
+     */
+    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+        GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
+
+        if (ctx != null)
+            return ctx.cacheObjectContext();
+
+        DynamicCacheDescriptor desc = cache().cacheDescriptor(cacheId);
+
+        return desc != null ? desc.cacheObjectContext(kernalContext().cacheObjects()) : null;
     }
 
     /**
@@ -740,7 +756,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return Error message if transactions are incompatible.
      */
-    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridLongList activeCacheIds,
+    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridIntList activeCacheIds,
         GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.systemTx() && !tx.system())
             return "system cache can be enlisted only in system transaction";
@@ -749,7 +765,7 @@ public class GridCacheSharedContext<K, V> {
             return "non-system cache can't be enlisted in system transaction";
 
         for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = (int)activeCacheIds.get(i);
+            int cacheId = activeCacheIds.get(i);
 
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 

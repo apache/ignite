@@ -90,9 +90,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     private IgniteCache<Integer, Map<Integer, Double>> newCache() {
         CacheConfiguration<Integer, Map<Integer, Double>> cfg = new CacheConfiguration<>();
 
-        // Assume 10% density.
-        cfg.setStartSize(Math.max(1024, (rows * cols) / 10));
-
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 

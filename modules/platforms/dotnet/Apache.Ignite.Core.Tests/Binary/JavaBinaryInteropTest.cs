@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                ignite.CreateCache<int, object>((string) null);
+                ignite.CreateCache<int, object>("default");
 
                 // Basic types.
                 // Types which map directly to Java are returned properly when retrieved as object.
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckValueCaching<T>(T val, bool asObject = true, bool asArray = true)
         {
-            var cache = Ignition.GetIgnite(null).GetCache<int, T>(null);
+            var cache = Ignition.GetIgnite().GetCache<int, T>("default");
 
             cache[1] = val;
             Assert.AreEqual(val, cache[1]);
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckValueCachingAsObject<T>(T val)
         {
-            var cache = Ignition.GetIgnite(null).GetCache<int, object>(null);
+            var cache = Ignition.GetIgnite().GetCache<int, object>("default");
 
             cache[1] = val;
             Assert.AreEqual(val, (T) cache[1]);

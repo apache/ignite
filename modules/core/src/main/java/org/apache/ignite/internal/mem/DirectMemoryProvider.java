@@ -18,8 +18,23 @@
 package org.apache.ignite.internal.mem;
 
 /**
- *
+ * Direct memory provider interface. Not thread-safe.
  */
 public interface DirectMemoryProvider {
-    public DirectMemory memory();
+    /**
+     * @param chunkSizes Initializes provider with the chunk sizes.
+     */
+    public void initialize(long[] chunkSizes);
+
+    /**
+     * Shuts down the provider. Will deallocate all previously allocated regions.
+     */
+    public void shutdown();
+
+    /**
+     * Attempts to allocate next memory region. Will return {@code null} if no more regions are available.
+     *
+     * @return Next memory region.
+     */
+    public DirectMemoryRegion nextRegion();
 }

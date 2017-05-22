@@ -140,7 +140,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkSingleWrites() throws Exception {
         prepare();
 
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
@@ -159,7 +159,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         for (int i = 0; i < 100; i++)
             map.put(i, String.valueOf(i));
 
-        grid(0).cache(null).putAll(map);
+        grid(0).cache(DEFAULT_CACHE_NAME).putAll(map);
 
         checkWrites();
     }
@@ -170,7 +170,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkTxWrites() throws Exception {
         prepare();
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < 100; i++)

@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Closure execution tests for serializable objects.
     /// </summary>
+    [TestFixture]
     public class SerializableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>

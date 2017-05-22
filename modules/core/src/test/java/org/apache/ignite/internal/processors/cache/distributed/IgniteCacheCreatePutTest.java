@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -67,12 +68,9 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
-        marsh.setRequireSerializable(false);
+        cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setMarshaller(marsh);
-
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName("cache*");
         ccfg.setCacheMode(PARTITIONED);
@@ -198,7 +196,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
                 while (System.currentTimeMillis() < stopTime) {
                     String cacheName = "dynamic-cache-" + nodeIdx;
 
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(cacheName);
 
@@ -240,7 +238,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setCacheMode(REPLICATED);

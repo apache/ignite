@@ -23,11 +23,11 @@
                     span Connection to Ignite Web Agent is not established
             .modal-body.agent-download
                 p Please download and run #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] to use this functionality
-                p For run:
+                p To start:
                 ul
                     li Download and unzip #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] archive
                     li Run shell file #[b ignite-web-agent.{sh|bat}]
-                p Refer to #[b README.txt] in agent folder for more information
+                p Refer to #[b README.txt] in the ignite-web-agent folder for more information.
                 .modal-advanced-options
                     i.fa(ng-class='showToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"' ng-click='showToken = !showToken')
                     a(ng-click='showToken = !showToken') {{showToken ? 'Hide security token...' : 'Show security token...'}}
@@ -53,7 +53,7 @@
                     li Ignite Grid is up and Ignite REST server started (copy "ignite-rest-http" folder from libs/optional/ to libs/)
                     li In agent settings check URI for connect to Ignite REST server
                     li Check agent logs for errors
-                    li Refer to #[b README.txt] in agent folder for more information
+                    li Refer to #[b README.txt] in the ignite-web-agent folder for more information.
 
             .modal-footer
                 button.btn.btn-default(ng-click='ctrl.back()') {{::ctrl.backText}}

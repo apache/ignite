@@ -356,11 +356,6 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
         @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
@@ -387,7 +382,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

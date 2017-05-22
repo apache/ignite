@@ -26,7 +26,7 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
  */
 public class JdbcPojoQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /** URL. */
-    private static final String URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-bin-config.xml";
+    private static final String URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /**
      * @throws Exception If failed.

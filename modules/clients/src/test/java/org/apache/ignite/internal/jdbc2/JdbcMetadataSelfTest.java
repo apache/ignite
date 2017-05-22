@@ -32,11 +32,14 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
@@ -71,7 +74,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
         return cfg;
     }
 
@@ -81,7 +83,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @param clsV Class v.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String name, Class<?> clsK, Class<?> clsV) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String name, Class<?> clsK, Class<?> clsV) {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
@@ -191,6 +193,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
+        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -203,8 +206,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             names.add("NAME");
             names.add("AGE");
             names.add("ORGID");
-            names.add("_KEY");
-            names.add("_VAL");
 
             int cnt = 0;
 
@@ -220,24 +221,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 } else if ("AGE".equals(name) || "ORGID".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
-                if ("_KEY".equals(name)) {
-                    assertEquals(OTHER, rs.getInt("DATA_TYPE"));
-                    assertEquals("OTHER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
-                if ("_VAL".equals(name)) {
-                    assertEquals(OTHER, rs.getInt("DATA_TYPE"));
-                    assertEquals("OTHER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(primitivesInformationIsLostAfterStore ? 1 : 0, rs.getInt("NULLABLE"));
                 }
 
                 cnt++;
             }
 
             assertTrue(names.isEmpty());
-            assertEquals(5, cnt);
+            assertEquals(3, cnt);
 
             rs = meta.getColumns("", "org", "Organization", "%");
 
@@ -245,8 +236,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             names.add("ID");
             names.add("NAME");
-            names.add("_KEY");
-            names.add("_VAL");
 
             cnt = 0;
 
@@ -264,22 +253,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
                 }
-                if ("_KEY".equals(name)) {
-                    assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
-                    assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
-                if ("_VAL".equals(name)) {
-                    assertEquals(OTHER, rs.getInt("DATA_TYPE"));
-                    assertEquals("OTHER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
 
                 cnt++;
             }
 
             assertTrue(names.isEmpty());
-            assertEquals(4, cnt);
+            assertEquals(2, cnt);
         }
     }
 

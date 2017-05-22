@@ -80,7 +80,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHE_COUNT];
 
         for (int i = 0; i < CACHE_COUNT; ++i) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(CACHE_PREFIX + i);
             ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
             ccfg.setCacheMode(CacheMode.PARTITIONED);

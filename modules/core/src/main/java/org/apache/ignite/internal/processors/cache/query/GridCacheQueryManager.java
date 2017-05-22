@@ -355,70 +355,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Entry for given key unswapped.
-     *
-     * @param key Key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
-        if(!enabled)
-            return;
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            if (isIndexingSpiEnabled()) {
-                Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
-
-                cctx.kernalContext().indexing().onSwap(space, key0);
-            }
-
-            if(qryProcEnabled)
-                qryProc.onSwap(space, key, partId);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
      * Checks if IndexinSPI is enabled.
      * @return IndexingSPI enabled flag.
      */
     private boolean isIndexingSpiEnabled() {
         return cctx.kernalContext().indexing().enabled();
-    }
-
-    /**
-     * Entry for given key unswapped.
-     *
-     * @param key Key.
-     * @param val Value
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
-        if(!enabled)
-            return;
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            if (isIndexingSpiEnabled()) {
-                CacheObjectContext coctx = cctx.cacheObjectContext();
-
-                Object key0 = unwrapIfNeeded(key, coctx);
-
-                Object val0 = unwrapIfNeeded(val, coctx);
-
-                cctx.kernalContext().indexing().onUnswap(space, key0, val0);
-            }
-
-            if(qryProcEnabled)
-                qryProc.onUnswap(space, key, partId, val);
-        }
-        finally {
-            leaveBusy();
-        }
     }
 
     /**
@@ -2090,6 +2031,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private static final long serialVersionUID = 0L;
 
+        /**
+         * Number of fields to report when no fields defined.
+         * Includes _key and _val columns.
+         */
+        private static final int NO_FIELDS_COLUMNS_COUNT = 2;
+
         /** Grid */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -2132,23 +2079,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.fields().size();
+                        int size = type.fields().isEmpty() ? NO_FIELDS_COLUMNS_COUNT : type.fields().size();
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
                         // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
-                        fieldsMap.put("_KEY", type.keyClass().getName());
-                        fieldsMap.put("_VAL", type.valueClass().getName());
+                        if (type.fields().isEmpty()) {
+                            fieldsMap.put("_KEY", type.keyClass().getName());
+                            fieldsMap.put("_VAL", type.valueClass().getName());
+                        }
 
                         for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());
 
                         fields.put(type.name(), fieldsMap);
 
-                        Collection<GridCacheSqlIndexMetadata> indexesCol =
-                            new ArrayList<>(type.indexes().size());
+                        Map<String, GridQueryIndexDescriptor> idxs = type.indexes();
 
-                        for (Map.Entry<String, GridQueryIndexDescriptor> e : type.indexes().entrySet()) {
+                        Collection<GridCacheSqlIndexMetadata> indexesCol = new ArrayList<>(idxs.size());
+
+                        for (Map.Entry<String, GridQueryIndexDescriptor> e : idxs.entrySet()) {
                             GridQueryIndexDescriptor desc = e.getValue();
 
                             // Add only SQL indexes.

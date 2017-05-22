@@ -103,8 +103,8 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         assertFalse(ignite1.configuration().isClientMode());
 
-        Affinity<Object> aff0 = ignite0.affinity(null);
-        Affinity<Object> aff1 = ignite1.affinity(null);
+        Affinity<Object> aff0 = ignite0.affinity(DEFAULT_CACHE_NAME);
+        Affinity<Object> aff1 = ignite1.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0 ; i < 100; i++) {
             TestObject1 obj1 = new TestObject1(i, i + 1);

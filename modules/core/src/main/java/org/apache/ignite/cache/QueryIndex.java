@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.cache;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +41,7 @@ public class QueryIndex implements Serializable {
     private String name;
 
     /** */
+    @GridToStringInclude
     private LinkedHashMap<String, Boolean> fields;
 
     /** */
@@ -259,5 +263,10 @@ public class QueryIndex implements Serializable {
      */
     public void setInlineSize(int inlineSize) {
         this.inlineSize = inlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryIndex.class, this);
     }
 }

@@ -70,7 +70,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller"&gt;
+ *         &lt;bean class="OptimizedMarshaller"&gt;
  *             &lt;property name="requireSerializable"&gt;true&lt;/property&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -232,7 +232,8 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
                 "[clsLdr=" + clsLdr + ", cls=" + e.getMessage() + "]", e);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " +
+                "[clsLdr=" + clsLdr + ", err=" + e.getMessage() + "]", e);
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);

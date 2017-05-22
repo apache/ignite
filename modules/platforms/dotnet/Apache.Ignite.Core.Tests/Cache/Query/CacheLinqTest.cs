@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class CacheLinqTest
     {
         /** Cache name. */
-        private const string PersonOrgCacheName = null;
+        private const string PersonOrgCacheName = "person_org";
 
         /** Cache name. */
         private const string PersonSecondCacheName = "person_cache";
@@ -1280,7 +1280,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, query.Ignite);
 
             var fq = query.GetFieldsQuery();
-            Assert.AreEqual("select _T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?)", fq.Sql);
+            Assert.AreEqual("select _T0._key, _T0._val from \"person_org\".Person as _T0 where (_T0._key > ?)", 
+                fq.Sql);
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
             Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
@@ -1289,8 +1290,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(fq.EnforceJoinOrder);
 
             var str = query.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
-                            "_T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?), Arguments=[10], " +
+            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                            "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
+                            "(_T0._key > ?), Arguments=[10], " +
                             "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
 
             // Check fields query
@@ -1300,16 +1302,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
 
             fq = fieldsQuery.GetFieldsQuery();
-            Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fq.Sql);
+            Assert.AreEqual("select _T0.Name from \"person_org\".Person as _T0", fq.Sql);
             Assert.IsFalse(fq.Local);
             Assert.AreEqual(SqlFieldsQuery.DefaultPageSize, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
 
             str = fieldsQuery.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
-                            "_T0.Name from \"\".Person as _T0, Arguments=[], Local=False, PageSize=1024, " +
-                            "EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                            "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
+                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
             
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
@@ -1320,8 +1322,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 
             str = distrQuery.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=, TableName=Person, Query=SqlFieldsQuery [Sql=select " +
-                            "_T0._key, _T0._val from \"\".Person as _T0 where (((_T0._key > ?) and (_T0.age1 > ?)) " +
+            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                            "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
+                            "(((_T0._key > ?) and (_T0.age1 > ?)) " +
                             "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
                             "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
         }
@@ -1423,6 +1426,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             new QueryAlias("AliasTest", "Person_AliasTest"),
                             new QueryAlias("Address.AliasTest", "Addr_AliasTest")
+                        },
+                        KeyFieldName = "MyKey",
+                        ValueFieldName = "MyValue",
+                        Fields =
+                        {
+                            new QueryField("MyKey", typeof(int)),
+                            new QueryField("MyValue", typeof(T)),
                         }
                     },
                     new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Replicated});

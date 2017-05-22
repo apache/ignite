@@ -272,7 +272,8 @@ object visor extends VisorTag {
     def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
         val grp = node match {
             case Some(n) => ignite.cluster.forNode(n)
-            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask],
+                new VisorCacheNodesTaskArg(cacheName)))
         }
 
         if (grp.nodes().isEmpty)
@@ -1832,7 +1833,7 @@ object visor extends VisorTag {
     @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
         executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
-            null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
+            new VisorCacheConfigurationCollectorTaskArg(null.asInstanceOf[JavaCollection[IgniteUuid]])).values()
 
     /**
      * Asks user to select a node from the list.

@@ -19,23 +19,39 @@
     min-width: 36px;
     height: 36px;
 
-    line-height: 36px;
+    line-height: 34px;
     text-align: center;
 
     color: #ee2b27;
     border: 1px solid #ee2b27;
     background: initial;
 
+    i {
+        margin: 0;
+
+        &.export-icon {
+            display: block;
+            width: 16px;
+            height: 16px;
+            margin: auto;
+
+            background-image: url('/images/icons/export.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+    }
+
     &:hover, &:focus {
         color: #a8110f;
         border-color: #a8110f;
+
+        i {
+            filter: hue-rotate(1deg) saturate(85) brightness(.66);
+        }
     }
 
     &:focus {
         outline: none;
     }
 
-    i {
-        margin: 0;
-    }
 }

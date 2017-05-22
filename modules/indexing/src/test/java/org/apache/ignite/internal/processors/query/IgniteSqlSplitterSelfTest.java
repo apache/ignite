@@ -110,7 +110,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
-        return new CacheConfiguration()
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
@@ -290,6 +290,35 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws InterruptedException If failed.
+     */
+    public void testDistributedJoinFromReplicatedCache() throws InterruptedException {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        CacheConfiguration ccfg2 = cacheConfig("org", true,
+            Integer.class, Organization.class);
+
+        CacheConfiguration ccfg3 = cacheConfig("orgRepl", false,
+            Integer.class, Organization.class);
+
+        IgniteCache<Integer, Person2> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Integer, Organization> c2 = ignite(0).getOrCreateCache(ccfg2);
+        IgniteCache<Integer, Organization> c3 = ignite(0).getOrCreateCache(ccfg3);
+
+        try {
+            awaitPartitionMapExchange();
+
+            doTestDistributedJoins(c3, c1, c2, 300, 2000, 5, false);
+            doTestDistributedJoins(c3, c1, c2, 300, 2000, 5, true);
+        }
+        finally {
+            c1.destroy();
+            c2.destroy();
+        }
+    }
+
     @SuppressWarnings("SuspiciousMethodCalls")
     public void testExists() {
         IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
@@ -413,7 +442,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             info("Plan: " + plan);
 
-            assertTrue(plan.contains("grpIdx"));
+            assertTrue("_explain: " + plan, plan.toLowerCase().contains("grpidx"));
 
             // Sorted list
             List<GroupIndexTestValue> list = F.asList(
@@ -476,6 +505,38 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    public void testUseIndexHints() {
+        CacheConfiguration ccfg = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        IgniteCache<Integer, Person2> c = ignite(0).getOrCreateCache(ccfg);
+
+        try {
+            String select = "select 1 from Person2 use index (\"PERSON2_ORGID_IDX\") where name = '' and orgId = 1";
+
+            String plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
+
+            select = "select 1 from Person2 use index (\"PERSON2_NAME_IDX\") where name = '' and orgId = 1";
+
+            plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testDistributedJoins() throws Exception {
@@ -491,14 +552,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         try {
             awaitPartitionMapExchange();
 
-            doTestDistributedJoins(c1, c2, 30, 100, 1000, false);
-            doTestDistributedJoins(c1, c2, 30, 100, 1000, true);
+            doTestDistributedJoins(c2, c1, c2, 30, 100, 1000, false);
+            doTestDistributedJoins(c2, c1, c2, 30, 100, 1000, true);
 
-            doTestDistributedJoins(c1, c2, 3, 10, 3, false);
-            doTestDistributedJoins(c1, c2, 3, 10, 3, true);
+            doTestDistributedJoins(c2, c1, c2, 3, 10, 3, false);
+            doTestDistributedJoins(c2, c1, c2, 3, 10, 3, true);
 
-            doTestDistributedJoins(c1, c2, 300, 2000, 5, false);
-            doTestDistributedJoins(c1, c2, 300, 2000, 5, true);
+            doTestDistributedJoins(c2, c1, c2, 300, 2000, 5, false);
+            doTestDistributedJoins(c2, c1, c2, 300, 2000, 5, true);
         }
         finally {
             c1.destroy();
@@ -738,14 +799,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from \"persPart\".Person2 p, (select * from \"orgRepl\".Organization) o " +
+                    "from \"persPart\".Person2 p, (select _key, _val, * from \"orgRepl\".Organization) o " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
@@ -958,7 +1019,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     sql);
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2.name and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -968,7 +1029,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     "batched:unicast");
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2._key and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -1377,6 +1438,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @param enforceJoinOrder Enforce join order.
      */
     private void doTestDistributedJoins(
+        IgniteCache<?,?> qryCache,
         IgniteCache<Integer, Person2> c1,
         IgniteCache<Integer, Organization> c2,
         int orgs,
@@ -1410,7 +1472,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
         String select = "select count(*) from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key";
 
-        String plan = (String)c2.query(new SqlFieldsQuery("explain " + select)
+        String plan = (String)qryCache.query(new SqlFieldsQuery("explain " + select)
             .setDistributedJoins(true).setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize))
             .getAll().get(0).get(0);
 
@@ -1421,7 +1483,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         else
             assertTrue(plan, plan.contains("batched:unicast"));
 
-        assertEquals(Long.valueOf(persons), c2.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        assertEquals((long)persons, qryCache.query(new SqlFieldsQuery(select).setDistributedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
 
         c1.clear();
@@ -1917,7 +1979,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         int orgId;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         String name;
 
         /**

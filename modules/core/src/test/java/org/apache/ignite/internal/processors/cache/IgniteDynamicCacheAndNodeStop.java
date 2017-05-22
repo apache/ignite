@@ -62,7 +62,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            final  CacheConfiguration ccfg = new CacheConfiguration();
+            final  CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ignite.createCache(ccfg);
 
@@ -72,7 +72,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     barrier.await();
 
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }

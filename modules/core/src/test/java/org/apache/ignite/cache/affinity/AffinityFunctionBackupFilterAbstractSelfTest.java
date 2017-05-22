@@ -182,11 +182,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     @SuppressWarnings("ConstantConditions")
     private void checkPartitions() throws Exception {
-        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < partCnt; i++) {
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
@@ -236,11 +236,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     @SuppressWarnings("ConstantConditions")
     private void checkPartitionsWithAffinityBackupFilter() throws Exception {
-        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < partCnt; i++) {
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
