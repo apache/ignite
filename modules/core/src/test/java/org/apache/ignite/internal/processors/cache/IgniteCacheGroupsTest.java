@@ -35,15 +35,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
@@ -58,6 +62,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -66,6 +71,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -388,6 +395,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
     private void scanQuery(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
@@ -430,13 +439,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            cache1 = ignite(local ? 0 : 1).cache(CACHE1);
-            cache2 = ignite(local ? 0 : 2).cache(CACHE2);
+            // Async put ops.
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
         ScanQuery<Integer, Integer> qry = new ScanQuery<>();
@@ -463,6 +476,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
     private void scanQueryMultiplePartitions(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
@@ -503,13 +518,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            cache1 = ignite(1).cache(CACHE1);
-            cache2 = ignite(2).cache(CACHE2);
+            // Async put ops.
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
 
@@ -559,6 +578,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
     private void cacheIterator(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
@@ -598,13 +619,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            IgniteCache cache1 = ignite(local ? 0 : 1).cache(CACHE1);
-            IgniteCache cache2 = ignite(local ? 0 : 2).cache(CACHE2);
+            // Async put ops.
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
 
@@ -678,13 +703,17 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            IgniteCache cache1 = ignite(local ? 0 : 1).cache(CACHE1);
-            IgniteCache cache2 = ignite(local ? 0 : 2).cache(CACHE2);
+            // async put ops
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
         checkData(local ? 0 : 3, CACHE1, data1);
@@ -702,6 +731,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
     private void createDestroyCaches(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
@@ -735,13 +766,16 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         else {
-            IgniteCache cache1 = ignite(1).cache(CACHE1);
-            IgniteCache cache2 = ignite(2).cache(CACHE2);
+            int ldrs = 4;
 
-            for (int i = 0; i < keys ; i++) {
-                cache1.put(i, data1[i]);
-                cache2.put(i, data2[i]);
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
         checkLocalData(3, CACHE1, data1);
@@ -765,6 +799,34 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param idx Node index.
+     * @param ldrs Loaders count.
+     * @param ldrIdx Loader index.
+     * @param cacheName Cache name.
+     * @param data Data.
+     * @return Callable for put operation.
+     */
+    private Callable<Void> putOperation(
+            final int idx,
+            final int ldrs,
+            final int ldrIdx,
+            final String cacheName,
+            final Integer[] data) {
+        return new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteCache cache = ignite(idx).cache(cacheName);
+
+                for (int j = 0, size = data.length; j < size ; j++) {
+                    if (j % ldrs == ldrIdx) {
+                        cache.put(j, data[j]);
+                    }
+                }
+                return null;
+            }
+        };
+    }
+
+    /**
      * Creates an array of random integers.
      *
      * @param cnt Array length.
@@ -777,6 +839,23 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < data.length; i++)
             data[i] = rnd.nextInt();
+
+        return data;
+    }
+
+    /**
+     * Creates a map with random integers.
+     *
+     * @param cnt Map size length.
+     * @return Map with random integers.
+     */
+    private Map<Integer, Integer> generateDataMap(int cnt) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Map<Integer, Integer> data = U.newHashMap(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            data.put(i, rnd.nextInt());
 
         return data;
     }
@@ -1491,12 +1570,38 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         int[] backups = cacheMode == REPLICATED ? new int[]{Integer.MAX_VALUE} : new int[]{0, 1, 2, 3};
 
         for (int backups0 : backups)
-            cacheApiTest(cacheMode, atomicityMode, backups0, false);
+            cacheApiTest(cacheMode, atomicityMode, backups0, false, false, false);
 
         int backups0 = cacheMode == REPLICATED ? Integer.MAX_VALUE :
             backups[ThreadLocalRandom.current().nextInt(backups.length)];
 
-        cacheApiTest(cacheMode, atomicityMode, backups0, true);
+        cacheApiTest(cacheMode, atomicityMode, backups0, true, false, false);
+
+        if (cacheMode == PARTITIONED) {
+            // Here the f variable is used as a bit set where 2 last bits
+            // determine whether a near cache is used on server/client side.
+            // The case without near cache is already tested at this point.
+            for (int f : new int[]{1, 2, 3}) {
+                cacheApiTest(cacheMode, atomicityMode, backups0, false, nearSrv(f), nearClient(f));
+                cacheApiTest(cacheMode, atomicityMode, backups0, true, nearSrv(f), nearClient(f));
+            }
+        }
+    }
+
+    /**
+     * @param flag Flag.
+     * @return {@code True} if near cache should be used on a client side.
+     */
+    private boolean nearClient(int flag) {
+        return (flag & 0b01) == 0b01;
+    }
+
+    /**
+     * @param flag Flag.
+     * @return {@code True} if near cache should be used on a server side.
+     */
+    private boolean nearSrv(int flag) {
+        return (flag & 0b10) == 0b10;
     }
 
     /**
@@ -1504,62 +1609,335 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param atomicityMode Atomicity mode.
      * @param backups Number of backups.
      * @param heapCache On heap cache flag.
+     * @param nearSrv {@code True} if near cache should be used on a server side.
+     * @param nearClient {@code True} if near cache should be used on a client side.
+     * @throws Exception If failed.
      */
-    private void cacheApiTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, int backups, boolean heapCache) {
-        for (int i = 0; i < 2; i++)
-            ignite(0).createCache(cacheConfiguration(GROUP1, "cache-" + i, cacheMode, atomicityMode, backups, heapCache));
+    private void cacheApiTest(CacheMode cacheMode,
+        CacheAtomicityMode atomicityMode,
+        int backups,
+        boolean heapCache,
+        boolean nearSrv,
+        boolean nearClient) throws Exception {
+        Ignite srv0 = ignite(0);
+
+        NearCacheConfiguration nearCfg = nearSrv ? new NearCacheConfiguration() : null;
+
+        srv0.createCache(cacheConfiguration(GROUP1, "cache-0", cacheMode, atomicityMode, backups, heapCache)
+            .setNearConfiguration(nearCfg));
+
+        srv0.createCache(cacheConfiguration(GROUP1, "cache-1", cacheMode, atomicityMode, backups, heapCache));
+
+        srv0.createCache(cacheConfiguration(GROUP2, "cache-2", cacheMode, atomicityMode, backups, heapCache)
+            .setNearConfiguration(nearCfg));
+
+        srv0.createCache(cacheConfiguration(null, "cache-3", cacheMode, atomicityMode, backups, heapCache));
+
+        if (nearClient) {
+            Ignite clientNode = ignite(4);
+
+            clientNode.createNearCache("cache-0", new NearCacheConfiguration());
+            clientNode.createNearCache("cache-2", new NearCacheConfiguration());
+        }
 
         try {
-            for (Ignite node : Ignition.allGrids()) {
-                for (int i = 0; i < 2; i++) {
-                    IgniteCache cache = node.cache("cache-" + i);
+            for (final Ignite node : Ignition.allGrids()) {
+                List<Callable<?>> ops = new ArrayList<>();
 
-                    log.info("Test cache [node=" + node.name() +
-                        ", cache=" + cache.getName() +
-                        ", mode=" + cacheMode +
-                        ", atomicity=" + atomicityMode +
-                        ", backups=" + backups +
-                        ", heapCache=" + heapCache +
-                        ']');
+                for (int i = 0; i < 4; i++)
+                    ops.add(testSet(node.cache("cache-" + i), cacheMode, atomicityMode, backups, heapCache, node));
 
-                    cacheApiTest(cache);
-                }
+                // Async operations.
+                GridTestUtils.runMultiThreaded(ops, "cacheApiTest");
             }
         }
         finally {
-            for (int i = 0; i < 2; i++)
-                ignite(0).destroyCache("cache-" + i);
+            for (int i = 0; i < 4; i++)
+                srv0.destroyCache("cache-" + i);
         }
     }
 
     /**
      * @param cache Cache.
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     * @param backups Number of backups.
+     * @param heapCache On heap cache flag.
+     * @param node Ignite node.
+     * @return Callable for the test operations.
      */
-    private void cacheApiTest(IgniteCache cache) {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+    private Callable<?> testSet(
+        final IgniteCache<Object, Object> cache,
+        final CacheMode cacheMode,
+        final CacheAtomicityMode atomicityMode,
+        final int backups,
+        final boolean heapCache,
+        final Ignite node) {
+        return new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                log.info("Test cache [node=" + node.name() +
+                    ", cache=" + cache.getName() +
+                    ", mode=" + cacheMode +
+                    ", atomicity=" + atomicityMode +
+                    ", backups=" + backups +
+                    ", heapCache=" + heapCache +
+                    ']');
 
-        for (int i = 0; i < 10; i++) {
-            Integer key = rnd.nextInt(10_000);
+                cacheApiTest(cache);
 
-            assertNull(cache.get(key));
-            assertFalse(cache.containsKey(key));
+                return null;
+            }
+        };
+    }
 
-            Integer val = key + 1;
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    private void cacheApiTest(IgniteCache cache) throws Exception {
+        cachePutAllGetAll(cache);
 
-            cache.put(key, val);
+        cachePutRemove(cache);
 
-            assertEquals(val, cache.get(key));
-            assertTrue(cache.containsKey(key));
+        cachePutGet(cache);
 
-            cache.remove(key);
+        cachePutGetAndPut(cache);
 
-            assertNull(cache.get(key));
-            assertFalse(cache.containsKey(key));
-        }
+        cacheQuery(cache);
 
+        cacheInvokeAll(cache);
+
+        cacheInvoke(cache);
+
+        cacheDataStreamer(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void tearDown(IgniteCache cache) {
         cache.clear();
 
         cache.removeAll();
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    private void cacheDataStreamer(final IgniteCache cache) throws Exception {
+        final int keys = 1000;
+        final int loaders = 4;
+
+        final Integer[] data = generateData(keys * loaders);
+
+        // Stream through a client node.
+        Ignite clientNode = ignite(4);
+
+        List<Callable<?>> cls = new ArrayList<>(loaders);
+
+        for (final int i : sequence(loaders)) {
+            final IgniteDataStreamer ldr = clientNode.dataStreamer(cache.getName());
+
+            ldr.autoFlushFrequency(0);
+
+            cls.add(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    List<IgniteFuture> futs = new ArrayList<>(keys);
+
+                    for (int j = 0, size = keys * loaders; j < size; j++) {
+                        if (j % loaders == i)
+                            futs.add(ldr.addData(j, data[j]));
+
+                        if(j % (100 * loaders) == 0)
+                            ldr.flush();
+                    }
+
+                    ldr.flush();
+
+                    for (IgniteFuture fut : futs)
+                        fut.get();
+
+                    return null;
+                }
+            });
+        }
+
+        GridTestUtils.runMultiThreaded(cls, "loaders");
+
+        Set<Integer> keysSet = sequence(data.length);
+
+        for (Cache.Entry<Integer, Integer> entry : (IgniteCache<Integer, Integer>)cache) {
+            assertTrue(keysSet.remove(entry.getKey()));
+            assertEquals(data[entry.getKey()], entry.getValue());
+        }
+
+        assertTrue(keysSet.isEmpty());
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutAllGetAll(IgniteCache cache) {
+        Map<Integer, Integer> data = generateDataMap(1000);
+
+        cache.putAll(data);
+
+        Map data0 = cache.getAll(data.keySet());
+
+        assertEquals(data.size(), data0.size());
+
+        for (Map.Entry<Integer, Integer> entry : data.entrySet()) {
+            assertEquals(entry.getValue(), data0.get(entry.getKey()));
+        }
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutRemove(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        assertTrue(cache.remove(key));
+
+        assertNull(cache.get(key));
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGet(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        Object val0 = cache.get(key);
+
+        assertEquals(val, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cachePutGetAndPut(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val1 = rnd.nextInt();
+        Integer val2 = rnd.nextInt();
+
+        cache.put(key, val1);
+
+        Object val0 = cache.getAndPut(key, val2);
+
+        assertEquals(val1, val0);
+
+        val0 = cache.get(key);
+
+        assertEquals(val2, val0);
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cacheQuery(IgniteCache cache) {
+        Map<Integer, Integer> data = generateDataMap(1000);
+
+        cache.putAll(data);
+
+        ScanQuery<Integer, Integer> qry = new ScanQuery<>(new IgniteBiPredicate<Integer, Integer>() {
+            @Override public boolean apply(Integer key, Integer val) {
+                return key % 2 == 0;
+            }
+        });
+
+        List<Cache.Entry<Integer, Integer>> all = cache.query(qry).getAll();
+
+        assertEquals(all.size(), data.size() / 2);
+
+        for (Cache.Entry<Integer, Integer> entry : all) {
+            assertEquals(0, entry.getKey() % 2);
+            assertEquals(entry.getValue(), data.get(entry.getKey()));
+        }
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cacheInvokeAll(IgniteCache cache) {
+        int keys = 1000;
+        Map<Integer, Integer> data = generateDataMap(keys);
+
+        cache.putAll(data);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        int one = rnd.nextInt();
+        int two = rnd.nextInt();
+
+        Map<Integer, CacheInvokeResult<Integer>> res = cache.invokeAll(data.keySet(), new CacheEntryProcessor<Integer, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) throws EntryProcessorException {
+                Object expected = ((Map)arguments[0]).get(entry.getKey());
+
+                assertEquals(expected, entry.getValue());
+
+                // Some calculation.
+                return (Integer)arguments[1] + (Integer)arguments[2];
+            }
+        }, data, one, two);
+
+        assertEquals(keys, res.size());
+        assertEquals(one + two, (Object)res.get(0).get());
+
+        tearDown(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void cacheInvoke(IgniteCache cache) {
+        Random rnd = ThreadLocalRandom.current();
+
+        Integer key = rnd.nextInt();
+        Integer val = rnd.nextInt();
+
+        cache.put(key, val);
+
+        int one = rnd.nextInt();
+        int two = rnd.nextInt();
+
+        Object res = cache.invoke(key, new CacheEntryProcessor<Integer, Integer, Integer>() {
+            @Override public Integer process(MutableEntry<Integer, Integer> entry, Object... arguments) throws EntryProcessorException {
+                assertEquals(arguments[0], entry.getValue());
+
+                // Some calculation.
+                return (Integer)arguments[1] + (Integer)arguments[2];
+            }
+        }, val, one, two);
+
+        assertEquals(one + two, res);
+
+        tearDown(cache);
     }
 
     /**

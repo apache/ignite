@@ -142,7 +142,8 @@ public interface IgniteCacheOffheapManager {
      * @param c Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean expire(GridCacheContext cctx, IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount) throws IgniteCheckedException;
+    public boolean expire(GridCacheContext cctx, IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount)
+        throws IgniteCheckedException;
 
     /**
      * Gets the number of entries pending expire.
@@ -212,7 +213,7 @@ public interface IgniteCacheOffheapManager {
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> iteratorForCache(int cacheId,
+    public GridIterator<CacheDataRow> cacheIterator(int cacheId,
         boolean primary,
         boolean backup,
         final AffinityTopologyVersion topVer)
@@ -224,17 +225,18 @@ public interface IgniteCacheOffheapManager {
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> iteratorForCache(int cacheId, final int part) throws IgniteCheckedException;
+    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
      * @return Iterator for given partition.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
 
     /**
      * @param part Partition.
+     * @param topVer Topology version.
      * @param partCntr Partition counter to get historical data if available.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
@@ -243,6 +245,7 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * @param cctx Cache context.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
@@ -250,7 +253,7 @@ public interface IgniteCacheOffheapManager {
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(
+    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> cacheEntriesIterator(
         GridCacheContext cctx,
         final boolean primary,
         final boolean backup,
@@ -258,13 +261,16 @@ public interface IgniteCacheOffheapManager {
         final boolean keepBinary) throws IgniteCheckedException;
 
     /**
+     * @param cacheId Cache ID.
      * @param part Partition.
      * @return Iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCloseableIterator<KeyCacheObject> keysIterator(final int part) throws IgniteCheckedException;
+    public GridCloseableIterator<KeyCacheObject> cacheKeysIterator(int cacheId, final int part)
+        throws IgniteCheckedException;
 
     /**
+     * @param cacheId Cache ID.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
@@ -280,7 +286,7 @@ public interface IgniteCacheOffheapManager {
      * @param cctx Cache context.
      * @param readers {@code True} to clear readers.
      */
-    public void clear(GridCacheContext cctx, boolean readers);
+    public void clearCache(GridCacheContext cctx, boolean readers);
 
     /**
      * @param cacheId Cache ID.
@@ -313,7 +319,9 @@ public interface IgniteCacheOffheapManager {
     public void dropRootPageForIndex(String idxName) throws IgniteCheckedException;
 
     /**
+     * @param idxName Index name.
      * @return Reuse list for index tree.
+     * @throws IgniteCheckedException If failed.
      */
     public ReuseList reuseListForIndex(String idxName) throws IgniteCheckedException;
 
@@ -467,6 +475,17 @@ public interface IgniteCacheOffheapManager {
          */
         public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper) throws IgniteCheckedException;
+
+        /**
+         * @param cacheId Cache ID.
+         * @param lower Lower bound.
+         * @param upper Upper bound.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
+            KeyCacheObject upper, Object x) throws IgniteCheckedException;
 
         /**
          * Destroys the tree associated with the store.
