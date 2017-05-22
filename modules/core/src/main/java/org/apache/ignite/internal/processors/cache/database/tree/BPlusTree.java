@@ -443,6 +443,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throws IgniteCheckedException {
             assert lvl == 0 : lvl; // Leaf.
 
+            // Check the triangle invariant.
+            if (io.getForward(leafAddr) != r.fwdId)
+                return RETRY;
+
             final int cnt = io.getCount(leafAddr);
 
             assert cnt <= Short.MAX_VALUE: cnt;
@@ -3384,7 +3388,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             if (tail.lvl == 0) {
                 // At the bottom level we can't have a tail without a sibling, it means we have higher levels.
-                assert tail.sibling != null;
+                assert tail.sibling != null : tail;
 
                 return NOT_FOUND; // Lock upper level, we are at the bottom now.
             }

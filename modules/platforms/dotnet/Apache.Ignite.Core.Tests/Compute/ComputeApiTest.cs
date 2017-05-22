@@ -1265,6 +1265,22 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.Throws<BinaryObjectException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+
+            // Local.
+            var ex = Assert.Throws<IgniteException>(() =>
+                _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.Message);
+
+            // Remote.
+            ex = Assert.Throws<IgniteException>(() =>
+                _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.Message);
         }
 
         /// <summary>
@@ -1462,6 +1478,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void ReadBinary(IBinaryReader reader)
         {
             throw new BinaryObjectException("Expected");
+        }
+    }
+
+    class ExceptionalComputeAction : IComputeAction
+    {
+        public const string ErrorText = "Expected user exception";
+
+        public void Invoke()
+        {
+            throw new OverflowException(ErrorText);
         }
     }
 

@@ -27,8 +27,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -1222,6 +1224,79 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals((Long)10L, last);
 
         assertNoLocks();
+    }
+
+    /**
+     *
+     */
+    public void testConcurrentGrowDegenerateTreeAndConcurrentRemove() throws Exception {
+        //calculate tree size when split happens
+        final TestTree t = createTestTree(true);
+        long i = 0;
+
+        for (; ; i++) {
+            t.put(i);
+
+            if (t.rootLevel() > 0)  //split happened
+                break;
+        }
+
+        final long treeStartSize = i;
+
+        final AtomicReference<Throwable> failed = new AtomicReference<>();
+
+        for (int k = 0; k < 100; k++) {
+            final TestTree tree = createTestTree(true);
+
+            final AtomicBoolean start = new AtomicBoolean();
+
+            final AtomicInteger ready = new AtomicInteger();
+
+            Thread first = new Thread(new Runnable() {
+                @Override public void run() {
+                    ready.incrementAndGet();
+
+                    while (!start.get()); //waiting without blocking
+
+                    try {
+                        tree.remove(treeStartSize / 2L);
+                    }
+                    catch (Throwable th) {
+                        failed.set(th);
+                    }
+                }
+            });
+
+            Thread second = new Thread(new Runnable() {
+                @Override public void run() {
+                    ready.incrementAndGet();
+
+                    while (!start.get()); //waiting without blocking
+
+                    try {
+                        tree.put(treeStartSize + 1);
+                    }
+                    catch (Throwable th) {
+                        failed.set(th);
+                    }
+                }
+            });
+
+            for (int j = 0; j < treeStartSize; j++)
+                tree.put((long)j);
+
+            first.start();
+            second.start();
+
+            while (ready.get() != 2);
+
+            start.set(true);
+
+            first.join();
+            second.join();
+
+            assertNull(failed.get());
+        }
     }
 
     /**

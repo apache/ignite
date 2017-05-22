@@ -108,9 +108,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default timeout after which long query warning will be printed. </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
-        /// <summary> Default size for onheap SQL row cache size. </summary>
-        public const int DefaultSqlOnheapRowCacheSize = 10*1024;
-
         /// <summary> Default value for keep portable in store behavior .</summary>
         public const bool DefaultKeepVinaryInStore = true;
 

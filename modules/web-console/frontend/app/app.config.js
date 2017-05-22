@@ -20,10 +20,12 @@ import angular from 'angular';
 
 const nonNil = _.negate(_.isNil);
 const nonEmpty = _.negate(_.isEmpty);
+const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
 
 _.mixin({
     nonNil,
-    nonEmpty
+    nonEmpty,
+    id8
 });
 
 import alertTemplateUrl from 'views/templates/alert.tpl.pug';
