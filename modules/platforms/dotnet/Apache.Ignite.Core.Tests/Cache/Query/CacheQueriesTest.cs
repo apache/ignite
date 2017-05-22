@@ -685,9 +685,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests query timeouts.
         /// </summary>
         [Test]
-        public void TestTimeout()
+        public void TestSqlQueryTimeout()
         {
-            // SQL Query.
             var cache = Cache();
             PopulateCache(cache, false, 20000, x => true);
 
@@ -698,14 +697,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).GetAll());
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
 
-            // Fields Query.
+        /// <summary>
+        /// Tests fields query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlFieldsQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
             var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500")
             {
                 Timeout = TimeSpan.FromMilliseconds(3)
             };
 
-            ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).GetAll());
+            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).GetAll());
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
