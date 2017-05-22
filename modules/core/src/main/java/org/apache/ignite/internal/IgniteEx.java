@@ -74,7 +74,8 @@ public interface IgniteEx extends Ignite {
      * @return Tuple [Existing or newly created cache; {@code true} if cache was newly crated, {@code false} otherwise]
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg) throws CacheException;
+    public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg)
+        throws CacheException;
 
     /**
      * Stops dynamically started cache.

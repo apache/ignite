@@ -420,7 +420,7 @@ class ClusterCachesInfo {
         if (!F.isEmpty(reqsToComplete)) {
             ctx.closure().callLocalSafe(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t :reqsToComplete) {
+                    for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t : reqsToComplete) {
                         final DynamicCacheChangeRequest req = t.get1();
                         AffinityTopologyVersion waitTopVer = t.get2();
 
