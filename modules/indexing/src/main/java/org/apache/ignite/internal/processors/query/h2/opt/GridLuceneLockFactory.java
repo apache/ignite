@@ -60,7 +60,7 @@ public class GridLuceneLockFactory extends LockFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public void release() throws IOException {
+        @Override public void close() throws IOException {
             locks.remove(lockName);
         }
 

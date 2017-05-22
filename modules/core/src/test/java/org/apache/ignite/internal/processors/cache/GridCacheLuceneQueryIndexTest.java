@@ -348,7 +348,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            1);
+            10);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
