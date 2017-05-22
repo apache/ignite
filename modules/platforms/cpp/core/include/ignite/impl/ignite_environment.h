@@ -217,6 +217,36 @@ namespace ignite
              */
             jobject GetProcessorCompute(jobject proj);
 
+            /**
+             * Locally execute compute job.
+             *
+             * @param jobHandle Job handle.
+             */
+            void ComputeJobExecuteLocal(int64_t jobHandle);
+
+            /**
+             * Locally commit job execution result for the task.
+             *
+             * @param taskHandle Task handle.
+             * @param jobHandle Job handle.
+             * @return Reduce politics.
+             */
+            int32_t ComputeTaskLocalJobResult(int64_t taskHandle, int64_t jobHandle);
+
+            /**
+             * Reduce compute task.
+             *
+             * @param taskHandle Task handle.
+             */
+            void ComputeTaskReduce(int64_t taskHandle);
+            
+            /**
+             * Complete compute task.
+             *
+             * @param taskHandle Task handle.
+             */
+            void ComputeTaskComplete(int64_t taskHandle);
+
         private:
             /** Node configuration. */
             IgniteConfiguration* cfg;

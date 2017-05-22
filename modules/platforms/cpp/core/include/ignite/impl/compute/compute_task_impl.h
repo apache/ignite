@@ -25,10 +25,9 @@
 
 #include <stdint.h>
 
-#include <cassert>
 #include <memory>
 
-#include <ignite/common/concurrent.h>
+#include <ignite/common/promise.h>
 
 namespace ignite
 {
@@ -236,7 +235,7 @@ namespace ignite
                  * @param job Job.
                  * @return Policy.
                  */
-                virtual int32_t JobResultLocal(common::concurrent::SharedPointer<ComputeJobHolder> job) = 0;
+                virtual int32_t JobResultLocal(ComputeJobHolder& job) = 0;
 
                 /**
                  * Reduce results of related jobs.
@@ -293,15 +292,11 @@ namespace ignite
                  * @param job Job.
                  * @return Policy.
                  */
-                virtual int32_t JobResultLocal(common::concurrent::SharedPointer<ComputeJobHolder> job)
+                virtual int32_t JobResultLocal(ComputeJobHolder& job)
                 {
                     typedef ComputeJobHolderImpl<JobType, ResultType> ActualComputeJobHolder;
 
-                    ComputeJobHolder* jobPtr = job.Get();
-
-                    assert(jobPtr != 0);
-
-                    ActualComputeJobHolder& job0 = static_cast<ActualComputeJobHolder&>(*jobPtr);
+                    ActualComputeJobHolder& job0 = static_cast<ActualComputeJobHolder&>(job);
 
                     res = job0.GetResult();
 
