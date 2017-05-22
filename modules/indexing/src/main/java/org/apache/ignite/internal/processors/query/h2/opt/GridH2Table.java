@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -47,7 +48,6 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
@@ -58,7 +58,6 @@ import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -104,6 +103,12 @@ public class GridH2Table extends TableBase {
     /** */
     private volatile boolean rebuildFromHashInProgress;
 
+    /** Identifier. */
+    private final QueryTable identifier;
+
+    /** Identifier as string. */
+    private final String identifierStr;
+
     /**
      * Creates table.
      *
@@ -148,6 +153,10 @@ public class GridH2Table extends TableBase {
         }
 
         this.rowFactory = rowFactory;
+
+        identifier = new QueryTable(getSchema().getName(), getName());
+
+        identifierStr = identifier.schema() + "." + identifier.table();
 
         // Indexes must be created in the end when everything is ready.
         idxs = idxsFactory.createSystemIndexes(this);
@@ -221,7 +230,7 @@ public class GridH2Table extends TableBase {
         if (destroyed) {
             unlock(exclusive);
 
-            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
+            throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
 
         if (snapshotInLock())
@@ -293,8 +302,15 @@ public class GridH2Table extends TableBase {
     /**
      * @return Table identifier.
      */
-    public String identifier() {
-        return getSchema().getName() + '.' + getName();
+    public QueryTable identifier() {
+        return identifier;
+    }
+
+    /**
+     * @return Table identifier as string.
+     */
+    public String identifierString() {
+        return identifierStr;
     }
 
     /**
@@ -352,7 +368,7 @@ public class GridH2Table extends TableBase {
      */
     private void ensureNotDestroyed() {
         if (destroyed)
-            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
+            throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
     }
 
     /**
