@@ -17,15 +17,10 @@
 
 package org.apache.ignite.cache.database;
 
-import java.io.File;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -35,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -42,14 +38,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.PersistenceConfiguration;
-import org.apache.ignite.events.CacheRebalancingEvent;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -75,6 +68,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg1 = cacheConfiguration(cacheName);
+        ccfg1.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
         ccfg1.setBackups(1);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -99,10 +93,10 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        MemoryConfiguration memCfg = new MemoryConfiguration();
 
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-        dbCfg.setPageSize(1024);
+        memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+        memCfg.setPageSize(1024);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
@@ -111,16 +105,14 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setSwapFilePath("work/swap");
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setMemoryConfiguration(memCfg);
 
         cfg.setPersistenceConfiguration(new PersistenceConfiguration());
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
     }
@@ -147,7 +139,7 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        G.stopAll(true);
+        stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
@@ -323,45 +315,46 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
      * @throws Exception If fails.
      */
     public void testPartitionLossAndRecover() throws Exception {
-        Ignite ignite1 = G.start(getConfiguration("test1"));
-        Ignite ignite2 = G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        Ignite ignite1 = startGrid(0);
+        Ignite ignite2 = startGrid(1);
+        Ignite ignite3 = startGrid(2);
+        Ignite ignite4 = startGrid(3);
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
+        IgniteCache<String, String> cache1 = ignite1.cache(cacheName);
+
+        final int offset = 10;
 
         for (int i = 0; i < 100; i++)
-            cache1.put(i, i);
-
-        ignite1.active(false);
+            cache1.put(String.valueOf(i), String.valueOf(i + offset));
 
         ignite3.close();
         ignite4.close();
-
-        ignite1.active(true);
 
         awaitPartitionMapExchange();
 
         assert !ignite1.cache(cacheName).lostPartitions().isEmpty();
 
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+        ignite3 = startGrid(2);
+        ignite4 = startGrid(3);
 
-        awaitPartitionMapExchange();
+        ignite1.resetLostPartitions(Collections.singletonList(cacheName));
 
-        ignite1.resetLostPartitions(Collections.singletonList(cache1.getName()));
+        IgniteCache<String, String> cache2 = ignite2.cache(cacheName);
+        IgniteCache<String, String> cache3 = ignite3.cache(cacheName);
+        IgniteCache<String, String> cache4 = ignite4.cache(cacheName);
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
+        //Thread.sleep(5_000);
 
         for (int i = 0; i < 100; i++) {
-            assert cache1.get(i).equals(i);
-            assert cache2.get(i).equals(i);
-            assert cache3.get(i).equals(i);
-            assert cache4.get(i).equals(i);
+            String key = String.valueOf(i);
+            String expected = String.valueOf(i + offset);
+
+            assertEquals(expected, cache1.get(key));
+            assertEquals(expected, cache2.get(key));
+            assertEquals(expected, cache3.get(key));
+            assertEquals(expected, cache4.get(key));
         }
     }
 
