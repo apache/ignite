@@ -1269,7 +1269,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(new QueryOptions
+            var query = cache.AsCacheQueryable(new QueryOptions
             {
                 Local = true,
                 PageSize = 999,
@@ -1277,7 +1277,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Timeout = TimeSpan.FromSeconds(2.5),
                 ReplicatedOnly = true,
                 Colocated = true
-            }).Where(x => x.Key > 10);
+            }).Where(x => x.Key > 10).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -1325,7 +1325,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
                 .Where(x => x.Key > 10 && x.Value.Age > 20 && x.Value.Name.Contains("x"));
 
-            query = (ICacheQueryable) distrQuery;
+            query = distrQuery.ToCacheQueryable();
 
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 

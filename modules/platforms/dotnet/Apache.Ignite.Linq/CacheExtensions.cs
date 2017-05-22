@@ -126,5 +126,15 @@ namespace Apache.Ignite.Linq
 
             return new CacheQueryable<TKey, TValue>(cache, queryOptions);
         }
+
+        /// <summary>
+        /// Casts this query to <see cref="ICacheQueryable"/>.
+        /// </summary>
+        public static ICacheQueryable ToCacheQueryable<T>(this IQueryable<T> query)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            return (ICacheQueryable) query;
+        }
     }
 }
