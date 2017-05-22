@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -66,11 +66,15 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     private void executeQuery() {
         IgniteCache<?, ?> cache = grid(1).cache("person");
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person where age > 10");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name as \"Full Name\", age from person where age > 10");
 
-        QueryCursor<List<?>> qryCursor = cache.query(qry);
+        FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
 
         assertEquals(2, qryCursor.getAll().size());
+
+        assertTrue("Full Name".equalsIgnoreCase(qryCursor.getFieldName(0)));
+
+        assertTrue("age".equalsIgnoreCase(qryCursor.getFieldName(1)));
     }
 
 
