@@ -21,12 +21,15 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.Enumeration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -103,6 +106,17 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        try {
+            Driver drv = DriverManager.getDriver("jdbc:ignite://");
+
+            if (drv != null)
+                DriverManager.deregisterDriver(drv);
+        } catch (SQLException ignored) {
+            // No-op.
+        }
+
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+
         startGridsMultiThreaded(3);
 
         IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -128,8 +142,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, o);
         cache.put(2, new TestObject(2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */

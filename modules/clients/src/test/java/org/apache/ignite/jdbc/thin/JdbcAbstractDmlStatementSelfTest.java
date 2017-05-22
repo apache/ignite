@@ -19,8 +19,11 @@ package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
+import java.util.Enumeration;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -56,9 +59,18 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(3);
+        try {
+            Driver drv = DriverManager.getDriver("jdbc:ignite://");
+
+            if (drv != null)
+                DriverManager.deregisterDriver(drv);
+        } catch (SQLException ignored) {
+            // No-op.
+        }
 
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+
+        startGridsMultiThreaded(3);
     }
 
     /** {@inheritDoc} */

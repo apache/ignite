@@ -18,9 +18,12 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Enumeration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -85,6 +88,17 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        try {
+            Driver drv = DriverManager.getDriver("jdbc:ignite://");
+
+            if (drv != null)
+                DriverManager.deregisterDriver(drv);
+        } catch (SQLException ignored) {
+            // No-op.
+        }
+
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+
         startGrids(3);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
@@ -103,8 +117,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person(1, "John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */
