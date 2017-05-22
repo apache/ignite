@@ -673,7 +673,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Check exception with non-UTC date
             var stream = new BinaryHeapStream(128);
             var writer = _marsh.StartMarshal(stream);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
+            Assert.Throws<BinaryObjectException>(() => writer.WriteTimestamp(DateTime.Now));
         }
 
         /**

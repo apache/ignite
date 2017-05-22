@@ -242,17 +242,6 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param part Partition.
-     * @param type Type.
-     * @param discoEvt Discovery event.
-     */
-    private void preloadEvent(int part, int type, DiscoveryEvent discoEvt) {
-        assert discoEvt != null;
-
-        cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
-    }
-
-    /**
      * Sets last exchange future.
      *
      * @param lastFut Last future to set.
@@ -627,7 +616,7 @@ public class GridDhtPartitionDemander {
                         boolean reserved = part.reserve();
 
                         assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                            cctx.igniteInstanceName() + ", cacheName=" + cctx.namex() + ", part=" + part + ']';
+                            cctx.igniteInstanceName() + ", cacheName=" + cctx.name() + ", part=" + part + ']';
 
                         part.lock();
 
