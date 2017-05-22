@@ -57,11 +57,11 @@ public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        MemoryConfiguration memCfg = new MemoryConfiguration();
 
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+        memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setPageSize(1024);
+        memCfg.setPageSize(1024);
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
@@ -69,12 +69,12 @@ public class IgniteDbPageEvictionSelfTest extends GridCommonAbstractTest {
         memPlcCfg.setInitialSize(50 * 1024 * 1024);
         memPlcCfg.setMaxSize(50 * 1024 * 1024);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setMemoryConfiguration(memCfg);
 
-        CacheConfiguration<DbKey, DbValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<DbKey, DbValue> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
