@@ -225,8 +225,6 @@ public class GridH2Table extends TableBase {
 
         ses.addLock(this);
 
-        lock(exclusive);
-
         if (destroyed) {
             unlock(exclusive);
 
@@ -235,6 +233,10 @@ public class GridH2Table extends TableBase {
 
         if (snapshotInLock())
             snapshotIndexes(null);
+
+        // Actually lock only after we're done with snapshots - otherwise we'd get stuck forever
+        // as snapshotIndexes does tryLock inside its body.
+        lock(exclusive);
 
         return false;
     }
