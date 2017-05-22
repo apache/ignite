@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import javax.management.JMException;
+import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -126,7 +127,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             igfsCache.put(cfg0.getName(), igfsCtx);
 
-            registerMetricsMBeans(igniteCfg, cfg, igfsCtx);
+            registerMetricsMBeans(cfg, igfsCtx);
         }
 
         if (log.isDebugEnabled())
@@ -183,16 +184,35 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /**
      * Registers IGFS metrics MBeans.
      *
-     * @param igniteCfg The Ignite configuration.
      * @param fsCfg The file system configuration.
      * @param igfsCtx The IGFS context.
      */
-    private void registerMetricsMBeans(IgniteConfiguration igniteCfg, FileSystemConfiguration fsCfg,
-        IgfsContext igfsCtx) throws IgniteCheckedException {
+    private void registerMetricsMBeans(FileSystemConfiguration fsCfg, IgfsContext igfsCtx)
+        throws IgniteCheckedException {
         try {
+            IgniteConfiguration igniteCfg = ctx.config();
+
             U.registerMBean(igniteCfg.getMBeanServer(), igniteCfg.getIgniteInstanceName(), "IgfsMetricsGroup",
                 fsCfg.getName(), new IgfsMetricsMXBeanImpl(igfsCtx.igfs()), IgfsMetricsMXBean.class);
 
+        } catch (JMException e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Unregisters IGFS metrics MBeans.
+     *
+     * @param fsCfg The file system configuration.
+     */
+    private void unregisterMetricsMBean(FileSystemConfiguration fsCfg) throws IgniteCheckedException {
+        try {
+            IgniteConfiguration igniteCfg = ctx.config();
+
+            ObjectName objName = U.makeMBeanName(igniteCfg.getIgniteInstanceName(), "IgfsMetricsGroup",
+                fsCfg.getName());
+
+            igniteCfg.getMBeanServer().unregisterMBean(objName);
         } catch (JMException e) {
             throw new IgniteCheckedException(e);
         }
@@ -214,7 +234,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // Stop IGFS instances.
         for (IgfsContext igfsCtx : igfsCache.values()) {
             if (log.isDebugEnabled())
@@ -229,6 +249,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
 
             igfsCtx.igfs().stop(cancel);
+
+            unregisterMetricsMBean(igfsCtx.configuration());
         }
 
         igfsCache.clear();
