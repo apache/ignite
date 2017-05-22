@@ -594,6 +594,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "myDefaultPlc",
                             PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            InitialSize = 340 * 1024 * 1024,
                             MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
@@ -606,7 +607,8 @@ namespace Apache.Ignite.Core.Tests
                             MaxSize = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
-                            SwapFilePath = "somePath2"
+                            SwapFilePath = "somePath2",
+                            MetricsEnabled = true
                         } 
                     }
                 }

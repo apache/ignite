@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all distributed tests located in org.apache.ignite.math.impls.* package.
+ * Test suite for all distributed tests located in org.apache.ignite.ml.math.impls.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

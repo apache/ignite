@@ -95,11 +95,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridNearCacheEntry(ctx, key, hash, val);
+                return new GridNearCacheEntry(ctx, key);
             }
         };
     }
@@ -338,23 +336,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         };
 
         return new EntrySet(super.entrySet(p), dht().entrySet(p));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        return dht().entrySet(part);
-    }
-
-    /**
-     * @return Keys for near cache only.
-     */
-    public Set<K> nearKeySet() {
-        return super.keySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V> values() {
-        return new GridCacheValueCollection<>(ctx, entrySet(), ctx.vararg(F.<K, V>cacheHasPeekValue()));
     }
 
     /** {@inheritDoc} */

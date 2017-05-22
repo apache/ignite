@@ -255,12 +255,16 @@ public class MemoryMetricsImpl implements MemoryMetrics {
             largeEntriesPages.decrement();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Enable metrics.
+     */
     public void enableMetrics() {
         metricsEnabled = true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Disable metrics.
+     */
     public void disableMetrics() {
         metricsEnabled = false;
     }

@@ -211,8 +211,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         }, IgniteException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 ignite.queue(name, 0, null);
 
                 return null;
