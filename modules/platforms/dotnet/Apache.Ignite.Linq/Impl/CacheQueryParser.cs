@@ -22,6 +22,7 @@ namespace Apache.Ignite.Linq.Impl
     using Remotion.Linq.Parsing.ExpressionVisitors.TreeEvaluation;
     using Remotion.Linq.Parsing.Structure;
     using Remotion.Linq.Parsing.Structure.ExpressionTreeProcessors;
+    using Remotion.Linq.Parsing.Structure.NodeTypeProviders;
 
     /// <summary>
     /// Cache query parser.
@@ -49,9 +50,26 @@ namespace Apache.Ignite.Linq.Impl
 
             var proc = CreateCompoundProcessor(transformerRegistry);
 
-            var parser = new ExpressionTreeParser(ExpressionTreeParser.CreateDefaultNodeTypeProvider(), proc);
+            var parser = new ExpressionTreeParser(CreateNodeTypeProvider(), proc);
 
             return new QueryParser(parser);
+        }
+
+        /// <summary>
+        /// Creates the node type provider.
+        /// </summary>
+        private static INodeTypeProvider CreateNodeTypeProvider()
+        {
+            var methodInfoRegistry = MethodInfoBasedNodeTypeRegistry.CreateFromRelinqAssembly();
+
+            // TODO:  Register DeleteAllExpressionNode
+            //methodInfoRegistry.Register(new[]{},);
+
+            return new CompoundNodeTypeProvider(new INodeTypeProvider[]
+            {
+                methodInfoRegistry,
+                MethodNameBasedNodeTypeRegistry.CreateFromRelinqAssembly()
+            });
         }
 
         /// <summary>
