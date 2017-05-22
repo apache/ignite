@@ -110,7 +110,7 @@ public class HibernateRegionFactory implements RegionFactory {
     private final ThreadLocal threadLoc = new ThreadLocal();
 
     /** Key transformer. */
-    private final HibernateKeyTransformer hibernate4transformgit er = new HibernateKeyTransformer() {
+    private final HibernateKeyTransformer hibernate4transformer = new HibernateKeyTransformer() {
         @Override public Object transform(Object key) {
             if (key instanceof CacheKey) {
                 CacheKey cacheKey = (CacheKey)key;
