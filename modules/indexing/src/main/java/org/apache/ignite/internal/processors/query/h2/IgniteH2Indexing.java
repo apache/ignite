@@ -2132,7 +2132,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IgniteCacheOffheapManager offheapMgr = cctx.group().offheap();
 
         for (int p = 0; p < cctx.affinity().partitions(); p++) {
-            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.keysIterator(p)) {
+            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.cacheKeysIterator(cctx.cacheId(), p)) {
                 while (keyIter.hasNext()) {
                     cctx.shared().database().checkpointReadLock();
 
