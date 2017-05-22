@@ -30,6 +30,11 @@ namespace Apache.Ignite.Linq.Impl.Dml
     internal sealed class DeleteAllExpressionNode : ResultOperatorExpressionNodeBase
     {
         /// <summary>
+        /// The DeleteAll method.
+        /// </summary>
+        public static readonly MethodInfo DeleteAllMethodInfo = typeof(CacheLinqExtensions).GetMethod("DeleteAll");
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DeleteAllExpressionNode"/> class.
         /// </summary>
         /// <param name="parseInfo">The parse information.</param>
@@ -60,7 +65,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
-            yield return typeof(CacheLinqExtensions).GetMethod("DeleteAll");
+            yield return DeleteAllMethodInfo;
         }
     }
 }

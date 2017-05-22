@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Linq
 {
     using System.Linq;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
+    using Apache.Ignite.Linq.Impl.Dml;
 
     /// <summary>
     /// Extensions methods for <see cref="ICache{TK,TV}"/>.
@@ -151,8 +153,8 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            // TODO: Some ResultOperator like Single() or Count().
-            return query.ToArray().Length;
+            return query.Provider.Execute<int>(Expression.Call(
+                null, DeleteAllExpressionNode.DeleteAllMethodInfo, query.Expression));
         }
     }
 }
