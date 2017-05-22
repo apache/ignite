@@ -1095,6 +1095,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
+            KeyCacheObject lower,
+            KeyCacheObject upper,
+            Object x)
+            throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.cursor(cacheId, lower, upper, x);
+
+            return EMPTY_CURSOR;
+        }
+
+        /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
             // No need to destroy delegate.
         }
