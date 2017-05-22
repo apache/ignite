@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq
 {
+    using System;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
@@ -156,6 +157,31 @@ namespace Apache.Ignite.Linq
             var method = DeleteAllExpressionNode.DeleteAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
 
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression));
+        }
+
+        /// <summary>
+        /// Deletes all rows that are matched by the specified query.
+        /// <para />
+        /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete
+        /// (as opposed to fetching all rows locally).
+        /// </summary>
+        /// <typeparam name="TKey">Key type.</typeparam>
+        /// <typeparam name="TValue">Value type.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns>
+        /// Affected row count.
+        /// </returns>
+        public static int DeleteAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
+            Expression<Func<ICacheEntry<TKey, TValue>, bool>> predicate)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+            IgniteArgumentCheck.NotNull(predicate, "predicate");
+
+            var method = DeleteAllExpressionNode.DeleteAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
+
+            return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
+                Expression.Quote(predicate)));
         }
     }
 }

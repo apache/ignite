@@ -1438,6 +1438,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = cache.AsCacheQueryable().Where(x => x.Key < 3).DeleteAll();
             Assert.AreEqual(2, res);
             Assert.AreEqual(Enumerable.Range(3, 8), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+
+            // TODO: Test with predicate
         }
 
         /// <summary>
