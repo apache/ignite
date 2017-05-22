@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
@@ -47,7 +48,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.thread.IgniteThreadFactory;
 
 /**
  * Implementation of {@link CacheStore} backed by Cassandra database.
@@ -58,6 +61,14 @@ import org.apache.ignite.resources.LoggerResource;
 public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     /** Connection attribute property name. */
     private static final String ATTR_CONN_PROP = "CASSANDRA_STORE_CONNECTION";
+
+    /** Thread name. */
+    private static final String CACHE_LOADER_THREAD_NAME = "cassandra-cache-loader";
+
+    /** Auto-injected ignite instance. */
+    @SuppressWarnings("unused")
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Auto-injected store session. */
     @CacheStoreSessionResource
@@ -99,7 +110,7 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         Collection<Future<?>> futs = new ArrayList<>(args.length);
 
         try {
-            pool = Executors.newFixedThreadPool(maxPoolSize);
+            pool = Executors.newFixedThreadPool(maxPoolSize, new IgniteThreadFactory(ignite.name(), CACHE_LOADER_THREAD_NAME));
 
             CassandraSession ses = getCassandraSession();
 
