@@ -681,14 +681,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, row[0]);
         }
 
+        /// <summary>
+        /// Tests query timeouts.
+        /// </summary>
         [Test]
         public void TestTimeout()
         {
             // SQL Query.
-            // TODO
+            var cache = Cache();
+            PopulateCache(cache, false, MaxItemCnt, x => true);
+
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500")
+            {
+                Timeout = TimeSpan.FromMilliseconds(2)
+            };
+
+            var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).GetAll());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
 
             // Fields Query.
-            // TODO
+            var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500")
+            {
+                Timeout = TimeSpan.FromMilliseconds(3)
+            };
+
+            ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).GetAll());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
         /// <summary>
