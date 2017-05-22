@@ -1416,8 +1416,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 EnableDistributedJoins = true
             });
 
-            var res = persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray();
-            Assert.IsTrue(res.Any());
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() =>
+                persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
+
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
         /// <summary>
