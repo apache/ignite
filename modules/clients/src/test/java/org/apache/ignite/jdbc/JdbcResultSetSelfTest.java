@@ -69,8 +69,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
@@ -95,8 +94,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
         IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -112,14 +110,12 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         stmt = DriverManager.getConnection(URL).createStatement();
 
         assert stmt != null;
@@ -127,8 +123,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
             stmt.close();
@@ -483,20 +478,21 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static void checkFieldPresenceInToString(final BinaryObject original,
         final String strToCheck,
         final String fieldName) {
-        final Object a = original.field(fieldName);
-        String strValToSearch = Objects.toString(a);
-        if (a != null) {
-            Class<?> aClass = a.getClass();
-            if (aClass.isArray()) {
-                Class<?> element = aClass.getComponentType();
-                if (element == Byte.TYPE) {
-                    strValToSearch = Arrays.toString((byte[])a);
-                }
+
+        final Object fieldVal = original.field(fieldName);
+        String strValToSearch = Objects.toString(fieldVal);
+        if (fieldVal != null) {
+            final Class<?> aCls = fieldVal.getClass();
+            if (aCls.isArray()) {
+                final Class<?> elemCls = aCls.getComponentType();
+                if (elemCls == Byte.TYPE)
+                    strValToSearch = Arrays.toString((byte[])fieldVal);
             }
-            else if (BinaryObject.class.isAssignableFrom(aClass)) {
-                // hack to avoid searching unpredictable toString representation like
+            else if (BinaryObject.class.isAssignableFrom(aCls)) {
+                // hack to avoid search of unpredictable toString representation like
                 // JdbcResultSetSelfTest$TestObjectField [idHash=1518952510, hash=11433031, a=100, b=AAAA]
                 // in toString
+                // other way to fix: iterate on binary object fields: final BinaryObject binVal = (BinaryObject)fieldVal;
                 strValToSearch = "";
             }
         }
@@ -598,8 +594,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(
             log,
             new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     rs.findColumn("wrong");
 
                     return null;
@@ -694,73 +689,44 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             this.id = id;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return S.toString(TestObject.class, this);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @SuppressWarnings({"BigDecimalEquals", "EqualsHashCodeCalledOnUrl", "RedundantIfStatement"})
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
 
             TestObject that = (TestObject)o;
 
-            if (id != that.id)
-                return false;
-            if (!Arrays.equals(arrVal, that.arrVal))
-                return false;
-            if (bigVal != null ? !bigVal.equals(that.bigVal) : that.bigVal != null)
-                return false;
-            if (boolVal != null ? !boolVal.equals(that.boolVal) : that.boolVal != null)
-                return false;
-            if (byteVal != null ? !byteVal.equals(that.byteVal) : that.byteVal != null)
-                return false;
-            if (dateVal != null ? !dateVal.equals(that.dateVal) : that.dateVal != null)
-                return false;
-            if (doubleVal != null ? !doubleVal.equals(that.doubleVal) : that.doubleVal != null)
-                return false;
-            if (f1 != null ? !f1.equals(that.f1) : that.f1 != null)
-                return false;
-            if (f2 != null ? !f2.equals(that.f2) : that.f2 != null)
-                return false;
-            if (f3 != null ? !f3.equals(that.f3) : that.f3 != null)
-                return false;
-            if (floatVal != null ? !floatVal.equals(that.floatVal) : that.floatVal != null)
-                return false;
-            if (intVal != null ? !intVal.equals(that.intVal) : that.intVal != null)
-                return false;
-            if (longVal != null ? !longVal.equals(that.longVal) : that.longVal != null)
-                return false;
-            if (shortVal != null ? !shortVal.equals(that.shortVal) : that.shortVal != null)
-                return false;
-            if (strVal != null ? !strVal.equals(that.strVal) : that.strVal != null)
-                return false;
-            if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null)
-                return false;
-            if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null)
-                return false;
-            if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null)
-                return false;
+            if (id != that.id) return false;
+            if (!Arrays.equals(arrVal, that.arrVal)) return false;
+            if (bigVal != null ? !bigVal.equals(that.bigVal) : that.bigVal != null) return false;
+            if (boolVal != null ? !boolVal.equals(that.boolVal) : that.boolVal != null) return false;
+            if (byteVal != null ? !byteVal.equals(that.byteVal) : that.byteVal != null) return false;
+            if (dateVal != null ? !dateVal.equals(that.dateVal) : that.dateVal != null) return false;
+            if (doubleVal != null ? !doubleVal.equals(that.doubleVal) : that.doubleVal != null) return false;
+            if (f1 != null ? !f1.equals(that.f1) : that.f1 != null) return false;
+            if (f2 != null ? !f2.equals(that.f2) : that.f2 != null) return false;
+            if (f3 != null ? !f3.equals(that.f3) : that.f3 != null) return false;
+            if (floatVal != null ? !floatVal.equals(that.floatVal) : that.floatVal != null) return false;
+            if (intVal != null ? !intVal.equals(that.intVal) : that.intVal != null) return false;
+            if (longVal != null ? !longVal.equals(that.longVal) : that.longVal != null) return false;
+            if (shortVal != null ? !shortVal.equals(that.shortVal) : that.shortVal != null) return false;
+            if (strVal != null ? !strVal.equals(that.strVal) : that.strVal != null) return false;
+            if (timeVal != null ? !timeVal.equals(that.timeVal) : that.timeVal != null) return false;
+            if (tsVal != null ? !tsVal.equals(that.tsVal) : that.tsVal != null) return false;
+            if (urlVal != null ? !urlVal.equals(that.urlVal) : that.urlVal != null) return false;
 
             return true;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @SuppressWarnings("EqualsHashCodeCalledOnUrl")
-        @Override
-        public int hashCode() {
+        @Override public int hashCode() {
             int res = id;
 
             res = 31 * res + (boolVal != null ? boolVal.hashCode() : 0);
@@ -805,26 +771,18 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             this.b = b;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
 
             TestObjectField that = (TestObjectField)o;
 
             return a == that.a && !(b != null ? !b.equals(that.b) : that.b != null);
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public int hashCode() {
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
             int res = a;
 
             res = 31 * res + (b != null ? b.hashCode() : 0);
@@ -832,11 +790,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             return res;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return S.toString(TestObjectField.class, this);
         }
     }
