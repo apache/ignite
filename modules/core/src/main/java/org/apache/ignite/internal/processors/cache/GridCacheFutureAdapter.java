@@ -35,6 +35,7 @@ public abstract class GridCacheFutureAdapter<R> extends GridFutureAdapter<R> imp
      * Default constructor.
      */
     public GridCacheFutureAdapter() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

@@ -45,8 +45,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
         final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 while (!stop.get()) {
                     doTestJoinQuery(client, rnd.nextInt(PARTS_PER_REGION.length) + 1);
 
@@ -61,8 +60,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
         final AtomicIntegerArray restartStats = new AtomicIntegerArray(GRIDS_COUNT);
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 while (!stop.get()) {
                     int grid = rnd.nextInt(GRIDS_COUNT);
 

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+@import '../../../public/stylesheets/variables';
+
 .ui-grid-settings {
     color: #393939;
 
@@ -90,10 +92,6 @@
         top: -1px;
     }
 
-    .btn {
-        line-height: 20px;
-    }
-
     &-filter {
         .ignite-form-field {
             $height: 36px;
@@ -161,8 +159,7 @@
         margin-right: 35px;
     }
 
-    .btn.btn--stroke,
-    .dropdown--ignite.ignite-form-field,
+    .btn-ignite,
     &-filter,
     &-number-filter,
     &-dateperiod {
@@ -178,24 +175,9 @@
     }
 
     .grid-settings {
-        i.gear-icon {
-            position: relative;
-            top: 2px;
-
-            display: block;
-            width: 16px;
-            height: 16px;
-            margin: auto;
-
-            background-image: url('/images/icons/gear.svg');
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-
-        &:hover, &:focus {
-            i.gear-icon {
-                filter: hue-rotate(1deg) saturate(85) brightness(.66);
-            }
+        svg {
+            cursor: pointer;
+            color: #424242;
         }
     }
 }

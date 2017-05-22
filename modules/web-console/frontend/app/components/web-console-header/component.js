@@ -21,10 +21,23 @@ import './style.scss';
 export default {
     template,
     controller: class {
-        static $inject = ['$rootScope', 'IgniteBranding'];
+        static $inject = ['$scope', '$state', 'IgniteBranding'];
 
-        constructor($rootScope, branding) {
-            Object.assign(this, {$rootScope, branding});
+        static webAgentDownloadVisibleStates = [
+            'base.configuration',
+            'base.sql',
+            'base.settings'
+        ];
+
+        constructor($scope, $state, branding) {
+            Object.assign(this, {$scope, $state, branding});
+        }
+
+        $onInit() {
+            this.$scope.$on('$stateChangeSuccess', () => {
+                this.isWebAgentDownloadVisible =
+                    this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
+            });
         }
     },
     transclude: {
