@@ -18,11 +18,10 @@
 package org.apache.ignite.ml.math.util;
 
 import java.util.List;
-import org.apache.ignite.ml.math.MathUtils;
+
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.NullArgumentException;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
@@ -124,11 +123,8 @@ public class MatrixUtil {
     }
 
     /** */
-    public static DenseLocalOnHeapMatrix fromList(List<Vector> vecs, boolean entriesAreRows) throws NoDataException, NullArgumentException {
-        MathUtils.checkNotNull(vecs);
-
-        if (vecs.isEmpty())
-            throw new NoDataException();
+    public static DenseLocalOnHeapMatrix fromList(List<Vector> vecs, boolean entriesAreRows) {
+        GridArgumentCheck.notEmpty(vecs, "vecs");
 
         int dim = vecs.get(0).size();
         int vecsSize = vecs.size();

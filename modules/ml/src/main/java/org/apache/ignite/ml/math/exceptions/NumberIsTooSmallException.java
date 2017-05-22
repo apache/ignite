@@ -21,10 +21,10 @@ package org.apache.ignite.ml.math.exceptions;
  */
 public class NumberIsTooSmallException extends MathIllegalNumberException {
     /** */
-    private static final String NUMBER_TOO_SMALL = "{1} is smaller than the minimum ({2})";
+    private static final String NUMBER_TOO_SMALL = "Number {1} is smaller than the minimum ({2}).";
 
     /** */
-    private static final String NUMBER_TOO_SMALL_BOUND_EXCLUDED = "{1} is smaller than, or equal to, the minimum ({2})";
+    private static final String NUMBER_TOO_SMALL_BOUND_EXCLUDED = "Number {1} is smaller than, or equal to, the minimum ({2}).";
 
     /** Serializable version Id. */
     private static final long serialVersionUID = -6100997100383932834L;

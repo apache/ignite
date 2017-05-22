@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.ml.math.exceptions;
 
 /**
@@ -28,7 +29,7 @@ public class MathArithmeticException extends MathRuntimeException {
      * Default constructor.
      */
     public MathArithmeticException() {
-        this("arithmetic exception");
+        this("Arithmetic exception.");
     }
 
     /**

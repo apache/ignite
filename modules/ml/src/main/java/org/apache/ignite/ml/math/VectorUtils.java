@@ -20,20 +20,22 @@ package org.apache.ignite.ml.math;
 import java.util.Map;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
 import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 
 public class VectorUtils {
-    /** */
+    /** Create new vector like given vector initialized by zeroes. */
     public static Vector zeroesLike(Vector v) {
         return v.like(v.size()).assign(0.0);
     }
 
-    /** */
-    public static Vector zeroes(int n) {
-        return new DenseLocalOnHeapVector(n).assign(0.0);
+    /** Create new */
+    public static DenseLocalOnHeapVector zeroes(int n) {
+        return (DenseLocalOnHeapVector) new DenseLocalOnHeapVector(n).assign(0.0);
     }
 
+    /** */
     public static Vector fromMap(Map<Integer, Double> value, boolean copy) {
-        return new SparseLocalVector(value, copy);
+        return new MapWrapperVector(value);
     }
 }

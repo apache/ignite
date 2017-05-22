@@ -36,11 +36,13 @@ public class EuclideanDistance implements DistanceMeasure {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-
+        // No-op
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-
+        // No-op
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.clustering;
 
-import java.util.Comparator;
 import org.apache.ignite.ml.math.Vector;
 
 import static org.junit.Assert.assertTrue;

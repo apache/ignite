@@ -117,9 +117,7 @@ import org.junit.runners.Suite;
     EigenDecompositionTest.class,
     CholeskyDecompositionTest.class,
     QRDecompositionTest.class,
-    SingularValueDecompositionTest.class,
-    // Regressions.
-    OLSMultipleLinearRegressionTest.class
+    SingularValueDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

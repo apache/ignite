@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.*;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
@@ -45,11 +46,11 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
     /**
      * Build a new clusterer with the given {@link DistanceMeasure}.
      *
-     * @param measure the distance measure to use
+     * @param measure Distance measure to use.
+     * @param maxIterations maximal number of iterations.
+     * @param seed Seed used in random parts of algorithm.
      */
-    protected KMeansLocalClusterer(DistanceMeasure measure,
-        int maxIterations,
-        Long seed) {
+    public KMeansLocalClusterer(DistanceMeasure measure, int maxIterations, Long seed) {
         super(measure);
         this.maxIterations = maxIterations;
         rand = seed != null ? new Random(seed) : new Random();
@@ -66,7 +67,7 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
     @Override public KMeansModel cluster(DenseLocalOnHeapMatrix points, int k,
         List<Double> weights) throws MathIllegalArgumentException, ConvergenceException {
 
-        MathUtils.checkNotNull(points);
+        GridArgumentCheck.notNull(points, "points");
 
         int dim = points.columnSize();
         Vector[] centers = new Vector[k];
@@ -95,9 +96,8 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
                 centers[i] = localCopyOf(points.viewRow(j - 1));
 
             for (int p = 0; p < points.rowSize(); p++)
-                costs.setX(p, Math.min(getDistanceMeasure().compute(localCopyOf(points.viewRow(p)),
-                    centers[i]),
-                    costs.get(p)));
+                costs.setX(p, Math.min(getDistanceMeasure().compute(localCopyOf(points.viewRow(p)), centers[i]),
+                        costs.get(p)));
         }
 
         int[] oldClosest = new int[points.rowSize()];

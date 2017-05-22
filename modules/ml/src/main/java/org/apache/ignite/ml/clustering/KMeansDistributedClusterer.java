@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -40,8 +39,8 @@ import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixSto
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
-import static org.apache.ignite.ml.math.StorageConstants.RANDOM_ACCESS_MODE;
-import static org.apache.ignite.ml.math.StorageConstants.ROW_STORAGE_MODE;
+import javax.cache.Cache;
+
 import static org.apache.ignite.ml.math.impls.CacheUtils.*;
 import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;
 
@@ -67,20 +66,16 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     private double epsilon = 1e-4;
 
     /** */
-    protected KMeansDistributedClusterer(DistanceMeasure measure,
-        int initSteps,
-        int maxIterations,
-        Long seed) {
+    protected KMeansDistributedClusterer(DistanceMeasure measure, int initSteps, int maxIterations, Long seed) {
         super(measure);
         this.initSteps = initSteps;
 
         // L'Ecuyer, "Tables of Linear Congruential Generators of
         // Different Sizes and Good Lattice Structure", 1999
-        AtomicLong seedUniquifier
-            = new AtomicLong(8682522807148012L);
+        AtomicLong seedUniquifier = new AtomicLong(8682522807148012L);
 
         if (seed == null) {
-            for (; ; ) {
+            while (true) {
                 long curr = seedUniquifier.get();
                 long next = curr * 181783497276652981L;
                 if (seedUniquifier.compareAndSet(curr, next)) {
@@ -94,34 +89,10 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         rnd = new Random(this.seed);
     }
 
-    /** Service class used for statistics, */
-    public static class SumsAndCounts {
-        /** */
-        public double totalCost;
-
-        /** */
-        public ConcurrentHashMap<Integer, Vector> sums = new ConcurrentHashMap<>();
-
-        /** Count of points closest to the center with a given index. */
-        public ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
-
-        /** Merge current */
-        public SumsAndCounts merge(SumsAndCounts other) {
-            this.totalCost += totalCost;
-            MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
-            MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
-            return this;
-        }
-    }
-
     /** */
-    @Override public KMeansModel cluster(SparseDistributedMatrix points,
-        int k) throws MathIllegalArgumentException, ConvergenceException {
-
-        SparseDistributedMatrix pointsCp = new SparseDistributedMatrix(points.rowSize(),
-            points.columnSize(),
-            ROW_STORAGE_MODE,
-            RANDOM_ACCESS_MODE);
+    @Override public KMeansModel cluster(SparseDistributedMatrix points, int k) throws
+            MathIllegalArgumentException, ConvergenceException {
+        SparseDistributedMatrix pointsCp = (SparseDistributedMatrix) points.like(points.rowSize(), points.columnSize());
 
         // TODO: this copy is very ineffective, just for POC. Immutability of data should be guaranteed by other methods
         // such as logical locks for example.
@@ -136,28 +107,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
         // Execute iterations of Lloyd's algorithm until converged
         while (iteration < maxIterations && !converged) {
-            SumsAndCounts stats = CacheUtils.distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
-                (IgniteBiFunction<javax.cache.Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
-                    Map<Integer, Double> vec = entry.getValue();
-
-                    IgniteBiTuple<Integer, Double> closest = findClosest(centers, VectorUtils.fromMap(vec, false));
-                    int bestCenterIdx = closest.get1();
-
-                    counts.totalCost += closest.get2();
-                    counts.sums.putIfAbsent(bestCenterIdx, VectorUtils.zeroes(dim));
-
-                    counts.sums.compute(bestCenterIdx,
-                        (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(VectorUtils.fromMap(vec, false)));
-
-                    counts.counts.merge(bestCenterIdx,
-                        1,
-                        (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
-
-                    return counts;
-                },
-                key -> key.get2().equals(uid),
-                SumsAndCounts::merge, new SumsAndCounts()
-            );
+            SumsAndCounts stats = getSumsAndCounts(centers, dim, uid);
 
             converged = true;
 
@@ -187,7 +137,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         Vector sample = localCopyOf(points.viewRow(rnd.nextInt(ptsCount)));
 
         List<Vector> centers = new ArrayList<>();
-        final List<Vector> newCenters = new ArrayList<>();
+        List<Vector> newCenters = new ArrayList<>();
         newCenters.add(sample);
         centers.add(sample);
 
@@ -201,20 +151,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
         while (step < initSteps) {
             // We assume here that costs can fit into memory of one node.
-            ConcurrentHashMap<Integer, Double> newCosts = distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
-                (IgniteBiFunction<javax.cache.Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, ConcurrentHashMap<Integer, Double>>,
-                    ConcurrentHashMap<Integer, Double>,
-                    ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
-                    for (Vector center : newCenters)
-                        map.merge(vectorWithIndex.getKey().get1(), distance(vectorWithIndex.getValue(), center), Functions.MIN);
-
-                    return map;
-                },
-                key -> key.get2().equals(points.getUUID()),
-                (map1, map2) -> {
-                    map1.putAll(map2);
-                    return map1;
-                }, new ConcurrentHashMap<>());
+            ConcurrentHashMap<Integer, Double> newCosts = getNewCosts(points, newCenters);
 
             // Merge costs with new costs.
             for (Integer ind : newCosts.keySet())
@@ -222,29 +159,9 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
             double sumCosts = costs.values().stream().mapToDouble(Double::valueOf).sum();
 
-            newCenters.clear();
-            newCenters.addAll(distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
-                (IgniteBiFunction<javax.cache.Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
-                    List<Vector>,
-                    List<Vector>>)(vectorWithIndex, list) -> {
-                    Integer ind = vectorWithIndex.getKey().get1();
-
-                    double prob = costs.get(ind) * 2.0 * k / sumCosts;
-
-                    if (new Random(seed ^ ind).nextDouble() < prob)
-                        list.add(VectorUtils.fromMap(vectorWithIndex.getValue(), false));
-
-                    return list;
-                },
-                key -> key.get2().equals(uid),
-                (list1, list2) -> {
-                    list1.addAll(list2);
-                    return list1;
-                },
-                new ArrayList<>()
-            ));
-
+            newCenters = getNewCenters(k, costs, uid, sumCosts);
             centers.addAll(newCenters);
+
             step++;
         }
 
@@ -256,47 +173,139 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
             // Finally, we might have a set of more than k distinct candidate centers; weight each
             // candidate by the number of points in the dataset mapping to it and run a local k-means++
             // on the weighted centers to pick k of them
-            ConcurrentHashMap<Integer, Integer> centerInd2Wight = distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
-                (IgniteBiFunction<javax.cache.Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
-                    ConcurrentHashMap<Integer, Integer>,
-                    ConcurrentHashMap<Integer, Integer>>)(vectorWithIndex, countMap) -> {
-                    Integer resInd = -1;
-                    Double resDist = Double.POSITIVE_INFINITY;
+            ConcurrentHashMap<Integer, Integer> centerInd2Weight = weightCenters(uid, distinctCenters);
 
-                    int i = 0;
-                    for (Vector cent : distinctCenters) {
-                        double curDist = distance(vectorWithIndex.getValue(), cent);
-
-                        if (resDist > curDist) {
-                            resDist = curDist;
-                            resInd = i;
-                        }
-
-                        i++;
-                    }
-
-                    countMap.compute(resInd, (ind, v) -> v != null ? v + 1 : 1);
-                    return countMap;
-                },
-                key -> key.get2().equals(uid),
-                (map1, map2) -> MapUtil.mergeMaps(map1, map2, (integer, integer2) -> integer2 + integer,
-                    ConcurrentHashMap::new),
-                new ConcurrentHashMap<>());
-
-            List<Double> weights = new ArrayList<>(centerInd2Wight.size());
+            List<Double> weights = new ArrayList<>(centerInd2Weight.size());
 
             for (int i = 0; i < distinctCenters.size(); i++)
-                weights.add(i, Double.valueOf(centerInd2Wight.getOrDefault(i, 0)));
+                weights.add(i, Double.valueOf(centerInd2Weight.getOrDefault(i, 0)));
 
             DenseLocalOnHeapMatrix dCenters = MatrixUtil.fromList(distinctCenters, true);
 
-            return new KMeansLocalClusterer(getDistanceMeasure(), 30, seed).
-                cluster(dCenters, k, weights).centers();
+            return new KMeansLocalClusterer(getDistanceMeasure(), 30, seed).cluster(dCenters, k, weights).centers();
         }
+    }
+
+    /** */
+    private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, IgniteUuid uid, double sumCosts) {
+        return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
+                List<Vector>,
+                List<Vector>>)(vectorWithIndex, list) -> {
+                Integer ind = vectorWithIndex.getKey().get1();
+
+                double prob = costs.get(ind) * 2.0 * k / sumCosts;
+
+                if (new Random(seed ^ ind).nextDouble() < prob)
+                    list.add(VectorUtils.fromMap(vectorWithIndex.getValue(), false));
+
+                return list;
+            },
+            key -> key.get2().equals(uid),
+            (list1, list2) -> {
+                list1.addAll(list2);
+                return list1;
+            },
+            new ArrayList<>()
+        );
+    }
+
+    /** */
+    private ConcurrentHashMap<Integer, Double> getNewCosts(SparseDistributedMatrix points, List<Vector> newCenters) {
+        return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, ConcurrentHashMap<Integer, Double>>,
+                ConcurrentHashMap<Integer, Double>,
+                ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
+                for (Vector center : newCenters)
+                    map.merge(vectorWithIndex.getKey().get1(), distance(vectorWithIndex.getValue(), center), Functions.MIN);
+
+                return map;
+            },
+            key -> key.get2().equals(points.getUUID()),
+            (map1, map2) -> {
+                map1.putAll(map2);
+                return map1;
+            }, new ConcurrentHashMap<>());
+    }
+
+    /** */
+    private ConcurrentHashMap<Integer, Integer> weightCenters(IgniteUuid uid, List<Vector> distinctCenters) {
+        return distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+            (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>,
+                ConcurrentHashMap<Integer, Integer>,
+                ConcurrentHashMap<Integer, Integer>>)(vectorWithIndex, countMap) -> {
+                Integer resInd = -1;
+                Double resDist = Double.POSITIVE_INFINITY;
+
+                int i = 0;
+                for (Vector cent : distinctCenters) {
+                    double curDist = distance(vectorWithIndex.getValue(), cent);
+
+                    if (resDist > curDist) {
+                        resDist = curDist;
+                        resInd = i;
+                    }
+
+                    i++;
+                }
+
+                countMap.compute(resInd, (ind, v) -> v != null ? v + 1 : 1);
+                return countMap;
+            },
+            key -> key.get2().equals(uid),
+            (map1, map2) -> MapUtil.mergeMaps(map1, map2, (integer, integer2) -> integer2 + integer,
+                ConcurrentHashMap::new),
+            new ConcurrentHashMap<>());
     }
 
     /** */
     private double distance(Map<Integer, Double> vecMap, Vector vector) {
         return distance(VectorUtils.fromMap(vecMap, false), vector);
     }
+
+    /** */
+    private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, IgniteUuid uid) {
+        return CacheUtils.distributedFold(SparseDistributedMatrixStorage.ML_CACHE_NAME,
+                (IgniteBiFunction<Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
+                    Map<Integer, Double> vec = entry.getValue();
+
+                    IgniteBiTuple<Integer, Double> closest = findClosest(centers, VectorUtils.fromMap(vec, false));
+                    int bestCenterIdx = closest.get1();
+
+                    counts.totalCost += closest.get2();
+                    counts.sums.putIfAbsent(bestCenterIdx, VectorUtils.zeroes(dim));
+
+                    counts.sums.compute(bestCenterIdx,
+                            (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(VectorUtils.fromMap(vec, false)));
+
+                    counts.counts.merge(bestCenterIdx, 1,
+                            (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
+
+                    return counts;
+                },
+                key -> key.get2().equals(uid),
+                SumsAndCounts::merge, new SumsAndCounts()
+        );
+    }
+
+    /** Service class used for statistics. */
+    private static class SumsAndCounts {
+        /** */
+        public double totalCost;
+
+        /** */
+        public ConcurrentHashMap<Integer, Vector> sums = new ConcurrentHashMap<>();
+
+        /** Count of points closest to the center with a given index. */
+        public ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
+
+        /** Merge current */
+        public SumsAndCounts merge(SumsAndCounts other) {
+            this.totalCost += totalCost;
+            MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
+            MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            return this;
+        }
+    }
+
 }

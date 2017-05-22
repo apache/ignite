@@ -73,14 +73,13 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
     public void testPerformClusterAnalysisDegenerate() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(new EuclideanDistance(), 1, 1,
-            1L);
+        KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(new EuclideanDistance(), 1, 1, 1L);
 
         double[] v1 = new double[] {1959, 325100};
         double[] v2 = new double[] {1960, 373200};
 
         SparseDistributedMatrix points = new SparseDistributedMatrix(2, 2, StorageConstants.ROW_STORAGE_MODE,
-            StorageConstants.RANDOM_ACCESS_MODE);
+                StorageConstants.RANDOM_ACCESS_MODE);
 
         points.setRow(0, v1);
         points.setRow(1, v2);
@@ -111,7 +110,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         int centersCnt = centers.size();
 
         SparseDistributedMatrix points = new SparseDistributedMatrix(ptsCnt, 2, StorageConstants.ROW_STORAGE_MODE,
-            StorageConstants.RANDOM_ACCESS_MODE);
+                StorageConstants.RANDOM_ACCESS_MODE);
 
         List<Integer> permutation = IntStream.range(0, ptsCnt).boxed().collect(Collectors.toList());
         Collections.shuffle(permutation, rnd);
@@ -127,7 +126,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         for (Integer count : centers.keySet()) {
             for (int i = 0; i < count; i++) {
                 DenseLocalOnHeapVector pnt = (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(2).assign(centers.get(count));
-                // pertrubate mdl on random value.
+                // pertrubate point on random value.
                 pnt.map(val -> val + rnd.nextDouble() * squareSideLen / 100);
                 mc[centIndex] = mc[centIndex].plus(pnt);
                 points.assignRow(permutation.get(totalCount), pnt);
