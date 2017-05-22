@@ -178,6 +178,8 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            // -54 is reserved for SQL.
+
             case -53:
                 msg = new SchemaOperationStatusMessage();
 
