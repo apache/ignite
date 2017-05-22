@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlNioListener;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -133,10 +132,8 @@ public class JdbcTcpIo {
 
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-        throw new IgniteCheckedException("Ignite node reject handshake message: " +
-            "the protocol version is not supported by Ignite version: " + ver + (F.isEmpty(err) ? "" : ". " +
-            "The driver protocol version introduced in Ignite version: " + CURRENT_VER.toString() + ". " +
-            "Error message: " + err));
+        throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+            ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
     }
 
     /**
@@ -169,8 +166,7 @@ public class JdbcTcpIo {
         if (readLen != 4) {
             close();
 
-            throw new IgniteCheckedException("IO error. Cannot receive message length (4 bytes expected). " +
-                "[received = " + readLen + ']');
+            throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
         }
 
         int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
@@ -183,8 +179,7 @@ public class JdbcTcpIo {
         if (readLen != size) {
             close();
 
-            throw new IgniteCheckedException("IO error. Cannot receive massage. [received=" + readLen + ", size="
-                + size + ']');
+            throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
         }
 
         return msgData;
