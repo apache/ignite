@@ -51,7 +51,7 @@
     padding: $content-padding;
 
     border: none;
-    border-radius: 4px;
+    border-radius: $ignite-button-border-radius;
     text-align: center;
     outline: none;
     font-family: Roboto, sans-serif;
@@ -94,9 +94,16 @@
     &:hover, &.hover,
     &:active, &.active {
         &:not([disabled]) {
-            color: white;
+            color: white !important;
             background-color: change-color($accent-color, $lightness: 41%);
+            text-decoration: none !important;
         }
+    }
+
+    // Override <a> styles
+    &:focus {
+        color: white !important;
+        text-decoration: none !important;
     }
 
     @include active-focus-shadows();
