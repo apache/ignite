@@ -111,6 +111,14 @@
     <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
+    <Compile Include="Impl\Binary\Deployment\AssemblyLoader.cs" />
+    <Compile Include="Impl\Binary\Deployment\AssemblyRequest.cs" />
+    <Compile Include="Impl\Binary\Deployment\AssemblyRequestResult.cs" />
+    <Compile Include="Impl\Binary\Deployment\GetAssemblyFunc.cs" />
+    <Compile Include="Impl\Binary\Deployment\PeerAssemblyResolver.cs" />
+    <Compile Include="Impl\Binary\Deployment\PeerLoadingExtensions.cs" />
+    <Compile Include="Impl\Binary\Deployment\PeerLoadingObjectHolder.cs" />
+    <Compile Include="Impl\Binary\Deployment\PeerLoadingObjectHolderSerializer.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />

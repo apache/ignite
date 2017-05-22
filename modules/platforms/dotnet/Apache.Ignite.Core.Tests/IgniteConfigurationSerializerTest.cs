@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingEnabled='true'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false' keepDeserialized='true'>
                                 <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
                             <cacheConfiguration>
                                 <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll'>
                                     <queryEntities>    
-                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
+                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                                             <fields>
                                                 <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
@@ -273,6 +273,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(89, memPlc.InitialSize);
             Assert.AreEqual(98, memPlc.MaxSize);
             Assert.IsTrue(memPlc.MetricsEnabled);
+
+            Assert.IsTrue(cfg.PeerAssemblyLoadingEnabled);
         }
 
         /// <summary>
@@ -831,7 +833,8 @@ namespace Apache.Ignite.Core.Tests
                             MetricsEnabled = true
                         }
                     }
-                }
+                },
+                PeerAssemblyLoadingEnabled = true
             };
         }
 

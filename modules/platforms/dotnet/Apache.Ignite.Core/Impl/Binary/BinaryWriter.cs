@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary.Deployment;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
@@ -53,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Whether we are currently detaching an object. */
         private bool _detaching;
+
+        /** Whether we are directly within peer loading object holder. */
+        private bool _isInPeerHolder;
 
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
@@ -1165,6 +1169,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
+            // Peer deployment mode: all user objects are wrapped.
+            if (EnablePeerDeployment && type != typeof(PeerLoadingObjectHolder))
+            {
+                if (_isInPeerHolder)
+                {
+                    _isInPeerHolder = false;
+                }
+                else
+                {
+                    _isInPeerHolder = true;
+                    Write(new PeerLoadingObjectHolder(obj));
+
+                    return;
+                }
+            }
+
             // Suppose that we faced normal object and perform descriptor lookup.
             var desc = _marsh.GetDescriptor(type);
 
@@ -1422,6 +1442,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
             }
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether all user objects
+        /// should be wrapped into <see cref="PeerLoadingObjectHolder"/>.
+        /// </summary>
+        internal bool EnablePeerDeployment { get; set; }
 
         /// <summary>
         /// Stream.

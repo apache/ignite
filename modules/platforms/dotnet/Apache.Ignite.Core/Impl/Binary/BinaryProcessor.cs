@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the type by id.
+        /// Gets the type name by id.
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <returns>Type or null.</returns>
