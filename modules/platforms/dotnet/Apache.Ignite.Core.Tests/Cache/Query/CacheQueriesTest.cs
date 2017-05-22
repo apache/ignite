@@ -689,9 +689,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // SQL Query.
             var cache = Cache();
-            PopulateCache(cache, false, MaxItemCnt, x => true);
+            PopulateCache(cache, false, 20000, x => true);
 
-            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500")
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
             {
                 Timeout = TimeSpan.FromMilliseconds(2)
             };
