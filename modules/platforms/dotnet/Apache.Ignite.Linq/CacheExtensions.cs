@@ -152,6 +152,7 @@ namespace Apache.Ignite.Linq
         /// <returns>Affected row count.</returns>
         public static int DeleteAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query)
         {
+            // TODO: Method name?? RemoveRange, Delete, RemoveAll? What is in cache for this?
             IgniteArgumentCheck.NotNull(query, "query");
 
             var method = DeleteAllExpressionNode.DeleteAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
