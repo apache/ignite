@@ -90,7 +90,6 @@ public class GridLuceneInputStream extends IndexInput {
         currBuf = 0;
     }
 
-
     /** {@inheritDoc} */
     @Override public void close() {
         // nothing to do here

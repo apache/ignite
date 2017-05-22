@@ -425,7 +425,6 @@ public class GridLuceneIndex implements AutoCloseable {
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
-            // U.closeQuiet(searcher); There is no need to close searcher any more.
             U.closeQuiet(reader);
         }
     }
