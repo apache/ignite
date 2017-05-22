@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -90,35 +91,29 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // TODO: IGNITE-4994: Restore mock.
-//        Driver.load();
-//
-//        conn = DriverManager.getConnection(DB_URL);
-//
-//        tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
-//            @Override public void onTableCreated(GridH2Table tbl) {
-//                // No-op.
-//            }
-//
-//            @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
-//                return null;
-//            }
-//
-//            @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {
-//                ArrayList<Index> idxs = new ArrayList<>();
-//
-//                IndexColumn id = tbl.indexColumn(0, SortOrder.ASCENDING);
-//                IndexColumn t = tbl.indexColumn(1, SortOrder.ASCENDING);
-//                IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
-//                IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
-//
-//                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
-//                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
-//                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
-//                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
-//
-//                return idxs;
-//            }
-//        }, null);
+        Driver.load();
+
+        conn = DriverManager.getConnection(DB_URL);
+
+        tbl = IgniteH2Indexing.H2TableEngine.createTable(conn, CREATE_TABLE_SQL, null, null,
+            new GridH2SystemIndexFactory() {
+            /** {@inheritDoc} */
+            @Override public ArrayList<Index> createSystemIndexes(GridH2Table tbl) {
+                ArrayList<Index> idxs = new ArrayList<>();
+
+                IndexColumn id = tbl.indexColumn(0, SortOrder.ASCENDING);
+                IndexColumn t = tbl.indexColumn(1, SortOrder.ASCENDING);
+                IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
+                IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
+
+                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
+                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
+                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
+                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
+
+                return idxs;
+            }
+        });
     }
 
     /** {@inheritDoc} */

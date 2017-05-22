@@ -3947,7 +3947,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private static H2RowFactory rowFactory0;
 
         /** */
-        private static TableDescriptor tblDesc0;
+        private static GridH2SystemIndexFactory idxFactory0;
 
         /** */
         private static GridH2Table resTbl0;
@@ -3959,29 +3959,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param sql DDL clause.
          * @param rowDesc Row descriptor.
          * @param rowFactory Row factory.
-         * @param tblDesc Table descriptor.
+         * @param idxFactory Index factory.
          * @throws SQLException If failed.
          * @return Created table.
          */
         public static synchronized GridH2Table createTable(Connection conn, String sql,
-            @Nullable GridH2RowDescriptor rowDesc, H2RowFactory rowFactory, TableDescriptor tblDesc)
+            @Nullable GridH2RowDescriptor rowDesc, H2RowFactory rowFactory, GridH2SystemIndexFactory idxFactory)
             throws SQLException {
             rowDesc0 = rowDesc;
             rowFactory0 = rowFactory;
-            tblDesc0 = tblDesc;
+            idxFactory0 = idxFactory;
 
             try {
                 try (Statement s = conn.createStatement()) {
                     s.execute(sql + " engine \"" + H2TableEngine.class.getName() + "\"");
                 }
 
-                tblDesc.tbl = resTbl0;
+                if (idxFactory instanceof TableDescriptor)
+                    ((TableDescriptor)idxFactory).tbl = resTbl0;
 
                 return resTbl0;
             }
             finally {
                 resTbl0 = null;
-                tblDesc0 = null;
+                idxFactory0 = null;
                 rowFactory0 = null;
                 rowDesc0 = null;
             }
@@ -3989,7 +3990,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public TableBase createTable(CreateTableData createTblData) {
-            resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.schema.spaceName);
+            String spaceName = null;
+
+            if (idxFactory0 instanceof TableDescriptor)
+                spaceName = ((TableDescriptor)idxFactory0).schema.spaceName;
+
+            resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, idxFactory0, spaceName);
 
             return resTbl0;
         }
