@@ -1523,6 +1523,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fqry.setDistributedJoins(qry.isDistributedJoins());
         fqry.setPartitions(qry.getPartitions());
         fqry.setLocal(qry.isLocal());
+        fqry.setSchema(qry.getSchema());
 
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);

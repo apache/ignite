@@ -49,6 +49,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default schema name. */
+    public static final String DFLT_SCHEMA = "default";
+
     /** SQL Query. */
     private String sql;
 
@@ -73,6 +76,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** Partitions for query */
     private int[] parts;
+
+    /** Schema. */
+    private String schema = DFLT_SCHEMA;
 
     /**
      * Constructs SQL fields query.
@@ -283,6 +289,31 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setPartitions(@Nullable int... parts) {
         this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema.
+     *
+     * @return Schema.
+     */
+    public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema.
+     * <p>
+     * Defaults to {@link #DFLT_SCHEMA}.
+     *
+     * @param schema Schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(String schema) {
+        A.notNull(schema, "schema");
+
+        this.schema = schema;
 
         return this;
     }

@@ -60,6 +60,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Partitions for query */
     private int[] parts;
 
+    /** Schema. */
+    private String schema = SqlFieldsQuery.DFLT_SCHEMA;
+
     /**
      * Constructs query for the given type name and SQL query.
      *
@@ -272,6 +275,29 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public SqlQuery setPartitions(@Nullable int... parts) {
         this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema.
+     *
+     * @return Schema.
+     */
+    public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema.
+     * <p>
+     * Defaults to {@link SqlFieldsQuery#DFLT_SCHEMA}.
+     *
+     * @param schema Schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlQuery setSchema(String schema) {
+        this.schema = schema;
 
         return this;
     }
