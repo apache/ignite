@@ -168,7 +168,8 @@ public class JdbcTcpIo {
         if (readLen != 4) {
             close();
 
-            throw new IgniteCheckedException("IO error. Cannot receive message len. lenSize = " + readLen);
+            throw new IgniteCheckedException("IO error. Cannot receive message length (4 bytes expected). " +
+                "[received = " + readLen + ']');
         }
 
         int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
