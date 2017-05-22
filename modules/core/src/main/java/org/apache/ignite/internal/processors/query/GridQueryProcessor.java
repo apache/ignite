@@ -612,7 +612,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         else
-            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
+            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space);
 
         // Start operation.
         SchemaOperationWorker worker =
@@ -1153,6 +1153,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Local operation finished successfully [opId=" + op.id() + ']');
 
+            String space = op.space();
+
             try {
                 if (op instanceof SchemaIndexCreateOperation) {
                     SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
@@ -1161,7 +1163,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
 
-                    QueryIndexKey idxKey = new QueryIndexKey(op.space(), op0.indexName());
+                    QueryIndexKey idxKey = new QueryIndexKey(space, op0.indexName());
 
                     idxs.put(idxKey, idxDesc);
                 }
@@ -1172,7 +1174,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     QueryUtils.processDynamicIndexChange(op0.indexName(), null, type);
 
-                    QueryIndexKey idxKey = new QueryIndexKey(op.space(), op0.indexName());
+                    QueryIndexKey idxKey = new QueryIndexKey(space, op0.indexName());
 
                     idxs.remove(idxKey);
                 }
@@ -1229,10 +1231,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String space = op.space();
 
-        GridCacheAdapter cache = ctx.cache().internalCache(op.space());
+        GridCacheAdapter cache = ctx.cache().internalCache(space);
 
         if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
-            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space);
 
         try {
             if (op instanceof SchemaIndexCreateOperation) {
@@ -1861,15 +1863,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Entry point for index procedure.
      *
-     * @param space Space name.
+     * @param schemaName Schema name.
      * @param tblName Table name.
      * @param idx Index.
      * @param ifNotExists When set to {@code true} operation will fail if index already exists.
      * @return Future completed when index is created.
      */
-    public IgniteInternalFuture<?> dynamicIndexCreate(String space, String tblName, QueryIndex idx,
+    public IgniteInternalFuture<?> dynamicIndexCreate(String schemaName, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        SchemaAbstractOperation op = new SchemaIndexCreateOperation(UUID.randomUUID(), space, tblName, idx, ifNotExists);
+        SchemaAbstractOperation op = new SchemaIndexCreateOperation(UUID.randomUUID(), schemaName, tblName, idx,
+            ifNotExists);
 
         return startIndexOperationDistributed(op);
     }
@@ -1877,12 +1880,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Entry point for index drop procedure
      *
+     * @param schemaName Schema name.
      * @param idxName Index name.
      * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
      * @return Future completed when index is created.
      */
-    public IgniteInternalFuture<?> dynamicIndexDrop(String space, String idxName, boolean ifExists) {
-        SchemaAbstractOperation op = new SchemaIndexDropOperation(UUID.randomUUID(), space, idxName, ifExists);
+    public IgniteInternalFuture<?> dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) {
+        SchemaAbstractOperation op = new SchemaIndexDropOperation(UUID.randomUUID(), schemaName, idxName, ifExists);
 
         return startIndexOperationDistributed(op);
     }

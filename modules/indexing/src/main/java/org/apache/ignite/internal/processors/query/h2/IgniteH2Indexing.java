@@ -1616,7 +1616,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             break;
                         }
                         catch (SQLException e) {
-                            if (!cachesCreated && e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1) {
+                            if (!cachesCreated && (
+                                e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                                e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                                e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                            ) {
                                 try {
                                     ctx.cache().createMissingQueryCaches();
                                 }
@@ -1632,7 +1636,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
 
-
                     prepared = GridSqlQueryParser.prepared(stmt);
 
                     if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
@@ -1642,8 +1645,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (prepared.isQuery()) {
                         bindParameters(stmt, F.asList(qry.getArgs()));
 
-                        twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
-                            distributedJoins, enforceJoinOrder, this);
+                        twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
+                            grpByCollocated, distributedJoins, enforceJoinOrder, this);
 
                         assert twoStepQry != null;
                     }

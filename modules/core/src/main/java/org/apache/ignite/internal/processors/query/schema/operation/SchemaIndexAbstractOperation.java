@@ -27,10 +27,10 @@ public abstract class SchemaIndexAbstractOperation extends SchemaAbstractOperati
      * Constructor.
      *
      * @param opId Operation ID.
-     * @param space Space.
+     * @param schemaName Schema name.
      */
-    public SchemaIndexAbstractOperation(UUID opId, String space) {
-        super(opId, space);
+    public SchemaIndexAbstractOperation(UUID opId, String schemaName) {
+        super(opId, schemaName);
     }
 
     /**
