@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
@@ -114,6 +115,12 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         public TimeSpan Timeout { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        public bool ReplicatedOnly { get; set; }
+
         /** <inheritDoc /> */
         internal override void Write(BinaryWriter writer, bool keepBinary)
         {
@@ -133,7 +140,7 @@ namespace Apache.Ignite.Core.Cache.Query
 
             writer.WriteBoolean(EnableDistributedJoins);
             writer.WriteInt((int) Timeout.TotalMilliseconds);
-            writer.WriteBoolean(false);  // TODO: ReplicatedOnly
+            writer.WriteBoolean(ReplicatedOnly);
         }
 
         /** <inheritDoc /> */
@@ -141,5 +148,21 @@ namespace Apache.Ignite.Core.Cache.Query
         {
             get { return CacheOp.QrySql; }
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            return string.Format("SqlQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
+                                 "EnableDistributedJoins={4}, Timeout={5}, ReplicatedOnly={6}]", Sql, args, Local,
+                PageSize, EnableDistributedJoins, Timeout, ReplicatedOnly);
+        }
+
     }
 }
