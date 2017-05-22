@@ -109,6 +109,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     public static final String IGNITE_PDS_WAL_FSYNC_DELAY = "IGNITE_PDS_WAL_FSYNC_DELAY"; // TODO may be move to config
 
+    /** Ignite pds wal record iterator buffer size. */
+    public static final String IGNITE_PDS_WAL_RECORD_ITERATOR_BUFFER_SIZE = "IGNITE_PDS_WAL_RECORD_ITERATOR_BUFFER_SIZE";
+
     /** */
     public static final String IGNITE_PDS_WAL_ALWAYS_WRITE_FULL_PAGES = "IGNITE_PDS_WAL_ALWAYS_WRITE_FULL_PAGES";
 
@@ -1933,6 +1936,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Buffer size. */
+        private final int buffSize = IgniteSystemProperties.getInteger(
+            IGNITE_PDS_WAL_RECORD_ITERATOR_BUFFER_SIZE, 64 * 1024 * 1024);
+
         /** */
         private final File walWorkDir;
 
@@ -2005,8 +2012,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             this.end = end;
             this.log = log;
 
+            int tlbSize0 = 16 * tlbSize;
+            int buffSize0 = tlbSize0 < buffSize ? tlbSize0 : buffSize;
+
             // Do not allocate direct buffer for iterator.
-            buf = ByteBuffer.allocate(16 * tlbSize);
+            buf = ByteBuffer.allocate(buffSize0);
             buf.order(ByteOrder.nativeOrder());
 
             init();
