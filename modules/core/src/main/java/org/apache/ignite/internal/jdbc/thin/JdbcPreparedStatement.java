@@ -76,7 +76,11 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public int executeUpdate() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        int res = executeUpdate(sql);
+
+        args = null;
+
+        return res;
     }
 
     /** {@inheritDoc} */

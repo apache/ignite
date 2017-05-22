@@ -62,7 +62,10 @@ public class JdbcResultSet implements ResultSet {
     private final List<SqlListenerColumnMeta> meta;
 
     /** Fields iterator. */
-    private Iterator<List<Object>> fields;
+    private Collection<List<Object>> fields;
+
+    /** Fields iterator. */
+    private Iterator<List<Object>> fieldsIter;
 
     /** Finished flag. */
     private boolean finished;
@@ -88,24 +91,28 @@ public class JdbcResultSet implements ResultSet {
     /** Fetch size. */
     private int maxRows;
 
+    /** Query flag (false for DML queries). */
+    private boolean isQuery;
+
     /**
      * Creates new result set.
      *
      * @param stmt Statement.
      * @param qryId Query ID.
      * @param meta Results metadata.
+     * @param isQuery Query flag (false for DML queries).
      * @param fetchSize Fetch size.
      * @param maxRows Max rows.
      */
-    @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcResultSet(JdbcStatement stmt, long qryId,
-        Collection<SqlListenerColumnMeta> meta, int fetchSize, int maxRows) {
+    @SuppressWarnings("OverlyStrongTypeCast") JdbcResultSet(JdbcStatement stmt, long qryId,
+        Collection<SqlListenerColumnMeta> meta, boolean isQuery, int fetchSize, int maxRows) {
         assert stmt != null;
         assert meta != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.qryId = qryId;
+        this.isQuery = isQuery;
         this.fetchSize = fetchSize;
         this.maxRows = maxRows;
 
@@ -117,7 +124,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fields == null && !finished) {
+        if (fieldsIter == null && !finished) {
             try {
                 int fetchSize0 = fetchSize;
 
@@ -128,7 +135,9 @@ public class JdbcResultSet implements ResultSet {
 
                 assert qryId == res.queryId();
 
-                fields = ((Collection<List<Object>>)res.items()).iterator();
+                fields = ((Collection<List<Object>>)res.items());
+
+                fieldsIter = fields.iterator();
 
                 fetched += res.items().size();
 
@@ -144,11 +153,11 @@ public class JdbcResultSet implements ResultSet {
             }
         }
 
-        if (fields != null && fields.hasNext()) {
-            curr = fields.next();
+        if (fieldsIter != null && fieldsIter.hasNext()) {
+            curr = fieldsIter.next();
 
-            if (!fields.hasNext())
-                fields = null;
+            if (!fieldsIter.hasNext())
+                fieldsIter = null;
 
             pos++;
 
@@ -159,6 +168,15 @@ public class JdbcResultSet implements ResultSet {
 
             return false;
         }
+    }
+
+    /**
+     * Reset field iterator. Used for DML queries.
+     */
+    void resetIter() {
+        assert fields != null;
+
+        fieldsIter = fields.iterator();
     }
 
     /** {@inheritDoc} */
@@ -466,7 +484,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fields == null && curr == null;
+        return finished && fieldsIter == null && curr == null;
     }
 
     /** {@inheritDoc} */
@@ -480,7 +498,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fields == null && curr != null;
+        return finished && fieldsIter == null && curr != null;
     }
 
     /** {@inheritDoc} */
@@ -1497,5 +1515,12 @@ public class JdbcResultSet implements ResultSet {
     private void ensureHasCurrentRow() throws SQLException {
         if (curr == null)
             throw new SQLException("Result set is not positioned on a row.");
+    }
+
+    /**
+     * @return Query flag (false for DML queries).
+     */
+    public boolean isQuery() {
+        return isQuery;
     }
 }

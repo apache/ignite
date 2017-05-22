@@ -217,7 +217,9 @@ public class JdbcTcpIo {
             }
         }
 
-        return new SqlListenerQueryExecuteResult(qryId, meta);
+        boolean isQuery = reader.readBoolean();
+
+        return new SqlListenerQueryExecuteResult(qryId, meta, isQuery);
     }
 
     /**

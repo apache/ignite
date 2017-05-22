@@ -189,7 +189,8 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(qryId, convertMetadata(fieldsMeta),
+                ((QueryCursorImpl)qryCur).isQuery());
 
             return new SqlListenerResponse(res);
         }

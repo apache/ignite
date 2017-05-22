@@ -29,13 +29,18 @@ public class SqlListenerQueryExecuteResult {
     /** Fields metadata. */
     private final Collection<SqlListenerColumnMeta> columnsMeta;
 
+    /** Query flag (false for DML queries). */
+    private final boolean isQuery;
+
     /**
      * @param queryId Query ID.
      * @param columnsMeta Columns metadata.
+     * @param isQuery Query flag (false for DML queries).
      */
-    public SqlListenerQueryExecuteResult(long queryId, Collection<SqlListenerColumnMeta> columnsMeta) {
+    public SqlListenerQueryExecuteResult(long queryId, Collection<SqlListenerColumnMeta> columnsMeta, boolean isQuery) {
         this.queryId = queryId;
         this.columnsMeta = columnsMeta;
+        this.isQuery = isQuery;
     }
 
     /**
@@ -50,5 +55,12 @@ public class SqlListenerQueryExecuteResult {
      */
     public Collection<SqlListenerColumnMeta> getColumnsMetadata() {
         return columnsMeta;
+    }
+
+    /**
+     * @return Query flag (false for DML queries).
+     */
+    public boolean isQuery() {
+        return isQuery;
     }
 }

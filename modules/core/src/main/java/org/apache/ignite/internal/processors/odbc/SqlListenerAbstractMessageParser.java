@@ -174,6 +174,8 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
 
             for (SqlListenerColumnMeta meta : metas)
                 meta.write(writer);
+
+            writer.writeBoolean(res.isQuery());
         }
         else if (res0 instanceof SqlListenerQueryFetchResult) {
             SqlListenerQueryFetchResult res = (SqlListenerQueryFetchResult) res0;
