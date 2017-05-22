@@ -111,6 +111,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.compress = compress;
     }
 
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
     /**
      * @return {@code True} if sent from client node.
      */
@@ -142,23 +147,23 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param cntrMap Partition update counters.
      */
-    public void partitionUpdateCounters(int cacheId, Map<Integer, T2<Long, Long>> cntrMap) {
+    public void partitionUpdateCounters(int grpId, Map<Integer, T2<Long, Long>> cntrMap) {
         if (partCntrs == null)
             partCntrs = new HashMap<>();
 
-        partCntrs.put(cacheId, cntrMap);
+        partCntrs.put(grpId, cntrMap);
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @return Partition update counters.
      */
-    @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
+    @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int grpId) {
         if (partCntrs != null) {
-            Map<Integer, T2<Long, Long>> res = partCntrs.get(cacheId);
+            Map<Integer, T2<Long, Long>> res = partCntrs.get(grpId);
 
             return res != null ? res : Collections.<Integer, T2<Long, Long>>emptyMap();
         }
@@ -351,31 +356,31 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         }
 
         switch (writer.state()) {
-            case 6:
+            case 5:
                 if (!writer.writeBoolean("client", client))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMap("dupPartsData", dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 7:
                 if (!writer.writeByteArray("exBytes", exBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeByteArray("partHistCntrsBytes", partHistCntrsBytes))
                     return false;
 
@@ -403,7 +408,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             return false;
 
         switch (reader.state()) {
-            case 6:
+            case 5:
                 client = reader.readBoolean("client");
 
                 if (!reader.isLastRead())
@@ -411,7 +416,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 dupPartsData = reader.readMap("dupPartsData", MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
 
                 if (!reader.isLastRead())
@@ -419,7 +424,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 8:
+            case 7:
                 exBytes = reader.readByteArray("exBytes");
 
                 if (!reader.isLastRead())
@@ -427,7 +432,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 partCntrsBytes = reader.readByteArray("partCntrsBytes");
 
                 if (!reader.isLastRead())
@@ -435,7 +440,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 partHistCntrsBytes = reader.readByteArray("partHistCntrsBytes");
 
                 if (!reader.isLastRead())
@@ -461,11 +466,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return 47;
     }
 
-    //todo add ex
-
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 10;
     }
 
     /** {@inheritDoc} */

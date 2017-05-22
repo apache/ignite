@@ -1680,7 +1680,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 c.call(dataRow);
             }
             else
-                cctx.offheap().invoke(key, localPartition(), c);
+                cctx.offheap().invoke(cctx, key, localPartition(), c);
 
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
 
@@ -3237,7 +3237,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().invoke(key,  localPartition(), new UpdateClosure(this, val, ver, expireTime));
+        cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime));
     }
 
     /**
@@ -3279,7 +3279,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        cctx.offheap().remove(key, partition(), localPartition());
+        cctx.offheap().remove(cctx, key, partition(), localPartition());
     }
 
     /** {@inheritDoc} */
@@ -3933,7 +3933,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (oldRow != null)
                 oldRow.key(entry.key);
 
-            newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(entry.key,
+            newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
+                entry.cctx,
+                entry.key,
                 val,
                 ver,
                 expireTime,
@@ -4285,7 +4287,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (needUpdate) {
-                newRow = entry.localPartition().dataStore().createRow(entry.key,
+                newRow = entry.localPartition().dataStore().createRow(
+                    entry.cctx,
+                    entry.key,
                     storeLoadedVal,
                     newVer,
                     entry.expireTimeExtras(),
@@ -4424,7 +4428,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
 
             if (!entry.isNear()) {
-                newRow = entry.localPartition().dataStore().createRow(entry.key,
+                newRow = entry.localPartition().dataStore().createRow(
+                    entry.cctx,
+                    entry.key,
                     updated,
                     newVer,
                     newExpireTime,

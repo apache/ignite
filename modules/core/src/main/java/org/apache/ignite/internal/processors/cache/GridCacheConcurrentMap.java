@@ -27,15 +27,17 @@ import org.jetbrains.annotations.Nullable;
 public interface GridCacheConcurrentMap {
     /**
      * Returns the entry associated with the specified key in the
-     * HashMap.  Returns null if the HashMap contains no mapping
+     * HashMap. Returns null if the HashMap contains no mapping
      * for this key.
      *
+     * @param ctx Cache context.
      * @param key Key.
      * @return Entry.
      */
-    @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key);
+    @Nullable public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key);
 
     /**
+     * @param ctx Cache context.
      * @param topVer Topology version.
      * @param key Key.
      * @param create Create flag.
@@ -44,6 +46,7 @@ public interface GridCacheConcurrentMap {
      * couldn't be created.
      */
     @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+        GridCacheContext ctx,
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         boolean create,
@@ -70,9 +73,10 @@ public interface GridCacheConcurrentMap {
      * It excludes entries that are marked as deleted.
      * It also does not include entries from underlying data store.
      *
+     * @param cacheId Cache ID.
      * @return the number of publicly available key-value mappings in this map.
      */
-    public int publicSize();
+    public int publicSize(int cacheId);
 
     /**
      * Increments public size.
@@ -89,20 +93,16 @@ public interface GridCacheConcurrentMap {
     public void decrementPublicSize(GridCacheEntryEx e);
 
     /**
+     * @param cacheId Cache ID.
      * @param filter Filter.
      * @return Iterable of the mappings contained in this map, excluding entries in unvisitable state.
      */
-    public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter);
+    public Iterable<GridCacheMapEntry> entries(int cacheId, CacheEntryPredicate... filter);
 
     /**
-     * @param filter Filter.
-     * @return Iterable of the mappings contained in this map, including entries in unvisitable state.
-     */
-    public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter);
-
-    /**
+     * @param cacheId Cache ID.
      * @param filter Filter.
      * @return Set of the mappings contained in this map.
      */
-    public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter);
+    public Set<GridCacheMapEntry> entrySet(int cacheId, CacheEntryPredicate... filter);
 }

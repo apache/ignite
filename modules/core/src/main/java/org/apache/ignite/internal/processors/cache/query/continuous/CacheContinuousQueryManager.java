@@ -127,7 +127,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
 
         if (cctx.affinityNode()) {
-            cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
+            cctx.io().addHandler(false, cctx.cacheId(), CacheContinuousQueryBatchAck.class,
                 new CI2<UUID, CacheContinuousQueryBatchAck>() {
                     @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
                         CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
@@ -655,7 +655,10 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         if (notifyExisting) {
-            final Iterator<CacheDataRow> it = cctx.offheap().iterator(true, true, AffinityTopologyVersion.NONE);
+            final Iterator<CacheDataRow> it = cctx.offheap().iteratorForCache(cctx.cacheId(),
+                true,
+                true,
+                AffinityTopologyVersion.NONE);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {
                 @Override public Iterator<CacheEntryEvent> iterator() {

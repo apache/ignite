@@ -31,6 +31,9 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private final int cacheGrpIdGen;
+
+    /** */
     @GridToStringInclude
     private final Map<String, CacheData> caches;
 
@@ -39,19 +42,49 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     private final Map<String, CacheData> templates;
 
     /** */
+    @GridToStringInclude
+    private final Map<Integer, CacheGroupData> cacheGrps;
+
+    /** */
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
 
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
+     * @param cacheGrps Started cache groups.
+     * @param cacheGrpIdGen Current counter for group ID assignment.
      * @param clientNodesMap Information about cache client nodes.
      */
     CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
+        Map<Integer, CacheGroupData> cacheGrps,
+        int cacheGrpIdGen,
         Map<String, Map<UUID, Boolean>> clientNodesMap) {
+        assert caches != null;
+        assert templates != null;
+        assert cacheGrps != null;
+        assert cacheGrpIdGen > 0 : cacheGrpIdGen;
+        assert clientNodesMap != null;
+
         this.caches = caches;
         this.templates = templates;
+        this.cacheGrpIdGen = cacheGrpIdGen;
+        this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
+    }
+
+    /**
+     * @return Current counter for group ID assignment.
+     */
+    int currentCacheGroupId() {
+        return cacheGrpIdGen;
+    }
+
+    /**
+     * @return Started cache groups.
+     */
+    Map<Integer, CacheGroupData> cacheGroups() {
+        return cacheGrps;
     }
 
     /**

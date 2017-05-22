@@ -194,8 +194,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map() {
-        if (cctx.dht().dhtPreloader().needForceKeys()) {
-            GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(
+        if (cctx.group().preloader().needForceKeys()) {
+            GridDhtFuture<Object> fut = cctx.group().preloader().request(
+                cctx,
                 Collections.singleton(key),
                 topVer);
 
@@ -265,9 +266,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
+        int keyPart = cctx.affinity().partition(key);
+
         GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
-            cache().topology().localPartition(key, false);
+            cache().topology().localPartition(keyPart, topVer, true) :
+            cache().topology().localPartition(keyPart);
 
         if (part == null)
             return false;

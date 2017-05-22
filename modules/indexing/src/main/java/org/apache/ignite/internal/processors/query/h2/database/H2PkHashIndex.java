@@ -108,7 +108,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             List<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
 
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores())
-                cursors.add(store.cursor(lowerObj, upperObj));
+                cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj));
 
             return new H2Cursor(new CompositeGridCursor<>(cursors.iterator()), p);
         }
@@ -126,7 +126,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     @Override public GridH2Row findOne(GridH2Row row) {
         try {
             for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-                CacheDataRow found = store.find(row.key);
+                CacheDataRow found = store.find(cctx, row.key);
 
                 if (found != null)
                     tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);

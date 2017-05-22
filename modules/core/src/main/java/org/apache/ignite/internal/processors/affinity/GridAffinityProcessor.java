@@ -395,7 +395,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                     new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
 
                 AffinityInfo info = new AffinityInfo(
-                    cctx.config().getAffinity(),
+                    cctx.group().config().getAffinity(),
                     cctx.config().getAffinityMapper(),
                     assign,
                     cctx.cacheObjectContext());

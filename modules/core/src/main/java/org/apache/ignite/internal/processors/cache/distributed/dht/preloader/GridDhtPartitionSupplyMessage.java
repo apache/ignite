@@ -31,10 +31,11 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,7 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Partition supply message.
  */
-public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements GridCacheDeployable {
+public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,15 +82,15 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
     /**
      * @param updateSeq Update sequence for this node.
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
     GridDhtPartitionSupplyMessage(long updateSeq,
-        int cacheId,
+        int grpId,
         AffinityTopologyVersion topVer,
         boolean addDepInfo) {
-        this.cacheId = cacheId;
+        this.grpId = grpId;
         this.updateSeq = updateSeq;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
@@ -206,18 +207,19 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     /**
      * @param p Partition.
      * @param info Entry to add.
-     * @param ctx Cache context.
+     * @param ctx Cache shared context.
+     * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
+    void addEntry0(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         assert info != null;
         assert info.key() != null : info;
         assert info.value() != null : info;
 
         // Need to call this method to initialize info properly.
-        marshalInfo(info, ctx);
+        marshalInfo(info, ctx, cacheObjCtx);
 
-        msgSize += info.marshalledSize(ctx);
+        msgSize += info.marshalledSize(cacheObjCtx);
 
         CacheEntryInfoCollection infoCol = infos().get(p);
 
@@ -237,13 +239,13 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cacheCtx = ctx.cacheContext(cacheId);
+        CacheGroupInfrastructure grp = ctx.cache().cacheGroup(grpId);
 
         for (CacheEntryInfoCollection col : infos().values()) {
             List<GridCacheEntryInfo> entries = col.infos();
 
             for (int i = 0; i < entries.size(); i++)
-                entries.get(i).unmarshal(cacheCtx, ldr);
+                entries.get(i).unmarshal(grp.cacheObjectContext(), ldr);
         }
     }
 

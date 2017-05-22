@@ -1047,12 +1047,12 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param space Cache name.
+     * @param grpId Cache group ID.
      * @param topVer Topology version.
      * @return Collection of data nodes.
      */
-    private Collection<ClusterNode> dataNodes(String space, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> res = ctx.discovery().cacheAffinityNodes(space, topVer);
+    private Collection<ClusterNode> dataNodes(int grpId, AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> res = ctx.discovery().cacheGroupAffinityNodes(grpId, topVer);
 
         return res != null ? res : Collections.<ClusterNode>emptySet();
     }
@@ -1068,7 +1068,7 @@ public class GridReduceQueryExecutor {
 
         String space = cctx.name();
 
-        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(space, NONE));
+        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cctx.groupId(), NONE));
 
         if (dataNodes.isEmpty())
             throw new CacheException("Failed to find data nodes for cache: " + space);
@@ -1134,7 +1134,7 @@ public class GridReduceQueryExecutor {
 
                     continue;
                 }
-                else if (!F.isEmpty(dataNodes(cctx.name(), NONE)))
+                else if (!F.isEmpty(dataNodes(cctx.groupId(), NONE)))
                     return null; // Retry.
 
                 throw new CacheException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
@@ -1163,7 +1163,7 @@ public class GridReduceQueryExecutor {
                         continue; // Skip unmapped partitions.
 
                     if (F.isEmpty(owners)) {
-                        if (!F.isEmpty(dataNodes(extraCctx.name(), NONE)))
+                        if (!F.isEmpty(dataNodes(extraCctx.groupId(), NONE)))
                             return null; // Retry.
 
                         throw new CacheException("Failed to find data nodes [cache=" + extraCctx.name() + ", part=" + p + "]");

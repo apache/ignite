@@ -139,7 +139,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         assert !Thread.holdsLock(this);
 
         // Remove this entry from partition mapping.
-        cctx.dht().topology().onRemoved(this);
+        cctx.topology().onRemoved(this);
     }
 
     /**
@@ -715,8 +715,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * @return Cache name.
      */
-    protected String cacheName() {
-        return cctx.dht().near().name();
+    protected final String cacheName() {
+        return cctx.name();
     }
 
     /** {@inheritDoc} */

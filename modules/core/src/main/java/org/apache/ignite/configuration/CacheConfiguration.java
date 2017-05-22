@@ -201,6 +201,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
+    /** Cache group name. */
+    private String grpName;
+
     /** Name of {@link MemoryPolicyConfiguration} for this cache */
     private String memPlcName;
 
@@ -406,6 +409,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
+        grpName = cc.getGroupName();
         indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
@@ -450,6 +454,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+    }
+
+    // TODO IGNTIE-5075.
+    public String getGroupName() {
+        return grpName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.grpName = groupName;
     }
 
     /**

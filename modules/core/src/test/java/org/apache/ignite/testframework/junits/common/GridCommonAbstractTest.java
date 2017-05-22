@@ -65,6 +65,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
@@ -1730,5 +1732,67 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         IgniteTxManager tm = ((IgniteKernal)ignite).context().cache().context().tm();
 
         return U.field(tm, "completedVersHashMap");
+    }
+
+    /**
+     *
+     */
+    protected final void checkCacheDiscoveryDataConsistent() {
+        Map<Integer, CacheGroupDescriptor> cacheGrps = null;
+        Map<String, DynamicCacheDescriptor> caches = null;
+
+        for (Ignite node : G.allGrids()) {
+            Map<Integer, CacheGroupDescriptor> cacheGrps0 =
+                ((IgniteKernal)node).context().cache().cacheGroupDescriptors();
+            Map<String, DynamicCacheDescriptor> caches0 =
+                ((IgniteKernal)node).context().cache().cacheDescriptors();
+
+            assertNotNull(cacheGrps0);
+            assertNotNull(caches0);
+
+            if (cacheGrps == null) {
+                cacheGrps = cacheGrps0;
+                caches = caches0;
+            }
+            else {
+                assertEquals(cacheGrps.size(), cacheGrps0.size());
+
+                for (Map.Entry<Integer, CacheGroupDescriptor> e : cacheGrps.entrySet()) {
+                    CacheGroupDescriptor desc = e.getValue();
+                    CacheGroupDescriptor desc0 = cacheGrps0.get(e.getKey());
+
+                    assertNotNull(desc0);
+                    checkGroupDescriptorsData(desc, desc0);
+                }
+
+                for (Map.Entry<String, DynamicCacheDescriptor> e : caches.entrySet()) {
+                    DynamicCacheDescriptor desc = e.getValue();
+                    DynamicCacheDescriptor desc0 = caches.get(e.getKey());
+
+                    assertNotNull(desc0);
+                    assertEquals(desc.deploymentId(), desc0.deploymentId());
+                    assertEquals(desc.receivedFrom(), desc0.receivedFrom());
+                    assertEquals(desc.startTopologyVersion(), desc0.startTopologyVersion());
+                    assertEquals(desc.cacheConfiguration().getName(), desc0.cacheConfiguration().getName());
+                    assertEquals(desc.cacheConfiguration().getGroupName(), desc0.cacheConfiguration().getGroupName());
+                    checkGroupDescriptorsData(desc.groupDescriptor(), desc0.groupDescriptor());
+                }
+            }
+        }
+    }
+
+    /**
+     * @param desc First descriptor.
+     * @param desc0 Second descriptor.
+     */
+    private void checkGroupDescriptorsData(CacheGroupDescriptor desc, CacheGroupDescriptor desc0) {
+        assertEquals(desc.groupName(), desc0.groupName());
+        assertEquals(desc.sharedGroup(), desc0.sharedGroup());
+        assertEquals(desc.deploymentId(), desc0.deploymentId());
+        assertEquals(desc.receivedFrom(), desc0.receivedFrom());
+        assertEquals(desc.startTopologyVersion(), desc0.startTopologyVersion());
+        assertEquals(desc.config().getName(), desc0.config().getName());
+        assertEquals(desc.config().getGroupName(), desc0.config().getGroupName());
+        assertEquals(desc.caches(), desc0.caches());
     }
 }

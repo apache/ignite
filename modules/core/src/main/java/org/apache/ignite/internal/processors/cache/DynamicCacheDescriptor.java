@@ -90,10 +90,14 @@ public class DynamicCacheDescriptor {
     /** Current schema. */
     private QuerySchema schema;
 
+    /** */
+    private final CacheGroupDescriptor grpDesc;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
+     * @param grpDesc Group descriptor.
      * @param template {@code True} if this is template configuration.
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.
@@ -104,12 +108,14 @@ public class DynamicCacheDescriptor {
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
+        CacheGroupDescriptor grpDesc,
         boolean template,
         UUID rcvdFrom,
         boolean staticCfg,
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
+        assert grpDesc != null || template;
         assert schema != null;
 
         if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
@@ -120,6 +126,7 @@ public class DynamicCacheDescriptor {
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
+        this.grpDesc = grpDesc;
         this.template = template;
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
@@ -132,6 +139,24 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             this.schema = schema.copy();
         }
+    }
+
+    /**
+     * @return Cache group ID.
+     */
+    public int groupId() {
+        assert grpDesc != null : this;
+
+        return grpDesc.groupId();
+    }
+
+    /**
+     * @return Cache group descriptor.
+     */
+    public CacheGroupDescriptor groupDescriptor() {
+        assert grpDesc != null : this;
+
+        return grpDesc;
     }
 
     /**
@@ -190,6 +215,7 @@ public class DynamicCacheDescriptor {
      *
      * @param proc Object processor.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
     public CacheObjectContext cacheObjectContext(IgniteCacheObjectProcessor proc) throws IgniteCheckedException {
         if (objCtx == null) {
