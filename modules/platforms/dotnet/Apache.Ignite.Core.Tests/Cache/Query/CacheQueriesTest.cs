@@ -708,9 +708,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Cache();
             PopulateCache(cache, false, 20000, x => true);
 
-            var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500")
+            var fieldsQry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 500 AND name like '%1%'")
             {
-                Timeout = TimeSpan.FromMilliseconds(3)
+                Timeout = TimeSpan.FromMilliseconds(1)
             };
 
             var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).GetAll());
