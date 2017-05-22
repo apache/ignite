@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
@@ -141,8 +139,8 @@ public class DdlStatementsProcessor {
             else if (gridStmt instanceof GridSqlCreateTable) {
                 GridSqlCreateTable createTbl = (GridSqlCreateTable)gridStmt;
 
-                ctx.query().dynamicTableCreate(toQueryEntity(createTbl), createTbl.templateCacheName(),
-                    createTbl.ifNotExists());
+                ctx.query().dynamicTableCreate(createTbl.schemaName(), toQueryEntity(createTbl),
+                    createTbl.templateCacheName(), createTbl.ifNotExists());
 
                 fut = null;
             }

@@ -61,7 +61,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         client().getOrCreateCache(cacheConfigurationForIndexing());
 
-        client().getOrCreateCache(cacheConfiguration());
+        client().addCacheConfiguration(cacheConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -82,7 +82,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testCreateTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"tplCache=cache\""));
+            "\"cacheTemplate=cache\""));
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -124,35 +124,35 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testCreateTableIfNotExists() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"tplCache=cache\""));
+            "\"cacheTemplate=cache\""));
 
         cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"tplCache=cache\""));
+            "\"cacheTemplate=cache\""));
     }
 
     /** */
     public void testCreateExistingTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"tplCache=cache\""));
+            "\"cacheTemplate=cache\""));
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
                     ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"tplCache=cache\""));
+                    "\"cacheTemplate=cache\""));
 
                 return null;
             }
-        }, IgniteSQLException.class, "Table already exists [tblName=Person]");
+        }, IgniteSQLException.class, "Table already exists: Person");
     }
 
     /** */
     public void testDropTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"tplCache=cache\""));
+            "\"cacheTemplate=cache\""));
 
         cache().query(new SqlFieldsQuery("DROP TABLE \"Person\".\"Person\""));
 
@@ -169,18 +169,18 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** */
     public void testDropTableIfExists() throws Exception {
-        cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache\".\"City\""));
+        cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache_idx\".\"City\""));
     }
 
     /** */
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("DROP TABLE \"cache\".\"City\""));
+                cache().query(new SqlFieldsQuery("DROP TABLE \"cache_idx\".\"City\""));
 
                 return null;
             }
-        }, IgniteSQLException.class, "Table not found [schemaName=cache,tblName=City]");
+        }, IgniteSQLException.class, "Table doesn't exist: City");
     }
 
     /** */
@@ -266,7 +266,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * @return Client node.
+     * @return Cache to issue queries upon.
      */
     private IgniteCache<?, ?> cache() {
         return client().cache(INDEXED_CACHE_NAME);

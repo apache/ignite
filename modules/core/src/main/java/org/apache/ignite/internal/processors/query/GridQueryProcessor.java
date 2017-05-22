@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -1266,21 +1264,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create cache and table from given query entity.
      *
+     * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
-     * @param tplCacheName Cache name to take settings from.
+     * @param templateCacheName Cache name to take settings from.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
         throws IgniteCheckedException {
-        CacheConfiguration<?, ?> tplCfg = ctx.cache().createConfigFromTemplate(tplCacheName);
+        CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
 
-        if (!F.isEmpty(tplCfg.getQueryEntities()))
-            throw new IgniteSQLException("Template cache already contains query entities which it should not " +
-                "[cacheName=" + tplCacheName + ']', IgniteQueryErrorCode.UNKNOWN);
+        if (templateCfg == null)
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
 
-        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(tplCfg);
+        if (!F.isEmpty(templateCfg.getQueryEntities()))
+            throw new SchemaOperationException("Template cache already contains query entities which it should not " +
+                "[cacheName=" + templateCacheName + ']');
+
+        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
 
         newCfg.setName(entity.getTableName());
 
@@ -1292,8 +1294,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean res = ctx.grid().getOrCreateCache0(newCfg, true).get2();
 
         if (!res && !ifNotExists)
-            throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
-                IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
     }
 
     /**
@@ -1302,14 +1303,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param ifExists Quietly ignore this command if table does not exist.
+     * @throws SchemaOperationException if {@code ifExists} is {@code false} and cache was not found.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
+    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) throws SchemaOperationException {
         boolean res = ctx.grid().destroyCache0(tblName, true);
 
         if (!res && !ifExists)
-            throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
-                ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
     }
 
     /**
