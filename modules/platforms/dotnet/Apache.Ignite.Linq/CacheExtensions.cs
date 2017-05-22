@@ -140,7 +140,6 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Deletes all rows that are matched by the specified query.
         /// </summary>
-        /// <typeparam name="T">Entry type.</typeparam>
         /// <typeparam name="TKey">Key type.</typeparam>
         /// <typeparam name="TValue">Value type.</typeparam>
         /// <param name="query">The query.</param>
