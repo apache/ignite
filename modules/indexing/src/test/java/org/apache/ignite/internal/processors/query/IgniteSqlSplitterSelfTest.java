@@ -1741,7 +1741,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             assertEquals("count", 15L, ((Number)row.get(0)).longValue());
             assertEquals("sum", 30L, ((Number)row.get(1)).longValue());
-            assertEquals("avg", 2.0d, ((Number)row.get(2)).doubleValue(), 0.001);
+            assertEquals("avg", 2, ((Integer)row.get(2)).intValue());
             assertEquals("min", 1, ((Integer)row.get(3)).intValue());
             assertEquals("max", 3, ((Integer)row.get(4)).intValue());
         }
@@ -1760,7 +1760,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             assertEquals("count distinct", 6L, ((Number)row.get(0)).longValue());
             assertEquals("sum distinct", 6L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 2.0d, ((Number)row.get(2)).doubleValue(), 0.001);
+            assertEquals("avg distinct", 2, ((Integer)row.get(2)).intValue());
             assertEquals("min distinct", 1, ((Integer)row.get(3)).intValue());
             assertEquals("max distinct", 3, ((Integer)row.get(4)).intValue());
         }
@@ -1780,12 +1780,12 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             assertEquals("count", 15L, ((Number)row.get(0)).longValue());
             assertEquals("sum", 30L, ((Number)row.get(1)).longValue());
-            assertEquals("avg", 2.0d, ((Number)row.get(2)).doubleValue(), 0.001);
+            assertEquals("avg", 2, ((Integer)row.get(2)).intValue());
             assertEquals("min", 1, ((Integer)row.get(3)).intValue());
             assertEquals("max", 3, ((Integer)row.get(4)).intValue());
             assertEquals("count distinct", 6L, ((Number)row.get(5)).longValue());
             assertEquals("sum distinct", 6L, ((Number)row.get(6)).longValue());
-            assertEquals("avg distinct", 2.0d, ((Number)row.get(7)).doubleValue(), 0.001);
+            assertEquals("avg distinct", 2, ((Integer)row.get(7)).intValue());
             assertEquals("min distinct", 1, ((Integer)row.get(8)).intValue());
             assertEquals("max distinct", 3, ((Integer)row.get(9)).intValue());
         }
@@ -1794,7 +1794,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /** Query with aggregates and groups */
     private void checkQueryWithGroupsAndAggrs(IgniteCache<Integer, Value> cache) {
         try (QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(
-            "SELECT fst, count(snd), sum(snd), avg(snd), min(snd), max(snd) FROM Value GROUP BY fst ORDER BY fst"))) {
+            "SELECT fst, count(snd), sum(snd), avg(snd), avg(CAST(snd AS DOUBLE)), " +
+            "min(snd), max(snd) FROM Value GROUP BY fst ORDER BY fst"))) {
             List<List<?>> result = qry.getAll();
 
             assertEquals(6, result.size());
@@ -1803,33 +1804,39 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals("fst", 1, ((Number)row.get(0)).intValue());
             assertEquals("count", 3L, ((Number)row.get(1)).longValue());
             assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 3.0d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min", 3, ((Integer)row.get(4)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(5)).intValue());
+            assertEquals("avg", 3, ((Number)row.get(3)).doubleValue(), 0.001);
+            assertEquals("avg dbl", 3d, ((Number)row.get(4)).doubleValue(), 0.001);
+            assertEquals("min", 3, ((Integer)row.get(5)).intValue());
+            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+
 
             row = result.get(1);
             assertEquals("fst", 2, ((Number)row.get(0)).intValue());
             assertEquals("count", 3L, ((Number)row.get(1)).longValue());
             assertEquals("sum", 6L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 2.0d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(4)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(5)).intValue());
+            assertEquals("avg", 2, ((Number)row.get(3)).doubleValue(), 0.001);
+            assertEquals("avg dbl", 2d, ((Number)row.get(4)).doubleValue(), 0.001);
+            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+
 
             row = result.get(2);
             assertEquals("fst", 3, ((Number)row.get(0)).intValue());
             assertEquals("count", 6L, ((Number)row.get(1)).longValue());
             assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 1.5d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(4)).intValue());
-            assertEquals("max", 2, ((Integer)row.get(5)).intValue());
+            assertEquals("avg", 1, ((Integer)row.get(3)).intValue());
+            assertEquals("avg dbl", 1.5d, ((Number)row.get(4)).doubleValue(), 0.001);
+            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            assertEquals("max", 2, ((Integer)row.get(6)).intValue());
         }
     }
 
     /** Query with distinct aggregates and groups */
     private void checkQueryWithGroupsAndDistinctAggr(IgniteCache<Integer, Value> cache) {
         try (QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(
-            "SELECT count(distinct snd), sum(distinct snd), avg(distinct snd), min(distinct snd), max(distinct snd) " +
-                "FROM Value GROUP BY fst"))) {
+            "SELECT count(distinct snd), sum(distinct snd), avg(distinct snd), " +
+            "avg(distinct cast(snd as double)), min(distinct snd), max(distinct snd) " +
+            "FROM Value GROUP BY fst"))) {
             List<List<?>> result = qry.getAll();
 
             assertEquals(6, result.size());
@@ -1837,32 +1844,35 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             List<?> row = result.get(0);
             assertEquals("count distinct", 1L, ((Number)row.get(0)).longValue());
             assertEquals("sum distinct", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 3.0d, ((Number)row.get(2)).doubleValue(), 0.001);
-            assertEquals("min distinct", 3, ((Integer)row.get(3)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(4)).intValue());
+            assertEquals("avg distinct", 3, ((Integer)row.get(2)).intValue());
+            assertEquals("avg distinct dbl", 3.0d, ((Number)row.get(3)).doubleValue(), 0.001);
+            assertEquals("min distinct", 3, ((Integer)row.get(4)).intValue());
+            assertEquals("max distinct", 3, ((Integer)row.get(5)).intValue());
 
             row = result.get(1);
             assertEquals("count distinct", 3L, ((Number)row.get(0)).longValue());
             assertEquals("sum distinct", 6L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 2.0d, ((Number)row.get(2)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(4)).intValue());
+            assertEquals("avg distinct", 2, ((Integer)row.get(2)).intValue());
+            assertEquals("avg distinct dbl", 2.0d, ((Number)row.get(3)).doubleValue(), 0.001);
+            assertEquals("min distinct", 1, ((Integer)row.get(4)).intValue());
+            assertEquals("max distinct", 3, ((Integer)row.get(5)).intValue());
 
             row = result.get(2);
             assertEquals("count distinct", 2L, ((Number)row.get(0)).longValue());
             assertEquals("sum distinct", 3L, ((Number)row.get(1)).longValue());
-            assertEquals("avg distinct", 1.5d, ((Number)row.get(2)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(3)).intValue());
-            assertEquals("max distinct", 2, ((Integer)row.get(4)).intValue());
+            assertEquals("avg distinct", 1, ((Integer)row.get(2)).intValue());
+            assertEquals("avg distinct dbl", 1.5d, ((Number)row.get(3)).doubleValue(), 0.001);
+            assertEquals("min distinct", 1, ((Integer)row.get(4)).intValue());
+            assertEquals("max distinct", 2, ((Integer)row.get(5)).intValue());
         }
     }
 
     /** Query with distinct aggregates and groups */
     private void checkQueryWithGroupsAndAggrMixed(IgniteCache<Integer, Value> cache) {
         try (QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(
-            "SELECT fst, count(snd), sum(snd), avg(snd), min(snd), max(snd)," +
-                "count(distinct snd), sum(distinct snd), avg(distinct snd), min(distinct snd), max(distinct snd) " +
-                "FROM Value GROUP BY fst"))) {
+            "SELECT fst, count(snd), sum(snd), avg(snd), avg(cast(snd as double)), min(snd), max(snd)," +
+            "count(distinct snd), sum(distinct snd), avg(distinct snd), avg(distinct cast(snd as double)), " +
+            "min(distinct snd), max(distinct snd) FROM Value GROUP BY fst"))) {
             List<List<?>> result = qry.getAll();
 
             assertEquals(6, result.size());
@@ -1871,40 +1881,46 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals("fst", 1, ((Number)row.get(0)).intValue());
             assertEquals("count", 3L, ((Number)row.get(1)).longValue());
             assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 3.0d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min", 3, ((Integer)row.get(4)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(5)).intValue());
-            assertEquals("count distinct", 1L, ((Number)row.get(6)).longValue());
-            assertEquals("sum distinct", 3L, ((Number)row.get(7)).longValue());
-            assertEquals("avg distinct", 3.0d, ((Number)row.get(8)).doubleValue(), 0.001);
-            assertEquals("min distinct", 3, ((Integer)row.get(9)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(10)).intValue());
+            assertEquals("avg", 3, ((Integer)row.get(3)).intValue());
+            assertEquals("avg dbl", 3.0d, ((Number)row.get(4)).doubleValue(), 0.001);
+            assertEquals("min", 3, ((Integer)row.get(5)).intValue());
+            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+            assertEquals("count distinct", 1L, ((Number)row.get(7)).longValue());
+            assertEquals("sum distinct", 3L, ((Number)row.get(8)).longValue());
+            assertEquals("avg distinct", 3, ((Integer)row.get(9)).intValue());
+            assertEquals("avg distinct dbl", 3.0d, ((Number)row.get(10)).doubleValue(), 0.001);
+            assertEquals("min distinct", 3, ((Integer)row.get(11)).intValue());
+            assertEquals("max distinct", 3, ((Integer)row.get(12)).intValue());
 
             row = result.get(1);
             assertEquals("fst", 2, ((Number)row.get(0)).intValue());
             assertEquals("count", 3L, ((Number)row.get(1)).longValue());
             assertEquals("sum", 6L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 2.0d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(4)).intValue());
-            assertEquals("max", 3, ((Integer)row.get(5)).intValue());
-            assertEquals("count distinct", 3L, ((Number)row.get(6)).longValue());
-            assertEquals("sum distinct", 6L, ((Number)row.get(7)).longValue());
-            assertEquals("avg distinct", 2.0d, ((Number)row.get(8)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(9)).intValue());
-            assertEquals("max distinct", 3, ((Integer)row.get(10)).intValue());
+            assertEquals("avg", 2, ((Integer)row.get(3)).intValue());
+            assertEquals("avg dbl", 2.0d, ((Number)row.get(4)).doubleValue(), 0.001);
+            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            assertEquals("max", 3, ((Integer)row.get(6)).intValue());
+            assertEquals("count distinct", 3L, ((Number)row.get(7)).longValue());
+            assertEquals("sum distinct", 6L, ((Number)row.get(8)).longValue());
+            assertEquals("avg distinct", 2, ((Integer)row.get(9)).intValue());
+            assertEquals("avg distinct dbl", 2.0d, ((Number)row.get(10)).doubleValue(), 0.001);
+            assertEquals("min distinct", 1, ((Integer)row.get(11)).intValue());
+            assertEquals("max distinct", 3, ((Integer)row.get(12)).intValue());
 
             row = result.get(2);
             assertEquals("fst", 3, ((Number)row.get(0)).intValue());
             assertEquals("count", 6L, ((Number)row.get(1)).longValue());
             assertEquals("sum", 9L, ((Number)row.get(2)).longValue());
-            assertEquals("avg", 1.5d, ((Number)row.get(3)).doubleValue(), 0.001);
-            assertEquals("min", 1, ((Integer)row.get(4)).intValue());
-            assertEquals("max", 2, ((Integer)row.get(5)).intValue());
-            assertEquals("count distinct", 2L, ((Number)row.get(6)).longValue());
-            assertEquals("sum distinct", 3L, ((Number)row.get(7)).longValue());
-            assertEquals("avg distinct", 1.5d, ((Number)row.get(8)).doubleValue(), 0.001);
-            assertEquals("min distinct", 1, ((Integer)row.get(9)).intValue());
-            assertEquals("max distinct", 2, ((Integer)row.get(10)).intValue());
+            assertEquals("avg", 1, ((Integer)row.get(3)).intValue());
+            assertEquals("avg dbl", 1.5d, ((Number)row.get(4)).doubleValue(), 0.001);
+            assertEquals("min", 1, ((Integer)row.get(5)).intValue());
+            assertEquals("max", 2, ((Integer)row.get(6)).intValue());
+            assertEquals("count distinct", 2L, ((Number)row.get(7)).longValue());
+            assertEquals("sum distinct", 3L, ((Number)row.get(8)).longValue());
+            assertEquals("avg distinct", 1, ((Integer)row.get(9)).intValue());
+            assertEquals("avg distinct dbl", 1.5d, ((Number)row.get(10)).doubleValue(), 0.001);
+            assertEquals("min distinct", 1, ((Integer)row.get(11)).intValue());
+            assertEquals("max distinct", 2, ((Integer)row.get(12)).intValue());
         }
     }
 
