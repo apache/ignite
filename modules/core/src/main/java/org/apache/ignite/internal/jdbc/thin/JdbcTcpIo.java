@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectReader;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectWriter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -63,7 +62,7 @@ public class JdbcTcpIo {
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Logger. */
-    private final IgniteLogger log;
+    private static final Logger log = Logger.getLogger(JdbcTcpIo.class.getName());
 
     /** Server endpoint address. */
     private final String endpointAddr;
@@ -96,15 +95,13 @@ public class JdbcTcpIo {
      * @param endpointAddr Endpoint.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param log Logger to use.
      */
-    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
+    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder= enforceJoinOrder;
-        this.log = log;
     }
 
     /**
@@ -112,7 +109,7 @@ public class JdbcTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws IgniteCheckedException, IOException {
-        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, log);
+        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, null);
 
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());
@@ -157,10 +154,8 @@ public class JdbcTcpIo {
 
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-        throw new IgniteCheckedException("Ignite node reject handshake message: " +
-            "the protocol version is not supported by Ignite version: " + ver + (F.isEmpty(err) ? "" : ". " +
-            "The driver protocol version introduced in Ignite version: " + CURRENT_VER.toString() + ". " +
-            "Error message: " + err));
+        throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+            ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
     }
 
     /**
@@ -335,32 +330,35 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     private  byte[] read() throws IOException, IgniteCheckedException {
-        byte[] sizeBytes = new byte[4];
+        byte[] sizeBytes = read(4);
 
-        int readLen = in.read(sizeBytes);
-
-        if (readLen != 4) {
-            close();
-
-            throw new IgniteCheckedException("IO error. Cannot receive the length of message (4 bytes expect) " +
-                "[received = " + readLen + ']');
-        }
-
-        int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
-        byte[] msgData = new byte[size];
+        return read(msgSize);
+    }
 
-        readLen = in.read(msgData);
+    /**
+     * @param size Count of bytes to read from stream.
+     * @return Read bytes.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    private byte [] read(int size) throws IOException, IgniteCheckedException {
+        int off = 0;
 
-        if (readLen != size) {
-            close();
+        byte[] data = new byte[size];
 
-            throw new IgniteCheckedException("IO error. Cannot receive massage [received=" + readLen + ", expected="
-                + size + ']');
+        while (off != size) {
+            int res = in.read(data, off, size - off);
+
+            if (res == -1)
+                throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
+
+            off += res;
         }
 
-        return msgData;
+        return data;
     }
 
     /**

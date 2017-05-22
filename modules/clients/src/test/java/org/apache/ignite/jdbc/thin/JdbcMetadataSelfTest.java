@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metadata tests.
  */
-public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
+public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -63,8 +63,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }
@@ -84,6 +82,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
@@ -102,8 +102,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */

@@ -163,15 +163,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            IgniteCache<Object, Object> cache0;
-
-            if (req.cacheName() != null)
-                cache0 = ctx.grid().cache(req.cacheName());
-            else {
-                boolean start = ctx.config().isClientMode();
-
-                cache0 = (IgniteCache<Object, Object>)ctx.cache().getOrStartPublicCache(start, false);
-            }
+            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
 
             if (cache0 == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,

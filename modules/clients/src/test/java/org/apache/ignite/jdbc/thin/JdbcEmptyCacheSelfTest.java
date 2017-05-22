@@ -34,7 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for empty cache.
  */
-public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
+public class JdbcEmptyCacheSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -76,9 +76,9 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrid();
+        super.beforeTestsStarted();
 
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        startGrid();
     }
 
     /** {@inheritDoc} */

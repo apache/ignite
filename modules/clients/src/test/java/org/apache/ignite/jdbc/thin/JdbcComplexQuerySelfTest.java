@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for complex queries (joins, etc.).
  */
-public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
+public class JdbcComplexQuerySelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -61,8 +61,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }
@@ -85,6 +83,8 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(3);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
@@ -103,8 +103,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         personCache.put(new AffinityKey<>("p1", "o1"), new Person(1, "John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */

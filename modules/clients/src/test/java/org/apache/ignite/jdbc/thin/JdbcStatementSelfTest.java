@@ -83,6 +83,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3);
 
         IgniteCache<String, Person> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -92,8 +94,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         cache.put("p1", new Person(1, "John", "White", 25));
         cache.put("p2", new Person(2, "Joe", "Black", 35));
         cache.put("p3", new Person(3, "Mike", "Green", 40));
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */

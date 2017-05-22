@@ -56,7 +56,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Prepared statement test.
  */
-public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
+public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -103,6 +103,8 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3);
 
         IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -128,8 +130,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, o);
         cache.put(2, new TestObject(2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */

@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
+public class JdbcNoDefaultSchemaTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -63,8 +63,6 @@ public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
-
         return cfg;
     }
 
@@ -86,6 +84,8 @@ public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(GRID_CNT);
 
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");

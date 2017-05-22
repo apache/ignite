@@ -18,8 +18,10 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Connection test.
  */
-public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
+public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -59,8 +61,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
-
         return cfg;
     }
 
@@ -79,9 +79,9 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(2);
+        super.beforeTestsStarted();
 
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        startGridsMultiThreaded(2);
     }
 
     /** {@inheritDoc} */
@@ -109,7 +109,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "Failed to start Ignite client");
+        }, SQLException.class, "Failed to connect to Ignite cluster [host=127.0.0.1, port=80]");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
