@@ -88,14 +88,14 @@ public interface GridQueryIndexing {
     /**
      * Perform a MERGE statement using data streamer as receiver.
      *
-     * @param spaceName Space name.
+     * @param schemaName Scehma name.
      * @param qry Query.
      * @param params Query parameters.
      * @param streamer Data streamer to feed data to.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public long streamUpdateQuery(final String spaceName, final String qry, @Nullable final Object[] params,
+    public long streamUpdateQuery(final String schemaName, final String qry, @Nullable final Object[] params,
         IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**

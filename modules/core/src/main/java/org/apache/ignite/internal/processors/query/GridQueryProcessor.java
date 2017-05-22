@@ -1714,12 +1714,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param spaceName Cache name.
+     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param streamer Data streamer.
      * @param qry Query.
      * @return Iterator.
      */
-    public long streamUpdateQuery(@Nullable final String spaceName,
+    public long streamUpdateQuery(final String cacheName, final String schemaName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
         assert streamer != null;
 
@@ -1727,11 +1728,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            GridCacheContext cctx = ctx.cache().cache(spaceName).context();
+            GridCacheContext cctx = ctx.cache().cache(cacheName).context();
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
-                    return idx.streamUpdateQuery(spaceName, qry, args, streamer);
+                    return idx.streamUpdateQuery(schemaName, qry, args, streamer);
                 }
             }, true);
         }

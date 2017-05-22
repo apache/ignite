@@ -54,6 +54,6 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
 
     /** {@inheritDoc} */
     @Override long doUpdate(String sql, Object[] args) throws SQLException {
-        return conn.query().streamUpdateQuery(conn.cacheName(), streamer, sql, args);
+        return conn.query().streamUpdateQuery(conn.cacheName(), conn.getSchema(), streamer, sql, args);
     }
 }
