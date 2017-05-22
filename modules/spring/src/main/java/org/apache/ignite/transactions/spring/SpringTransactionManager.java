@@ -446,6 +446,18 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
     }
 
     /** {@inheritDoc} */
+    @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
+
+        assert tx != null;
+
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Setting Ignite transaction rollback-only: " + tx);
+
+        tx.setRollbackOnly();
+    }
+
     @Override protected void doCleanupAfterCompletion(Object transaction) {
         IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
