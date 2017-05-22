@@ -65,6 +65,7 @@ public class JdbcTcpIo {
     /** Enforce join order. */
     private boolean enforceJoinOrder;
 
+    /** Closed flag. */
     private boolean closed;
 
     /**
