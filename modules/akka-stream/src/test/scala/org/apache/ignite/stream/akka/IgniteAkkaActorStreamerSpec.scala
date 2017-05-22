@@ -30,7 +30,7 @@ import org.apache.ignite.events.CacheEvent
 import org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT
 import org.apache.ignite.lang.{IgniteBiTuple, IgnitePredicate}
 import org.apache.ignite.stream.StreamSingleTupleExtractor
-import org.apache.ignite.stream.scala.akka.IgniteAkkaActorJavaStreamer
+import org.apache.ignite.stream.scala.akka.IgniteAkkaActorStreamerJava
 import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSpec, Matchers}
 import org.scalatest.junit.JUnitRunner
@@ -131,7 +131,7 @@ class IgniteAkkaActorStreamerSpec extends FunSpec with Matchers with BeforeAndAf
             dataStreamer.allowOverwrite(true)
             dataStreamer.autoFlushFrequency(1)
 
-            val actorStreamer = system.actorOf(Props(new IgniteAkkaActorJavaStreamer(
+            val actorStreamer = system.actorOf(Props(new IgniteAkkaActorStreamerJava(
                 dataStreamer, IgniteAkkaActorStreamerSpec.singleExtractor)), "streamer")
 
             for (i <- 1 to IgniteAkkaActorStreamerSpec.CACHE_ENTRY_COUNT) {

@@ -19,7 +19,7 @@ package org.apache.ignite.stream.scala.akka
 
 import akka.actor.Actor
 import org.apache.ignite.IgniteDataStreamer
-import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
+import org.apache.ignite.stream.{StreamAdapter, StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
 /**
  * Implements actor for Ignite Streamer.
@@ -31,11 +31,11 @@ import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTuple
  * @tparam K Key type.
  * @tparam V Value type.
  */
-class IgniteAkkaActorJavaStreamer[T, K, V](
+class IgniteAkkaActorStreamerJava[T, K, V](
     val strm: IgniteDataStreamer[K, V],
     val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V],
     val multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]
-) extends org.apache.ignite.stream.StreamAdapter[T, K, V] with Actor {
+) extends StreamAdapter[T, K, V] with Actor {
     require(strm != null, "the IgniteDataStreamer must be initialize.")
     require(singleTupleExtractor != null || multipleTupleExtractor != null, "the extractor must be initialize.")
 
