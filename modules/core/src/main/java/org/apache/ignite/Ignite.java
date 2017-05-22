@@ -27,6 +27,8 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -618,8 +620,21 @@ public interface Ignite extends AutoCloseable {
     /**
      * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
      * instance.
+     * Returned collection contains latest snapshots of {@link MemoryMetrics} for each page memory region
+     * configured with {@link MemoryPolicyConfiguration configuration} withing the Ignite instance.
      *
-     * @return Collection of {@link MemoryMetrics}
+     * @return Collection of {@link MemoryMetrics} snapshots.
      */
     public Collection<MemoryMetrics> memoryMetrics();
+
+    /**
+     * Returns latest snapshot of {@link MemoryMetrics} for a memory region of a given name.
+     *
+     * If system default memory region was used, its {@link MemoryMetrics} can be accessed by passing
+     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} name.
+     *
+     * @param memPlcName Name of memory region configured with {@link MemoryPolicyConfiguration config}.
+     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     */
+    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 }

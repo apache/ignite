@@ -17,7 +17,9 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -66,6 +68,12 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Default metrics enabled flag. */
     public static final boolean DFLT_METRICS_ENABLED = false;
 
+    /** Default amount of sub intervals to calculate {@link MemoryMetrics#getAllocationRate()} metric. */
+    public static final int DFLT_SUB_INTERVALS = 5;
+
+    /** Default length of interval over which {@link MemoryMetrics#getAllocationRate()} metric is calculated. */
+    public static final int DFLT_RATE_TIME_INTERVAL_SEC = 60;
+
     /** Memory policy name. */
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -90,8 +98,18 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Minimum number of empty pages in reuse lists. */
     private int emptyPagesPoolSize = 100;
 
-    /** */
+    /**
+     * Flag to enable on configuration level collecting {@link MemoryMetrics} on this memory policy.
+     */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
+
+    /** Amount of sub intervals used to calculate {@link MemoryMetrics#getAllocationRate()} metric for this policy. */
+    private int subIntervals = DFLT_SUB_INTERVALS;
+
+    /**
+     * Interval (in seconds) over which {@link MemoryMetrics#getAllocationRate()} metric is calculated.
+     */
+    private int rateTimeInterval = DFLT_RATE_TIME_INTERVAL_SEC;
 
     /**
      * Gets memory policy name.
@@ -263,7 +281,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics MX bean.
+     * at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
      *
      * @return Metrics enabled flag.
      */
@@ -273,13 +291,105 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics MX bean.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets interval in seconds over which {@link MemoryMetrics#getAllocationRate()} metric is calculated.
+     * For instance if time interval of 60 seconds is used, {@link MemoryMetrics#getAllocationRate() allocation rate}
+     * (pages per second) will be calculated according to the formula:
+     * allocationRate = (number of pages allocated for the last 60 seconds) / 60 seconds.
+     *
+     * Default value is 60 seconds.
+     *
+     * Shorter rate time interval with more {@link #getSubIntervals() subintervals} allows to monitor quick changes
+     * (drops or spikes) in allocation rate but leads to harsher sequence of values.
+     *
+     * Longer rate time interval allows smoother sequences of values but evens spikes or drops.
+     *
+     * The setting can be changed at runtime via memory metrics {@link MemoryMetricsMXBean MX bean},
+     * changes will be applied to future indications of the metric.
+     *
+     * Value must be greater than zero.
+     *
+     * @return Time interval over which allocation rate is calculated.
+     */
+    public int getRateTimeInterval() {
+        return rateTimeInterval;
+    }
+
+    /**
+     * Gets interval in seconds over which {@link MemoryMetrics#getAllocationRate()} metric is calculated.
+     * For instance if time interval of 60 seconds is used, {@link MemoryMetrics#getAllocationRate() allocation rate}
+     * (pages per second) will be calculated according to the formula:
+     * allocationRate = (number of pages allocated for the last 60 seconds) / 60 seconds.
+     *
+     * Default value is 60 seconds.
+     *
+     * Shorter rate time interval with more {@link #getSubIntervals() subintervals} allows to monitor quick changes
+     * (drops or spikes) in allocation rate but leads to harsher sequence of values.
+     *
+     * Longer rate time interval allows smoother sequences of values but evens spikes or drops.
+     *
+     * The setting can be changed at runtime via memory metrics {@link MemoryMetricsMXBean MX bean},
+     * changes will be applied to future indications of the metric.
+     *
+     * Value must be greater than zero.
+     *
+     * @param rateTimeInterval Time interval value, must be greater than zero.
+     * @return {@code this} for chaining.
+     */
+    public MemoryPolicyConfiguration setRateTimeInterval(int rateTimeInterval) {
+        this.rateTimeInterval = rateTimeInterval;
+
+        return this;
+    }
+
+    /**
+     * Gets number of sub intervals to calculate {@link MemoryMetrics#getAllocationRate()} metric.
+     * To calculate the metric {@link #getRateTimeInterval() rate time interval} gets split into sub intervals;
+     * for each sub interval a separate counter is used.
+     *
+     * More sub intervals allow to have smoother sequence of values of {@link MemoryMetrics#getAllocationRate()} metric
+     * but if each sub interval is less than 10 ms allocations may not be counted and short spikes may not be reflected
+     * by the metric.
+     *
+     * Default value is 5 sub intervals.
+     *
+     * Value must be greater than zero.
+     *
+     * @return number of sub intervals.
+     */
+    public int getSubIntervals() {
+        return subIntervals;
+    }
+
+    /**
+     * Gets number of sub intervals to calculate {@link MemoryMetrics#getAllocationRate()} metric.
+     * To calculate the metric {@link #getRateTimeInterval() rate time interval} gets split into sub intervals;
+     * for each sub interval a separate counter is used.
+     *
+     * More sub intervals allow to have smoother sequence of values of {@link MemoryMetrics#getAllocationRate()} metric
+     * with smaller drops but if each sub interval is less than 10 ms allocations may not be counted
+     * and short spikes may not be reflected by the metric.
+     *
+     * Default value is 5 sub intervals.
+     *
+     * Value must be greater than zero.
+     *
+     * @param subIntervals Sub intervals number, must be greater than zero.
+     * @return {@code this} for chaining.
+     */
+    public MemoryPolicyConfiguration setSubIntervals(int subIntervals) {
+        this.subIntervals = subIntervals;
 
         return this;
     }
