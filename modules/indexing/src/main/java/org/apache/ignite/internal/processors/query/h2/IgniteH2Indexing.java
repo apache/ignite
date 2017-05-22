@@ -1534,7 +1534,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fqry.setDistributedJoins(qry.isDistributedJoins());
         fqry.setPartitions(qry.getPartitions());
         fqry.setLocal(qry.isLocal());
-        fqry.setSchema(qry.getSchema());
 
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
@@ -1582,10 +1581,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
         GridQueryCancel cancel) {
-        final String schema = qry.getSchema();
+        final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
-        Connection c = connectionForSchema(schema);
+        Connection c = connectionForSpace(space);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins();
@@ -1596,7 +1595,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery twoStepQry = null;
         List<GridQueryFieldMetadata> meta;
 
-        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(schema, sqlQry, grpByCollocated,
+        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder, qry.isLocal());
 
         TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
@@ -2666,7 +2665,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static final class TwoStepCachedQueryKey {
         /** */
-        private final String schema;
+        private final String space;
 
         /** */
         private final String sql;
@@ -2684,22 +2683,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final boolean isLocal;
 
         /**
-         * Constructor.
-         *
-         * @param schema Schema.
+         * @param space Space.
          * @param sql Sql.
          * @param grpByCollocated Collocated GROUP BY.
          * @param distributedJoins Distributed joins enabled.
          * @param enforceJoinOrder Enforce join order of tables.
          * @param isLocal Query is local flag.
          */
-        private TwoStepCachedQueryKey(String schema,
+        private TwoStepCachedQueryKey(String space,
             String sql,
             boolean grpByCollocated,
             boolean distributedJoins,
             boolean enforceJoinOrder,
             boolean isLocal) {
-            this.schema = schema;
+            this.space = space;
             this.sql = sql;
             this.grpByCollocated = grpByCollocated;
             this.distributedJoins = distributedJoins;
@@ -2726,7 +2723,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (enforceJoinOrder != that.enforceJoinOrder)
                 return false;
 
-            if (schema != null ? !schema.equals(that.schema) : that.schema != null)
+            if (space != null ? !space.equals(that.space) : that.space != null)
                 return false;
 
             return isLocal == that.isLocal && sql.equals(that.sql);
@@ -2734,7 +2731,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = schema != null ? schema.hashCode() : 0;
+            int res = space != null ? space.hashCode() : 0;
             res = 31 * res + sql.hashCode();
             res = 31 * res + (grpByCollocated ? 1 : 0);
             res = res + (distributedJoins ? 2 : 0);

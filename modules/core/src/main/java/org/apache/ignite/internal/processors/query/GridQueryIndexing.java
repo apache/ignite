@@ -95,7 +95,7 @@ public interface GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public long streamUpdateQuery(final String schemaName, final String qry, @Nullable final Object[] params,
+    public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
         IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
