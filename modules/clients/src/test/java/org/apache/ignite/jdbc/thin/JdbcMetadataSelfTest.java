@@ -31,12 +31,10 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
@@ -148,7 +146,9 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testGetTables() throws Exception {
+    public void testGetTables() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -184,7 +184,9 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testGetColumns() throws Exception {
+    public void testGetColumns() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
 
@@ -278,7 +280,9 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testMetadataResultSetClose() throws Exception {
+    public void testMetadataResultSetClose() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
             int colCnt = tbls.getMetaData().getColumnCount();
