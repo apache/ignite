@@ -461,8 +461,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return grpName;
     }
 
-    public void setGroupName(String groupName) {
+    public CacheConfiguration<K, V> setGroupName(String groupName) {
         this.grpName = groupName;
+
+        return this;
     }
 
     /**
