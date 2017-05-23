@@ -63,6 +63,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -78,7 +81,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -1373,6 +1378,34 @@ public abstract class GridAbstractTest extends TestCase {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
         return cfg;
+    }
+
+    /**
+     * Create instance of {@link BinaryMarshaller} suitable for use
+     * without starting a grid upon an empty {@link IgniteConfiguration}.
+     * @return Binary marshaller.
+     * @throws IgniteCheckedException if failed.
+     */
+    protected BinaryMarshaller createStandaloneBinaryMarshaller() throws IgniteCheckedException {
+        return createStandaloneBinaryMarshaller(new IgniteConfiguration());
+    }
+
+    /**
+     * Create instance of {@link BinaryMarshaller} suitable for use
+     * without starting a grid upon given {@link IgniteConfiguration}.
+     * @return Binary marshaller.
+     * @throws IgniteCheckedException if failed.
+     */
+    protected BinaryMarshaller createStandaloneBinaryMarshaller(IgniteConfiguration cfg) throws IgniteCheckedException {
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
+
+        marsh.setContext(new MarshallerContextTestImpl());
+
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
+
+        return marsh;
     }
 
     /**
