@@ -55,11 +55,13 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImp
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
 /**
@@ -419,18 +421,29 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plcCfg MemoryPolicyConfiguration to validate.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private static void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
+    private void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
         if (plcCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("MemoryPolicy must have size more than 10MB (use " +
                 "MemoryPolicyConfiguration.initialSize property to set correct size in bytes) " +
                 "[name=" + plcCfg.getName() + ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]"
             );
 
-        if (plcCfg.getMaxSize() < plcCfg.getInitialSize())
-            throw new IgniteCheckedException("MemoryPolicy maxSize must not be smaller than " +
-                "initialSize [name=" + plcCfg.getName() +
-                ", initSize=" + U.readableSize(plcCfg.getInitialSize(), true) +
-                ", maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) + ']');
+        if (plcCfg.getMaxSize() < plcCfg.getInitialSize()) {
+            // We will know for sure if initialSize has been changed if we compare Longs by "==".
+            if (plcCfg.getInitialSize() == DFLT_MEMORY_POLICY_INITIAL_SIZE) {
+                plcCfg.setInitialSize(plcCfg.getMaxSize());
+
+                LT.warn(log, "MemoryPolicy maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) +
+                    " is smaller than defaultInitialSize=" +
+                    U.readableSize(MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE, true) +
+                    ", setting initialSize to " + U.readableSize(plcCfg.getMaxSize(), true));
+            } else {
+                throw new IgniteCheckedException("MemoryPolicy maxSize must not be smaller than " +
+                    "initialSize [name=" + plcCfg.getName() +
+                    ", initSize=" + U.readableSize(plcCfg.getInitialSize(), true) +
+                    ", maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) + ']');
+            }
+        }
 
         if (U.jvm32Bit() && plcCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
             throw new IgniteCheckedException("MemoryPolicy initialSize exceeds 2GB on 32-bit JVM (use " +
