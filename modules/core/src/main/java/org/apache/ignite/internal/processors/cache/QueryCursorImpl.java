@@ -189,16 +189,20 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         return fieldsMeta;
     }
 
-    /**
-     * @param idx field index.
-     * @return field name.
-     */
+    /** {@inheritDoc} */
     @Override public String getFieldName(int idx) {
         assert this.fieldsMeta != null;
 
         GridQueryFieldMetadata metadata = fieldsMeta.get(idx);
 
         return metadata.fieldName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRowSize() {
+        assert this.fieldsMeta != null;
+
+        return fieldsMeta.size();
     }
 
     /** Query cursor state */

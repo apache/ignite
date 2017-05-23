@@ -25,7 +25,15 @@ public interface FieldsQueryCursor<T> extends QueryCursor<T> {
     /**
      * Gets field name.
      *
+     * @param idx field index.
      * @return Field name.
      */
     String getFieldName(int idx);
+
+    /**
+     * Gets number of fields in a row.
+     *
+     * @return row size.
+     */
+    int getRowSize();
 }
