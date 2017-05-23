@@ -120,12 +120,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         if (pstCfg.getPersistenceStorePath() != null) {
             File workDir0 = new File(pstCfg.getPersistenceStorePath());
+
             if (!workDir0.isAbsolute())
-                workDir0 = U.resolveWorkDirectory(igniteCfg.getWorkDirectory(), pstCfg.getPersistenceStorePath(), false);
+                workDir0 = U.resolveWorkDirectory(
+                    igniteCfg.getWorkDirectory(),
+                    pstCfg.getPersistenceStorePath(),
+                    false
+                );
+
             storeWorkDir = new File(workDir0, consId);
         }
         else
-            storeWorkDir = new File(U.resolveWorkDirectory(igniteCfg.getWorkDirectory(), "db", false), consId);
+            storeWorkDir = new File(U.resolveWorkDirectory(
+                igniteCfg.getWorkDirectory(),
+                "db",
+                false
+            ), consId);
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
     }

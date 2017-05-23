@@ -39,6 +39,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+
 /**
  *
  */
@@ -85,6 +87,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
         client = false;
 
         stopAllGrids();
@@ -96,6 +100,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testReservedOnExchange() throws Exception {
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
@@ -107,6 +113,17 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
             cache.put(k, k);
 
         forceCheckpoint();
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, k * 2);
+
+        forceCheckpoint();
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, k);
+
+        forceCheckpoint();
+
 
         Lock lock = cache.lock(0);
 
@@ -179,6 +196,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
         int entryCnt = 10_000;
 
         Ignite ig0 = startGrids(2);
@@ -268,6 +287,8 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testNodeLeftDuringExchange() throws Exception {
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
@@ -319,7 +340,7 @@ public class IgniteWalHistoryReservationsSelfTest extends GridCommonAbstractTest
 
             assert reserved;
 
-            stopGrid(initGridCnt - 1);
+            stopGrid(Integer.toString(initGridCnt - 1), true, false);
         }
         finally {
             lock.unlock();

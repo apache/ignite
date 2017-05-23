@@ -130,7 +130,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  *
@@ -152,7 +152,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private final int ggWalRebalanceThreshold = IgniteSystemProperties.getInteger(
-        IGNITE_WAL_REBALANCE_THRESHOLD, 500_000);
+        IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
 
     /** Checkpoint lock hold count. */
     private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = new ThreadLocal<Integer>() {
@@ -887,32 +887,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (part.state() != GridDhtPartitionState.OWNING || part.dataStore().fullSize() <= ggWalRebalanceThreshold)
                     continue;
 
-                for (Long cpTs : checkpointHist.checkpoints()) {
-                    try {
-                        CheckpointEntry entry = checkpointHist.entry(cpTs);
+                CheckpointEntry cpEntry = searchCheckpointEntry(cacheCtx, part.id(), null);
 
-                        if (!entry.cacheGrpStates.containsKey(grp.groupId()) ||
-                            !entry.cacheGrpStates.get(grp.groupId()).partitions().containsKey(part.id()))
-                            continue;
+                try {
+                    if (cpEntry != null && cctx.wal().reserve(cpEntry.cpMark)) {
+                        Map<Integer, T2<Long, WALPointer>> cacheMap = reservedForExchange.get(cacheCtx.cacheId());
 
-                        WALPointer ptr = searchPartitionCounter(grp.groupId(), part.id(), entry.checkpointTimestamp());
+                        if (cacheMap == null) {
+                            cacheMap = new HashMap<>();
 
-                        if (ptr != null && cctx.wal().reserve(ptr)) {
-                            Map<Integer, T2<Long, WALPointer>> cacheMap = reservedForExchange.get(grp.groupId());
-
-                            if (cacheMap == null) {
-                                cacheMap = new HashMap<>();
-
-                                reservedForExchange.put(grp.groupId(), cacheMap);
-                            }
-
-                            cacheMap.put(part.id(), new T2<>(entry.partitionCounter(grp.groupId(), part.id()), ptr));
+                            reservedForExchange.put(grp.groupId(), cacheMap);
                         }
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Error while trying to reserve history", ex);
-                    }
 
+                        cacheMap.put(part.id(), new T2<>(cpEntry.partitionCounter(grp.groupId(), part.id()), cpEntry.cpMark));
+                    }
+                }
+                catch (IgniteCheckedException ex) {
+                    U.error(log, "Error while trying to reserve history", ex);
                 }
             }
         }
@@ -952,7 +943,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
-        WALPointer ptr = searchPartitionCounter(grpId, partId, cntr);
+        CheckpointEntry cpEntry = searchCheckpointEntry(grpId, partId, cntr);
+
+        if (cpEntry == null)
+            return false;
+
+        WALPointer ptr = cpEntry.cpMark;
 
         if (ptr == null)
             return false;
@@ -1054,12 +1050,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param grpId Cache group ID.
      * @param part Partition ID.
-     * @param partCntrSince Partition counter.
-     * @return WAL pointer or {@code null} if failed to search.
+     * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
+     * @return Checkpoint entry or {@code null} if failed to search.
      */
-    WALPointer searchPartitionCounter(int grpId, int part, Long partCntrSince) {
+    @Nullable public WALPointer searchPartitionCounter(GridCacheContext cacheCtx, int part, @Nullable Long partCntrSince) {
+        CheckpointEntry entry = searchCheckpointEntry(cacheCtx, part, partCntrSince);
+
+        if (entry == null)
+            return null;
+
+        return entry.cpMark;
+    }
+
+    /**
+     * Tries to search for a WAL pointer for the given partition counter start.
+     *
+     * @param cacheCtx Cache context.
+     * @param part Partition ID.
+     * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
+     * @return Checkpoint entry or {@code null} if failed to search.
+     */
+    @Nullable private CheckpointEntry searchCheckpointEntry(GridCacheContext cacheCtx, int part, @Nullable Long partCntrSince) {
         boolean hasGap = false;
-        WALPointer first = null;
+        CheckpointEntry first = null;
 
         for (Long cpTs : checkpointHist.checkpoints()) {
             try {
@@ -1068,8 +1081,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Long foundCntr = entry.partitionCounter(grpId, part);
 
                 if (foundCntr != null) {
-                    if (foundCntr <= partCntrSince) {
-                        first = entry.cpMark;
+                    if (partCntrSince == null) {
+                        if (hasGap) {
+                            first = entry;
+
+                            hasGap = false;
+                        }
+
+                        if (first == null)
+                            first = entry;
+                    }
+                    else if (foundCntr <= partCntrSince) {
+                        first = entry;
 
                         hasGap = false;
                     }

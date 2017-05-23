@@ -54,7 +54,7 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
     private static final long CHUNK_SIZE = 1024 * 1024;
 
     /** */
-    private static final long MEMORY_LIMIT = 5 * CHUNK_SIZE;
+    private static final long MEMORY_LIMIT = 10 * CHUNK_SIZE;
 
     /** */
     private static final int PAGES_NUM = 128_000;
