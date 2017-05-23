@@ -37,8 +37,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.client.impl.GridClientImpl;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
@@ -54,6 +52,9 @@ import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
  * See documentation of {@link org.apache.ignite.IgniteJdbcThinDriver} for details.
  */
 public class JdbcConnection implements Connection {
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(JdbcConnection.class.getName());
+
     /** Cache name. */
     private String schemaName;
 
@@ -74,9 +75,6 @@ public class JdbcConnection implements Connection {
 
     /** Ignite endpoint. */
     private JdbcTcpIo cliIo;
-
-    /** Logger. */
-    private static final Logger log = Logger.getLogger(JdbcConnection.class.getName());
 
     /**
      * Creates new connection.
@@ -103,10 +101,10 @@ public class JdbcConnection implements Connection {
             int port = Integer.parseInt(portStr);
 
             if (port <= 0 || port > 0xFFFF)
-                throw new SQLException("JDBC connection port is invalid: [port=" + portStr + ']');
+                throw new SQLException("Invalid port: " + portStr);
         }
         catch (NumberFormatException e) {
-            throw new SQLException("JDBC connection port is invalid: [port=" + portStr + ']', e);
+            throw new SQLException("Invalid port: " + portStr, e);
         }
 
         String endpoint = host + ":" + portStr;
@@ -179,7 +177,7 @@ public class JdbcConnection implements Connection {
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
-            log.warning("Transactions are not supported.");
+            LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -211,7 +209,7 @@ public class JdbcConnection implements Connection {
         this.autoCommit = autoCommit;
 
         if (!autoCommit)
-            log.warning("Transactions are not supported.");
+            LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -219,7 +217,7 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         if (!autoCommit)
-            log.warning("Transactions are not supported.");
+            LOG.warning("Transactions are not supported.");
 
         return autoCommit;
     }
@@ -228,14 +226,14 @@ public class JdbcConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        log.warning("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        log.warning("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -288,7 +286,7 @@ public class JdbcConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        log.warning("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
 
         txIsolation = level;
     }
@@ -297,7 +295,7 @@ public class JdbcConnection implements Connection {
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
 
-        log.warning("Transactions are not supported.");
+        LOG.warning("Transactions are not supported.");
 
         return txIsolation;
     }
@@ -331,7 +329,7 @@ public class JdbcConnection implements Connection {
         ensureNotClosed();
 
         if (holdability != HOLD_CURSORS_OVER_COMMIT)
-            log.warning("Transactions are not supported.");
+            LOG.warning("Transactions are not supported.");
 
         this.holdability = holdability;
     }

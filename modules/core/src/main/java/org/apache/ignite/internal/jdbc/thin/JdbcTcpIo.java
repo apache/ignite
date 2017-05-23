@@ -22,14 +22,13 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlNioListener;
+import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -108,7 +107,7 @@ public class JdbcTcpIo {
         writer.writeShort(CURRENT_VER.minor());
         writer.writeShort(CURRENT_VER.maintenance());
 
-        writer.writeByte(SqlNioListener.JDBC_CLIENT);
+        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
@@ -157,7 +156,7 @@ public class JdbcTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    private  byte[] read() throws IOException, IgniteCheckedException {
+    private byte[] read() throws IOException, IgniteCheckedException {
         byte[] sizeBytes = read(4);
 
         int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
@@ -181,7 +180,7 @@ public class JdbcTcpIo {
             int res = in.read(data, off, size - off);
 
             if (res == -1)
-                throw new IgniteCheckedException("Failed to read incoming message (not enough data)");
+                throw new IgniteCheckedException("Failed to read incoming message (not enough data).");
 
             off += res;
         }

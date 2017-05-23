@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Enumeration;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -147,7 +146,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         assert conn.isClosed();
 
         assert !conn.isValid(2): "Connection must be closed";
-
 
         GridTestUtils.assertThrows(
             log,

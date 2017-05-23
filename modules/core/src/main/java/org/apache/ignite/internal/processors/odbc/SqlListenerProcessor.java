@@ -126,7 +126,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(host)
                             .port(port)
-                            .listener(new SqlNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
+                            .listener(new SqlListenerNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())

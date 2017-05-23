@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * ODBC message listener.
  */
-public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
+public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** The value corresponds to ODBC driver of the parser field of the handshake request. */
     public static final byte ODBC_CLIENT = 0;
 
@@ -81,7 +81,7 @@ public class SqlNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      */
-    public SqlNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public SqlListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
