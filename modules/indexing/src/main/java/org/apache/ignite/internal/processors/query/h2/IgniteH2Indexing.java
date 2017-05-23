@@ -2135,7 +2135,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             schema = schemas.get(escapeName(schemaName, true));
         }
 
-        return schema.spaceName;
+        return schema.cacheName;
     }
 
     /**
@@ -2555,7 +2555,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Schema rmv = schemas.remove(schema);
 
         if (rmv != null) {
-            cacheName2schema.remove(emptyIfNull(rmv.spaceName));
+            cacheName2schema.remove(emptyIfNull(rmv.cacheName));
             mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 
@@ -2576,7 +2576,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 it.hasNext(); ) {
                 Map.Entry<TwoStepCachedQueryKey, TwoStepCachedQuery> e = it.next();
 
-                if (F.eq(e.getKey().space, cacheName))
+                if (F.eq(e.getKey().cacheName, cacheName))
                     it.remove();
             }
         }
@@ -2590,7 +2590,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
 
         return new IndexingQueryFilter() {
-            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String cacheName) {
+            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
                 if (cache.context().isReplicated())
@@ -2673,7 +2673,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static final class TwoStepCachedQueryKey {
         /** */
-        private final String space;
+        // TODO: To be replaced with schema.
+        private final String cacheName;
 
         /** */
         private final String sql;
@@ -2691,20 +2692,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final boolean isLocal;
 
         /**
-         * @param space Space.
+         * @param cacheName Cache name.
          * @param sql Sql.
          * @param grpByCollocated Collocated GROUP BY.
          * @param distributedJoins Distributed joins enabled.
          * @param enforceJoinOrder Enforce join order of tables.
          * @param isLocal Query is local flag.
          */
-        private TwoStepCachedQueryKey(String space,
+        private TwoStepCachedQueryKey(String cacheName,
             String sql,
             boolean grpByCollocated,
             boolean distributedJoins,
             boolean enforceJoinOrder,
             boolean isLocal) {
-            this.space = space;
+            this.cacheName = cacheName;
             this.sql = sql;
             this.grpByCollocated = grpByCollocated;
             this.distributedJoins = distributedJoins;
@@ -2731,7 +2732,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (enforceJoinOrder != that.enforceJoinOrder)
                 return false;
 
-            if (space != null ? !space.equals(that.space) : that.space != null)
+            if (cacheName != null ? !cacheName.equals(that.cacheName) : that.cacheName != null)
                 return false;
 
             return isLocal == that.isLocal && sql.equals(that.sql);
@@ -2739,7 +2740,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = space != null ? space.hashCode() : 0;
+            int res = cacheName != null ? cacheName.hashCode() : 0;
             res = 31 * res + sql.hashCode();
             res = 31 * res + (grpByCollocated ? 1 : 0);
             res = res + (distributedJoins ? 2 : 0);
@@ -3161,7 +3162,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (type().valueClass() == String.class) {
                 try {
-                    luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
+                    luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.cacheName, type);
                 }
                 catch (IgniteCheckedException e1) {
                     throw new IgniteException(e1);
@@ -3174,7 +3175,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (textIdx != null) {
                 try {
-                    luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
+                    luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.cacheName, type);
                 }
                 catch (IgniteCheckedException e1) {
                     throw new IgniteException(e1);
@@ -3446,7 +3447,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private class Schema {
         /** */
-        private final String spaceName;
+        // TODO: To be rmeoved.
+        private final String cacheName;
 
         /** */
         private final String schemaName;
@@ -3467,14 +3469,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final CacheConfiguration<?, ?> ccfg;
 
         /**
-         * @param spaceName Space name.
+         * @param cacheName Cache name.
          * @param schemaName Schema name.
          * @param cctx Cache context.
          * @param ccfg Cache configuration.
          */
-        private Schema(String spaceName, String schemaName, GridCacheContext<?, ?> cctx,
+        private Schema(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
             CacheConfiguration<?, ?> ccfg) {
-            this.spaceName = spaceName;
+            this.cacheName = cacheName;
             this.cctx = cctx;
             this.schemaName = schemaName;
             this.ccfg = ccfg;
@@ -3649,9 +3651,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 CacheObject co = (CacheObject)obj;
 
                 if (type == Value.JAVA_OBJECT)
-                    return new GridH2ValueCacheObject(cacheContext(schema.spaceName), co);
+                    return new GridH2ValueCacheObject(cacheContext(schema.cacheName), co);
 
-                obj = co.value(objectContext(schema.spaceName), false);
+                obj = co.value(objectContext(schema.cacheName), false);
             }
 
             switch (type) {
@@ -3729,7 +3731,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     "or configure key type as common super class for all actual keys for this value type.", e);
             }
 
-            GridCacheContext cctx = cacheContext(schema.spaceName);
+            GridCacheContext cctx = cacheContext(schema.cacheName);
 
             if (cctx.offheapIndex()) {
                 row.ver = ver;
@@ -4009,7 +4011,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public TableBase createTable(CreateTableData createTblData) {
-            resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.schema.spaceName);
+            resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.schema.cacheName);
 
             return resTbl0;
         }
