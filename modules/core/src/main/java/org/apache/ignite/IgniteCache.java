@@ -347,21 +347,24 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
     /**
-     * Queries cache. Accepts any subclass of {@link Query} interface (excepts  {@link SqlFieldsQuery}).
+     * Queries cache. Accepts any subclass of {@link Query} interface.
+     * See also {@link #query(SqlFieldsQuery)}.
      *
      * @param qry Query.
      * @return Cursor.
      * @see ScanQuery
      * @see SqlQuery
+     * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
+     *
      */
     public <R> QueryCursor<R> query(Query<R> qry);
 
     /**
-     * Queries cache. Accepts any subclass of {@link SqlFieldsQuery} interface.
+     * Queries cache. Accepts {@link SqlFieldsQuery} class.
      *
-     * @param qry Query.
+     * @param qry SqlFieldsQuery.
      * @return Cursor.
      * @see SqlFieldsQuery
      */

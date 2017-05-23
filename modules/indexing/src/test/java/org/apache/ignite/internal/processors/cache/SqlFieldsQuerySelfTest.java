@@ -72,11 +72,11 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
 
         assertEquals(2, qryCursor.getAll().size());
 
-        assertEquals(2, qryCursor.getRowSize()); // Row contains "name" and "age" fields.
+        assertEquals(2, qryCursor.getColumnsCount()); // Row contains "name" and "age" fields.
 
-        assertTrue("Full Name".equalsIgnoreCase(qryCursor.getFieldName(0)));
+        assertEquals("Full Name", qryCursor.getFieldName(0));
 
-        assertTrue("age".equalsIgnoreCase(qryCursor.getFieldName(1)));
+        assertEquals("AGE", qryCursor.getFieldName(1));
     }
 
 

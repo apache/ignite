@@ -199,7 +199,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
     }
 
     /** {@inheritDoc} */
-    @Override public int getRowSize() {
+    @Override public int getColumnsCount() {
         assert this.fieldsMeta != null;
 
         return fieldsMeta.size();
