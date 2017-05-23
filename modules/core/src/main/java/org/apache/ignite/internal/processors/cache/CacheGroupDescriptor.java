@@ -76,7 +76,7 @@ public class CacheGroupDescriptor {
         IgniteUuid deploymentId,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
-        assert grpId > 0 : grpId;
+        assert grpId != 0;
 
         this.grpName = grpName;
         this.grpId = grpId;

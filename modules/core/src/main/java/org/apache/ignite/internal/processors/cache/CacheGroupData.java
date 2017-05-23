@@ -74,7 +74,7 @@ public class CacheGroupData implements Serializable {
         IgniteUuid deploymentId,
         Map<String, Integer> caches) {
         assert cacheCfg != null;
-        assert grpId > 0 : grpId;
+        assert grpId != 0;
         assert deploymentId != null;
 
         this.cacheCfg = cacheCfg;

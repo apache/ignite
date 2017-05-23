@@ -66,9 +66,6 @@ class ClusterCachesInfo {
     /** */
     private final ConcurrentMap<Integer, CacheGroupDescriptor> registeredCacheGrps = new ConcurrentHashMap<>();
 
-    /** */
-    private int cacheGrpIdGen = 1;
-
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
@@ -420,6 +417,8 @@ class ClusterCachesInfo {
                     if (!grpDesc.hasCaches()) {
                         registeredCacheGrps.remove(grpDesc.groupId());
 
+                        ctx.discovery().removeCacheGroup(grpDesc);
+
                         exchangeActions.addCacheGroupToStop(grpDesc);
                     }
                 }
@@ -683,7 +682,6 @@ class ClusterCachesInfo {
         return new CacheNodeCommonDiscoveryData(caches,
             templates,
             cacheGrps,
-            cacheGrpIdGen,
             ctx.discovery().clientNodesMap());
     }
 
@@ -698,10 +696,6 @@ class ClusterCachesInfo {
         assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
 
         CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
-
-        cacheGrpIdGen = cachesData.currentCacheGroupId();
-
-        assert cacheGrpIdGen > 0 : cacheGrpIdGen;
 
         // Replace locally registered data with actual data received from cluster.
         registeredCaches.clear();
@@ -999,7 +993,12 @@ class ClusterCachesInfo {
             }
         }
 
-        int grpId = cacheGrpIdGen++;
+        int grpId;
+
+        if (startedCacheCfg.getGroupName() == null)
+            grpId = CU.cacheId(startedCacheCfg.getName());
+        else
+            grpId = CU.cacheId("grp#" + startedCacheCfg.getGroupName());
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
@@ -1127,7 +1126,6 @@ class ClusterCachesInfo {
 
         Set<String> stoppedCaches = new HashSet<>();
         Set<Integer> stoppedCacheGrps = new HashSet<>();
-        Map<Integer, Integer> newCacheGrpIds = new HashMap<>();
 
         for (Map.Entry<Integer, CacheGroupDescriptor> e : cachesOnDisconnect.cacheGrps.entrySet()) {
             CacheGroupDescriptor locDesc = e.getValue();
@@ -1152,7 +1150,7 @@ class ClusterCachesInfo {
             if (stopped)
                 stoppedCacheGrps.add(locDesc.groupId());
             else
-                newCacheGrpIds.put(locDesc.groupId(), desc.groupId());
+                assert locDesc.groupId() == desc.groupId();
         }
 
         for (Map.Entry<String, DynamicCacheDescriptor> e : cachesOnDisconnect.caches.entrySet()) {
@@ -1183,7 +1181,7 @@ class ClusterCachesInfo {
 
         cachesOnDisconnect = null;
 
-        return new ClusterCachesReconnectResult(stoppedCacheGrps, stoppedCaches, newCacheGrpIds);
+        return new ClusterCachesReconnectResult(stoppedCacheGrps, stoppedCaches);
     }
 
     /**

@@ -318,9 +318,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
-            new CacheGroupAffinity(filter, cacheMode));
+            new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode));
 
         assert old == null : old;
+    }
+
+    /**
+     * @param grpDesc Cache group descriptor.
+     */
+    public void removeCacheGroup(CacheGroupDescriptor grpDesc) {
+        CacheGroupAffinity rmvd = registeredCacheGrps.remove(grpDesc.groupId());
+
+        assert rmvd != null : grpDesc.cacheOrGroupName();
     }
 
     /**
@@ -2704,6 +2713,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      */
     private static class CacheGroupAffinity {
+        /** */
+        private final String name;
+
         /** Nodes filter. */
         private final IgnitePredicate<ClusterNode> cacheFilter;
 
@@ -2711,13 +2723,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final CacheMode cacheMode;
 
         /**
+         * @param name Name.
          * @param cacheFilter Node filter.
          * @param cacheMode Cache mode.
          */
-        CacheGroupAffinity(IgnitePredicate<ClusterNode> cacheFilter,
+        CacheGroupAffinity(
+            String name,
+            IgnitePredicate<ClusterNode> cacheFilter,
             CacheMode cacheMode) {
+            this.name = name;
             this.cacheFilter = cacheFilter;
             this.cacheMode = cacheMode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "CacheGroupAffinity [name=" + name + ']';
         }
     }
 

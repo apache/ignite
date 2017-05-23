@@ -124,11 +124,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        //cfg.setLateAffinityAssignment(false);
-
         cfg.setClientMode(client);
-
-        cfg.setMarshaller(null);
 
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);

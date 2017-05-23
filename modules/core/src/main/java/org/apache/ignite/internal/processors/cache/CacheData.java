@@ -87,7 +87,7 @@ public class CacheData implements Serializable {
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
         assert template || cacheId != 0 : cacheCfg.getName();
-        assert template || grpId > 0 : cacheCfg.getName();
+        assert template || grpId != 0 : cacheCfg.getName();
 
         this.cacheCfg = cacheCfg;
         this.cacheId = cacheId;

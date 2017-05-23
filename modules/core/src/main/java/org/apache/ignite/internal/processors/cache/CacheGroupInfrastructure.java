@@ -63,8 +63,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  *
  */
 public class CacheGroupInfrastructure {
-    /** Group ID (can be changed after client reconnect). */
-    private int grpId;
+    /** Group ID. */
+    private final int grpId;
 
     /** Node ID cache group was received from. */
     private final UUID rcvdFrom;
@@ -151,9 +151,9 @@ public class CacheGroupInfrastructure {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer) {
-        assert grpId > 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
         assert ccfg != null;
         assert memPlc != null || !affNode;
+        assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
 
         this.grpId = grpId;
         this.rcvdFrom = rcvdFrom;
@@ -766,13 +766,9 @@ public class CacheGroupInfrastructure {
     }
 
     /**
-     * @param grpId New group ID.
+     *
      */
-    public void onReconnected(int grpId) {
-        assert grpId > 0 : grpId;
-
-        this.grpId = grpId;
-
+    public void onReconnected() {
         aff.onReconnected();
 
         if (top != null)
