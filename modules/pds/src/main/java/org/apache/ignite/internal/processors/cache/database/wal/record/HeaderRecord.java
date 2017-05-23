@@ -26,7 +26,7 @@ public class HeaderRecord extends WALRecord {
     /** */
     public static final long MAGIC = 0xB0D045A_CE7ED045AL;
 
-    /** */
+    /** Serializer version */
     private final int ver;
 
     /**
