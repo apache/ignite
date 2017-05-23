@@ -998,7 +998,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             synchronized (pendingEvts) {
                 if (log.isDebugEnabled()) {
-
                     log.debug("Handling event [lastFiredEvt=" + lastFiredEvt +
                         ", curTop=" + curTop +
                         ", entUpdCnt=" + entry.updateCounter() +
