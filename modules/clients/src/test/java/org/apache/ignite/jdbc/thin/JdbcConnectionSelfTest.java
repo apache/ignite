@@ -135,7 +135,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "JDBC connection port is invalid");
+        }, SQLException.class, "Invalid port:");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -143,7 +143,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "JDBC connection port is invalid");
+        }, SQLException.class, "Invalid port:");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -151,7 +151,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "JDBC connection port is invalid");
+        }, SQLException.class, "Invalid port:");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -159,7 +159,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "JDBC connection host is empty");
+        }, SQLException.class, "Host name is empty");
     }
 
     /**

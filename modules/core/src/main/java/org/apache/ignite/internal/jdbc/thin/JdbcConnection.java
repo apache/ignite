@@ -108,7 +108,7 @@ public class JdbcConnection implements Connection {
         }
 
         if (host == null || host.trim().isEmpty())
-            throw new SQLException("JDBC connection host is empty");
+            throw new SQLException("Host name is empty");
 
         String endpoint = host.trim() + ":" + portStr.trim();
 
