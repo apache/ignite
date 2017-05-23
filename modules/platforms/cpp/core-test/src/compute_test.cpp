@@ -26,9 +26,12 @@
 #include <ignite/ignition.h>
 #include <ignite/test_utils.h>
 
+#include <ignite/test_utils.h>
+
 using namespace ignite;
 using namespace ignite::compute;
 using namespace ignite::common::concurrent;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -70,13 +73,22 @@ struct ComputeTestSuiteFixture
 struct Func1 : ComputeFunc<std::string>
 {
     Func1(int32_t a, int32_t b) :
-        a(a), b(b)
+        a(a), b(b), err()
+    {
+        // No-op.
+    }
+
+    Func1(IgniteError err) :
+        a(), b(), err(err)
     {
         // No-op.
     }
 
     virtual std::string Call()
     {
+        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+            throw err;
+
         std::stringstream tmp;
 
         tmp << a << '.' << b;
@@ -86,29 +98,40 @@ struct Func1 : ComputeFunc<std::string>
 
     int32_t a;
     int32_t b;
+    IgniteError err;
 };
 
 struct Func2 : ComputeFunc<std::string>
 {
     Func2(int32_t a, int32_t b) :
-        a(a), b(b)
+        a(a), b(b), err()
+    {
+        // No-op.
+    }
+
+    Func2(IgniteError err) :
+        a(), b(), err(err)
     {
         // No-op.
     }
 
     virtual std::string Call()
     {
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
+
+        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+            throw err;
+
         std::stringstream tmp;
 
         tmp << a << '.' << b;
-
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
 
         return tmp.str();
     }
 
     int32_t a;
     int32_t b;
+    IgniteError err;
 };
 
 namespace ignite
@@ -220,11 +243,38 @@ BOOST_AUTO_TEST_CASE(IgniteCallAsyncLocal)
 
     BOOST_CHECK(!res.IsReady());
 
+    BOOST_CHECKPOINT("Waiting with timeout");
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
 
     BOOST_CHECK_EQUAL(res.GetValue(), "312.245");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteCallSyncLocalError)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Making Call");
+
+    BOOST_CHECK_EXCEPTION(compute.Call<std::string>(Func1(MakeTestError())), IgniteError, IsTestError);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteCallAsyncLocalError)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Making Call");
+    Future<std::string> res = compute.CallAsync<std::string>(Func2(MakeTestError()));
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECKPOINT("Waiting with timeout");
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
 }
 
 BOOST_AUTO_TEST_CASE(IgniteCallTestRemote)
