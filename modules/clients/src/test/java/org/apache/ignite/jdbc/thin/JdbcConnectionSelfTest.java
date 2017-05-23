@@ -128,6 +128,38 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, SQLException.class, "URL is invalid");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:-1");
+
+                return null;
+            }
+        }, SQLException.class, "JDBC connection port is invalid");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:0");
+
+                return null;
+            }
+        }, SQLException.class, "JDBC connection port is invalid");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:100000");
+
+                return null;
+            }
+        }, SQLException.class, "JDBC connection port is invalid");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "     :10000");
+
+                return null;
+            }
+        }, SQLException.class, "JDBC connection host is empty");
     }
 
     /**

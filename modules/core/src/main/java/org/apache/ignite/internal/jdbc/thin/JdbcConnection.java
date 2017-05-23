@@ -107,7 +107,10 @@ public class JdbcConnection implements Connection {
             throw new SQLException("Invalid port: " + portStr, e);
         }
 
-        String endpoint = host + ":" + portStr;
+        if (host == null || host.trim().isEmpty())
+            throw new SQLException("JDBC connection host is empty");
+
+        String endpoint = host.trim() + ":" + portStr.trim();
 
         try {
             cliIo = new JdbcTcpIo(endpoint, distributedJoins, enforceJoinOrder);
