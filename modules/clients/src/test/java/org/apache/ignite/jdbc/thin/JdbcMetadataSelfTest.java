@@ -278,7 +278,7 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMetadataResultSetClose() throws Exception {
+    public void _testMetadataResultSetClose() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
             int colCnt = tbls.getMetaData().getColumnCount();
