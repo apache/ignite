@@ -20,6 +20,8 @@
 #endif
 
 #include <boost/test/unit_test.hpp>
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
 
 #include <ignite/ignition.h>
 #include <ignite/test_utils.h>
@@ -37,15 +39,21 @@ struct ComputeTestSuiteFixture
 {
     Ignite node;
 
+    Ignite MakeNode(const char* name)
+    {
+#ifdef IGNITE_TESTS_32
+        const char* config = "cache-test-32.xml";
+#else
+        const char* config = "cache-test.xml";
+#endif
+        return ignite_test::StartNode(config, name);
+    }
+
     /*
      * Constructor.
      */
     ComputeTestSuiteFixture() :
-#ifdef IGNITE_TESTS_32
-        node(ignite_test::StartNode("cache-test-32.xml", "ClusterTest"))
-#else
-        node(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
-#endif
+        node(MakeNode("ComputeNode1"))
     {
         // No-op.
     }
@@ -72,6 +80,29 @@ struct Func1 : ComputeFunc<std::string>
         std::stringstream tmp;
 
         tmp << a << '.' << b;
+
+        return tmp.str();
+    }
+
+    int32_t a;
+    int32_t b;
+};
+
+struct Func2 : ComputeFunc<std::string>
+{
+    Func2(int32_t a, int32_t b) :
+        a(a), b(b)
+    {
+        // No-op.
+    }
+
+    virtual std::string Call()
+    {
+        std::stringstream tmp;
+
+        tmp << a << '.' << b;
+
+        boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
 
         return tmp.str();
     }
@@ -124,12 +155,53 @@ namespace ignite
                 dst.b = reader.ReadInt32("b");
             }
         };
+
+        template<>
+        struct BinaryType<Func2>
+        {
+            static int32_t GetTypeId()
+            {
+                return GetBinaryStringHashCode("Func1");
+            }
+
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "Func1";
+            }
+
+            static int32_t GetFieldId(const char* name)
+            {
+                return GetBinaryStringHashCode(name);
+            }
+
+            static bool IsNull(const Func2& obj)
+            {
+                return obj.a == 0 && obj.b == 0;
+            }
+
+            static void GetNull(Func2& dst)
+            {
+                dst = Func2(0, 0);
+            }
+
+            static void Write(BinaryWriter& writer, const Func2& obj)
+            {
+                writer.WriteInt32("a", obj.a);
+                writer.WriteInt32("b", obj.b);
+            }
+
+            static void Read(BinaryReader& reader, Func2& dst)
+            {
+                dst.a = reader.ReadInt32("a");
+                dst.b = reader.ReadInt32("b");
+            }
+        };
     }
 }
 
 BOOST_FIXTURE_TEST_SUITE(ComputeTestSuite, ComputeTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(IgniteCallTest)
+BOOST_AUTO_TEST_CASE(IgniteCallSyncLocal)
 {
     Compute compute = node.GetCompute();
 
@@ -137,6 +209,35 @@ BOOST_AUTO_TEST_CASE(IgniteCallTest)
     std::string res = compute.Call<std::string>(Func1(8, 5));
 
     BOOST_CHECK_EQUAL(res, "8.5");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteCallAsyncLocal)
+{
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Making Call");
+    Future<std::string> res = compute.CallAsync<std::string>(Func2(312, 245));
+
+    BOOST_CHECK(!res.IsReady());
+
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECK_EQUAL(res.GetValue(), "312.245");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteCallTestRemote)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Making Call");
+    compute.CallAsync<std::string>(Func2(8, 5));
+
+    std::string res = compute.Call<std::string>(Func1(42, 24));
+
+    BOOST_CHECK_EQUAL(res, "42.24");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

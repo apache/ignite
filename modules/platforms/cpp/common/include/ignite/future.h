@@ -129,7 +129,19 @@ namespace ignite
 
             assert(state0 != 0);
 
-            return state0->Cancel();
+            state0->Cancel();
+        }
+
+        /**
+         * Check if the future ready.
+         */
+        bool IsReady()
+        {
+            common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->IsSet();
         }
 
     private:
@@ -237,7 +249,19 @@ namespace ignite
 
             assert(state0 != 0);
 
-            return state0->Cancel();
+            state0->Cancel();
+        }
+
+        /**
+         * Check if the future ready.
+         */
+        bool IsReady()
+        {
+            common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state0->IsSet();
         }
 
     private:
