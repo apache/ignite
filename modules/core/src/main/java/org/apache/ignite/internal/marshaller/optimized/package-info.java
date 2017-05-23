@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
-
 /**
- * Cache query suite with binary marshaller.
+ * <!-- Package description. -->
+ * Contains Optimized marshaller.
  */
-public class IgniteBinaryCacheQueryTestSuite4 extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        TestSuite suite = IgniteCacheQuerySelfTestSuite4.suite();
-
-        return suite;
-    }
-}
+package org.apache.ignite.internal.marshaller.optimized;
