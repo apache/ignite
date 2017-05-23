@@ -141,8 +141,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String schema, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
-        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;

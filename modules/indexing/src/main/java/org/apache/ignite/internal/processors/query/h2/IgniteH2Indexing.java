@@ -857,8 +857,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(final String cacheName, final String qry,
-        @Nullable final Collection<Object> params, final IndexingQueryFilter filter,
-        boolean enforceJoinOrder, final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
+        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final String schema = schema(cacheName);
 
         final Connection conn = connectionForSchema(schema);
