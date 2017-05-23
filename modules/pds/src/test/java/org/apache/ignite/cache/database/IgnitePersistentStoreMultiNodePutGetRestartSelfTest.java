@@ -132,8 +132,6 @@ public class IgnitePersistentStoreMultiNodePutGetRestartSelfTest extends GridCom
      * @throws Exception if failed.
      */
     public void testPutGetSimple() throws Exception {
-
-
         info(">>> Will use path: " + allocPath);
 
         startGrids(GRID_CNT);
