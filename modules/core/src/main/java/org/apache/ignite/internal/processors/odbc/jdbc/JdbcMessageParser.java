@@ -15,54 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc.odbc;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractMessageParser;
 
 /**
  * JDBC message parser.
  */
-public class OdbcMessageParser extends SqlListenerAbstractMessageParser {
-    /** Marshaller. */
-    private final GridBinaryMarshaller marsh;
-
+public class JdbcMessageParser extends SqlListenerAbstractMessageParser {
     /**
      * @param ctx Context.
      */
-    public OdbcMessageParser(GridKernalContext ctx) {
-        super(ctx, new OdbcObjectReader(), new OdbcObjectWriter());
-
-        if (ctx.cacheObjects() instanceof CacheObjectBinaryProcessorImpl) {
-            CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
-
-            marsh = cacheObjProc.marshaller();
-        }
-        else {
-            throw new IgniteException("ODBC can only be used with BinaryMarshaller (please set it " +
-                "through IgniteConfiguration.setMarshaller())");
-        }
+    public JdbcMessageParser(GridKernalContext ctx) {
+        super(ctx, new JdbcObjectReader(), new JdbcObjectWriter());
     }
 
     /** {@inheritDoc} */
     @Override protected BinaryReaderExImpl createReader(byte[] msg) {
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        return new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
+        return new BinaryReaderExImpl(null, stream, ctx.config().getClassLoader(), true);
     }
 
     /** {@inheritDoc} */
     @Override protected BinaryWriterExImpl createWriter(int cap) {
-        return new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(cap),
-            BinaryThreadLocalContext.get().schemaHolder(), null);
+        return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
     }
 }
