@@ -385,7 +385,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         // Fields query
         GridQueryFieldsResult fieldsRes =
             spi.queryLocalSqlFields("A", "select a.a.name n1, a.a.age a1, b.a.name n2, " +
-            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), false, null, false, 0, null);
+            "b.a.age a2 from a.a, b.a where a.a.id = b.a.id ", Collections.emptySet(), null, false, 0, null);
 
         String[] aliases = {"N1", "A1", "N2", "A2"};
         Object[] vals = { "Valera", 19, "Kolya", 25};
@@ -468,7 +468,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, Arrays.<Object>asList(1, range), false,
+                GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, Arrays.<Object>asList(1, range),
                     null, false, 0, null);
 
                 assert res.iterator().hasNext();
