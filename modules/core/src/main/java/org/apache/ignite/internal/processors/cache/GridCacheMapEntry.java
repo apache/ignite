@@ -3727,14 +3727,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             for (int i = 0; i < owners.size(); i++) {
                 GridCacheMvccCandidate owner = owners.candidate(i);
 
-                if(checkingCandidate != null && checkingCandidate.hasCandidate(owner.version()))
-                    continue;
                 boolean locked = prevOwners == null || !prevOwners.hasCandidate(owner.version());
 
                 if (locked) {
                     cctx.mvcc().callback().onOwnerChanged(this, owner);
 
-                    if (owner.local())
+                    if (owner.local()
+                        && (checkingCandidate == null || !checkingCandidate.hasCandidate(owner.version())))
                         checkThreadChain(owner);
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED)) {
