@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema.operation;
-
-import java.util.UUID;
+package org.apache.ignite.cache.query;
 
 /**
- * Schema index abstract operation.
+ * SQL query result cursor. This extends {@link QueryCursor}
+ * to expose fields metadata to public API for SqlFieldsQueries.
  */
-public abstract class SchemaIndexAbstractOperation extends SchemaAbstractOperation {
+public interface FieldsQueryCursor<T> extends QueryCursor<T> {
     /**
-     * Constructor.
+     * Gets field name.
      *
-     * @param opId Operation ID.
-     * @param cacheName Cache name.
-     * @param schemaName Schema name.
+     * @param idx field index.
+     * @return Field name.
      */
-    public SchemaIndexAbstractOperation(UUID opId, String cacheName, String schemaName) {
-        super(opId, cacheName, schemaName);
-    }
+    String getFieldName(int idx);
 
     /**
-     * @return Index name.
+     * Gets number of columns in a row.
+     *
+     * @return row size.
      */
-    public abstract String indexName();
+    int getColumnsCount();
 }

@@ -89,6 +89,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.jdbc.thin.JdbcPreparedStatementSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.jdbc.thin.JdbcNoDefaultSchemaTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.jdbc.thin.JdbcEmptyCacheSelfTest.class));
+        suite.addTest(new TestSuite(org.apache.ignite.jdbc.thin.JdbcMetadataSelfTest.class));
 
         return suite;
     }

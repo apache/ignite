@@ -148,7 +148,7 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetTables() throws Exception {
+    public void _testGetTables() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -184,7 +184,7 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetColumns() throws Exception {
+    public void _testGetColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
 

@@ -65,6 +65,4 @@ public class OdbcMessageParser extends SqlListenerAbstractMessageParser {
         return new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(cap),
             BinaryThreadLocalContext.get().schemaHolder(), null);
     }
-
-
 }

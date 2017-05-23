@@ -61,6 +61,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -1335,7 +1336,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
+    @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry, final IndexingQueryFilter filter, final GridQueryCancel cancel)
         throws IgniteCheckedException {
 
@@ -1568,7 +1569,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+    @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
         GridQueryCancel cancel) {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
@@ -1616,7 +1617,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             break;
                         }
                         catch (SQLException e) {
-                            if (!cachesCreated && e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1) {
+                            if (!cachesCreated && (
+                                e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                                e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                                e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                            ) {
                                 try {
                                     ctx.cache().createMissingQueryCaches();
                                 }
@@ -1632,7 +1637,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
 
-
                     prepared = GridSqlQueryParser.prepared(stmt);
 
                     if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
@@ -1642,8 +1646,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (prepared.isQuery()) {
                         bindParameters(stmt, F.asList(qry.getArgs()));
 
-                        twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), grpByCollocated,
-                            distributedJoins, enforceJoinOrder, this);
+                        twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
+                            grpByCollocated, distributedJoins, enforceJoinOrder, this);
 
                         assert twoStepQry != null;
                     }
@@ -2032,6 +2036,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public GridH2Table dataTable(QueryTable tbl) {
         return dataTables.get(tbl);
+    }
+
+    /**
+     * Find table for index.
+     *
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @return Table or {@code null} if index is not found.
+     */
+    public GridH2Table dataTableForIndex(String schemaName, String idxName) {
+        for (Map.Entry<QueryTable, GridH2Table> dataTableEntry : dataTables.entrySet()) {
+            if (F.eq(dataTableEntry.getKey().schema(), schemaName)) {
+                GridH2Table h2Tbl = dataTableEntry.getValue();
+
+                if (h2Tbl.containsUserIndex(idxName))
+                    return h2Tbl;
+            }
+        }
+
+        return null;
     }
 
     /**
