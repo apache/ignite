@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
-import org.apache.ignite.internal.processors.query.schema.SchemaKey;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
@@ -155,7 +154,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridMessageListener ioLsnr;
 
     /** Schema operations. */
-    private final ConcurrentHashMap<SchemaKey, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
 
     /** Active propose messages. */
     private final LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = new LinkedHashMap<>();
@@ -417,9 +416,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // running operation.
             SchemaOperation schemaOp = new SchemaOperation(msg);
 
-            SchemaKey key = msg.schemaKey();
+            String schemaName = msg.schemaName();
 
-            SchemaOperation prevSchemaOp = schemaOps.get(key);
+            SchemaOperation prevSchemaOp = schemaOps.get(schemaName);
 
             if (prevSchemaOp != null) {
                 prevSchemaOp = prevSchemaOp.unwind();
@@ -433,7 +432,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return false;
             }
             else {
-                schemaOps.put(key, schemaOp);
+                schemaOps.put(schemaName, schemaOp);
 
                 return exchangeReady;
             }
@@ -456,7 +455,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (disconnected)
                 return;
 
-            SchemaOperation curOp = schemaOps.get(msg.schemaKey());
+            SchemaOperation curOp = schemaOps.get(msg.schemaName());
 
             assert curOp != null;
             assert F.eq(opId, curOp.id());
@@ -503,7 +502,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             msg.proposeMessage(proposeMsg);
 
             if (exchangeReady) {
-                SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
 
                 if (F.eq(op.id(), opId)) {
                     // Completed top operation.
@@ -529,9 +528,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             else {
                 // Set next operation as top-level one.
-                SchemaKey schemaKey = proposeMsg.schemaKey();
+                String schemaName = proposeMsg.schemaName();
 
-                SchemaOperation op = schemaOps.remove(schemaKey);
+                SchemaOperation op = schemaOps.remove(schemaName);
 
                 assert op != null;
                 assert F.eq(op.id(), opId);
@@ -540,7 +539,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaOperation nextOp = op.next();
 
                 if (nextOp != null)
-                    schemaOps.put(schemaKey, nextOp);
+                    schemaOps.put(schemaName, nextOp);
             }
 
             // Clean stale IO messages from just-joined nodes.
@@ -2219,7 +2218,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             SchemaProposeDiscoveryMessage proposeMsg = activeProposals.get(opId);
 
             if (proposeMsg != null) {
-                SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
 
                 if (op != null && F.eq(op.id(), opId) && op.started() && coordinator().isLocal()) {
                     if (log.isDebugEnabled())
@@ -2405,14 +2404,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return;
 
             final UUID opId = id();
-            final SchemaKey key = proposeMsg.schemaKey();
+            final String schemaName = proposeMsg.schemaName();
 
             // Operation might be still in progress on client nodes which are not tracked by coordinator,
             // so we chain to operation future instead of doing synchronous unwind.
             mgr.worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
                 @Override public void apply(IgniteInternalFuture fut) {
                     synchronized (stateMux) {
-                        SchemaOperation op = schemaOps.remove(key);
+                        SchemaOperation op = schemaOps.remove(schemaName);
 
                         assert op != null;
                         assert F.eq(op.id(), opId);
@@ -2421,7 +2420,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         final SchemaOperation nextOp = op.next();
 
                         if (nextOp != null) {
-                            schemaOps.put(key, nextOp);
+                            schemaOps.put(schemaName, nextOp);
 
                             if (log.isDebugEnabled())
                                 log.debug("Next schema change operation started [opId=" + nextOp.id() + ']');
