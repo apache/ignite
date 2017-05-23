@@ -579,7 +579,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            Connection conn = h2.connectionForSpace(mainCctx.name());
+            Connection conn = h2.connectionForCache(mainCctx.name());
 
             setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 

@@ -1982,7 +1982,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public String space(String schema) throws SQLException {
         checkxEnabled();
 
-        return idx.space(schema);
+        return idx.cacheName(schema);
     }
 
     /**

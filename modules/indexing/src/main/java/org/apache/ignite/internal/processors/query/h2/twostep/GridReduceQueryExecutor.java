@@ -543,7 +543,7 @@ public class GridReduceQueryExecutor {
             final String space = cctx.name();
 
             final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
-                h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize(),
+                h2.connectionForCache(space), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
