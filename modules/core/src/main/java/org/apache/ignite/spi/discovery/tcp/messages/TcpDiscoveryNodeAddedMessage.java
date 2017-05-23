@@ -68,8 +68,39 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** Start time of the first grid node. */
     private final long gridStartTime;
 
-    /** */
-    public Where where = Where.COORDINATOR;
+    /**
+     * ??0b means the message should reach the coordinator.
+     * ??1b means the message should reach next node in the ring.
+     * ?10b means the message should reach node from message.
+     * 1??b in case if the coordinator has changed.
+     */
+    public byte state = 0;
+
+    public boolean willReachCoordinator() {
+
+        return (3 & state) == 0;
+    }
+    public boolean willReachNextNode() {
+        return (3 & state) == 1;
+    }
+    public boolean willReachNode() {
+        return (3 & state) == 2;
+    }
+    public boolean didCoordinatorChanged() {
+        return state >= 4 ;
+    }
+    public void toCoordinator() {
+        state = (byte)(state & 4);
+    }
+    public void toNextNode() {
+        state = (byte)((state & 4)+1);
+    }
+    public void toNode() {
+        state = (byte)((state & 4)+2);
+    }
+    public void coordinatorChanged() {
+        state = (byte)(state | 4);
+    }
 
     /**
      * Constructor.

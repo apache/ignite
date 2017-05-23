@@ -828,7 +828,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Marshal credentials for backward compatibility and security.
         marshalCredentials(locNode, locCred);
-
         while (true) {
             if (!sendJoinRequestMessage()) {
                 if (log.isDebugEnabled())
@@ -853,7 +852,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 notifyDiscovery(EVT_NODE_JOINED, 1, locNode);
-
                 break;
             }
 
@@ -868,12 +866,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 while (spiState == CONNECTING && timeout > 0) {
                     try {
                         mux.wait(timeout);
-
                         timeout = threshold - U.currentTimeMillis();
                     }
                     catch (InterruptedException ignored) {
                         Thread.currentThread().interrupt();
-
                         throw new IgniteSpiException("Thread has been interrupted.");
                     }
                 }
@@ -2671,8 +2667,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                     TcpDiscoveryNodeAddedMessage tmsg = (TcpDiscoveryNodeAddedMessage)msg;
                     //If we have to skip new node for first time
-                    if (tempNode.id().equals(tmsg.node().id()) &&
-                        tmsg.where!= TcpDiscoveryNodeAddedMessage.Where.NODE) {
+                    if (tempNode.id().equals(tmsg.node().id()) && !tmsg.willReachNode()) {
                         Collection<TcpDiscoveryNode> failedPlus = U.arrayList(failedNodes);
                         failedPlus.add(tempNode);
                         tempNode = ring.nextNode(failedPlus);
@@ -3896,7 +3891,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node.isClient()) {
                     addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
-
                     addFinishMsg.clientNodeAttributes(node.attributes());
                 }
 
@@ -4178,43 +4172,29 @@ class ServerImpl extends TcpDiscoveryImpl {
             final UUID locNodeId = getLocalNodeId();
 
             //When message need reach the coordinator or the msg.node
-            if ((msg.where == TcpDiscoveryNodeAddedMessage.Where.COORDINATOR || !msg.verified())
-                && !isLocalNodeCoordinator()) {
-
-                if (sendMessageToRemotes(msg))
-                    sendMessageAcrossRing(msg);
-                return;
-            }
-            if (locNodeId.equals(node.id()) && msg.where != TcpDiscoveryNodeAddedMessage.Where.NODE &&
-                !(msg.where == TcpDiscoveryNodeAddedMessage.Where.COORDINATOR && isLocalNodeCoordinator())
-                && (ring.allNodes().size()!=1)
-                ) {
-
+            if (((msg.willReachCoordinator() || !msg.verified()) && !isLocalNodeCoordinator()) ||
+                    (locNodeId.equals(node.id()) && !msg.willReachNode() && !(msg.willReachCoordinator() &&
+                        isLocalNodeCoordinator()) && (ring.allNodes().size()!=1))) {
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
                 return;
             }
 
             //If message is walking across the ring but back to coordinator
-            if (msg.verified() && isLocalNodeCoordinator() && msg.where == TcpDiscoveryNodeAddedMessage.Where.NEXT) {
+            if (msg.verified() && isLocalNodeCoordinator() && msg.willReachNextNode()) {
                 //If coordinator was changed
-                if (!locNodeId.equals(msg.verifierNodeId())) {
-                    msg.verify(null);
+                if (!locNodeId.equals(msg.verifierNodeId()) && !msg.didCoordinatorChanged()) {
+                    msg.coordinatorChanged();
 
-                    //Start from the beggining
-                    if (subProcessAddedMessageByCoordinator(msg, node, locNodeId))
-                        return;
-
-                    if (ring.allNodes().size()==1) {
-                        msg.where = TcpDiscoveryNodeAddedMessage.Where.NODE;
-                    } else
-                        msg.where = TcpDiscoveryNodeAddedMessage.Where.NEXT;
+                    if (ring.allNodes().size()==1)
+                        msg.toNode();
+                    else
+                        msg.toNextNode();
                     if (sendMessageToRemotes(msg))
                         sendMessageAcrossRing(msg);
                     return;
                 }
-
-                msg.where = TcpDiscoveryNodeAddedMessage.Where.NODE;
+                msg.toNode();
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
                 return;
@@ -4225,9 +4205,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 //Next node can be equals msg.node, in this case we must skip it
                 if (ring.allNodes().size()==1)
-                    msg.where = TcpDiscoveryNodeAddedMessage.Where.NODE;
+                    msg.toNode();
                 else
-                    msg.where = TcpDiscoveryNodeAddedMessage.Where.NEXT;
+                    msg.toNextNode();
             }
             else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
                 // Local node already has node from message in local topology.
@@ -4259,10 +4239,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && locNodeId.equals(node.id()) &&
-                msg.where == TcpDiscoveryNodeAddedMessage.Where.NODE) {
+                msg.willReachNode()) {
                 if (subProcessAddedMessageFromThisNode(msg, node, locNodeId))
                     return;
-                msg.where = TcpDiscoveryNodeAddedMessage.Where.COORDINATOR;
+                msg.toCoordinator();
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
