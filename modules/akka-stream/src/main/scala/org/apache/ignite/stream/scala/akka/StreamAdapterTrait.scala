@@ -21,10 +21,7 @@ import org.apache.ignite.IgniteDataStreamer
 import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
 /**
- *
- * @tparam T
- * @tparam K
- * @tparam V
+ * Reimplementation StreamAdapter.java to trait.
  */
 trait StreamAdapterTrait[T, K, V] {
     /** Streamer. */

@@ -223,9 +223,9 @@ object IgniteAkkaActorStreamerSpec {
     }
 
     /**
-      * @param ignite Ignite instance.
-      * @return Cache listener.
-      */
+     * @param ignite Ignite instance.
+     * @return Cache listener.
+     */
     private def subscribeToPutEvents(ignite: Ignite): CacheListener = {
         // Listen to cache PUT events and expect as many as messages as test data items.
         val listener = new CacheListener
@@ -236,28 +236,28 @@ object IgniteAkkaActorStreamerSpec {
     }
 
     /**
-      * @param listener Cache listener.
-      */
+     * @param listener Cache listener.
+     */
     private def unsubscribeToPutEvents(ignite: Ignite, listener: CacheListener) {
         ignite.events(ignite.cluster.forCacheNodes(CACHE_NAME)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT)
     }
 
     /**
-      * Listener.
-      */
+     * Listener.
+     */
     private class CacheListener extends IgnitePredicate[CacheEvent] {
         /** */
         private val latch = new CountDownLatch(CACHE_ENTRY_COUNT)
 
         /**
-          * @return Latch.
-          */
+         * @return Latch.
+         */
         def getLatch: CountDownLatch = latch
 
         /**
-          * @param evt Cache Event.
-          * @return true.
-          */
+         * @param evt Cache Event.
+         * @return true.
+         */
         override def apply(evt: CacheEvent): Boolean = {
             latch.countDown()
 
