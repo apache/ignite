@@ -136,7 +136,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
-import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
@@ -476,9 +475,6 @@ public abstract class IgniteUtils {
 
     /** Mutex. */
     static final Object mux = new Object();
-
-//    /** Mutex for MBean management. */
-//    private static final Object mbeanMux = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
@@ -4527,9 +4523,7 @@ public abstract class IgniteUtils {
 
         mbean.getMBeanInfo();
 
-        ObjectName objName = makeMBeanName(igniteInstanceName, grp, name);
-
-        return mbeanSrv.registerMBean(mbean, objName).getObjectName();
+        return mbeanSrv.registerMBean(mbean, makeMBeanName(igniteInstanceName, grp, name)).getObjectName();
     }
 
     /**
