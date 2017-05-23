@@ -72,6 +72,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
 
+    /** Maximum initial size on 32-bit JVM */
+    private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
+
+    private static final boolean JVM_32_BIT = "32".equals(System.getProperty("sun.arch.data.model"));
+
     /** */
     protected Map<String, MemoryPolicy> memPlcMap;
 
@@ -358,6 +363,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "size: " + U.readableSize(sysCacheInitSize, true)
             );
 
+        if (JVM_32_BIT && sysCacheInitSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
+            throw new IgniteCheckedException("Initial size for system cache exceeds 2GB on 32-bit JVM (use " +
+                "MemoryPolicyConfiguration.systemCacheInitialSize property to set correct size in bytes " +
+                "or use 64-bit JVM); size: " + U.readableSize(sysCacheInitSize, true)
+            );
+
         if (sysCacheMaxSize < sysCacheInitSize)
             throw new IgniteCheckedException("MaxSize of system cache must not be smaller than " +
                 "initialSize [initSize=" + U.readableSize(sysCacheInitSize, true) +
@@ -388,6 +399,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (dfltPlcSize < MIN_PAGE_MEMORY_SIZE)
                 throw new IgniteCheckedException("User-defined default MemoryPolicy size is less than 1MB. " +
                         "Use MemoryConfiguration.defaultMemoryPolicySize property to set correct size.");
+
+            if (JVM_32_BIT && dfltPlcSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
+                throw new IgniteCheckedException("User-defined default MemoryPolicy size exceeds 2GB on 32-bit JVM (use " +
+                    "MemoryConfiguration.defaultMemoryPolicySize property to set correct size in bytes " +
+                    "or use 64-bit JVM); size: " + U.readableSize(dfltPlcSize, true)
+                );
         }
 
         if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName)) {
@@ -416,6 +433,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "initialSize [name=" + plcCfg.getName() +
                 ", initSize=" + U.readableSize(plcCfg.getInitialSize(), true) +
                 ", maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) + ']');
+
+        if (JVM_32_BIT && plcCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT) {
+            throw new IgniteCheckedException("MemoryPolicy initialSize exceeds 2GB on 32-bit JVM (use " +
+                "MemoryPolicyConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
+                "[name=" + plcCfg.getName() +
+                ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]");
+        }
     }
 
     /**
