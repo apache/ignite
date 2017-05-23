@@ -32,6 +32,9 @@ public abstract class SchemaAbstractOperation implements Serializable {
     /** Operation ID. */
     private final UUID opId;
 
+    /** Cache name. */
+    private final String cacheName;
+
     /** Schema name. */
     private final String schemaName;
 
@@ -41,8 +44,9 @@ public abstract class SchemaAbstractOperation implements Serializable {
      * @param opId Operation ID.
      * @param schemaName Schema name.
      */
-    public SchemaAbstractOperation(UUID opId, String schemaName) {
+    public SchemaAbstractOperation(UUID opId, String cacheName, String schemaName) {
         this.opId = opId;
+        this.cacheName = cacheName;
         this.schemaName = schemaName;
     }
 
@@ -56,9 +60,8 @@ public abstract class SchemaAbstractOperation implements Serializable {
     /**
      * @return Space.
      */
-    // TODO: Must go away.
-    public String space() {
-        return schemaName;
+    public String cacheName() {
+        return cacheName;
     }
 
     /**

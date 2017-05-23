@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
@@ -117,13 +118,24 @@ public class DdlStatementsProcessor {
 
                 newIdx.setFields(flds);
 
-                fut = ctx.query().dynamicIndexCreate(createIdx.schemaName(), typeDesc.tableName(), newIdx,
-                    createIdx.ifNotExists());
+                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), createIdx.schemaName(), typeDesc.tableName(),
+                    newIdx, createIdx.ifNotExists());
             }
             else if (gridStmt instanceof GridSqlDropIndex) {
                 GridSqlDropIndex dropIdx = (GridSqlDropIndex)gridStmt;
 
-                fut = ctx.query().dynamicIndexDrop(dropIdx.schemaName(), dropIdx.name(), dropIdx.ifExists());
+                GridH2Table tbl = idx.dataTableForIndex(dropIdx.schemaName(), dropIdx.indexName());
+
+                if (tbl != null)
+                    fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), dropIdx.schemaName(), dropIdx.indexName(),
+                        dropIdx.ifExists());
+                else {
+                    if (dropIdx.ifExists())
+                        fut = new GridFinishedFuture();
+                    else
+                        throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
+                            dropIdx.indexName());
+                }
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,

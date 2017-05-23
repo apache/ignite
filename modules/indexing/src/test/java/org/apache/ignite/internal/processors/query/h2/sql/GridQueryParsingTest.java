@@ -591,7 +591,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * Test two instances of {@link GridSqlDropIndex} for equality.
      */
     private static void assertDropIndexEquals(GridSqlDropIndex exp, GridSqlDropIndex actual) {
-        assertEqualsIgnoreCase(exp.name(), actual.name());
+        assertEqualsIgnoreCase(exp.indexName(), actual.indexName());
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEquals(exp.ifExists(), actual.ifExists());
     }
@@ -602,7 +602,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static GridSqlDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
         GridSqlDropIndex res = new GridSqlDropIndex();
 
-        res.name(name);
+        res.indexName(name);
         res.schemaName(schema);
         res.ifExists(ifExists);
 

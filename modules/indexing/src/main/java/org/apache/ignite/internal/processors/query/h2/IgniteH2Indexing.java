@@ -2038,6 +2038,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Find table for index.
+     *
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @return Table or {@code null} if index is not found.
+     */
+    public GridH2Table dataTableForIndex(String schemaName, String idxName) {
+        for (Map.Entry<QueryTable, GridH2Table> dataTableEntry : dataTables.entrySet()) {
+            if (F.eq(dataTableEntry.getKey(), schemaName)) {
+                GridH2Table h2Tbl = dataTableEntry.getValue();
+
+                if (h2Tbl.containsUserIndex(idxName))
+                    return h2Tbl;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gets corresponding DB type from java class.
      *
      * @param cls Java class.

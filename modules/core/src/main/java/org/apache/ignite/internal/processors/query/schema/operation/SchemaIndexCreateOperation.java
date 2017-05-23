@@ -45,14 +45,15 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      * Constructor.
      *
      * @param opId Operation id.
+     * @param cacheName Cache name.
      * @param schemaName Schame name.
      * @param tblName Table name.
      * @param idx Index params.
      * @param ifNotExists Ignore operation if index exists.
      */
-    public SchemaIndexCreateOperation(UUID opId, String schemaName, String tblName, QueryIndex idx,
+    public SchemaIndexCreateOperation(UUID opId, String cacheName, String schemaName, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        super(opId, schemaName);
+        super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
         this.idx = idx;

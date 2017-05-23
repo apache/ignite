@@ -38,12 +38,13 @@ public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
      * Constructor.
      *
      * @param opId Operation id.
+     * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param idxName Index name.
      * @param ifExists Ignore operation if index doesn't exist.
      */
-    public SchemaIndexDropOperation(UUID opId, String schemaName, String idxName, boolean ifExists) {
-        super(opId, schemaName);
+    public SchemaIndexDropOperation(UUID opId, String cacheName, String schemaName, String idxName, boolean ifExists) {
+        super(opId, cacheName, schemaName);
 
         this.idxName = idxName;
         this.ifExists = ifExists;
