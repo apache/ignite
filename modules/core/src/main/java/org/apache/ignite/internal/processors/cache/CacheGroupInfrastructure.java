@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -98,7 +99,7 @@ public class CacheGroupInfrastructure {
     private boolean needsRecovery;
 
     /** */
-    private final List<GridCacheContext> caches;
+    private volatile List<GridCacheContext> caches;
 
     /** */
     private final IgniteLogger log;
@@ -236,14 +237,14 @@ public class CacheGroupInfrastructure {
      * @return {@code True} if group contains cache with given name.
      */
     public boolean hasCache(String cacheName) {
-        synchronized (caches) {
-            for (int i = 0; i < caches.size(); i++) {
-                if (caches.get(i).name().equals(cacheName))
-                    return true;
-            }
+        List<GridCacheContext> caches = this.caches;
 
-            return false;
+        for (int i = 0; i < caches.size(); i++) {
+            if (caches.get(i).name().equals(cacheName))
+                return true;
         }
+
+        return false;
     }
 
     /**
@@ -253,51 +254,58 @@ public class CacheGroupInfrastructure {
         assert cacheType.userCache() == cctx.userCache() : cctx.name();
         assert grpId == cctx.groupId() : cctx.name();
 
-        synchronized (caches) {
-            assert sharedGroup() || caches.isEmpty();
+        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
 
-            boolean add = caches.add(cctx);
+        assert sharedGroup() || caches.isEmpty();
 
-            assert add : cctx.name();
-        }
+        boolean add = caches.add(cctx);
+
+        assert add : cctx.name();
+
+        this.caches = caches;
     }
 
     /**
      * @param cctx Cache context.
      */
     private void removeCacheContext(GridCacheContext cctx) {
-        synchronized (caches) {
-            if (caches.contains(cctx)) { // It is possible cache is not added in case of errors on cache start.
+        ArrayList<GridCacheContext> caches = new ArrayList<>(this.caches);
+
+        // It is possible cache was not added in case of errors on cache start.
+        for (Iterator<GridCacheContext> it = caches.iterator(); it.hasNext();) {
+            GridCacheContext next = it.next();
+
+            if (next == cctx) {
                 assert sharedGroup() || caches.size() == 1 : caches.size();
 
-                boolean rmv = caches.remove(cctx);
-
-                assert rmv : cctx.name();
+                it.remove();
             }
         }
+
+        this.caches = caches;
     }
 
     /**
      * @return Cache context if group contains single cache.
      */
     public GridCacheContext singleCacheContext() {
-        synchronized (caches) {
-            assert !sharedGroup() && caches.size() == 1;
+        List<GridCacheContext> caches = this.caches;
 
-            return caches.get(0);
-        }
+        assert !sharedGroup() && caches.size() == 1;
+
+        return caches.get(0);
     }
 
     /**
      *
      */
     public void unwindUndeploys() {
-        synchronized (caches) {
-            for (int i = 0; i < caches.size(); i++) {
-                GridCacheContext cctx = caches.get(i);
+        List<GridCacheContext> caches = this.caches;
 
-                cctx.deploy().unwind(cctx);
-            }
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
+
+            cctx.deploy().unwind(cctx);
         }
     }
 
@@ -327,20 +335,20 @@ public class CacheGroupInfrastructure {
         if (!eventRecordable(type))
             LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
-        synchronized (caches) {
-            for (int i = 0; i < caches.size(); i++) {
-                GridCacheContext cctx = caches.get(i);
+        List<GridCacheContext> caches = this.caches;
 
-                if (cctx.recordEvent(type)) {
-                    cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
-                        cctx.localNode(),
-                        "Cache rebalancing event.",
-                        type,
-                        part,
-                        discoNode,
-                        discoType,
-                        discoTs));
-                }
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
+
+            if (cctx.recordEvent(type)) {
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache rebalancing event.",
+                    type,
+                    part,
+                    discoNode,
+                    discoType,
+                    discoTs));
             }
         }
     }
@@ -354,19 +362,19 @@ public class CacheGroupInfrastructure {
             LT.warn(log, "Added event without checking if event is recordable: " +
                 U.gridEventName(EVT_CACHE_REBALANCE_PART_UNLOADED));
 
-        synchronized (caches) {
-            for (int i = 0; i < caches.size(); i++) {
-                GridCacheContext cctx = caches.get(i);
+        List<GridCacheContext> caches = this.caches;
 
-                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
-                    cctx.localNode(),
-                    "Cache unloading event.",
-                    EVT_CACHE_REBALANCE_PART_UNLOADED,
-                    part,
-                    null,
-                    0,
-                    0));
-            }
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
+
+            cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                cctx.localNode(),
+                "Cache unloading event.",
+                EVT_CACHE_REBALANCE_PART_UNLOADED,
+                part,
+                null,
+                0,
+                0));
         }
     }
 
@@ -392,25 +400,25 @@ public class CacheGroupInfrastructure {
         boolean hasOldVal,
         boolean keepBinary
     ) {
-        synchronized (caches) {
-            for (int i = 0; i < caches.size(); i++) {
-                GridCacheContext cctx = caches.get(i);
+        List<GridCacheContext> caches = this.caches;
 
-                cctx.events().addEvent(part,
-                    key,
-                    evtNodeId,
-                    (IgniteUuid)null,
-                    null,
-                    type,
-                    newVal,
-                    hasNewVal,
-                    oldVal,
-                    hasOldVal,
-                    null,
-                    null,
-                    null,
-                    keepBinary);
-            }
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
+
+            cctx.events().addEvent(part,
+                key,
+                evtNodeId,
+                (IgniteUuid)null,
+                null,
+                type,
+                newVal,
+                hasNewVal,
+                oldVal,
+                hasOldVal,
+                null,
+                null,
+                null,
+                keepBinary);
         }
     }
 
@@ -635,26 +643,26 @@ public class CacheGroupInfrastructure {
      * @return {@code True} if group contains caches.
      */
     boolean hasCaches() {
-        synchronized (caches) {
-            return !caches.isEmpty();
-        }
+        List<GridCacheContext> caches = this.caches;
+
+        return !caches.isEmpty();
     }
 
     /**
      * @param part Partition ID.
      */
     public void onPartitionEvicted(int part) {
-        synchronized (caches) {
-            for (int i = 0; i < caches.size(); i++) {
-                GridCacheContext cctx = caches.get(i);
+        List<GridCacheContext> caches = this.caches;
 
-                if (cctx.isDrEnabled())
-                    cctx.dr().partitionEvicted(part);
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
 
-                cctx.continuousQueries().onPartitionEvicted(part);
+            if (cctx.isDrEnabled())
+                cctx.dr().partitionEvicted(part);
 
-                cctx.dataStructures().onPartitionEvicted(part);
-            }
+            cctx.continuousQueries().onPartitionEvicted(part);
+
+            cctx.dataStructures().onPartitionEvicted(part);
         }
     }
 

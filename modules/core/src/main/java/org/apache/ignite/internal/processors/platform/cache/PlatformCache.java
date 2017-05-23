@@ -1282,8 +1282,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         Object[] args = readQueryArgs(reader);
 
         boolean distrJoins = reader.readBoolean();
+        int timeout = reader.readInt();
+        boolean replicated = reader.readBoolean();
 
-        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc).setDistributedJoins(distrJoins);
+        return new SqlQuery(typ, sql)
+                .setPageSize(pageSize)
+                .setArgs(args)
+                .setLocal(loc)
+                .setDistributedJoins(distrJoins)
+                .setTimeout(timeout, TimeUnit.MILLISECONDS)
+                .setReplicatedOnly(replicated);
     }
 
     /**
@@ -1301,9 +1309,19 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         boolean distrJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
+        int timeout = reader.readInt();
+        boolean replicated = reader.readBoolean();
+        boolean collocated = reader.readBoolean();
 
-        return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc)
-            .setDistributedJoins(distrJoins).setEnforceJoinOrder(enforceJoinOrder);
+        return new SqlFieldsQuery(sql)
+                .setPageSize(pageSize)
+                .setArgs(args)
+                .setLocal(loc)
+                .setDistributedJoins(distrJoins)
+                .setEnforceJoinOrder(enforceJoinOrder)
+                .setTimeout(timeout, TimeUnit.MILLISECONDS)
+                .setReplicatedOnly(replicated)
+                .setCollocated(collocated);
     }
 
     /**
