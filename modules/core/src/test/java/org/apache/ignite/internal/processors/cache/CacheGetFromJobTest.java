@@ -41,6 +41,11 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */

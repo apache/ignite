@@ -576,9 +576,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final int futId;
 
         /** DHT mapping. */

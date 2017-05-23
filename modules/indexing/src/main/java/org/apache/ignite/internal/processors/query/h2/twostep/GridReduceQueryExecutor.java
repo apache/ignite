@@ -83,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -348,19 +347,13 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param cctx Cache context for main space.
-     * @param extraSpaces Extra spaces.
+     * @param cacheIds Cache IDs.
      * @return {@code true} If preloading is active.
      */
-    private boolean isPreloadingActive(final GridCacheContext<?, ?> cctx, List<Integer> extraSpaces) {
-        if (hasMovingPartitions(cctx))
-            return true;
-
-        if (extraSpaces != null) {
-            for (int i = 0; i < extraSpaces.size(); i++) {
-                if (hasMovingPartitions(cacheContext(extraSpaces.get(i))))
-                    return true;
-            }
+    private boolean isPreloadingActive(List<Integer> cacheIds) {
+        for (Integer cacheId : cacheIds) {
+            if (hasMovingPartitions(cacheContext(cacheId)))
+                return true;
         }
 
         return false;
@@ -439,17 +432,14 @@ public class GridReduceQueryExecutor {
     /**
      * @param isReplicatedOnly If we must only have replicated caches.
      * @param topVer Topology version.
-     * @param cctx Cache context for main space.
-     * @param extraSpaces Extra spaces.
+     * @param cacheIds Participating cache IDs.
      * @param parts Partitions.
      * @return Data nodes or {@code null} if repartitioning started and we need to retry.
      */
-    private Map<ClusterNode, IntArray> stableDataNodes(
-            boolean isReplicatedOnly,
-            AffinityTopologyVersion topVer,
-            final GridCacheContext<?, ?> cctx,
-            List<Integer> extraSpaces,
-            int[] parts) {
+    private Map<ClusterNode, IntArray> stableDataNodes(boolean isReplicatedOnly, AffinityTopologyVersion topVer,
+        List<Integer> cacheIds, int[] parts) {
+        GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
+
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
 
         Set<ClusterNode> nodes = map.keySet();
@@ -457,54 +447,53 @@ public class GridReduceQueryExecutor {
         if (F.isEmpty(map))
             throw new CacheException("Failed to find data nodes for cache: " + cctx.name());
 
-        if (!F.isEmpty(extraSpaces)) {
-            for (int i = 0; i < extraSpaces.size(); i++) {
-                GridCacheContext<?,?> extraCctx = cacheContext(extraSpaces.get(i));
+        for (int i = 1; i < cacheIds.size(); i++) {
+            GridCacheContext<?,?> extraCctx = cacheContext(cacheIds.get(i));
 
-                String extraSpace = extraCctx.name();
+            String extraCacheName = extraCctx.name();
 
-                if (extraCctx.isLocal())
-                    continue; // No consistency guaranties for local caches.
+            if (extraCctx.isLocal())
+                continue; // No consistency guaranties for local caches.
 
-                if (isReplicatedOnly && !extraCctx.isReplicated())
-                    throw new CacheException("Queries running on replicated cache should not contain JOINs " +
-                        "with partitioned tables [rCache=" + cctx.name() + ", pCache=" + extraSpace + "]");
+            if (isReplicatedOnly && !extraCctx.isReplicated())
+                throw new CacheException("Queries running on replicated cache should not contain JOINs " +
+                    "with partitioned tables [replicatedCache=" + cctx.name() +
+                    ", partitionedCache=" + extraCacheName + "]");
 
-                Set<ClusterNode> extraNodes = stableDataNodesMap(topVer, extraCctx, parts).keySet();
+            Set<ClusterNode> extraNodes = stableDataNodesMap(topVer, extraCctx, parts).keySet();
 
-                if (F.isEmpty(extraNodes))
-                    throw new CacheException("Failed to find data nodes for cache: " + extraSpace);
+            if (F.isEmpty(extraNodes))
+                throw new CacheException("Failed to find data nodes for cache: " + extraCacheName);
 
-                if (isReplicatedOnly && extraCctx.isReplicated()) {
-                    nodes.retainAll(extraNodes);
+            if (isReplicatedOnly && extraCctx.isReplicated()) {
+                nodes.retainAll(extraNodes);
 
-                    if (map.isEmpty()) {
-                        if (isPreloadingActive(cctx, extraSpaces))
-                            return null; // Retry.
-                        else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                                ", cache2=" + extraSpace + "]");
-                    }
+                if (map.isEmpty()) {
+                    if (isPreloadingActive(cacheIds))
+                        return null; // Retry.
+                    else
+                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            ", cache2=" + extraCacheName + "]");
                 }
-                else if (!isReplicatedOnly && extraCctx.isReplicated()) {
-                    if (!extraNodes.containsAll(nodes))
-                        if (isPreloadingActive(cctx, extraSpaces))
-                            return null; // Retry.
-                        else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                                ", cache2=" + extraSpace + "]");
-                }
-                else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
-                    if (!extraNodes.equals(nodes))
-                        if (isPreloadingActive(cctx, extraSpaces))
-                            return null; // Retry.
-                        else
-                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                                ", cache2=" + extraSpace + "]");
-                }
-                else
-                    throw new IllegalStateException();
             }
+            else if (!isReplicatedOnly && extraCctx.isReplicated()) {
+                if (!extraNodes.containsAll(nodes))
+                    if (isPreloadingActive(cacheIds))
+                        return null; // Retry.
+                    else
+                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            ", cache2=" + extraCacheName + "]");
+            }
+            else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
+                if (!extraNodes.equals(nodes))
+                    if (isPreloadingActive(cacheIds))
+                        return null; // Retry.
+                    else
+                        throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            ", cache2=" + extraCacheName + "]");
+            }
+            else
+                throw new IllegalStateException();
         }
 
         return map;
@@ -537,8 +526,6 @@ public class GridReduceQueryExecutor {
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
         // Fail if all caches are replicated and explicit partitions are set.
-
-
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -561,7 +548,7 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-            List<Integer> extraSpaces = qry.extraCaches();
+            List<Integer> cacheIds = qry.cacheIds();
 
             Collection<ClusterNode> nodes = null;
 
@@ -572,29 +559,29 @@ public class GridReduceQueryExecutor {
             Map<ClusterNode, IntArray> qryMap = null;
 
             // Partitions are not supported for queries over all replicated caches.
-            if (cctx.isReplicated() && parts != null) {
-                boolean failIfReplicatedOnly = true;
+            if (parts != null) {
+                boolean replicatedOnly = true;
 
-                for (Integer cacheId : extraSpaces) {
+                for (Integer cacheId : cacheIds) {
                     if (!cacheContext(cacheId).isReplicated()) {
-                        failIfReplicatedOnly = false;
+                        replicatedOnly = false;
 
                         break;
                     }
                 }
 
-                if (failIfReplicatedOnly)
+                if (replicatedOnly)
                     throw new CacheException("Partitions are not supported for replicated caches");
             }
 
             if (qry.isLocal())
                 nodes = singletonList(ctx.discovery().localNode());
             else {
-                if (isPreloadingActive(cctx, extraSpaces)) {
+                if (isPreloadingActive(cacheIds)) {
                     if (isReplicatedOnly)
-                        nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
+                        nodes = replicatedUnstableDataNodes(cacheIds);
                     else {
-                        partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
+                        partsMap = partitionedUnstableDataNodes(cacheIds);
 
                         if (partsMap != null) {
                             qryMap = narrowForQuery(partsMap, parts);
@@ -602,8 +589,9 @@ public class GridReduceQueryExecutor {
                             nodes = qryMap == null ? null : qryMap.keySet();
                         }
                     }
-                } else {
-                    qryMap = stableDataNodes(isReplicatedOnly, topVer, cctx, extraSpaces, parts);
+                }
+                else {
+                    qryMap = stableDataNodes(isReplicatedOnly, topVer, cacheIds, parts);
 
                     if (qryMap != null)
                         nodes = qryMap.keySet();
@@ -633,7 +621,7 @@ public class GridReduceQueryExecutor {
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
             final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
-                findFirstPartitioned(cctx, extraSpaces).config().getQueryParallelism();
+                findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
             int replicatedQrysCnt = 0;
 
@@ -731,7 +719,7 @@ public class GridReduceQueryExecutor {
                                 .requestId(qryReqId)
                                 .topologyVersion(topVer)
                                 .pageSize(r.pageSize)
-                                .caches(qry.caches())
+                                .caches(qry.cacheIds())
                                 .tables(distributedJoins ? qry.tables() : null)
                                 .partitions(convert(partsMap))
                                 .queries(mapQrys)
@@ -873,22 +861,18 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param cctx Cache context for main space.
-     * @param extraSpaces Extra spaces.
+     * @param cacheIds Cache IDs.
      * @return The first partitioned cache context.
      */
-    private GridCacheContext<?,?> findFirstPartitioned(GridCacheContext<?,?> cctx, List<Integer> extraSpaces) {
-        if (cctx.isLocal())
-            throw new CacheException("Cache is LOCAL: " + cctx.name());
+    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> cacheIds) {
+        for (int i = 0; i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 
-        if (!cctx.isReplicated())
-            return cctx;
+            if (i == 0 && cctx.isLocal())
+                throw new CacheException("Cache is LOCAL: " + cctx.name());
 
-        for (int i = 0 ; i < extraSpaces.size(); i++) {
-            GridCacheContext<?, ?> extraCctx = cacheContext(extraSpaces.get(i));
-
-            if (!extraCctx.isReplicated() && !extraCctx.isLocal())
-                return extraCctx;
+            if (!cctx.isReplicated() && !cctx.isLocal())
+                return cctx;
         }
 
         throw new IllegalStateException("Failed to find partitioned cache.");
@@ -997,20 +981,20 @@ public class GridReduceQueryExecutor {
     /**
      * Calculates data nodes for replicated caches on unstable topology.
      *
-     * @param cctx Cache context for main space.
-     * @param extraSpaces Extra spaces.
+     * @param cacheIds Cache IDs.
      * @return Collection of all data nodes owning all the caches or {@code null} for retry.
      */
-    private Collection<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?, ?> cctx,
-        List<Integer> extraSpaces) {
+    private Collection<ClusterNode> replicatedUnstableDataNodes(List<Integer> cacheIds) {
         int i = 0;
+
+        GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i++));
 
         // The main cache is allowed to be partitioned.
         if (!cctx.isReplicated()) {
-            assert !F.isEmpty(extraSpaces): "no extra replicated caches with partitioned main cache";
+            assert cacheIds.size() > 1: "no extra replicated caches with partitioned main cache";
 
             // Just replace the main cache with the first one extra.
-            cctx = cacheContext(extraSpaces.get(i++));
+            cctx = cacheContext(cacheIds.get(i++));
 
             assert cctx.isReplicated(): "all the extra caches must be replicated here";
         }
@@ -1020,27 +1004,26 @@ public class GridReduceQueryExecutor {
         if (F.isEmpty(nodes))
             return null; // Retry.
 
-        if (!F.isEmpty(extraSpaces)) {
-            for (;i < extraSpaces.size(); i++) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(extraSpaces.get(i));
+        for (;i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> extraCctx = cacheContext(cacheIds.get(i));
 
-                if (extraCctx.isLocal())
-                    continue;
+            if (extraCctx.isLocal())
+                continue;
 
-                if (!extraCctx.isReplicated())
-                    throw new CacheException("Queries running on replicated cache should not contain JOINs " +
-                        "with tables in partitioned caches [rCache=" + cctx.name() + ", pCache=" + extraCctx.name() + "]");
+            if (!extraCctx.isReplicated())
+                throw new CacheException("Queries running on replicated cache should not contain JOINs " +
+                    "with tables in partitioned caches [replicatedCache=" + cctx.name() + ", " +
+                    "partitionedCache=" + extraCctx.name() + "]");
 
-                Set<ClusterNode> extraOwners = replicatedUnstableDataNodes(extraCctx);
+            Set<ClusterNode> extraOwners = replicatedUnstableDataNodes(extraCctx);
 
-                if (F.isEmpty(extraOwners))
-                    return null; // Retry.
+            if (F.isEmpty(extraOwners))
+                return null; // Retry.
 
-                nodes.retainAll(extraOwners);
+            nodes.retainAll(extraOwners);
 
-                if (nodes.isEmpty())
-                    return null; // Retry.
-            }
+            if (nodes.isEmpty())
+                return null; // Retry.
         }
 
         return nodes;
@@ -1092,23 +1075,19 @@ public class GridReduceQueryExecutor {
     /**
      * Calculates partition mapping for partitioned cache on unstable topology.
      *
-     * @param cctx Cache context for main space.
-     * @param extraSpaces Extra spaces.
+     * @param cacheIds Cache IDs.
      * @return Partition mapping or {@code null} if we can't calculate it due to repartitioning and we need to retry.
      */
     @SuppressWarnings("unchecked")
-    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(GridCacheContext<?,?> cctx,
-        List<Integer> extraSpaces) {
-        assert !cctx.isLocal() : cctx.name() + " must not be LOCAL";
-
+    private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(List<Integer> cacheIds) {
         // If the main cache is replicated, just replace it with the first partitioned.
-        cctx = findFirstPartitioned(cctx, extraSpaces);
+        GridCacheContext<?,?> cctx = findFirstPartitioned(cacheIds);
 
         final int partsCnt = cctx.affinity().partitions();
 
-        if (extraSpaces != null) { // Check correct number of partitions for partitioned caches.
-            for (int i = 0; i < extraSpaces.size(); i++) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(extraSpaces.get(i));
+        if (cacheIds.size() > 1) { // Check correct number of partitions for partitioned caches.
+            for (Integer cacheId : cacheIds) {
+                GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
 
                 if (extraCctx.isReplicated() || extraCctx.isLocal())
                     continue;
@@ -1117,14 +1096,15 @@ public class GridReduceQueryExecutor {
 
                 if (parts != partsCnt)
                     throw new CacheException("Number of partitions must be the same for correct collocation [cache1=" +
-                        cctx.name() + ", parts1=" + partsCnt + ", cache2=" + extraCctx.name() + ", parts2=" + parts + "]");
+                        cctx.name() + ", parts1=" + partsCnt + ", cache2=" + extraCctx.name() +
+                        ", parts2=" + parts + "]");
             }
         }
 
         Set<ClusterNode>[] partLocs = new Set[partsCnt];
 
         // Fill partition locations for main cache.
-        for (int p = 0, parts =  cctx.affinity().partitions(); p < parts; p++) {
+        for (int p = 0; p < partsCnt; p++) {
             List<ClusterNode> owners = cctx.topology().owners(p);
 
             if (F.isEmpty(owners)) {
@@ -1143,11 +1123,11 @@ public class GridReduceQueryExecutor {
             partLocs[p] = new HashSet<>(owners);
         }
 
-        if (extraSpaces != null) {
+        if (cacheIds.size() > 1) {
             // Find owner intersections for each participating partitioned cache partition.
             // We need this for logical collocation between different partitioned caches with the same affinity.
-            for (int i = 0; i < extraSpaces.size(); i++) {
-                GridCacheContext<?, ?> extraCctx = cacheContext(extraSpaces.get(i));
+            for (Integer cacheId : cacheIds) {
+                GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
 
                 // This is possible if we have replaced a replicated cache with a partitioned one earlier.
                 if (cctx == extraCctx)
@@ -1156,7 +1136,7 @@ public class GridReduceQueryExecutor {
                 if (extraCctx.isReplicated() || extraCctx.isLocal())
                     continue;
 
-                for (int p = 0, parts =  extraCctx.affinity().partitions(); p < parts; p++) {
+                for (int p = 0, parts = extraCctx.affinity().partitions(); p < parts; p++) {
                     List<ClusterNode> owners = extraCctx.topology().owners(p);
 
                     if (partLocs[p] == UNMAPPED_PARTS)
@@ -1166,7 +1146,8 @@ public class GridReduceQueryExecutor {
                         if (!F.isEmpty(dataNodes(extraCctx.name(), NONE)))
                             return null; // Retry.
 
-                        throw new CacheException("Failed to find data nodes [cache=" + extraCctx.name() + ", part=" + p + "]");
+                        throw new CacheException("Failed to find data nodes [cache=" + extraCctx.name() +
+                            ", part=" + p + "]");
                     }
 
                     if (partLocs[p] == null)
@@ -1181,8 +1162,8 @@ public class GridReduceQueryExecutor {
             }
 
             // Filter nodes where not all the replicated caches loaded.
-            for (int i = 0; i < extraSpaces.size(); i++) {
-                GridCacheContext<?,?> extraCctx = cacheContext(extraSpaces.get(i));
+            for (Integer cacheId : cacheIds) {
+                GridCacheContext<?, ?> extraCctx = cacheContext(cacheId);
 
                 if (!extraCctx.isReplicated())
                     continue;

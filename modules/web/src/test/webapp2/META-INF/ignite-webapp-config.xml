@@ -39,21 +39,10 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <!--
-            Configure optimized marshaller.
+            Configure binary marshaller.
         -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
-                <!--
-                    For better performance set this property to true in case
-                    all marshalled classes implement java.io.Serializable.
-                    Default value is true.
-
-                    Note, that it is recommended to implement java.io.Externalizable
-                    instead of java.io.Serializable for smaller network footprint
-                    and even better performance.
-                -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <!-- Set to local host address just for examples. -->

@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
+    <Compile Include="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
@@ -94,6 +95,7 @@
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\CacheTestKey.cs" />
+    <Compile Include="Cache\MemoryMetricsTest.cs" />
     <Compile Include="Cache\NonSerializableCacheEntryProcessor.cs" />
     <Compile Include="Cache\NonSerializableException.cs" />
     <Compile Include="Cache\PartitionLossTest.cs" />

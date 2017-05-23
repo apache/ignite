@@ -895,7 +895,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Invalid dateTime
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<InvalidOperationException>(() =>
+            var ex = Assert.Throws<BinaryObjectException>(() =>
                 roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
             Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.", 
                 ex.Message);
@@ -1273,7 +1273,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 Local = true,
                 PageSize = 999,
-                EnforceJoinOrder = true
+                EnforceJoinOrder = true,
+                Timeout = TimeSpan.FromSeconds(2.5),
+                ReplicatedOnly = true,
+                Colocated = true
             }).Where(x => x.Key > 10);
 
             Assert.AreEqual(cache.Name, query.CacheName);
@@ -1288,12 +1291,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(999, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsTrue(fq.EnforceJoinOrder);
+            Assert.IsTrue(fq.ReplicatedOnly);
+            Assert.IsTrue(fq.Colocated);
+            Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
 
             var str = query.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(_T0._key > ?), Arguments=[10], " +
-                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
+                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                            "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -1311,7 +1318,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             str = fieldsQuery.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                             "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
             
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
@@ -1326,7 +1334,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(((_T0._key > ?) and (_T0.age1 > ?)) " +
                             "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
+                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
         }
 
         /// <summary>
@@ -1393,6 +1402,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        /// <summary>
+        /// Tests the query timeout.
+        /// </summary>
+        [Test]
+        public void TestTimeout()
+        {
+            var persons = GetPersonCache().AsCacheQueryable(new QueryOptions
+            {
+                Timeout = TimeSpan.FromMilliseconds(1),
+                EnableDistributedJoins = true
+            });
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() =>
+                persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
+
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
         /// <summary>

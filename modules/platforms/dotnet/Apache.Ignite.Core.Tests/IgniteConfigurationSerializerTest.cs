@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests
                             <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                             <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheInitialSize='67' systemCacheMaxSize='68'>
                                 <memoryPolicies>
-                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' />
+                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' />
                                 </memoryPolicies>
                             </memoryConfiguration>
                         </igniteConfig>";
@@ -272,6 +272,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("abc", memPlc.SwapFilePath);
             Assert.AreEqual(89, memPlc.InitialSize);
             Assert.AreEqual(98, memPlc.MaxSize);
+            Assert.IsTrue(memPlc.MetricsEnabled);
         }
 
         /// <summary>
@@ -826,7 +827,8 @@ namespace Apache.Ignite.Core.Tests
                             PageEvictionMode = DataPageEvictionMode.RandomLru,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
-                            SwapFilePath = "somePath2"
+                            SwapFilePath = "somePath2",
+                            MetricsEnabled = true
                         }
                     }
                 }

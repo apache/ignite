@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
@@ -101,7 +102,7 @@ public class GridMapQueryExecutor {
     /** */
     private static final Field RESULT_FIELD;
 
-    /**
+    /*
      * Initialize.
      */
     static {
@@ -514,7 +515,7 @@ public class GridMapQueryExecutor {
         AffinityTopologyVersion topVer,
         Map<UUID, int[]> partsMap,
         int[] parts,
-        Collection<String> tbls,
+        Collection<QueryTable> tbls,
         int pageSize,
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
@@ -567,14 +568,14 @@ public class GridMapQueryExecutor {
             if (!F.isEmpty(tbls)) {
                 snapshotedTbls = new ArrayList<>(tbls.size());
 
-                for (String identifier : tbls) {
-                    GridH2Table tbl = h2.dataTable(identifier);
+                for (QueryTable tbl : tbls) {
+                    GridH2Table h2Tbl = h2.dataTable(tbl);
 
-                    Objects.requireNonNull(tbl, identifier);
+                    Objects.requireNonNull(h2Tbl, tbl.toString());
 
-                    tbl.snapshotIndexes(qctx);
+                    h2Tbl.snapshotIndexes(qctx);
 
-                    snapshotedTbls.add(tbl);
+                    snapshotedTbls.add(h2Tbl);
                 }
             }
 
@@ -618,7 +619,7 @@ public class GridMapQueryExecutor {
                                 "SQL query executed.",
                                 EVT_CACHE_QUERY_EXECUTED,
                                 CacheQueryType.SQL.name(),
-                                mainCctx.namex(),
+                                mainCctx.name(),
                                 null,
                                 qry.query(),
                                 null,
@@ -1169,7 +1170,7 @@ public class GridMapQueryExecutor {
                         "SQL fields query result set row read.",
                         EVT_CACHE_QUERY_OBJECT_READ,
                         CacheQueryType.SQL.name(),
-                        cctx.namex(),
+                        cctx.name(),
                         null,
                         qry.query(),
                         null,

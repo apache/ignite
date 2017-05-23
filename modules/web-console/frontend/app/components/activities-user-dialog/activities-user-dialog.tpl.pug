@@ -22,6 +22,7 @@
                     i.fa.fa-info-circle
                     | Activity details: {{ ctrl.user.userName }}
                 button.close(type='button' aria-label='Close' ng-click='$hide()')
+                     svg(ignite-icon='cross')
             .modal-body.modal-body-with-scroll(id='activities-user-dialog')
                 .panel--ignite
                     table.table--ignite(scrollable-container='#activities-user-dialog' st-table='displayedRows' st-safe-src='ctrl.data')

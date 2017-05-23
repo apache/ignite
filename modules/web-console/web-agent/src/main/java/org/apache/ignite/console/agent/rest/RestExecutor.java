@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -60,15 +62,26 @@ public class RestExecutor {
     public RestExecutor(String nodeUrl) {
         this.nodeUrl = nodeUrl;
 
-        httpClient = new OkHttpClient.Builder().build();
+        Dispatcher dispatcher = new Dispatcher();
+        
+        dispatcher.setMaxRequests(Integer.MAX_VALUE);
+        dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
+
+        httpClient = new OkHttpClient.Builder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .dispatcher(dispatcher)
+            .build();
     }
 
     /**
      * Stop HTTP client.
      */
     public void stop() {
-        if (httpClient != null)
+        if (httpClient != null) {
             httpClient.dispatcher().executorService().shutdown();
+
+            httpClient.dispatcher().cancelAll();
+        }
     }
 
     /** */
@@ -189,7 +202,7 @@ public class RestExecutor {
         Map<String, Object> params = new HashMap<>(3);
 
         params.put("cmd", "top");
-        params.put("attr", full);
+        params.put("attr", true);
         params.put("mtr", full);
 
         return sendRequest(demo, "ignite", params, "GET", null, null);

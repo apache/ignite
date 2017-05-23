@@ -15,23 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+import angular from 'angular';
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import directive from './directive';
+import './style.scss';
 
-/**
- *
- */
-public class IgniteBinaryObjectsCacheTestSuite2 {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        return IgniteCacheTestSuite2.suite();
-    }
-}
+export default angular
+    .module('ignite-console.ignite-icon', [])
+    .directive('igniteIcon', directive);

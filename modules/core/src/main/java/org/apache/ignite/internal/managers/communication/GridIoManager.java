@@ -21,17 +21,23 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,6 +64,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -86,6 +93,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -99,11 +107,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGF
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -431,6 +439,262 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         return map;
+    }
+
+    /**
+     * @param warmup Warmup duration in milliseconds.
+     * @param duration Test duration in milliseconds.
+     * @param threads Thread count.
+     * @param maxLatency Max latency in nanoseconds.
+     * @param rangesCnt Ranges count in resulting histogram.
+     * @param payLoadSize Payload size in bytes.
+     * @param procFromNioThread {@code True} to process requests in NIO threads.
+     * @param nodes Nodes participating in test.
+     */
+    public void runIoTest(
+        final long warmup,
+        final long duration,
+        final int threads,
+        final long maxLatency,
+        final int rangesCnt,
+        final int payLoadSize,
+        final boolean procFromNioThread,
+        final List<ClusterNode> nodes
+    ) {
+        ExecutorService svc = Executors.newFixedThreadPool(threads + 1);
+
+        final AtomicBoolean warmupFinished = new AtomicBoolean();
+        final AtomicBoolean done = new AtomicBoolean();
+        final CyclicBarrier bar = new CyclicBarrier(threads + 1);
+        final LongAdder8 cnt = new LongAdder8();
+        final long sleepDuration = 5000;
+        final byte[] payLoad = new byte[payLoadSize];
+        final Map<UUID, long[]>[] res = new Map[threads];
+        final ConcurrentMap<UUID, GridAtomicLong> maxLatencies = new ConcurrentHashMap8<>();
+
+        boolean failed = true;
+
+        try {
+            svc.execute(new Runnable() {
+                @Override public void run() {
+                    boolean failed = true;
+
+                    try {
+                        bar.await();
+
+                        long start = System.currentTimeMillis();
+
+                        if (log.isInfoEnabled())
+                            log.info("IO test started " +
+                                "[warmup=" + warmup +
+                                ", duration=" + duration +
+                                ", threads=" + threads +
+                                ", maxLatency=" + maxLatency +
+                                ", rangesCnt=" + rangesCnt +
+                                ", payLoadSize=" + payLoadSize +
+                                ", procFromNioThreads=" + procFromNioThread + ']'
+                            );
+
+                        for (;;) {
+                            if (!warmupFinished.get() && System.currentTimeMillis() - start > warmup) {
+                                if (log.isInfoEnabled())
+                                    log.info("IO test warmup finished.");
+
+                                warmupFinished.set(true);
+
+                                start = System.currentTimeMillis();
+                            }
+
+                            if (warmupFinished.get() && System.currentTimeMillis() - start > duration) {
+                                if (log.isInfoEnabled())
+                                    log.info("IO test finished, will wait for all threads to finish.");
+
+                                done.set(true);
+
+                                bar.await();
+
+                                failed = false;
+
+                                break;
+                            }
+
+                            if (log.isInfoEnabled())
+                                log.info("IO test [opsCnt/sec=" + (cnt.sumThenReset() * 1000 / sleepDuration) +
+                                    ", warmup=" + !warmupFinished.get() +
+                                    ", elapsed=" + (System.currentTimeMillis() - start) + ']');
+
+                            Thread.sleep(sleepDuration);
+                        }
+
+                        // At this point all threads have finished the test and
+                        // stored data to the resulting array of maps.
+                        // Need to iterate it over and sum values for all threads.
+                        Map<UUID, long[]> res0 = new HashMap<>();
+
+                        for (Map<UUID, long[]> r : res) {
+                            for (Entry<UUID, long[]> e : r.entrySet()) {
+                                long[] r0 = res0.get(e.getKey());
+
+                                if (r0 == null)
+                                    res0.put(e.getKey(), e.getValue());
+                                else {
+                                    for (int i = 0; i < rangesCnt + 1; i++)
+                                        r0[i] += e.getValue()[i];
+                                }
+                            }
+                        }
+
+                        printIoTestResults(maxLatency / (1000 * rangesCnt), res0, maxLatencies);
+                    }
+                    catch (InterruptedException | BrokenBarrierException e) {
+                        U.error(log, "IO test failed.", e);
+                    }
+                    finally {
+                        if (failed)
+                            bar.reset();
+                    }
+                }
+            });
+
+            for (int i = 0; i < threads; i++) {
+                final int i0 = i;
+
+                res[i] = U.newHashMap(nodes.size());
+
+                svc.execute(new Runnable() {
+                    @Override public void run() {
+                        boolean failed = true;
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                        int size = nodes.size();
+                        Map<UUID, long[]> res0 = res[i0];
+
+                        try {
+                            boolean warmupFinished0 = false;
+
+                            bar.await();
+
+                            for (;;) {
+                                if (done.get())
+                                    break;
+
+                                if (!warmupFinished0)
+                                    warmupFinished0 = warmupFinished.get();
+
+                                ClusterNode node = nodes.get(rnd.nextInt(size));
+
+                                long start = System.nanoTime();
+
+                                sendIoTest(node, payLoad, procFromNioThread).get();
+
+                                long latency = System.nanoTime() - start;
+
+                                cnt.increment();
+
+                                long[] latencies = res0.get(node.id());
+
+                                if (latencies == null)
+                                    res0.put(node.id(), latencies = new long[rangesCnt + 1]);
+
+                                if (latency >= maxLatency) {
+                                    latencies[rangesCnt]++; // Timed out.
+
+                                    GridAtomicLong maxLatency = maxLatencies.get(node.id());
+
+                                    if (maxLatency == null) {
+                                        GridAtomicLong old = maxLatencies.putIfAbsent(node.id(),
+                                            maxLatency = new GridAtomicLong());
+
+                                        if (old != null)
+                                            maxLatency = old;
+                                    }
+
+                                    maxLatency.setIfGreater(latency);
+                                }
+                                else {
+                                    int idx = (int)Math.floor((1.0 * latency) / ((1.0 * maxLatency) / rangesCnt));
+
+                                    latencies[idx]++;
+                                }
+                            }
+
+                            bar.await();
+
+                            failed = false;
+                        }
+                        catch (Exception e) {
+                            U.error(log, "IO test worker thread failed.", e);
+                        }
+                        finally {
+                            if (failed)
+                                bar.reset();
+                        }
+                    }
+                });
+            }
+
+            failed = false;
+        }
+        finally {
+            if (failed)
+                U.shutdownNow(GridIoManager.class, svc, log);
+        }
+    }
+
+    /**
+     * @param binLatencyMcs Bin latency in microseconds.
+     * @param res Resulting map.
+     * @param maxLatencies Max latency for each node.
+     */
+    private void printIoTestResults(
+        long binLatencyMcs,
+        Map<UUID, long[]> res,
+        ConcurrentMap<UUID, GridAtomicLong> maxLatencies
+    ) {
+        StringBuilder b = new StringBuilder(U.nl())
+            .append("IO test results (round-trip count per each latency bin) " +
+                "[binLatency=" + binLatencyMcs + "mcs]")
+            .append(U.nl());
+
+        for (Entry<UUID, long[]> e : res.entrySet()) {
+            ClusterNode node = ctx.discovery().node(e.getKey());
+
+            b.append("Node ID: ").append(e.getKey()).append(" (addrs=")
+                .append(node != null ? node.addresses().toString() : "n/a").append(')').append(U.nl());
+
+            b.append("Latency bin, mcs | Count exclusive | Percentage exclusive | " +
+                "Count inclusive | Percentage inclusive ").append(U.nl());
+
+            long[] nodeRes = e.getValue();
+
+            long sum = 0;
+
+            for (int i = 0; i < nodeRes.length; i++)
+                sum += nodeRes[i];
+
+            long curSum = 0;
+
+            for (int i = 0; i < nodeRes.length; i++) {
+                curSum += nodeRes[i];
+
+                if (i < nodeRes.length - 1)
+                    b.append(String.format("<%11d mcs | %15d | %19.6f%% | %15d | %19.6f%%\n",
+                        (i + 1) * binLatencyMcs,
+                        nodeRes[i], (100.0 * nodeRes[i]) / sum,
+                        curSum, (100.0 * curSum) / sum));
+                else
+                    b.append(String.format(">%11d mcs | %15d | %19.6f%% | %15d | %19.6f%%\n",
+                        i * binLatencyMcs,
+                        nodeRes[i], (100.0 * nodeRes[i]) / sum,
+                        curSum, (100.0 * curSum) / sum));
+            }
+
+            GridAtomicLong maxLatency = maxLatencies.get(e.getKey());
+
+            b.append("Max latency (ns): ").append(maxLatency != null ? maxLatency.get() : -1).append(U.nl());
+        }
+
+        if (log.isInfoEnabled())
+            log.info(b.toString());
     }
 
     /** {@inheritDoc} */

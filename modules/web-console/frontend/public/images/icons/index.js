@@ -15,24 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheExpiryPolicyTestSuite;
-import org.apache.ignite.testframework.config.GridTestProperties;
-
-/**
- *
- */
-public class IgniteBinaryObjectsCacheExpiryPolicyTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        return IgniteCacheExpiryPolicyTestSuite.suite();
-    }
-}
+export csv from './csv.svg';
+export cross from './cross.svg';
+export gear from './gear.svg';
+export clock from './clock.svg';
+export manual from './manual.svg';
+export download from './download.svg';
