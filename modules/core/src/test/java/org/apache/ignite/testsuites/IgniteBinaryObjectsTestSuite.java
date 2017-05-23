@@ -22,6 +22,7 @@ import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
+import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldIdentityResolverSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -100,6 +101,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryIdentityResolverConfigurationSelfTest.class);
 
         suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
+        suite.addTestSuite(BinaryConfigurationCustomSerializerSelfTest.class);
         suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);

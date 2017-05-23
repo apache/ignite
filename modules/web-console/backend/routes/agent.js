@@ -21,21 +21,27 @@
 
 module.exports = {
     implements: 'routes/agents',
-    inject: ['require(lodash)', 'require(express)', 'services/agents']
+    inject: ['require(lodash)', 'require(express)', 'services/agents', 'services/activities']
 };
 
 /**
  * @param _
  * @param express
  * @param {AgentsService} agentsService
+ * @param {ActivitiesService} activitiesService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, agentsService) {
+module.exports.factory = function(_, express, agentsService, activitiesService) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 
         /* Get grid topology. */
         router.get('/download/zip', (req, res) => {
+            activitiesService.merge(req.user._id, {
+                group: 'agent',
+                action: '/agent/download'
+            });
+
             agentsService.getArchive(req.origin(), req.user.token)
                 .then(({fileName, buffer}) => {
                     // Set the archive name.

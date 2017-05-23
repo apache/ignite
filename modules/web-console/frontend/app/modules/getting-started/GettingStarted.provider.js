@@ -19,6 +19,7 @@ import angular from 'angular';
 
 // Getting started pages.
 import PAGES from 'app/data/getting-started.json';
+import templateUrl from 'views/templates/getting-started.tpl.pug';
 
 angular
     .module('ignite-console.getting-started', [])
@@ -77,7 +78,7 @@ angular
             _fillPage();
         };
 
-        const dialog = $modal({templateUrl: '/templates/getting-started.html', scope, placement: 'center', show: false, backdrop: 'static'});
+        const dialog = $modal({ templateUrl, scope, placement: 'center', show: false, backdrop: 'static'});
 
         scope.close = () => {
             try {

@@ -47,7 +47,7 @@ All Ignite SQL features are supported: distributed joins, groupings, aggregates,
 More info: https://apacheignite-net.readme.io/
         </description>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2016</copyright>
+        <copyright>Copyright 2017</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />

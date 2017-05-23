@@ -49,6 +49,9 @@ public class GridIoPolicy {
     /** Pool for handling distributed index range requests. */
     public static final byte IDX_POOL = 8;
 
+    /** Pool for service proxy executions. */
+    public static final byte SERVICE_POOL = 9;
+
     /**
      * Defines the range of reserved pools that are not available for plugins.
      * @param key The key.

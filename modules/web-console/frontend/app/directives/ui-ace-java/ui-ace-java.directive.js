@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import templateUrl from './ui-ace-java.jade';
+import template from './ui-ace-java.pug';
 import controller from './ui-ace-java.controller';
 
 export default ['igniteUiAceJava', [() => {
@@ -55,7 +55,7 @@ export default ['igniteUiAceJava', [() => {
             client: '@'
         },
         link,
-        templateUrl,
+        template,
         controller,
         controllerAs: 'ctrl',
         require: ['igniteUiAceJava', '?^igniteUiAceTabs', '?^form', '?ngModel']

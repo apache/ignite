@@ -191,6 +191,9 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
 
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
+
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());
@@ -922,7 +925,7 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryInternalMapper userTypeMapper(int typeId) {
+    BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
         return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
@@ -932,7 +935,7 @@ public class BinaryContext {
      * @param clsName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryInternalMapper userTypeMapper(String clsName) {
+    BinaryInternalMapper userTypeMapper(String clsName) {
         BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
         if (mapper != null)

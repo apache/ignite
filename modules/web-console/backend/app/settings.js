@@ -51,13 +51,7 @@ module.exports.factory = function(nconf, fs) {
 
     return {
         agent: {
-            dists: 'agent_dists',
-            port: _normalizePort(nconf.get('agentServer:port') || 3002),
-            SSLOptions: nconf.get('agentServer:ssl') && {
-                key: fs.readFileSync(nconf.get('agentServer:key')),
-                cert: fs.readFileSync(nconf.get('agentServer:cert')),
-                passphrase: nconf.get('agentServer:keyPassphrase')
-            }
+            dists: 'agent_dists'
         },
         server: {
             port: _normalizePort(nconf.get('server:port') || 3000),
