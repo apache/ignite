@@ -141,7 +141,7 @@ namespace Apache.Ignite.Linq
         }
 
         /// <summary>
-        /// Deletes all rows that are matched by the specified query.
+        /// Removes all rows that are matched by the specified query.
         /// <para />
         /// This method results in "DELETE FROM" distributed SQL query, performing bulk delete 
         /// (as opposed to fetching all rows locally).
@@ -152,7 +152,6 @@ namespace Apache.Ignite.Linq
         /// <returns>Affected row count.</returns>
         public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query)
         {
-            // TODO: Method name?? RemoveRange, Delete, RemoveAll? What is in cache for this?
             IgniteArgumentCheck.NotNull(query, "query");
 
             var method = RemoveAllExpressionNode.RemoveAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
@@ -160,8 +159,6 @@ namespace Apache.Ignite.Linq
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression));
         }
 
-        // TODO
-        /*
         /// <summary>
         /// Deletes all rows that are matched by the specified query.
         /// <para />
@@ -185,6 +182,6 @@ namespace Apache.Ignite.Linq
 
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
                 Expression.Quote(predicate)));
-        }*/
+        }
     }
 }
