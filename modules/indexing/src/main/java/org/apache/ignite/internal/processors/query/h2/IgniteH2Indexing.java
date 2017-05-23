@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.Connection;
@@ -136,7 +135,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
-import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
 import org.h2.engine.Session;
@@ -210,9 +208,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
 
-    /** */
-    private static final Field COMMAND_FIELD;
-
     /** The period of clean up the {@link #stmtCache}. */
     private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
@@ -231,15 +226,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.objectCache", "false");
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
-
-        try {
-            COMMAND_FIELD = JdbcPreparedStatement.class.getDeclaredField("command");
-
-            COMMAND_FIELD.setAccessible(true);
-        }
-        catch (NoSuchFieldException e) {
-            throw new IllegalStateException("Check H2 version in classpath.", e);
-        }
     }
 
     /** Logger. */
@@ -980,19 +966,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return meta;
-    }
-
-    /**
-     * @param stmt Prepared statement.
-     * @return Command type.
-     */
-    private static int commandType(PreparedStatement stmt) {
-        try {
-            return ((CommandInterface)COMMAND_FIELD.get(stmt)).getCommandType();
-        }
-        catch (IllegalAccessException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     /**
@@ -1902,21 +1875,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return null;
 
         return schema.tables().get(type);
-    }
-
-    /**
-     * Gets collection of table for given schema name.
-     *
-     * @param schemaName Schema name.
-     * @return Collection of table descriptors.
-     */
-    private Collection<H2TableDescriptor> tables(String schemaName) {
-        H2Schema schema = schemas.get(schemaName);
-
-        if (schema == null)
-            return Collections.emptySet();
-
-        return schema.tables().values();
     }
 
     /**
