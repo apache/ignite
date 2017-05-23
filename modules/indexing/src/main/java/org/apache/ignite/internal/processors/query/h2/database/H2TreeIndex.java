@@ -167,9 +167,9 @@ public class H2TreeIndex extends GridH2IndexBase {
             IgniteBiPredicate<Object, Object> p = null;
 
             if (f != null) {
-                String spaceName = getTable().cacheName();
+                String cacheName = getTable().cacheName();
 
-                p = f.forSpace(spaceName);
+                p = f.forCache(cacheName);
             }
 
             int seg = threadLocalSegment();

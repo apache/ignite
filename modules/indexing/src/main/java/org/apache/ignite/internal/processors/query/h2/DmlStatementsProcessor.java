@@ -122,31 +122,31 @@ public class DmlStatementsProcessor {
     /**
      * Handle cache stop.
      *
-     * @param spaceName Cache name.
+     * @param cacheName Cache name.
      */
-    public void onCacheStop(String spaceName) {
-        planCache.remove(spaceName);
+    public void onCacheStop(String cacheName) {
+        planCache.remove(cacheName);
     }
 
     /**
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param stmt JDBC statement.
      * @param fieldsQry Original query.
      * @param loc Query locality flag.
-     * @param filters Space name and key filter.
+     * @param filters Cache name and key filter.
      * @param cancel Cancel.
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
-    private UpdateResult updateSqlFields(String spaceName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
+    private UpdateResult updateSqlFields(String cacheName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
         boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
 
-        UpdatePlan plan = getPlanForStatement(spaceName, stmt, null);
+        UpdatePlan plan = getPlanForStatement(cacheName, stmt, null);
 
         GridCacheContext<?, ?> cctx = plan.tbl.rowDescriptor().context();
 
@@ -194,7 +194,7 @@ public class DmlStatementsProcessor {
     }
 
     /**
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param stmt Prepared statement.
      * @param fieldsQry Initial query.
      * @param cancel Query cancel.
@@ -202,9 +202,9 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String spaceName, PreparedStatement stmt,
+    QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String cacheName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, false, null, cancel);
+        UpdateResult res = updateSqlFields(cacheName, stmt, fieldsQry, false, null, cancel);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), null, false);
@@ -216,17 +216,17 @@ public class DmlStatementsProcessor {
 
     /**
      * Execute DML statement on local cache.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param stmt Prepared statement.
-     * @param filters Space name and key filter.
+     * @param filters Cache name and key filter.
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    GridQueryFieldsResult updateLocalSqlFields(String spaceName, PreparedStatement stmt,
+    GridQueryFieldsResult updateLocalSqlFields(String cacheName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, true, filters, cancel);
+        UpdateResult res = updateSqlFields(cacheName, stmt, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
@@ -317,8 +317,9 @@ public class DmlStatementsProcessor {
      * Actually perform SQL DML operation locally.
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
-     * @param filters Space name and key filter.
-     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.   @return Pair [number of successfully processed items; keys that have failed to be processed]
+     * @param filters Cache name and key filter.
+     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
+     * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
@@ -392,28 +393,28 @@ public class DmlStatementsProcessor {
     /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param prepStmt JDBC statement.
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private UpdatePlan getPlanForStatement(String spaceName, PreparedStatement prepStmt,
+    private UpdatePlan getPlanForStatement(String cacheName, PreparedStatement prepStmt,
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared(prepStmt);
 
-        spaceName = F.isEmpty(spaceName) ? "default" : spaceName;
+        cacheName = F.isEmpty(cacheName) ? "default" : cacheName;
 
-        ConcurrentMap<String, UpdatePlan> spacePlans = planCache.get(spaceName);
+        ConcurrentMap<String, UpdatePlan> cachePlans = planCache.get(cacheName);
 
-        if (spacePlans == null) {
-            spacePlans = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
+        if (cachePlans == null) {
+            cachePlans = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
-            spacePlans = U.firstNotNull(planCache.putIfAbsent(spaceName, spacePlans), spacePlans);
+            cachePlans = U.firstNotNull(planCache.putIfAbsent(cacheName, cachePlans), cachePlans);
         }
 
         // getSQL returns field value, so it's fast
         // Don't look for re-runs in cache, we don't cache them
-        UpdatePlan res = (errKeysPos == null ? spacePlans.get(p.getSQL()) : null);
+        UpdatePlan res = (errKeysPos == null ? cachePlans.get(p.getSQL()) : null);
 
         if (res != null)
             return res;
@@ -422,7 +423,7 @@ public class DmlStatementsProcessor {
 
         // Don't cache re-runs
         if (errKeysPos == null)
-            return U.firstNotNull(spacePlans.putIfAbsent(p.getSQL(), res), res);
+            return U.firstNotNull(cachePlans.putIfAbsent(p.getSQL(), res), res);
         else
             return res;
     }

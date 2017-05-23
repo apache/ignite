@@ -540,10 +540,10 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = qryIdGen.incrementAndGet();
 
-            final String space = cctx.name();
+            final String cacheName = cctx.name();
 
-            final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
-                h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize(),
+            final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), cacheName,
+                h2.connectionForCache(cacheName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
@@ -794,11 +794,11 @@ public class GridReduceQueryExecutor {
 
                         try {
                             if (qry.explain())
-                                return explainPlan(r.conn, space, qry, params);
+                                return explainPlan(r.conn, cacheName, qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(space,
+                            ResultSet res = h2.executeSqlQueryWithTimer(cacheName,
                                 r.conn,
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
@@ -1030,12 +1030,12 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param space Cache name.
+     * @param cacheName Cache name.
      * @param topVer Topology version.
      * @return Collection of data nodes.
      */
-    private Collection<ClusterNode> dataNodes(String space, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> res = ctx.discovery().cacheAffinityNodes(space, topVer);
+    private Collection<ClusterNode> dataNodes(String cacheName, AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> res = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
         return res != null ? res : Collections.<ClusterNode>emptySet();
     }
@@ -1049,12 +1049,12 @@ public class GridReduceQueryExecutor {
     private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?,?> cctx) {
         assert cctx.isReplicated() : cctx.name() + " must be replicated";
 
-        String space = cctx.name();
+        String cacheName = cctx.name();
 
-        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(space, NONE));
+        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cacheName, NONE));
 
         if (dataNodes.isEmpty())
-            throw new CacheException("Failed to find data nodes for cache: " + space);
+            throw new CacheException("Failed to find data nodes for cache: " + cacheName);
 
         // Find all the nodes owning all the partitions for replicated cache.
         for (int p = 0, parts = cctx.affinity().partitions(); p < parts; p++) {
@@ -1213,18 +1213,18 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param c Connection.
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param qry Query.
      * @param params Query parameters.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry, Object[] params)
+    private Iterator<List<?>> explainPlan(JdbcConnection c, String cacheName, GridCacheTwoStepQuery qry, Object[] params)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(space, c,
+            ResultSet rs = h2.executeSqlQueryWithTimer(cacheName, c,
                 "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
 
             lists.add(F.asList(getPlan(rs)));
@@ -1240,7 +1240,7 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(space,
+        ResultSet rs = h2.executeSqlQueryWithTimer(cacheName,
             c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),

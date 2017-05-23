@@ -1686,18 +1686,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param cursor GridCursor.
          * @param time Time for expired rows filtering.
          * @param qryFilter Filter.
-         * @param spaceName Space name.
+         * @param cacheName Cache name.
          */
-        protected FilteringCursor(GridCursor<GridH2Row> cursor,
-            long time,
-            IndexingQueryFilter qryFilter,
-            String spaceName) {
+        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
+            String cacheName) {
             this.cursor = cursor;
 
             this.time = time;
 
             if (qryFilter != null) {
-                this.fltr = qryFilter.forSpace(spaceName);
+                this.fltr = qryFilter.forCache(cacheName);
 
                 this.isValRequired = qryFilter.isValueRequired();
             }
