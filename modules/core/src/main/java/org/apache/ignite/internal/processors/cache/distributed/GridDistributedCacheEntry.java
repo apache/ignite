@@ -617,7 +617,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         }
 
         // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, false);
     }
 
     /** {@inheritDoc} */
@@ -702,8 +702,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                     if (e != null)
                         e.recheck();
-
-                    break;
+                    else
+                        break;
                 }
             }
         }
