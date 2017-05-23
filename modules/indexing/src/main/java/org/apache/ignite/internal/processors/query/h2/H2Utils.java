@@ -18,16 +18,24 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.h2.engine.Session;
+import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 
 import java.lang.reflect.Constructor;
+import java.sql.Connection;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,7 +50,7 @@ public class H2Utils {
     public static final char ESC_CH = '\"';
 
     /** */
-    public static final String ESC_STR = ESC_CH + "" + ESC_CH;
+    private static final String ESC_STR = ESC_CH + "" + ESC_CH;
 
     /**
      * @param c1 First column.
@@ -184,10 +192,10 @@ public class H2Utils {
         IndexColumn keyCol, IndexColumn affCol) {
         assert keyCol != null;
 
-        if (!H2Utils.containsKeyColumn(desc, cols))
+        if (!containsKeyColumn(desc, cols))
             cols.add(keyCol);
 
-        if (affCol != null && !H2Utils.containsColumn(cols, affCol))
+        if (affCol != null && !containsColumn(cols, affCol))
             cols.add(affCol);
 
         return cols;
@@ -202,7 +210,7 @@ public class H2Utils {
      */
     public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
         try {
-            Class<?> cls = Class.forName(H2Utils.SPATIAL_IDX_CLS);
+            Class<?> cls = Class.forName(SPATIAL_IDX_CLS);
 
             Constructor<?> ctor = cls.getConstructor(
                 GridH2Table.class,
@@ -218,8 +226,68 @@ public class H2Utils {
             return (GridH2IndexBase)ctor.newInstance(tbl, idxName, segments, cols);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to instantiate: " + H2Utils.SPATIAL_IDX_CLS, e);
+            throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
         }
+    }
+
+    /**
+     * Stores rule for constructing schemaName according to cache configuration.
+     *
+     * @param ccfg Cache configuration.
+     * @return Proper schema name according to ANSI-99 standard.
+     */
+    public static String schemaNameFromCacheConfiguration(CacheConfiguration<?, ?> ccfg) {
+        if (ccfg.getSqlSchema() == null)
+            return escapeName(ccfg.getName(), true);
+
+        if (ccfg.getSqlSchema().charAt(0) == ESC_CH)
+            return ccfg.getSqlSchema();
+
+        return ccfg.isSqlEscapeAll() ?
+            escapeName(ccfg.getSqlSchema(), true) : ccfg.getSqlSchema().toUpperCase();
+    }
+
+    /**
+     * @param rsMeta Metadata.
+     * @return List of fields metadata.
+     * @throws SQLException If failed.
+     */
+    public static List<GridQueryFieldMetadata> meta(ResultSetMetaData rsMeta) throws SQLException {
+        List<GridQueryFieldMetadata> meta = new ArrayList<>(rsMeta.getColumnCount());
+
+        for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
+            String schemaName = rsMeta.getSchemaName(i);
+            String typeName = rsMeta.getTableName(i);
+            String name = rsMeta.getColumnLabel(i);
+            String type = rsMeta.getColumnClassName(i);
+
+            if (type == null) // Expression always returns NULL.
+                type = Void.class.getName();
+
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type));
+        }
+
+        return meta;
+    }
+
+    /**
+     * @param c Connection.
+     * @return Session.
+     */
+    public static Session session(Connection c) {
+        return (Session)((JdbcConnection)c).getSession();
+    }
+
+    /**
+     * @param conn Connection to use.
+     * @param distributedJoins If distributed joins are enabled.
+     * @param enforceJoinOrder Enforce join order of tables.
+     */
+    public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
+        Session s = session(conn);
+
+        s.setForceJoinOrder(enforceJoinOrder);
+        s.setJoinBatchEnabled(distributedJoins);
     }
 
     /**
