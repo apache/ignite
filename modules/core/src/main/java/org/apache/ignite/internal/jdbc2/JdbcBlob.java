@@ -22,7 +22,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Simple BLOB implementation. Actually there is no such entity as BLOB in Ignite. So using arrays is preferable way
@@ -63,7 +65,7 @@ public class JdbcBlob implements Blob {
 
         byte[] res = new byte[size];
 
-        System.arraycopy(arr, idx, res, 0, size);
+        U.arrayCopy(arr, idx, res, 0, size);
 
         return res;
     }
@@ -143,19 +145,19 @@ public class JdbcBlob implements Blob {
         if (idx + len > arr.length) {
             dst = new byte[arr.length + (len - (arr.length - idx))];
 
-            System.arraycopy(arr, 0, dst, 0, idx);
+            U.arrayCopy(arr, 0, dst, 0, idx);
 
             arr = dst;
         }
 
-        System.arraycopy(bytes, off, dst, idx, len);
+        U.arrayCopy(bytes, off, dst, idx, len);
 
         return len;
     }
 
     /** {@inheritDoc} */
     @Override public OutputStream setBinaryStream(long pos) throws SQLException {
-        throw new UnsupportedOperationException();
+        throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
