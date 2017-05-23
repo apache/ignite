@@ -34,8 +34,6 @@ public class IgniteBinarySimpleNameMapperBasicTestSuite extends TestSuite {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
         GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
 
-        final TestSuite suite = IgniteBasicTestSuite.suite();
-        suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
-        return suite;
+        return IgniteBasicTestSuite.suite();
     }
 }
