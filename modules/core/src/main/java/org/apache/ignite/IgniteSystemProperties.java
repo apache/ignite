@@ -613,7 +613,7 @@ public final class IgniteSystemProperties {
     /**
      * WAL rebalance threshold.
      */
-     public static final String IGNITE_WAL_REBALANCE_THRESHOLD = "IGNITE_WAL_REBALANCE_THRESHOLD";
+     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
 
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {

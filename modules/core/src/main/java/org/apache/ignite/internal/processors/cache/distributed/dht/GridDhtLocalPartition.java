@@ -141,8 +141,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param id Partition ID.
      * @param entryFactory Entry factory.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
-        int id, GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(
+        GridCacheContext cctx,
+        int id,
+        GridCacheMapEntryFactory entryFactory
+    ) {
         super(cctx, entryFactory, Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / cctx.affinity().partitions()));
 
         this.id = id;

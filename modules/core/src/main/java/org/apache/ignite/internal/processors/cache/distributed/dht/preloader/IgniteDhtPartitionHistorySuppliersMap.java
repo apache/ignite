@@ -80,6 +80,9 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param cntr Partition counter.
      */
     public synchronized void put(UUID nodeId, int cacheId, int partId, long cntr) {
+        if (map == null)
+            map = new HashMap<>();
+
         Map<T2<Integer, Integer>, Long> nodeMap = map.get(nodeId);
 
         if (nodeMap == null) {
