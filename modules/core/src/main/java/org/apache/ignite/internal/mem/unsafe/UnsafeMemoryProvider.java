@@ -73,7 +73,17 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         long chunkSize = sizes[regions.size()];
 
-        long ptr = GridUnsafe.allocateMemory(chunkSize);
+        long ptr;
+
+        try {
+            ptr = GridUnsafe.allocateMemory(chunkSize);
+        }
+        catch (IllegalArgumentException e) {
+            U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
+                ". Check if chunkSize is too large and 32-bit JVM is used.");
+
+            return null;
+        }
 
         if (ptr <= 0) {
             U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true));
