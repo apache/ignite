@@ -1027,8 +1027,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     public GridQueryFieldsResult queryLocalSqlFields(final String cacheName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final Connection conn = connectionForCache(cacheName);
 
         setupConnection(conn, false, enforceJoinOrder);
@@ -1046,7 +1045,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setEnforceJoinOrder(enforceJoinOrder);
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
-            return dmlProc.updateLocalSqlFields(cacheName, stmt, fldsQry, filter, cancel);
+            return dmlProc.updateSqlFieldsLocal(cacheName, stmt, fldsQry, filter, cancel);
         }
         else if (DdlStatementsProcessor.isDdlStatement(p))
             throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
@@ -1334,19 +1333,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
-        final SqlFieldsQuery qry, final IndexingQueryFilter filter, final GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        final SqlFieldsQuery qry, final boolean keepBinary, final IndexingQueryFilter filter,
+        final GridQueryCancel cancel) throws IgniteCheckedException {
 
         if (cctx.config().getQueryParallelism() > 1) {
             qry.setDistributedJoins(true);
 
             assert qry.isLocal();
 
-            return queryDistributedSqlFields(cctx, qry, cancel);
+            return queryDistributedSqlFields(cctx, qry, keepBinary, cancel);
         }
         else {
-            final boolean keepBinary = cctx.keepBinary();
-
             final String cacheName = cctx.name();
             final String sql = qry.getSql();
             final Object[] args = qry.getArgs();
@@ -1379,7 +1376,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert qry.isLocal();
 
-            return queryDistributedSql(cctx, qry);
+            return queryDistributedSql(cctx, qry, keepBinary);
         }
         else {
             String cacheName = cctx.name();
@@ -1495,7 +1492,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?, ?> cctx, SqlQuery qry) {
+    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?, ?> cctx,
+        SqlQuery qry, boolean keepBinary) {
         String type = qry.getType();
         String cacheName = cctx.name();
 
@@ -1525,7 +1523,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res = queryDistributedSqlFields(cctx, fqry, null);
+        final QueryCursor<List<?>> res = queryDistributedSqlFields(cctx, fqry, keepBinary, null);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1567,7 +1565,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
-        GridQueryCancel cancel) {
+        boolean keepBinary, GridQueryCancel cancel) {
         final String cacheName = cctx.name();
         final String sqlQry = qry.getSql();
 
@@ -1657,7 +1655,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            return dmlProc.updateSqlFieldsTwoStep(cctx.name(), stmt, qry, cancel);
+                            return dmlProc.updateSqlFieldsDistributed(cctx.name(), stmt, qry, cancel);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
@@ -1727,9 +1725,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel,
-                    qry.getArgs(), qry.getPartitions()),
-            cancel);
+            runQueryTwoStep(cctx, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
+                qry.getArgs(), qry.getPartitions()), cancel);
 
         cursor.fieldsMeta(meta);
 

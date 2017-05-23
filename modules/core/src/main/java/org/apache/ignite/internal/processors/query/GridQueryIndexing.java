@@ -68,23 +68,25 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param keepBinary Keep binary flag.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?,?> cctx, SqlQuery qry)
-        throws IgniteCheckedException;
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?,?> cctx, SqlQuery qry,
+        boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Parses SQL query into two step query and executes it.
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param keepBinary Keep binary flag.
      * @param cancel Query cancel.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public FieldsQueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
-        GridQueryCancel cancel) throws IgniteCheckedException;
+        boolean keepBinary, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.
@@ -116,12 +118,13 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param keepBinary Keep binary flag.
      * @param filter Cache name and key filter.
      * @param cancel Query cancel.
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
-        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
+        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Executes text query.

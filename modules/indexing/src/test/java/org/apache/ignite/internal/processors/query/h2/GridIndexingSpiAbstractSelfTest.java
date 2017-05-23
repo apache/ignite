@@ -468,8 +468,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 time = now;
                 range *= 3;
 
-                GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, Arrays.<Object>asList(1, range), null,
-                    false, 0, null);
+                GridQueryFieldsResult res = spi.queryLocalSqlFields("A", sql, Arrays.<Object>asList(1, range),
+                    null, false, 0, null);
 
                 assert res.iterator().hasNext();
 
