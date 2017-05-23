@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWriter;
 
 /**
- *
+ * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class IgniteBinaryObjectsCacheRestartTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        return IgniteCacheRestartTestSuite.suite();
+public class JdbcObjectWriter extends SqlListenerAbstractObjectWriter {
+    /** {@inheritDoc} */
+    @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj)
+        throws BinaryObjectException {
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

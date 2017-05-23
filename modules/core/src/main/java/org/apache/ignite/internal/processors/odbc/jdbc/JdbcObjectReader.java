@@ -15,24 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheExpiryPolicyTestSuite;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReader;
 
 /**
- *
+ * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
-public class IgniteBinaryObjectsCacheExpiryPolicyTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        return IgniteCacheExpiryPolicyTestSuite.suite();
+@SuppressWarnings("unchecked")
+public class JdbcObjectReader extends SqlListenerAbstractObjectReader {
+    /** {@inheritDoc} */
+    @Override protected Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
-
 /**
- * Test for {@link CacheJdbcPojoStore} with optimized marshaller and enabled SQL escaping.
+ * <!-- Package description. -->
+ * Optimized marchalling test package.
  */
-public class CacheJdbcPojoStoreOptimizedMarshallerWithSqlEscapeSelfTest extends CacheJdbcPojoStoreOptimizedMarshallerSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean sqlEscapeAll(){
-        return true;
-    }
-}
+package org.apache.ignite.internal.marshaller.optimized;

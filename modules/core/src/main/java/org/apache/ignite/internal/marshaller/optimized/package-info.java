@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains Optimized marshaller.
  */
-public class BinaryObjectsTxDeadlockDetectionTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        return TxDeadlockDetectionTestSuite.suite();
-    }
-}
+package org.apache.ignite.internal.marshaller.optimized;

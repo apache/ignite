@@ -34,6 +34,14 @@ namespace ignite
 {
     namespace odbc
     {
+        struct ClientType
+        {
+            enum Type
+            {
+                ODBC = 0
+            };
+        };
+
         struct RequestType
         {
             enum Type
@@ -104,6 +112,8 @@ namespace ignite
                 writer.WriteInt16(version.GetMajor());
                 writer.WriteInt16(version.GetMinor());
                 writer.WriteInt16(version.GetMaintenance());
+                
+                writer.WriteInt8(ClientType::ODBC);
 
                 writer.WriteBool(distributedJoins);
                 writer.WriteBool(enforceJoinOrder);

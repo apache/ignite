@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -123,7 +124,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         injectLogger(spi);
 
         ctx.config().setCommunicationSpi(spi);
-        ctx.config().setMarshaller(new OptimizedMarshaller());
+        ctx.config().setMarshaller(new BinaryMarshaller());
 
         GridIoManager mgr = new GridIoManager(ctx);
 
