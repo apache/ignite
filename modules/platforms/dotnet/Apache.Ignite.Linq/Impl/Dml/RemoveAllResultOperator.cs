@@ -24,9 +24,9 @@ namespace Apache.Ignite.Linq.Impl.Dml
     using Remotion.Linq.Clauses.StreamedData;
 
     /// <summary>
-    /// Represents an operator for <see cref="CacheLinqExtensions.DeleteAll{TKey,TValue}"/>.
+    /// Represents an operator for <see cref="CacheLinqExtensions.RemoveAll{TKey,TValue}"/>.
     /// </summary>
-    internal sealed class DeleteAllResultOperator : ValueFromSequenceResultOperatorBase
+    internal sealed class RemoveAllResultOperator : ValueFromSequenceResultOperatorBase
     {
         /** <inheritdoc /> */
         public override IStreamedDataInfo GetOutputDataInfo(IStreamedDataInfo inputInfo)
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         public override ResultOperatorBase Clone(CloneContext cloneContext)
         {
-            return new DeleteAllResultOperator();
+            return new RemoveAllResultOperator();
         }
 
         /** <inheritdoc /> */
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         public override StreamedValue ExecuteInMemory<T>(StreamedSequence sequence)
         {
-            throw new NotSupportedException("DeleteAll is not supported for in-memory sequences.");
+            throw new NotSupportedException("RemoveAll is not supported for in-memory sequences.");
         }
     }
 }

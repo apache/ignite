@@ -63,8 +63,8 @@ namespace Apache.Ignite.Linq.Impl
         {
             var methodInfoRegistry = MethodInfoBasedNodeTypeRegistry.CreateFromRelinqAssembly();
 
-            methodInfoRegistry.Register(DeleteAllExpressionNode.GetSupportedMethods(), 
-                typeof(DeleteAllExpressionNode));
+            methodInfoRegistry.Register(RemoveAllExpressionNode.GetSupportedMethods(), 
+                typeof(RemoveAllExpressionNode));
 
             return new CompoundNodeTypeProvider(new INodeTypeProvider[]
             {

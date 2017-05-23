@@ -150,12 +150,12 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TValue">Value type.</typeparam>
         /// <param name="query">The query.</param>
         /// <returns>Affected row count.</returns>
-        public static int DeleteAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query)
+        public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query)
         {
             // TODO: Method name?? RemoveRange, Delete, RemoveAll? What is in cache for this?
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var method = DeleteAllExpressionNode.DeleteAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
+            var method = RemoveAllExpressionNode.RemoveAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
 
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression));
         }
@@ -175,13 +175,13 @@ namespace Apache.Ignite.Linq
         /// <returns>
         /// Affected row count.
         /// </returns>
-        public static int DeleteAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
+        public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
             Expression<Func<ICacheEntry<TKey, TValue>, bool>> predicate)
         {
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(predicate, "predicate");
 
-            var method = DeleteAllExpressionNode.DeleteAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
+            var method = RemoveAllExpressionNode.RemoveAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
 
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
                 Expression.Quote(predicate)));

@@ -1424,10 +1424,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Tests the DeleteAll extension.
+        /// Tests the RemoveAll extension.
         /// </summary>
         [Test]
-        public void TestDeleteAll()
+        public void TestRemoveAll()
         {
             // Use new cache to avoid touching static data.
             var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
@@ -1435,7 +1435,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
 
-            var res = cache.AsCacheQueryable().Where(x => x.Key < 3).DeleteAll();
+            var res = cache.AsCacheQueryable().Where(x => x.Key < 3).RemoveAll();
             Assert.AreEqual(2, res);
             Assert.AreEqual(Enumerable.Range(3, 8), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 

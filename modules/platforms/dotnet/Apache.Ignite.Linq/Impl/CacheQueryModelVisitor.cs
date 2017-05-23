@@ -112,7 +112,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             _aliases.Push();
 
-            if (IsDeleteAll(queryModel))
+            if (IsRemoveAll(queryModel))
             {
                 _builder.Append("delete ");
             }
@@ -526,12 +526,12 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Determines whether specified model describes a Delete All operation.
+        /// Determines whether specified model describes a Remove All operation.
         /// </summary>
-        private static bool IsDeleteAll(QueryModel queryModel)
+        private static bool IsRemoveAll(QueryModel queryModel)
         {
             return queryModel.ResultOperators.Count == 1 &&
-                   queryModel.ResultOperators[0] is DeleteAllResultOperator;
+                   queryModel.ResultOperators[0] is RemoveAllResultOperator;
         }
     }
 }

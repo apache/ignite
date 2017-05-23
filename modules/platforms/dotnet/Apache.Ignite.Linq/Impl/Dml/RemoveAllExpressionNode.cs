@@ -24,23 +24,23 @@ namespace Apache.Ignite.Linq.Impl.Dml
     using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
     /// <summary>
-    /// Represents a <see cref="MethodCallExpression"/> for <see cref="CacheLinqExtensions.DeleteAll{TKey,TValue}"/>.
-    /// When user calls DeleteAll, this node is generated.
+    /// Represents a <see cref="MethodCallExpression"/> for <see cref="CacheLinqExtensions.RemoveAll{TKey,TValue}"/>.
+    /// When user calls RemoveAll, this node is generated.
     /// </summary>
-    internal sealed class DeleteAllExpressionNode : ResultOperatorExpressionNodeBase
+    internal sealed class RemoveAllExpressionNode : ResultOperatorExpressionNodeBase
     {
         /// <summary>
-        /// The DeleteAll method.
+        /// The RemoveAll method.
         /// </summary>
-        public static readonly MethodInfo DeleteAllMethodInfo = typeof(CacheLinqExtensions).GetMethod("DeleteAll");
+        public static readonly MethodInfo RemoveAllMethodInfo = typeof(CacheLinqExtensions).GetMethod("RemoveAll");
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeleteAllExpressionNode"/> class.
+        /// Initializes a new instance of the <see cref="RemoveAllExpressionNode"/> class.
         /// </summary>
         /// <param name="parseInfo">The parse information.</param>
         /// <param name="optionalPredicate">The optional predicate.</param>
         /// <param name="optionalSelector">The optional selector.</param>
-        public DeleteAllExpressionNode(MethodCallExpressionParseInfo parseInfo,
+        public RemoveAllExpressionNode(MethodCallExpressionParseInfo parseInfo,
             LambdaExpression optionalPredicate, LambdaExpression optionalSelector)
             : base(parseInfo, optionalPredicate, optionalSelector)
         {
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         protected override ResultOperatorBase CreateResultOperator(ClauseGenerationContext clauseGenerationContext)
         {
-            return new DeleteAllResultOperator();
+            return new RemoveAllResultOperator();
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
-            yield return DeleteAllMethodInfo;
+            yield return RemoveAllMethodInfo;
         }
     }
 }
