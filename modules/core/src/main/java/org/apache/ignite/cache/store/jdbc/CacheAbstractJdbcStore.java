@@ -69,6 +69,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -120,6 +121,9 @@ import static org.apache.ignite.cache.store.jdbc.JdbcTypesTransformer.NUMERIC_TY
 public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Connection attribute property name. */
     protected static final String ATTR_CONN_PROP = "JDBC_STORE_CONNECTION";
+
+    /** Thread name. */
+    private static final String CACHE_LOADER_THREAD_NAME = "jdbc-cache-loader";
 
     /** Built in Java types names. */
     protected static final Collection<String> BUILT_IN_TYPES = new HashSet<>();
@@ -680,7 +684,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         String cacheName = session().cacheName();
 
         try {
-            pool = Executors.newFixedThreadPool(maxPoolSize);
+            pool = Executors.newFixedThreadPool(maxPoolSize, new IgniteThreadFactory(ignite.name(), CACHE_LOADER_THREAD_NAME));
 
             Collection<Future<?>> futs = new ArrayList<>();
 
