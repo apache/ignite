@@ -2181,6 +2181,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         batch.clientReconnect(reconnect);
 
+        batch.restartingCaches(restartingCaches);
+
         if (!reconnect)
             batch.startCaches(startAllCachesOnClientStart());
 
@@ -2265,6 +2267,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         else {
                             assert req.cacheType() != null : req;
 
+                            if (restartingCaches.contains(req.cacheName()))
+                                continue;
+
                             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                                 ctx,
                                 ccfg,
@@ -2294,12 +2299,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
+                for (String s : batch.restartingCaches())
+                    registeredCaches.remove(s);
+
+                restartingCaches.addAll(batch.restartingCaches());
+
                 if (!F.isEmpty(batch.clientNodes())) {
                     for (Map.Entry<String, Map<UUID, Boolean>> entry : batch.clientNodes().entrySet()) {
                         String cacheName = entry.getKey();
 
-                        for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
-                            ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
+                        if (!restartingCaches.contains(cacheName))
+                            for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
+                                ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
                     }
                 }
 
