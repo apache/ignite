@@ -811,10 +811,10 @@ public class GridH2Table extends TableBase {
      * @return {@code True} if exists.
      */
     public boolean containsUserIndex(String idxName) {
-        for (int i = 2; i < idxs.size();) {
+        for (int i = 2; i < idxs.size(); i++) {
             Index idx = idxs.get(i);
 
-            if (F.eq(idx.getName(), idxName))
+            if (idx.getName().equalsIgnoreCase(idxName))
                 return true;
         }
 

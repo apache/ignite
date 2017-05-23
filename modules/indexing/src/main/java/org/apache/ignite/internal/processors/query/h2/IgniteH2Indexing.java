@@ -2046,7 +2046,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public GridH2Table dataTableForIndex(String schemaName, String idxName) {
         for (Map.Entry<QueryTable, GridH2Table> dataTableEntry : dataTables.entrySet()) {
-            if (F.eq(dataTableEntry.getKey(), schemaName)) {
+            if (F.eq(dataTableEntry.getKey().schema(), schemaName)) {
                 GridH2Table h2Tbl = dataTableEntry.getValue();
 
                 if (h2Tbl.containsUserIndex(idxName))
