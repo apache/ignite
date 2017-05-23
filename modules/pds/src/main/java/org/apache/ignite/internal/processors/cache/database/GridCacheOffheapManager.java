@@ -952,7 +952,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
                 if (delegate0 != null)
                     delegate0.updateCounter(val);
