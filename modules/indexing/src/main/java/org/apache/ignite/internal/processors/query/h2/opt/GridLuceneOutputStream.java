@@ -167,15 +167,6 @@ public class GridLuceneOutputStream extends IndexOutput {
         return currBufIdx < 0 ? 0 : bufStart + bufPosition;
     }
 
-    /**
-     * Returns byte usage of all buffers.
-     *
-     * @return Bytes used.
-     */
-    public long sizeInBytes() {
-        return (long)file.numBuffers() * (long)BUFFER_SIZE;
-    }
-
     /** {@inheritDoc} */
     @Override public void copyBytes(DataInput input, long numBytes) throws IOException {
         assert numBytes >= 0 : "numBytes=" + numBytes;
