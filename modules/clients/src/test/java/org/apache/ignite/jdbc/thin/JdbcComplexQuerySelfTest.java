@@ -115,7 +115,7 @@ public class JdbcComplexQuerySelfTest extends JdbcAbstractSelfTest {
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema("pers");
 
         stmt = conn.createStatement();
 

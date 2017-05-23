@@ -606,6 +606,14 @@ public class BinaryUtils {
     }
 
     /**
+     * @param typeId Binary type ID.
+     * @return Class of plain type.
+     */
+    @Nullable public static Class <?> plainClassByType(byte typeId) {
+        return FLAG_TO_CLASS.get(typeId);
+    }
+
+    /**
      * Tells whether provided type is binary.
      *
      * @param cls Class to check.

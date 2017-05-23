@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
 
 /**
@@ -118,14 +119,12 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public int getColumnType(int col) throws SQLException {
-        // TODO: implement type mapping.
-        return 0;
+        return JdbcUtils.type(meta.get(col - 1).getDataType().getName());
     }
 
     /** {@inheritDoc} */
     @Override public String getColumnTypeName(int col) throws SQLException {
-        // TODO: implement type mapping.
-        return null;
+        return JdbcUtils.typeName(meta.get(col - 1).getDataType().getName());
     }
 
     /** {@inheritDoc} */

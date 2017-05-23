@@ -91,9 +91,9 @@ public class JdbcEmptyCacheSelfTest extends JdbcAbstractSelfTest {
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema(CACHE_NAME);
 
-        stmt = DriverManager.getConnection(URL).createStatement();
+        stmt = conn.createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();

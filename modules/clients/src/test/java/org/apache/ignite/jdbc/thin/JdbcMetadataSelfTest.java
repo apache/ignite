@@ -52,7 +52,7 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/pers";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -113,7 +113,11 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testResultSetMetaData() throws Exception {
-        Statement stmt = DriverManager.getConnection(URL).createStatement();
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema("pers");
+
+        Statement stmt = conn.createStatement();
 
         ResultSet rs = stmt.executeQuery(
             "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
@@ -182,6 +186,8 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
      */
     public void testGetColumns() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema("pers");
+
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getColumns("", "pers", "Person", "%");
@@ -282,7 +288,9 @@ public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
                     tbls.getObject(i + 1);
             }
         }
-        catch (Exception ignored) {
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
             fail();
         }
     }

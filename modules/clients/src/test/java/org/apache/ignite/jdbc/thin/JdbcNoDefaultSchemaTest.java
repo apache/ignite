@@ -127,7 +127,7 @@ public class JdbcNoDefaultSchemaTest extends JdbcAbstractSelfTest {
     public void testNoCacheNameQuery() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema("cache1");
 
         Statement stmt = conn.createStatement();
 
