@@ -608,7 +608,7 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
+                        rs = h2.executeSqlQueryWithTimer(h2.schema(mainCctx.name()), conn, qry.query(),
                             F.asList(qry.parameters(params)), true,
                             timeout,
                             qr.cancels[qryIdx]);

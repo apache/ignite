@@ -793,12 +793,14 @@ public class GridReduceQueryExecutor {
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
 
                         try {
+                            String schema = h2.schema(cacheName);
+
                             if (qry.explain())
-                                return explainPlan(r.conn, cacheName, qry, params);
+                                return explainPlan(r.conn, schema, qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(cacheName,
+                            ResultSet res = h2.executeSqlQueryWithTimer(schema,
                                 r.conn,
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
@@ -1213,18 +1215,18 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param c Connection.
-     * @param cacheName Cache name.
+     * @param schema Schema.
      * @param qry Query.
      * @param params Query parameters.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, String cacheName, GridCacheTwoStepQuery qry, Object[] params)
+    private Iterator<List<?>> explainPlan(JdbcConnection c, String schema, GridCacheTwoStepQuery qry, Object[] params)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(cacheName, c,
+            ResultSet rs = h2.executeSqlQueryWithTimer(schema, c,
                 "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
 
             lists.add(F.asList(getPlan(rs)));
@@ -1240,7 +1242,7 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(cacheName,
+        ResultSet rs = h2.executeSqlQueryWithTimer(schema,
             c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),
