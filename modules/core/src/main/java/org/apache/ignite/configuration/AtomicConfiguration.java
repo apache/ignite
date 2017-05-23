@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,6 +45,9 @@ public class AtomicConfiguration {
 
     /** Number of backups. */
     private int backups = DFLT_BACKUPS;
+
+    /** Affinity function */
+    private AffinityFunction aff;
 
     /**
      * @return Number of backup nodes.
@@ -96,6 +100,27 @@ public class AtomicConfiguration {
      */
     public void setAtomicSequenceReserveSize(int seqReserveSize) {
         this.seqReserveSize = seqReserveSize;
+    }
+
+    /**
+     * Gets atomic cache affinity function.
+     *
+     * @return Affinity function or null, if not set.
+     */
+    public AffinityFunction getAffinity() {
+        return aff;
+    }
+
+    /**
+     * Sets atomic cache affinity function.
+     *
+     * @param aff Affinity function.
+     * @return {@code this} for chaining.
+     */
+    public AtomicConfiguration setAffinity(AffinityFunction aff) {
+        this.aff = aff;
+
+        return this;
     }
 
     /** {@inheritDoc} */
