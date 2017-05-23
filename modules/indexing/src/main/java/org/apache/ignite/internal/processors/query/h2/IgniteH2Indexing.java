@@ -430,8 +430,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Connection.
      */
     public Connection connectionForCache(String cacheName) {
+        return connectionForSchema(schema(cacheName));
+    }
+
+    /**
+     * @param schema Schema.
+     * @return Connection.
+     */
+    public Connection connectionForSchema(String schema) {
         try {
-            return connectionForThread(schema(cacheName));
+            return connectionForThread(schema);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1029,7 +1037,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridQueryFieldsResult queryLocalSqlFields(final String cacheName, final String qry,
         @Nullable final Collection<Object> params, boolean keepBinary, final IndexingQueryFilter filter,
         boolean enforceJoinOrder, final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
-        final Connection conn = connectionForCache(cacheName);
+        final String schema = schema(cacheName);
+
+        final Connection conn = connectionForSchema(schema);
 
         setupConnection(conn, false, enforceJoinOrder);
 
@@ -1046,7 +1056,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setEnforceJoinOrder(enforceJoinOrder);
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
-            return dmlProc.updateSqlFieldsLocal(cacheName, stmt, fldsQry, keepBinary, filter, cancel);
+            return dmlProc.updateSqlFieldsLocal(schema, stmt, fldsQry, keepBinary, filter, cancel);
         }
         else if (DdlStatementsProcessor.isDdlStatement(p))
             throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
@@ -1076,7 +1086,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 runs.putIfAbsent(run.id(), run);
 
                 try {
-                    ResultSet rs = executeSqlQueryWithTimer(schema(cacheName), stmt, conn, qry, params, timeout, cancel);
+                    ResultSet rs = executeSqlQueryWithTimer(schema, stmt, conn, qry, params, timeout, cancel);
 
                     return new FieldsIterator(rs);
                 }
@@ -1570,7 +1580,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String cacheName = cctx.name();
         final String sqlQry = qry.getSql();
 
-        Connection c = connectionForCache(cacheName);
+        String schema = schema(cctx.name());
+
+        Connection c = connectionForSchema(schema);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins();
@@ -1656,7 +1668,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            return dmlProc.updateSqlFieldsDistributed(cctx.name(), stmt, qry, keepBinary, cancel);
+                            return dmlProc.updateSqlFieldsDistributed(schema, stmt, qry, keepBinary, cancel);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
