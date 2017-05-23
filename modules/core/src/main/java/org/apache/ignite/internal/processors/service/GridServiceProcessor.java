@@ -1265,10 +1265,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * @param nodes Remote nodes.
-     */
-    public void initCompatibilityMode(Collection<ClusterNode> nodes) {
+    /** */
+    public void initCompatibilityMode() {
         boolean mode = false;
 
         if (srvcCompatibilitySysProp != null)
