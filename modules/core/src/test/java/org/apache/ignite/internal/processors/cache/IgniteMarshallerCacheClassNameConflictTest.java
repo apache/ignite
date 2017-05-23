@@ -258,31 +258,6 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
         }
     }
 
-    public static void main(String[] args) {
-        String baseName = Organization.class.getName();
-        int i = baseName.hashCode();
-        Base64.Encoder encoder = Base64.getEncoder();
-        byte[] objIdBytes = new byte[8];
-        Random secRand = new Random();
-        int attempts = 0;
-        int i1 = Runtime.getRuntime().availableProcessors();
-        while (true) {
-            secRand.nextBytes(objIdBytes);
-            String objId = encoder.encodeToString(objIdBytes);
-            if(objId.contains("/") || objId.contains("+"))
-                continue;
-            String s = baseName + "_" + objId.replaceAll("=", "");
-            if (s.hashCode() == i) {
-
-                System.err.println("Found [" + s + "]");
-                break;
-            }
-            attempts++;
-            if (attempts % 500000 == 0)
-                System.out.println(attempts  + " last checked " + s);
-        }
-    }
-
     /**
      * Class name is chosen to be in conflict with other class name this test put to cache.
      */
