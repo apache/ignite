@@ -24,6 +24,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -1654,7 +1655,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
+    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
         final boolean keepBinary) {
         checkxEnabled();
 
@@ -1671,14 +1672,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            IgniteOutClosureX<QueryCursor<List<?>>> clo;
+            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
 
             if (loc) {
-                clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                    @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                         GridQueryCancel cancel = new GridQueryCancel();
 
-                        final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry, keepBinary,
+                        final FieldsQueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry, keepBinary,
                             idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
 
                         Iterable<List<?>> iterExec = new Iterable<List<?>>() {
@@ -1701,8 +1702,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 };
             }
             else {
-                clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                    @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                         return idx.queryDistributedSqlFields(cctx, qry, keepBinary, null);
                     }
                 };
@@ -1980,7 +1981,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schema Schema name.
      * @return Cache name from schema name.
      */
-    // TODO: To be removed
     public String cacheName(String schema) throws SQLException {
         checkxEnabled();
 

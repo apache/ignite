@@ -61,6 +61,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -1332,7 +1333,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
+    @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry, final boolean keepBinary, final IndexingQueryFilter filter,
         final GridQueryCancel cancel) throws IgniteCheckedException {
 
@@ -1564,7 +1565,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+    @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel) {
         final String cacheName = cctx.name();
         final String sqlQry = qry.getSql();
@@ -1747,7 +1748,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Cache name.
      */
     private String cacheNameForSchemaAndTable(String schemaName, String tblName) {
-        // TODO: This need to be changed.
         return cacheName(schemaName);
     }
 
@@ -2672,7 +2672,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private static final class TwoStepCachedQueryKey {
         /** */
-        // TODO: To be replaced with schema.
         private final String cacheName;
 
         /** */
@@ -3446,7 +3445,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private class Schema {
         /** */
-        // TODO: To be rmeoved.
         private final String cacheName;
 
         /** */
