@@ -178,7 +178,8 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(predicate, "predicate");
 
-            var method = RemoveAllExpressionNode.RemoveAllMethodInfo.MakeGenericMethod(typeof(TKey), typeof(TValue));
+            var method = RemoveAllExpressionNode.RemoveAllPredicateMethodInfo
+                .MakeGenericMethod(typeof(TKey), typeof(TValue));
 
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
                 Expression.Quote(predicate)));

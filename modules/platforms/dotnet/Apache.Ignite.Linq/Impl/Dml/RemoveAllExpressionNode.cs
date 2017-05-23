@@ -80,6 +80,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
             yield return RemoveAllMethodInfo;
+            yield return RemoveAllPredicateMethodInfo;
         }
     }
 }
