@@ -26,6 +26,9 @@ namespace ignite
 {
     namespace binary
     {
+        class BinaryReader;
+        class BinaryWriter;
+
         template<typename T>
         struct BinaryType;
 

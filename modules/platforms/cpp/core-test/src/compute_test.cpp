@@ -49,7 +49,7 @@ struct ComputeTestSuiteFixture
 #else
         const char* config = "cache-test.xml";
 #endif
-        return ignite_test::StartNode(config, name);
+        return StartNode(config, name);
     }
 
     /*
@@ -170,7 +170,7 @@ namespace ignite
 
             static bool IsNull(const Func1& obj)
             {
-                return obj.a == 0 && obj.b == 0;
+                return false;
             }
 
             static void GetNull(Func1& dst)
@@ -182,12 +182,14 @@ namespace ignite
             {
                 writer.WriteInt32("a", obj.a);
                 writer.WriteInt32("b", obj.b);
+                writer.WriteObject<IgniteError>("err", obj.err);
             }
 
             static void Read(BinaryReader& reader, Func1& dst)
             {
                 dst.a = reader.ReadInt32("a");
                 dst.b = reader.ReadInt32("b");
+                dst.err = reader.ReadObject<IgniteError>("err");
             }
         };
 
@@ -211,7 +213,7 @@ namespace ignite
 
             static bool IsNull(const Func2& obj)
             {
-                return obj.a == 0 && obj.b == 0;
+                return false;
             }
 
             static void GetNull(Func2& dst)
@@ -223,12 +225,14 @@ namespace ignite
             {
                 writer.WriteInt32("a", obj.a);
                 writer.WriteInt32("b", obj.b);
+                writer.WriteObject<IgniteError>("err", obj.err);
             }
 
             static void Read(BinaryReader& reader, Func2& dst)
             {
                 dst.a = reader.ReadInt32("a");
                 dst.b = reader.ReadInt32("b");
+                dst.err = reader.ReadObject<IgniteError>("err");
             }
         };
     }
@@ -326,15 +330,6 @@ BOOST_AUTO_TEST_CASE(IgniteCallTestRemoteError)
     res.WaitFor(100);
 
     BOOST_CHECK(!res.IsReady());
-
-    try
-    {
-        res.GetValue();
-    }
-    catch (const IgniteError& err)
-    {
-        std::cout << err.GetText() << std::endl;
-    }
 
     BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
 }

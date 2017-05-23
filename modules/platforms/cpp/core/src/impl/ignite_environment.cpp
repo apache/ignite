@@ -468,9 +468,7 @@ namespace ignite
             InteropOutputStream outStream(mem.Get());
             BinaryWriterImpl writer(&outStream, GetTypeManager());
 
-            std::cout << __LINE__ << std::endl;
             BinaryObjectImpl binJob = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position(), 0);
-            std::cout << __LINE__ << std::endl;
 
             int32_t jobTypeId = binJob.GetTypeId();
 

@@ -121,18 +121,16 @@ namespace ignite
                         // Fail
                         writer.WriteBool(false);
 
-                        // Exception in string format (true if object)
-                        writer.WriteBool(false);
+                        // Native Exception
+                        writer.WriteBool(true);
 
-                        // Error message
-                        writer.WriteString(err.GetText(), static_cast<int32_t>(strlen(err.GetText())));
+                        writer.WriteObject<IgniteError>(err);
                     }
                     else
                     {
                         // Success
                         writer.WriteBool(true);
 
-                        // Result
                         writer.WriteObject<ResultType>(res);
                     }
                 }
@@ -154,19 +152,22 @@ namespace ignite
                     }
                     else
                     {
-                        bool object = reader.ReadBool();
+                        bool native = reader.ReadBool();
 
-                        assert(!object);
+                        if (native)
+                            err = reader.ReadObject<IgniteError>();
+                        else
+                        {
+                            std::stringstream buf;
 
-                        std::stringstream buf;
+                            buf << reader.ReadObject<std::string>() << " : ";
+                            buf << reader.ReadObject<std::string>() << ", ";
+                            buf << reader.ReadObject<std::string>();
 
-                        buf << reader.ReadObject<std::string>() << " : ";
-                        buf << reader.ReadObject<std::string>() << ", ";
-                        buf << reader.ReadObject<std::string>();
+                            std::string msg = buf.str();
 
-                        std::string msg = buf.str();
-
-                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+                            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+                        }
                     }
                 }
 

@@ -45,7 +45,7 @@ namespace ignite
             BinaryRawWriter raw = writer.RawWriter();
 
             raw.WriteInt32(obj.GetCode());
-            raw.WriteString(obj.GetText(), strlen(obj.GetText()));
+            raw.WriteString(obj.GetText(), static_cast<int32_t>(strlen(obj.GetText())));
         }
 
         void BinaryType<IgniteError>::Read(BinaryReader& reader, IgniteError& dst)
