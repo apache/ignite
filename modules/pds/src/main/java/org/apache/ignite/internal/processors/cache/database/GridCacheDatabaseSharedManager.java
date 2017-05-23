@@ -2301,14 +2301,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.beforePageWrite(fullId);
 
-                    int cacheId = fullId.cacheId();
+                    int grpId = fullId.cacheId();
 
-                    GridCacheContext cacheCtx = context().cacheContext(cacheId);
+                    CacheGroupInfrastructure grp = context().cache().cacheGroup(grpId);
 
-                    if (cacheCtx == null)
+                    if (grp == null)
                         continue;
 
-                    PageMemoryEx pageMem = (PageMemoryEx) cacheCtx.memoryPolicy().pageMemory();
+                    PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
 
                     Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf);
 
@@ -2327,7 +2327,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         PageIO.setCrc(writeAddr, 0);
 
-                        PageStore store = storeMgr.writeInternal(cacheId, fullId.pageId(), tmpWriteBuf, tag);
+                        PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag);
 
                         updStores.add(store);
                     }

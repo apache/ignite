@@ -278,8 +278,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(int cacheId, int partId) throws IgniteCheckedException {
-        PageStore store = getStore(cacheId, partId);
+    @Override public boolean exists(int grpId, int partId) throws IgniteCheckedException {
+        PageStore store = getStore(grpId, partId);
 
         return store.exists();
     }

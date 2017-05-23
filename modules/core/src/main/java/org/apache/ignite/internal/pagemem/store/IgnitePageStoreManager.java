@@ -91,17 +91,17 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
-     * Checks if page exists.
+     * Checks if partition store exists.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param partId Partition ID.
-     * @return {@code True} if page exists.
+     * @return {@code True} if partition store exists.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean exists(int cacheId, int partId) throws IgniteCheckedException;
+    public boolean exists(int grpId, int partId) throws IgniteCheckedException;
 
     /**
-     * Reads a header of apage store.
+     * Reads a header of a page store.
      *
      * @param cacheId Cache ID.
      * @param partId Partition ID.
