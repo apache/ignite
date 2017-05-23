@@ -25,6 +25,8 @@
 
 namespace ignite
 {
+    class IgniteBinding;
+
     namespace compute
     {
         /**
@@ -38,6 +40,9 @@ namespace ignite
         template<typename R>
         class ComputeFunc
         {
+            friend class ignite::IgniteBinding;
+
+            typedef R ReturnType;
         public:
             /**
              * Destructor.

@@ -47,8 +47,12 @@ namespace ignite
             enum Type
             {
                 CACHE_INVOKE = 8,
+                COMPUTE_TASK_JOB_RESULT = 10,
                 COMPUTE_TASK_REDUCE = 11,
                 COMPUTE_TASK_COMPLETE = 12,
+                COMPUTE_JOB_CREATE = 14,
+                COMPUTE_JOB_EXECUTE = 15,
+                COMPUTE_JOB_DESTROY = 17,
                 CONTINUOUS_QUERY_LISTENER_APPLY = 18,
                 CONTINUOUS_QUERY_FILTER_CREATE = 19,
                 CONTINUOUS_QUERY_FILTER_APPLY = 20,
@@ -73,8 +77,6 @@ namespace ignite
             int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            std::cout << type << std::endl;
-
             switch (type)
             {
                 case OperationCallback::ON_STOP:
@@ -84,11 +86,42 @@ namespace ignite
                     break;
                 }
 
+                case OperationCallback::COMPUTE_JOB_CREATE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    res = env->Get()->ComputeJobCreate(mem);
+
+                    break;
+                }
+
+                case OperationCallback::COMPUTE_JOB_EXECUTE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->ComputeJobExecute(mem);
+
+                    break;
+                }
+
+                case OperationCallback::COMPUTE_JOB_DESTROY:
+                {
+                    env->Get()->ComputeJobDestroy(val);
+
+                    break;
+                }
+
+                case OperationCallback::COMPUTE_TASK_JOB_RESULT:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+                    
+                    res = env->Get()->ComputeTaskJobResult(mem);
+
+                    break;
+                }
+
                 case OperationCallback::COMPUTE_TASK_REDUCE:
                 {
-                    std::cout << "COMPUTE_TASK_REDUCE" << std::endl;
-                    std::cout << "handle: " << val << std::endl;
-
                     env->Get()->ComputeTaskReduce(val);
 
                     break;
@@ -161,15 +194,10 @@ namespace ignite
             int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            std::cout << type << std::endl;
-
             switch (type)
             {
                 case OperationCallback::COMPUTE_JOB_EXECUTE_LOCAL:
                 {
-                    std::cout << "COMPUTE_JOB_EXECUTE_LOCAL" << std::endl;
-                    std::cout << "val1: " << val1 << std::endl;
-
                     env->Get()->ComputeJobExecuteLocal(val1);
 
                     break;
@@ -177,10 +205,6 @@ namespace ignite
 
                 case OperationCallback::COMPUTE_TASK_LOCAL_JOB_RESULT:
                 {
-                    std::cout << "COMPUTE_TASK_LOCAL_JOB_RESULT" << std::endl;
-                    std::cout << "val1: " << val1 << std::endl;
-                    std::cout << "val2: " << val2 << std::endl;
-
                     res = env->Get()->ComputeTaskLocalJobResult(val1, val2);
 
                     break;
@@ -188,9 +212,6 @@ namespace ignite
 
                 case OperationCallback::COMPUTE_TASK_COMPLETE:
                 {
-                    std::cout << "COMPUTE_TASK_COMPLETE" << std::endl;
-                    std::cout << "val1: " << val1 << std::endl;
-
                     env->Get()->ComputeTaskComplete(val1);
 
                     break;
@@ -434,6 +455,105 @@ namespace ignite
                 registry.Release(task->GetJobHandle());
                 registry.Release(taskHandle);
             }
+        }
+
+        int64_t IgniteEnvironment::ComputeJobCreate(SharedPointer<InteropMemory>& mem)
+        {
+            if (!binding.Get())
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteBinding is not initialized.");
+
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+
+            InteropOutputStream outStream(mem.Get());
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
+
+            std::cout << __LINE__ << std::endl;
+            BinaryObjectImpl binJob = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position(), 0);
+            std::cout << __LINE__ << std::endl;
+
+            int32_t jobTypeId = binJob.GetTypeId();
+
+            bool invoked = false;
+
+            int64_t handle = binding.Get()->InvokeCallback(invoked,
+                IgniteBindingImpl::CallbackType::COMPUTE_JOB_CREATE, jobTypeId, reader, writer);
+
+            if (!invoked)
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ compute job is not registered on the node (did you compile your program without -rdynamic?).",
+                    "jobTypeId", jobTypeId);
+            }
+
+            return handle;
+        }
+
+        void IgniteEnvironment::ComputeJobExecute(SharedPointer<InteropMemory>& mem)
+        {
+            InteropInputStream inStream(mem.Get());
+
+            InteropOutputStream outStream(mem.Get());
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
+
+            int64_t jobHandle = inStream.ReadInt64();
+
+            SharedPointer<compute::ComputeJobHolder> job0 =
+                StaticPointerCast<compute::ComputeJobHolder>(registry.Get(jobHandle));
+
+            compute::ComputeJobHolder* job = job0.Get();
+
+            if (job)
+                job->ExecuteRemote(writer);
+            else
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "Job is not registred for handle", "jobHandle", jobHandle);
+            }
+
+            outStream.Synchronize();
+        }
+
+        void IgniteEnvironment::ComputeJobDestroy(int64_t jobHandle)
+        {
+            registry.Release(jobHandle);
+        }
+
+        int32_t IgniteEnvironment::ComputeTaskJobResult(SharedPointer<InteropMemory>& mem)
+        {
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+
+            int64_t taskHandle = reader.ReadInt64();
+            int64_t jobHandle = reader.ReadInt64();
+
+            // Node GUID
+            reader.ReadGuid();
+
+            // Cancel flag
+            reader.ReadBool();
+
+            SharedPointer<compute::ComputeJobHolder> job0 =
+                StaticPointerCast<compute::ComputeJobHolder>(registry.Get(jobHandle));
+
+            compute::ComputeJobHolder* job = job0.Get();
+
+            SharedPointer<compute::ComputeTaskHolder> task0 =
+                StaticPointerCast<compute::ComputeTaskHolder>(registry.Get(taskHandle));
+
+            compute::ComputeTaskHolder* task = task0.Get();
+
+            if (task && job)
+                return task->JobResultRemote(*job, reader);
+
+            if (!task)
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "Task is not registred for handle", "taskHandle", taskHandle);
+            }
+
+            IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                "Job is not registred for handle", "jobHandle", jobHandle);
         }
 
         void IgniteEnvironment::ProcessorReleaseStart()

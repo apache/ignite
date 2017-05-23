@@ -72,6 +72,12 @@ struct ComputeTestSuiteFixture
 
 struct Func1 : ComputeFunc<std::string>
 {
+    Func1() :
+        a(), b(), err()
+    {
+        // No-op.
+    }
+
     Func1(int32_t a, int32_t b) :
         a(a), b(b), err()
     {
@@ -103,6 +109,12 @@ struct Func1 : ComputeFunc<std::string>
 
 struct Func2 : ComputeFunc<std::string>
 {
+    Func2() :
+        a(), b(), err()
+    {
+        // No-op.
+    }
+
     Func2(int32_t a, int32_t b) :
         a(a), b(b), err()
     {
@@ -184,12 +196,12 @@ namespace ignite
         {
             static int32_t GetTypeId()
             {
-                return GetBinaryStringHashCode("Func1");
+                return GetBinaryStringHashCode("Func2");
             }
 
             static void GetTypeName(std::string& dst)
             {
-                dst = "Func1";
+                dst = "Func2";
             }
 
             static int32_t GetFieldId(const char* name)
@@ -220,6 +232,14 @@ namespace ignite
             }
         };
     }
+}
+
+IGNITE_EXPORTED_CALL void IgniteModuleInit1(IgniteBindingContext& context)
+{
+    IgniteBinding binding = context.GetBingding();
+
+    binding.RegisterComputeFunc<Func1>();
+    binding.RegisterComputeFunc<Func2>();
 }
 
 BOOST_FIXTURE_TEST_SUITE(ComputeTestSuite, ComputeTestSuiteFixture)
@@ -288,6 +308,35 @@ BOOST_AUTO_TEST_CASE(IgniteCallTestRemote)
     std::string res = compute.Call<std::string>(Func1(42, 24));
 
     BOOST_CHECK_EQUAL(res, "42.24");
+}
+
+BOOST_AUTO_TEST_CASE(IgniteCallTestRemoteError)
+{
+    Ignite node2 = MakeNode("ComputeNode2");
+    Compute compute = node.GetCompute();
+
+    BOOST_CHECKPOINT("Making Call");
+    compute.CallAsync<std::string>(Func2(8, 5));
+
+    Future<std::string> res = compute.CallAsync<std::string>(Func2(MakeTestError()));
+
+    BOOST_CHECK(!res.IsReady());
+
+    BOOST_CHECKPOINT("Waiting with timeout");
+    res.WaitFor(100);
+
+    BOOST_CHECK(!res.IsReady());
+
+    try
+    {
+        res.GetValue();
+    }
+    catch (const IgniteError& err)
+    {
+        std::cout << err.GetText() << std::endl;
+    }
+
+    BOOST_CHECK_EXCEPTION(res.GetValue(), IgniteError, IsTestError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -247,6 +247,37 @@ namespace ignite
              */
             void ComputeTaskComplete(int64_t taskHandle);
 
+            /**
+             * Create compute job.
+             *
+             * @param mem Memory.
+             * @return Job handle.
+             */
+            int64_t ComputeJobCreate(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Execute compute job.
+             *
+             * @param mem Memory.
+             * @return Job handle.
+             */
+            void ComputeJobExecute(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Destroy compute job.
+             *
+             * @param jobHandle Job handle to destroy.
+             */
+            void ComputeJobDestroy(int64_t jobHandle);
+
+            /**
+             * Consume result of remote job execution.
+             *
+             * @param mem Memory containing result.
+             * @return Reduce policy.
+             */
+            int32_t ComputeTaskJobResult(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
         private:
             /** Node configuration. */
             IgniteConfiguration* cfg;

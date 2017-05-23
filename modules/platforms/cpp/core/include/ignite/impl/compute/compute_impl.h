@@ -98,9 +98,6 @@ namespace ignite
                     writer.WriteInt64(jobHandle);
                     writer.WriteObject<F>(func);
 
-                    std::cout << "taskHandle: " << taskHandle << std::endl;
-                    std::cout << "jobHandle: " << jobHandle << std::endl;
-
                     out.Synchronize();
 
                     jobject target = InStreamOutObject(Operation::Unicast, *mem.Get());

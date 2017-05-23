@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include <memory>
+#include <sstream>
 
 #include <ignite/common/promise.h>
 
@@ -108,6 +109,67 @@ namespace ignite
                         promise.SetValue(std::auto_ptr<ResultType>(new ResultType(res)));
                 }
 
+                /**
+                 * Write using writer.
+                 *
+                 * @param writer Writer.
+                 */
+                void Write(binary::BinaryWriterImpl& writer)
+                {
+                    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+                    {
+                        // Fail
+                        writer.WriteBool(false);
+
+                        // Exception in string format (true if object)
+                        writer.WriteBool(false);
+
+                        // Error message
+                        writer.WriteString(err.GetText(), static_cast<int32_t>(strlen(err.GetText())));
+                    }
+                    else
+                    {
+                        // Success
+                        writer.WriteBool(true);
+
+                        // Result
+                        writer.WriteObject<ResultType>(res);
+                    }
+                }
+
+                /**
+                 * Read using reader.
+                 *
+                 * @param reader Reader.
+                 */
+                void Read(binary::BinaryReaderImpl& reader)
+                {
+                    bool success = reader.ReadBool();
+
+                    if (success)
+                    {
+                        res = reader.ReadObject<ResultType>();
+
+                        err = IgniteError();
+                    }
+                    else
+                    {
+                        bool object = reader.ReadBool();
+
+                        assert(!object);
+
+                        std::stringstream buf;
+
+                        buf << reader.ReadObject<std::string>() << " : ";
+                        buf << reader.ReadObject<std::string>() << ", ";
+                        buf << reader.ReadObject<std::string>();
+
+                        std::string msg = buf.str();
+
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+                    }
+                }
+
             private:
                 /** Result. */
                 ResultType res;
@@ -135,6 +197,13 @@ namespace ignite
                  * Execute job locally.
                  */
                 virtual void ExecuteLocal() = 0;
+
+                /**
+                 * Execute job remote.
+                 *
+                 * @param writer Writer.
+                 */
+                virtual void ExecuteRemote(binary::BinaryWriterImpl& writer) = 0;
             };
 
             /**
@@ -195,6 +264,13 @@ namespace ignite
                     }
                 }
 
+                virtual void ExecuteRemote(binary::BinaryWriterImpl& writer)
+                {
+                    ExecuteLocal();
+
+                    res.Write(writer);
+                }
+
             private:
                 /** Result. */
                 ComputeJobResult<ResultType> res;
@@ -236,6 +312,15 @@ namespace ignite
                  * @return Policy.
                  */
                 virtual int32_t JobResultLocal(ComputeJobHolder& job) = 0;
+
+                /**
+                 * Process remote job result.
+                 *
+                 * @param job Job.
+                 * @param reader Reader for stream with result.
+                 * @return Policy.
+                 */
+                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader) = 0;
 
                 /**
                  * Reduce results of related jobs.
@@ -299,6 +384,20 @@ namespace ignite
                     ActualComputeJobHolder& job0 = static_cast<ActualComputeJobHolder&>(job);
 
                     res = job0.GetResult();
+
+                    return ComputeJobResultPolicy::WAIT;
+                }
+
+                /**
+                 * Process remote job result.
+                 *
+                 * @param job Job.
+                 * @param reader Reader for stream with result.
+                 * @return Policy.
+                 */
+                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                {
+                    res.Read(reader);
 
                     return ComputeJobResultPolicy::WAIT;
                 }
