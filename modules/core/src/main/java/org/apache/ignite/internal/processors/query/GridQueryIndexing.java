@@ -142,27 +142,26 @@ public interface GridQueryIndexing {
     /**
      * Create new index locally.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param tblName Table name.
      * @param idxDesc Index descriptor.
      * @param ifNotExists Ignore operation if index exists (instead of throwing an error).
      * @param cacheVisitor Cache visitor
      * @throws IgniteCheckedException if failed.
      */
-    public void dynamicIndexCreate(String cacheName, String tblName, QueryIndexDescriptorImpl idxDesc,
+    public void dynamicIndexCreate(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc,
         boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
 
     /**
      * Remove index from the cache.
      *
-     * @param cacheName cache name.
+     * @param schemaName Schema name.
      * @param idxName Index name.
      * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void dynamicIndexDrop(String cacheName, String idxName, boolean ifExists)
-        throws IgniteCheckedException;
+    public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
 
     /**
      * Registers cache.

@@ -764,12 +764,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Add initial user index.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param desc Table descriptor.
      * @param h2Idx User index.
      * @throws IgniteCheckedException If failed.
      */
-    private void addInitialUserIndex(String cacheName, TableDescriptor desc, GridH2IndexBase h2Idx)
+    private void addInitialUserIndex(String schemaName, TableDescriptor desc, GridH2IndexBase h2Idx)
         throws IgniteCheckedException {
         GridH2Table h2Tbl = desc.tbl;
 
@@ -778,7 +778,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             String sql = indexCreateSql(desc.fullTableName(), h2Idx, false, desc.schema.escapeAll());
 
-            executeSql(cacheName, sql);
+            executeSql(schemaName, sql);
         }
         catch (Exception e) {
             // Rollback and re-throw.
@@ -789,12 +789,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void dynamicIndexCreate(final String cacheName, final String tblName,
+    @Override public void dynamicIndexCreate(final String schemaName, final String tblName,
         final QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
         throws IgniteCheckedException {
         // Locate table.
-        String schemaName = schema(cacheName);
-
         Schema schema = schemas.get(schemaName);
 
         TableDescriptor desc = (schema != null ? schema.tbls.get(tblName) : null);
@@ -834,7 +832,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // prepared statements are re-built.
             String sql = indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists, schema.escapeAll());
 
-            executeSql(cacheName, sql);
+            executeSql(schemaName, sql);
         }
         catch (Exception e) {
             // Rollback and re-throw.
@@ -846,27 +844,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override public void dynamicIndexDrop(final String cacheName, String idxName, boolean ifExists)
+    @Override public void dynamicIndexDrop(final String schemaName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
-        String schemaName = schema(cacheName);
-
         Schema schema = schemas.get(schemaName);
 
         String sql = indexDropSql(schemaName, idxName, ifExists, schema.escapeAll());
 
-        executeSql(cacheName, sql);
+        executeSql(schemaName, sql);
     }
 
     /**
      * Execute DDL command.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql SQL.
      * @throws IgniteCheckedException If failed.
      */
-    private void executeSql(String cacheName, String sql) throws IgniteCheckedException {
+    private void executeSql(String schemaName, String sql) throws IgniteCheckedException {
         try {
-            Connection conn = connectionForCache(cacheName);
+            Connection conn = connectionForSchema(schemaName);
 
             try (PreparedStatement stmt = prepareStatement(conn, sql, false)) {
                 stmt.execute();
@@ -1863,7 +1859,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             Connection conn = connectionForThread(schemaName);
 
-            createTable(cacheName, schema, tbl, conn);
+            createTable(schemaName, schema, tbl, conn);
 
             schema.add(tbl);
         }
@@ -1971,14 +1967,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Create db table by using given table descriptor.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param schema Schema.
      * @param tbl Table descriptor.
      * @param conn Connection.
      * @throws SQLException If failed to create db table.
      * @throws IgniteCheckedException If failed.
      */
-    private void createTable(String cacheName, Schema schema, TableDescriptor tbl, Connection conn)
+    private void createTable(String schemaName, Schema schema, TableDescriptor tbl, Connection conn)
         throws SQLException, IgniteCheckedException {
         assert schema != null;
         assert tbl != null;
@@ -2013,7 +2009,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql.toString(), rowDesc, rowFactory, tbl);
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
-            addInitialUserIndex(cacheName, tbl, usrIdx);
+            addInitialUserIndex(schemaName, tbl, usrIdx);
 
         if (dataTables.putIfAbsent(h2Tbl.identifier(), h2Tbl) != null)
             throw new IllegalStateException("Table already exists: " + h2Tbl.identifierString());

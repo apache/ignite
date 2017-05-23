@@ -1247,12 +1247,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor =
                     new SchemaIndexCacheVisitorImpl(this, cache.context(), cacheName, op0.tableName(), cancelTok);
 
-                idx.dynamicIndexCreate(cacheName, op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
+                idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
             else if (op instanceof SchemaIndexDropOperation) {
                 SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
 
-                idx.dynamicIndexDrop(cacheName, op0.indexName(), op0.ifExists());
+                idx.dynamicIndexDrop(op0.schemaName(), op0.indexName(), op0.ifExists());
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);

@@ -1033,20 +1033,20 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public void dynamicIndexCreate(@NotNull String cacheName, String tblName,
+        @Override public void dynamicIndexCreate(@NotNull String schemaName, String tblName,
             QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
             throws IgniteCheckedException {
             awaitIndexing(ctx.localNodeId());
 
-            super.dynamicIndexCreate(cacheName, tblName, idxDesc, ifNotExists, cacheVisitor);
+            super.dynamicIndexCreate(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
         }
 
         /** {@inheritDoc} */
-        @Override public void dynamicIndexDrop(@NotNull String cacheName, String idxName, boolean ifExists)
+        @Override public void dynamicIndexDrop(@NotNull String schemaName, String idxName, boolean ifExists)
             throws IgniteCheckedException{
             awaitIndexing(ctx.localNodeId());
 
-            super.dynamicIndexDrop(cacheName, idxName, ifExists);
+            super.dynamicIndexDrop(schemaName, idxName, ifExists);
         }
     }
 }
