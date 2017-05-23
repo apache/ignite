@@ -517,7 +517,9 @@ public final class IgniteSystemProperties {
 
     /**
      * Use local metadata cache instead of distributed one. May be used only when binary objects schema
-     * are not modified and all classes available on each node.
+     * are not modified and all classes available on each node. Classes that implements Binarylizable are
+     * not supported.
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     public static final String IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE = "IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE";
 
