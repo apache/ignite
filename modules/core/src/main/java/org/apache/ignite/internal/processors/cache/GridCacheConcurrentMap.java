@@ -63,7 +63,7 @@ public interface GridCacheConcurrentMap {
      *
      * @return the number of key-value mappings in this map.
      */
-    public int size();
+    public int internalSize();
 
     /**
      * Returns the number of publicly available key-value mappings in this map.
@@ -87,11 +87,6 @@ public interface GridCacheConcurrentMap {
      * @param e Entry that caused public size change.
      */
     public void decrementPublicSize(GridCacheEntryEx e);
-
-    /**
-     * @return Random entry out of hash map.
-     */
-    public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.

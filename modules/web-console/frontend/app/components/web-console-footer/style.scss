@@ -42,4 +42,14 @@ web-console-footer {
     ignite-powered-by-apache {
         margin-left: auto;
     }
+
+    a {
+        color: #ee8e89;
+
+        &:hover, &.hover,
+        &:focus, &.focus {
+            color: #ee2b27;
+            text-decoration: none;
+        }
+    }
 }

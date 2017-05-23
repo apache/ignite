@@ -206,15 +206,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Indicates object array. */
         public const int ObjTypeId = -1;
 
-        /** Int type. */
-        public static readonly Type TypInt = typeof(int);
-
-        /** Collection type. */
-        public static readonly Type TypCollection = typeof(ICollection);
-
-        /** Dictionary type. */
-        public static readonly Type TypDictionary = typeof(IDictionary);
-
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
@@ -1679,8 +1670,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void ToJavaDate(DateTime date, out long high, out int low)
         {
             if (date.Kind != DateTimeKind.Utc)
-                throw new InvalidOperationException(
+            {
+                throw new BinaryObjectException(
                     "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+            }
 
             long diff = date.Ticks - JavaDateTicks;
 

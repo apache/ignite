@@ -61,7 +61,7 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         return 0;
     }
 
@@ -78,11 +78,6 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
-        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */

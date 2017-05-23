@@ -106,11 +106,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     action(obj, reader);
 
                 _serializableDescriptor.OnDeserialized(obj, ctx);
-
-            }
-            finally
-            {
+                
                 DeserializationCallbackProcessor.Pop();
+            }
+            catch (Exception)
+            {
+                // Clear callbacks on exception to avoid dangling objects.
+                DeserializationCallbackProcessor.Clear();
+                throw;
             }
 
             return (T) obj;
@@ -122,13 +125,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return true; }
         }
 
-        /// <summary>Register type.</summary>
+        /// <summary>
+        /// Register type.
+        /// </summary>
         /// <param name="type">Type.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
+        /// <param name="forceTimestamp">Force timestamp serialization for DateTime fields..</param>
+        /// <returns>Resulting serializer.</returns>
         internal BinaryReflectiveSerializerInternal Register(Type type, int typeId, IBinaryNameMapper converter,
-            IBinaryIdMapper idMapper)
+            IBinaryIdMapper idMapper, bool forceTimestamp)
         {
             Debug.Assert(_wActions == null && _rActions == null);
 
@@ -162,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryReflectiveWriteAction writeAction;
                 BinaryReflectiveReadAction readAction;
 
-                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode);
+                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode, forceTimestamp);
 
                 wActions[i] = writeAction;
                 rActions[i] = readAction;

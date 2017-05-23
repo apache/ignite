@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -275,17 +274,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param grid Kernal.
-     * @return Name for swap space.
-     */
-    private String swapSpaceName(String cacheName, IgniteKernal grid) {
-        GridCacheContext<Object, Object> cctx = grid.internalCache(cacheName).context();
-
-        return CU.swapSpaceName(cctx.isNear() ? cctx.near().dht().context() : cctx);
     }
 
     /**

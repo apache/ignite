@@ -1821,9 +1821,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     private static class StartFuture extends GridFutureAdapter<UUID> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private GridKernalContext ctx;
 
         /** Consume ID. */

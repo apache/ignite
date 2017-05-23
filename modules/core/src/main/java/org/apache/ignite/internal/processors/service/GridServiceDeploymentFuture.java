@@ -26,9 +26,6 @@ import org.apache.ignite.services.ServiceConfiguration;
  */
 public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private final ServiceConfiguration cfg;
 
     /**

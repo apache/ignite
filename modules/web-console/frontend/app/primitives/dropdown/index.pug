@@ -16,7 +16,7 @@
 
 mixin ignite-form-field-bsdropdown(label, model, name, disabled, required, options, tip)
     .dropdown--ignite.ignite-form-field
-        .ignite-form-field__control(
+        button.btn-ignite.btn-ignite--primary-outline(
             data-ng-model=model
 
             data-ng-required=required && `${required}`
@@ -33,9 +33,8 @@ mixin ignite-form-field-bsdropdown(label, model, name, disabled, required, optio
             aria-haspopup='true'
             aria-expanded='false'
         )&attributes(attributes)
-            a.dropdown-toggle
-                span !{label}
-                span.caret
+            | !{label}
+            span.icon-right.fa.fa-caret-down
 
         ul.dropdown-menu(role='menu')
             li(ng-repeat=`item in ${options}` ng-if='item.available')

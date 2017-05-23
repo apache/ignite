@@ -113,7 +113,7 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
             GridCacheAdapter.class,
             "map");
 
-        assertEquals(KEYS_COUNT, map.size());
+        assertEquals(KEYS_COUNT, map.publicSize());
 
         assertEquals(KEYS_COUNT, cache.size());
 

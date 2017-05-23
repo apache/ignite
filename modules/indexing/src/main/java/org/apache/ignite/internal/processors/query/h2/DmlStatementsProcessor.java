@@ -253,7 +253,7 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, null);
 
-        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().namex()))
+        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().name()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
                 " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
