@@ -134,6 +134,7 @@ public class DmlStatementsProcessor {
      * @param cacheName Cache name.
      * @param stmt JDBC statement.
      * @param fieldsQry Original query.
+     * @param keepBinary Keep binary flag.
      * @param loc Query locality flag.
      * @param filters Cache name and key filter.
      * @param cancel Cancel.
@@ -141,7 +142,8 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String cacheName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
-        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        boolean keepBinary, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
@@ -170,7 +172,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(cctx, stmt, fieldsQry, loc, filters, cancel, errKeys);
+                r = executeUpdateStatement(cctx, stmt, fieldsQry, keepBinary, loc, filters, cancel, errKeys);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -197,14 +199,15 @@ public class DmlStatementsProcessor {
      * @param cacheName Cache name.
      * @param stmt Prepared statement.
      * @param fieldsQry Initial query.
+     * @param keepBinary Keep binary.
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String cacheName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(cacheName, stmt, fieldsQry, false, null, cancel);
+    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String cacheName, PreparedStatement stmt,
+        SqlFieldsQuery fieldsQry, boolean keepBinary, GridQueryCancel cancel) throws IgniteCheckedException {
+        UpdateResult res = updateSqlFields(cacheName, stmt, fieldsQry, keepBinary, false, null, cancel);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), null, false);
@@ -218,15 +221,18 @@ public class DmlStatementsProcessor {
      * Execute DML statement on local cache.
      * @param cacheName Cache name.
      * @param stmt Prepared statement.
+     * @param fieldsQry Fields query.
+     * @param keepBinary Keep biary flag.
      * @param filters Cache name and key filter.
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    GridQueryFieldsResult updateLocalSqlFields(String cacheName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(cacheName, stmt, fieldsQry, true, filters, cancel);
+    GridQueryFieldsResult updateSqlFieldsLocal(String cacheName, PreparedStatement stmt,
+        SqlFieldsQuery fieldsQry, boolean keepBinary, IndexingQueryFilter filters, GridQueryCancel cancel)
+        throws IgniteCheckedException {
+        UpdateResult res = updateSqlFields(cacheName, stmt, fieldsQry, keepBinary, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
@@ -267,7 +273,7 @@ public class DmlStatementsProcessor {
             final ArrayList<List<?>> data = new ArrayList<>(plan.rowsNum);
 
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,
-                F.asList(args), null, false, 0, null);
+                F.asList(args), true, null, false, 0, null);
 
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -315,8 +321,11 @@ public class DmlStatementsProcessor {
 
     /**
      * Actually perform SQL DML operation locally.
+     *
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
+     * @param fieldsQry Fields query.
+     * @param keepBinary Keep binary flag.
      * @param filters Cache name and key filter.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
@@ -324,7 +333,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(final GridCacheContext cctx, PreparedStatement prepStmt,
-        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel,
+        SqlFieldsQuery fieldsQry, boolean keepBinary, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel,
         Object[] failedKeys) throws IgniteCheckedException {
         Integer errKeysPos = null;
 
@@ -351,11 +360,12 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) idx.queryDistributedSqlFields(cctx, newFieldsQry, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.queryDistributedSqlFields(cctx, newFieldsQry, keepBinary, cancel);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
+                F.asList(fieldsQry.getArgs()), keepBinary, filters, fieldsQry.isEnforceJoinOrder(),
+                fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

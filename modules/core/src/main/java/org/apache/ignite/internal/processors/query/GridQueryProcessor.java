@@ -1650,10 +1650,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+    public QueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
+        final boolean keepBinary) {
         checkxEnabled();
 
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
@@ -1676,7 +1678,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                         GridQueryCancel cancel = new GridQueryCancel();
 
-                        final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
+                        final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry, keepBinary,
                             idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
 
                         Iterable<List<?>> iterExec = new Iterable<List<?>>() {
@@ -1701,7 +1703,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 clo = new IgniteOutClosureX<QueryCursor<List<?>>>() {
                     @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(cctx, qry, null);
+                        return idx.queryDistributedSqlFields(cctx, qry, keepBinary, null);
                     }
                 };
             }
@@ -1766,16 +1768,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
             return queryLocalSql(cctx, qry, keepBinary);
 
-        return queryDistributedSql(cctx, qry);
+        return queryDistributedSql(cctx, qry, keepBinary);
     }
 
     /**
      * @param cctx Cache context.
      * @param qry Query.
+     * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
-        final SqlQuery qry) {
+    private <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
+        final SqlQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
@@ -1785,7 +1788,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSql(cctx, qry);
+                        return idx.queryDistributedSql(cctx, qry, keepBinary);
                     }
                 }, true);
         }
@@ -1803,11 +1806,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(
-        final GridCacheContext<?, ?> cctx,
-        final SqlQuery qry,
-        final boolean keepBinary
-    ) {
+    private <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(final GridCacheContext<?, ?> cctx, final SqlQuery qry,
+        final boolean keepBinary) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -1826,7 +1826,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.getArgs(),
                             cctx.name());
 
-                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), qry.getPartitions()), keepBinary);
+                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), qry.getPartitions()),
+                            keepBinary);
                     }
                 }, true);
         }
