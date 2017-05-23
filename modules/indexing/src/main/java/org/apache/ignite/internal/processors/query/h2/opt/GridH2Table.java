@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 public class GridH2Table extends TableBase {
     /** */
-    private final String spaceName;
+    private final String cacheName;
 
     /** */
     private final GridH2RowDescriptor desc;
@@ -116,16 +116,16 @@ public class GridH2Table extends TableBase {
      * @param desc Row descriptor.
      * @param rowFactory Row factory.
      * @param idxsFactory Indexes factory.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      */
     public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, @Nullable String spaceName) {
+        GridH2SystemIndexFactory idxsFactory, String cacheName) {
         super(createTblData);
 
         assert idxsFactory != null;
 
         this.desc = desc;
-        this.spaceName = spaceName;
+        this.cacheName = cacheName;
 
         if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -211,8 +211,8 @@ public class GridH2Table extends TableBase {
     /**
      * @return Space name.
      */
-    @Nullable public String spaceName() {
-        return spaceName;
+    @Nullable public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
@@ -759,12 +759,12 @@ public class GridH2Table extends TableBase {
 
             Index cloneIdx = createDuplicateIndexIfNeeded(idx);
 
-            ArrayList<Index> newIdxs = new ArrayList<>(
-                    idxs.size() + ((cloneIdx == null) ? 1 : 2));
+            ArrayList<Index> newIdxs = new ArrayList<>(idxs.size() + ((cloneIdx == null) ? 1 : 2));
 
             newIdxs.addAll(idxs);
 
             newIdxs.add(idx);
+
             if (cloneIdx != null)
                 newIdxs.add(cloneIdx);
 
@@ -804,6 +804,23 @@ public class GridH2Table extends TableBase {
         }
     }
 
+    /**
+     * Check whether user index with provided name exists.
+     *
+     * @param idxName Index name.
+     * @return {@code True} if exists.
+     */
+    public boolean containsUserIndex(String idxName) {
+        for (int i = 2; i < idxs.size(); i++) {
+            Index idx = idxs.get(i);
+
+            if (idx.getName().equalsIgnoreCase(idxName))
+                return true;
+        }
+
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void removeIndex(Index h2Idx) {
         throw DbException.getUnsupportedException("must use removeIndex(session, idx)");
@@ -823,7 +840,7 @@ public class GridH2Table extends TableBase {
             Index targetIdx = (h2Idx instanceof GridH2ProxyIndex)?
                     ((GridH2ProxyIndex)h2Idx).underlyingIndex(): h2Idx;
 
-            for (int i = 2; i < idxs.size(); ) {
+            for (int i = 2; i < idxs.size();) {
                 Index idx = idxs.get(i);
 
                 if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
@@ -983,24 +1000,29 @@ public class GridH2Table extends TableBase {
      * @return Proxy index.
      */
     public Index createDuplicateIndexIfNeeded(Index target) {
-        if (!(target instanceof H2TreeIndex) &&
-            !(target instanceof SpatialIndex))
+        if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
             return null;
 
         IndexColumn[] cols = target.getIndexColumns();
+
         List<IndexColumn> proxyCols = new ArrayList<>(cols.length);
+
         boolean modified = false;
-        for (int i = 0; i < cols.length; i++) {
-            IndexColumn col = cols[i];
+
+        for (IndexColumn col : cols) {
             IndexColumn proxyCol = new IndexColumn();
+
             proxyCol.columnName = col.columnName;
             proxyCol.column = col.column;
             proxyCol.sortType = col.sortType;
 
             int altColId = desc.getAlternativeColumnId(proxyCol.column.getColumnId());
+
             if (altColId != proxyCol.column.getColumnId()) {
                 proxyCol.column = getColumn(altColId);
+
                 proxyCol.columnName = proxyCol.column.getName();
+
                 modified = true;
             }
 

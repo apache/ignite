@@ -342,7 +342,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Filtered iterator.
      */
     protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, IndexingQueryFilter filter) {
-        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().spaceName());
+        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().cacheName());
     }
 
     /**

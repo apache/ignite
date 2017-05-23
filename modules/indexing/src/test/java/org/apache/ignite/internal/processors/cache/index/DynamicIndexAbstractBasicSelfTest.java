@@ -351,7 +351,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         try {
-            queryProcessor(node()).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
+            String cacheName = randomString();
+
+            queryProcessor(node()).dynamicIndexCreate(cacheName, cacheName, TBL_NAME, idx, false).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
@@ -844,7 +846,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         initialize(mode, atomicityMode, near);
 
         try {
-            queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
+            String cacheName = randomString();
+
+            queryProcessor(node()).dynamicIndexDrop(cacheName, cacheName, "my_idx", false).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
