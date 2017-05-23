@@ -52,14 +52,9 @@ public class GridLuceneDirectory extends BaseDirectory {
      * @param mem Memory.
      */
     public GridLuceneDirectory(GridUnsafeMemory mem) {
-        this.mem = mem;
+        super(new GridLuceneLockFactory());
 
-        try {
-            setLockFactory(new GridLuceneLockFactory());
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        this.mem = mem;
     }
 
     /** {@inheritDoc} */
@@ -78,10 +73,16 @@ public class GridLuceneDirectory extends BaseDirectory {
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean fileExists(String name) {
+    @Override public void renameFile(String source, String dest) throws IOException {
         ensureOpen();
 
-        return fileMap.containsKey(name);
+        GridLuceneFile file = fileMap.get(source);
+
+        if (file == null)
+            throw new FileNotFoundException(source);
+
+        fileMap.put(dest, file);
+        fileMap.remove(source);
     }
 
     /** {@inheritDoc} */

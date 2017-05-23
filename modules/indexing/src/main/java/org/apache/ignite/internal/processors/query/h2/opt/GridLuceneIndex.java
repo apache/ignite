@@ -113,7 +113,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
         try {
             writer = new IndexWriter(dir,
-                new IndexWriterConfig(Version.LUCENE_4_10_4, new StandardAnalyzer()));
+                new IndexWriterConfig(new StandardAnalyzer()));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

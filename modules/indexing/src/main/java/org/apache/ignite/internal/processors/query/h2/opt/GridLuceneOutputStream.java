@@ -62,6 +62,8 @@ public class GridLuceneOutputStream extends IndexOutput {
      * @param f File.
      */
     public GridLuceneOutputStream(GridLuceneFile f) {
+        super("RAMOutputStream(name=\"noname\")");
+
         file = f;
 
         mem = f.getDirectory().memory();
@@ -157,8 +159,8 @@ public class GridLuceneOutputStream extends IndexOutput {
             file.setLength(pointer);
     }
 
-    /** {@inheritDoc} */
-    @Override public void flush() throws IOException {
+    /** Forces any buffered output to be written. */
+    private void flush() throws IOException {
         setFileLength();
     }
 
