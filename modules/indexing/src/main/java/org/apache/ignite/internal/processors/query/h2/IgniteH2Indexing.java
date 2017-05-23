@@ -1567,10 +1567,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
         GridQueryCancel cancel) {
-        final String space = cctx.name();
+        final String cacheName = cctx.name();
         final String sqlQry = qry.getSql();
 
-        Connection c = connectionForCache(space);
+        Connection c = connectionForCache(cacheName);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins();
@@ -1581,7 +1581,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery twoStepQry = null;
         List<GridQueryFieldMetadata> meta;
 
-        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(space, sqlQry, grpByCollocated,
+        final TwoStepCachedQueryKey cachedQryKey = new TwoStepCachedQueryKey(cacheName, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder, qry.isLocal());
         TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
@@ -1676,7 +1676,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 LinkedHashSet<Integer> caches0 = new LinkedHashSet<>();
 
-                // Setup spaces from schemas.
+                // Setup caches from schemas.
                 assert twoStepQry != null;
 
                 int tblCnt = twoStepQry.tablesCount();
@@ -1685,9 +1685,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     caches0.add(cctx.cacheId());
 
                     for (QueryTable table : twoStepQry.tables()) {
-                        String cacheName = cacheNameForSchemaAndTable(table.schema(), table.table());
+                        String tblCacheName = cacheNameForSchemaAndTable(table.schema(), table.table());
 
-                        int cacheId = CU.cacheId(cacheName);
+                        int cacheId = CU.cacheId(tblCacheName);
 
                         caches0.add(cacheId);
                     }
