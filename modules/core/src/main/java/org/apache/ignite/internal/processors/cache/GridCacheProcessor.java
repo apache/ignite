@@ -1184,9 +1184,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.continuous().onCacheStart(cacheCtx);
 
-        if (sharedCtx.pageStore() != null  && !ctx.clientNode())
-            sharedCtx.pageStore().initializeForCache(grpDesc, cacheCtx.config());
-
         CacheConfiguration cfg = cacheCtx.config();
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
@@ -1876,6 +1873,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ccfg.setNearConfiguration(reqNearCfg);
         }
+
+        if (sharedCtx.pageStore() != null  && affNode)
+            sharedCtx.pageStore().initializeForCache(grpDesc, startCfg);
 
         String grpName = startCfg.getGroupName();
 
