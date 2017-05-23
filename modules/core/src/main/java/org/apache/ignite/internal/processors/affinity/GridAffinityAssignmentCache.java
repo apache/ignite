@@ -134,7 +134,7 @@ public class GridAffinityAssignmentCache {
         assert ctx != null;
         assert aff != null;
         assert nodeFilter != null;
-        assert grpId > 0;
+        assert grpId != 0;
 
         this.ctx = ctx;
         this.aff = aff;

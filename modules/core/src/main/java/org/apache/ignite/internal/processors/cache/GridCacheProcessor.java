@@ -1137,18 +1137,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (CacheGroupInfrastructure grp : cacheGrps.values()) {
-            Integer grpId = reconnectRes.newCacheGroupIds().get(grp.groupId());
+        final Set<Integer> stoppedGrps = reconnectRes.stoppedCacheGroups();
 
-            if (grpId != null)
-                grp.onReconnected(grpId);
-            else
+        for (CacheGroupInfrastructure grp : cacheGrps.values()) {
+            if (stoppedGrps.contains(grp.groupId()))
                 cacheGrps.remove(grp.groupId());
+            else
+                grp.onReconnected();
         }
 
         sharedCtx.onReconnected();
-
-        sharedCtx.io().onReconnected(reconnectRes.newCacheGroupIds());
 
         for (GridCacheAdapter cache : reconnected)
             cache.context().gate().reconnected(false);

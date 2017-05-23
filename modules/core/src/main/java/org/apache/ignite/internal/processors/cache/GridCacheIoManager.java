@@ -1284,46 +1284,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param newGrpIds New cache group IDs.
-     */
-    void onReconnected(Map<Integer, Integer> newGrpIds) {
-        assert grpHandlers.orderedHandlers.isEmpty() : grpHandlers.orderedHandlers;
-
-        Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new HashMap<>();
-        Map<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>> clsHandlers = new HashMap<>();
-
-        for (Map.Entry<Integer, Integer> idEntry : newGrpIds.entrySet()) {
-            Integer oldId = idEntry.getKey();
-            Integer newId = idEntry.getValue();
-
-            if (!oldId.equals(newId)) {
-                IgniteBiInClosure[] c = grpHandlers.idxClsHandlers.remove(oldId);
-
-                if (c != null) {
-                    Object old = idxClsHandlers.put(newId, c);
-
-                    assert old == null;
-                }
-
-                for (Map.Entry<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>> e : grpHandlers.clsHandlers.entrySet()) {
-                    if (e.getKey().hndId == oldId) {
-                        IgniteBiInClosure<UUID, GridCacheMessage> c0 = grpHandlers.clsHandlers.remove(e.getKey());
-
-                        assert c0 != null;
-
-                        Object old = clsHandlers.put(new ListenerKey(newId, e.getKey().msgCls), c0);
-
-                        assert old == null;
-                    }
-                }
-            }
-        }
-
-        grpHandlers.idxClsHandlers.putAll(idxClsHandlers);
-        grpHandlers.clsHandlers.putAll(clsHandlers);
-    }
-
-    /**
      * @param msgHandlers Handlers.
      * @param hndId ID to remove handlers for.
      */
