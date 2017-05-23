@@ -52,53 +52,15 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  * Basic test suite.
+ * May be removed soon as all tests were moved to {@link IgniteBasicTestSuite}
  */
+@Deprecated
 public class IgniteBinaryBasicTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        TestSuite suite = new TestSuite("GridGain Binary Basic Test Suite");
-
-        Set<Class> ignoredTests = new HashSet<>();
-
-        // Tests that are not ready to be used with PortableMarshaller
-        ignoredTests.add(GridJdkMarshallerSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerEnumSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerTest.class);
-        ignoredTests.add(OptimizedObjectStreamSelfTest.class);
-        ignoredTests.add(GridUnsafeDataOutputArraySizingSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerNodeFailoverTest.class);
-        ignoredTests.add(OptimizedMarshallerSerialPersistentFieldsSelfTest.class);
-        ignoredTests.add(GridNioSslSelfTest.class);
-        ignoredTests.add(GridNioSelfTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingErrorTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingTxErrorTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        ignoredTests.add(GridReleaseTypeSelfTest.class);
-        ignoredTests.add(IgniteUtilsSelfTest.class);
-        ignoredTests.add(ClusterGroupSelfTest.class);
-        ignoredTests.add(GridMessagingNoPeerClassLoadingSelfTest.class);
-        ignoredTests.add(GridMessagingSelfTest.class);
-        ignoredTests.add(GridVersionSelfTest.class);
-        ignoredTests.add(GridDeploymentMessageCountSelfTest.class);
-        ignoredTests.add(DynamicProxySerializationMultiJvmSelfTest.class);
-        ignoredTests.add(GridHandleTableSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerPooledSelfTest.class);
-
-        // TODO: check and delete if pass.
-        ignoredTests.add(IgniteDaemonNodeMarshallerCacheTest.class);
-
-        suite.addTest(IgniteBasicTestSuite.suite(ignoredTests));
-
-        suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
-        suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
-
-        return suite;
+        return new TestSuite("GridGain Binary Basic Test Suite: migrated to Ignite Basic Test Suite");
     }
 }
