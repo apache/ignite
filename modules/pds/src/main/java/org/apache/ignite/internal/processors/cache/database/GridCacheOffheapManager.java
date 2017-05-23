@@ -472,6 +472,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      *
      */
     private static class RebalanceIteratorAdapter implements IgniteRebalanceIterator {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Cache context. */
         private GridCacheContext cctx;
 
