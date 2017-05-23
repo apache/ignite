@@ -1729,6 +1729,32 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Check results of aggregate functions if now rows are selected */
+    public void testEmptyCacheAggregates() throws Exception {
+        final String cacheName = "ints";
+
+        IgniteCache<Integer, Value> cache = ignite(0).getOrCreateCache(cacheConfig(cacheName, true,
+            Integer.class, Value.class));
+
+        try (QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(
+            "SELECT count(fst), sum(snd), avg(snd), min(snd), max(snd) FROM Value"))) {
+            List<List<?>> result = qry.getAll();
+
+            assertEquals(1, result.size());
+
+            List<?> row = result.get(0);
+
+            assertEquals("count", 0L, ((Number)row.get(0)).longValue());
+            assertEquals("sum", null, row.get(1));
+            assertEquals("avg", null, row.get(2));
+            assertEquals("min", null, row.get(3));
+            assertEquals("max", null, row.get(4));
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
     /** Simple query with aggregates */
     private void checkSimpleQueryWithAggr(IgniteCache<Integer, Value> cache) {
         try (QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(
