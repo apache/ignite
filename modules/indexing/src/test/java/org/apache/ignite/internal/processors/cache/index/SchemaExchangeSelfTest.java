@@ -469,7 +469,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
                 final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
                 try {
-                    queryProcessor(node1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                    queryProcessor(node1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);

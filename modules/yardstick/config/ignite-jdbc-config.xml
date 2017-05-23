@@ -33,9 +33,7 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <property name="discoverySpi">

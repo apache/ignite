@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWriter;
 
 /**
- * Test for {@link CacheJdbcPojoStore} with optimized marshaller.
+ * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class CacheJdbcPojoStoreOptimizedMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
+public class JdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
-    @Override protected Marshaller marshaller(){
-        return new OptimizedMarshaller();
+    @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj)
+        throws BinaryObjectException {
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

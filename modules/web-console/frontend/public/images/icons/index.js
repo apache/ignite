@@ -15,14 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
-
-/**
- * Tests for PRIMARY mode with optimized marshaller.
- */
-public class IgfsPrimaryOptimziedMarshallerSelfTest extends IgfsPrimarySelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean useOptimizedMarshaller() {
-        return true;
-    }
-}
+export csv from './csv.svg';
+export cross from './cross.svg';
+export gear from './gear.svg';
+export clock from './clock.svg';
+export manual from './manual.svg';
+export download from './download.svg';

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Affinity assignment request.
@@ -31,6 +30,9 @@ import org.jetbrains.annotations.NotNull;
 public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private long futId;
 
     /** Topology version being queried. */
     private AffinityTopologyVersion topVer;
@@ -43,12 +45,26 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
     }
 
     /**
+     * @param futId Future ID.
      * @param cacheId Cache ID.
      * @param topVer Topology version.
      */
-    public GridDhtAffinityAssignmentRequest(int cacheId, @NotNull AffinityTopologyVersion topVer) {
+    public GridDhtAffinityAssignmentRequest(
+        long futId,
+        int cacheId,
+        AffinityTopologyVersion topVer) {
+        assert topVer != null;
+
+        this.futId = futId;
         this.cacheId = cacheId;
         this.topVer = topVer;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +91,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -94,6 +110,12 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
+                if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -116,6 +138,14 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())

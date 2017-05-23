@@ -19,12 +19,27 @@ web-console-header {
     @import "./../../../public/stylesheets/variables.scss";
 
     $nav-item-margin: 42px;
+    $bottom-border-width: 4px;
 
     display: block;
     font-family: Roboto;
     font-size: 16px;
-    border-bottom: 4px solid red;
+    border-bottom: $bottom-border-width solid red;
     background: white;
+    position: relative;
+
+    &:after {
+        // Shows header shadow over absoluteley positioned child content,
+        // otherwise z ordering issues happen.
+        display: block;
+        width: 100%;
+        content: '';
+        height: 20px;
+        position: absolute;
+        overflow: hidden;
+        box-shadow: 0 4px 4px -2px rgba(0, 0, 0, 0.3);
+        bottom: -4px;
+    }
 
     .wch-slot {
         &>* {
@@ -49,9 +64,8 @@ web-console-header {
         flex-direction: row;
         flex-wrap: wrap;
         align-items: center;
-        justify-content: center;
-        min-height: 80px;
-        padding: 10px 0;
+        padding: 18.5px 0;
+        position: relative;
     }
 
     .wch-logo {
@@ -122,6 +136,23 @@ web-console-header {
 
         &+.wch-revert-identity {
             border-top: 1px solid darken($brand-warning, 15%);
+        }
+    }
+
+    .wch-web-agent-download {
+        border-bottom-right-radius: $ignite-button-border-radius;
+        border-bottom-left-radius: $ignite-button-border-radius;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: $bottom-border-width;
+        // If defined on button, shadow would conflict with already present
+        // shadows of .btn-ignite, so we shadow wrapper instead.
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+
+        .btn-ignite--primary {
+            border-top-right-radius: 0;
+            border-top-left-radius: 0;
         }
     }
 }
