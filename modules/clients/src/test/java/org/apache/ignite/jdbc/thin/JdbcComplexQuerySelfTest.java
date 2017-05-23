@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -112,7 +113,11 @@ public class JdbcComplexQuerySelfTest extends JdbcAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stmt = DriverManager.getConnection(URL).createStatement();
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
+
+        stmt = conn.createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();
@@ -122,6 +127,7 @@ public class JdbcComplexQuerySelfTest extends JdbcAbstractSelfTest {
     @Override protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
+
             stmt.close();
 
             assert stmt.isClosed();

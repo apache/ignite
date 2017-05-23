@@ -90,7 +90,9 @@ public class JdbcStatement implements Statement {
 
             qryId = res.getQueryId();
 
-            return new JdbcResultSet(this, qryId, res.getColumnsMetadata(), fetchSize, maxRows);
+            rs = new JdbcResultSet(this, qryId, res.getColumnsMetadata(), fetchSize, maxRows);
+
+            return rs;
         }
         catch (IOException e) {
             conn.close();

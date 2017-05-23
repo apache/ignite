@@ -104,9 +104,10 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
-        stmt = conn.createStatement();
 
         conn.setSchema(DEFAULT_CACHE_NAME);
+
+        stmt = conn.createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();

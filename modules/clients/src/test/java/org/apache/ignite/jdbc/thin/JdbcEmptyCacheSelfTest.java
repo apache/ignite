@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -88,6 +89,10 @@ public class JdbcEmptyCacheSelfTest extends JdbcAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
+
         stmt = DriverManager.getConnection(URL).createStatement();
 
         assert stmt != null;
@@ -98,6 +103,7 @@ public class JdbcEmptyCacheSelfTest extends JdbcAbstractSelfTest {
     @Override protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
+
             stmt.close();
 
             assert stmt.isClosed();

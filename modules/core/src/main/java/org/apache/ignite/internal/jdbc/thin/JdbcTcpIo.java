@@ -344,7 +344,7 @@ public class JdbcTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    private byte [] read(int size) throws IOException, IgniteCheckedException {
+    private byte[] read(int size) throws IOException, IgniteCheckedException {
         int off = 0;
 
         byte[] data = new byte[size];

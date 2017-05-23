@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -116,7 +117,11 @@ public class JdbcResultSetSelfTest extends JdbcAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stmt = DriverManager.getConnection(URL).createStatement();
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
+
+        stmt = conn.createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();
@@ -126,6 +131,7 @@ public class JdbcResultSetSelfTest extends JdbcAbstractSelfTest {
     @Override protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
+
             stmt.close();
 
             assert stmt.isClosed();
@@ -433,10 +439,8 @@ public class JdbcResultSetSelfTest extends JdbcAbstractSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Query execute error: " +
-            "class org.apache.ignite.binary.BinaryObjectException: JDBC doesn't support not embedded objects");
+        }, IgniteCheckedException.class, "JDBC doesn't support custom objects");
     }
-
 
     /**
      * @throws Exception If failed.
