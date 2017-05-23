@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
@@ -494,7 +495,7 @@ public class GridMapQueryExecutor {
         AffinityTopologyVersion topVer,
         Map<UUID, int[]> partsMap,
         int[] parts,
-        Collection<String> tbls,
+        Collection<QueryTable> tbls,
         int pageSize,
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
@@ -547,14 +548,14 @@ public class GridMapQueryExecutor {
             if (!F.isEmpty(tbls)) {
                 snapshotedTbls = new ArrayList<>(tbls.size());
 
-                for (String identifier : tbls) {
-                    GridH2Table tbl = h2.dataTable(identifier);
+                for (QueryTable tbl : tbls) {
+                    GridH2Table h2Tbl = h2.dataTable(tbl);
 
-                    Objects.requireNonNull(tbl, identifier);
+                    Objects.requireNonNull(h2Tbl, tbl.toString());
 
-                    tbl.snapshotIndexes(qctx);
+                    h2Tbl.snapshotIndexes(qctx);
 
-                    snapshotedTbls.add(tbl);
+                    snapshotedTbls.add(h2Tbl);
                 }
             }
 

@@ -25,9 +25,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.tests.pojos.Person;
@@ -42,9 +44,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Assert;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -242,6 +244,34 @@ public class IgnitePersistentStoreTest {
             personCache.removeAll(personMap.keySet());
 
             LOGGER.info("BLOB strategy delete tests passed");
+        }
+    }
+
+    /** */
+    @Test
+    public void blobBinaryLoadCacheTest() {
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
+            IgniteCache<Long, PojoPerson> personCache = ignite.getOrCreateCache("cache2");
+
+            assert ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
+
+            personCache.put(1L, new PojoPerson(1, "name"));
+
+            assert personCache.withKeepBinary().get(1L) instanceof BinaryObject;
+        }
+
+        Ignition.stopAll(true);
+
+        try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/loadall_blob/ignite-config.xml")) {
+            IgniteCache<Long, PojoPerson> personCache = ignite.getOrCreateCache("cache2");
+
+            personCache.loadCache(null, null);
+
+            PojoPerson person = personCache.get(1L);
+
+            LOGGER.info("loadCache tests passed");
         }
     }
 
@@ -672,5 +702,35 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Passed POJO transaction tests for " + concurrency +
                 " concurrency and " + isolation + " isolation level");
         LOGGER.info("-----------------------------------------------------------------------------------");
+    }
+
+    /** */
+    public static class PojoPerson {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /** */
+        public PojoPerson() {
+            // No-op.
+        }
+
+        /** */
+        public PojoPerson(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        /** */
+        public int getId() {
+            return id;
+        }
+
+        /** */
+        public String getName() {
+            return name;
+        }
     }
 }
