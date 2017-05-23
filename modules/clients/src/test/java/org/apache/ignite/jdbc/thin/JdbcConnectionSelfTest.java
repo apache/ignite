@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Enumeration;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -118,6 +117,38 @@ public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
                 return null;
             }
         }, SQLException.class, "URL is invalid");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:-1");
+
+                return null;
+            }
+        }, SQLException.class, "Invalid port:");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:0");
+
+                return null;
+            }
+        }, SQLException.class, "Invalid port:");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:100000");
+
+                return null;
+            }
+        }, SQLException.class, "Invalid port:");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                DriverManager.getConnection(URL_PREFIX + "     :10000");
+
+                return null;
+            }
+        }, SQLException.class, "Host name is empty");
     }
 
     /**
@@ -136,7 +167,6 @@ public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
         assert conn.isClosed();
 
         assert !conn.isValid(2): "Connection must be closed";
-
 
         GridTestUtils.assertThrows(
             log,

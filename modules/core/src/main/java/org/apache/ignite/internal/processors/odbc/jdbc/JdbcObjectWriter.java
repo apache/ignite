@@ -28,6 +28,6 @@ public class JdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
     @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj)
         throws BinaryObjectException {
-        throw new BinaryObjectException("JDBC doesn't support not embedded objects.");
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

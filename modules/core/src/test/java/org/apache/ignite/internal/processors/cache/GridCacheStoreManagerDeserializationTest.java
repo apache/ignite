@@ -37,7 +37,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -88,7 +88,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         if (igniteInstanceName != null && igniteInstanceName.toLowerCase().startsWith("binary"))
             c.setMarshaller(new BinaryMarshaller());
         else
-            c.setMarshaller(new OptimizedMarshaller());
+            c.setMarshaller(new JdkMarshaller());
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
