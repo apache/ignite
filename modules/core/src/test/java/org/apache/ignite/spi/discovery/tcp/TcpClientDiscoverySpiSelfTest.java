@@ -1103,19 +1103,22 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJoinError() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1624");
+        //fail("https://issues.apache.org/jira/browse/IGNITE-1624");
+        for (int i = 0; i < 1500; i++) {
+            startServerNodes(1);
 
-        startServerNodes(1);
+            Ignite ignite = G.ignite("server-0");
 
-        Ignite ignite = G.ignite("server-0");
+            TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
 
-        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+            srvSpi.failNodeAddedMessage();
 
-        srvSpi.failNodeAddedMessage();
+            startClientNodes(1);
 
-        startClientNodes(1);
-
-        checkNodes(1, 1);
+            checkNodes(1, 1);
+            afterTest();
+            beforeTest();
+        }
     }
 
     /**
