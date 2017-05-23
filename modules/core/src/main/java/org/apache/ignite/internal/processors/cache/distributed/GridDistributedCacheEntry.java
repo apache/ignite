@@ -589,7 +589,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     /**
      * Rechecks if lock should be reassigned.
      */
-    public void recheck() {
+    public void recheck(GridCacheMvccCandidate checkingCandidate) {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
@@ -617,7 +617,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         }
 
         // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val, false);
+        checkOwnerChanged(prev, owner, val, checkingCandidate);
     }
 
     /** {@inheritDoc} */
@@ -701,7 +701,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                         (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
                     if (e != null)
-                        e.recheck();
+                        e.recheck(owner);
                     else
                         break;
                 }

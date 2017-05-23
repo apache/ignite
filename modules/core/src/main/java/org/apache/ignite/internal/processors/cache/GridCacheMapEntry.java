@@ -3685,7 +3685,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected final void checkOwnerChanged(@Nullable CacheLockCandidates prevOwners,
         @Nullable CacheLockCandidates owners,
         CacheObject val) {
-        checkOwnerChanged(prevOwners, owners, val, true);
+        checkOwnerChanged(prevOwners, owners, val, null);
     }
     /**
      * @param prevOwners Previous owners.
@@ -3696,7 +3696,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected final void checkOwnerChanged(@Nullable CacheLockCandidates prevOwners,
         @Nullable CacheLockCandidates owners,
         CacheObject val,
-        boolean checkCandidateChain) {
+        CacheLockCandidates checkingCandidate) {
         assert !Thread.holdsLock(this);
 
         if (prevOwners != null && owners == null) {
@@ -3727,12 +3727,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             for (int i = 0; i < owners.size(); i++) {
                 GridCacheMvccCandidate owner = owners.candidate(i);
 
+                if(checkingCandidate != null && checkingCandidate.hasCandidate(owner.version()))
+                    continue;
                 boolean locked = prevOwners == null || !prevOwners.hasCandidate(owner.version());
 
                 if (locked) {
                     cctx.mvcc().callback().onOwnerChanged(this, owner);
 
-                    if (owner.local() && checkCandidateChain)
+                    if (owner.local())
                         checkThreadChain(owner);
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_LOCKED)) {
