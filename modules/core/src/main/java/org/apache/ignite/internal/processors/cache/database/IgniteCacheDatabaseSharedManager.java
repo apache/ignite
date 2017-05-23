@@ -414,6 +414,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             );
 
         if (plcCfg.getMaxSize() < plcCfg.getInitialSize()) {
+            // We will know for sure if initialSize has been changed if we compare Longs by "==".
             if (plcCfg.getInitialSize() == DFLT_MEMORY_POLICY_INITIAL_SIZE) {
                 plcCfg.setInitialSize(plcCfg.getMaxSize());
 
