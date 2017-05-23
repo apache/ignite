@@ -56,12 +56,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
@@ -614,11 +612,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 if (update)
                     try {
-                        // TODO IGNITE-5075.
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                     }
                     catch (IgniteCheckedException e) {
-                        log.error("Error while writing to log", e);
+                        U.error(log, "Error while writing to log", e);
                     }
 
                 return update;

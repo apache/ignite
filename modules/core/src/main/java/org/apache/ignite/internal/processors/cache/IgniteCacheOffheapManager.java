@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -373,14 +374,20 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param size Size to init.
          * @param updCntr Update counter to init.
+         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
          */
-        void init(long size, long updCntr);
+        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes);
 
         /**
          * @param cacheId Cache ID.
          * @return Size.
          */
         int cacheSize(int cacheId);
+
+        /**
+         * @return Cache sizes if store belongs to group containing multiple caches.
+         */
+        Map<Integer, Long> cacheSizes();
 
         /**
          * @return Total size.

@@ -179,10 +179,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             freeList.saveMetadata();
 
-            // TODO IGNITE-5075.
+            // TODO IGNITE-5075: save cache sizes.
             long updCntr = store.updateCounter();
             int size = store.fullSize();
             long rmvId = globalRemoveId().get();
+            Map<Integer, Long> cacheSizes = grp.sharedGroup() ? store.cacheSizes() : null;
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
@@ -221,11 +222,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         io.setPartitionState(pageAddr, (byte)state);
 
-                        int pageCount;
+                        int pageCnt;
 
                         if (beforeSnapshot) {
-                            pageCount = this.ctx.pageStore().pages(grpId, store.partId());
-                            io.setCandidatePageCount(pageAddr, pageCount);
+                            pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
+                            io.setCandidatePageCount(pageAddr, pageCnt);
 
                             if (saveMeta) {
                                 long metaPageId = pageMem.metaPageId(grpId);
@@ -265,7 +266,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                     this.ctx.pageStore().pages(grpId, store.partId()));
                         }
                         else
-                            pageCount = io.getCandidatePageCount(pageAddr);
+                            pageCnt = io.getCandidatePageCount(pageAddr);
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageUpdatePartitionDataRecord(
@@ -275,7 +276,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 rmvId,
                                 size,
                                 (byte)state,
-                                pageCount
+                                pageCnt
                             ));
                     }
                     finally {
@@ -804,6 +805,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     int grpId = grp.groupId();
                     long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
                     long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+
                     try {
                         long pageAddr = pageMem.readLock(grpId, partMetaId, partMetaPage);
 
@@ -811,7 +813,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             if (PageIO.getType(pageAddr) != 0) {
                                 PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
-                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr));
+                                // TODO IGNITE-5075.
+                                delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), null);
 
                                 globalRemoveId().setIfGreater(io.getGlobalRemoveId(pageAddr));
                             }
@@ -945,6 +948,30 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public int cacheSize(int cacheId) {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null ? 0 : delegate0.cacheSize(cacheId);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<Integer, Long> cacheSizes() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null ? null : delegate0.cacheSizes();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public long updateCounter() {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -957,7 +984,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr) {
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
             throw new IllegalStateException("Should be never called.");
         }
 
@@ -1111,11 +1138,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
             // No need to destroy delegate.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int cacheSize(int cacheId) {
-            return 0;
         }
 
         /** {@inheritDoc} */

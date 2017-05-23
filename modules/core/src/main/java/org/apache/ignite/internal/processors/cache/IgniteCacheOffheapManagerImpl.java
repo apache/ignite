@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1022,6 +1024,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public Map<Integer, Long> cacheSizes() {
+            if (!grp.sharedGroup())
+                return null;
+
+            Map<Integer, Long> res = new HashMap<>();
+
+            for (Map.Entry<Integer, AtomicLong> e : cacheSizes.entrySet())
+                res.put(e.getKey(), e.getValue().longValue());
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
         @Override public int fullSize() {
             return (int)storageSize.get();
         }
@@ -1491,10 +1506,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr) {
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
             initCntr = updCntr;
             storageSize.set(size);
             cntr.set(updCntr);
+
+            if (cacheSizes != null) {
+                for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())
+                    this.cacheSizes.put(e.getKey(), new AtomicLong(e.getValue()));
+            }
         }
 
         /**

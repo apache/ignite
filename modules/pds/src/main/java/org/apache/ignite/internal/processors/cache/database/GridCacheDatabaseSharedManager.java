@@ -665,7 +665,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.topologyVersion()) &&
-                    !cctx.pageStore().hasIndexStore(cacheCtx.cacheId()) && cacheCtx.affinityNode()) {
+                    !cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()) {
                     final int cacheId = cacheCtx.cacheId();
 
                     final IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
@@ -849,7 +849,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @throws IgniteCheckedException If failed to restore database status from WAL.
      */
-    public void restoreState() throws IgniteCheckedException {
+    private void restoreState() throws IgniteCheckedException {
         try {
             CheckpointStatus status = readCheckpointStatus();
 
@@ -1365,7 +1365,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException if no MemoryPolicy is configured for a name obtained from cache descriptor.
      */
     private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
-        // TODO IGNITE-5075: group ID should not change.
         // TODO IGNITE-5075: cache descriptor can be removed.
         GridCacheSharedContext sharedCtx = context();
 
@@ -1375,7 +1374,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             .config()
             .getMemoryPolicyName();
 
-        return (PageMemoryEx) sharedCtx.database().memoryPolicy(memPlcName).pageMemory();
+        return (PageMemoryEx)sharedCtx.database().memoryPolicy(memPlcName).pageMemory();
     }
 
     /**

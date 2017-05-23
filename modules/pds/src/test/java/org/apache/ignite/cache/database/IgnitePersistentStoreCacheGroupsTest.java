@@ -118,6 +118,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
                 assertEquals(cacheName + i, cache.get(i));
             }
+
+            assertEquals(10, cache.size());
         }
 
         stopGrid(0);
@@ -129,6 +131,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
             for (int i = 0; i < 10; i++)
                 assertEquals(cacheName + i, cache.get(i));
+
+            assertEquals(10, cache.size());
         }
     }
 

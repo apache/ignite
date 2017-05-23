@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.database.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreClientNearCachePutGetWithPersistenceSelfTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreDynamicCacheTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreSingleNodePutGetPersistenceSelfTest;
@@ -84,6 +85,8 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePersistentStoreDynamicCacheTest.class);
         suite.addTestSuite(IgniteWalDirectoriesConfigurationTest.class);
         suite.addTestSuite(IgnitePersistentStoreClientNearCachePutGetWithPersistenceSelfTest.class);
+
+        suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
 
         return suite;
     }
