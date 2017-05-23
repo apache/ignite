@@ -1517,7 +1517,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     caches0.add(cctx.cacheId());
 
                     for (QueryTable table : twoStepQry.tables()) {
-                        String tblCacheName = cacheNameForSchemaAndTable(table.schema(), table.table());
+                        String tblCacheName = dataTable(table).cacheName();
 
                         int cacheId = CU.cacheId(tblCacheName);
 
@@ -1569,17 +1569,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return cursor;
-    }
-
-    /**
-     * Get cache for schema and table.
-     *
-     * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @return Cache name.
-     */
-    private String cacheNameForSchemaAndTable(String schemaName, String tblName) {
-        return cacheName(schemaName);
     }
 
     /**
