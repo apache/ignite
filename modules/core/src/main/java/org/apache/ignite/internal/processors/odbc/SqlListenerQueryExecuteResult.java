@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Collection;
+import java.util.List;
 
 /**
  * SQL listener query execute result.
@@ -26,16 +26,21 @@ public class SqlListenerQueryExecuteResult {
     /** Query ID. */
     private final long queryId;
 
-    /** Fields metadata. */
-    private final Collection<SqlListenerColumnMeta> columnsMeta;
+    /** Query result rows. */
+    private final List<List<Object>> items;
+
+    /** Flag indicating the query has no unfetched results. */
+    private final boolean last;
 
     /**
      * @param queryId Query ID.
-     * @param columnsMeta Columns metadata.
+     * @param items Query result rows.
+     * @param last Flag indicating the query has no unfetched results.
      */
-    public SqlListenerQueryExecuteResult(long queryId, Collection<SqlListenerColumnMeta> columnsMeta) {
+    public SqlListenerQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
         this.queryId = queryId;
-        this.columnsMeta = columnsMeta;
+        this.items = items;
+        this.last = last;
     }
 
     /**
@@ -46,9 +51,16 @@ public class SqlListenerQueryExecuteResult {
     }
 
     /**
-     * @return Columns metadata.
+     * @return Query result rows.
      */
-    public Collection<SqlListenerColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
+    public List<List<Object>> items() {
+        return items;
+    }
+
+    /**
+     * @return Flag indicating the query has no unfetched results.
+     */
+    public boolean last() {
+        return last;
     }
 }

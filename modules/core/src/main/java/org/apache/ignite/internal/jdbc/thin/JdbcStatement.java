@@ -85,12 +85,14 @@ public class JdbcStatement implements Statement {
 
         try {
 
-            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), sql, args);
+            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), fetchSize, maxRows,
+                sql, args);
+
             assert res != null;
 
             qryId = res.getQueryId();
 
-            rs = new JdbcResultSet(this, qryId, res.getColumnsMetadata(), fetchSize, maxRows);
+            rs = new JdbcResultSet(this, qryId, fetchSize, res.items());
 
             return rs;
         }

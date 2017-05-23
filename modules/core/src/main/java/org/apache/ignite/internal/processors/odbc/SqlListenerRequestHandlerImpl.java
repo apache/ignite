@@ -48,6 +48,7 @@ import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.META
 import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_FETCH;
+import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.QRY_METADATA;
 
 /**
  * SQL query handler.
@@ -69,7 +70,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
     private final int maxCursors;
 
     /** Current queries cursors. */
-    private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, SqlListenerQueryCursor> qryCursors = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
     private final boolean distributedJoins;
@@ -112,6 +113,9 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
 
                 case QRY_FETCH:
                     return fetchQuery((SqlListenerQueryFetchRequest)req);
+
+                case QRY_METADATA:
+                    return metadataQuery((SqlListenerQueryMetadataRequest)req);
 
                 case QRY_CLOSE:
                     return closeQuery((SqlListenerQueryCloseRequest)req);
@@ -162,6 +166,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setPageSize(req.fetchSize());
 
             IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
 
@@ -175,13 +180,13 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
                     "Can not get cache with keep binary: " + req.cacheName());
 
-            QueryCursor qryCur = cache.query(qry);
+            SqlListenerQueryCursor cur = new SqlListenerQueryCursor(
+                qryId, req.fetchSize(), req.maxRows(), (QueryCursorImpl)cache.query(qry));
 
-            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
+            qryCursors.put(qryId, cur);
 
-            List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
-
-            SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(
+                qryId, cur.fetchRows(), !cur.hasNext());
 
             return new SqlListenerResponse(res);
         }
@@ -195,6 +200,60 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
     }
 
     /**
+     * {@link SqlListenerQueryFetchRequest} command handler.
+     *
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private SqlListenerResponse fetchQuery(SqlListenerQueryFetchRequest req) {
+        try {
+            SqlListenerQueryCursor cur = qryCursors.get(req.queryId());
+
+            if (cur == null)
+                return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
+                    "Failed to find query with ID: " + req.queryId());
+
+            cur.fetchSize(req.fetchSize());
+
+            SqlListenerQueryFetchResult res = new SqlListenerQueryFetchResult(
+                req.queryId(), cur.fetchRows(), !cur.hasNext());
+
+            return new SqlListenerResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * {@link SqlListenerQueryMetadataRequest} command handler.
+     *
+     * @param req Query metadata request.
+     * @return Response.
+     */
+    private SqlListenerResponse metadataQuery(SqlListenerQueryMetadataRequest req) {
+        try {
+            SqlListenerQueryCursor cur = qryCursors.get(req.queryId());
+
+            if (cur == null)
+                return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
+                    "Failed to find query with ID: " + req.queryId());
+
+            SqlListenerQueryMetadataResult res = new SqlListenerQueryMetadataResult(req.queryId(),
+                cur.meta());
+
+            return new SqlListenerResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
      * {@link SqlListenerQueryCloseRequest} command handler.
      *
      * @param req Execute query request.
@@ -202,15 +261,11 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
      */
     private SqlListenerResponse closeQuery(SqlListenerQueryCloseRequest req) {
         try {
-            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
+            SqlListenerQueryCursor cur= qryCursors.get(req.queryId());
 
-            if (tuple == null)
+            if (cur == null)
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
                     "Failed to find query with ID: " + req.queryId());
-
-            QueryCursor cur = tuple.get1();
-
-            assert(cur != null);
 
             cur.close();
 
@@ -224,46 +279,6 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             qryCursors.remove(req.queryId());
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req.queryId() + ']', e);
-
-            return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
-        }
-    }
-
-    /**
-     * {@link SqlListenerQueryFetchRequest} command handler.
-     *
-     * @param req Execute query request.
-     * @return Response.
-     */
-    private SqlListenerResponse fetchQuery(SqlListenerQueryFetchRequest req) {
-        try {
-            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(req.queryId());
-
-            if (tuple == null)
-                return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + req.queryId());
-
-            Iterator iter = tuple.get2();
-
-            if (iter == null) {
-                QueryCursor cur = tuple.get1();
-
-                iter = cur.iterator();
-
-                tuple.put(cur, iter);
-            }
-
-            List<Object> items = new ArrayList<>();
-
-            for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
-                items.add(iter.next());
-
-            SqlListenerQueryFetchResult res = new SqlListenerQueryFetchResult(req.queryId(), items, !iter.hasNext());
-
-            return new SqlListenerResponse(res);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
@@ -457,27 +472,6 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             default:
                 return GridBinaryMarshaller.BYTE_ARR;
         }
-    }
-
-    /**
-     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
-     * {@link SqlListenerColumnMeta}.
-     *
-     * @param meta Internal query field metadata.
-     * @return Odbc query field metadata.
-     */
-    private static Collection<SqlListenerColumnMeta> convertMetadata(Collection<?> meta) {
-        List<SqlListenerColumnMeta> res = new ArrayList<>();
-
-        if (meta != null) {
-            for (Object info : meta) {
-                assert info instanceof GridQueryFieldMetadata;
-
-                res.add(new SqlListenerColumnMeta((GridQueryFieldMetadata)info));
-            }
-        }
-
-        return res;
     }
 
     /**

@@ -22,22 +22,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * SQL listener query fetch request.
  */
-public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
+public class SqlListenerQueryMetadataRequest extends SqlListenerRequest {
     /** Query ID. */
     private final long queryId;
 
-    /** Fetch size. */
-    private final int fetchSize;
-
     /**
      * @param queryId Query ID.
-     * @param fetchSize Fetch size.
      */
-    public SqlListenerQueryFetchRequest(long queryId, int fetchSize) {
-        super(QRY_FETCH);
+    public SqlListenerQueryMetadataRequest(long queryId) {
+        super(QRY_METADATA);
 
         this.queryId = queryId;
-        this.fetchSize = fetchSize;
     }
 
     /**
@@ -47,15 +42,8 @@ public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
         return queryId;
     }
 
-    /**
-     * @return Query ID.
-     */
-    public int fetchSize() {
-        return fetchSize;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SqlListenerQueryFetchRequest.class, this);
+        return S.toString(SqlListenerQueryMetadataRequest.class, this);
     }
 }

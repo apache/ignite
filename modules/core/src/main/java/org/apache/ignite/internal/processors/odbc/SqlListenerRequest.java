@@ -30,17 +30,20 @@ public class SqlListenerRequest {
     /** Fetch query results. */
     public static final int QRY_FETCH = 3;
 
+    /** Gather query metadata. */
+    public static final int QRY_METADATA = 4;
+
     /** Close query. */
-    public static final int QRY_CLOSE = 4;
+    public static final int QRY_CLOSE = 5;
 
     /** Get columns meta query. */
-    public static final int META_COLS = 5;
+    public static final int META_COLS = 6;
 
     /** Get columns meta query. */
-    public static final int META_TBLS = 6;
+    public static final int META_TBLS = 7;
 
     /** Get parameters meta. */
-    public static final int META_PARAMS = 7;
+    public static final int META_PARAMS = 8;
 
     /** Command. */
     private final int cmd;

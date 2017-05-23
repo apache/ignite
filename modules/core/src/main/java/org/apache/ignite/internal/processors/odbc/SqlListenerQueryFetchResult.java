@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * SQL listener query fetch result.
@@ -27,7 +28,7 @@ public class SqlListenerQueryFetchResult {
     private final long queryId;
 
     /** Query result rows. */
-    private final Collection<?> items;
+    private final List<List<Object>> items;
 
     /** Flag indicating the query has no unfetched results. */
     private final boolean last;
@@ -37,7 +38,7 @@ public class SqlListenerQueryFetchResult {
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
      */
-    public SqlListenerQueryFetchResult(long queryId, Collection<?> items, boolean last){
+    public SqlListenerQueryFetchResult(long queryId, List<List<Object>> items, boolean last){
         this.queryId = queryId;
         this.items = items;
         this.last = last;
@@ -53,7 +54,7 @@ public class SqlListenerQueryFetchResult {
     /**
      * @return Query result rows.
      */
-    public Collection<?> items() {
+    public List<List<Object>> items() {
         return items;
     }
 

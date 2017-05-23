@@ -17,27 +17,25 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.util.List;
 
 /**
- * SQL listener query fetch request.
+ * SQL listener query fetch result.
  */
-public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
+public class SqlListenerQueryMetadataResult {
     /** Query ID. */
     private final long queryId;
 
-    /** Fetch size. */
-    private final int fetchSize;
+    /** Fields metadata. */
+    private final List<SqlListenerColumnMeta> meta;
 
     /**
      * @param queryId Query ID.
-     * @param fetchSize Fetch size.
+     * @param meta Query metadata.
      */
-    public SqlListenerQueryFetchRequest(long queryId, int fetchSize) {
-        super(QRY_FETCH);
-
+    public SqlListenerQueryMetadataResult(long queryId, List<SqlListenerColumnMeta> meta){
         this.queryId = queryId;
-        this.fetchSize = fetchSize;
+        this.meta = meta;
     }
 
     /**
@@ -48,14 +46,9 @@ public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
     }
 
     /**
-     * @return Query ID.
+     * @return Query result rows.
      */
-    public int fetchSize() {
-        return fetchSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlListenerQueryFetchRequest.class, this);
+    public List<SqlListenerColumnMeta> meta() {
+        return meta;
     }
 }

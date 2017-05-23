@@ -71,7 +71,11 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
         switch (cmd) {
             case SqlListenerRequest.QRY_EXEC: {
                 String cache = reader.readString();
+                int fetchSize = reader.readInt();
+                int maxRows = reader.readInt();
+
                 String sql = reader.readString();
+
                 int argsNum = reader.readInt();
 
                 Object[] params = new Object[argsNum];
@@ -79,16 +83,24 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
                 for (int i = 0; i < argsNum; ++i)
                     params[i] = objReader.readObject(reader);
 
-                res = new SqlListenerQueryExecuteRequest(cache, sql, params);
+                res = new SqlListenerQueryExecuteRequest(cache, fetchSize, maxRows, sql, params);
 
                 break;
             }
 
             case SqlListenerRequest.QRY_FETCH: {
                 long queryId = reader.readLong();
-                int pageSize = reader.readInt();
+                int fetchSize = reader.readInt();
 
-                res = new SqlListenerQueryFetchRequest(queryId, pageSize);
+                res = new SqlListenerQueryFetchRequest(queryId, fetchSize);
+
+                break;
+            }
+
+            case SqlListenerRequest.QRY_METADATA: {
+                long queryId = reader.readLong();
+
+                res = new SqlListenerQueryMetadataRequest(queryId);
 
                 break;
             }
@@ -166,14 +178,24 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
 
             writer.writeLong(res.getQueryId());
 
-            Collection<SqlListenerColumnMeta> metas = res.getColumnsMetadata();
+            Collection<?> items0 = res.items();
 
-            assert metas != null;
+            assert items0 != null;
 
-            writer.writeInt(metas.size());
+            writer.writeBoolean(res.last());
 
-            for (SqlListenerColumnMeta meta : metas)
-                meta.write(writer);
+            writer.writeInt(items0.size());
+
+            for (Object row0 : items0) {
+                if (row0 != null) {
+                    Collection<?> row = (Collection<?>)row0;
+
+                    writer.writeInt(row.size());
+
+                    for (Object obj : row)
+                        objWriter.writeObject(writer, obj);
+                }
+            }
         }
         else if (res0 instanceof SqlListenerQueryFetchResult) {
             SqlListenerQueryFetchResult res = (SqlListenerQueryFetchResult) res0;
@@ -201,6 +223,21 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
                         objWriter.writeObject(writer, obj);
                 }
             }
+        }
+        else if (res0 instanceof SqlListenerQueryMetadataResult) {
+            SqlListenerQueryMetadataResult res = (SqlListenerQueryMetadataResult) res0;
+
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.queryId());
+
+            writer.writeLong(res.queryId());
+
+            Collection<SqlListenerColumnMeta> columnsMeta = res.meta();
+
+            writer.writeInt(columnsMeta.size());
+
+            for (SqlListenerColumnMeta columnMeta : columnsMeta)
+                columnMeta.write(writer);
         }
         else if (res0 instanceof SqlListenerQueryCloseResult) {
             SqlListenerQueryCloseResult res = (SqlListenerQueryCloseResult) res0;

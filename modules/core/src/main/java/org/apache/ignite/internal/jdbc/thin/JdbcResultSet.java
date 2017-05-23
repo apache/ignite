@@ -38,15 +38,14 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryMetadataResult;
 
 /**
  * JDBC result set implementation.
@@ -59,10 +58,13 @@ public class JdbcResultSet implements ResultSet {
     private final Long qryId;
 
     /** Table names. */
-    private final List<SqlListenerColumnMeta> meta;
+    private List<SqlListenerColumnMeta> metaRef;
 
     /** Fields iterator. */
-    private Iterator<List<Object>> fields;
+    private List<List<Object>> fields;
+
+    /** Fields iterator. */
+    private Iterator<List<Object>> fieldsIt;
 
     /** Finished flag. */
     private boolean finished;
@@ -79,37 +81,28 @@ public class JdbcResultSet implements ResultSet {
     /** Was {@code NULL} flag. */
     private boolean wasNull;
 
-    /** Count of fetched rows. */
-    private long fetched;
-
     /** Fetch size. */
     private int fetchSize;
-
-    /** Fetch size. */
-    private int maxRows;
 
     /**
      * Creates new result set.
      *
      * @param stmt Statement.
      * @param qryId Query ID.
-     * @param meta Results metadata.
      * @param fetchSize Fetch size.
-     * @param maxRows Max rows.
+     * @param fields Query result page.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcResultSet(JdbcStatement stmt, long qryId,
-        Collection<SqlListenerColumnMeta> meta, int fetchSize, int maxRows) {
+    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, List<List<Object>> fields) {
         assert stmt != null;
-        assert meta != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.qryId = qryId;
         this.fetchSize = fetchSize;
-        this.maxRows = maxRows;
+        this.fields = fields;
 
-        this.meta = (ArrayList<SqlListenerColumnMeta>)(meta);
+        fieldsIt = fields.iterator();
     }
 
     /** {@inheritDoc} */
@@ -117,22 +110,16 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fields == null && !finished) {
+        if (fieldsIt == null && !finished) {
             try {
-                int fetchSize0 = fetchSize;
-
-                if (maxRows > 0)
-                    fetchSize0 = Math.min(fetchSize, (int)(maxRows - fetched));
-
-                SqlListenerQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize0);
+                SqlListenerQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
 
                 assert qryId == res.queryId();
 
-                fields = ((Collection<List<Object>>)res.items()).iterator();
+                fields = res.items();
+                finished = res.last();
 
-                fetched += res.items().size();
-
-                finished = res.last() || fetched == maxRows;
+                fieldsIt = fields.iterator();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -144,11 +131,11 @@ public class JdbcResultSet implements ResultSet {
             }
         }
 
-        if (fields != null && fields.hasNext()) {
-            curr = fields.next();
+        if (fieldsIt != null && fieldsIt.hasNext()) {
+            curr = fieldsIt.next();
 
-            if (!fields.hasNext())
-                fields = null;
+            if (!fieldsIt.hasNext())
+                fieldsIt = null;
 
             pos++;
 
@@ -406,7 +393,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcResultSetMetadata(meta);
+        return new JdbcResultSetMetadata(meta());
     }
 
     /** {@inheritDoc} */
@@ -422,6 +409,8 @@ public class JdbcResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public int findColumn(final String colLb) throws SQLException {
         ensureNotClosed();
+
+        List<SqlListenerColumnMeta> meta = meta();
 
         for (int i = 0; i < meta.size(); i++) {
             if (meta.get(i).getColumnName().equalsIgnoreCase(colLb))
@@ -466,7 +455,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fields == null && curr == null;
+        return finished && fieldsIt == null && curr == null;
     }
 
     /** {@inheritDoc} */
@@ -480,7 +469,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fields == null && curr != null;
+        return finished && fieldsIt == null && curr != null;
     }
 
     /** {@inheritDoc} */
@@ -1497,5 +1486,29 @@ public class JdbcResultSet implements ResultSet {
     private void ensureHasCurrentRow() throws SQLException {
         if (curr == null)
             throw new SQLException("Result set is not positioned on a row.");
+    }
+
+    /**
+     * @return Results metadata.
+     * @throws SQLException On errror.
+     */
+    private List<SqlListenerColumnMeta> meta() throws SQLException {
+        if (metaRef == null) {
+            try {
+                SqlListenerQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
+
+                metaRef = res.meta();
+            }
+            catch (IOException e) {
+                stmt.connection().close();
+
+                throw new SQLException("Failed to get query metadata.", e);
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException("Failed to get query metadata.", e);
+            }
+        }
+
+        return metaRef;
     }
 }

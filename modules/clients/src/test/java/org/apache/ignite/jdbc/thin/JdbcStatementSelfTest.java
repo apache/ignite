@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-public class JdbcStatementSelfTest extends GridCommonAbstractTest {
+public class JdbcStatementSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
