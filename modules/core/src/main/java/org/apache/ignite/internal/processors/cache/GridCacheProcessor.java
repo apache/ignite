@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -173,6 +174,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Map of proxies. */
     private final ConcurrentMap<String, IgniteCacheProxy<?, ?>> jCacheProxies;
+
+    /** Restarting caches */
+    private final Set<String> restartingCaches = new GridConcurrentHashSet<>();
 
     /** Caches stop sequence. */
     private final Deque<String> stopSeq;
@@ -1117,6 +1121,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 caches.remove(maskNull(cache.name()));
                 jCacheProxies.remove(maskNull(cache.name()));
+                restartingCaches.remove(maskNull(cache.name()));
 
                 IgniteInternalFuture<?> fut = ctx.closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
@@ -1857,8 +1862,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             onKernalStart(cache);
 
-            if (proxyRestart)
+            if (proxyRestart) {
                 proxy.onRestarted(cacheCtx, cache);
+
+                restartingCaches.remove(maskNull(cacheCtx.name()));
+            }
         }
     }
 
@@ -1896,6 +1904,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Break the proxy before exchange future is done.
         if (req.restart()) {
             proxy = jCacheProxies.get(maskNull(req.cacheName()));
+
+            restartingCaches.add(req.cacheName());
 
             if (proxy != null)
                 proxy.restart();
@@ -3164,6 +3174,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
+            if (restartingCaches.size() > 0) {
+                String msg = "Joining server node during cache restarting is not allowed";
+
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+            }
+
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 
