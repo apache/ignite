@@ -240,7 +240,7 @@ public class IgniteIoTestMessage implements Message {
     /**
      * @return Response received timestamp (millis).
      */
-    public long responseRecievedTsMillis() {
+    public long responseReceivedTsMillis() {
         return resRcvTsMillis;
     }
 
