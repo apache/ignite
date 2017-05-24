@@ -416,9 +416,9 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         if (args == null)
             args = new ArrayList<>(paramIdx);
-        else
-            args.ensureCapacity(paramIdx);
 
+        while (args.size() < paramIdx)
+            args.add(null);
 
         args.set(paramIdx - 1, val);
     }
