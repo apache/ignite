@@ -346,7 +346,7 @@ public final class GridTestUtils {
             Throwable t = e;
 
             while (t != null) {
-                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
                     log.info("Caught expected exception: " + t.getMessage());
 
                     return t;

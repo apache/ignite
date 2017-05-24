@@ -664,13 +664,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
@@ -680,7 +680,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable String spaceName, Object k)
+        @Override public void remove(@Nullable String cacheName, Object k)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
