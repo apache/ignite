@@ -20,7 +20,7 @@
 #include <ignite/impl/binary/binary_type_updater_impl.h>
 #include <ignite/impl/module_manager.h>
 #include <ignite/impl/ignite_binding_impl.h>
-#include <ignite/impl/compute/compute_task_impl.h>
+#include <ignite/impl/compute/compute_task_holder.h>
 
 #include <ignite/binary/binary.h>
 #include <ignite/cache/query/continuous/continuous_query.h>

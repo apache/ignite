@@ -24,7 +24,7 @@
 #include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 #include <ignite/impl/cache/cache_entry_processor_holder.h>
-#include <ignite/impl/compute/compute_task_impl.h>
+#include <ignite/impl/compute/compute_task_holder.h>
 
 namespace ignite
 {
