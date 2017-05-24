@@ -189,7 +189,7 @@ public class QueryUtils {
         Map<String, String> normalAliases = new HashMap<>(normalEntity.getAliases());
 
         for (String fieldName : normalEntity.getFields().keySet()) {
-            String fieldAlias = normalAliases.get(fieldName);
+            String fieldAlias = entity.getAliases().get(fieldName);
 
             if (fieldAlias == null)
                 fieldAlias = aliasForFieldName(fieldName);
