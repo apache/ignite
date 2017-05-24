@@ -87,8 +87,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
 
-    /** Retries because ownership changed. */
-    private Collection<Integer> retries;
+    /** Retry because ownership changed. */
+    private Integer retry;
 
     /** Subject ID. */
     private UUID subjId;
@@ -202,10 +202,13 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
             if (fut != null) {
                 if (!F.isEmpty(fut.invalidPartitions())) {
-                    if (retries == null)
-                        retries = new HashSet<>();
+                    assert fut.invalidPartitions().size() == 1 : fut.invalidPartitions();
 
-                    retries.addAll(fut.invalidPartitions());
+                    retry = F.first(fut.invalidPartitions());
+
+                    onDone((GridCacheEntryInfo)null);
+
+                    return;
                 }
 
                 fut.listen(
@@ -240,17 +243,14 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map0() {
-        // Assign keys to primary nodes.
-        int part = cctx.affinity().partition(key);
+        assert retry == null : retry;
 
-        if (retries == null || !retries.contains(part)) {
-            if (!map(key)) {
-                retries = Collections.singleton(part);
+        if (!map(key)) {
+            retry = cctx.affinity().partition(key);
 
-                onDone((GridCacheEntryInfo)null);
+            onDone((GridCacheEntryInfo)null);
 
-                return;
-            }
+            return;
         }
 
         getAsync();
@@ -258,7 +258,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> invalidPartitions() {
-        return retries == null ? Collections.<Integer>emptyList() : retries;
+        return retry == null ? Collections.<Integer>emptyList() : Collections.singletonList(retry);
     }
 
     /**
