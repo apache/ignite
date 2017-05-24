@@ -1417,7 +1417,8 @@ public class IgniteTxHandler {
                     req.transactionNodes(),
                     req.subjectId(),
                     req.taskNameHash(),
-                    single);
+                    single,
+                    req.storeUsed());
 
                 tx.writeVersion(req.writeVersion());
 
