@@ -32,9 +32,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for ??
+ * Tests locking of thread of candidates (see IGNITE-5227)
  */
-public class CacheBulkUnlockTest extends GridCommonAbstractTest {
+public class CacheLockCandidatesThreadTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DEFAULT_CACHE_NAME = "default";
@@ -42,18 +42,18 @@ public class CacheBulkUnlockTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testBatchUnlockForLocalMode() throws Exception {
-        doBulkUnlock(CacheMode.LOCAL);
+    public void testLockCandidatesThreadForLocalMode() throws Exception {
+        lockThreadOfCandidates(CacheMode.LOCAL);
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testBatchUnlockForPartitionedMode() throws Exception {
-        doBulkUnlock(CacheMode.PARTITIONED);
+    public void testLockCandidatesThreadForPartitionedMode() throws Exception {
+        lockThreadOfCandidates(CacheMode.PARTITIONED);
     }
 
-    private void doBulkUnlock(CacheMode mode) throws Exception {
+    private void lockThreadOfCandidates(CacheMode mode) throws Exception {
         startGrid(0);
         grid(0).createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
