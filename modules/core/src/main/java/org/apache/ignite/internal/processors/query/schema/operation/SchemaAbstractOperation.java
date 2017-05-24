@@ -32,18 +32,22 @@ public abstract class SchemaAbstractOperation implements Serializable {
     /** Operation ID. */
     private final UUID opId;
 
-    /** Space. */
-    private final String space;
+    /** Cache name. */
+    private final String cacheName;
+
+    /** Schema name. */
+    private final String schemaName;
 
     /**
      * Constructor.
      *
      * @param opId Operation ID.
-     * @param space Space.
+     * @param schemaName Schema name.
      */
-    public SchemaAbstractOperation(UUID opId, String space) {
+    public SchemaAbstractOperation(UUID opId, String cacheName, String schemaName) {
         this.opId = opId;
-        this.space = space;
+        this.cacheName = cacheName;
+        this.schemaName = schemaName;
     }
 
     /**
@@ -54,10 +58,17 @@ public abstract class SchemaAbstractOperation implements Serializable {
     }
 
     /**
-     * @return Space.
+     * @return Cache name.
      */
-    public String space() {
-        return space;
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schemaName;
     }
 
     /** {@inheritDoc} */

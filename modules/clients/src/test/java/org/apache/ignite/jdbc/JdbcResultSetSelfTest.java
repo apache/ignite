@@ -17,30 +17,33 @@
 
 package org.apache.ignite.jdbc;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -69,7 +72,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -440,9 +443,82 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * This does extended toString compare. <br> Actual toString in case binary is enabled is called at {@link
+     * org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
+     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br> and then strings are
+     * compared in assertions <p> And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected
+     * by this test: <br> <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582,
+     * hash=11433031, a=100, b=AAAA]</code> <br>
+     *
+     * @param originalObj object initially placed to cache
+     * @param binary optional parameter, if absent, direct toString compare is used
+     * @param resSetObj object returned by result set
+     */
+    public static void assertEqualsToStringRepresentation(
+        final Object originalObj,
+        @Nullable final IgniteBinary binary,
+        final Object resSetObj) {
+        if (binary != null) {
+            final BinaryObject origObjAsBinary = binary.toBinary(originalObj);
+            final String strFromResSet = Objects.toString(resSetObj);
+            for (Field declaredField : originalObj.getClass().getDeclaredFields()) {
+                checkFieldPresenceInToString(origObjAsBinary, strFromResSet, declaredField.getName());
+            }
+        }
+        else
+            assertEquals(originalObj.toString(), Objects.toString(resSetObj));
+    }
+
+    /**
+     * Checks particular field from original binary object
+     *
+     * @param original binary object representation of original object
+     * @param strToCheck string from result set, to be checked for presence of all fields
+     * @param fieldName field name have being checked
+     */
+    private static void checkFieldPresenceInToString(final BinaryObject original,
+        final String strToCheck,
+        final String fieldName) {
+
+        final Object fieldVal = original.field(fieldName);
+        String strValToSearch = Objects.toString(fieldVal);
+        if (fieldVal != null) {
+            final Class<?> aCls = fieldVal.getClass();
+            if (aCls.isArray()) {
+                final Class<?> elemCls = aCls.getComponentType();
+                if (elemCls == Byte.TYPE)
+                    strValToSearch = Arrays.toString((byte[])fieldVal);
+            }
+            else if (BinaryObject.class.isAssignableFrom(aCls)) {
+                // hack to avoid search of unpredictable toString representation like
+                // JdbcResultSetSelfTest$TestObjectField [idHash=1518952510, hash=11433031, a=100, b=AAAA]
+                // in toString
+                // other way to fix: iterate on binary object fields: final BinaryObject binVal = (BinaryObject)fieldVal;
+                strValToSearch = "";
+            }
+        }
+        assertTrue("Expected to find field "
+                + fieldName + " having value " + strValToSearch
+                + " in toString representation [" + strToCheck + "]",
+            strToCheck.contains(fieldName + "=" + strValToSearch));
+    }
+
+    /**
+     * @param str initial toString representation from binary object
+     * @return same representation with removed ID hash value
+     */
+    private static String removeIdHash(String str) {
+        return str.replaceAll("idHash=(\\d)*", "idHash=...");
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testObject() throws Exception {
+        final Ignite ignite = ignite(0);
+        final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
+        final IgniteBinary binary = binaryMarshaller ? ignite.binary() : null;
+
         ResultSet rs = stmt.executeQuery(SQL);
 
         TestObjectField f1 = new TestObjectField(100, "AAAA");
@@ -451,20 +527,19 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         TestObject o = createObjectWithData(1);
 
         assertTrue(rs.next());
+        assertEqualsToStringRepresentation(f1, binary, rs.getObject("f1"));
+        assertEqualsToStringRepresentation(f1, binary, rs.getObject(16));
 
-        assertEquals(f1.toString(), rs.getObject("f1"));
-        assertEquals(f1.toString(), rs.getObject(16));
-
-        assertEquals(f2.toString(), rs.getObject("f2"));
-        assertEquals(f2.toString(), rs.getObject(17));
+        assertEqualsToStringRepresentation(f2, binary, rs.getObject("f2"));
+        assertEqualsToStringRepresentation(f2, binary, rs.getObject(17));
 
         assertNull(rs.getObject("f3"));
         assertTrue(rs.wasNull());
         assertNull(rs.getObject(18));
         assertTrue(rs.wasNull());
 
-        assertEquals(o.toString(), rs.getObject("_val"));
-        assertEquals(o.toString(), rs.getObject(19));
+        assertEqualsToStringRepresentation(o, binary, rs.getObject("_val"));
+        assertEqualsToStringRepresentation(o, binary, rs.getObject(19));
 
         assertFalse(rs.next());
     }
@@ -684,10 +759,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PackageVisibleField")
     private static class TestObjectField implements Serializable {
         /** */
-        final int a;
+        @GridToStringInclude final int a;
 
         /** */
-        final String b;
+        @GridToStringInclude final String b;
 
         /**
          * @param a A.

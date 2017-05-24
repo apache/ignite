@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -81,9 +80,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver = version(1, 1);
         GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, ver);
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller(false);
-
-        marsh.setContext(new MarshallerContextTestImpl());
+        Marshaller marsh = createStandaloneBinaryMarshaller();
 
         byte[] verBytes = marsh.marshal(ver);
         byte[] verExBytes = marsh.marshal(verEx);

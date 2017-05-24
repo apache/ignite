@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWriter;
 
 /**
- * Test for {@link CacheJdbcPojoStore} with optimized marshaller and enabled SQL escaping.
+ * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class CacheJdbcPojoStoreOptimizedMarshallerWithSqlEscapeSelfTest extends CacheJdbcPojoStoreOptimizedMarshallerSelfTest {
+public class OdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
-    @Override protected boolean sqlEscapeAll(){
-        return true;
+    @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj) throws BinaryObjectException {
+        writer.writeObjectDetached(obj);
     }
 }

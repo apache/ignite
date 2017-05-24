@@ -58,19 +58,6 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testOptimizedMarshaller() throws Exception {
-        marshFactory = new Callable<Marshaller>() {
-            @Override public Marshaller call() throws Exception {
-                return new OptimizedMarshaller(false);
-            }
-        };
-
-        doTestMarshaller();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testBinaryMarshaller() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {

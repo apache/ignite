@@ -351,7 +351,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         try {
-            queryProcessor(node()).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
+            String cacheName = randomString();
+
+            queryProcessor(node()).dynamicIndexCreate(cacheName, cacheName, TBL_NAME, idx, false).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
@@ -844,7 +846,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         initialize(mode, atomicityMode, near);
 
         try {
-            queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
+            String cacheName = randomString();
+
+            queryProcessor(node()).dynamicIndexDrop(cacheName, cacheName, "my_idx", false).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
@@ -1016,13 +1020,13 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     /**
      * Synchronously create index.
      *
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param tblName Table name.
      * @param idx Index.
      * @param ifNotExists When set to true operation will fail if index already exists.
      * @throws Exception If failed.
      */
-    private void dynamicIndexCreate(String space, String tblName, QueryIndex idx, boolean ifNotExists)
+    private void dynamicIndexCreate(String cacheName, String tblName, QueryIndex idx, boolean ifNotExists)
         throws Exception {
         GridStringBuilder sql = new SB("CREATE INDEX ")
             .a(ifNotExists ? "IF NOT EXISTS " : "")
@@ -1047,32 +1051,32 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         sql.a(')');
 
-        executeSql(space, sql.toString());
+        executeSql(cacheName, sql.toString());
     }
 
     /**
      * Synchronously drop index.
      *
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param idxName Index name.
      * @param ifExists When set to true operation fill fail if index doesn't exists.
      * @throws Exception if failed.
      */
-    private void dynamicIndexDrop(String space, String idxName, boolean ifExists) throws Exception {
+    private void dynamicIndexDrop(String cacheName, String idxName, boolean ifExists) throws Exception {
         String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
 
-        executeSql(space, sql);
+        executeSql(cacheName, sql);
     }
 
     /**
      * Execute SQL.
      *
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param sql SQL.
      */
-    private void executeSql(String space, String sql) {
+    private void executeSql(String cacheName, String sql) {
         log.info("Executing DDL: " + sql);
 
-        node().cache(space).query(new SqlFieldsQuery(sql)).getAll();
+        node().cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
     }
 }
