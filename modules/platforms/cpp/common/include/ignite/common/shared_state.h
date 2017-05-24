@@ -23,6 +23,8 @@
 #ifndef _IGNITE_SHARED_STATE
 #define _IGNITE_SHARED_STATE
 
+#include <memory>
+
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
 #include <ignite/common/cancelable.h>
