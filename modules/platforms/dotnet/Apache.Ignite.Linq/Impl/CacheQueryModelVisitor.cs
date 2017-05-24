@@ -114,6 +114,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (IsRemoveAll(queryModel))
             {
+                // TODO: Append current table name.
                 _builder.Append("delete ");
             }
             else
