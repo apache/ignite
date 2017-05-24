@@ -227,9 +227,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            int len = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
+            int len = BinaryUtils.doReadUnsignedVarint(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + len + BinaryUtils.sizeInUnsignedVarint(len);
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -316,8 +316,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 1);
-                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
+                int dataLen = BinaryUtils.doReadUnsignedVarint(ptr, fieldPos + 1);
+
+                int len = BinaryUtils.sizeInUnsignedVarint(dataLen);
+
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 1 + len, dataLen);
 
                 val = new String(data, UTF_8);
 
@@ -363,10 +366,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
             }
 
             case GridBinaryMarshaller.DECIMAL: {
-                int scale = BinaryPrimitives.readInt(ptr, fieldPos + 1);
+                int scale = BinaryUtils.doReadSignedVarint(ptr, fieldPos + 1);
+                int len = 1 + BinaryUtils.sizeInSignedVarint(scale);
 
-                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 5);
-                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
+                int dataLen = BinaryUtils.doReadUnsignedVarint(ptr, fieldPos + len);
+                len += BinaryUtils.sizeInUnsignedVarint(dataLen);
+
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + len, dataLen);
 
                 BigInteger intVal = new BigInteger(data);
 

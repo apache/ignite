@@ -57,7 +57,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     @Nullable public static BinaryLazyMap parseMap(BinaryBuilderReader reader) {
         int off = reader.position() - 1;
 
-        int size = reader.readInt();
+        int size = BinaryUtils.doReadUnsignedVarint(reader);
 
         reader.skip(1); // map type.
 
@@ -74,9 +74,9 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
      */
     private void ensureDelegateInit() {
         if (delegate == null) {
-            int size = reader.readIntPositioned(off + 1);
+            int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
+            reader.position(off + 1/* flag */ + BinaryUtils.sizeInUnsignedVarint(size)/* size */ + 1/* col type */);
 
             delegate = new LinkedHashMap<>();
 
@@ -88,9 +88,9 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (delegate == null) {
-            int size = reader.readIntPositioned(off + 1);
+            int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
+            int hdrSize = 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(size) /* size */ + 1 /* col type */;
             writer.write(reader.array(), off, hdrSize);
 
             reader.position(off + hdrSize);
@@ -102,9 +102,9 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
         }
         else {
             writer.writeByte(GridBinaryMarshaller.MAP);
-            writer.writeInt(delegate.size());
+            writer.doWriteUnsignedVarint(delegate.size());
 
-            byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];
+            byte colType = reader.array()[off + 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(delegate.size()) /* size */];
 
             writer.writeByte(colType);
 
@@ -118,7 +118,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     /** {@inheritDoc} */
     @Override public int size() {
         if (delegate == null)
-            return reader.readIntPositioned(off + 1);
+            return BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
         return delegate.size();
     }

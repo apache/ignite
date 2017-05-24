@@ -172,7 +172,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     break;
 
                 case GridBinaryMarshaller.STRING: {
-                    int dataLen = buf.getInt();
+                    int dataLen = BinaryUtils.doReadUnsignedVarint(buf);
 
                     byte[] data = new byte[dataLen];
 

@@ -44,7 +44,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
      */
     BinaryLazyArrayList(BinaryBuilderReader reader, int size) {
         this.reader = reader;
-        off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
+        off = reader.position() - 1/* flag */ - BinaryUtils.sizeInUnsignedVarint(size)/* size */ - 1/* col type */;
 
         assert size >= 0;
 
@@ -57,9 +57,9 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
      */
     private void ensureDelegateInit() {
         if (delegate == null) {
-            int size = reader.readIntPositioned(off + 1);
+            int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
+            reader.position(off + 1/* flag */ + BinaryUtils.sizeInUnsignedVarint(size)/* size */ + 1/* col type */);
 
             delegate = new ArrayList<>(size);
 
@@ -126,7 +126,7 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     /** {@inheritDoc} */
     @Override public int size() {
         if (delegate == null)
-            return reader.readIntPositioned(off + 1);
+            return BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
         return delegate.size();
     }
@@ -134,9 +134,9 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (delegate == null) {
-            int size = reader.readIntPositioned(off + 1);
+            int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
+            int hdrSize = 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(size) /* size */ + 1 /* col type */;
 
             writer.write(reader.array(), off, hdrSize);
 
@@ -150,9 +150,9 @@ class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderS
         }
         else {
             writer.writeByte(GridBinaryMarshaller.COL);
-            writer.writeInt(delegate.size());
+            writer.doWriteUnsignedVarint(delegate.size());
 
-            byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];
+            byte colType = reader.array()[off + 1 /* flag */ + BinaryUtils.sizeInUnsignedVarint(delegate.size()) /* size */];
             writer.writeByte(colType);
 
             int oldPos = reader.position();

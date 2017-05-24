@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryObjectToStringSelfTest;
 import org.apache.ignite.internal.binary.BinarySerialiedFieldComparatorSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.BinaryTreeSelfTest;
+import org.apache.ignite.internal.binary.BinaryUtilsSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
@@ -88,6 +89,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
 
         suite.addTestSuite(BinaryTreeSelfTest.class);
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
+        suite.addTestSuite(BinaryUtilsSelfTest.class);
 
         suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
         suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
