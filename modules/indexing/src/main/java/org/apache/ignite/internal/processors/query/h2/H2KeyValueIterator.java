@@ -15,23 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.query.h2;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.sql.ResultSet;
 
 /**
- *
+ * Special key/value iterator based on database result set.
  */
-public class IgniteBinaryObjectsCacheTestSuite4 {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        return IgniteCacheTestSuite4.suite();
+    /**
+     * @param data Data array.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
+        super(data, false, true);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected IgniteBiTuple<K, V> createRow() {
+        K key = (K)row[0];
+        V val = (V)row[1];
+
+        return new IgniteBiTuple<>(key, val);
     }
 }
