@@ -37,6 +37,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 /**
@@ -45,9 +46,6 @@ import java.util.Calendar;
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
-
-    /** Arguments count. */
-    private final int argsCnt;
 
     /**
      * Creates new prepared statement.
@@ -59,8 +57,6 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         super(conn);
 
         this.sql = sql;
-
-        argsCnt = sql.replaceAll("[^?]", "").length();
     }
 
     /** {@inheritDoc} */
@@ -415,12 +411,15 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (paramIdx < 1 || paramIdx > argsCnt)
+        if (paramIdx < 1)
             throw new SQLException("Parameter index is invalid: " + paramIdx);
 
         if (args == null)
-            args = new Object[argsCnt];
+            args = new ArrayList<>(paramIdx);
+        else
+            args.ensureCapacity(paramIdx);
 
-        args[paramIdx - 1] = val;
+
+        args.set(paramIdx - 1, val);
     }
 }

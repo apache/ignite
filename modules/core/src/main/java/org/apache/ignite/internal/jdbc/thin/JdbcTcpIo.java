@@ -173,7 +173,7 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public SqlListenerQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
-        String sql, Object[] args)
+        String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP),
             null, null);
@@ -184,7 +184,7 @@ public class JdbcTcpIo {
         writer.writeInt(fetchSize);
         writer.writeInt(maxRows);
         writer.writeString(sql);
-        writer.writeInt(args == null ? 0 : args.length);
+        writer.writeInt(args == null ? 0 : args.size());
 
         if (args != null) {
             for (Object arg : args)
