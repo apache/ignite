@@ -222,7 +222,7 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @return Space name.
+     * @return Cache name.
      */
     @Nullable public String cacheName() {
         return cacheName;

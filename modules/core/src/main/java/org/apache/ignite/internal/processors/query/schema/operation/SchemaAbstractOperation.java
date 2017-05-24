@@ -58,7 +58,7 @@ public abstract class SchemaAbstractOperation implements Serializable {
     }
 
     /**
-     * @return Space.
+     * @return Cache name.
      */
     public String cacheName() {
         return cacheName;
