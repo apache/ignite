@@ -1435,12 +1435,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
 
+            // Without predicate.
             var res = cache.AsCacheQueryable().Where(x => x.Key < 3).RemoveAll();
             Assert.AreEqual(2, res);
             Assert.AreEqual(Enumerable.Range(3, 8), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 
+            // With predicate.
+            res = cache.AsCacheQueryable().RemoveAll(x => x.Key < 7);
+            Assert.AreEqual(5, res);
+            Assert.AreEqual(Enumerable.Range(7, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+
             // TODO: Test with joins and selects and so on.
-            // TODO: Test with predicate
         }
 
         /// <summary>

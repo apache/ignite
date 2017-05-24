@@ -18,13 +18,15 @@
 namespace Apache.Ignite.Linq.Impl.Dml
 {
     using System;
+    using System.Linq;
     using System.Linq.Expressions;
+    using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.ResultOperators;
     using Remotion.Linq.Clauses.StreamedData;
 
     /// <summary>
-    /// Represents an operator for <see cref="CacheLinqExtensions.RemoveAll{TKey,TValue}"/>.
+    /// Represents an operator for <see cref="CacheLinqExtensions.RemoveAll{TK,TV}(IQueryable{ICacheEntry{TK,TV}})"/>.
     /// </summary>
     internal sealed class RemoveAllResultOperator : ValueFromSequenceResultOperatorBase
     {
