@@ -45,41 +45,27 @@ namespace ignite
          * // Compute over all nodes in the cluster.
          * Compute c = node.GetCompute();
          * @endcode
-         * You can also get an instance of Compute over a subset of cluster
-         * nodes, i.e. over a ClusterGroup:
-         * @code{.cpp}
-         * // Cluster group composed of all remote nodes.
-         * ClusterGroup rmtGrp = node.GetCluster().ForRemotes();
          *
-         * // Compute over remote nodes only.
-         * Compute c = node.GetCompute(rmtGrp);
-         * @endcode
          * The methods are grouped as follows:
-         * - <tt>apply(...)</tt> methods execute IgniteClosure jobs over nodes
+         * - <tt>Apply(...)</tt> methods execute IgniteClosure jobs over nodes
          *   in the cluster group.
-         * - <tt>call(...)</tt> methods execute ComputeFunc jobs over nodes in
+         * - <tt>Call(...)</tt> methods execute ComputeFunc jobs over nodes in
          *   the cluster group.
-         * - <tt>run(...)</tt> methods execute ComputeAction jobs over nodes in
+         * - <tt>Run(...)</tt> methods execute ComputeAction jobs over nodes in
          *   the cluster group.
-         * - <tt>broadcast(...)</tt> methods broadcast jobs to all nodes in the
+         * - <tt>Broadcast(...)</tt> methods broadcast jobs to all nodes in the
          *   cluster group.
-         * - <tt>affinityCall(...)</tt> and <tt>affinityRun(...)</tt> methods
+         * - <tt>AffinityCall(...)</tt> and <tt>AffinityRun(...)</tt> methods
          *   collocate jobs with nodes on which a specified key is cached.
          *
-         * Note that if attempt is made to execute a computation over an empty
-         * cluster group (i.e. cluster group that does not have any alive
-         * nodes), then IgniteError will be thrown out of result future.
-         *
          * @par Load Balancing
-         * In all cases other than <tt>broadcast(...)</tt>, Ignite must select
+         * In all cases other than <tt>Broadcast(...)</tt>, Ignite must select
          * a node for a computation to be executed. The node will be selected
-         * based on the underlying LoadBalancingSpi, which by default
+         * based on the underlying \c LoadBalancingSpi, which by default
          * sequentially picks next available node from the underlying cluster
          * group. Other load balancing policies, such as \c random or
          * \c adaptive, can be configured as well by selecting a different
-         * load balancing SPI in Ignite configuration. If your logic requires
-         * some custom load balancing behavior, consider implementing
-         * ComputeTask directly. 
+         * load balancing SPI in Ignite configuration.
          *
          * @par Fault Tolerance
          * Ignite guarantees that as long as there is at least one grid node
@@ -103,6 +89,8 @@ namespace ignite
             /**
              * Constructor.
              *
+             * Internal method. Should not be used by user.
+             *
              * @param impl Implementation.
              */
             Compute(common::concurrent::SharedPointer<impl::compute::ComputeImpl> impl) :
@@ -115,11 +103,11 @@ namespace ignite
              * Calls provided ComputeFunc on a node within the underlying
              * cluster group.
              *
-             * @tparam F Compute function type. Should implement ComputeFunc
-             *  class.
              * @tparam R Call return type. BinaryType should be specialized for
              *  the type if it is not primitive. Should not be void. For
              *  non-returning methods see Compute::Run().
+             * @tparam F Compute function type. Should implement ComputeFunc
+             *  class.
              * @param func Compute function to call.
              * @return Computation result.
              * @throw IgniteError in case of error.
@@ -134,13 +122,13 @@ namespace ignite
              * Asyncronuously calls provided ComputeFunc on a node within
              * the underlying cluster group.
              *
-             * @tparam F Compute function type. Should implement ComputeFunc
-             *  class.
              * @tparam R Call return type. BinaryType should be specialized for
              *  the type if it is not primitive. Should not be void. For
              *  non-returning methods see Compute::Run().
+             * @tparam F Compute function type. Should implement ComputeFunc
+             *  class.
              * @param func Compute function to call.
-             * @return Future that can be used to acess computation result once
+             * @return Future that can be used to access computation result once
              *  it's ready.
              * @throw IgniteError in case of error.
              */

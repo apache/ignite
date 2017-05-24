@@ -32,7 +32,7 @@ namespace ignite
         /**
          * Interface for a simple compute function that can be serialized and
          * called on the remote nodes. ignite::binary::BinaryType class template
-         * should be specialized for this type.
+         * should be specialized for any class, inheriting from this class.
          *
          * @tparam R Call return type. BinaryType should be specialized for the
          *  type if it is not primitive.
