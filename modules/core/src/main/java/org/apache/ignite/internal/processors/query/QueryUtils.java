@@ -45,10 +45,10 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -162,17 +162,92 @@ public class QueryUtils {
 
     /**
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
-     * upper case and escape inner class separator characters ('$' for Java and '.' for .NET) with underscore.
+     * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
      * @param entity Query entity.
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
     public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
-        if (!escape)
+        if (escape)
             return entity;
 
-        // TODO
+        QueryEntity normalEntity = new QueryEntity();
+
+        // Propaget plain properties.
+        normalEntity.setKeyType(entity.getKeyType());
+        normalEntity.setValueType(entity.getValueType());
+        normalEntity.setKeyFieldName(entity.getKeyFieldName());
+        normalEntity.setValueFieldName(entity.getValueFieldName());
+        normalEntity.setFields(entity.getFields());
+        normalEntity.setKeyFields(entity.getKeyFields());
+
+        // Normalize table name.
+        normalEntity.setTableName(normalizeObjectName(tableName(entity)));
+
+        // Normalize field names through aliases.
+        Map<String, String> normalAliases = new HashMap<>(normalEntity.getAliases());
+
+        for (String fieldName : normalEntity.getFields().keySet()) {
+            String fieldAlias = normalAliases.get(fieldName);
+
+            if (fieldAlias == null)
+                fieldAlias = aliasForFieldName(fieldName);
+
+            assert fieldAlias != null;
+
+            normalAliases.put(fieldName, normalizeObjectName(fieldAlias));
+        }
+
+        normalEntity.setAliases(normalAliases);
+
+        // Normalize indexes.
+        Collection<QueryIndex> normalIdxs = new LinkedList<>();
+
+        for (QueryIndex idx : entity.getIndexes()) {
+            QueryIndex normalIdx = new QueryIndex();
+
+            normalIdx.setFields(idx.getFields());
+            normalIdx.setIndexType(idx.getIndexType());
+            normalIdx.setInlineSize(idx.getInlineSize());
+
+            normalIdx.setName(normalizeObjectName(indexName(normalEntity, idx)));
+
+            normalIdxs.add(normalIdx);
+        }
+
+        normalEntity.setIndexes(normalIdxs);
+
+        return normalEntity;
+    }
+
+    /**
+     * Get alias for the field name (i.e. last part of the property).
+     *
+     * @param fieldName Field name.
+     * @return Alias.
+     */
+    private static String aliasForFieldName(String fieldName) {
+        int idx = fieldName.lastIndexOf('.');
+
+        if (idx >= 0)
+            fieldName = fieldName.substring(idx + 1);
+
+        return fieldName;
+    }
+
+    /**
+     * Normalize object name.
+     *
+     * @param str String.
+     * @return Escaped string.
+     */
+    private static String normalizeObjectName(String str) {
+        assert str != null;
+
+        String res = str.replace('.', '_').replace('$', '_');
+
+        return res.toUpperCase();
     }
 
     /**
