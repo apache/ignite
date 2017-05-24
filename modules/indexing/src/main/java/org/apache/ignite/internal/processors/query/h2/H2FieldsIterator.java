@@ -15,17 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
+package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.IgniteCheckedException;
+
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Test for {@link CacheJdbcPojoStore} with optimized marshaller.
+ * Special field set iterator based on database result set.
  */
-public class CacheJdbcPojoStoreOptimizedMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
+public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * @param data Data.
+     * @throws IgniteCheckedException If failed.
+     */
+    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
+        super(data, false, true);
+    }
+
     /** {@inheritDoc} */
-    @Override protected Marshaller marshaller(){
-        return new OptimizedMarshaller();
+    @Override protected List<?> createRow() {
+        ArrayList<Object> res = new ArrayList<>(row.length);
+
+        Collections.addAll(res, row);
+
+        return res;
     }
 }

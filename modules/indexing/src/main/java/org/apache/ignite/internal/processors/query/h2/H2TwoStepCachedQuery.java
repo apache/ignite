@@ -15,14 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.internal.processors.query.h2;
+
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.util.List;
 
 /**
- * Tests for PRIMARY mode with optimized marshaller.
+ * Cached two-step query.
  */
-public class IgfsPrimaryOptimziedMarshallerSelfTest extends IgfsPrimarySelfTest {
+public class H2TwoStepCachedQuery {
+    /** */
+    final List<GridQueryFieldMetadata> meta;
+
+    /** */
+    final GridCacheTwoStepQuery twoStepQry;
+
+    /**
+     * @param meta Fields metadata.
+     * @param twoStepQry Query.
+     */
+    public H2TwoStepCachedQuery(List<GridQueryFieldMetadata> meta, GridCacheTwoStepQuery twoStepQry) {
+        this.meta = meta;
+        this.twoStepQry = twoStepQry;
+    }
+
     /** {@inheritDoc} */
-    @Override protected boolean useOptimizedMarshaller() {
-        return true;
+    @Override public String toString() {
+        return S.toString(H2TwoStepCachedQuery.class, this);
     }
 }

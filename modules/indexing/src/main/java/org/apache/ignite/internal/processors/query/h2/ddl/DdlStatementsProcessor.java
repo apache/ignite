@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
@@ -75,7 +76,7 @@ public class DdlStatementsProcessor {
      * @param stmt H2 statement to parse and execute.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
         throws IgniteCheckedException {
         assert stmt instanceof JdbcPreparedStatement;
 
@@ -86,8 +87,6 @@ public class DdlStatementsProcessor {
 
             if (gridStmt instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex createIdx = (GridSqlCreateIndex)gridStmt;
-
-                String spaceName = idx.space(createIdx.schemaName());
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -119,14 +118,24 @@ public class DdlStatementsProcessor {
 
                 newIdx.setFields(flds);
 
-                fut = ctx.query().dynamicIndexCreate(spaceName, typeDesc.tableName(), newIdx, createIdx.ifNotExists());
+                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), createIdx.schemaName(), typeDesc.tableName(),
+                    newIdx, createIdx.ifNotExists());
             }
             else if (gridStmt instanceof GridSqlDropIndex) {
                 GridSqlDropIndex dropIdx = (GridSqlDropIndex)gridStmt;
 
-                String spaceName = idx.space(dropIdx.schemaName());
+                GridH2Table tbl = idx.dataTableForIndex(dropIdx.schemaName(), dropIdx.indexName());
 
-                fut = ctx.query().dynamicIndexDrop(spaceName, dropIdx.name(), dropIdx.ifExists());
+                if (tbl != null)
+                    fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), dropIdx.schemaName(), dropIdx.indexName(),
+                        dropIdx.ifExists());
+                else {
+                    if (dropIdx.ifExists())
+                        fut = new GridFinishedFuture();
+                    else
+                        throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
+                            dropIdx.indexName());
+                }
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,

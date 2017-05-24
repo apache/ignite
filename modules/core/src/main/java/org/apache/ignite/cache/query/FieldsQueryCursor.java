@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+package org.apache.ignite.cache.query;
 
 /**
- * Cache query suite with binary marshaller.
+ * SQL query result cursor. This extends {@link QueryCursor}
+ * to expose fields metadata to public API for SqlFieldsQueries.
  */
-public class IgniteBinaryCacheQueryTestSuite4 extends TestSuite {
+public interface FieldsQueryCursor<T> extends QueryCursor<T> {
     /**
-     * @return Suite.
-     * @throws Exception In case of error.
+     * Gets field name.
+     *
+     * @param idx field index.
+     * @return Field name.
      */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+    String getFieldName(int idx);
 
-        TestSuite suite = IgniteCacheQuerySelfTestSuite4.suite();
-
-        return suite;
-    }
+    /**
+     * Gets number of columns in a row.
+     *
+     * @return row size.
+     */
+    int getColumnsCount();
 }

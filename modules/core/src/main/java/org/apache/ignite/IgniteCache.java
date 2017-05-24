@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -41,6 +42,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
@@ -346,6 +348,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * Queries cache. Accepts any subclass of {@link Query} interface.
+     * See also {@link #query(SqlFieldsQuery)}.
      *
      * @param qry Query.
      * @return Cursor.
@@ -354,8 +357,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
+     *
      */
     public <R> QueryCursor<R> query(Query<R> qry);
+
+    /**
+     * Queries cache. Accepts {@link SqlFieldsQuery} class.
+     *
+     * @param qry SqlFieldsQuery.
+     * @return Cursor.
+     * @see SqlFieldsQuery
+     */
+    public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
 
     /**
      * Queries the cache transforming the entries on the server nodes. Can be used, for example,

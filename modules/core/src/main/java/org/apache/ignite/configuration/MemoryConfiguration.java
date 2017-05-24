@@ -63,7 +63,8 @@ public class MemoryConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default memory policy start size (256 MB). */
-    public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256 * 1024 * 1024;
+    @SuppressWarnings("UnnecessaryBoxing")
+    public static final Long DFLT_MEMORY_POLICY_INITIAL_SIZE = new Long(256L * 1024 * 1024);
 
     /** Fraction of available memory to allocate for default MemoryPolicy. */
     private static final double DFLT_MEMORY_POLICY_FRACTION = 0.8;

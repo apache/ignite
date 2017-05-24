@@ -3414,7 +3414,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (obsoleteVersionExtras() != null)
                         return true;
 
-                    // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                    // TODO IGNITE-5286: need keep removed entries in heap map, otherwise removes can be lost.
                     if (cctx.deferredDelete() && deletedUnlocked())
                         return false;
 
@@ -3457,7 +3457,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             // Version has changed since entry passed the filter. Do it again.
                             continue;
 
-                        // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                        // TODO IGNITE-5286: need keep removed entries in heap map, otherwise removes can be lost.
                         if (cctx.deferredDelete() && deletedUnlocked())
                             return false;
 
