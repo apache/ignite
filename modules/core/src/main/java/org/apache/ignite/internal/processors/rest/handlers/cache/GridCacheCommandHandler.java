@@ -383,7 +383,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
-                                return new GridRestResponse(f.get());
+                                f.get();
+
+                                return new GridRestResponse(null);
                             }
                         });
 
@@ -396,7 +398,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
-                                return new GridRestResponse(f.get());
+                                f.get();
+
+                                return new GridRestResponse(null);
                             }
                         });
 
