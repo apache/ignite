@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
-    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;

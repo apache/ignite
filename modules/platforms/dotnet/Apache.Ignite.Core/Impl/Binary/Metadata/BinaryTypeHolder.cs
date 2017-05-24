@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
 
