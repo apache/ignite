@@ -73,10 +73,6 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /** */
     private static volatile boolean busySpinFlag;
 
-    static {
-        GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
