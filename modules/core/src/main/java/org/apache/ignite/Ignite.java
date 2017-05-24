@@ -620,18 +620,19 @@ public interface Ignite extends AutoCloseable {
     /**
      * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
      * instance.
-     * Returned collection contains latest snapshots of {@link MemoryMetrics} for each page memory region
-     * configured with {@link MemoryPolicyConfiguration configuration} withing the Ignite instance.
+     * Returns the collection that contains the latest snapshots for each memory region
+     * configured with {@link MemoryPolicyConfiguration configuration} on this Ignite node instance.
      *
      * @return Collection of {@link MemoryMetrics} snapshots.
      */
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
-     * Returns latest snapshot of {@link MemoryMetrics} for a memory region of a given name.
+     * Returns the latest {@link MemoryMetrics} snapshot for the memory region of the given name.
      *
-     * If system default memory region was used, its {@link MemoryMetrics} can be accessed by passing
-     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} name.
+     * To get the metrics for the default memory region use
+     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} as the name
+     * or a custom name if the default memory region has been renamed.
      *
      * @param memPlcName Name of memory region configured with {@link MemoryPolicyConfiguration config}.
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.

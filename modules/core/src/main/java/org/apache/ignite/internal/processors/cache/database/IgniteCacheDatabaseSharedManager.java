@@ -355,13 +355,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static void checkMetricsProperties(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
         if (plcCfg.getRateTimeInterval() <= 0)
             throw new IgniteCheckedException("Rate time interval must be greater than zero " +
-                "(use MemoryPolicyConfiguration.rateTimeInterval property to set correct length of interval) " +
+                "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval) " +
                 "[name=" + plcCfg.getName() +
                 ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]"
             );
         if (plcCfg.getSubIntervals() <= 0)
             throw new IgniteCheckedException("Sub intervals must be greater than zero " +
-                "(use MemoryPolicyConfiguration.subIntervals property to set correct number of sub intervals) " +
+                "(use MemoryPolicyConfiguration.subIntervals property to adjust the sub intervals) " +
                 "[name=" + plcCfg.getName() +
                 ", subIntervals=" + plcCfg.getSubIntervals() + "]"
             );
