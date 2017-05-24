@@ -1468,7 +1468,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 _metas = new Dictionary<int, BinaryType>(1)
                 {
-                    {desc.TypeId, new BinaryType(desc, fields)}
+                    {desc.TypeId, new BinaryType(desc, _marsh, fields)}
                 };
             }
             else
@@ -1478,7 +1478,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_metas.TryGetValue(desc.TypeId, out meta))
                     meta.UpdateFields(fields);
                 else
-                    _metas[desc.TypeId] = new BinaryType(desc, fields);
+                    _metas[desc.TypeId] = new BinaryType(desc, _marsh, fields);
             }
         }
 
