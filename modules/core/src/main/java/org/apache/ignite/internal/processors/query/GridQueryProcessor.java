@@ -24,6 +24,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -1646,18 +1647,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+    public FieldsQueryCursor<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
         checkxEnabled();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    return idx.queryTwoStep(cctx, qry, null);
-                }
-            }, true);
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx,
+                new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        return idx.queryTwoStep(cctx, qry, null);
+                    }
+                }, true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1927,16 +1929,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Iterator.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
+    public FieldsQueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     GridQueryCancel cancel = new GridQueryCancel();
 
-                    final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
+                    final FieldsQueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
                         idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
 
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {

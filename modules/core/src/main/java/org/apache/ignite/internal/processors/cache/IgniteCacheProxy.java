@@ -51,6 +51,7 @@ import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
@@ -760,6 +761,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+        return (FieldsQueryCursor<List<?>>)query((Query)qry);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
         A.notNull(qry, "qry");
 
@@ -808,9 +815,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                         "Using both partitions and distributed JOINs is not supported for the same query");
 
                 if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
-                    return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
+                    return (FieldsQueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
 
-                return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
+                return (FieldsQueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }
 
             if (qry instanceof ScanQuery)

@@ -76,7 +76,7 @@ namespace ignite
              * Special latch with count = 1.
              */
             class IGNITE_IMPORT_EXPORT SingleLatch
-            {                
+            {
             public:
                 /**
                  * Constructor.
