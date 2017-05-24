@@ -153,7 +153,7 @@ public class TcpDiscoveryNodesRing {
      * @return Collection of visible nodes.
      */
     public Collection<TcpDiscoveryNode> visibleNodes() {
-        return nodes(VISIBLE_NODES);
+        return resortedNodes(VISIBLE_NODES);
     }
 
     /**
@@ -677,6 +677,23 @@ public class TcpDiscoveryNodesRing {
         }
         finally {
             rwLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * @param p Filters.
+     * @return Unmodifiable collection of nodes.
+     */
+    private Collection<TcpDiscoveryNode> resortedNodes(IgnitePredicate<? super TcpDiscoveryNode>... p) {
+        rwLock.readLock().lock();
+
+        try {
+            List<TcpDiscoveryNode> list = U.arrayList(nodes, p);
+            Collections.sort(list);
+            return Collections.unmodifiableCollection(list);
+        }
+        finally {
+            rwLock.readLock().unlock();
         }
     }
 
