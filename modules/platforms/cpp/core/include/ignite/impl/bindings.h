@@ -92,7 +92,7 @@ namespace ignite
 
             /**
              * Binding for compute job creation.
-             * 
+             *
              * @tparam F The job type.
              * @tparam R The job return type.
              *

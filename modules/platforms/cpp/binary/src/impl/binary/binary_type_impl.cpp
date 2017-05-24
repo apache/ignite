@@ -22,7 +22,7 @@
 #include <ignite/impl/binary/binary_type_impl.h>
 
 namespace ignite
-{    
+{
     namespace binary
     {
         int32_t BinaryType<IgniteError>::GetTypeId()

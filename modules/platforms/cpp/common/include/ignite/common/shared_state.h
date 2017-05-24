@@ -162,7 +162,7 @@ namespace ignite
 
                 throw error;
             }
-            
+
             /**
              * Set cancel target.
              */
@@ -334,7 +334,7 @@ namespace ignite
 
                 throw error;
             }
-            
+
             /**
              * Set cancel target.
              */

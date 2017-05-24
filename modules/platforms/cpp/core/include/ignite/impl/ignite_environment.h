@@ -239,7 +239,7 @@ namespace ignite
              * @param taskHandle Task handle.
              */
             void ComputeTaskReduce(int64_t taskHandle);
-            
+
             /**
              * Complete compute task.
              *

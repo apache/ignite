@@ -114,7 +114,7 @@ namespace ignite
                 case OperationCallback::COMPUTE_TASK_JOB_RESULT:
                 {
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
-                    
+
                     res = env->Get()->ComputeTaskJobResult(mem);
 
                     break;
@@ -388,7 +388,7 @@ namespace ignite
 
         void IgniteEnvironment::ComputeJobExecuteLocal(int64_t jobHandle)
         {
-            SharedPointer<compute::ComputeJobHolder> job0 = 
+            SharedPointer<compute::ComputeJobHolder> job0 =
                 StaticPointerCast<compute::ComputeJobHolder>(registry.Get(jobHandle));
 
             compute::ComputeJobHolder* job = job0.Get();
@@ -416,7 +416,7 @@ namespace ignite
 
             if (task && job)
                 return task->JobResultLocal(*job);
-            
+
             if (!task)
             {
                 IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,

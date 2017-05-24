@@ -130,7 +130,7 @@ namespace ignite
             public:
                 typedef F JobType;
                 typedef R ResultType;
-                
+
                 /**
                  * Constructor.
                  *
