@@ -1905,7 +1905,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (req.restart()) {
             proxy = jCacheProxies.get(maskNull(req.cacheName()));
 
-            restartingCaches.add(req.cacheName());
+            restartingCaches.add(maskNull(req.cacheName()));
 
             if (proxy != null)
                 proxy.restart();
@@ -2267,7 +2267,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         else {
                             assert req.cacheType() != null : req;
 
-                            if (restartingCaches.contains(req.cacheName()))
+                            if (restartingCaches.contains(maskNull(req.cacheName())))
                                 continue;
 
                             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
@@ -2299,8 +2299,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                for (String s : batch.restartingCaches())
-                    registeredCaches.remove(s);
+                for (String name : batch.restartingCaches())
+                    registeredCaches.remove(name);
 
                 restartingCaches.addAll(batch.restartingCaches());
 
@@ -2308,7 +2308,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     for (Map.Entry<String, Map<UUID, Boolean>> entry : batch.clientNodes().entrySet()) {
                         String cacheName = entry.getKey();
 
-                        if (!restartingCaches.contains(cacheName))
+                        if (!restartingCaches.contains(maskNull(cacheName)))
                             for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
                                 ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
                     }
