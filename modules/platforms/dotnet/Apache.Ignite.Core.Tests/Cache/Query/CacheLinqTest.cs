@@ -1434,18 +1434,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     new QueryEntity(typeof(int), typeof(Person))));
 
             Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
+            
+            var queryable = cache.AsCacheQueryable();
 
             // Without predicate.
-            var res = cache.AsCacheQueryable().Where(x => x.Key < 3).RemoveAll();
+            var res = queryable.Where(x => x.Key < 3).RemoveAll();
             Assert.AreEqual(2, res);
             Assert.AreEqual(Enumerable.Range(3, 8), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 
             // With predicate.
-            res = cache.AsCacheQueryable().RemoveAll(x => x.Key < 7);
-            Assert.AreEqual(5, res);
-            Assert.AreEqual(Enumerable.Range(7, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+            res = queryable.RemoveAll(x => x.Key < 7);
+            Assert.AreEqual(4, res);
+            Assert.AreEqual(Enumerable.Range(7, 4), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 
-            // TODO: Test with joins and selects and so on.
+            // Complex query with joins.
+            var qry = GetPersonCache()
+                .AsCacheQueryable()
+                .Where(x => x.Key == 7)
+                .Join(queryable.Where(x => x.Value.Age > 0), p => p.Key, p => p.Key, (p1, p2) => p2);
+
+            res = qry.RemoveAll();
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
         }
 
         /// <summary>
