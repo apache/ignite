@@ -76,9 +76,7 @@ public class MetaPageInitRecord extends InitNewPageRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        PageMetaIO io = ioType == PageIO.T_META ?
-            PageMetaIO.VERSIONS.forPage(pageAddr) :
-            PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+        PageMetaIO io = PageMetaIO.getPageIO(ioType, ioVer);
 
         io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
 
