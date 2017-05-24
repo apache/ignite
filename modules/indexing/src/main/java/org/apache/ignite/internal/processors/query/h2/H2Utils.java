@@ -101,7 +101,7 @@ public class H2Utils {
             .a(spatial ? "SPATIAL " : "")
             .a("INDEX ")
             .a(ifNotExists ? "IF NOT EXISTS " : "")
-            .a(h2Idx.getName())
+            .a(withQuotes(h2Idx.getName()))
             .a(" ON ")
             .a(fullTblName)
             .a(" (");
@@ -114,7 +114,7 @@ public class H2Utils {
             else
                 sb.a(", ");
 
-            sb.a("\"" + col.columnName + "\"").a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
+            sb.a(withQuotes(col.columnName)).a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
         }
 
         sb.a(')');
@@ -130,7 +130,7 @@ public class H2Utils {
      * @return Statement string.
      */
     public static String indexDropSql(String schemaName, String idxName, boolean ifExists) {
-        return "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + schemaName + '.' + idxName;
+        return "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + withQuotes(schemaName) + '.' + withQuotes(idxName);
     }
 
     /**

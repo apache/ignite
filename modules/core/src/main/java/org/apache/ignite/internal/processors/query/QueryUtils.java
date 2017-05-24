@@ -64,13 +64,13 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 public class QueryUtils {
 
     /** Field name for key. */
-    public static final String KEY_FIELD_NAME = "_key";
+    public static final String KEY_FIELD_NAME = "_KEY";
 
     /** Field name for value. */
-    public static final String VAL_FIELD_NAME = "_val";
+    public static final String VAL_FIELD_NAME = "_VAL";
 
     /** Version field name. */
-    public static final String VER_FIELD_NAME = "_ver";
+    public static final String VER_FIELD_NAME = "_VER";
 
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);

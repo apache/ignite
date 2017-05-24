@@ -80,7 +80,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         this.type = type;
         this.schema = schema;
 
-        fullTblName = schema.schemaName() + "." + H2Utils.withQuotes(type.tableName());
+        fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
     }
 
     /**
@@ -230,7 +230,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
                 String firstField = idxDesc.fields().iterator().next();
 
-                Column col = tbl.getColumn(H2Utils.withQuotes(firstField));
+                Column col = tbl.getColumn(firstField);
 
                 IndexColumn idxCol = tbl.indexColumn(col.getColumnId(),
                     idxDesc.descending(firstField) ? SortOrder.DESCENDING : SortOrder.ASCENDING);
@@ -274,27 +274,27 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Index.
      */
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
-        String name = H2Utils.withQuotes(idxDesc.name());
-
         IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);
 
         for (String field : idxDesc.fields()) {
-            Column col = tbl.getColumn(H2Utils.withQuotes(field));
+            Column col = tbl.getColumn(field);
 
             cols.add(tbl.indexColumn(col.getColumnId(),
                 idxDesc.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
         }
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
+
         if (idxDesc.type() == QueryIndexType.SORTED) {
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
-            return idx.createSortedIndex(schema, name, tbl, false, cols, idxDesc.inlineSize());
+
+            return idx.createSortedIndex(schema, idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL) {
-            return H2Utils.createSpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()]));
+            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));
         }
 
         throw new IllegalStateException("Index type: " + idxDesc.type());
