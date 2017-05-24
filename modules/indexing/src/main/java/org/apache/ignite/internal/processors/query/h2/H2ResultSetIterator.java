@@ -35,7 +35,7 @@ import org.h2.value.Value;
 /**
  * Iterator over result set.
  */
-public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
+public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private static final Field RESULT_FIELD;
 
@@ -77,7 +77,7 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
      * @param needCpy {@code True} if need copy cache object's value.
      * @throws IgniteCheckedException If failed.
      */
-    protected GridH2ResultSetIterator(ResultSet data, boolean closeStmt, boolean needCpy) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data, boolean closeStmt, boolean needCpy) throws IgniteCheckedException {
         this.data = data;
         this.closeStmt = closeStmt;
 
@@ -186,6 +186,6 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridH2ResultSetIterator.class, this);
+        return S.toString(H2ResultSetIterator.class, this);
     }
 }

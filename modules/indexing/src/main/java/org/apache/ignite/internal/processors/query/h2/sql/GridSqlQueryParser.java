@@ -775,7 +775,7 @@ public class GridSqlQueryParser {
     private GridSqlDropIndex parseDropIndex(DropIndex dropIdx) {
         GridSqlDropIndex res = new GridSqlDropIndex();
 
-        res.name(DROP_INDEX_NAME.get(dropIdx));
+        res.indexName(DROP_INDEX_NAME.get(dropIdx));
         res.schemaName(SCHEMA_COMMAND_SCHEMA.get(dropIdx).getName());
         res.ifExists(DROP_INDEX_IF_EXISTS.get(dropIdx));
 

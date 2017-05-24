@@ -206,7 +206,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         int seg = threadLocalSegment();
 
         // Fast path if we don't need to perform any filtering.
-        if (f == null || f.forSpace((getTable()).spaceName()) == null)
+        if (f == null || f.forCache((getTable()).cacheName()) == null)
             try {
                 return treeForRead(seg).size();
             } catch (IgniteCheckedException e) {
