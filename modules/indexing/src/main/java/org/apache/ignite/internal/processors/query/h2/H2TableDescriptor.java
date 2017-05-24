@@ -80,9 +80,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         this.type = type;
         this.schema = schema;
 
-        String tblName = H2Utils.escapeName(type.tableName(), schema.escapeAll());
-
-        fullTblName = schema.schemaName() + "." + tblName;
+        fullTblName = schema.schemaName() + "." + H2Utils.withQuotes(type.tableName());
     }
 
     /**
@@ -232,10 +230,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
                 String firstField = idxDesc.fields().iterator().next();
 
-                String firstFieldName =
-                    schema.escapeAll() ? firstField : H2Utils.escapeName(firstField, false).toUpperCase();
-
-                Column col = tbl.getColumn(firstFieldName);
+                Column col = tbl.getColumn(H2Utils.withQuotes(firstField));
 
                 IndexColumn idxCol = tbl.indexColumn(col.getColumnId(),
                     idxDesc.descending(firstField) ? SortOrder.DESCENDING : SortOrder.ASCENDING);
@@ -279,19 +274,15 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Index.
      */
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
-        String name = schema.escapeAll() ? idxDesc.name() : H2Utils.escapeName(idxDesc.name(), false).toUpperCase();
+        String name = H2Utils.withQuotes(idxDesc.name());
 
         IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);
 
-        boolean escapeAll = schema.escapeAll();
-
         for (String field : idxDesc.fields()) {
-            String fieldName = escapeAll ? field : H2Utils.escapeName(field, false).toUpperCase();
-
-            Column col = tbl.getColumn(fieldName);
+            Column col = tbl.getColumn(H2Utils.withQuotes(field));
 
             cols.add(tbl.indexColumn(col.getColumnId(),
                 idxDesc.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));

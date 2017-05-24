@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -49,21 +48,15 @@ public class H2Schema {
     /** */
     private final GridCacheContext<?, ?> cctx;
 
-    /** */
-    private final CacheConfiguration<?, ?> ccfg;
-
     /**
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param cctx Cache context.
-     * @param ccfg Cache configuration.
      */
-    H2Schema(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
-        CacheConfiguration<?, ?> ccfg) {
+    public H2Schema(String cacheName, String schemaName, GridCacheContext<?, ?> cctx) {
         this.cacheName = cacheName;
         this.cctx = cctx;
         this.schemaName = schemaName;
-        this.ccfg = ccfg;
 
         rowCache = null;
     }
@@ -116,13 +109,6 @@ public class H2Schema {
     public void add(H2TableDescriptor tbl) {
         if (tbls.putIfAbsent(tbl.typeName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
-    }
-
-    /**
-     * @return Escape all.
-     */
-    public boolean escapeAll() {
-        return ccfg.isSqlEscapeAll();
     }
 
     /**

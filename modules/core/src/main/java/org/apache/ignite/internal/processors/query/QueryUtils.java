@@ -168,7 +168,7 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+    private static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
         if (escape)
             return entity;
 
@@ -222,6 +222,26 @@ public class QueryUtils {
     }
 
     /**
+     * Stores rule for constructing schemaName according to cache configuration.
+     *
+     * @param cacheName Cache name.
+     * @param schemaName Schema name.
+     * @param escape Whether to perform escape.
+     * @return Proper schema name according to ANSI-99 standard.
+     */
+    public static String normalizeSchemaName(String cacheName, @Nullable String schemaName, boolean escape) {
+        String res = schemaName;
+
+        if (res == null)
+            res = cacheName;
+
+        if (!escape)
+            res = normalizeObjectName(res);
+
+        return res;
+    }
+
+    /**
      * Get alias for the field name (i.e. last part of the property).
      *
      * @param fieldName Field name.
@@ -257,11 +277,14 @@ public class QueryUtils {
      * @param cctx Cache context.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
+     * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
     public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
-        List<Class<?>> mustDeserializeClss) throws IgniteCheckedException {
+        List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
+        qryEntity = normalizeQueryEntity(qryEntity, escape);
+
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
@@ -343,8 +366,12 @@ public class QueryUtils {
                 // Need to setup affinity key for distributed joins.
                 String affField = ctx.cacheObjects().affinityField(qryEntity.findKeyType());
 
-                if (affField != null)
+                if (affField != null) {
+                    if (!escape)
+                        affField = normalizeObjectName(affField);
+
                     desc.affinityKey(affField);
+                }
             }
         }
         else {
@@ -356,8 +383,12 @@ public class QueryUtils {
                 String affField =
                     ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
-                if (affField != null)
+                if (affField != null) {
+                    if (!escape)
+                        affField = normalizeObjectName(affField);
+
                     desc.affinityKey(affField);
+                }
             }
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
