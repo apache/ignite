@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -177,25 +178,10 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
                 log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
-
-            Collection<?> items0 = res.items();
-
-            assert items0 != null;
-
             writer.writeBoolean(res.last());
+            writer.writeBoolean(res.isQuery());
 
-            writer.writeInt(items0.size());
-
-            for (Object row0 : items0) {
-                if (row0 != null) {
-                    Collection<?> row = (Collection<?>)row0;
-
-                    writer.writeInt(row.size());
-
-                    for (Object obj : row)
-                        objWriter.writeObject(writer, obj);
-                }
-            }
+            writeRows(writer, res.items());
         }
         else if (res0 instanceof SqlListenerQueryFetchResult) {
             SqlListenerQueryFetchResult res = (SqlListenerQueryFetchResult) res0;
@@ -205,24 +191,9 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
 
             writer.writeLong(res.queryId());
 
-            Collection<?> items0 = res.items();
-
-            assert items0 != null;
-
             writer.writeBoolean(res.last());
 
-            writer.writeInt(items0.size());
-
-            for (Object row0 : items0) {
-                if (row0 != null) {
-                    Collection<?> row = (Collection<?>)row0;
-
-                    writer.writeInt(row.size());
-
-                    for (Object obj : row)
-                        objWriter.writeObject(writer, obj);
-                }
-            }
+            writeRows(writer, res.items());
         }
         else if (res0 instanceof SqlListenerQueryMetadataResult) {
             SqlListenerQueryMetadataResult res = (SqlListenerQueryMetadataResult) res0;
@@ -282,6 +253,25 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
             assert false : "Should not reach here.";
 
         return writer.array();
+    }
+
+    /**
+     * @param writer Binary writer.
+     * @param rows Result rows.
+     */
+    private void writeRows(BinaryWriterExImpl writer, List<List<Object>> rows) {
+        assert rows != null;
+
+        writer.writeInt(rows.size());
+
+        for (List<Object> row : rows) {
+            if (row != null) {
+                writer.writeInt(row.size());
+
+                for (Object obj : row)
+                    objWriter.writeObject(writer, obj);
+            }
+        }
     }
 
     /**

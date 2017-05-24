@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -43,6 +43,7 @@ class SqlListenerQueryCursor {
     /** Query result rows. */
     private final QueryCursorImpl<List<Object>> cur;
 
+    /** Query results iterator. */
     private final Iterator<List<Object>> iter;
 
     /**
@@ -119,5 +120,13 @@ class SqlListenerQueryCursor {
      */
     public void fetchSize(int fetchSize) {
         this.fetchSize = fetchSize;
+    }
+
+    /**
+     * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
+     * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
+     */
+    public boolean isQuery() {
+        return cur.isQuery();
     }
 }

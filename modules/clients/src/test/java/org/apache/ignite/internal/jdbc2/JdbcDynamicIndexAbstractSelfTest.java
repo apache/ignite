@@ -79,8 +79,6 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
             ps.setString(5, "Pazzi");
             ps.executeUpdate();
         }
-
-        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

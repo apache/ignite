@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query fetch request.
+ * SQL listener query metadata request.
  */
 public class SqlListenerQueryMetadataRequest extends SqlListenerRequest {
     /** Query ID. */

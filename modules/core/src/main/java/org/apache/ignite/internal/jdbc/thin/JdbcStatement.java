@@ -92,7 +92,7 @@ public class JdbcStatement implements Statement {
 
             qryId = res.getQueryId();
 
-            rs = new JdbcResultSet(this, qryId, fetchSize, res.items());
+            rs = new JdbcResultSet(this, qryId, fetchSize, res.last(), res.items());
 
             return rs;
         }

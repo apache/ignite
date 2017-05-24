@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc;
 import java.util.List;
 
 /**
- * SQL listener query fetch result.
+ * SQL listener query metadata result.
  */
 public class SqlListenerQueryMetadataResult {
     /** Query ID. */

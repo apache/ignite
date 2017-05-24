@@ -22,25 +22,21 @@ import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.SqlListenerRequest.META_PARAMS;
@@ -186,7 +182,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             qryCursors.put(qryId, cur);
 
             SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(
-                qryId, cur.fetchRows(), !cur.hasNext());
+                qryId, cur.fetchRows(), !cur.hasNext(), cur.isQuery());
 
             return new SqlListenerResponse(res);
         }

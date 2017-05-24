@@ -103,7 +103,7 @@ public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvalidUrls() throws Exception {
+    public void testFailedHandshake() throws Exception {
         final ServerSocket srvSock = new ServerSocket(60000, 0, InetAddress.getByName("127.0.0.1"));
 
         IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
@@ -128,12 +128,18 @@ public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
                     return null;
                 }
             }, SQLException.class, "Failed to connect to Ignite cluster [host=127.0.0.1, port=60000]");
-        } finally {
+        }
+        finally {
             f.get(3000);
 
             srvSock.close();
         }
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidUrls() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 DriverManager.getConnection("q");

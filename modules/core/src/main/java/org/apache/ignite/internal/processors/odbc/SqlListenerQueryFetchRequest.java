@@ -48,7 +48,7 @@ public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
     }
 
     /**
-     * @return Query ID.
+     * @return Fetch page size.
      */
     public int fetchSize() {
         return fetchSize;

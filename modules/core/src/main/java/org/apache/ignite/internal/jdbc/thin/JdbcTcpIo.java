@@ -205,65 +205,12 @@ public class JdbcTcpIo {
         }
 
         long qryId = reader.readLong();
-
         boolean last = reader.readBoolean();
+        boolean isQuery = reader.readBoolean();
 
         List<List<Object>> items = readRows(reader);
 
-        return new SqlListenerQueryExecuteResult(qryId, items, last);
-    }
-
-    /**
-     * @param reader Binary reader.
-     * @return Query metadata.
-     */
-    private List<SqlListenerColumnMeta> readQueryMeta(BinaryReaderExImpl reader) {
-        int metaSize = reader.readInt();
-
-        List<SqlListenerColumnMeta> meta = null;
-
-        if (metaSize > 0) {
-            meta = new ArrayList<>(metaSize);
-
-            for (int i = 0; i < metaSize; ++i) {
-                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
-
-                m.read(reader);
-
-                meta.add(m);
-            }
-        }
-
-        return meta;
-    }
-
-    /**
-     * @param reader Binary reader.
-     * @return Rows.
-     */
-    private List<List<Object>> readRows(BinaryReaderExImpl reader) {
-        int rowsSize = reader.readInt();
-
-        List<List<Object>> rows;
-
-        if (rowsSize > 0) {
-            rows = new ArrayList<>(rowsSize);
-
-            for (int i = 0; i < rowsSize; ++i) {
-
-                int colsSize = reader.readInt();
-
-                List<Object> col = new ArrayList<>(colsSize);
-
-                for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(objReader.readSqlObject(reader));
-
-                rows.add(col);
-            }
-        } else
-            rows = Collections.emptyList();
-
-        return rows;
+        return new SqlListenerQueryExecuteResult(qryId, items, last, isQuery);
     }
 
     /**
@@ -303,12 +250,20 @@ public class JdbcTcpIo {
 
         boolean last = reader.readBoolean();
 
+        List<List<Object>> rows = readRows(reader);
+
+        return new SqlListenerQueryFetchResult(qryId, rows, last);
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return Rows.
+     */
+    private List<List<Object>> readRows(BinaryReaderExImpl reader) {
         int rowsSize = reader.readInt();
 
-        List<List<Object>> rows;
-
         if (rowsSize > 0) {
-            rows = new ArrayList<>(rowsSize);
+            List<List<Object>> rows = new ArrayList<>(rowsSize);
 
             for (int i = 0; i < rowsSize; ++i) {
 
@@ -321,10 +276,10 @@ public class JdbcTcpIo {
 
                 rows.add(col);
             }
-        } else
-            rows = Collections.emptyList();
 
-        return new SqlListenerQueryFetchResult(qryId, rows, last);
+            return rows;
+        } else
+            return Collections.emptyList();
     }
 
     /**
@@ -361,6 +316,32 @@ public class JdbcTcpIo {
             + respQryId + ']';
 
         return new SqlListenerQueryMetadataResult(qryId, readQueryMeta(reader));
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return Query metadata.
+     */
+    private List<SqlListenerColumnMeta> readQueryMeta(BinaryReaderExImpl reader) {
+        int metaSize = reader.readInt();
+
+        List<SqlListenerColumnMeta> meta;
+
+        if (metaSize > 0) {
+            meta = new ArrayList<>(metaSize);
+
+            for (int i = 0; i < metaSize; ++i) {
+                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
+
+                m.read(reader);
+
+                meta.add(m);
+            }
+        }
+        else
+            meta = Collections.emptyList();
+
+        return meta;
     }
 
     /**

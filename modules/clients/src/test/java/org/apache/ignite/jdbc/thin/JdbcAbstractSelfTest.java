@@ -50,5 +50,4 @@ public class JdbcAbstractSelfTest extends GridCommonAbstractTest {
 
         return cfg;
     }
-
 }

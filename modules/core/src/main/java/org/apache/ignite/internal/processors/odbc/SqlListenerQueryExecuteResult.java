@@ -32,15 +32,20 @@ public class SqlListenerQueryExecuteResult {
     /** Flag indicating the query has no unfetched results. */
     private final boolean last;
 
+    /** Flag indicating the query is SELECT query. {@code false} for DML/DDL queries. */
+    private final boolean isQuery;
+
     /**
      * @param queryId Query ID.
      * @param items Query result rows.
-     * @param last Flag indicating the query has no unfetched results.
+     * @param last Flag indicates the query has no unfetched results.
+     * @param isQuery Flag indicates the query is SELECT query. {@code false} for DML/DDL queries
      */
-    public SqlListenerQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
+    public SqlListenerQueryExecuteResult(long queryId, List<List<Object>> items, boolean last, boolean isQuery) {
         this.queryId = queryId;
         this.items = items;
         this.last = last;
+        this.isQuery = isQuery;
     }
 
     /**
@@ -62,5 +67,12 @@ public class SqlListenerQueryExecuteResult {
      */
     public boolean last() {
         return last;
+    }
+
+    /**
+     * @return Flag indicating the query is SELECT query. {@code false} for DML/DDL queries.
+     */
+    public boolean isQuery() {
+        return isQuery;
     }
 }

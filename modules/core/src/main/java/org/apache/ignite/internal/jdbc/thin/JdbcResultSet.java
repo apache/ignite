@@ -60,6 +60,9 @@ public class JdbcResultSet implements ResultSet {
     /** Table names. */
     private List<SqlListenerColumnMeta> metaRef;
 
+    /** Table names. */
+    private boolean metaInit;
+
     /** Fields iterator. */
     private List<List<Object>> fields;
 
@@ -90,10 +93,11 @@ public class JdbcResultSet implements ResultSet {
      * @param stmt Statement.
      * @param qryId Query ID.
      * @param fetchSize Fetch size.
+     * @param finished Finished flag.
      * @param fields Query result page.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, List<List<Object>> fields) {
+    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields) {
         assert stmt != null;
         assert fetchSize > 0;
 
@@ -101,6 +105,7 @@ public class JdbcResultSet implements ResultSet {
         this.qryId = qryId;
         this.fetchSize = fetchSize;
         this.fields = fields;
+        this.finished = finished;
 
         fieldsIt = fields.iterator();
     }
@@ -131,21 +136,23 @@ public class JdbcResultSet implements ResultSet {
             }
         }
 
-        if (fieldsIt != null && fieldsIt.hasNext()) {
-            curr = fieldsIt.next();
+        if (fieldsIt != null) {
+            if (fieldsIt.hasNext()) {
+                curr = fieldsIt.next();
 
-            if (!fieldsIt.hasNext())
+                pos++;
+
+                return true;
+            }
+            else {
                 fieldsIt = null;
+                curr = null;
 
-            pos++;
-
-            return true;
+                return false;
+            }
         }
-        else {
-            curr = null;
-
+        else
             return false;
-        }
     }
 
     /** {@inheritDoc} */
@@ -469,7 +476,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt == null && curr != null;
+        return finished && fieldsIt != null && !fieldsIt.hasNext() && curr != null;
     }
 
     /** {@inheritDoc} */
@@ -1490,14 +1497,16 @@ public class JdbcResultSet implements ResultSet {
 
     /**
      * @return Results metadata.
-     * @throws SQLException On errror.
+     * @throws SQLException On error.
      */
     private List<SqlListenerColumnMeta> meta() throws SQLException {
-        if (metaRef == null) {
+        if (!metaInit) {
             try {
                 SqlListenerQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
 
                 metaRef = res.meta();
+
+                metaInit = true;
             }
             catch (IOException e) {
                 stmt.connection().close();
