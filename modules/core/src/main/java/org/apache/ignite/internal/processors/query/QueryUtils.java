@@ -161,6 +161,21 @@ public class QueryUtils {
     }
 
     /**
+     * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
+     * upper case and escape inner class separator characters ('$' for Java and '.' for .NET) with underscore.
+     *
+     * @param entity Query entity.
+     * @param escape Escape flag taken form configuration.
+     * @return Normalized query entity.
+     */
+    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+        if (!escape)
+            return entity;
+
+        // TODO
+    }
+
+    /**
      * Create type candidate for query entity.
      *
      * @param cacheName Cache name.

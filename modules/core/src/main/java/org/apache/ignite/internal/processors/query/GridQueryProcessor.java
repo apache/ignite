@@ -679,7 +679,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity,
+                        QueryEntity qryEntity0 =
+                            QueryUtils.normalizeQueryEntity(qryEntity, cctx.config().isSqlEscapeAll());
+
+                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity0,
                             mustDeserializeClss);
 
                         cands.add(cand);
