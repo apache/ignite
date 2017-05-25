@@ -17,11 +17,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -381,11 +379,11 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
         /** Case when rateTimeInterval property of MemoryPolicyConfiguration is less than or equals zero. */
         LTE_ZERO_RATE_TIME_INTERVAL("Rate time interval must be greater than zero " +
-            "(use MemoryPolicyConfiguration.rateTimeInterval property to set correct length of interval)"),
+            "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval)"),
 
         /** Case when subIntervals property of MemoryPolicyConfiguration is less than or equals zero. */
         LTE_ZERO_SUB_INTERVALS("Sub intervals must be greater than zero " +
-            "(use MemoryPolicyConfiguration.subIntervals property to set correct number of sub intervals)");
+            "(use MemoryPolicyConfiguration.subIntervals property to adjust the sub intervals)");
 
         /**
          * @param violationMsg Violation message.
