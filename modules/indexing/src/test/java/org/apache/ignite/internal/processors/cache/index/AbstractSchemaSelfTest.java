@@ -61,11 +61,20 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
 
+    /** Escaped table name. */
+    protected static final String TBL_NAME_ESCAPED = typeName(ValueClass.class);
+
     /** Index name 1. */
     protected static final String IDX_NAME_1 = "IDX_1";
 
+    /** Index name 1 escaped. */
+    protected static final String IDX_NAME_1_ESCAPED = "idx_1";
+
     /** Index name 2. */
     protected static final String IDX_NAME_2 = "IDX_2";
+
+    /** Index name 2 escaped. */
+    protected static final String IDX_NAME_2_ESCAPED = "idx_2";
 
     /** Key ID field. */
     protected static final String FIELD_KEY = "id";
