@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Deployment
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
@@ -161,7 +162,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Deployment
             // Start Ignite and execute computation on remote node.
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                PeerAssemblyLoadingEnabled = enablePeerDeployment
+                PeerAssemblyLoadingMode = enablePeerDeployment
+                    ? PeerAssemblyLoadingMode.CurrentAppDomain
+                    : PeerAssemblyLoadingMode.Disabled
             };
 
             using (var ignite = Ignition.Start(cfg))

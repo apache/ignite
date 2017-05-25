@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Deployment
     using System.CodeDom.Compiler;
     using System.Diagnostics;
     using System.IO;
+    using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
@@ -66,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Deployment
         {
             using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                PeerAssemblyLoadingEnabled = true,
+                PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
                 IgniteInstanceName = "peerDeployTest",
                 DiscoverySpi = new TcpDiscoverySpi
                 {

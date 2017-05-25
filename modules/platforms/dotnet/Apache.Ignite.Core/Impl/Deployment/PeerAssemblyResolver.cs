@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -113,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
             Debug.Assert(assemblyName != null);
             Debug.Assert(ignite != null);
 
-            if (!ignite.Configuration.PeerAssemblyLoadingEnabled)
+            if (ignite.Configuration.PeerAssemblyLoadingMode == PeerAssemblyLoadingMode.Disabled)
                 return null;
 
             Debug.WriteLine("Requesting assembly from other nodes: " + assemblyName);
