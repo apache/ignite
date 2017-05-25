@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary.Deployment
+namespace Apache.Ignite.Core.Tests.Deployment
 {
     extern alias ExamplesDll;
     using Apache.Ignite.Core.Compute;
-    using ExamplesDll::Apache.Ignite.ExamplesDll.Binary;
+    using Address = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Address;
 
     /// <summary>
     /// Function that returns an instance of a class from another assembly.

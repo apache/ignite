@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary.Deployment
+namespace Apache.Ignite.Core.Tests.Deployment
 {
     extern alias ExamplesDll;
     using System.Linq;
     using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.Log4Net;
-    using ExamplesDll::Apache.Ignite.ExamplesDll.Binary;
     using NUnit.Framework;
+    using Address = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Address;
 
     /// <summary>
     /// Tests all APIs that support peer assembly loading.

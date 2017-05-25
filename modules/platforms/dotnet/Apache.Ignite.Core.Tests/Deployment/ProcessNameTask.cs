@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary.Deployment
+namespace Apache.Ignite.Core.Tests.Deployment
 {
     using System.Collections.Generic;
     using System.Linq;

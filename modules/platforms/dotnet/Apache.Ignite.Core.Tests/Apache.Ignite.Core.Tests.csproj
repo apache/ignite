@@ -75,11 +75,11 @@
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
-    <Compile Include="Binary\Deployment\GetAddressFunc.cs" />
-    <Compile Include="Binary\Deployment\PeerAssemblyLoadingAllApisTest.cs" />
-    <Compile Include="Binary\Deployment\PeerAssemblyLoadingVersioningTest.cs" />
-    <Compile Include="Binary\Deployment\ProcessNameFunc.cs" />
-    <Compile Include="Binary\Deployment\ProcessNameTask.cs" />
+    <Compile Include="Deployment\GetAddressFunc.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingVersioningTest.cs" />
+    <Compile Include="Deployment\ProcessNameFunc.cs" />
+    <Compile Include="Deployment\ProcessNameTask.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
     <Compile Include="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="Binary\JavaTypeMappingTest.cs" />
@@ -91,7 +91,7 @@
     <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
     <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
     <Compile Include="Binary\TypeNameParserTest.cs" />
-    <Compile Include="Binary\Deployment\PeerAssemblyLoadingTest.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingTest.cs" />
     <Compile Include="Binary\TypeResolverTest.cs" />
     <Compile Include="Cache\AddArgCacheEntryProcessor.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
@@ -384,7 +384,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
-    <None Include="Binary\Deployment\peer_assembly_app.config">
+    <None Include="Deployment\peer_assembly_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="custom_app.config">
