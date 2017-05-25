@@ -112,7 +112,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             _aliases.Push();
 
-            if (!VisitRemoveOperator(queryModel))
+            var hasDelete = VisitRemoveOperator(queryModel);
+
+            if (!hasDelete)
             {
                 // SELECT
                 _builder.Append("select ");
@@ -124,8 +126,11 @@ namespace Apache.Ignite.Linq.Impl
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
-            // UNION ...
-            ProcessResultOperatorsEnd(queryModel);
+            if (!hasDelete)
+            {
+                // UNION ...
+                ProcessResultOperatorsEnd(queryModel);
+            }
 
             _aliases.Pop();
         }
@@ -241,8 +246,6 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void ProcessResultOperatorsEnd(QueryModel queryModel)
         {
-            ProcessSkipTake(queryModel);
-
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
                 string keyword = null;
@@ -558,15 +561,6 @@ namespace Apache.Ignite.Linq.Impl
         private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
         {
             new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
-        }
-
-        /// <summary>
-        /// Determines whether specified model describes a Remove All operation.
-        /// </summary>
-        private static bool IsRemoveAll(QueryModel queryModel)
-        {
-            return queryModel.ResultOperators.Count == 1 &&
-                   queryModel.ResultOperators[0] is RemoveAllResultOperator;
         }
     }
 }
