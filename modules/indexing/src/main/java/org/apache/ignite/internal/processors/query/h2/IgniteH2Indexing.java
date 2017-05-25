@@ -85,7 +85,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.query.CacheQryPartitionInfo;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -1739,7 +1739,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
-                partitions = calculateQryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+                partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
             } catch (IgniteCheckedException e) {
                 throw new CacheException("Failed to calculate derived partitions: [qry=" + sqlQry + ", params=" +
                     Arrays.deepToString(qry.getArgs()) + "]", e);
@@ -2665,19 +2665,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @return Partitions.
      */
-    private int[] calculateQryPartitions(CacheQryPartitionInfo[] partInfoList, Object[] params)
+    private int[] calculateQueryPartitions(CacheQueryPartitionInfo[] partInfoList, Object[] params)
         throws IgniteCheckedException {
 
         ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
 
-        for (CacheQryPartitionInfo partInfo: partInfoList) {
+        for (CacheQueryPartitionInfo partInfo: partInfoList) {
             int partId = partInfo.partition() < 0 ?
                 kernalContext().affinity().partition(partInfo.cacheName(), params[partInfo.paramIdx()]) :
                 partInfo.partition();
 
             int i = 0;
 
-            while (i < list.size() && list.get(i) < partId) i++;
+            while (i < list.size() && list.get(i) < partId)
+                i++;
 
             if (i < list.size()) {
                 if (list.get(i) > partId)

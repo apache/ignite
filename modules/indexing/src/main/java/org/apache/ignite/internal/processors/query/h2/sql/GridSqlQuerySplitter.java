@@ -35,7 +35,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.CacheQryPartitionInfo;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -245,23 +245,7 @@ public class GridSqlQuerySplitter {
         twoStepQry.distributedJoins(distributedJoins);
 
         // all map queries must have non-empty derivedPartitions to use this feature.
-        CacheQryPartitionInfo[] derivedPartitions = null;
-
-        for (GridCacheSqlQuery mapSqlQry : twoStepQry.mapQueries()) {
-            CacheQryPartitionInfo[] partInfo = (CacheQryPartitionInfo[])mapSqlQry.derivedPartitions();
-
-            if (partInfo == null) {
-                derivedPartitions = null;
-
-                break;
-            }
-
-            if (derivedPartitions == null)
-                derivedPartitions = partInfo;
-            else
-                derivedPartitions = mergePartitionInfo(derivedPartitions, partInfo);
-        }
-        twoStepQry.derivedPartitions(derivedPartitions);
+        twoStepQry.derivedPartitions(mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
 
         return twoStepQry;
     }
@@ -1347,7 +1331,7 @@ public class GridSqlQuerySplitter {
         map.partitioned(hasPartitionedTables(mapQry));
 
         if (map.isPartitioned())
-            map.derivedPartitions(derivePartitionsFromQry(mapQry, ctx));
+            map.derivedPartitions(derivePartitionsFromQuery(mapQry, ctx));
 
         mapSqlQrys.add(map);
     }
@@ -2020,7 +2004,7 @@ public class GridSqlQuerySplitter {
      * @param ctx Kernal context.
      * @return Array of partitions, or {@code null} if none identified
      */
-    private static CacheQryPartitionInfo[] derivePartitionsFromQry(GridSqlQuery qry, GridKernalContext ctx)
+    private static CacheQueryPartitionInfo[] derivePartitionsFromQuery(GridSqlQuery qry, GridKernalContext ctx)
         throws IgniteCheckedException {
 
         if (!(qry instanceof GridSqlSelect))
@@ -2040,7 +2024,7 @@ public class GridSqlQuerySplitter {
      * @param ctx Kernal context.
      * @return Array of partition info objects, or {@code null} if none identified
      */
-    private static CacheQryPartitionInfo[] extractPartition(GridSqlAst el, GridKernalContext ctx)
+    private static CacheQueryPartitionInfo[] extractPartition(GridSqlAst el, GridKernalContext ctx)
         throws IgniteCheckedException {
 
         if (!(el instanceof GridSqlOperation))
@@ -2050,10 +2034,10 @@ public class GridSqlQuerySplitter {
 
         switch (op.operationType()) {
             case EQUAL: {
-                CacheQryPartitionInfo partInfo = extractPartitionFromEquality(op, ctx);
+                CacheQueryPartitionInfo partInfo = extractPartitionFromEquality(op, ctx);
 
                 if (partInfo != null)
-                    return new CacheQryPartitionInfo[] { partInfo };
+                    return new CacheQueryPartitionInfo[] { partInfo };
 
                 return null;
             }
@@ -2061,8 +2045,8 @@ public class GridSqlQuerySplitter {
             case AND: {
                 assert op.size() == 2;
 
-                CacheQryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
-                CacheQryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
+                CacheQueryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
+                CacheQueryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
 
                 if (partsLeft != null && partsRight != null)
                     return null; //kind of conflict (_key = 1) and (_key = 2)
@@ -2079,8 +2063,8 @@ public class GridSqlQuerySplitter {
             case OR: {
                 assert op.size() == 2;
 
-                CacheQryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
-                CacheQryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
+                CacheQueryPartitionInfo[] partsLeft = extractPartition(op.child(0), ctx);
+                CacheQueryPartitionInfo[] partsRight = extractPartition(op.child(1), ctx);
 
                 if (partsLeft != null && partsRight != null)
                     return mergePartitionInfo(partsLeft, partsRight);
@@ -2100,7 +2084,7 @@ public class GridSqlQuerySplitter {
      * @param ctx Kernal Context.
      * @return partition info, or {@code null} if none identified
      */
-    private static CacheQryPartitionInfo extractPartitionFromEquality(GridSqlOperation op, GridKernalContext ctx)
+    private static CacheQueryPartitionInfo extractPartitionFromEquality(GridSqlOperation op, GridKernalContext ctx)
         throws IgniteCheckedException {
 
         assert op.operationType() == GridSqlOperationType.EQUAL;
@@ -2132,7 +2116,7 @@ public class GridSqlQuerySplitter {
         if (right instanceof GridSqlConst) {
             GridSqlConst constant = (GridSqlConst)right;
 
-            return new CacheQryPartitionInfo(ctx.affinity().partition(tbl.spaceName(),
+            return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.spaceName(),
                 constant.value().getObject()), null, -1);
         }
 
@@ -2140,7 +2124,7 @@ public class GridSqlQuerySplitter {
 
         GridSqlParameter param = (GridSqlParameter) right;
 
-        return new CacheQryPartitionInfo(-1, tbl.spaceName(), param.index());
+        return new CacheQueryPartitionInfo(-1, tbl.spaceName(), param.index());
     }
 
     /**
@@ -2150,35 +2134,63 @@ public class GridSqlQuerySplitter {
      * @param b Partition info array.
      * @return Result.
      */
-    private static CacheQryPartitionInfo[] mergePartitionInfo(CacheQryPartitionInfo[] a, CacheQryPartitionInfo[] b) {
+    private static CacheQueryPartitionInfo[] mergePartitionInfo(CacheQueryPartitionInfo[] a, CacheQueryPartitionInfo[] b) {
         assert a != null;
         assert b != null;
 
         if (a.length == 1 && b.length == 1) {
             if (a[0].equals(b[0]))
-                return new CacheQryPartitionInfo[] { a[0] };
+                return new CacheQueryPartitionInfo[] { a[0] };
 
-            return new CacheQryPartitionInfo[] { a[0], b[0] };
+            return new CacheQueryPartitionInfo[] { a[0], b[0] };
         }
 
-        ArrayList<CacheQryPartitionInfo> list = new ArrayList<>(a.length + b.length);
+        ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
 
-        for (CacheQryPartitionInfo part: a)
+        for (CacheQueryPartitionInfo part: a)
             list.add(part);
 
-        for (CacheQryPartitionInfo part: b) {
+        for (CacheQueryPartitionInfo part: b) {
             int i = 0;
 
-            while (i < list.size() && !list.get(i).equals(part)) i++;
+            while (i < list.size() && !list.get(i).equals(part))
+                i++;
 
             if (i == list.size())
                 list.add(part);
         }
 
-        CacheQryPartitionInfo[] result = new CacheQryPartitionInfo[list.size()];
+        CacheQueryPartitionInfo[] result = new CacheQueryPartitionInfo[list.size()];
 
         for (int i = 0; i < list.size(); i++)
             result[i] = list.get(i);
+
+        return result;
+    }
+
+    /**
+     * Ensures all given queries have non-empty derived partitions and merges them.
+     *
+     * @param queries Collection of queries.
+     * @return Derived partitions for all queries, or {@code null}.
+     */
+    private static CacheQueryPartitionInfo[] mergePartitionsFromMultipleQueries(List<GridCacheSqlQuery> queries) {
+        CacheQueryPartitionInfo[] result = null;
+
+        for (GridCacheSqlQuery qry : queries) {
+            CacheQueryPartitionInfo[] partInfo = (CacheQueryPartitionInfo[])qry.derivedPartitions();
+
+            if (partInfo == null) {
+                result = null;
+
+                break;
+            }
+
+            if (result == null)
+                result = partInfo;
+            else
+                result = mergePartitionInfo(result, partInfo);
+        }
 
         return result;
     }

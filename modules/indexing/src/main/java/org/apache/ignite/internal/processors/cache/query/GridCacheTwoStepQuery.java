@@ -73,7 +73,7 @@ public class GridCacheTwoStepQuery {
     private boolean local;
 
     /** */
-    private CacheQryPartitionInfo[] derivedPartitions;
+    private CacheQueryPartitionInfo[] derivedPartitions;
 
     /**
      * @param originalSql Original query SQL.
@@ -262,14 +262,14 @@ public class GridCacheTwoStepQuery {
     /**
      * @return Query derived partitions info.
      */
-    public CacheQryPartitionInfo[] derivedPartitions() {
+    public CacheQueryPartitionInfo[] derivedPartitions() {
         return this.derivedPartitions;
     }
 
     /**
      * @param derivedPartitions Query derived partitions info.
      */
-    public void derivedPartitions(CacheQryPartitionInfo[] derivedPartitions) {
+    public void derivedPartitions(CacheQueryPartitionInfo[] derivedPartitions) {
         this.derivedPartitions = derivedPartitions;
     }
 

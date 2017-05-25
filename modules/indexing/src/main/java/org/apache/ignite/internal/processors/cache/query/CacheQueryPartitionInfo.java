@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * The given class holds the required info, so that effective partition
  * can be calculated during query parameter binding.
  */
-public class CacheQryPartitionInfo {
+public class CacheQueryPartitionInfo {
     /** */
     private int partId;
 
@@ -52,7 +52,7 @@ public class CacheQryPartitionInfo {
      * @param cacheName Cache name required for partition calculation.
      * @param paramIdx Query parameter index required for partition calculation.
      */
-    public CacheQryPartitionInfo(int partId, String cacheName, int paramIdx) {
+    public CacheQueryPartitionInfo(int partId, String cacheName, int paramIdx) {
         this.partId = partId;
         this.cacheName = cacheName;
         this.paramIdx = paramIdx;
@@ -89,10 +89,10 @@ public class CacheQryPartitionInfo {
         if (this == obj)
             return true;
 
-        if (!(obj instanceof CacheQryPartitionInfo))
+        if (!(obj instanceof CacheQueryPartitionInfo))
             return false;
 
-        CacheQryPartitionInfo other = (CacheQryPartitionInfo)obj;
+        CacheQueryPartitionInfo other = (CacheQueryPartitionInfo)obj;
 
         if (partId >= 0)
             return partId == other.partId;
@@ -105,6 +105,6 @@ public class CacheQryPartitionInfo {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheQryPartitionInfo.class, this);
+        return S.toString(CacheQueryPartitionInfo.class, this);
     }
 }
