@@ -39,7 +39,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
             mxBeanToRestore = memMxBeanField.get(null);
             memMxBeanField.set(null, memoryMXBean);
 
-            correctSetupOfTestPerformed = true;
+            correctSetupOfTestPerformed = memMxBeanField.get(null) == memoryMXBean;
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -97,10 +97,10 @@ public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
         final GridDiscoveryManager mgr = new GridDiscoveryManager(ctx);
         final long nHeapMax = mgr.metrics().getNonHeapMemoryMaximum();
         if (correctSetupOfTestPerformed)
-            assertEquals(nHeapMax, 0);
+            assertEquals(0, nHeapMax);
 
         final long heapMax = mgr.metrics().getHeapMemoryMaximum();
         if (correctSetupOfTestPerformed)
-            assertEquals(heapMax, 0);
+            assertEquals(0, heapMax);
     }
 }
