@@ -140,7 +140,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testJoin() throws Exception {
         ResultSet rs = stmt.executeQuery(
-            "select p.id, p.name, o.name as orgName from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
+            "select p.id, p.name, o.name as orgName from pers.Person p, org.Organization o where p.orgId = o.id");
 
         assert rs != null;
 
@@ -175,7 +175,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testJoinWithoutAlias() throws Exception {
         ResultSet rs = stmt.executeQuery(
-            "select p.id, p.name, o.name from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
+            "select p.id, p.name, o.name from pers.Person p, org.Organization o where p.orgId = o.id");
 
         assert rs != null;
 
@@ -212,7 +212,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIn() throws Exception {
-        ResultSet rs = stmt.executeQuery("select name from \"pers\".Person where age in (25, 35)");
+        ResultSet rs = stmt.executeQuery("select name from pers.Person where age in (25, 35)");
 
         assert rs != null;
 
@@ -232,7 +232,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBetween() throws Exception {
-        ResultSet rs = stmt.executeQuery("select name from \"pers\".Person where age between 24 and 36");
+        ResultSet rs = stmt.executeQuery("select name from pers.Person where age between 24 and 36");
 
         assert rs != null;
 
@@ -252,7 +252,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCalculatedValue() throws Exception {
-        ResultSet rs = stmt.executeQuery("select age * 2 from \"pers\".Person");
+        ResultSet rs = stmt.executeQuery("select age * 2 from pers.Person");
 
         assert rs != null;
 
