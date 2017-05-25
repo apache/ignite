@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl.Dml
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
@@ -37,18 +38,21 @@ namespace Apache.Ignite.Linq.Impl.Dml
         }
 
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public override ResultOperatorBase Clone(CloneContext cloneContext)
         {
             return new RemoveAllResultOperator();
         }
 
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public override void TransformExpressions(Func<Expression, Expression> transformation)
         {
             // No-op.
         }
 
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public override StreamedValue ExecuteInMemory<T>(StreamedSequence sequence)
         {
             throw new NotSupportedException("RemoveAll is not supported for in-memory sequences.");

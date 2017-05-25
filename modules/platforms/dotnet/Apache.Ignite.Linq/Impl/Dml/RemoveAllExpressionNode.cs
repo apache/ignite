@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl.Dml
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -62,6 +63,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         }
 
         /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
         public override Expression Resolve(ParameterExpression inputParameter, Expression expressionToBeResolved,
             ClauseGenerationContext clauseGenerationContext)
         {
