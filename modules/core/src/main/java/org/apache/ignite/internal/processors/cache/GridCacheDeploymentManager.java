@@ -274,7 +274,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             U.quietAndWarn(log, "");
             U.quietAndWarn(
                 log,
-                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.namexx() +
+                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.name() +
                     ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
                     ", clsLdr=" + ldr.getClass().getName() + ']');
             U.quietAndWarn(

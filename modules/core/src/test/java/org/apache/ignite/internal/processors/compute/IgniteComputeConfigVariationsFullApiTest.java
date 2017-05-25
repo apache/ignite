@@ -1324,18 +1324,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(argument(0));
 
             JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             setArguments(in.readObject());
 
@@ -1352,9 +1348,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1434,18 +1428,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", argument(0));
 
             JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             Object arg = reader.readObject("arg");
 
@@ -1464,9 +1454,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1655,9 +1643,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1750,9 +1736,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1931,18 +1915,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(arg);
 
             JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             arg = in.readObject();
 
@@ -1959,9 +1939,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -2041,18 +2019,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", arg);
 
             JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             arg = reader.readObject("arg");
 
@@ -2069,9 +2043,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -2150,9 +2122,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void run() {
             checkState();
         }
@@ -2238,16 +2208,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             isVal = in.readBoolean();
             bVal = in.readByte();
@@ -2262,9 +2228,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -2343,16 +2307,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             isVal = reader.readBoolean("isVal");
             bVal = reader.readByte("bVal");
@@ -2367,9 +2327,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }

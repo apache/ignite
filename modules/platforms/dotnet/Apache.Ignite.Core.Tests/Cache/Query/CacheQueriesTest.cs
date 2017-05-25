@@ -105,8 +105,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (int i = 0; i < GridCnt; i++)
             {
-                for (int j = 0; j < MaxItemCnt; j++)
-                    cache.Remove(j);
+                cache.Clear();
 
                 Assert.IsTrue(cache.IsEmpty());
             }
@@ -352,8 +351,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 2. Validate results.
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
             {
-                EnableDistributedJoins = distrJoin
+                EnableDistributedJoins = distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(3)
             };
+
+            Assert.AreEqual(string.Format("SqlQuery [Sql=age < 50, Arguments=[], Local={0}, " +
+                                          "PageSize=1024, EnableDistributedJoins={1}, Timeout={2}, " +
+                                          "ReplicatedOnly=False]", loc, distrJoin, qry.Timeout), qry.ToString());
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
@@ -376,7 +381,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", loc)
             {
                 EnableDistributedJoins = distrJoin,
-                EnforceJoinOrder = enforceJoinOrder
+                EnforceJoinOrder = enforceJoinOrder,
+                Colocated = !distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(2)
             };
 
             using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
@@ -673,6 +681,44 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
+            {
+                Timeout = TimeSpan.FromMilliseconds(2)
+            };
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).ToArray());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests fields query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlFieldsQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
+            var fieldsQry = new SqlFieldsQuery("SELECT * FROM QueryPerson WHERE age < 5000 AND name like '%0%'")
+            {
+                Timeout = TimeSpan.FromMilliseconds(3)
+            };
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).ToArray());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
         /// Validates the query results.
         /// </summary>
         /// <param name="cache">Cache.</param>
@@ -820,7 +866,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (var i = 0; i < cnt; i++)
             {
-                var val = rand.Next(100);
+                var val = rand.Next(cnt);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
@@ -845,8 +891,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public QueryPerson(string name, int age)
         {
             Name = name;
-            Age = age;
-            Birthday = DateTime.UtcNow.AddYears(-age);
+            Age = age % 2000;
+            Birthday = DateTime.UtcNow.AddYears(-Age);
         }
 
         /// <summary>

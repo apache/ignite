@@ -117,8 +117,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override
-                public Object execute() throws IgniteException {
+                @Override public Object execute() throws IgniteException {
                     MyService svc = ignite.services().service("my-service");
 
                     while (!isCancelled()) {

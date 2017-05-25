@@ -268,6 +268,14 @@ namespace ignite
                 }
 
                 /**
+                 * Remove all added arguments.
+                 */
+                void ClearArguments()
+                {
+                    args.clear();
+                }
+
+                /**
                  * Write query info to the stream.
                  *
                  * @param writer Writer.
@@ -287,6 +295,9 @@ namespace ignite
 
                     writer.WriteBool(distributedJoins);
                     writer.WriteBool(enforceJoinOrder);
+                    writer.WriteInt32(0);  // Timeout, ms
+                    writer.WriteBool(false);  // ReplicatedOnly
+                    writer.WriteBool(false);  // Colocated
                 }
 
             private:

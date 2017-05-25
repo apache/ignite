@@ -47,11 +47,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.marshaller.MarshallerUtils;
 
 import static java.lang.reflect.Modifier.isFinal;

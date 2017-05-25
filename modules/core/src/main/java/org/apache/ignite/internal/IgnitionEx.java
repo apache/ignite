@@ -2421,6 +2421,7 @@ public class IgnitionEx {
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
             ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
+            ccfg.setAffinity(cfg.getAffinity());
             ccfg.setRebalanceOrder(-1); //Prior to user caches.
 
             if (cfg.getCacheMode() == PARTITIONED)
