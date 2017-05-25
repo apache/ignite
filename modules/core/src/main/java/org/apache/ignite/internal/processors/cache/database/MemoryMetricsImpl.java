@@ -44,10 +44,10 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     private volatile boolean metricsEnabled;
 
     /** */
-    private volatile int subInts = 5;
+    private volatile int subInts;
 
     /** */
-    private volatile LongAdder8[] allocRateCounters = new LongAdder8[subInts];
+    private volatile LongAdder8[] allocRateCounters;
 
     /** */
     private final AtomicInteger counterIdx = new AtomicInteger(0);
@@ -58,9 +58,8 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
     private final MemoryPolicyConfiguration memPlcCfg;
 
-    /** Time interval (in seconds) when allocations/evictions are counted to calculate rate.
-     * Default value is 60 seconds. */
-    private volatile int rateTimeInterval = 60;
+    /** Time interval (in seconds) when allocations/evictions are counted to calculate rate. */
+    private volatile int rateTimeInterval;
 
     /**
      * @param memPlcCfg MemoryPolicyConfiguration.
@@ -69,6 +68,12 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         this.memPlcCfg = memPlcCfg;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
+
+        rateTimeInterval = memPlcCfg.getRateTimeInterval();
+
+        subInts = memPlcCfg.getSubIntervals();
+
+        allocRateCounters = new LongAdder8[subInts];
 
         for (int i = 0; i < subInts; i++)
             allocRateCounters[i] = new LongAdder8();
@@ -140,9 +145,6 @@ public class MemoryMetricsImpl implements MemoryMetrics {
      *
      */
     private void updateAllocationRateMetrics() {
-        if (subInts != allocRateCounters.length)
-            return;
-
         long lastUpdT = lastUpdTime.get();
         long currT = IgniteUtils.currentTimeMillis();
 
@@ -154,11 +156,16 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
         LongAdder8[] rateCntrs = allocRateCounters;
 
+        if (subInts != rateCntrs.length)
+            return;
+
+        int cntrIdx = counterIdx.get();
+
         for (int i = 1; i <= subInts; i++) {
             if (deltaT < subInt(i)) {
                 if (i > 1) {
                     if (!lastUpdTime.compareAndSet(lastUpdT, currT)) {
-                        rateCntrs[counterIdx.get()].increment();
+                        rateCntrs[cntrIdx].increment();
 
                         break;
                     }
@@ -174,7 +181,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
                     break;
                 }
                 else {
-                    rateCntrs[counterIdx.get()].increment();
+                    rateCntrs[cntrIdx].increment();
 
                     break;
                 }
@@ -182,8 +189,8 @@ public class MemoryMetricsImpl implements MemoryMetrics {
             else if (i == subInts && lastUpdTime.compareAndSet(lastUpdT, currT))
                 resetAll();
 
-            if (currIdx != counterIdx.get()) {
-                rateCntrs[counterIdx.get()].increment();
+            if (currIdx != cntrIdx) {
+                rateCntrs[cntrIdx].increment();
 
                 break;
             }

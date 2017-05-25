@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
@@ -34,16 +35,23 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
+import org.h2.command.ddl.DropTable;
 import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.table.Column;
+import org.h2.value.DataType;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -137,11 +145,27 @@ public class DdlStatementsProcessor {
                             dropIdx.indexName());
                 }
             }
+            else if (gridStmt instanceof GridSqlCreateTable) {
+                GridSqlCreateTable createTbl = (GridSqlCreateTable)gridStmt;
+
+                ctx.query().dynamicTableCreate(createTbl.schemaName(), toQueryEntity(createTbl),
+                    createTbl.templateCacheName(), createTbl.ifNotExists());
+
+                fut = null;
+            }
+            else if (gridStmt instanceof GridSqlDropTable) {
+                GridSqlDropTable dropTbl = (GridSqlDropTable)gridStmt;
+
+                ctx.query().dynamicTableDrop(dropTbl.schemaName(), dropTbl.tableName(), dropTbl.ifExists());
+
+                fut = null;
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            fut.get();
+            if (fut != null)
+                fut.get();
 
             QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
                 (Collections.singletonList(0L)), null, false);
@@ -211,10 +235,37 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * Convert this statement to query entity and do Ignite specific sanity checks on the way.
+     * @return Query entity mimicking this SQL statement.
+     */
+    private static QueryEntity toQueryEntity(GridSqlCreateTable createTbl) {
+        QueryEntity res = new QueryEntity();
+
+        res.setTableName(createTbl.tableName());
+
+        for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
+            GridSqlColumn gridCol = e.getValue();
+
+            Column col = gridCol.column();
+
+            res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
+        }
+
+        res.setKeyType(createTbl.tableName() + "Key");
+
+        res.setValueType(createTbl.tableName());
+
+        res.setKeyFields(createTbl.primaryKeyColumns());
+
+        return res;
+    }
+
+    /**
      * @param cmd Statement.
      * @return Whether {@code cmd} is a DDL statement we're able to handle.
      */
     public static boolean isDdlStatement(Prepared cmd) {
-        return cmd instanceof CreateIndex || cmd instanceof DropIndex;
+        return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
+            cmd instanceof DropTable;
     }
 }

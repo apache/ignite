@@ -92,6 +92,16 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
                 break;
 
+            case LTE_ZERO_RATE_TIME_INTERVAL:
+                plcs = createRateTimeIntervalIsNegative();
+
+                break;
+
+            case LTE_ZERO_SUB_INTERVALS:
+                plcs = createSubIntervalsIsNegative();
+
+                break;
+
             default:
                 fail("Violation type was not configured: " + violationType);
         }
@@ -101,6 +111,30 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         cfg.setMemoryConfiguration(memCfg);
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    private MemoryPolicyConfiguration[] createSubIntervalsIsNegative() {
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0].setSubIntervals(-10);
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private MemoryPolicyConfiguration[] createRateTimeIntervalIsNegative() {
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0].setRateTimeInterval(-10);
+
+        return res;
     }
 
     /**
@@ -277,6 +311,24 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testRateTimeIntervalPropertyIsNegative() throws Exception {
+        violationType = ValidationViolationType.LTE_ZERO_RATE_TIME_INTERVAL;
+
+        doTest(violationType);
+    }
+
+    /**
+     *
+     */
+    public void testSubIntervalsPropertyIsNegative() throws Exception {
+        violationType = ValidationViolationType.LTE_ZERO_SUB_INTERVALS;
+
+        doTest(violationType);
+    }
+
+    /**
      * Tries to start ignite node with invalid configuration and checks that corresponding exception is thrown.
      *
      * @param violationType Configuration violation type.
@@ -323,7 +375,15 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE("User-defined default MemoryPolicy size is less than 1MB."),
 
         /** */
-        MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE("MemoryPolicy maxSize must not be smaller than initialSize");
+        MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE("MemoryPolicy maxSize must not be smaller than initialSize"),
+
+        /** Case when rateTimeInterval property of MemoryPolicyConfiguration is less than or equals zero. */
+        LTE_ZERO_RATE_TIME_INTERVAL("Rate time interval must be greater than zero " +
+            "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval)"),
+
+        /** Case when subIntervals property of MemoryPolicyConfiguration is less than or equals zero. */
+        LTE_ZERO_SUB_INTERVALS("Sub intervals must be greater than zero " +
+            "(use MemoryPolicyConfiguration.subIntervals property to adjust the sub intervals)");
 
         /**
          * @param violationMsg Violation message.
