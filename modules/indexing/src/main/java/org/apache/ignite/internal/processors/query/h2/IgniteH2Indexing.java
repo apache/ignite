@@ -664,7 +664,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         tbl.onDrop();
 
-        tbl.schema().tables().remove(tbl.typeName());
+        tbl.schema().remove(tbl);
     }
 
     /**

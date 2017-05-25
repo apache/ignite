@@ -107,8 +107,15 @@ public class H2Schema {
      * @param tbl Table descriptor.
      */
     public void add(H2TableDescriptor tbl) {
-        if (tbls.putIfAbsent(tbl.typeName(), tbl) != null)
+        if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
+    }
+
+    /**
+     * @param tbl Table descriptor.
+     */
+    public void remove(H2TableDescriptor tbl) {
+        tbls.remove(tbl.tableName());
     }
 
     /**

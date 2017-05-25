@@ -119,6 +119,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
+     * @return Table name.
+     */
+    String tableName() {
+        return type.tableName();
+    }
+
+    /**
      * @return Database full table name.
      */
     String fullTableName() {
