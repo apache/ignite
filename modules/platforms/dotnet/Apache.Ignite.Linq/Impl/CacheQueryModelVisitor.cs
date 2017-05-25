@@ -112,11 +112,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             _aliases.Push();
 
-            if (IsRemoveAll(queryModel))
-            {
-                _builder.Append("delete ");
-            }
-            else
+            if (!VisitRemoveOperator(queryModel))
             {
                 // SELECT
                 _builder.Append("select ");
@@ -132,6 +128,45 @@ namespace Apache.Ignite.Linq.Impl
             ProcessResultOperatorsEnd(queryModel);
 
             _aliases.Pop();
+        }
+
+        /// <summary>
+        /// Visits the remove operator. Returns true if it is present.
+        /// </summary>
+        private bool VisitRemoveOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            if (resultOps.LastOrDefault() is RemoveAllResultOperator)
+            {
+                _builder.Append("delete ");
+
+                if (resultOps.Count == 2)
+                {
+                    var resOp = resultOps[0] as TakeResultOperator;
+
+                    if (resOp == null)
+                    {
+                        throw new NotSupportedException(
+                            "RemoveAll can not be combined with result operators (other than Take): " +
+                            resultOps[0].GetType().Name);
+                    }
+
+                    _builder.Append("top ");
+                    BuildSqlExpression(resOp.Count);
+                    _builder.Append(" ");
+                }
+                else if (resultOps.Count > 2)
+                {
+                    throw new NotSupportedException(
+                        "RemoveAll can not be combined with result operators (other than Take): " +
+                        string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+                }
+
+                return true;
+            }
+                
+            return false;
         }
 
         /// <summary>
