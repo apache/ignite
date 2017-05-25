@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -52,6 +53,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
 
     /** */
     private boolean startCaches;
+
+    /** Restarting caches. */
+    private Set<String> restartingCaches;
 
     /**
      * @param reqs Requests.
@@ -124,6 +128,20 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      */
     public boolean startCaches() {
         return startCaches;
+    }
+
+    /**
+     * @param caches restarting caches.
+     */
+    public void restartingCaches(Set<String> caches) {
+        this.restartingCaches = caches;
+    }
+
+    /**
+     *
+     */
+    public Set<String> restartingCaches() {
+        return this.restartingCaches;
     }
 
     /**

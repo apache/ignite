@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -173,6 +174,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Map of proxies. */
     private final ConcurrentMap<String, IgniteCacheProxy<?, ?>> jCacheProxies;
+
+    /** Restarting caches */
+    private final Set<String> restartingCaches = new GridConcurrentHashSet<>();
 
     /** Caches stop sequence. */
     private final Deque<String> stopSeq;
@@ -2171,6 +2175,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         batch.clientReconnect(reconnect);
 
+        batch.restartingCaches(restartingCaches);
+
         if (!reconnect)
             batch.startCaches(startAllCachesOnClientStart());
 
@@ -2255,6 +2261,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         else {
                             assert req.cacheType() != null : req;
 
+                            if (restartingCaches.contains(maskNull(req.cacheName())))
+                                continue;
+
                             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                                 ctx,
                                 ccfg,
@@ -2284,12 +2293,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
+                for (String name : batch.restartingCaches())
+                    registeredCaches.remove(name);
+
+                restartingCaches.addAll(batch.restartingCaches());
+
                 if (!F.isEmpty(batch.clientNodes())) {
                     for (Map.Entry<String, Map<UUID, Boolean>> entry : batch.clientNodes().entrySet()) {
                         String cacheName = entry.getKey();
 
-                        for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
-                            ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
+                        if (!restartingCaches.contains(maskNull(cacheName)))
+                            for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
+                                ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
                     }
                 }
 
@@ -2610,6 +2625,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
         boolean restart) {
+        return dynamicDestroyCaches(cacheNames, checkThreadTx, restart, true);
+    }
+
+    /**
+     * @param cacheNames Collection of cache names to destroy.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when cache is destroyed.
+     */
+    public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
+        boolean restart, boolean destroy) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
@@ -2619,7 +2644,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
             t.stop(true);
-            t.destroy(true);
+            t.destroy(destroy);
 
             t.restart(restart);
 
@@ -2915,7 +2940,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
         if (msg instanceof StartSnapshotOperationAckDiscoveryMessage &&
-            ((StartSnapshotOperationAckDiscoveryMessage)msg).error() == null)
+            ((StartSnapshotOperationAckDiscoveryMessage)msg).needExchange())
             return true;
 
         if (msg instanceof DynamicCacheChangeBatch)
@@ -3002,6 +3027,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         startDesc.startTopologyVersion(newTopVer);
 
+                        restartingCaches.remove(maskNull(ccfg.getName()));
+
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
                         assert old == null :
@@ -3075,6 +3102,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (desc != null) {
                     if (req.stop()) {
                         DynamicCacheDescriptor old = registeredCaches.remove(maskNull(req.cacheName()));
+
+                        if (req.restart())
+                            restartingCaches.add(maskNull(req.cacheName()));
 
                         assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
@@ -3154,6 +3184,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
+            if (restartingCaches.size() > 0) {
+                String msg = "Joining server node during cache restarting is not allowed";
+
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+            }
+
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 
