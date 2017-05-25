@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteAtomicLong;
@@ -125,7 +126,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
@@ -163,6 +164,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -924,7 +926,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
             startProcessor(new GridCacheProcessor(ctx));startProcessor(new GridClusterStateProcessor(ctx));
             startProcessor(new GridQueryProcessor(ctx));
-            startProcessor(new OdbcProcessor(ctx));
+            startProcessor(new SqlListenerProcessor(ctx));
             startProcessor(new GridServiceProcessor(ctx));
             startProcessor(new GridTaskSessionProcessor(ctx));
             startProcessor(new GridJobProcessor(ctx));
@@ -2789,6 +2791,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        return getOrCreateCache0(cacheCfg).get1();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
+        CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
         CU.validateCacheName(cacheCfg.getName());
 
@@ -2797,8 +2806,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
+            Boolean res = false;
+
             if (ctx.cache().cache(cacheCfg.getName()) == null) {
-                ctx.cache().dynamicStartCache(cacheCfg,
+                res = ctx.cache().dynamicStartCache(cacheCfg,
                     cacheCfg.getName(),
                     null,
                     false,
@@ -2806,7 +2817,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     true).get();
             }
 
-            return ctx.cache().publicJCache(cacheCfg.getName());
+            return new IgniteBiTuple<>((IgniteCache<K, V>)ctx.cache().publicJCache(cacheCfg.getName()), res);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -3006,12 +3017,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
+        destroyCache0(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean destroyCache0(String cacheName) throws CacheException {
         CU.validateCacheName(cacheName);
 
-        IgniteInternalFuture stopFut = destroyCacheAsync(cacheName, true);
+        IgniteInternalFuture<Boolean> stopFut = destroyCacheAsync(cacheName, true);
 
         try {
-            stopFut.get();
+            return stopFut.get();
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -3037,7 +3053,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Ignite future.
      */
-    public IgniteInternalFuture<?> destroyCacheAsync(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<Boolean> destroyCacheAsync(String cacheName, boolean checkThreadTx) {
         CU.validateCacheName(cacheName);
 
         guard();
@@ -3403,6 +3419,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.cache().context().database().memoryMetrics();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        guard();
+
+        try {
+            return ctx.cache().context().database().memoryMetrics(memPlcName);
         }
         finally {
             unguard();

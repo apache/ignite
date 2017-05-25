@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -553,7 +554,7 @@ public class GridMapQueryExecutor {
 
                     Objects.requireNonNull(h2Tbl, tbl.toString());
 
-                    h2Tbl.snapshotIndexes(qctx);
+                    h2Tbl.snapshotIndexes(qctx, segmentId);
 
                     snapshotedTbls.add(h2Tbl);
                 }
@@ -594,7 +595,7 @@ public class GridMapQueryExecutor {
 
                         GridH2QueryContext.set(conn, qctx);
 
-                        rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
+                        rs = h2.executeSqlQueryWithTimer(h2.schema(mainCctx.name()), conn, qry.query(),
                             qry.parameters(params),
                             timeout,
                             qr.cancels[qryIdx]);

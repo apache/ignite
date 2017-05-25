@@ -66,6 +66,8 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
+import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -538,7 +540,7 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = qryIdGen.incrementAndGet();
 
-            final String space = cctx.name();
+            final String cacheName = cctx.name();
 
             final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
                 qry.mapQueries().size(), qry.pageSize(),
@@ -773,19 +775,21 @@ public class GridReduceQueryExecutor {
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
 
                         try {
+                            String schema = h2.schema(cacheName);
+
                             if (qry.explain())
-                                return explainPlan(conn, qry);
+                                return explainPlan(conn, schema, qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            H2ResultSet res = h2.executeSqlQueryWithTimer(space,
+                            H2ResultSet res = h2.executeSqlQueryWithTimer(schema,
                                 conn,
                                 rdc.query(),
                                 rdc.parameters(params),
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new IgniteH2Indexing.FieldsIterator(res);
+                            resIter = new H2FieldsIterator(res);
 
                             // The statement will cache some extra thread local objects.
                             conn.dropCachedStatement(rdc.query());
@@ -1015,12 +1019,12 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param space Cache name.
+     * @param cacheName Cache name.
      * @param topVer Topology version.
      * @return Collection of data nodes.
      */
-    private Collection<ClusterNode> dataNodes(String space, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> res = ctx.discovery().cacheAffinityNodes(space, topVer);
+    private Collection<ClusterNode> dataNodes(String cacheName, AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> res = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
         return res != null ? res : Collections.<ClusterNode>emptySet();
     }
@@ -1034,12 +1038,12 @@ public class GridReduceQueryExecutor {
     private Set<ClusterNode> replicatedUnstableDataNodes(GridCacheContext<?,?> cctx) {
         assert cctx.isReplicated() : cctx.name() + " must be replicated";
 
-        String space = cctx.name();
+        String cacheName = cctx.name();
 
-        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(space, NONE));
+        Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(cacheName, NONE));
 
         if (dataNodes.isEmpty())
-            throw new CacheException("Failed to find data nodes for cache: " + space);
+            throw new CacheException("Failed to find data nodes for cache: " + cacheName);
 
         // Find all the nodes owning all the partitions for replicated cache.
         for (int p = 0, parts = cctx.affinity().partitions(); p < parts; p++) {
@@ -1198,11 +1202,12 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param c Connection.
+     * @param schema Schema.
      * @param qry Query.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(H2Connection c, GridCacheTwoStepQuery qry)
+    private Iterator<List<?>> explainPlan(H2Connection c, String schema, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 

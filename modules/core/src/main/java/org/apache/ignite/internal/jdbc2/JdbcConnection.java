@@ -704,7 +704,7 @@ public class JdbcConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         assert ignite instanceof IgniteEx;
 
-        cacheName = ((IgniteEx)ignite).context().query().space(schema);
+        cacheName = ((IgniteEx)ignite).context().query().cacheName(schema);
     }
 
     /** {@inheritDoc} */

@@ -81,6 +81,9 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalReplicatedSelfTest.class));
 
+        // New thin JDBC
+        suite.addTest(new TestSuite(org.apache.ignite.jdbc.thin.JdbcConnectionSelfTest.class));
+
         return suite;
     }
 }

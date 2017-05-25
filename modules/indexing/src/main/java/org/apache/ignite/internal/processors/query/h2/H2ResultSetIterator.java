@@ -30,7 +30,7 @@ import org.h2.value.Value;
 /**
  * Iterator over result set.
  */
-public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
+public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,7 +47,7 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
      * @param data Data array.
      * @throws IgniteCheckedException If failed.
      */
-    protected GridH2ResultSetIterator(H2ResultSet data) throws IgniteCheckedException {
+    protected H2ResultSetIterator(H2ResultSet data) throws IgniteCheckedException {
         this.data = data;
 
         if (data != null)
@@ -123,6 +123,6 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridH2ResultSetIterator.class, this);
+        return S.toString(H2ResultSetIterator.class, this);
     }
 }
