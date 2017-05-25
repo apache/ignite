@@ -145,7 +145,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
-    /** */
+    /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
     /** */
@@ -287,6 +287,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
         try {
             return mem.getNonHeapMemoryUsage();
+        }
+        catch (IllegalArgumentException ignored) {
+            return new MemoryUsage(0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Returns the current memory usage of the heap
+     * @return memory usage or fake value with zero in case there was exception during take of metrics
+     */
+    private MemoryUsage getHeapMemoryUsage() {
+        // Catch exception here to allow discovery proceed even if metrics are not available
+        // java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616
+        // at java.lang.management.MemoryUsage.<init>(Unknown Source)
+        try {
+            return mem.getHeapMemoryUsage();
         }
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
@@ -799,19 +815,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             @Override public long getHeapMemoryInitialized() {
-                return mem.getHeapMemoryUsage().getInit();
+                return getHeapMemoryUsage().getInit();
             }
 
             @Override public long getHeapMemoryUsed() {
-                return mem.getHeapMemoryUsage().getUsed();
+                return getHeapMemoryUsage().getUsed();
             }
 
             @Override public long getHeapMemoryCommitted() {
-                return mem.getHeapMemoryUsage().getCommitted();
+                return getHeapMemoryUsage().getCommitted();
             }
 
             @Override public long getHeapMemoryMaximum() {
-                return mem.getHeapMemoryUsage().getMax();
+                return getHeapMemoryUsage().getMax();
             }
 
             @Override public long getNonHeapMemoryInitialized() {
