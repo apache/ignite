@@ -30,6 +30,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -242,16 +243,21 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
-            Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout,
-            GridQueryCancel cancel) throws IgniteCheckedException {
+        @Override public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx,
+            SqlFieldsQuery qry,
+            IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
-            String qry, String alias, Collection<Object> params, GridQueryTypeDescriptor type,
-            IndexingQueryFilter filter) throws IgniteCheckedException {
+        @Override public long streamUpdateQuery(@Nullable String spaceName, String qry,
+            @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
+            IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
             return null;
         }
 
@@ -329,6 +335,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public String space(String schemaName) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
             return null;
         }
@@ -341,6 +352,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void cancelAllQueries() {
 
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
+            long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+            return null;
         }
     }
 }
