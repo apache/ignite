@@ -65,7 +65,10 @@ applications.
 
 There are two ways to install ODBC driver currently. The first one is to use
 32-bit or 64-bit installer. This is the most simple way and you are recommended
-to stick to it by default.
+to stick to it by default. You can find them in $IGNITE_HOME/platforms/cpp/bin/odbc/
+
+- 32-bit installer : $IGNITE_HOME/platforms/cpp/bin/odbc/ignite-odbc-x86.msi
+- 64-bit installer : $IGNITE_HOME/platforms/cpp/bin/odbc/ignite-odbc-amd64.msi
 
 32-bit installer : $IGNITE_HOME/platforms/cpp/bin/odbc/ignite-odbc-x86.msi
 64-bit installer : $IGNITE_HOME/platforms/cpp/bin/odbc/ignite-odbc-amd64.msi
