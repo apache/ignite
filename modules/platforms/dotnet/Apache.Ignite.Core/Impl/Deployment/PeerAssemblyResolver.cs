@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Cluster;
@@ -38,11 +39,11 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <summary>
         /// Initializes a new instance of the <see cref="PeerAssemblyResolver"/> class.
         /// </summary>
-        public PeerAssemblyResolver(Ignite ignite)
+        public PeerAssemblyResolver(Ignite ignite, Guid originNodeId)
         {
             Debug.Assert(ignite != null);
 
-            _handler = (sender, args) => GetAssembly(ignite, args.Name);
+            _handler = (sender, args) => GetAssembly(ignite, args.Name, originNodeId);
 
             AppDomain.CurrentDomain.AssemblyResolve += _handler;
         }
@@ -58,8 +59,11 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// </summary>
         /// <param name="typeName">Assembly-qualified type name.</param>
         /// <param name="ignite">Ignite.</param>
-        /// <returns>Resulting type or null.</returns>
-        public static Type LoadAssemblyAndGetType(string typeName, Ignite ignite)
+        /// <param name="originNodeId">Originating node identifier.</param>
+        /// <returns>
+        /// Resulting type or null.
+        /// </returns>
+        public static Type LoadAssemblyAndGetType(string typeName, Ignite ignite, Guid originNodeId)
         {
             Debug.Assert(!string.IsNullOrEmpty(typeName));
 
@@ -69,7 +73,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
 
             Debug.Assert(assemblyName != null);
 
-            var asm = GetAssembly(ignite, assemblyName);
+            var asm = GetAssembly(ignite, assemblyName, originNodeId);
 
             if (asm == null)
             {
@@ -83,19 +87,19 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <summary>
         /// Gets the assembly.
         /// </summary>
-        private static Assembly GetAssembly(Ignite ignite, string assemblyName)
+        private static Assembly GetAssembly(Ignite ignite, string assemblyName, Guid originNodeId)
         {
             return LoadedAssembliesResolver.Instance.GetAssembly(assemblyName)
                    ?? AssemblyLoader.GetAssembly(assemblyName)
-                   ?? LoadAssembly(ignite, assemblyName);
+                   ?? LoadAssembly(ignite, assemblyName, originNodeId);
         }
 
         /// <summary>
         /// Loads the assembly.
         /// </summary>
-        private static Assembly LoadAssembly(Ignite ignite, string assemblyName)
+        private static Assembly LoadAssembly(Ignite ignite, string assemblyName, Guid originNodeId)
         {
-            var res = RequestAssembly(assemblyName, ignite);
+            var res = RequestAssembly(assemblyName, ignite, originNodeId);
 
             if (res == null)
                 return null;
@@ -108,8 +112,12 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// </summary>
         /// <param name="assemblyName">Name of the assembly.</param>
         /// <param name="ignite">Ignite.</param>
-        /// <returns>Successful result or null.</returns>
-        private static AssemblyRequestResult RequestAssembly(string assemblyName, Ignite ignite)
+        /// <param name="originNodeId">The origin node identifier.</param>
+        /// <returns>
+        /// Successful result or null.
+        /// </returns>
+        /// <exception cref="IgniteException"></exception>
+        private static AssemblyRequestResult RequestAssembly(string assemblyName, Ignite ignite, Guid originNodeId)
         {
             Debug.Assert(assemblyName != null);
             Debug.Assert(ignite != null);
@@ -120,13 +128,12 @@ namespace Apache.Ignite.Core.Impl.Deployment
             Debug.WriteLine("Requesting assembly from other nodes: " + assemblyName);
 
             // New nodes are not tracked during the loop, since some of the existing nodes caused this call.
-            var dotNetNodes = ignite.GetCluster().ForDotNet().ForRemotes().GetNodes();
             var func = new GetAssemblyFunc();
             var req = new AssemblyRequest(assemblyName);
 
-            foreach (var node in dotNetNodes)
+            foreach (var node in GetDotNetNodes(ignite, originNodeId))
             {
-                var compute = ignite.GetCluster().ForNodes(node).GetCompute();
+                var compute = ignite.GetCluster().ForNodeIds(node).GetCompute();
                 var result = ComputeApplySafe(compute, func, req);
 
                 if (result != null)
@@ -144,6 +151,22 @@ namespace Apache.Ignite.Core.Impl.Deployment
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets the dot net nodes, origin node comes first.
+        /// </summary>
+        private static IEnumerable<Guid> GetDotNetNodes(IIgnite ignite, Guid originNodeId)
+        {
+            yield return originNodeId;
+
+            foreach (var node in ignite.GetCluster().ForDotNet().ForRemotes().GetNodes())
+            {
+                if (node.Id != originNodeId)
+                {
+                    yield return node.Id;
+                }
+            }
         }
 
         /// <summary>

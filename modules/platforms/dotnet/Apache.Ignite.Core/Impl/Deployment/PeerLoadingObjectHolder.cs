@@ -50,6 +50,8 @@ namespace Apache.Ignite.Core.Impl.Deployment
         public PeerLoadingObjectHolder(BinaryReader reader)
         {
             Debug.Assert(reader != null);
+
+            var originNodeId = reader.ReadGuid();
             
             var typeName = reader.ReadString();
 
@@ -80,6 +82,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
+            writer0.WriteGuid(writer0.Marshaller.Ignite.GetLocalNode().Id);
             writer0.WriteString(_object.GetType().AssemblyQualifiedName);
             writer0.WithDetach(w => w.WriteObject(_object));
         }
