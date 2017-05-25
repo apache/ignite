@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -467,7 +466,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
             @Override public void run() {
                 assertTrue(node2.context().clientDisconnected());
 
-                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
                 try {
                     dynamicIndexCreate(node1, CACHE_NAME, TBL_NAME, idx, false);
@@ -479,7 +478,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         });
 
         assertIndex(CACHE_NAME, QueryUtils.normalizeObjectName(TBL_NAME), QueryUtils.normalizeObjectName(IDX_NAME_1),
-            field(QueryUtils.normalizeObjectName(FIELD_NAME_1)));
+            field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED)));
     }
 
     /**

@@ -91,7 +91,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         assertSize(3);
 
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
-            + FIELD_NAME_1 + "\" ASC)")).getAll();
+            + FIELD_NAME_1_ESCAPED + "\" ASC)")).getAll();
 
         // Test that local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
@@ -125,7 +125,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
-            + FIELD_NAME_1 + "\" ASC)"));
+            + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
         assertSqlException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -142,7 +142,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
-            + FIELD_NAME_1 + "\" ASC)"));
+            + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
         cache.query(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS \"" + IDX_NAME_1_ESCAPED + "\" ON \"" +
             TBL_NAME_ESCAPED + "\"(\"id\" ASC)"));
@@ -157,7 +157,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         assertSize(3);
 
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
-            + FIELD_NAME_1 + "\" ASC)"));
+            + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
         assertSize(3);
 
@@ -211,7 +211,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         assertColumnValues("val1", "val2", "val3");
 
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
-            + FIELD_NAME_1 + "\" ASC)"));
+            + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
         assertColumnValues("val1", "val2", "val3");
 
@@ -238,7 +238,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         for (String v : vals)
             expRes.add(Collections.singletonList(v));
 
-        assertEquals(expRes, cache().query(new SqlFieldsQuery("SELECT \"" + FIELD_NAME_1 + "\" FROM \"" +
+        assertEquals(expRes, cache().query(new SqlFieldsQuery("SELECT \"" + FIELD_NAME_1_ESCAPED + "\" FROM \"" +
             TBL_NAME_ESCAPED + "\" ORDER BY \"id\"")).getAll());
     }
 
@@ -332,12 +332,12 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         entity.setValueType(ValueClass.class.getName());
 
         entity.addQueryField("id", Long.class.getName(), null);
-        entity.addQueryField(FIELD_NAME_1, String.class.getName(), null);
-        entity.addQueryField(FIELD_NAME_2, String.class.getName(), null);
+        entity.addQueryField(FIELD_NAME_1_ESCAPED, String.class.getName(), null);
+        entity.addQueryField(FIELD_NAME_2_ESCAPED, String.class.getName(), null);
 
         entity.setKeyFields(Collections.singleton("id"));
 
-        entity.setAliases(Collections.singletonMap(FIELD_NAME_2, alias(FIELD_NAME_2)));
+        entity.setAliases(Collections.singletonMap(FIELD_NAME_2_ESCAPED, alias(FIELD_NAME_2_ESCAPED)));
 
         ccfg.setQueryEntities(Collections.singletonList(entity));
 
