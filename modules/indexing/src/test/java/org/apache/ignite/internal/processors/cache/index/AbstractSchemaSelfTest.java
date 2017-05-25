@@ -449,7 +449,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         throws Exception {
         GridStringBuilder sql = new SB("CREATE INDEX ")
             .a(ifNotExists ? "IF NOT EXISTS " : "")
-            .a("\"" + idx.getName() + "\"")
+            .a(idx.getName())
             .a(" ON ")
             .a(tblName)
             .a(" (");
@@ -465,7 +465,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
             String name = fieldEntry.getKey();
             boolean asc = fieldEntry.getValue();
 
-            sql.a("\"" + name + "\"").a(" ").a(asc ? "ASC" : "DESC");
+            sql.a(name).a(" ").a(asc ? "ASC" : "DESC");
         }
 
         sql.a(')');
@@ -483,7 +483,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     protected void dynamicIndexDrop(Ignite node, String cacheName, String idxName, boolean ifExists) throws Exception {
-        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
+        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + idxName;
 
         executeSql(node, cacheName, sql);
     }

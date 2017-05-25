@@ -174,13 +174,15 @@ public class QueryUtils {
 
         QueryEntity normalEntity = new QueryEntity();
 
-        // Propaget plain properties.
+        // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
         normalEntity.setValueType(entity.getValueType());
-        normalEntity.setKeyFieldName(entity.getKeyFieldName());
-        normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setFields(entity.getFields());
         normalEntity.setKeyFields(entity.getKeyFields());
+
+        // Normalize key/value field names.
+        normalEntity.setKeyFieldName(normalizeObjectName(entity.getKeyFieldName()));
+        normalEntity.setValueFieldName(normalizeObjectName(entity.getValueFieldName()));
 
         // Normalize table name.
         normalEntity.setTableName(normalizeObjectName(tableName(entity)));
@@ -263,8 +265,9 @@ public class QueryUtils {
      * @param str String.
      * @return Escaped string.
      */
-    public static String normalizeObjectName(String str) {
-        assert str != null;
+    public static @Nullable String normalizeObjectName(@Nullable String str) {
+        if (str == null)
+            return null;
 
         String res = str.replace('.', '_').replace('$', '_');
 
