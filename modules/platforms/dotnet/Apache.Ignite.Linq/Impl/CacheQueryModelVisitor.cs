@@ -246,6 +246,8 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void ProcessResultOperatorsEnd(QueryModel queryModel)
         {
+            ProcessSkipTake(queryModel);
+
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
                 string keyword = null;
