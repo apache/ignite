@@ -40,8 +40,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  *
@@ -234,7 +235,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
      * @param msg Message.
      */
     private void checkFullMessage(GridDhtPartitionsFullMessage msg) {
-        Map<Integer, Integer> dupPartsData = GridTestUtils.getFieldValue(msg, "dupPartsData");
+        Map<Integer, Integer> dupPartsData = getFieldValue(msg, "dupPartsData");
 
         assertNotNull(dupPartsData);
 
@@ -243,7 +244,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
+        Map<Integer, Map<Integer, Long>> partCntrs =
+            getFieldValue(getFieldValue(msg, "partCntrs"), "map");
 
         if (partCntrs != null) {
             for (Map<Integer, Long> cntrs : partCntrs.values())
@@ -255,7 +257,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
      * @param msg Message.
      */
     private void checkSingleMessage(GridDhtPartitionsSingleMessage msg) {
-        Map<Integer, Integer> dupPartsData = GridTestUtils.getFieldValue(msg, "dupPartsData");
+        Map<Integer, Integer> dupPartsData = getFieldValue(msg, "dupPartsData");
 
         assertNotNull(dupPartsData);
 
@@ -264,7 +266,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
+        Map<Integer, Map<Integer, Long>> partCntrs = getFieldValue(msg, "partCntrs");
 
         if (partCntrs != null) {
             for (Map<Integer, Long> cntrs : partCntrs.values())
