@@ -51,17 +51,17 @@ namespace Apache.Ignite.Core.Impl.Deployment
         {
             Debug.Assert(reader != null);
 
-            var originNodeId = reader.ReadGuid();
+            var originNodeId = reader.ReadGuid().GetValueOrDefault();
             
             var typeName = reader.ReadString();
 
             var ignite = reader.Marshaller.Ignite;
 
-            using (new PeerAssemblyResolver(ignite))  // Resolve transitive dependencies when needed.
+            using (new PeerAssemblyResolver(ignite, originNodeId))  // Resolve transitive dependencies when needed.
             {
                 // Resolve type from existing assemblies or from remote nodes.
                 var type = Type.GetType(typeName, false)
-                           ?? PeerAssemblyResolver.LoadAssemblyAndGetType(typeName, ignite);
+                           ?? PeerAssemblyResolver.LoadAssemblyAndGetType(typeName, ignite, originNodeId);
 
                 Debug.Assert(type != null);
 
