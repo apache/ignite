@@ -1469,7 +1469,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Skip is not supported with DELETE.
             var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).RemoveAll());
             Assert.AreEqual(
-                "Operator is not supported: Apache.Ignite.Linq.Impl.Dml.RemoveAllResultOperator", nex.Message);
+                "RemoveAll can not be combined with result operators (other than Take): SkipResultOperator",
+                nex.Message);
+
+            // Multiple result operators are not supported with DELETE.
+            nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).RemoveAll());
+            Assert.AreEqual(
+                "RemoveAll can not be combined with result operators (other than Take): SkipResultOperator, " +
+                "TakeResultOperator, RemoveAllResultOperator", nex.Message);
 
             // Joins are not supported in H2.
             var qry = queryable
