@@ -114,11 +114,6 @@ namespace Apache.Ignite.Linq.Impl
 
             if (IsRemoveAll(queryModel))
             {
-                // TODO: Append current table name.
-                /**
-                var queryable = ExpressionWalker.GetCacheQueryable(queryModel.MainFromClause);
-                var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                _builder.AppendFormat("delete {0} ", tableName);*/
                 _builder.Append("delete ");
             }
             else

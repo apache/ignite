@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -1447,25 +1448,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(4, res);
             Assert.AreEqual(Enumerable.Range(7, 4), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 
-            // Simple join.
+            // Joins are not supported in H2.
             var qry = queryable
                 .Where(x => x.Key == 7)
                 .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
 
-            res = qry.RemoveAll();
-            Assert.AreEqual(1, res);
-            Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+            var ex = Assert.Throws<IgniteException>(() => qry.RemoveAll());
+            Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
 
+            // Subquery-style join.
 
-            // Complex query with joins.
-            /**qry = GetPersonCache()
-                .AsCacheQueryable()
-                .Where(x => x.Key == 7)
-                .Join(queryable.Where(x => x.Value.Age > 0), p => p.Key, p => p.Key, (p1, p2) => p2);
-
-            res = qry.RemoveAll();
-            Assert.AreEqual(1, res);
-            Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());*/
 
             // Skip/Take.
             // TODO
