@@ -169,8 +169,11 @@ public class QueryUtils {
      * @return Normalized query entity.
      */
     private static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
-        if (escape)
+        if (escape) {
+            entity.setTableName(tableName(entity));
+
             return entity;
+        }
 
         QueryEntity normalEntity = new QueryEntity();
 
