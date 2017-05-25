@@ -1121,7 +1121,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 caches.remove(maskNull(cache.name()));
                 jCacheProxies.remove(maskNull(cache.name()));
-                restartingCaches.remove(maskNull(cache.name()));
 
                 IgniteInternalFuture<?> fut = ctx.closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
@@ -1862,11 +1861,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             onKernalStart(cache);
 
-            if (proxyRestart) {
+            if (proxyRestart)
                 proxy.onRestarted(cacheCtx, cache);
-
-                restartingCaches.remove(maskNull(cacheCtx.name()));
-            }
         }
     }
 
@@ -1904,8 +1900,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Break the proxy before exchange future is done.
         if (req.restart()) {
             proxy = jCacheProxies.get(maskNull(req.cacheName()));
-
-            restartingCaches.add(maskNull(req.cacheName()));
 
             if (proxy != null)
                 proxy.restart();
@@ -3033,6 +3027,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         startDesc.startTopologyVersion(newTopVer);
 
+                        restartingCaches.remove(maskNull(ccfg.getName()));
+
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
                         assert old == null :
@@ -3106,6 +3102,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (desc != null) {
                     if (req.stop()) {
                         DynamicCacheDescriptor old = registeredCaches.remove(maskNull(req.cacheName()));
+
+                        if (req.restart())
+                            restartingCaches.add(maskNull(req.cacheName()));
 
                         assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
