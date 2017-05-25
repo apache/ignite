@@ -63,7 +63,9 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
         stmt = conn.createStatement();
+
         prepStmt = conn.prepareStatement(SQL_PREPARED);
 
         assertNotNull(stmt);

@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstractTest {
+public abstract class JdbcAbstractDmlStatementSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -59,14 +59,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
+        super.beforeTestsStarted();
 
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
 
@@ -83,6 +76,8 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         ignite(0).getOrCreateCache(cacheConfig());
 
         conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -90,6 +85,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
         conn.close();
+
         assertTrue(conn.isClosed());
     }
 
