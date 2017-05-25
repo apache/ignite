@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 /**
  * Inconsistent metrics from JVM reported: grid manager handle test
  */
-public class GridManagerIllegalStateHandleTest extends TestCase {
+public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
     private Object mxBeanToRestore;
 
