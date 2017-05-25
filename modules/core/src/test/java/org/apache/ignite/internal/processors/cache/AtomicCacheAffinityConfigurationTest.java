@@ -35,10 +35,13 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        AtomicConfiguration aCcfg = new AtomicConfiguration();
+
+        aCcfg.setCacheMode(CacheMode.PARTITIONED);
+        aCcfg.setAffinity(affinityFunction);
+
         return super.getConfiguration(igniteInstanceName)
-            .setAtomicConfiguration(new AtomicConfiguration()
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setAffinity(affinityFunction));
+            .setAtomicConfiguration(aCcfg);
     }
 
     /**
