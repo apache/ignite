@@ -1438,15 +1438,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             
             var queryable = cache.AsCacheQueryable();
 
+            Func<int[]> getKeys = () => cache.Select(x => x.Key).OrderBy(x => x).ToArray();
+
             // Without predicate.
             var res = queryable.Where(x => x.Key < 3).RemoveAll();
             Assert.AreEqual(2, res);
-            Assert.AreEqual(Enumerable.Range(3, 8), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+            Assert.AreEqual(Enumerable.Range(3, 8), getKeys());
 
             // With predicate.
             res = queryable.RemoveAll(x => x.Key < 7);
             Assert.AreEqual(4, res);
-            Assert.AreEqual(Enumerable.Range(7, 4), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+            Assert.AreEqual(Enumerable.Range(7, 4), getKeys());
 
             // Joins are not supported in H2.
             var qry = queryable
@@ -1457,7 +1459,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
 
             // Subquery-style join.
+            var ids = GetPersonCache().AsCacheQueryable().Where(x => x.Key == 7).Select(x => x.Key);
 
+            res = queryable.Where(x => ids.Contains(x.Key)).RemoveAll();
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(Enumerable.Range(8, 3), getKeys());
 
             // Skip/Take.
             // TODO
