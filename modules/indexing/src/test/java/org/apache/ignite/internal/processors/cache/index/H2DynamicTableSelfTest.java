@@ -78,7 +78,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         super.afterTest();
     }
 
-    /** */
+    /**
+     * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
     public void testCreateTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -120,7 +123,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }
     }
 
-    /** */
+    /**
+     * Test that attempting to {@code CREATE TABLE} that already exists does not yield an error if the statement
+     *     contains {@code IF NOT EXISTS} clause.
+     * @throws Exception if failed.
+     */
     public void testCreateTableIfNotExists() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -131,7 +138,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             "\"cacheTemplate=cache\""));
     }
 
-    /** */
+    /**
+     * Test that attempting to {@code CREATE TABLE} that already exists yields an error.
+     * @throws Exception if failed.
+     */
     public void testCreateExistingTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -148,7 +158,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }, IgniteSQLException.class, "Table already exists: Person");
     }
 
-    /** */
+    /**
+     * Test that {@code DROP TABLE} actually removes specified cache and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
     public void testDropTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -167,12 +180,19 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }
     }
 
-    /** */
-    public void testDropTableIfExists() throws Exception {
+    /**
+     * Test that attempting to {@code DROP TABLE} that does not exist does not yield an error if the statement contains
+     *     {@code IF EXISTS} clause.
+     * @throws Exception if failed.
+     */
+    public void testDropMissingTableIfExists() throws Exception {
         cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache_idx\".\"City\""));
     }
 
-    /** */
+    /**
+     * Test that attempting to {@code DROP TABLE} that does not exist yields an error.
+     * @throws Exception if failed.
+     */
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -183,19 +203,29 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }, IgniteSQLException.class, "Table doesn't exist: City");
     }
 
-    /** */
+    /**
+     * Check that {@code DROP TABLE} for caches not created with {@code CREATE TABLE} yields an error.
+     * @throws Exception if failed.
+     */
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("DROP TABLE \"cache\""));
+                @Override public Object call() throws Exception {
+                    cache().query(new SqlFieldsQuery("DROP TABLE \"cache_idx\""));
 
-                return null;
-            }
-        }, IgniteSQLException.class,
-            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache]");
+                    return null;
+                }
+            }, IgniteSQLException.class,
+            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx]");
     }
 
-    /** */
+    /**
+     * Check that a property in given descriptor is present and has parameters as expected.
+     * @param desc Descriptor.
+     * @param name Property name.
+     * @param type Expected property type.
+     * @param isKey {@code true} if the property is expected to belong to key, {@code false} is it's expected to belong
+     *     to value.
+     */
     private void assertProperty(QueryTypeDescriptorImpl desc, String name, Class<?> type, boolean isKey) {
         GridQueryProperty p = desc.property(name);
 

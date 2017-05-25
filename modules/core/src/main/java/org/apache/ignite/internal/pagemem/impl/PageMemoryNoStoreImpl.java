@@ -336,20 +336,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long loadedPages() {
-        long total = 0;
-
-        for (Segment seg : segments) {
-            seg.readLock().lock();
-
-            try {
-                total += seg.allocatedPages();
-            }
-            finally {
-                seg.readLock().unlock();
-            }
-        }
-
-        return total;
+        return allocatedPages.get();
     }
 
     /**
@@ -754,13 +741,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          */
         private int sumPages() {
             return pagesInPrevSegments + maxPages;
-        }
-
-        /**
-         * @return Total number of loaded pages for the segment.
-         */
-        private int allocatedPages() {
-            return allocatedPages.get();
         }
 
         /**

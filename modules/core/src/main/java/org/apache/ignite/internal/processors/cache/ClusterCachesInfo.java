@@ -380,10 +380,13 @@ class ClusterCachesInfo {
                 assert req.stop() ^ req.close() : req;
 
                 if (desc != null) {
-                    if (req.sql() && !desc.sql())
+                    if (req.sql() && !desc.sql()) {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
                             "DROP TABLE [cacheName=" + req.cacheName() + ']'));
+
+                        continue;
+                    }
 
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
