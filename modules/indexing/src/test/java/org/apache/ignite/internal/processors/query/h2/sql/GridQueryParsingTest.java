@@ -58,8 +58,6 @@ import org.h2.command.Parser;
 import org.h2.command.Prepared;
 import org.h2.jdbc.JdbcSQLException;
 import org.h2.command.ddl.CreateTable;
-import org.h2.engine.Session;
-import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
 import org.h2.table.Column;
 import org.h2.value.Value;
@@ -874,7 +872,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        H2Connection c = idx.takeConnectionForSpace(DEFAULT_CACHE_NAME);
+        H2Connection c = idx.takeConnectionForCache(DEFAULT_CACHE_NAME);
 
         PreparedStatement ps = c.prepare(sql, null);
 

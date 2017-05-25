@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -589,7 +588,7 @@ public class GridMapQueryExecutor {
                         // Setup a separate connection for each MAP query because we have
                         // to be able lazily traverse each result set independently.
                         // Now in H2 connection can not be reused if it has alive lazy result set.
-                        conn = h2.takeConnectionForSpace(mainCctx.name());
+                        conn = h2.takeConnectionForCache(mainCctx.name());
 
                         conn.setupConnection(distributedJoinMode != OFF, enforceJoinOrder);
 

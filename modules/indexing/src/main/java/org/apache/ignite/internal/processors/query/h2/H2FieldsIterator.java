@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Special field set iterator based on database result set.
@@ -35,8 +33,8 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @param data Data.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
-        super(data, false, true);
+    public H2FieldsIterator(H2ResultSet data) throws IgniteCheckedException {
+        super(data);
     }
 
     /** {@inheritDoc} */

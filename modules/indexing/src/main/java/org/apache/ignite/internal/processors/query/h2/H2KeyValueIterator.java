@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import java.sql.ResultSet;
-
 /**
  * Special key/value iterator based on database result set.
  */
@@ -33,8 +31,8 @@ public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<
      * @param data Data array.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
-        super(data, false, true);
+    protected H2KeyValueIterator(H2ResultSet data) throws IgniteCheckedException {
+        super(data);
     }
 
     /** {@inheritDoc} */

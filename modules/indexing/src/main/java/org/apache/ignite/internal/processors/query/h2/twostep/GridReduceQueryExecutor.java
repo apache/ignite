@@ -65,9 +65,8 @@ import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
-import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.H2ResultSet;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -542,7 +541,7 @@ public class GridReduceQueryExecutor {
 
             final String cacheName = cctx.name();
 
-            final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
+            final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), cacheName,
                 qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
@@ -632,7 +631,7 @@ public class GridReduceQueryExecutor {
 
                 if (!skipMergeTbl) {
                     if (conn == null)
-                        r.qryInfo.connection(conn = h2.takeConnectionForSpace(space));
+                        r.qryInfo.connection(conn = h2.takeConnectionForCache(cacheName));
 
                     GridMergeTable tbl;
 
@@ -778,7 +777,7 @@ public class GridReduceQueryExecutor {
                             String schema = h2.schema(cacheName);
 
                             if (qry.explain())
-                                return explainPlan(conn, schema, qry, params);
+                                return explainPlan(conn, qry);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
@@ -1202,12 +1201,11 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param c Connection.
-     * @param schema Schema.
      * @param qry Query.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(H2Connection c, String schema, GridCacheTwoStepQuery qry)
+    private Iterator<List<?>> explainPlan(H2Connection c, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 

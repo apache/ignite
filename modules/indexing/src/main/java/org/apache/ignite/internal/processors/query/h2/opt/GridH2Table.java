@@ -248,7 +248,7 @@ public class GridH2Table extends TableBase {
         }
 
         if (snapshotInLock(ses)) {
-            final GridH2QueryContext qctx = GridH2QueryContext.get();
+            final GridH2QueryContext qctx = getQueryContextForSession(ses);
 
             assert qctx != null;
 
