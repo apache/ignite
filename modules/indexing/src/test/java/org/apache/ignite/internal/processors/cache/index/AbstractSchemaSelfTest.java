@@ -208,7 +208,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         assert desc != null;
 
         for (QueryEntity entity : desc.schema().entities()) {
-            if (F.eq(tblName, QueryUtils.tableName(entity))) {
+            if (F.eq(tblName, entity.getTableName())) {
                 for (QueryIndex idx : entity.getIndexes()) {
                     if (F.eq(QueryUtils.indexName(entity, idx), idxName)) {
                         LinkedHashMap<String, Boolean> idxFields = idx.getFields();

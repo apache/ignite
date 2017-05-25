@@ -982,7 +982,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
 
         for (QueryEntity entity : schema.entities()) {
-            String tblName = QueryUtils.tableName(entity);
+            String tblName = entity.getTableName();
 
             QueryEntity oldEntity = tblMap.put(tblName, entity);
 
@@ -993,7 +993,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             for (QueryIndex entityIdx : entity.getIndexes()) {
-                String idxName = QueryUtils.indexName(entity, entityIdx);
+                String idxName = entityIdx.getName();
 
                 T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
 

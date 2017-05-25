@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -109,6 +110,9 @@ public class QueryUtils {
         if (res == null)
             res = typeName(entity.findValueType());
 
+        if (res == null)
+            throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
+
         return res;
     }
 
@@ -168,9 +172,14 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    private static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
+        String tblName = tableName(entity);
+
         if (escape) {
-            entity.setTableName(tableName(entity));
+            entity.setTableName(tblName);
+
+            for (QueryIndex idx : entity.getIndexes())
+                idx.setName(indexName(entity, idx));
 
             return entity;
         }
@@ -188,7 +197,7 @@ public class QueryUtils {
         normalEntity.setValueFieldName(normalizeObjectName(entity.getValueFieldName()));
 
         // Normalize table name.
-        normalEntity.setTableName(normalizeObjectName(tableName(entity)));
+        normalEntity.setTableName(normalizeObjectName(tblName));
 
         // Normalize field names through aliases.
         Map<String, String> normalAliases = new HashMap<>(normalEntity.getAliases());
@@ -290,7 +299,8 @@ public class QueryUtils {
      */
     public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
         List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
-        qryEntity = normalizeQueryEntity(qryEntity, escape);
+        // TODO: Remove this line
+//        qryEntity = normalizeQueryEntity(qryEntity, escape);
 
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
@@ -961,37 +971,6 @@ public class QueryUtils {
             return (SchemaOperationException)e;
 
         return new SchemaOperationException("Unexpected exception.", e);
-    }
-
-    /**
-     * Prepare cache configuration.
-     *
-     * @param ccfg Cache configuration.
-     */
-    @SuppressWarnings("unchecked")
-    public static void prepareCacheConfiguration(CacheConfiguration ccfg) {
-        assert ccfg != null;
-
-        Collection<QueryEntity> entities = ccfg.getQueryEntities();
-
-        if (!F.isEmpty(entities)) {
-            for (QueryEntity entity : entities) {
-                if (F.isEmpty(entity.findValueType()))
-                    continue;
-
-                Collection<QueryIndex> idxs = entity.getIndexes();
-
-                if (!F.isEmpty(idxs)) {
-                    for (QueryIndex idx : idxs) {
-                        if (idx.getName() == null) {
-                            String idxName = indexName(entity, idx);
-
-                            idx.setName(idxName);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /**

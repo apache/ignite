@@ -34,7 +34,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -182,7 +181,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             .a("INDEX ")
             .a("\"" + idx.getName() + "\"")
             .a(" ON ")
-            .a(QueryUtils.tableName(entity))
+            .a("\"" + entity.getTableName() + "\"")
             .a(" (");
 
         boolean first = true;
