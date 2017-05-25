@@ -74,6 +74,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
                 String cache = reader.readString();
                 int fetchSize = reader.readInt();
                 int maxRows = reader.readInt();
+                boolean metaInResp = reader.readBoolean();
 
                 String sql = reader.readString();
 
@@ -84,7 +85,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
                 for (int i = 0; i < argsNum; ++i)
                     params[i] = objReader.readObject(reader);
 
-                res = new SqlListenerQueryExecuteRequest(cache, fetchSize, maxRows, sql, params);
+                res = new SqlListenerQueryExecuteRequest(cache, fetchSize, maxRows, metaInResp, sql, params);
 
                 break;
             }
@@ -181,6 +182,8 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
             writer.writeBoolean(res.last());
             writer.writeBoolean(res.isQuery());
 
+            writeColumnsMeta(writer, res.meta());
+
             writeRows(writer, res.items());
         }
         else if (res0 instanceof SqlListenerQueryFetchResult) {
@@ -203,12 +206,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
 
             writer.writeLong(res.queryId());
 
-            Collection<SqlListenerColumnMeta> columnsMeta = res.meta();
-
-            writer.writeInt(columnsMeta.size());
-
-            for (SqlListenerColumnMeta columnMeta : columnsMeta)
-                columnMeta.write(writer);
+            writeColumnsMeta(writer, res.meta());
         }
         else if (res0 instanceof SqlListenerQueryCloseResult) {
             SqlListenerQueryCloseResult res = (SqlListenerQueryCloseResult) res0;
@@ -221,14 +219,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
         else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
             OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult) res0;
 
-            Collection<SqlListenerColumnMeta> columnsMeta = res.meta();
-
-            assert columnsMeta != null;
-
-            writer.writeInt(columnsMeta.size());
-
-            for (SqlListenerColumnMeta columnMeta : columnsMeta)
-                columnMeta.write(writer);
+            writeColumnsMeta(writer, res.meta());
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
             OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;
@@ -253,6 +244,19 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
             assert false : "Should not reach here.";
 
         return writer.array();
+    }
+
+    /**
+     * @param writer Binary writer.
+     * @param meta Column metadata.
+     */
+    private void writeColumnsMeta(BinaryWriterExImpl writer, Collection<SqlListenerColumnMeta> meta) {
+        assert meta != null;
+
+        writer.writeInt(meta.size());
+
+        for (SqlListenerColumnMeta columnMeta : meta)
+            columnMeta.write(writer);
     }
 
     /**

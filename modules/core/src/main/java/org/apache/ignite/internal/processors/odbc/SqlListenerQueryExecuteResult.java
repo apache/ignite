@@ -26,6 +26,9 @@ public class SqlListenerQueryExecuteResult {
     /** Query ID. */
     private final long queryId;
 
+    /** Fields metadata. */
+    private final List<SqlListenerColumnMeta> meta;
+
     /** Query result rows. */
     private final List<List<Object>> items;
 
@@ -37,12 +40,14 @@ public class SqlListenerQueryExecuteResult {
 
     /**
      * @param queryId Query ID.
+     * @param meta Fields metadata.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
      * @param isQuery Flag indicates the query is SELECT query. {@code false} for DML/DDL queries
      */
-    public SqlListenerQueryExecuteResult(long queryId, List<List<Object>> items, boolean last, boolean isQuery) {
+    public SqlListenerQueryExecuteResult(long queryId, List<SqlListenerColumnMeta> meta, List<List<Object>> items, boolean last, boolean isQuery) {
         this.queryId = queryId;
+        this.meta = meta;
         this.items = items;
         this.last = last;
         this.isQuery = isQuery;
@@ -60,6 +65,13 @@ public class SqlListenerQueryExecuteResult {
      */
     public List<List<Object>> items() {
         return items;
+    }
+
+    /**
+     * @return Query results metadata.
+     */
+    public List<SqlListenerColumnMeta> meta() {
+        return meta;
     }
 
     /**

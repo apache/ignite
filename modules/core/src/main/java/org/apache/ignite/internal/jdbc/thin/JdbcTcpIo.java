@@ -183,6 +183,7 @@ public class JdbcTcpIo {
         writer.writeString(cache);
         writer.writeInt(fetchSize);
         writer.writeInt(maxRows);
+        writer.writeBoolean(false); // metaInResponse == false for JDBC. Query metadata is gathered on demand.
         writer.writeString(sql);
         writer.writeInt(args == null ? 0 : args.size());
 
@@ -208,9 +209,11 @@ public class JdbcTcpIo {
         boolean last = reader.readBoolean();
         boolean isQuery = reader.readBoolean();
 
+        List<SqlListenerColumnMeta> meta = readColumnsMeta(reader);
+
         List<List<Object>> items = readRows(reader);
 
-        return new SqlListenerQueryExecuteResult(qryId, items, last, isQuery);
+        return new SqlListenerQueryExecuteResult(qryId, meta, items, last, isQuery);
     }
 
     /**
@@ -315,14 +318,14 @@ public class JdbcTcpIo {
         assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
             + respQryId + ']';
 
-        return new SqlListenerQueryMetadataResult(qryId, readQueryMeta(reader));
+        return new SqlListenerQueryMetadataResult(qryId, readColumnsMeta(reader));
     }
 
     /**
      * @param reader Binary reader.
      * @return Query metadata.
      */
-    private List<SqlListenerColumnMeta> readQueryMeta(BinaryReaderExImpl reader) {
+    private List<SqlListenerColumnMeta> readColumnsMeta(BinaryReaderExImpl reader) {
         int metaSize = reader.readInt();
 
         List<SqlListenerColumnMeta> meta;

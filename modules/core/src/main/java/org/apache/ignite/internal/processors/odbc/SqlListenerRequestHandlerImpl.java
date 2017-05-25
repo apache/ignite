@@ -182,7 +182,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             qryCursors.put(qryId, cur);
 
             SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(
-                qryId, cur.fetchRows(), !cur.hasNext(), cur.isQuery());
+                qryId, cur.meta(), cur.fetchRows(), !cur.hasNext(), cur.isQuery());
 
             return new SqlListenerResponse(res);
         }

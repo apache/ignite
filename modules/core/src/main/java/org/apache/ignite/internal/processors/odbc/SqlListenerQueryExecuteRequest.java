@@ -36,6 +36,9 @@ public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
     /** Max rows. */
     private final int maxRows;
 
+    /** Flag to add metadata information to response. */
+    private final boolean metaInResp;
+
     /** Sql query. */
     @GridToStringInclude(sensitive = true)
     private final String sqlQry;
@@ -48,15 +51,18 @@ public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
      * @param cacheName Cache name.
      * @param fetchSize Fetch size.
      * @param maxRows Max rows.
+     * @param metaInResp Flag to add metadata information to response.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public SqlListenerQueryExecuteRequest(String cacheName, int fetchSize, int maxRows, String sqlQry, Object[] args) {
+    public SqlListenerQueryExecuteRequest(String cacheName, int fetchSize, int maxRows, boolean metaInResp, String sqlQry,
+        Object[] args) {
         super(QRY_EXEC);
 
         this.cacheName = F.isEmpty(cacheName) ? null : cacheName;
         this.fetchSize = fetchSize;
         this.maxRows = maxRows;
+        this.metaInResp = metaInResp;
         this.sqlQry = sqlQry;
         this.args = args;
     }
@@ -87,6 +93,13 @@ public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
      */
     public Object[] arguments() {
         return args;
+    }
+
+    /**
+     * @return Flag to add metadata information to response.
+     */
+    public boolean metadataInResponse() {
+        return metaInResp;
     }
 
     /**
