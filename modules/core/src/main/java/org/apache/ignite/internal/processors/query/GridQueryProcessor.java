@@ -1270,6 +1270,58 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Create cache and table from given query entity.
+     *
+     * @param schemaName Schema name to create table in.
+     * @param entity Entity to create table from.
+     * @param templateCacheName Cache name to take settings from.
+     * @param ifNotExists Quietly ignore this command if table already exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
+        throws IgniteCheckedException {
+        CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
+
+        if (templateCfg == null)
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
+
+        if (!F.isEmpty(templateCfg.getQueryEntities()))
+            throw new SchemaOperationException("Template cache already contains query entities which it should not " +
+                "[cacheName=" + templateCacheName + ']');
+
+        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
+
+        newCfg.setName(entity.getTableName());
+
+        newCfg.setQueryEntities(Collections.singleton(entity));
+
+        // We want to preserve user specified names as they are
+        newCfg.setSqlEscapeAll(true);
+
+        boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
+
+        if (!res && !ifNotExists)
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+    }
+
+    /**
+     * Drop table by destroying its cache if it's an 1:1 per cache table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param ifExists Quietly ignore this command if table does not exist.
+     * @throws SchemaOperationException if {@code ifExists} is {@code false} and cache was not found.
+     */
+    @SuppressWarnings("unchecked")
+    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) throws SchemaOperationException {
+        boolean res = ctx.grid().destroyCache0(tblName);
+
+        if (!res && !ifExists)
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+    }
+
+    /**
      * Register cache in indexing SPI.
      *
      * @param cacheName Cache name.
