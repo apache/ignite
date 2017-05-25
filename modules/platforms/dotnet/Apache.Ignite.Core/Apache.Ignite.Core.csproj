@@ -98,6 +98,7 @@
     <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Cache\IMemoryMetrics.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingMode.cs" />
     <Compile Include="Events\IEventStorageSpi.cs" />
     <Compile Include="Events\MemoryEventStorageSpi.cs" />
     <Compile Include="Events\NoopEventStorageSpi.cs" />
