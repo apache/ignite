@@ -387,15 +387,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 sharedCtx.affinity().removeAllCacheInfo();
 
-                if (!ctx.clientNode()) {
-                    sharedCtx.database().onDeActivate(ctx);
+                sharedCtx.database().onDeActivate(ctx);
 
-                    if (sharedCtx.pageStore() != null)
-                        sharedCtx.pageStore().onDeActivate(ctx);
+                if (sharedCtx.pageStore() != null)
+                    sharedCtx.pageStore().onDeActivate(ctx);
 
-                    if (sharedCtx.wal() != null)
-                        sharedCtx.wal().onDeActivate(ctx);
-                }
+                if (sharedCtx.wal() != null)
+                    sharedCtx.wal().onDeActivate(ctx);
             }
             catch (Exception e) {
                 for (Map.Entry<UUID, Exception> entry : exs.entrySet())
