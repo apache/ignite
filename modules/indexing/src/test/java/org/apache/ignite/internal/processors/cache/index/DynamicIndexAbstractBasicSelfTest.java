@@ -1028,30 +1028,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     private void dynamicIndexCreate(String cacheName, String tblName, QueryIndex idx, boolean ifNotExists)
         throws Exception {
-        GridStringBuilder sql = new SB("CREATE INDEX ")
-            .a(ifNotExists ? "IF NOT EXISTS " : "")
-            .a("\"" + idx.getName() + "\"")
-            .a(" ON ")
-            .a(tblName)
-            .a(" (");
-
-        boolean first = true;
-
-        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
-            if (first)
-                first = false;
-            else
-                sql.a(", ");
-
-            String name = fieldEntry.getKey();
-            boolean asc = fieldEntry.getValue();
-
-            sql.a("\"" + name + "\"").a(" ").a(asc ? "ASC" : "DESC");
-        }
-
-        sql.a(')');
-
-        executeSql(cacheName, sql.toString());
+        dynamicIndexCreate(node(), cacheName, tblName, idx, ifNotExists);
     }
 
     /**
@@ -1063,20 +1040,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception if failed.
      */
     private void dynamicIndexDrop(String cacheName, String idxName, boolean ifExists) throws Exception {
-        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
-
-        executeSql(cacheName, sql);
-    }
-
-    /**
-     * Execute SQL.
-     *
-     * @param cacheName Cache name.
-     * @param sql SQL.
-     */
-    private void executeSql(String cacheName, String sql) {
-        log.info("Executing DDL: " + sql);
-
-        node().cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
+        dynamicIndexDrop(node(), cacheName, idxName, ifExists);
     }
 }

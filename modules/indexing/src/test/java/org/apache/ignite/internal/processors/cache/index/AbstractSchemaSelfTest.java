@@ -22,6 +22,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,7 +34,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -430,6 +433,72 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static String alias(String fieldName) {
         return fieldName + "_alias";
+    }
+
+    /**
+     * Synchronously create index.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to true operation will fail if index already exists.
+     * @throws Exception If failed.
+     */
+    protected void dynamicIndexCreate(Ignite node, String cacheName, String tblName, QueryIndex idx, boolean ifNotExists)
+        throws Exception {
+        GridStringBuilder sql = new SB("CREATE INDEX ")
+            .a(ifNotExists ? "IF NOT EXISTS " : "")
+            .a("\"" + idx.getName() + "\"")
+            .a(" ON ")
+            .a(tblName)
+            .a(" (");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
+            if (first)
+                first = false;
+            else
+                sql.a(", ");
+
+            String name = fieldEntry.getKey();
+            boolean asc = fieldEntry.getValue();
+
+            sql.a("\"" + name + "\"").a(" ").a(asc ? "ASC" : "DESC");
+        }
+
+        sql.a(')');
+
+        executeSql(node, cacheName, sql.toString());
+    }
+
+    /**
+     * Synchronously drop index.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param idxName Index name.
+     * @param ifExists When set to true operation fill fail if index doesn't exists.
+     * @throws Exception if failed.
+     */
+    protected void dynamicIndexDrop(Ignite node, String cacheName, String idxName, boolean ifExists) throws Exception {
+        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
+
+        executeSql(node, cacheName, sql);
+    }
+
+    /**
+     * Execute SQL.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param sql SQL.
+     */
+    private void executeSql(Ignite node, String cacheName, String sql) {
+        log.info("Executing DDL: " + sql);
+
+        node.cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
     }
 
     /**
