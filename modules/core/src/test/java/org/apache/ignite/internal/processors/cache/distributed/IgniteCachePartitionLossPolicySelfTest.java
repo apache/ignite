@@ -141,6 +141,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * See also https://issues.apache.org/jira/browse/IGNITE-5078
      * @throws Exception if failed.
      */
     public void testIgnore() throws Exception {

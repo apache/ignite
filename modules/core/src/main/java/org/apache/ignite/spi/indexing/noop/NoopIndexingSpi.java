@@ -33,19 +33,19 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiNoop
 public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     /** {@inheritDoc} */
-    @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
+    @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String cacheName, Collection<Object> params,
         @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
         throw new IgniteSpiException("You have to configure custom GridIndexingSpi implementation.");
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
+    @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
         throws IgniteSpiException {
         assert false;
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
+    @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
         assert false;
     }
 
