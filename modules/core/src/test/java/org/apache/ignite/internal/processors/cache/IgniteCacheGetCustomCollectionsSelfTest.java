@@ -41,12 +41,12 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
-        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>();
+        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         mapCacheConfig.setCacheMode(CacheMode.PARTITIONED);
         mapCacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

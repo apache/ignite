@@ -18,42 +18,19 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        cfg.setPeerClassLoadingEnabled(true);
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -89,11 +66,17 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     private void executeQuery() {
         IgniteCache<?, ?> cache = grid(1).cache("person");
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person where age > 10");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name as \"Full Name\", age from person where age > 10");
 
-        QueryCursor<List<?>> qryCursor = cache.query(qry);
+        FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
 
         assertEquals(2, qryCursor.getAll().size());
+
+        assertEquals(2, qryCursor.getColumnsCount()); // Row contains "name" and "age" fields.
+
+        assertEquals("Full Name", qryCursor.getFieldName(0));
+
+        assertEquals("AGE", qryCursor.getFieldName(1));
     }
 
 
@@ -101,7 +84,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     private IgniteCache<Integer, Person> createAndFillCache() {
-        CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheConf.setCacheMode(CacheMode.PARTITIONED);
         cacheConf.setBackups(0);

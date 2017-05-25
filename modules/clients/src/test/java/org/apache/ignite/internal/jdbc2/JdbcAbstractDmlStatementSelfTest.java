@@ -21,17 +21,10 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Collections;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -42,84 +35,20 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-config.xml";
 
     /** JDBC URL for tests involving binary objects manipulation. */
-    static final String BASE_URL_BIN = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-bin-config.xml";
+    static final String BASE_URL_BIN = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /** SQL SELECT query for verification. */
     static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
 
+    /** Alias for _key */
+    private static final String KEY_ALIAS = "key";
+
     /** Connection. */
     protected Connection conn;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration0(gridName);
-    }
-
-    /**
-     * @param gridName Grid name.
-     * @return Grid configuration used for starting the grid.
-     * @throws Exception If failed.
-     */
-    private IgniteConfiguration getConfiguration0(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
-
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            String.class, Person.class
-        );
-
-        cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        return cfg;
-    }
-
-    /**
-     * @param gridName Grid name.
-     * @return Grid configuration used for starting the grid ready for manipulating binary objects.
-     * @throws Exception If failed.
-     */
-    IgniteConfiguration getBinaryConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration0(gridName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        CacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
-
-        ccfg.getQueryEntities().clear();
-
-        QueryEntity e = new QueryEntity();
-
-        e.setKeyType(String.class.getName());
-        e.setValueType("Person");
-
-        e.addQueryField("id", Integer.class.getName(), null);
-        e.addQueryField("age", Integer.class.getName(), null);
-        e.addQueryField("firstName", String.class.getName(), null);
-        e.addQueryField("lastName", String.class.getName(), null);
-
-        ccfg.setQueryEntities(Collections.singletonList(e));
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -135,7 +64,60 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        ignite(0).getOrCreateCache(cacheConfig());
+
         conn = DriverManager.getConnection(getCfgUrl());
+    }
+
+    /**
+     * @return Cache configuration for non binary marshaller tests.
+     */
+    private CacheConfiguration nonBinCacheConfig() {
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setBackups(1);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setIndexedTypes(
+            String.class, Person.class
+        );
+
+        return cache;
+    }
+
+    /**
+     * @return Cache configuration for binary marshaller tests.
+     */
+    final CacheConfiguration binaryCacheConfig() {
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setBackups(1);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        QueryEntity e = new QueryEntity();
+
+        e.setKeyType(String.class.getName());
+        e.setValueType("Person");
+
+        e.setKeyFieldName(KEY_ALIAS);
+
+        e.addQueryField(KEY_ALIAS, e.getKeyType(), null);
+        e.addQueryField("id", Integer.class.getName(), null);
+        e.addQueryField("age", Integer.class.getName(), null);
+        e.addQueryField("firstName", String.class.getName(), null);
+        e.addQueryField("lastName", String.class.getName(), null);
+
+        cache.setQueryEntities(Collections.singletonList(e));
+
+        return cache;
+    }
+
+    /**
+     * @return Configuration of cache to create.
+     */
+    CacheConfiguration cacheConfig() {
+        return nonBinCacheConfig();
     }
 
     /**
@@ -147,9 +129,10 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+        conn.close();
+        assertTrue(conn.isClosed());
     }
 
     /**

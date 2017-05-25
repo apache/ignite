@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +51,38 @@ public interface CacheObject extends Message {
      * @throws IgniteCheckedException If failed.
      */
     public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache object context.
+     * @return Size required to store this value object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param buf Buffer to write value to.
+     * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
+     *      buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean putValue(ByteBuffer buf) throws IgniteCheckedException;
+
+    /**
+     * @param addr Address tp write value to.
+     * @return Number of bytes written.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int putValue(long addr) throws IgniteCheckedException;
+
+    /**
+     * @param buf Buffer to write value to.
+     * @param off Offset in source binary data.
+     * @param len Length of the data to write.
+     * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
+     *      buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean putValue(ByteBuffer buf, int off, int len) throws IgniteCheckedException;
 
     /**
      * @return Object type.

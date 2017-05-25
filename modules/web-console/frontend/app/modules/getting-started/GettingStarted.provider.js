@@ -78,7 +78,7 @@ angular
             _fillPage();
         };
 
-        const dialog = $modal({ templateUrl, scope, placement: 'center', show: false, backdrop: 'static'});
+        const dialog = $modal({ templateUrl, scope, show: false, backdrop: 'static'});
 
         scope.close = () => {
             try {

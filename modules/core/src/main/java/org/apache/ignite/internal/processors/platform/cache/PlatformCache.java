@@ -32,7 +32,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -69,6 +67,7 @@ import javax.cache.Cache;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -132,9 +131,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_LOC_LOAD_CACHE = 17;
-
-    /** */
-    public static final int OP_LOC_PROMOTE = 18;
 
     /** */
     public static final int OP_LOCAL_CLEAR = 20;
@@ -203,7 +199,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_CLEAR_CACHE = 41;
 
     /** */
-    public static final int OP_WITH_ASYNC = 42;
+    public static final int OP_WITH_PARTITION_RECOVER = 42;
 
     /** */
     public static final int OP_REMOVE_ALL2 = 43;
@@ -328,14 +324,14 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_GLOBAL_METRICS = 83;
 
+    /** */
+    public static final int OP_GET_LOST_PARTITIONS = 84;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
     /** Initial JCache (not in binary mode). */
     private final IgniteCache rawCache;
-
-    /** Underlying JCache in async mode. */
-    private final IgniteCache cacheAsync;
 
     /** Whether this cache is created with "keepBinary" flag on the other side. */
     private final boolean keepBinary;
@@ -386,8 +382,9 @@ public class PlatformCache extends PlatformAbstractTarget {
         assert exts != null;
 
         rawCache = cache;
+
         IgniteCache binCache = cache.withKeepBinary();
-        cacheAsync = binCache.withAsync();
+
         this.cache = (IgniteCacheProxy)binCache;
         this.keepBinary = keepBinary;
         this.exts = exts;
@@ -437,23 +434,17 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_CONTAINS_KEYS:
                     return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
 
-                case OP_LOC_PROMOTE: {
-                    cache.localPromote(PlatformUtils.readSet(reader));
-
-                    return TRUE;
-                }
-
                 case OP_REPLACE_3:
                     return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
                         reader.readObjectDetached()) ? TRUE : FALSE;
 
                 case OP_LOC_LOAD_CACHE:
-                    loadCache0(reader, true, cache);
+                    loadCache0(reader, true);
 
                     return TRUE;
 
                 case OP_LOAD_CACHE:
-                    loadCache0(reader, false, cache);
+                    loadCache0(reader, false);
 
                     return TRUE;
 
@@ -553,66 +544,66 @@ public class PlatformCache extends PlatformAbstractTarget {
                     });
                 }
 
-
                 case OP_PUT_ASYNC: {
-                    cacheAsync.put(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.putAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_CLEAR_CACHE_ASYNC: {
-                    cacheAsync.clear();
+                    readAndListenFuture(reader, cache.clearAsync());
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_CLEAR_ALL_ASYNC: {
-                    cacheAsync.clearAll(PlatformUtils.readSet(reader));
+                    readAndListenFuture(reader, cache.clearAllAsync(PlatformUtils.readSet(reader)));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_REMOVE_ALL2_ASYNC: {
-                    cacheAsync.removeAll();
+                    readAndListenFuture(reader, cache.removeAllAsync());
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_SIZE_ASYNC: {
                     CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
 
-                    cacheAsync.size(modes);
+                    readAndListenFuture(reader, cache.sizeAsync(modes));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_CLEAR_ASYNC: {
-                    cacheAsync.clear(reader.readObjectDetached());
+                    readAndListenFuture(reader, cache.clearAsync(reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_LOAD_CACHE_ASYNC: {
-                    loadCache0(reader, false, cacheAsync);
+                    readAndListenFuture(reader, loadCacheAsync0(reader, false));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_LOC_LOAD_CACHE_ASYNC: {
-                    loadCache0(reader, true, cacheAsync);
+                    readAndListenFuture(reader, loadCacheAsync0(reader, true));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
                 }
 
                 case OP_PUT_ALL_ASYNC:
-                    cacheAsync.putAll(PlatformUtils.readMap(reader));
+                    readAndListenFuture(reader, cache.putAllAsync(PlatformUtils.readMap(reader)));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_REMOVE_ALL_ASYNC:
-                    cacheAsync.removeAll(PlatformUtils.readSet(reader));
+                    readAndListenFuture(reader, cache.removeAllAsync(PlatformUtils.readSet(reader)));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_REBALANCE:
                     readAndListenFuture(reader, cache.rebalance());
@@ -620,79 +611,81 @@ public class PlatformCache extends PlatformAbstractTarget {
                     return TRUE;
 
                 case OP_GET_ASYNC:
-                    cacheAsync.get(reader.readObjectDetached());
+                    readAndListenFuture(reader, cache.getAsync(reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_CONTAINS_KEY_ASYNC:
-                    cacheAsync.containsKey(reader.readObjectDetached());
+                    readAndListenFuture(reader, cache.containsKeyAsync(reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_CONTAINS_KEYS_ASYNC:
-                    cacheAsync.containsKeys(PlatformUtils.readSet(reader));
+                    readAndListenFuture(reader, cache.containsKeysAsync(PlatformUtils.readSet(reader)));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_REMOVE_OBJ_ASYNC:
-                    cacheAsync.remove(reader.readObjectDetached());
+                    readAndListenFuture(reader, cache.removeAsync(reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_REMOVE_BOOL_ASYNC:
-                    cacheAsync.remove(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.removeAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_GET_ALL_ASYNC: {
                     Set keys = PlatformUtils.readSet(reader);
 
-                    cacheAsync.getAll(keys);
-
-                    readAndListenFuture(reader, cacheAsync.future(), WRITER_GET_ALL);
+                    readAndListenFuture(reader, cache.getAllAsync(keys), WRITER_GET_ALL);
 
                     return TRUE;
                 }
 
                 case OP_GET_AND_PUT_ASYNC:
-                    cacheAsync.getAndPut(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.getAndPutAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_GET_AND_PUT_IF_ABSENT_ASYNC:
-                    cacheAsync.getAndPutIfAbsent(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.getAndPutIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_GET_AND_REMOVE_ASYNC:
-                    cacheAsync.getAndRemove(reader.readObjectDetached());
+                    readAndListenFuture(reader, cache.getAndRemoveAsync(reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_GET_AND_REPLACE_ASYNC:
-                    cacheAsync.getAndReplace(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.getAndReplaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_REPLACE_2_ASYNC:
-                    cacheAsync.replace(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_REPLACE_3_ASYNC:
-                    cacheAsync.replace(reader.readObjectDetached(), reader.readObjectDetached(),
-                        reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.replaceAsync(reader.readObjectDetached(), reader.readObjectDetached(),
+                            reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_INVOKE_ASYNC: {
                     Object key = reader.readObjectDetached();
 
                     CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
 
-                    cacheAsync.invoke(key, proc);
-
-                    readAndListenFuture(reader, cacheAsync.future(), WRITER_INVOKE);
+                    readAndListenFuture(reader, cache.invokeAsync(key, proc), WRITER_INVOKE);
 
                     return TRUE;
                 }
@@ -702,17 +695,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
 
-                    cacheAsync.invokeAll(keys, proc);
-
-                    readAndListenFuture(reader, cacheAsync.future(), WRITER_INVOKE_ALL);
+                    readAndListenFuture(reader, cache.invokeAllAsync(keys, proc), WRITER_INVOKE_ALL);
 
                     return TRUE;
                 }
 
                 case OP_PUT_IF_ABSENT_ASYNC:
-                    cacheAsync.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached());
+                    readAndListenFuture(reader,
+                        cache.putIfAbsentAsync(reader.readObjectDetached(), reader.readObjectDetached()));
 
-                    return readAndListenFuture(reader);
+                    return TRUE;
 
                 case OP_INVOKE: {
                     Object key = reader.readObjectDetached();
@@ -807,8 +799,45 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Loads cache via localLoadCache or loadCache.
+     *
+     * @param reader Binary reader.
+     * @param loc Local flag.
+     * @return Cache async operation future.
      */
-    private void loadCache0(BinaryRawReaderEx reader, boolean loc, IgniteCache cache) {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
+        PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
+
+        Object[] args = readLoadCacheArgs(reader);
+
+        if (loc)
+            cache.localLoadCache(filter, args);
+        else
+            cache.loadCache(filter, args);
+    }
+
+    /**
+     * Asynchronously loads cache via localLoadCacheAsync or loadCacheAsync.
+     *
+     * @param reader Binary reader.
+     * @param loc Local flag.
+     * @return Cache async operation future.
+     */
+    private IgniteFuture<Void> loadCacheAsync0(BinaryRawReaderEx reader, boolean loc) {
+        PlatformCacheEntryFilter filter = createPlatformCacheEntryFilter(reader);
+
+        Object[] args = readLoadCacheArgs(reader);
+
+        if (loc)
+            return cache.localLoadCacheAsync(filter, args);
+        else
+            return cache.loadCacheAsync(filter, args);
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return created object.
+     */
+    @Nullable private PlatformCacheEntryFilter createPlatformCacheEntryFilter(BinaryRawReaderEx reader) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
@@ -816,6 +845,14 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (pred != null)
             filter = platformCtx.createCacheEntryFilter(pred, 0);
 
+        return filter;
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return Arguments array.
+     */
+    @Nullable private Object[] readLoadCacheArgs(BinaryRawReaderEx reader) {
         Object[] args = null;
 
         int argCnt = reader.readInt();
@@ -827,10 +864,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 args[i] = reader.readObjectDetached();
         }
 
-        if (loc)
-            cache.localLoadCache(filter, args);
-        else
-            cache.loadCache(filter, args);
+        return args;
     }
 
     /** {@inheritDoc} */
@@ -944,6 +978,17 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
+            case OP_GET_LOST_PARTITIONS:
+                Collection<Integer> parts = cache.lostPartitions();
+
+                writer.writeInt(parts.size());
+
+                for (int p : parts) {
+                    writer.writeInt(p);
+                }
+
+                break;
+
             default:
                 super.processOutStream(type, writer);
         }
@@ -952,11 +997,8 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
-            case OP_WITH_ASYNC: {
-                if (cache.isAsync())
-                    return this;
-
-                return copy(rawCache.withAsync(), keepBinary);
+            case OP_WITH_PARTITION_RECOVER: {
+                return copy(rawCache.withPartitionRecover(), keepBinary);
             }
 
             case OP_WITH_KEEP_BINARY: {
@@ -1130,25 +1172,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl) cacheAsync.future()).internalFuture();
-    }
-
-    /** <inheritDoc /> */
-    @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
-        if (opId == OP_GET_ALL)
-            return WRITER_GET_ALL;
-
-        if (opId == OP_INVOKE)
-            return WRITER_INVOKE;
-
-        if (opId == OP_INVOKE_ALL)
-            return WRITER_INVOKE_ALL;
-
-        return null;
-    }
-
     /**
      * Get lock by id.
      *
@@ -1179,6 +1202,10 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Runs specified query.
+     *
+     * @param qry Query.
+     * @return Query cursor.
+     * @throws IgniteCheckedException On error.
      */
     private PlatformQueryCursor runQuery(Query qry) throws IgniteCheckedException {
 
@@ -1195,6 +1222,10 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Runs specified fields query.
+     *
+     * @param qry Query.
+     * @return Query cursor.
+     * @throws IgniteCheckedException On error.
      */
     private PlatformFieldsQueryCursor runFieldsQuery(Query qry)
         throws IgniteCheckedException {
@@ -1211,6 +1242,10 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Reads the query of specified type.
+     *
+     * @param reader Binary reader.
+     * @return Query.
+     * @throws IgniteCheckedException On error.
      */
     private Query readInitialQuery(BinaryRawReaderEx reader) throws IgniteCheckedException {
         int typ = reader.readInt();
@@ -1234,6 +1269,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Reads sql query.
+     *
+     * @param reader Binary reader.
+     * @return Query.
      */
     private Query readSqlQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
@@ -1244,12 +1282,23 @@ public class PlatformCache extends PlatformAbstractTarget {
         Object[] args = readQueryArgs(reader);
 
         boolean distrJoins = reader.readBoolean();
+        int timeout = reader.readInt();
+        boolean replicated = reader.readBoolean();
 
-        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc).setDistributedJoins(distrJoins);
+        return new SqlQuery(typ, sql)
+                .setPageSize(pageSize)
+                .setArgs(args)
+                .setLocal(loc)
+                .setDistributedJoins(distrJoins)
+                .setTimeout(timeout, TimeUnit.MILLISECONDS)
+                .setReplicatedOnly(replicated);
     }
 
     /**
      * Reads fields query.
+     *
+     * @param reader Binary reader.
+     * @return Query.
      */
     private Query readFieldsQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
@@ -1260,13 +1309,26 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         boolean distrJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
+        int timeout = reader.readInt();
+        boolean replicated = reader.readBoolean();
+        boolean collocated = reader.readBoolean();
 
-        return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc)
-            .setDistributedJoins(distrJoins).setEnforceJoinOrder(enforceJoinOrder);
+        return new SqlFieldsQuery(sql)
+                .setPageSize(pageSize)
+                .setArgs(args)
+                .setLocal(loc)
+                .setDistributedJoins(distrJoins)
+                .setEnforceJoinOrder(enforceJoinOrder)
+                .setTimeout(timeout, TimeUnit.MILLISECONDS)
+                .setReplicatedOnly(replicated)
+                .setCollocated(collocated);
     }
 
     /**
      * Reads text query.
+     *
+     * @param reader Binary reader.
+     * @return Query.
      */
     private Query readTextQuery(BinaryRawReader reader) {
         boolean loc = reader.readBoolean();
@@ -1279,6 +1341,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /**
      * Reads scan query.
+     *
+     * @param reader Binary reader.
+     * @return Query.
      */
     private Query readScanQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
@@ -1356,7 +1421,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getCacheTxCommits());
         writer.writeLong(metrics.getCacheTxRollbacks());
         writer.writeString(metrics.name());
-        writer.writeLong(metrics.getOverflowSize());
         writer.writeLong(metrics.getOffHeapGets());
         writer.writeLong(metrics.getOffHeapPuts());
         writer.writeLong(metrics.getOffHeapRemovals());
@@ -1369,16 +1433,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getOffHeapPrimaryEntriesCount());
         writer.writeLong(metrics.getOffHeapBackupEntriesCount());
         writer.writeLong(metrics.getOffHeapAllocatedSize());
-        writer.writeLong(metrics.getOffHeapMaxSize());
-        writer.writeLong(metrics.getSwapGets());
-        writer.writeLong(metrics.getSwapPuts());
-        writer.writeLong(metrics.getSwapRemovals());
-        writer.writeLong(metrics.getSwapHits());
-        writer.writeLong(metrics.getSwapMisses());
-        writer.writeLong(metrics.getSwapEntriesCount());
-        writer.writeLong(metrics.getSwapSize());
-        writer.writeFloat(metrics.getSwapHitPercentage());
-        writer.writeFloat(metrics.getSwapMissPercentage());
         writer.writeInt(metrics.getSize());
         writer.writeInt(metrics.getKeySize());
         writer.writeBoolean(metrics.isEmpty());

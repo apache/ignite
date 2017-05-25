@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -230,10 +231,13 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
      * ComputeService section contains names of all supported providers.
      *
      * @param provider Provider name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setProvider(String provider) {
+    public TcpDiscoveryCloudIpFinder setProvider(String provider) {
         this.provider = provider;
+
+        return this;
     }
 
     /**
@@ -244,10 +248,13 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
      * what is used as an identity for a particular cloud platform.
      *
      * @param identity Identity to use during authentication on the cloud.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setIdentity(String identity) {
+    public TcpDiscoveryCloudIpFinder setIdentity(String identity) {
         this.identity = identity;
+
+        return this;
     }
 
     /**
@@ -258,10 +265,13 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
      * what is used as an credential for a particular cloud platform.
      *
      * @param credential Credential to use during authentication on the cloud.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCredential(String credential) {
+    public TcpDiscoveryCloudIpFinder setCredential(String credential) {
         this.credential = credential;
+
+        return this;
     }
 
     /**
@@ -275,10 +285,13 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
      * what is used as an credential for a particular cloud platform.
      *
      * @param credentialPath Path to the credential to use during authentication on the cloud.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCredentialPath(String credentialPath) {
+    public TcpDiscoveryCloudIpFinder setCredentialPath(String credentialPath) {
         this.credentialPath = credentialPath;
+
+        return this;
     }
 
     /**
@@ -291,13 +304,14 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
      * providers a call to this method is redundant.
      *
      * @param zones Zones where VMs are located or null if to take every zone into account.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setZones(Collection<String> zones) {
-        if (F.isEmpty(zones))
-            return;
+    public TcpDiscoveryCloudIpFinder setZones(Collection<String> zones) {
+        if (!F.isEmpty(zones))
+            this.zones = new TreeSet<>(zones);
 
-        this.zones = new TreeSet<>(zones);
+        return this;
     }
 
     /**
@@ -310,13 +324,14 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
      * providers a call to this method is redundant.
      *
      * @param regions Regions where VMs are located or null if to check every region a provider has.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setRegions(Collection<String> regions) {
-        if (F.isEmpty(regions))
-            return;
+    public TcpDiscoveryCloudIpFinder setRegions(Collection<String> regions) {
+        if (!F.isEmpty(regions))
+            this.regions = new TreeSet<>(regions);
 
-        this.regions = new TreeSet<>(regions);
+        return this;
     }
 
     /**
@@ -451,5 +466,17 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
         }
 
         return builder.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryCloudIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryCloudIpFinder.class, this);
     }
 }

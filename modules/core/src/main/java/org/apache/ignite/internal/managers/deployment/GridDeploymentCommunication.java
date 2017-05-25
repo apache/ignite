@@ -294,7 +294,7 @@ class GridDeploymentCommunication {
 
         if (node != null) {
             try {
-                ctx.io().send(node, topic, res, GridIoPolicy.P2P_POOL);
+                ctx.io().sendToCustomTopic(node, topic, res, GridIoPolicy.P2P_POOL);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent peer class loading response [node=" + node.id() + ", res=" + res + ']');
@@ -324,7 +324,7 @@ class GridDeploymentCommunication {
         Message req = new GridDeploymentRequest(null, null, rsrcName, true);
 
         if (!rmtNodes.isEmpty()) {
-            ctx.io().send(
+            ctx.io().sendToGridTopic(
                 rmtNodes,
                 TOPIC_CLASSLOAD,
                 req,
@@ -445,7 +445,7 @@ class GridDeploymentCommunication {
             if (req.responseTopic() != null && !ctx.localNodeId().equals(dstNode.id()))
                 req.responseTopicBytes(U.marshal(marsh, req.responseTopic()));
 
-            ctx.io().send(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
+            ctx.io().sendToGridTopic(dstNode, TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 
             if (log.isDebugEnabled())
                 log.debug("Sent peer class loading request [node=" + dstNode.id() + ", req=" + req + ']');

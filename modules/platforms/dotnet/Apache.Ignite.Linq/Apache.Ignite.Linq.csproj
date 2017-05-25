@@ -52,7 +52,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CacheExtensions.cs" />
-    <Compile Include="CompiledQuery2.cs" />
     <Compile Include="CompiledQuery.cs" />
     <Compile Include="ICacheQueryable.cs" />
     <Compile Include="Impl\AliasDictionary.cs" />

@@ -150,7 +150,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
 
             if (!nodes.isEmpty()) {
                 try {
-                    ctx.io().send(nodes, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(nodes, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     throw U.convertException(e);
@@ -169,7 +169,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
                 ctx.job().cancelJob(ses.getId(), jobId, false);
             else {
                 try {
-                    ctx.io().send(node, TOPIC_JOB_CANCEL, new GridJobCancelRequest(ses.getId(), jobId), SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(node, TOPIC_JOB_CANCEL, new GridJobCancelRequest(ses.getId(), jobId), SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     // Avoid stack trace for left nodes.

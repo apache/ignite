@@ -28,7 +28,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -75,15 +74,9 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(0);
 
-            IgniteCompute comp = ignite.compute().withAsync();
+            ComputeTaskFuture<Integer> fut1 = ignite.compute().executeAsync(TestJobsChainTask.class, true);
 
-            comp.execute(TestJobsChainTask.class, true);
-
-            ComputeTaskFuture<Integer> fut1 = comp.future();
-
-            comp.execute(TestJobsChainTask.class, false);
-
-            ComputeTaskFuture<Integer> fut2 = comp.future();
+            ComputeTaskFuture<Integer> fut2 = ignite.compute().executeAsync(TestJobsChainTask.class, false);
 
             assert fut1.get() == 55;
             assert fut2.get() == 55;
@@ -105,15 +98,9 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     try {
-                        IgniteCompute comp = ignite.compute().withAsync();
+                        ComputeTaskFuture<Integer> fut1 = ignite.compute().executeAsync(TestJobsChainTask.class, true);
 
-                        comp.execute(TestJobsChainTask.class, true);
-
-                        ComputeTaskFuture<Integer> fut1 = comp.future();
-
-                        comp.execute(TestJobsChainTask.class, false);
-
-                        ComputeTaskFuture<Integer> fut2 = comp.future();
+                        ComputeTaskFuture<Integer> fut2 = ignite.compute().executeAsync(TestJobsChainTask.class, false);
 
                         assert fut1.get() == 55;
                         assert fut2.get() == 55;

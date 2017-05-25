@@ -36,7 +36,7 @@ public class HadoopIgfs20FileSystemLoopbackPrimarySelfTest extends HadoopIgfs20F
 
     /** {@inheritDoc} */
     @Override protected String primaryFileSystemUriPath() {
-        return "igfs://igfs:" + getTestGridName(0) + "@/";
+        return "igfs://igfs@/";
     }
 
     /** {@inheritDoc} */
@@ -45,11 +45,11 @@ public class HadoopIgfs20FileSystemLoopbackPrimarySelfTest extends HadoopIgfs20F
     }
 
     /** {@inheritDoc} */
-    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String igniteInstanceName) {
         IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
 
         cfg.setType(IgfsIpcEndpointType.TCP);
-        cfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+        cfg.setPort(DFLT_IPC_PORT + getTestIgniteInstanceIndex(igniteInstanceName));
 
         return cfg;
     }

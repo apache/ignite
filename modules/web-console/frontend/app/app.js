@@ -16,9 +16,7 @@
  */
 
 import '../public/stylesheets/style.scss';
-import '../app/components/ui-grid-header/ui-grid-header.scss';
-import '../app/components/ui-grid-settings/ui-grid-settings.scss';
-import '../app/components/form-field-datepicker/form-field-datepicker.scss';
+import '../app/primitives';
 
 import './app.config';
 
@@ -80,7 +78,6 @@ import igniteRetainSelection from './directives/retain-selection.directive';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Clone from './services/Clone.service.js';
 import Confirm from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
@@ -117,6 +114,11 @@ import resetPassword from './controllers/reset-password.controller';
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
+import clusterSelect from './components/cluster-select';
+import './components/input-dialog';
+import webConsoleHeader from './components/web-console-header';
+import webConsoleFooter from './components/web-console-footer';
+import igniteIcon from './components/ignite-icon';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
@@ -149,6 +151,7 @@ angular
     'ignite-console.core',
     'ignite-console.ace',
     'ignite-console.Form',
+    'ignite-console.input-dialog',
     'ignite-console.user',
     'ignite-console.branding',
     'ignite-console.socket',
@@ -173,7 +176,11 @@ angular
     // Ignite configuration module.
     'ignite-console.config',
     // Ignite modules.
-    'ignite-console.modules'
+    'ignite-console.modules',
+    // Components
+    webConsoleHeader.name,
+    webConsoleFooter.name,
+    igniteIcon.name
 ])
 // Directives.
 .directive(...igniteAutoFocus)
@@ -198,12 +205,12 @@ angular
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
+.directive('igniteClusterSelect', clusterSelect)
 // Services.
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
-.service(...Clone)
 .service(...Confirm)
 .service(...ConfirmBatch)
 .service(...CopyToClipboard)
@@ -226,11 +233,11 @@ angular
 .controller(...igfs)
 .controller(...profile)
 // Filters.
-.filter(...byName)
+.filter('byName', byName)
 .filter('defaultName', defaultName)
-.filter(...domainsValidation)
-.filter(...duration)
-.filter(...hasPojo)
+.filter('domainsValidation', domainsValidation)
+.filter('duration', duration)
+.filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);
@@ -243,10 +250,10 @@ angular
             abstract: true,
             template: baseTemplate
         })
-        .state('settings', {
+        .state('base.settings', {
             url: '/settings',
             abstract: true,
-            template: baseTemplate
+            template: '<ui-view></ui-view>'
         });
 
     $urlRouterProvider.otherwise('/404');
@@ -258,8 +265,8 @@ angular
     $root.$meta = $meta;
     $root.gettingStarted = gettingStarted;
 }])
-.run(['$rootScope', 'IgniteAgentMonitor', ($root, agentMonitor) => {
-    $root.$on('user', () => agentMonitor.init());
+.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
+    $root.$on('user', () => agentMgr.connect());
 }])
 .run(['$rootScope', ($root) => {
     $root.$on('$stateChangeStart', () => {
@@ -274,7 +281,7 @@ angular
                 .then((user) => {
                     $root.$broadcast('user', user);
 
-                    $state.go('settings.admin');
+                    $state.go('base.settings.admin');
                 })
                 .then(() => Notebook.load())
                 .catch(Messages.showError);

@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcDriver;
@@ -77,6 +76,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
@@ -127,6 +127,12 @@ public class JdbcConnection implements Connection {
     /** Distributed joins flag. */
     private boolean distributedJoins;
 
+    /** Transactions allowed flag. */
+    private boolean txAllowed;
+
+    /** Current transaction isolation. */
+    private int txIsolation;
+
     /** Make this connection streaming oriented, and prepared statements - data streamer aware. */
     private final boolean stream;
 
@@ -158,10 +164,11 @@ public class JdbcConnection implements Connection {
 
         this.url = url;
 
-        this.cacheName = props.getProperty(PROP_CACHE);
-        this.locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
-        this.collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
-        this.distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        cacheName = props.getProperty(PROP_CACHE);
+        locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
+        collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
+        distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
@@ -174,7 +181,7 @@ public class JdbcConnection implements Connection {
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
         if (nodeIdProp != null)
-            this.nodeId = UUID.fromString(nodeIdProp);
+            nodeId = UUID.fromString(nodeIdProp);
 
         try {
             String cfgUrl = props.getProperty(PROP_CFG);
@@ -219,8 +226,12 @@ public class JdbcConnection implements Connection {
 
                             ignite = Ignition.start();
                         }
-                        else
-                            ignite = Ignition.start(loadConfiguration(cfgUrl));
+                        else {
+                            IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> cfgAndCtx =
+                                loadConfiguration(cfgUrl);
+
+                            ignite = IgnitionEx.start(cfgAndCtx.get1(), cfgAndCtx.get2());
+                        }
 
                         fut.onDone(ignite);
                     }
@@ -241,20 +252,21 @@ public class JdbcConnection implements Connection {
 
     /**
      * @param cfgUrl Config URL.
+     * @return Ignite config and Spring context.
      */
-    private IgniteConfiguration loadConfiguration(String cfgUrl) {
+    private IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> loadConfiguration(String cfgUrl) {
         try {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
                 IgnitionEx.loadConfigurations(cfgUrl);
 
             IgniteConfiguration cfg = F.first(cfgMap.get1());
 
-            if (cfg.getGridName() == null)
-                cfg.setGridName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
+            if (cfg.getIgniteInstanceName() == null)
+                cfg.setIgniteInstanceName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
 
             cfg.setClientMode(true); // Force client mode.
 
-            return cfg;
+            return new IgniteBiTuple<>(cfg, cfgMap.getValue());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -291,7 +303,7 @@ public class JdbcConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        if (!autoCommit)
+        if (!txAllowed && !autoCommit)
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
@@ -306,14 +318,16 @@ public class JdbcConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (!txAllowed)
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (!txAllowed)
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -386,14 +400,20 @@ public class JdbcConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (txAllowed)
+            txIsolation = level;
+        else
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (txAllowed)
+            return txIsolation;
+        else
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -445,7 +465,7 @@ public class JdbcConnection implements Connection {
     @Override public void setHoldability(int holdability) throws SQLException {
         ensureNotClosed();
 
-        if (holdability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && holdability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
     }
 
@@ -460,28 +480,28 @@ public class JdbcConnection implements Connection {
     @Override public Savepoint setSavepoint() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Savepoint setSavepoint(String name) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -495,7 +515,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         JdbcStatement stmt = new JdbcStatement(this);
@@ -516,7 +536,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         JdbcPreparedStatement stmt;
@@ -618,11 +638,7 @@ public class JdbcConnection implements Connection {
                     throw new SQLException("Failed to establish connection with node (is it a server node?): " +
                         nodeId);
 
-                IgniteCompute compute = ignite.compute(grp).withAsync();
-
-                compute.call(task);
-
-                return compute.<Boolean>future().get(timeout, SECONDS);
+                return ignite.compute(grp).callAsync(task).get(timeout, SECONDS);
             }
             else
                 return task.call();
@@ -691,7 +707,7 @@ public class JdbcConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         assert ignite instanceof IgniteEx;
 
-        cacheName = ((IgniteEx)ignite).context().query().space(schema);
+        cacheName = ((IgniteEx)ignite).context().query().cacheName(schema);
     }
 
     /** {@inheritDoc} */

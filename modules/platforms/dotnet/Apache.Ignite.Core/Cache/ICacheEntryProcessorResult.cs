@@ -18,12 +18,18 @@
 namespace Apache.Ignite.Core.Cache
 {
     /// <summary>
-    /// Represents a result of processing <see cref="ICacheEntry{K, V}"/> 
-    /// by <see cref="ICacheEntryProcessor{K, V, A, R}"/>.
+    /// Represents a result of processing <see cref="ICacheEntry{K, V}" />
+    /// by <see cref="ICacheEntryProcessor{K, V, A, R}" />.
     /// </summary>
+    /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="T">Processor result type.</typeparam>
-    public interface ICacheEntryProcessorResult<out T>
+    public interface ICacheEntryProcessorResult<out TK, out T>
     {
+        /// <summary>
+        /// Gets the cache key.
+        /// </summary>
+        TK Key { get; }
+
         /// <summary>
         /// Gets the result of processing an entry.
         /// <para />

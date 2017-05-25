@@ -85,6 +85,13 @@ namespace ignite
                      */
                     void GetAll(OutputOperation& op, IgniteError& err);
 
+                    /**
+                     * Get all cursor entries.
+                     *
+                     * @param op Operation.
+                     */
+                    void GetAll(OutputOperation& op);
+
                 private:
                     /** Environment. */
                     ignite::common::concurrent::SharedPointer<impl::IgniteEnvironment> env;

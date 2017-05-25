@@ -24,18 +24,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  *
@@ -43,6 +44,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** */
     private Set<Class<?>> recordClasses;
+
+    /** */
+    private IgniteBiPredicate<ClusterNode, Message> recordP;
 
     /** */
     private List<Object> recordedMsgs = new ArrayList<>();
@@ -54,7 +58,15 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     private Map<Class<?>, Set<String>> blockCls = new HashMap<>();
 
     /** */
-    private IgnitePredicate<GridIoMessage> blockP;
+    private IgniteBiPredicate<ClusterNode, Message> blockP;
+
+    /**
+     * @param node Node.
+     * @return Test SPI.
+     */
+    public static TestRecordingCommunicationSpi spi(Ignite node) {
+        return (TestRecordingCommunicationSpi)node.configuration().getCommunicationSpi();
+    }
 
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
@@ -62,21 +74,24 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         if (msg instanceof GridIoMessage) {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
-            Object msg0 = ioMsg.message();
+            Message msg0 = ioMsg.message();
 
             synchronized (this) {
-                if (recordClasses != null && recordClasses.contains(msg0.getClass()))
+                boolean record = (recordClasses != null && recordClasses.contains(msg0.getClass())) ||
+                    (recordP != null && recordP.apply(node, msg0));
+
+                if (record)
                     recordedMsgs.add(msg0);
 
                 boolean block = false;
 
-                if (blockP != null && blockP.apply(ioMsg))
+                if (blockP != null && blockP.apply(node, msg0))
                     block = true;
                 else {
                     Set<String> blockNodes = blockCls.get(msg0.getClass());
 
                     if (blockNodes != null) {
-                        String nodeName = (String)node.attributes().get(ATTR_GRID_NAME);
+                        String nodeName = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
 
                         block = blockNodes.contains(nodeName);
                     }
@@ -88,12 +103,25 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
                     blockedMsgs.add(new T2<>(node, ioMsg));
 
+                    notifyAll();
+
                     return;
                 }
+                else if (record)
+                    notifyAll();
             }
         }
 
         super.sendMessage(node, msg, ackC);
+    }
+
+    /**
+     * @param recordP Record predicate.
+     */
+    public void record(IgniteBiPredicate<ClusterNode, Message> recordP) {
+        synchronized (this) {
+            this.recordP = recordP;
+        }
     }
 
     /**
@@ -137,9 +165,46 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
+     * @param cls Message class.
+     * @param nodeName Node name.
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForBlocked(Class<?> cls, String nodeName) throws InterruptedException {
+        synchronized (this) {
+            while (!hasMessage(cls, nodeName))
+                wait();
+        }
+    }
+
+    /**
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForRecorded() throws InterruptedException {
+        synchronized (this) {
+            while (recordedMsgs.isEmpty())
+                wait();
+        }
+    }
+
+    /**
+     * @param cls Message class.
+     * @param nodeName Node name.
+     * @return {@code True} if has blocked message.
+     */
+    private boolean hasMessage(Class<?> cls, String nodeName) {
+        for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+            if (msg.get2().message().getClass() == cls &&
+                nodeName.equals(msg.get1().attribute(ATTR_IGNITE_INSTANCE_NAME)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param blockP Message block predicate.
      */
-    public void blockMessages(IgnitePredicate<GridIoMessage> blockP) {
+    public void blockMessages(IgniteBiPredicate<ClusterNode, Message> blockP) {
         synchronized (this) {
             this.blockP = blockP;
         }

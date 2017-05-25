@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -138,7 +139,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private boolean locCache;
 
     /** */
-    private transient boolean keepBinary;
+    private boolean keepBinary;
 
     /** */
     private transient ConcurrentMap<Integer, PartitionRecovery> rcvs;
@@ -153,10 +154,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient int cacheId;
 
     /** */
-    private transient volatile Map<Integer, Long> initUpdCntrs;
+    private transient volatile Map<Integer, T2<Long, Long>> initUpdCntrs;
 
     /** */
-    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
+    private transient volatile Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode;
 
     /** */
     private transient volatile AffinityTopologyVersion initTopVer;
@@ -165,7 +166,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean ignoreClsNotFound;
 
     /** */
-    private transient boolean asyncCallback;
+    private transient boolean asyncCb;
 
     /** */
     private transient UUID nodeId;
@@ -289,8 +290,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
-        Map<Integer, Long> cntrs) {
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
+        Map<Integer, T2<Long, Long>> cntrs) {
         this.initUpdCntrsPerNode = cntrsPerNode;
         this.initUpdCntrs = cntrs;
         this.initTopVer = topVer;
@@ -307,12 +308,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (locLsnr instanceof JCacheQueryLocalListener) {
                 ctx.resource().injectGeneric(((JCacheQueryLocalListener)locLsnr).impl);
 
-                asyncCallback = ((JCacheQueryLocalListener)locLsnr).async();
+                asyncCb = ((JCacheQueryLocalListener)locLsnr).async();
             }
             else {
                 ctx.resource().injectGeneric(locLsnr);
 
-                asyncCallback = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
+                asyncCb = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
             }
         }
 
@@ -323,14 +324,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (((JCacheQueryRemoteFilter)filter).impl != null)
                     ctx.resource().injectGeneric(((JCacheQueryRemoteFilter)filter).impl);
 
-                if (!asyncCallback)
-                    asyncCallback = ((JCacheQueryRemoteFilter)filter).async();
+                if (!asyncCb)
+                    asyncCb = ((JCacheQueryRemoteFilter)filter).async();
             }
             else {
                 ctx.resource().injectGeneric(filter);
 
-                if (!asyncCallback)
-                    asyncCallback = U.hasAnnotation(filter, IgniteAsyncCallback.class);
+                if (!asyncCb)
+                    asyncCb = U.hasAnnotation(filter, IgniteAsyncCallback.class);
             }
         }
 
@@ -398,7 +399,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
                 assert !skipPrimaryCheck || (cctx.isReplicated() && ctx.localNodeId().equals(nodeId));
 
-                if (asyncCallback) {
+                if (asyncCb) {
                     ContinuousQueryAsyncClosure clsr = new ContinuousQueryAsyncClosure(
                         primary,
                         evt,
@@ -425,7 +426,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                                     onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                                 }
-                            });
+                            }, sync);
                         }
                     }
                 }
@@ -454,6 +455,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
+                assert topVer != null;
+
                 Collection<CacheContinuousQueryEntry> backupQueue0 = backupQueue;
 
                 if (backupQueue0 == null)
@@ -558,16 +561,19 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
-     * Wait topology.
+     * @param ctx Context.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
+    void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
         if (!cctx.isLocal()) {
-            cacheContext(ctx).affinity().affinityReadyFuture(initTopVer).get();
+            AffinityTopologyVersion topVer = initTopVer;
+
+            cacheContext(ctx).affinity().affinityReadyFuture(topVer).get();
 
             for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
-                getOrCreatePartitionRecovery(ctx, partId);
+                getOrCreatePartitionRecovery(ctx, partId, topVer);
         }
     }
 
@@ -606,7 +612,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (objs.isEmpty())
             return;
 
-        if (asyncCallback) {
+        if (asyncCb) {
             final List<CacheContinuousQueryEntry> entries = objs instanceof List ? (List)objs : new ArrayList(objs);
 
             IgniteStripedThreadPoolExecutor asyncPool = ctx.asyncCallbackPool();
@@ -733,7 +739,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
         }
 
-        PartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition());
+        PartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition(), e.topologyVersion());
 
         return rec.collectEntries(e, cctx, cache);
     }
@@ -866,37 +872,41 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @param ctx Context.
      * @param partId Partition id.
+     * @param topVer Topology version for current operation.
      * @return Partition recovery.
      */
-    @NotNull private PartitionRecovery getOrCreatePartitionRecovery(GridKernalContext ctx, int partId) {
+    @NotNull private PartitionRecovery getOrCreatePartitionRecovery(GridKernalContext ctx,
+        int partId,
+        AffinityTopologyVersion topVer) {
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
         PartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            Long partCntr = null;
+            T2<Long, Long> partCntrs = null;
 
-            AffinityTopologyVersion initTopVer0 = initTopVer;
+            Map<UUID, Map<Integer, T2<Long, Long>>> initUpdCntrsPerNode = this.initUpdCntrsPerNode;
 
-            if (initTopVer0 != null) {
+            if (initUpdCntrsPerNode != null) {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
                 GridCacheAffinityManager aff = cctx.affinity();
 
-                if (initUpdCntrsPerNode != null) {
-                    for (ClusterNode node : aff.nodesByPartition(partId, initTopVer)) {
-                        Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
+                for (ClusterNode node : aff.nodesByPartition(partId, topVer)) {
+                    Map<Integer, T2<Long, Long>> map = initUpdCntrsPerNode.get(node.id());
 
-                        if (map != null) {
-                            partCntr = map.get(partId);
+                    if (map != null) {
+                        partCntrs = map.get(partId);
 
-                            break;
-                        }
+                        break;
                     }
                 }
-                else if (initUpdCntrs != null)
-                    partCntr = initUpdCntrs.get(partId);
             }
+            else if (initUpdCntrs != null)
+                partCntrs = initUpdCntrs.get(partId);
 
-            rec = new PartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), initTopVer0, partCntr);
+            rec = new PartitionRecovery(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), topVer,
+                partCntrs != null ? partCntrs.get2() : null);
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
 
@@ -1324,7 +1334,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     for (AffinityTopologyVersion topVer : t.get2()) {
                         for (ClusterNode node : ctx.discovery().cacheAffinityNodes(cctx.name(), topVer)) {
-                            if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
+                            if (!node.isLocal()) {
                                 try {
                                     cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
                                 }
@@ -1389,6 +1399,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         out.writeBoolean(sync);
         out.writeBoolean(ignoreExpired);
         out.writeInt(taskHash);
+        out.writeBoolean(keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -1410,6 +1421,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         sync = in.readBoolean();
         ignoreExpired = in.readBoolean();
         taskHash = in.readInt();
+        keepBinary = in.readBoolean();
 
         cacheId = CU.cacheId(cacheName);
     }

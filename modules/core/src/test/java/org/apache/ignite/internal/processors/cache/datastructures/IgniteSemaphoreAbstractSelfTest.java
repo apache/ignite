@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -107,7 +106,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("myCache");
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -225,9 +224,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         assertEquals(-2, semaphore1.availablePermits());
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -264,8 +261,6 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
             }
         });
 
-        IgniteFuture<Object> fut = comp.future();
-
         Thread.sleep(3000);
 
         semaphore1.release(2);
@@ -295,7 +290,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         cfg = optimize(getConfiguration("npeGrid"));
         cfg.setGridLogger(stringLogger);
 
-        try (Ignite ignite = startGrid(cfg.getGridName(), cfg)) {
+        try (Ignite ignite = startGrid(cfg.getIgniteInstanceName(), cfg)) {
             ignite.semaphore("semaphore", 1, true, true);
         }
 

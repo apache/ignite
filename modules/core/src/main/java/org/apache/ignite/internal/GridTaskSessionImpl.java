@@ -114,6 +114,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private final IgniteFutureImpl mapFut;
 
+    /** */
+    private final String execName;
+
     /**
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
@@ -129,6 +132,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
      * @param subjId Subject ID.
+     * @param execName Custom executor name.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -144,7 +148,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        UUID subjId) {
+        UUID subjId,
+        @Nullable String execName) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -173,6 +178,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.fullSup = fullSup;
         this.internal = internal;
         this.subjId = subjId;
+        this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
     }
@@ -871,6 +877,13 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public boolean isInternal() {
         return internal;
+    }
+
+    /**
+     * @return Custom executor name.
+     */
+    @Nullable public String executorName() {
+        return execName;
     }
 
     /** {@inheritDoc} */

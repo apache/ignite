@@ -75,6 +75,30 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        assert val != null : "Value is not initialized";
+
+        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(val.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), val, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        assert val != null : "Value is not initialized";
+
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, val, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.objectPutSize(val.length);
+    }
+
+    /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
         return TYPE_BYTE_ARR;
     }
@@ -154,7 +178,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 105;
     }
 
@@ -165,6 +189,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheObjectByteArrayImpl [arrLen" + (val != null ? val.length : 0) + ']';
+        return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
     }
 }

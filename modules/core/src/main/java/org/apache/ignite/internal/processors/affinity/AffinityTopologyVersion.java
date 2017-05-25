@@ -73,6 +73,15 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
+     * @return Topology version with incremented minor version.
+     */
+    public AffinityTopologyVersion nextMinorVersion() {
+        assert topVer > 0;
+
+        return new AffinityTopologyVersion(topVer, minorTopVer + 1);
+    }
+
+    /**
      * @return Topology version.
      */
     public long topologyVersion() {
@@ -190,7 +199,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 111;
     }
 

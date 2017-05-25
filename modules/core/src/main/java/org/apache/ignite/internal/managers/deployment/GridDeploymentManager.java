@@ -91,7 +91,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         GridProtocolHandler.registerDeploymentManager(this);
 
         assertParameter(ctx.config().getDeploymentMode() != null, "ctx.config().getDeploymentMode() != null");

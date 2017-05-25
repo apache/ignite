@@ -83,8 +83,6 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
     private void startUp() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -96,15 +94,15 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        dataCacheCfg.setName("partitioned");
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
@@ -113,16 +111,18 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid");
+        cfg.setIgniteInstanceName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -307,11 +307,11 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
         fsCfg.setBoolean("fs.igfs.impl.disable.cache", true);
 
         if (logging)
-            fsCfg.setBoolean(String.format(PARAM_IGFS_LOG_ENABLED, "igfs:igfs-grid@"), logging);
+            fsCfg.setBoolean(String.format(PARAM_IGFS_LOG_ENABLED, "igfs@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_IGFS_LOG_DIR, "igfs:igfs-grid@"), U.getIgniteHome());
+        fsCfg.setStrings(String.format(PARAM_IGFS_LOG_DIR, "igfs@"), U.getIgniteHome());
 
-        return (IgniteHadoopFileSystem)FileSystem.get(new URI("igfs://igfs:igfs-grid@/"), fsCfg);
+        return (IgniteHadoopFileSystem)FileSystem.get(new URI("igfs://igfs@/"), fsCfg);
     }
 
     /**

@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,7 +43,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -62,18 +60,13 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
@@ -218,8 +211,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         }, IgniteException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 ignite.queue(name, 0, null);
 
                 return null;

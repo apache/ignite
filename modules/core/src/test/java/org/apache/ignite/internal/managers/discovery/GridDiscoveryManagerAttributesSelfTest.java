@@ -22,15 +22,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -54,10 +54,10 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private static boolean binaryMarshallerEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
             cfg.setClientMode(true);
 
         if (binaryMarshallerEnabled)
@@ -346,8 +346,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 

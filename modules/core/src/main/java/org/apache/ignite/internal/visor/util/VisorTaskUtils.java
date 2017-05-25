@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
@@ -53,23 +52,20 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.random.RandomEvictionPolicyMBean;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEventV2;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
 import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -142,7 +138,7 @@ public class VisorTaskUtils {
     /** Comparator for log files by last modified date. */
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
-            return Long.compare(f2.lastModified(), f1.lastModified());
+            return Long.compare(f2.getLastModified(), f1.getLastModified());
         }
     };
 
@@ -259,7 +255,7 @@ public class VisorTaskUtils {
                     sb.append(", ");
             }
 
-            sb.append("]");
+            sb.append(']');
 
             return sb.toString();
         }
@@ -294,6 +290,26 @@ public class VisorTaskUtils {
     }
 
     /**
+     * Compact classes names.
+
+     * @param clss Classes to compact.
+     * @return Compacted string.
+     */
+    @Nullable public static List<String> compactClasses(Class<?>[] clss) {
+        if (clss == null)
+            return null;
+
+        int len = clss.length;
+
+        List<String> res = new ArrayList<>(len);
+
+        for (Class<?> cls: clss)
+            res.add(U.compact(cls.getName()));
+
+        return res;
+    }
+
+    /**
      * Joins array elements to string.
      *
      * @param arr Array.
@@ -308,6 +324,29 @@ public class VisorTaskUtils {
         StringBuilder sb = new StringBuilder();
 
         for (Object s : arr)
+            sb.append(s).append(sep);
+
+        if (sb.length() > 0)
+            sb.setLength(sb.length() - sep.length());
+
+        return U.compact(sb.toString());
+    }
+
+    /**
+     * Joins iterable collection elements to string.
+     *
+     * @param col Iterable collection.
+     * @return String.
+     */
+    @Nullable public static String compactIterable(Iterable col) {
+        if (col == null || !col.iterator().hasNext())
+            return null;
+
+        String sep = ", ";
+
+        StringBuilder sb = new StringBuilder();
+
+        for (Object s : col)
             sb.append(s).append(sep);
 
         if (sb.length() > 0)
@@ -390,17 +429,6 @@ public class VisorTaskUtils {
     /** Mapper from grid event to Visor data transfer object. */
     public static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
-    /** Mapper from grid event to Visor data transfer object. */
-    public static final VisorEventMapper EVT_MAPPER_V2 = new VisorEventMapper() {
-        @Override protected VisorGridEvent discoveryEvent(DiscoveryEvent de, int type, IgniteUuid id, String name,
-            UUID nid, long ts, String msg, String shortDisplay) {
-            ClusterNode node = de.eventNode();
-
-            return new VisorGridDiscoveryEventV2(type, id, name, nid, ts, msg, shortDisplay, node.id(),
-                F.first(node.addresses()), node.isDaemon(), de.topologyVersion());
-        }
-    };
-
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
@@ -432,7 +460,7 @@ public class VisorTaskUtils {
      * @param evtMapper Closure to map grid events to Visor data transfer objects.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
+    public static List<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
@@ -464,7 +492,9 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<Event> evts = ignite.events().localQuery(p, evtTypes);
+        Collection<Event> evts = ignite.configuration().getEventStorageSpi() instanceof NoopEventStorageSpi
+            ? Collections.<Event>emptyList()
+            : ignite.events().localQuery(p, evtTypes);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
@@ -479,7 +509,7 @@ public class VisorTaskUtils {
 
         boolean lost = !lastFound.get() && throttle == 0;
 
-        Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
+        List<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
             res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
@@ -645,6 +675,7 @@ public class VisorTaskUtils {
                 raf.seek(pos);
 
                 byte[] buf = new byte[toRead];
+
                 int cntRead = raf.read(buf, 0, toRead);
 
                 if (cntRead != toRead)
@@ -692,9 +723,6 @@ public class VisorTaskUtils {
     public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
         if (plc instanceof LruEvictionPolicyMBean)
             return ((LruEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof RandomEvictionPolicyMBean)
-            return ((RandomEvictionPolicyMBean)plc).getMaxSize();
 
         if (plc instanceof FifoEvictionPolicyMBean)
             return ((FifoEvictionPolicyMBean)plc).getMaxSize();
@@ -873,8 +901,6 @@ public class VisorTaskUtils {
         if (cmdFilePath == null || !cmdFilePath.exists())
             throw new FileNotFoundException(String.format("File not found: %s", cmdFile));
 
-        String ignite = cmdFilePath.getCanonicalPath();
-
         File nodesCfgPath = U.resolveIgnitePath(cfgPath);
 
         if (nodesCfgPath == null || !nodesCfgPath.exists())
@@ -887,6 +913,8 @@ public class VisorTaskUtils {
         List<Process> run = new ArrayList<>();
 
         try {
+            String igniteCmd = cmdFilePath.getCanonicalPath();
+
             for (int i = 0; i < nodesToStart; i++) {
                 if (U.isMacOs()) {
                     Map<String, String> macEnv = new HashMap<>(System.getenv());
@@ -915,9 +943,9 @@ public class VisorTaskUtils {
                                     entry.getKey(), val.replace('\n', ' ').replace("'", "\'")));
                     }
 
-                    run.add(openInConsole(envs.toString(), ignite, quitePar, nodeCfg));
+                    run.add(openInConsole(envs.toString(), igniteCmd, quitePar, nodeCfg));
                 } else
-                    run.add(openInConsole(null, envVars, ignite, quitePar, nodeCfg));
+                    run.add(openInConsole(null, envVars, igniteCmd, quitePar, nodeCfg));
             }
 
             return run;

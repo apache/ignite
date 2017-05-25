@@ -65,16 +65,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface Ignite extends AutoCloseable {
     /**
-     * Gets the name of the grid this grid instance (and correspondingly its local node) belongs to.
-     * Note that single Java VM can have multiple grid instances all belonging to different grids. Grid
-     * name allows to indicate to what grid this particular grid instance (i.e. grid runtime and its
-     * local node) belongs to.
+     * Gets the name of the Ignite instance.
+     * The name allows having multiple Ignite instances with different names within the same Java VM.
      * <p>
-     * If default grid instance is used, then
-     * {@code null} is returned. Refer to {@link Ignition} documentation
-     * for information on how to start named grids.
+     * If default Ignite instance is used, then {@code null} is returned.
+     * Refer to {@link Ignition} documentation for information on how to start named ignite Instances.
      *
-     * @return Name of the grid, or {@code null} for default grid.
+     * @return Name of the Ignite instance, or {@code null} for default Ignite instance.
      */
     public String name();
 
@@ -343,7 +340,7 @@ public interface Ignite extends AutoCloseable {
      * @return Cache instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -354,7 +351,7 @@ public interface Ignite extends AutoCloseable {
      * @return {@code IgniteCache} instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -381,7 +378,7 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of the cache for the specified name.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name) throws CacheException;
+    public <K, V> IgniteCache<K, V> cache(String name) throws CacheException;
 
     /**
      * Gets the collection of names of currently available caches.
@@ -405,11 +402,11 @@ public interface Ignite extends AutoCloseable {
      * is responsible for loading external data into in-memory data grid. For more information
      * refer to {@link IgniteDataStreamer} documentation.
      *
-     * @param cacheName Cache name ({@code null} for default cache).
+     * @param cacheName Cache name.
      * @return Data streamer.
      * @throws IllegalStateException If node is stopping.
      */
-    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) throws IllegalStateException;
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) throws IllegalStateException;
 
     /**
      * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
@@ -527,7 +524,6 @@ public interface Ignite extends AutoCloseable {
      *      all threads on other nodes waiting to acquire lock are interrupted.
      * @param fair If {@code True}, fair lock will be created.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
-     *      Will re-create lock if the node that stored the lock left topology and there are no backups left.
      * @return ReentrantLock for the given name.
      * @throws IgniteException If reentrant lock could not be fetched or created.
      */
@@ -582,7 +578,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
-     * {@link G#stop(String, boolean) G.stop(gridName, true)}.
+     * {@link G#stop(String, boolean) G.stop(igniteInstanceName, true)}.
      * <p>
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
@@ -592,11 +588,38 @@ public interface Ignite extends AutoCloseable {
     @Override public void close() throws IgniteException;
 
     /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
+     * Gets affinity service to provide information about data partitioning and distribution.
+     *
      * @param cacheName Cache name.
      * @param <K> Cache key type.
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     */
+    public void active(boolean active);
+
+    /**
+     * Clears partition's lost state and moves caches to a normal mode.
+     */
+    public void resetLostPartitions(Collection<String> cacheNames);
+
+    /**
+     * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
+     * instance.
+     *
+     * @return Collection of {@link MemoryMetrics}
+     */
+    public Collection<MemoryMetrics> memoryMetrics();
 }

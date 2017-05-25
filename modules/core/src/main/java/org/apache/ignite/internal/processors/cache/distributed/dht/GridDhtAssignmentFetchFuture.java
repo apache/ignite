@@ -17,23 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -44,14 +48,14 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  * Future that fetches affinity assignment from remote cache nodes.
  */
 public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffinityAssignmentResponse> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
+
+    /** */
+    private static final AtomicLong idGen = new AtomicLong();
 
     /** */
     private final GridCacheSharedContext ctx;
@@ -64,24 +68,33 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     private ClusterNode pendingNode;
 
     /** */
-    @GridToStringInclude
-    private final T2<Integer, AffinityTopologyVersion> key;
+    private final long id;
+
+    /** */
+    private final AffinityTopologyVersion topVer;
+
+    /** */
+    private final int cacheId;
 
     /**
      * @param ctx Context.
-     * @param cacheName Cache name.
+     * @param cacheDesc Cache descriptor.
      * @param topVer Topology version.
+     * @param discoCache Discovery cache.
      */
     public GridDhtAssignmentFetchFuture(
         GridCacheSharedContext ctx,
-        String cacheName,
-        AffinityTopologyVersion topVer
+        DynamicCacheDescriptor cacheDesc,
+        AffinityTopologyVersion topVer,
+        DiscoCache discoCache
     ) {
+        this.topVer = topVer;
+        this.cacheId = cacheDesc.cacheId();
         this.ctx = ctx;
-        int cacheId = CU.cacheId(cacheName);
-        this.key = new T2<>(cacheId, topVer);
 
-        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheId, topVer);
+        id = idGen.getAndIncrement();
+
+        Collection<ClusterNode> availableNodes = discoCache.cacheAffinityNodes(cacheDesc.cacheId());
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
@@ -99,6 +112,20 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     }
 
     /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long id() {
+        return id;
+    }
+
+    /**
      * Initializes fetch future.
      */
     public void init() {
@@ -108,25 +135,10 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     }
 
     /**
-     * @return Future key.
-     */
-    public T2<Integer, AffinityTopologyVersion> key() {
-        return key;
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param res Response.
      */
     public void onResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
-        if (!res.topologyVersion().equals(key.get2())) {
-            if (log.isDebugEnabled())
-                log.debug("Received affinity assignment for wrong topology version (will ignore) " +
-                    "[node=" + nodeId + ", res=" + res + ", topVer=" + key.get2() + ']');
-
-            return;
-        }
-
         GridDhtAffinityAssignmentResponse res0 = null;
 
         synchronized (this) {
@@ -182,7 +194,8 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                         log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(key.get1(), key.get2()),
+                    ctx.io().send(node,
+                        new GridDhtAffinityAssignmentRequest(id, cacheId, topVer),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.
@@ -202,8 +215,14 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                         "continue to another node): " + node);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log0, "Failed to request affinity assignment from remote node (will " +
-                        "continue to another node): " + node, e);
+                    if (ctx.discovery().reconnectSupported() && X.hasCause(e, IOException.class)) {
+                        onDone(new IgniteNeedReconnectException(ctx.localNode(), e));
+
+                        return;
+                    }
+
+                    U.warn(log0, "Failed to request affinity assignment from remote node (will " +
+                        "continue to another node): " + node);
                 }
             }
 

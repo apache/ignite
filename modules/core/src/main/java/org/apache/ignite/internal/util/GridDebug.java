@@ -70,7 +70,7 @@ public class GridDebug {
     /** */
     static {
         if (LOGS_PATH != null) {
-            File log = new File(LOGS_PATH + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-").format(new Date()) +
+            File log = new File(new File(LOGS_PATH), new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-").format(new Date()) +
                     ManagementFactory.getRuntimeMXBean().getName() + ".log");
 
             assert !log.exists();

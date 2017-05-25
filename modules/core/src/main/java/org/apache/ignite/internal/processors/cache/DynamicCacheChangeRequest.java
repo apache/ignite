@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Cache start/stop request.
@@ -33,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
 public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private UUID reqId;
 
     /** Start ID. */
     private IgniteUuid deploymentId;
@@ -59,6 +64,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Destroy. */
+    private boolean destroy;
+
     /** Close flag. */
     private boolean close;
 
@@ -71,49 +79,123 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** */
-    private transient boolean exchangeNeeded;
+    /** Cache state. Set to non-null when global state is changed. */
+    private ClusterState state;
 
-    /** */
-    private transient AffinityTopologyVersion cacheFutTopVer;
+    /** Reset lost partitions flag. */
+    private boolean resetLostPartitions;
+
+    /** Dynamic schema. */
+    private QuerySchema schema;
 
     /**
-     * Constructor creates cache stop request.
-     *
+     * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+    public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert cacheName != null;
+        assert initiatingNodeId != null;
+
+        this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
     }
 
     /**
-     * @return {@code True} if request should trigger partition exchange.
+     * @param reqId Unique request ID.
+     * @param state New cluster state.
+     * @param initiatingNodeId Initiating node ID.
      */
-    public boolean exchangeNeeded() {
-        return exchangeNeeded;
+    public DynamicCacheChangeRequest(UUID reqId, ClusterState state, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert state != null;
+        assert initiatingNodeId != null;
+
+        this.reqId = reqId;
+        this.state = state;
+        this.initiatingNodeId = initiatingNodeId;
     }
 
     /**
-     * @param cacheFutTopVer Ready topology version when dynamic cache future should be completed.
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @return Request to reset lost partitions.
      */
-    public void cacheFutureTopologyVersion(AffinityTopologyVersion cacheFutTopVer) {
-        this.cacheFutTopVer = cacheFutTopVer;
+    static DynamicCacheChangeRequest resetLostPartitions(GridKernalContext ctx, String cacheName) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.markResetLostPartitions();
+
+        return req;
     }
 
     /**
-     * @return Ready topology version when dynamic cache future should be completed.
+     * @param ctx Context.
+     * @param cfg0 Template configuration.
+     * @return Request to add template.
      */
-    @Nullable public AffinityTopologyVersion cacheFutureTopologyVersion() {
-        return cacheFutTopVer;
+    static DynamicCacheChangeRequest addTemplateRequest(GridKernalContext ctx, CacheConfiguration<?, ?> cfg0) {
+        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(cfg0);
+
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg.getName(), ctx.localNodeId());
+
+        req.template(true);
+        req.startCacheConfiguration(cfg);
+        req.schema(new QuerySchema(cfg.getQueryEntities()));
+        req.deploymentId(IgniteUuid.randomUuid());
+
+        return req;
     }
 
     /**
-     * @param exchangeNeeded {@code True} if request should trigger partition exchange.
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @return Request to close client cache.
      */
-    public void exchangeNeeded(boolean exchangeNeeded) {
-        this.exchangeNeeded = exchangeNeeded;
+    static DynamicCacheChangeRequest closeRequest(GridKernalContext ctx, String cacheName) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.close(true);
+
+        return req;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @param destroy Destroy flag.
+     * @return Cache stop request.
+     */
+    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean destroy) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.stop(true);
+        req.destroy(destroy);
+
+        return req;
+    }
+
+    /**
+     * @return Request ID.
+     */
+    public UUID requestId() {
+        return reqId;
+    }
+
+    /**
+     * @return State.
+     */
+    public ClusterState state() {
+        return state;
+    }
+
+    /**
+     * @return {@code True} if global caches state is changes.
+     */
+    public boolean globalStateChange() {
+        return state != null;
     }
 
     /**
@@ -152,10 +234,38 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * Set resetLostPartitions flag.
+     */
+    public void markResetLostPartitions() {
+        resetLostPartitions = true;
+    }
+
+    /**
+     * @return Reset lost partitions flag.
+     */
+    public boolean resetLostPartitions() {
+        return resetLostPartitions;
+    }
+
+    /**
      * @return {@code True} if this is a stop request.
      */
     public boolean stop() {
         return stop;
+    }
+
+    /**
+     *
+     */
+    public boolean destroy(){
+        return destroy;
+    }
+
+    /**
+     * @param destroy Destroy.
+     */
+    public void destroy(boolean destroy) {
+        this.destroy = destroy;
     }
 
     /**
@@ -282,6 +392,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Dynamic schema.
+     */
+    public QuerySchema schema() {
+        return schema;
+    }
+
+    /**
+     * @param schema Dynamic schema.
+     */
+    public void schema(QuerySchema schema) {
+        this.schema = schema != null ? schema.copy() : null;
     }
 
     /** {@inheritDoc} */

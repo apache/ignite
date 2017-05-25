@@ -101,56 +101,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
-        // Check marshaller.
-        Marshaller marsh = igniteCfg.getMarshaller();
-
-        if (marsh == null) {
-            igniteCfg.setMarshaller(new BinaryMarshaller());
-
-            dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
-        }
-        else if (!(marsh instanceof BinaryMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
-                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
-
-        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
-
-        if (bCfg == null) {
-            bCfg = new BinaryConfiguration();
-
-            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
-            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-
-            igniteCfg.setBinaryConfiguration(bCfg);
-
-            dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
-                "note that binary name mapper is set to " + bCfg.getNameMapper()
-                + " and binary ID mapper is set to " + bCfg.getIdMapper()
-                + " (other nodes must have the same binary name and ID mapper types)."));
-        }
-        else {
-            BinaryNameMapper nameMapper = bCfg.getNameMapper();
-
-            if (nameMapper == null) {
-                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
-
-                dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
-                    bCfg.getNameMapper()
-                    + " (other nodes must have the same binary name mapper type)."));
-            }
-
-            BinaryIdMapper idMapper = bCfg.getIdMapper();
-
-            if (idMapper == null) {
-                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-
-                dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
-                    bCfg.getIdMapper()
-                    + " (other nodes must have the same binary ID mapper type)."));
-            }
-        }
-
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
 
@@ -159,6 +109,32 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
+
+        // Make sure binary config is right.
+        setBinaryConfiguration(igniteCfg, dotNetCfg0);
+    }
+
+    /**
+     * Sets binary config.
+     *
+     * @param igniteCfg Ignite config.
+     * @param dotNetCfg Dotnet config.
+     */
+    private void setBinaryConfiguration(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx dotNetCfg) {
+        // Check marshaller.
+        Marshaller marsh = igniteCfg.getMarshaller();
+
+        if (marsh == null) {
+            igniteCfg.setMarshaller(new BinaryMarshaller());
+
+            dotNetCfg.warnings(Collections.singleton("Marshaller is automatically set to " +
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+        }
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
+                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
     }
 
     /**

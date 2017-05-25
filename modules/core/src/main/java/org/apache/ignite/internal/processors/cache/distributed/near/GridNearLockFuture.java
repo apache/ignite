@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -80,7 +80,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 /**
  * Cache lock future.
  */
-public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean>
+public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -100,6 +100,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private final Collection<KeyCacheObject> keys;
 
     /** Future ID. */
@@ -164,6 +165,12 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     /** Keep binary context flag. */
     private final boolean keepBinary;
 
+    /** Recovery mode context flag. */
+    private final boolean recovery;
+
+    /** */
+    private int miniId;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -188,7 +195,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean recovery
+    ) {
         super(CU.boolReducer());
 
         assert keys != null;
@@ -205,8 +214,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         this.filter = filter;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
 
-        ignoreInterrupts(true);
+        ignoreInterrupts();
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -496,13 +506,11 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     /**
      * @return Keys for which locks requested from remote nodes but response isn't received.
      */
-    public Set<IgniteTxKey> requestedKeys() {
-        synchronized (sync) {
-            if (timeoutObj != null && timeoutObj.requestedKeys != null)
-                return timeoutObj.requestedKeys;
+    public synchronized Set<IgniteTxKey> requestedKeys() {
+        if (timeoutObj != null && timeoutObj.requestedKeys != null)
+            return timeoutObj.requestedKeys;
 
-            return requestedKeys0();
-        }
+        return requestedKeys0();
     }
 
     /**
@@ -532,9 +540,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @return Mini future.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -546,7 +554,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -557,7 +565,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
         return null;
     }
-
 
     /**
      * @param t Error.
@@ -780,7 +787,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.topologyVersion().equals(topVer)){
-                    Throwable err = fut.validateCache(cctx);
+                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -828,7 +835,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx);
+                Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
                     onDone(err);
@@ -1042,6 +1049,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 first = false;
                                             }
 
+                                            assert !implicitTx() && !implicitSingleTx() : tx;
+
                                             req = new GridNearLockRequest(
                                                 cctx.cacheId(),
                                                 topVer,
@@ -1050,8 +1059,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 futId,
                                                 lockVer,
                                                 inTx(),
-                                                implicitTx(),
-                                                implicitSingleTx(),
                                                 read,
                                                 retval,
                                                 isolation(),
@@ -1178,7 +1185,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             req.filter(filter, cctx);
 
         if (node.isLocal()) {
-            req.miniId(IgniteUuid.randomUuid());
+            req.miniId(-1);
 
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
@@ -1316,7 +1323,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                 fut));
         }
         else {
-            final MiniFuture fut = new MiniFuture(node, mappedKeys);
+            final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
             req.miniId(fut.futureId());
 
@@ -1437,7 +1444,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             timedOut = true;
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                synchronized (sync) {
+                synchronized (GridNearLockFuture.this) {
                     requestedKeys = requestedKeys0();
 
                     clear(); // Stop response processing.
@@ -1486,10 +1493,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Node ID. */
         @GridToStringExclude
@@ -1505,19 +1509,22 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         /**
          * @param node Node.
          * @param keys Keys.
+         * @param futId Mini future ID.
          */
         MiniFuture(
             ClusterNode node,
-            Collection<KeyCacheObject> keys
+            Collection<KeyCacheObject> keys,
+            int futId
         ) {
             this.node = node;
             this.keys = keys;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

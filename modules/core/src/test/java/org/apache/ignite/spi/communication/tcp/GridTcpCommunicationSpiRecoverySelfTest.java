@@ -689,7 +689,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         for (int i = 0; i < SPI_CNT; i++) {
             TcpCommunicationSpi spi = getSpi(i);
 
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName", "grid-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 
@@ -720,7 +720,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             nodes.add(node);
 
-            spi.spiStart(getTestGridName() + (i + 1));
+            spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
             spis.add(spi);
 

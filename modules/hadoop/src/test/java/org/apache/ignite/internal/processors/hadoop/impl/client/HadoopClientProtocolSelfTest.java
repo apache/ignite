@@ -129,7 +129,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).format();
+        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).clear();
 
         setupLockFile.delete();
         mapLockFile.delete();
@@ -200,8 +200,8 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
             job.setReducerClass(TestCountingReducer.class);
             job.setCombinerClass(TestCountingCombiner.class);
 
-            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
-            FileOutputFormat.setOutputPath(job, new Path(PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@" + PATH_INPUT));
+            FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName + "@" + PATH_OUTPUT));
 
             job.submit();
 
@@ -230,6 +230,9 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
             assertEquals("wrong counter value", 15, counters.findCounter(TestCounter.COUNTER1).getValue());
             assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER2).getValue());
             assertEquals("wrong counter value", 3, counters.findCounter(TestCounter.COUNTER3).getValue());
+        }
+        catch (Throwable t) {
+            log.error("Unexpected exception", t);
         }
         finally {
             job.getCluster().close();
@@ -482,7 +485,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
-        conf.set("fs.defaultFS", "igfs://:" + getTestGridName(0) + "@/");
+        conf.set("fs.defaultFS", "igfs://@/");
 
         return conf;
     }

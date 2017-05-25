@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -42,8 +41,8 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -60,48 +59,41 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
     public void testPrimitiveTypes() throws Exception {
         Ignite ignite = startGrid(1);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("c1");
-
-        ccfg.setIndexedTypes(
-            byte.class, byte.class,
-            short.class, short.class,
-            int.class, int.class,
-            long.class, long.class,
-            float.class, float.class,
-            double.class, double.class,
-            boolean.class, boolean.class);
-
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg);
-
+        IgniteCache<Byte, Byte> cacheByte = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), byte.class, byte.class);
         byte b = 1;
-        cache.put(b, b);
+        cacheByte.put(b, b);
 
+        IgniteCache<Short, Short> cacheShort = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), short.class, short.class);
         short s = 2;
-        cache.put(s, s);
+        cacheShort.put(s, s);
 
+        IgniteCache<Integer, Integer> cacheInt = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), int.class, int.class);
         int i = 3;
-        cache.put(i, i);
+        cacheInt.put(i, i);
 
+        IgniteCache<Long, Long> cacheLong = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), long.class, long.class);
         long l = 4;
-        cache.put(l, l);
+        cacheLong.put(l, l);
 
+        IgniteCache<Float, Float> cacheFloat = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), float.class, float.class);
         float f = 5;
-        cache.put(f, f);
+        cacheFloat.put(f, f);
 
+        IgniteCache<Double, Double> cacheDouble = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), double.class, double.class);
         double d = 6;
-        cache.put(d, d);
+        cacheDouble.put(d, d);
 
+        IgniteCache<Boolean, Boolean> cacheBoolean = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), boolean.class, boolean.class);
         boolean bool = true;
-        cache.put(bool, bool);
+        cacheBoolean.put(bool, bool);
 
-        assert cache.query(new ScanQuery<>()).getAll().size() == 7;
 
-        assertEquals(cache.query(new SqlQuery<>(Byte.class, "1 = 1")).getAll().size(), 1);
-        assertEquals(cache.query(new SqlQuery<>(Short.class, "1 = 1")).getAll().size(), 1);
-        assertEquals(cache.query(new SqlQuery<>(Integer.class, "1 = 1")).getAll().size(), 1);
-        assertEquals(cache.query(new SqlQuery<>(Long.class, "1 = 1")).getAll().size(), 1);
-        assertEquals(cache.query(new SqlQuery<>(Float.class, "1 = 1")).getAll().size(), 1);
-        assertEquals(cache.query(new SqlQuery<>(Double.class, "1 = 1")).getAll().size(), 1);
-        assertEquals(cache.query(new SqlQuery<>(Boolean.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheByte.query(new SqlQuery<>(Byte.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheShort.query(new SqlQuery<>(Short.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheInt.query(new SqlQuery<>(Integer.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheLong.query(new SqlQuery<>(Long.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheFloat.query(new SqlQuery<>(Float.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheDouble.query(new SqlQuery<>(Double.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cacheBoolean.query(new SqlQuery<>(Boolean.class, "1 = 1")).getAll().size(), 1);
     }
 }

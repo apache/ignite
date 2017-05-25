@@ -25,9 +25,6 @@ With Apache Ignite.NET:
 
 Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 
-NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
-      Schema Import module use JavaFX, under OpenJDK may be compiled and run only on OpenJDK 8 with installed OpenJFX.
-
 Ignite Hadoop Accelerator Maven Build Instructions
 ============================================
 mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X] [-Dspark.version=x.y.z]

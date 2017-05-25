@@ -77,14 +77,14 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
                 }
                 return null;
             }
-        }, IgniteException.class, "Failed to load bean in application context");
+        }, IgniteException.class, "Spring bean with provided name doesn't exist");
     }
 
     /**
      * @return Cache configuration with store.
      */
     private CacheConfiguration<Integer, String> cacheConfiguration() {
-        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         CacheJdbcPojoStoreFactory<Integer, String> factory = new CacheJdbcPojoStoreFactory<>();
 
@@ -101,7 +101,7 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
      * @return Cache configuration with store.
      */
     private CacheConfiguration<Integer, String> cacheConfigurationH2Dialect() {
-        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         CacheJdbcPojoStoreFactory<Integer, String> factory = new CacheJdbcPojoStoreFactory<>();
 

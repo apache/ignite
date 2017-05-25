@@ -22,6 +22,6 @@ include /app/helpers/jade/mixins
 
 div
     .details-row
-        +text('Bucket name:', `${model}.bucketName`, `${discoveryKind}BucketName'`, required, 'Input bucket name', 'Bucket name for IP finder')
+        +text('Bucket name:', `${model}.bucketName`, `'${discoveryKind}BucketName'`, required, 'Input bucket name', 'Bucket name for IP finder')
     .details-row
         label Note, AWS credentials will be generated as stub

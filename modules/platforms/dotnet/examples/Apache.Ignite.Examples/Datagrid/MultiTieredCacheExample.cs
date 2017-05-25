@@ -26,8 +26,7 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
-    using Apache.Ignite.Core.SwapSpace.File;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
 
     /// <summary>
     /// This example demonstrates on how to configure a multi-tiered Ignite cache that will store data in different 
@@ -60,22 +59,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
             Console.WriteLine(">>> Swap space directory: " + swapDir);
 
-            var cfg = new IgniteConfiguration
-            {
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryMulticastIpFinder
-                    {
-                        Endpoints = new[] { "127.0.0.1:47500" }
-                    }
-                },
-                SwapSpaceSpi = new FileSwapSpaceSpi
-                {
-                    BaseDirectory = swapDir
-                }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 var cacheCfg = new CacheConfiguration
                 {
@@ -85,10 +69,6 @@ namespace Apache.Ignite.Examples.Datagrid
                     {
                         MaxSize = 10 // Maximum number of entries that will be stored in Java heap. 
                     },
-                    // Limit off-heap to roughly 10 entries. Actual entry count will be lower due to metadata overhead.
-                    OffHeapMaxMemory = EntrySize * 10,
-                    // Data will be swapped to disk if there is no more space in off-heap space.
-                    EnableSwap = true 
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cacheCfg);
@@ -113,7 +93,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 Console.WriteLine(">>> Waiting for metrics final update...");
 
-                Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
+                Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
 
                 PrintCacheMetrics(cache);
 
@@ -130,9 +110,9 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var metrics = cache.GetLocalMetrics();
 
-            Console.WriteLine("\n>>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}, Swap={3}]",
+            Console.WriteLine("\n>>> Cache entries layout: [Total={0}, Java heap={1}, Off-Heap={2}]",
                 cache.GetSize(CachePeekMode.All), 
-                metrics.Size, metrics.OffHeapEntriesCount, metrics.SwapEntriesCount);
+                metrics.Size, metrics.OffHeapEntriesCount);
         }
     }
 }

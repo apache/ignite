@@ -44,6 +44,7 @@ libignite_common_la_LDFLAGS = \
 libignite_common_la_SOURCES = \
     os/linux/src/common/concurrent_os.cpp \
     os/linux/src/common/platform_utils.cpp \
+    os/linux/src/common/dynamic_load_os.cpp \
     src/common/big_integer.cpp \
     src/common/concurrent.cpp \
     src/common/decimal.cpp \
@@ -52,7 +53,8 @@ libignite_common_la_SOURCES = \
     src/date.cpp \
     src/ignite_error.cpp \
     src/guid.cpp \
-    src/timestamp.cpp
+    src/timestamp.cpp \
+    src/time.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

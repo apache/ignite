@@ -43,8 +43,8 @@ mixin hard-link(ref, txt)
                             i.fa.fa-fw.fa-download(ng-hide='isPrepareDownloading')
                             i.fa.fa-fw.fa-refresh.fa-spin(ng-show='isPrepareDownloading')
                             span.tipLabel Download project
-                    button.btn.btn-primary(bs-tooltip='' data-title='Preview generated project structure' data-placement='bottom')
-                        div(bs-popover data-template-url='{{ ctrl.summaryProjectStructureTemplateUrl }}', data-placement='bottom', data-trigger='click' data-auto-close='true')
+                    span(bs-tooltip='' data-title='Preview generated project structure' data-placement='bottom')
+                        button.btn.btn-primary(bs-popover data-template-url='{{ ctrl.summaryProjectStructureTemplateUrl }}', data-placement='bottom', data-trigger='click' data-auto-close='true')
                             i.fa.fa-sitemap
                             label.tipLabel Project structure
                     button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers

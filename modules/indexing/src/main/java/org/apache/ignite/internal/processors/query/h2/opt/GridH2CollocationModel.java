@@ -39,8 +39,6 @@ import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-
 /**
  * Collocation model for a query.
  */
@@ -300,10 +298,10 @@ public final class GridH2CollocationModel {
             assert childFilters == null;
 
             // We are at table instance.
-            GridH2Table tbl = (GridH2Table)filter().getTable();
+            Table tbl = filter().getTable();
 
             // Only partitioned tables will do distributed joins.
-            if (!tbl.isPartitioned()) {
+            if (!(tbl instanceof GridH2Table) || !((GridH2Table)tbl).isPartitioned()) {
                 type = Type.REPLICATED;
                 multiplier = MULTIPLIER_COLLOCATED;
 
@@ -389,11 +387,11 @@ public final class GridH2CollocationModel {
 
         if (validate) {
             if (tbl.rowDescriptor().context().customAffinityMapper())
-                throw customAffinityError(tbl.spaceName());
+                throw customAffinityError(tbl.cacheName());
 
             if (F.isEmpty(tf.getIndexConditions())) {
                 throw new CacheException("Failed to prepare distributed join query: " +
-                    "join condition does not use index [joinedCache=" + tbl.spaceName() +
+                    "join condition does not use index [joinedCache=" + tbl.cacheName() +
                     ", plan=" + tf.getSelect().getPlanSQL() + ']');
             }
         }
@@ -413,7 +411,7 @@ public final class GridH2CollocationModel {
                 int cmpType = c.getCompareType();
 
                 if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
-                    (colId == affColId || colId == KEY_COL) && c.isEvaluatable()) {
+                    (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
                     affKeyCondFound = true;
 
                     Expression exp = c.getExpression();
@@ -486,7 +484,7 @@ public final class GridH2CollocationModel {
 
         if (t instanceof GridH2Table) {
             if (validate && ((GridH2Table)t).rowDescriptor().context().customAffinityMapper())
-                throw customAffinityError(((GridH2Table)t).spaceName());
+                throw customAffinityError(((GridH2Table)t).cacheName());
 
             IndexColumn affCol = ((GridH2Table)t).getAffinityKeyColumn();
 
@@ -593,7 +591,7 @@ public final class GridH2CollocationModel {
     private GridH2CollocationModel child(int i, boolean create) {
         GridH2CollocationModel child = children[i];
 
-        if (child == null && create && isChildTableOrView(i, null)) {
+        if (child == null && create) {
             TableFilter f = childFilters[i];
 
             if (f.getTable().isView()) {

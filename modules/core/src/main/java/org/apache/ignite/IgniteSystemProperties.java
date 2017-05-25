@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,8 +34,16 @@ import org.jetbrains.annotations.Nullable;
 public final class IgniteSystemProperties {
     /**
      * If this system property is present the Ignite will include grid name into verbose log.
+     *
+     * @deprecated Use {@link #IGNITE_LOG_INSTANCE_NAME}.
      */
+    @Deprecated
     public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
+
+    /**
+     * If this system property is present the Ignite will include instance name into verbose log.
+     */
+    public static final String IGNITE_LOG_INSTANCE_NAME = "IGNITE_LOG_INSTANCE_NAME";
 
     /**
      * This property is used internally to pass an exit code to loader when
@@ -283,6 +291,13 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
+     * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
+     * synchronization mode. If value is {@code 0} then limit is unbounded.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
+        "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
+
     /** Ttl of removed cache entries (ms). */
     public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
 
@@ -306,6 +321,11 @@ public final class IgniteSystemProperties {
      * Atomic cache deferred update timeout.
      */
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
+
+    /**
+     * Atomic cache deferred update timeout.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT = "IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT";
 
     /**
      * One phase commit deferred ack request timeout.
@@ -434,6 +454,9 @@ public final class IgniteSystemProperties {
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
 
+    /** Long-long offheap map load factor. */
+    public static final String IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR = "IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR";
+
     /** Maximum number of nested listener calls before listener notification becomes asynchronous. */
     public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
 
@@ -509,6 +532,12 @@ public final class IgniteSystemProperties {
     @Deprecated
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
+    /**
+     * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
+     * only one node for host in cluster.
+     */
+    public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
+
     /** */
     public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
@@ -543,6 +572,27 @@ public final class IgniteSystemProperties {
      * @deprecated Should be removed in Apache Ignite 2.0.
      */
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
+    /**
+     * System property to specify maximum payload size in bytes for {@code H2TreeIndex}.
+     * <p>
+     * Defaults to {@code 0}, meaning that inline index store is disabled.
+     */
+    public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
+
+    /**
+     * Indexing discovery history size. Protects from duplicate messages maintaining the list of IDs of recently
+     * arrived discovery messages.
+     * <p>
+     * Defaults to {@code 1000}.
+     */
+    public static final String IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE = "IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE";
+
+    /** Cache start size for on-heap maps. Defaults to 4096. */
+    public static final String IGNITE_CACHE_START_SIZE = "IGNITE_CACHE_START_SIZE";
+
+    /** */
+    public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
 
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
@@ -641,6 +691,34 @@ public final class IgniteSystemProperties {
 
         try {
             res = Integer.parseInt(s);
+        }
+        catch (NumberFormatException ignore) {
+            res = dflt;
+        }
+
+        return res;
+    }
+
+    /**
+     * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value
+     * @return Float value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
+    public static float getFloat(String name, float dflt) {
+        String s = getString(name);
+
+        if (s == null)
+            return dflt;
+
+        float res;
+
+        try {
+            res = Float.parseFloat(s);
         }
         catch (NumberFormatException ignore) {
             res = dflt;

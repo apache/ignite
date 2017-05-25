@@ -48,22 +48,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public void BeforeTests()
         {
-            //TestUtils.JVM_DEBUG = true;
-
-            TestUtils.KillProcesses();
-
-            TestUtils.JvmDebug = true;
-
-            IgniteConfiguration cfg = new IgniteConfiguration
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = IgniteName,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
+                IgniteInstanceName = IgniteName,
                 SpringConfigUrl = @"config\cache\store\cache-store-session.xml"
-            };
-
-
-            Ignition.Start(cfg);
+            });
         }
 
         /// <summary>
@@ -155,7 +144,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Test store implementation.
         /// </summary>
         // ReSharper disable once UnusedMember.Global
-        public class Store : CacheStoreAdapter
+        public class Store : CacheStoreAdapter<object, object>
         {
             /** Store session. */
             [StoreSessionResource]

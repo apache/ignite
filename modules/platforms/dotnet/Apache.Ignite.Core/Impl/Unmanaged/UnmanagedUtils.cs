@@ -47,8 +47,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var ptr = NativeMethods.LoadLibrary(path);
 
             if (ptr == IntPtr.Zero)
-                throw new IgniteException(string.Format("Failed to load {0}: {1}", 
-                    IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
+            {
+                var err = Marshal.GetLastWin32Error();
+
+                throw new IgniteException(string.Format("Failed to load {0} from {1}: [{2}]",
+                    IgniteUtils.FileIgniteJniDll, path, IgniteUtils.FormatWin32Error(err)));
+            }
 
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
 
@@ -317,6 +321,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
+        internal static IUnmanagedTarget ProcessorExtension(IUnmanagedTarget target, int id)
+        {
+            void* res = JNI.ProcessorExtension(target.Context, target.Target, id);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorAtomicLong(IUnmanagedTarget target, string name, long initialValue, 
             bool create)
         {
@@ -455,6 +466,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             void* res = JNI.TargetOutObject(target.Context, target.Target, opType);
 
             return target.ChangeTarget(res);
+        }
+
+        internal static void TargetInStreamAsync(IUnmanagedTarget target, int opType, long memPtr)
+        {
+            JNI.TargetInStreamAsync(target.Context, target.Target, opType, memPtr);
         }
 
         #endregion

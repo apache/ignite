@@ -29,7 +29,6 @@
     <bean abstract="true" id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
-        <!--<property name="odbcConfiguration"><null/></property>-->
 
         <property name="cacheConfiguration">
             <list>
@@ -58,6 +57,7 @@
                                         <entry key="boolField" value="java.lang.Boolean"/>
                                         <entry key="guidField" value="java.util.UUID"/>
                                         <entry key="dateField" value="java.util.Date"/>
+                                        <entry key="timeField" value="java.sql.Time"/>
                                         <entry key="timestampField" value="java.sql.Timestamp"/>
                                         <entry key="i8ArrayField" value="[B"/>
                                     </map>
@@ -95,8 +95,13 @@
                                 <property name="keyType" value="java.lang.Long"/>
                                 <property name="valueType" value="ComplexType"/>
 
+                                <property name="keyFieldName" value="k"/>
+                                <property name="valueFieldName" value="v"/>
+
                                 <property name="fields">
                                     <map>
+                                        <entry key="k" value="java.lang.Long"/>
+                                        <entry key="v" value="ComplexType"/>
                                         <entry key="i32Field" value="java.lang.Integer"/>
                                         <entry key="objField" value="TestObject"/>
                                         <entry key="strField" value="java.lang.String"/>

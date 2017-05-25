@@ -160,7 +160,7 @@ public class GridH2RowRange implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -34;
     }
 

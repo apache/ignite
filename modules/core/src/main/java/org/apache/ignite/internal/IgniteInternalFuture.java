@@ -103,21 +103,6 @@ public interface IgniteInternalFuture<R> {
     public boolean isCancelled();
 
     /**
-     * Gets start time for this future.
-     *
-     * @return Start time for this future.
-     */
-    public long startTime();
-
-    /**
-     * Gets duration in milliseconds between start of the future and current time if future
-     * is not finished, or between start and finish of this future.
-     *
-     * @return Time in milliseconds this future has taken to execute.
-     */
-    public long duration();
-
-    /**
      * Registers listener closure to be asynchronously notified whenever future completes.
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.

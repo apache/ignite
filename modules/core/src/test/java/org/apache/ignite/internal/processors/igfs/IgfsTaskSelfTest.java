@@ -100,7 +100,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**
@@ -112,28 +112,27 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     private IgniteConfiguration config(int idx) {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
         igfsCfg.setDefaultMode(PRIMARY);
         igfsCfg.setFragmentizerEnabled(false);
 
-        CacheConfiguration dataCacheCfg = new CacheConfiguration();
+        CacheConfiguration dataCacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(1));
         dataCacheCfg.setBackups(0);
 
-        CacheConfiguration metaCacheCfg = new CacheConfiguration();
+        CacheConfiguration metaCacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -142,10 +141,9 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setGridName("node-" + idx);
+        cfg.setIgniteInstanceName("node-" + idx);
 
         return cfg;
     }
@@ -164,6 +162,25 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         IgniteBiTuple<Long, Integer> taskRes = igfs.execute(new Task(),
             new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
+
+        assert F.eq(genLen, taskRes.getKey());
+        assert F.eq(TOTAL_WORDS, taskRes.getValue());
+    }
+
+    /**
+     * Test task.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testTaskAsync() throws Exception {
+        String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
+
+        generateFile(TOTAL_WORDS);
+        Long genLen = igfs.info(FILE).length();
+
+        IgniteBiTuple<Long, Integer> taskRes = igfs.executeAsync(new Task(),
+            new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg).get();
 
         assert F.eq(genLen, taskRes.getKey());
         assert F.eq(TOTAL_WORDS, taskRes.getValue());

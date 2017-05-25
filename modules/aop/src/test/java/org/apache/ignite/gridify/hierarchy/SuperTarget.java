@@ -26,7 +26,7 @@ public abstract class SuperTarget {
     /**
      * @return Always returns "SuperTarget.methodA()".
      */
-    @Gridify(gridName = "GridifyHierarchyTest")
+    @Gridify(igniteInstanceName = "GridifyHierarchyTest")
     protected String methodA() {
         System.out.println(">>> Called SuperTarget.methodA()");
 
@@ -43,7 +43,7 @@ public abstract class SuperTarget {
     /**
      * @return "SuperTarget.methodC()" string.
      */
-    @Gridify(gridName = "GridifyHierarchyTest")
+    @Gridify(igniteInstanceName = "GridifyHierarchyTest")
     private String methodC() {
         System.out.println(">>> Called SuperTarget.methodC()");
 

@@ -41,10 +41,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -52,15 +53,13 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
-import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -75,15 +74,19 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
-import org.h2.jdbc.JdbcPreparedStatement;
+import org.h2.command.dml.Delete;
+import org.h2.command.dml.Insert;
+import org.h2.command.dml.Merge;
+import org.h2.command.dml.Update;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 
 /**
  *
@@ -93,11 +96,10 @@ public class DmlStatementsProcessor {
     private final static int DFLT_DML_RERUN_ATTEMPTS = 4;
 
     /** Indexing. */
-    private final IgniteH2Indexing indexing;
+    private IgniteH2Indexing idx;
 
-    /** Set of binary type ids for which warning about missing identity in configuration has been printed. */
-    private final static Set<Integer> WARNED_TYPES =
-        Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
+    /** Logger. */
+    private IgniteLogger log;
 
     /** Default size for update plan cache. */
     private static final int PLAN_CACHE_SIZE = 1024;
@@ -105,36 +107,46 @@ public class DmlStatementsProcessor {
     /** Update plans cache. */
     private final ConcurrentMap<String, ConcurrentMap<String, UpdatePlan>> planCache = new ConcurrentHashMap<>();
 
-    /** Dummy metadata for update result. */
-    private final static List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     * @param idx indexing.
+     */
+    public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
+        this.idx = idx;
+
+        log = ctx.log(DmlStatementsProcessor.class);
+    }
 
     /**
-     * @param indexing indexing.
+     * Handle cache stop.
+     *
+     * @param cacheName Cache name.
      */
-    DmlStatementsProcessor(IgniteH2Indexing indexing) {
-        this.indexing = indexing;
+    public void onCacheStop(String cacheName) {
+        planCache.remove(idx.schema(cacheName));
     }
 
     /**
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
-     * @param spaceName Space name.
+     * @param schema Schema.
      * @param stmt JDBC statement.
      * @param fieldsQry Original query.
      * @param loc Query locality flag.
-     * @param filters Space name and key filter.
+     * @param filters Cache name and key filter.
      * @param cancel Cancel.
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
-    private UpdateResult updateSqlFields(String spaceName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
+    private UpdateResult updateSqlFields(String schema, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
         boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
 
-        UpdatePlan plan = getPlanForStatement(spaceName, stmt, null);
+        UpdatePlan plan = getPlanForStatement(schema, stmt, null);
 
         GridCacheContext<?, ?> cctx = plan.tbl.rowDescriptor().context();
 
@@ -147,7 +159,7 @@ public class DmlStatementsProcessor {
 
                 if (opCtx == null)
                     // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null);
+                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
                 else if (!opCtx.isKeepBinary())
                     newOpCtx = opCtx.keepBinary();
 
@@ -182,17 +194,17 @@ public class DmlStatementsProcessor {
     }
 
     /**
-     * @param spaceName Space name.
+     * @param schema Schema.
      * @param stmt Prepared statement.
-     * @param fieldsQry Initial query.
+     * @param fieldsQry Initial query
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsTwoStep(String spaceName, PreparedStatement stmt,
+    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schema, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, false, null, cancel);
+        UpdateResult res = updateSqlFields(schema, stmt, fieldsQry, false, null, cancel);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), null, false);
@@ -204,17 +216,20 @@ public class DmlStatementsProcessor {
 
     /**
      * Execute DML statement on local cache.
-     * @param spaceName Space name.
+     *
+     * @param schema Schema.
      * @param stmt Prepared statement.
-     * @param filters Space name and key filter.
+     * @param fieldsQry Fields query.
+     * @param filters Cache name and key filter.
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    GridQueryFieldsResult updateLocalSqlFields(String spaceName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, true, filters, cancel);
+    GridQueryFieldsResult updateSqlFieldsLocal(String schema, PreparedStatement stmt,
+        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
+        throws IgniteCheckedException {
+        UpdateResult res = updateSqlFields(schema, stmt, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
@@ -235,13 +250,13 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
 
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+        Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
         UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, null);
 
-        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().namex()))
+        if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().name()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
                 " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -254,8 +269,8 @@ public class DmlStatementsProcessor {
 
             final ArrayList<List<?>> data = new ArrayList<>(plan.rowsNum);
 
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry,
-                F.asList(args), null, false, 0, null);
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry, F.asList(args),
+                null, false, 0, null);
 
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -276,11 +291,8 @@ public class DmlStatementsProcessor {
                 }
             }, null);
 
-            GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
-
             if (plan.rowsNum == 1) {
-                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next().toArray(), plan.colNames, plan.colTypes,
-                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next(), plan);
 
                 streamer.addData(t.getKey(), t.getValue());
 
@@ -290,8 +302,7 @@ public class DmlStatementsProcessor {
             Map<Object, Object> rows = new LinkedHashMap<>(plan.rowsNum);
 
             for (List<?> row : cur) {
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes,
-                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                final IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), t.getValue());
             }
@@ -307,10 +318,13 @@ public class DmlStatementsProcessor {
 
     /**
      * Actually perform SQL DML operation locally.
+     *
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
-     * @param filters Space name and key filter.
-     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.   @return Pair [number of successfully processed items; keys that have failed to be processed]
+     * @param fieldsQry Fields query.
+     * @param filters Cache name and key filter.
+     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
+     * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
@@ -319,7 +333,7 @@ public class DmlStatementsProcessor {
         Object[] failedKeys) throws IgniteCheckedException {
         Integer errKeysPos = null;
 
-        UpdatePlan plan = getPlanForStatement(cctx.name(), prepStmt, errKeysPos);
+        UpdatePlan plan = getPlanForStatement(idx.schema(cctx.name()), prepStmt, errKeysPos);
 
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
@@ -342,10 +356,10 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.queryDistributedSqlFields(cctx, newFieldsQry, true, cancel);
         }
         else {
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry,
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -384,28 +398,27 @@ public class DmlStatementsProcessor {
     /**
      * Generate SELECT statements to retrieve data for modifications from and find fast UPDATE or DELETE args,
      * if available.
-     * @param spaceName Space name.
+     *
+     * @param schema Schema.
      * @param prepStmt JDBC statement.
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private UpdatePlan getPlanForStatement(String spaceName, PreparedStatement prepStmt,
-        @Nullable Integer errKeysPos) throws IgniteCheckedException {
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
+    private UpdatePlan getPlanForStatement(String schema, PreparedStatement prepStmt, @Nullable Integer errKeysPos)
+        throws IgniteCheckedException {
+        Prepared p = GridSqlQueryParser.prepared(prepStmt);
 
-        spaceName = F.isEmpty(spaceName) ? "default" : spaceName;
+        ConcurrentMap<String, UpdatePlan> cachePlans = planCache.get(schema);
 
-        ConcurrentMap<String, UpdatePlan> spacePlans = planCache.get(spaceName);
+        if (cachePlans == null) {
+            cachePlans = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
-        if (spacePlans == null) {
-            spacePlans = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
-
-            spacePlans = U.firstNotNull(planCache.putIfAbsent(spaceName, spacePlans), spacePlans);
+            cachePlans = U.firstNotNull(planCache.putIfAbsent(schema, cachePlans), cachePlans);
         }
 
         // getSQL returns field value, so it's fast
         // Don't look for re-runs in cache, we don't cache them
-        UpdatePlan res = (errKeysPos == null ? spacePlans.get(p.getSQL()) : null);
+        UpdatePlan res = (errKeysPos == null ? cachePlans.get(p.getSQL()) : null);
 
         if (res != null)
             return res;
@@ -414,7 +427,7 @@ public class DmlStatementsProcessor {
 
         // Don't cache re-runs
         if (errKeysPos == null)
-            return U.firstNotNull(spacePlans.putIfAbsent(p.getSQL(), res), res);
+            return U.firstNotNull(cachePlans.putIfAbsent(p.getSQL(), res), res);
         else
             return res;
     }
@@ -483,7 +496,7 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             if (e.size() != 2) {
-                U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
+                U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
                 continue;
             }
 
@@ -568,7 +581,6 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             Object key = e.get(0);
-            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
             Object newVal;
 
@@ -590,12 +602,12 @@ public class DmlStatementsProcessor {
             if (newVal == null)
                 throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-            if (bin && !(val instanceof BinaryObject))
-                val = cctx.grid().binary().toBinary(val);
+            // Skip key and value - that's why we start off with 3rd column
+            for (int i = 0; i < plan.tbl.getColumns().length - DEFAULT_COLUMNS_COUNT; i++) {
+                Column c = plan.tbl.getColumn(i + DEFAULT_COLUMNS_COUNT);
 
-            // Skip key and value - that's why we start off with 2nd column
-            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                Column c = plan.tbl.getColumn(i + 2);
+                if (desc.isKeyValueOrVersionColumn(c.getColumnId()))
+                    continue;
 
                 GridQueryProperty prop = desc.type().property(c.getName());
 
@@ -604,13 +616,10 @@ public class DmlStatementsProcessor {
 
                 boolean hasNewColVal = newColVals.containsKey(c.getName());
 
-                // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                if (bin && !hasNewColVal)
+                if (!hasNewColVal)
                     continue;
 
-                // Column values that have been explicitly specified have priority over field values in old or new _val
-                // If no value given for the column, then we expect to find it in value, and not in key - hence null arg.
-                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : prop.value(null, val);
+                Object colVal = newColVals.get(c.getName());
 
                 // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
                 desc.setColumnValue(null, newVal, colVal, i);
@@ -784,8 +793,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next(),
+                plan);
 
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
@@ -797,8 +806,7 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier, plan.valSupplier,
-                    plan.keyColIdx, plan.valColIdx, desc);
+                IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -830,8 +838,7 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes,
-                plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next(), plan);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -856,8 +863,7 @@ public class DmlStatementsProcessor {
             while (it.hasNext()) {
                 List<?> row = it.next();
 
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
-                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                final IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
@@ -904,7 +910,7 @@ public class DmlStatementsProcessor {
      * @param rows Rows to process.
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
      *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private static PageProcessingResult processPage(GridCacheContext cctx,
@@ -925,35 +931,29 @@ public class DmlStatementsProcessor {
      * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
      * @param cctx Cache context.
      * @param row Row to process.
-     * @param cols Query cols.
-     * @param colTypes Column types to convert data from {@code row} to.
-     * @param keySupplier Key instantiation method.
-     * @param valSupplier Key instantiation method.
-     * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
-     * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param rowDesc Row descriptor.
+     * @param plan Update plan.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
-    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
-        int[] colTypes, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
-        GridH2RowDescriptor rowDesc) throws IgniteCheckedException {
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, List<?> row, UpdatePlan plan)
+        throws IgniteCheckedException {
+        GridH2RowDescriptor rowDesc = plan.tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
-        Object key = keySupplier.apply(F.asList(row));
+        Object key = plan.keySupplier.apply(row);
 
-        if (GridQueryProcessor.isSqlType(desc.keyClass())) {
-            assert keyColIdx != -1;
+        if (QueryUtils.isSqlType(desc.keyClass())) {
+            assert plan.keyColIdx != -1;
 
-            key = convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx]);
+            key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
         }
 
-        Object val = valSupplier.apply(F.asList(row));
+        Object val = plan.valSupplier.apply(row);
 
-        if (GridQueryProcessor.isSqlType(desc.valueClass())) {
-            assert valColIdx != -1;
+        if (QueryUtils.isSqlType(desc.valueClass())) {
+            assert plan.valColIdx != -1;
 
-            val = convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx]);
+            val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
         }
 
         if (key == null)
@@ -962,17 +962,40 @@ public class DmlStatementsProcessor {
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-        for (int i = 0; i < cols.length; i++) {
-            if (i == keyColIdx || i == valColIdx)
+        Map<String, Object> newColVals = new HashMap<>();
+
+        for (int i = 0; i < plan.colNames.length; i++) {
+            if (i == plan.keyColIdx || i == plan.valColIdx)
                 continue;
 
-            GridQueryProperty prop = desc.property(cols[i]);
+            String colName = plan.colNames[i];
+
+            GridQueryProperty prop = desc.property(colName);
 
             assert prop != null;
 
             Class<?> expCls = prop.type();
 
-            desc.setValue(cols[i], key, val, convert(row[i], rowDesc, expCls, colTypes[i]));
+            newColVals.put(colName, convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
+        }
+
+        // We update columns in the order specified by the table for a reason - table's
+        // column order preserves their precedence for correct update of nested properties.
+        Column[] cols = plan.tbl.getColumns();
+
+        // First 3 columns are _key, _val and _ver. Skip 'em.
+        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+            if (plan.tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
+                continue;
+
+            String colName = cols[i].getName();
+
+            if (!newColVals.containsKey(colName))
+                continue;
+
+            Object colVal = newColVals.get(colName);
+
+            desc.setValue(colName, key, val, colVal);
         }
 
         if (cctx.binaryMarshaller()) {
@@ -981,43 +1004,9 @@ public class DmlStatementsProcessor {
 
             if (val instanceof BinaryObjectBuilder)
                 val = ((BinaryObjectBuilder) val).build();
-
-            if (key instanceof BinaryObject)
-                key = updateHashCodeIfNeeded(cctx, (BinaryObject) key);
-
-            if (val instanceof BinaryObject)
-                val = updateHashCodeIfNeeded(cctx, (BinaryObject) val);
         }
 
         return new IgniteBiTuple<>(key, val);
-    }
-
-    /**
-     * Set hash code to binary object if it does not have one.
-     *
-     * @param cctx Cache context.
-     * @param binObj Binary object.
-     * @return Binary object with hash code set.
-     */
-    private BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
-        if (U.isHashCodeEmpty(binObj)) {
-            if (WARNED_TYPES.add(binObj.type().typeId()))
-                U.warn(indexing.getLogger(), "Binary object's type does not have identity resolver explicitly set, therefore " +
-                    "BinaryArrayIdentityResolver is used to generate hash codes for its instances, and therefore " +
-                    "hash code of this binary object will most likely not match that of its non serialized form. " +
-                    "For finer control over identity of this type, please update your BinaryConfiguration accordingly." +
-                    " [typeId=" + binObj.type().typeId() + ", typeName=" + binObj.type().typeName() + ']');
-
-            int hash = BinaryArrayIdentityResolver.instance().hashCode(binObj);
-
-            // Empty hash code means no identity set for the type, therefore, we can safely set hash code
-            // via this Builder as it won't be overwritten.
-            return cctx.grid().binary().builder(binObj)
-                .hashCode(hash)
-                .build();
-        }
-        else
-            return binObj;
     }
 
     /** */
@@ -1104,6 +1093,16 @@ public class DmlStatementsProcessor {
         @Override public void apply(MutableEntry<Object, Object> e) {
             e.setValue(val);
         }
+    }
+
+    /**
+     * Check whether statement is DML statement.
+     *
+     * @param stmt Statement.
+     * @return {@code True} if this is DML.
+     */
+    static boolean isDmlStatement(Prepared stmt) {
+        return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
     }
 
     /** Update result - modifications count and keys to re-run query with, if needed. */

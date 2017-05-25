@@ -73,6 +73,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * GridGain platform processor.
  */
+@SuppressWarnings({"ConditionalExpressionWithIdenticalBranches", "unchecked"})
 public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor {
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -93,6 +94,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** Interop configuration. */
     private final PlatformConfigurationEx interopCfg;
+
+    /** Extensions. */
+    private final PlatformPluginExtension[] extensions;
 
     /** Whether processor is started. */
     private boolean started;
@@ -137,16 +141,19 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         if (interopCfg.logger() != null)
             interopCfg.logger().setContext(platformCtx);
+
+        // Initialize extensions (if any).
+        extensions = prepareExtensions(ctx.plugins().extensions(PlatformPluginExtension.class));
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeString(ctx.gridName());
+            writer.writeString(ctx.igniteInstanceName());
 
             out.synchronize();
 
@@ -207,15 +214,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
-        // This method is a single point of entry for all remote closures
-        // CPP platform does not currently support remote code execution
-        // Therefore, all remote execution attempts come from .NET
-        // Throw an error if current platform is not .NET
-        if (!PlatformUtils.PLATFORM_DOTNET.equals(interopCfg.platform())) {
-            throw new IgniteException(".NET platform is not available [nodeId=" + ctx.grid().localNode().id() + "] " +
-                "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes).");
-        }
-
         return platformCtx;
     }
 
@@ -333,6 +331,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTargetProxy extensions() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTargetProxy extension(int id) {
+        if (extensions != null && id < extensions.length) {
+            PlatformPluginExtension ext = extensions[id];
+
+            if (ext != null)
+                return proxy(ext.createTarget());
+        }
+
+        throw new IgniteException("Platform extension is not registered [id=" + id + ']');
     }
 
     /** {@inheritDoc} */
@@ -565,7 +575,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 if (oldCacheExt != null)
                     throw new IgniteException("Platform cache extensions cannot have the same ID [" +
-                        "id=" + cacheExt.id() + ", first=" + oldCacheExt + ", second=" + cacheExt + ']');
+                            "id=" + cacheExt.id() + ", first=" + oldCacheExt + ", second=" + cacheExt + ']');
 
                 if (cacheExt.id() > maxExtId)
                     maxExtId = cacheExt.id();
@@ -581,6 +591,47 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         else
             //noinspection ZeroLengthArrayAllocation
             return new PlatformCacheExtension[0];
+    }
+
+    /**
+     * Prepare extensions.
+     *
+     * @param exts Original extensions.
+     * @return Prepared extensions.
+     */
+    private static PlatformPluginExtension[] prepareExtensions(PlatformPluginExtension[] exts) {
+        if (!F.isEmpty(exts)) {
+            int maxExtId = 0;
+
+            Map<Integer, PlatformPluginExtension> idToExt = new HashMap<>();
+
+            for (PlatformPluginExtension ext : exts) {
+                if (ext == null)
+                    throw new IgniteException("Platform extension cannot be null.");
+
+                if (ext.id() < 0)
+                    throw new IgniteException("Platform extension ID cannot be negative: " + ext);
+
+                PlatformPluginExtension oldCacheExt = idToExt.put(ext.id(), ext);
+
+                if (oldCacheExt != null)
+                    throw new IgniteException("Platform extensions cannot have the same ID [" +
+                            "id=" + ext.id() + ", first=" + oldCacheExt + ", second=" + ext + ']');
+
+                if (ext.id() > maxExtId)
+                    maxExtId = ext.id();
+            }
+
+            PlatformPluginExtension[] res = new PlatformPluginExtension[maxExtId + 1];
+
+            for (PlatformPluginExtension ext : exts)
+                res[ext.id()]= ext;
+
+            return res;
+        }
+        else
+            //noinspection ZeroLengthArrayAllocation
+            return new PlatformPluginExtension[0];
     }
 
     /**

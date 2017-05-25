@@ -66,11 +66,8 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
     public static final IgfsPath ROOT = new IgfsPath(SLASH);
 
     /**
-     * Constructs default root path.
-     *
-     * @deprecated Use {@link #ROOT} instead.
+     * Default constructor.
      */
-    @Deprecated
     public IgfsPath() {
         path = SLASH;
     }
@@ -146,17 +143,6 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
      */
     public String name() {
         return GridFilenameUtils.getName(path);
-    }
-
-    /**
-     * Returns a root for this path.
-     *
-     * @return Root for this path.
-     * @deprecated Use {@link #ROOT} instead.
-     */
-    @Deprecated
-    public IgfsPath root() {
-        return ROOT;
     }
 
     /**
@@ -245,21 +231,6 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
         A.notNull(path, "path");
 
         return this.path.startsWith(path.path.endsWith(SLASH) ? path.path : path.path + SLASH);
-    }
-
-    /**
-     * Checks if paths are identical.
-     *
-     * @param path Path to check.
-     * @return {@code True} if paths are identical.
-     * @deprecated Use {@link #equals(Object)} instead.
-     */
-    @SuppressWarnings("unused")
-    @Deprecated
-    public boolean isSame(IgfsPath path) {
-        A.notNull(path, "path");
-
-        return this == path || this.path.equals(path.path);
     }
 
     /** {@inheritDoc} */

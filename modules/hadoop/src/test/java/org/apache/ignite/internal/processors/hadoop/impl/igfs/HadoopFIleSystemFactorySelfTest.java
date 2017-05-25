@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -125,11 +127,10 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         assert secondary.exists(IGFS_PATH_DUAL);
 
         // Create remote instance.
-        FileSystem fs = FileSystem.get(URI.create("igfs://primary:primary@127.0.0.1:10500/"), baseConfiguration());
+        FileSystem fs = FileSystem.get(URI.create("igfs://primary@127.0.0.1:10500/"), baseConfiguration());
 
-        // Ensure lifecycle callback was invoked.
-        assert START_CNT.get() == 2;
-        assert STOP_CNT.get() == 0;
+        assertEquals(1, START_CNT.get());
+        assertEquals(0, STOP_CNT.get());
 
         // Check file system operations.
         assert fs.exists(PATH_DUAL);
@@ -148,17 +149,16 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         assert secondary.exists(IGFS_PATH_PROXY);
         assert fs.exists(PATH_PROXY);
 
-        // Close file system and ensure that associated factory was notified.
         fs.close();
 
-        assert START_CNT.get() == 2;
-        assert STOP_CNT.get() == 1;
+        assertEquals(1, START_CNT.get());
+        assertEquals(0, STOP_CNT.get());
 
         // Stop primary node and ensure that base factory was notified.
         G.stop(primary.context().kernalContext().grid().name(), true);
 
-        assert START_CNT.get() == 2;
-        assert STOP_CNT.get() == 2;
+        assertEquals(1, START_CNT.get());
+        assertEquals(1, STOP_CNT.get());
     }
 
     /**
@@ -181,14 +181,14 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         // Prepare configuration.
         Configuration conf = baseConfiguration();
 
-        conf.set("fs.defaultFS", "igfs://secondary:secondary@127.0.0.1:11500/");
+        conf.set("fs.defaultFS", "igfs://secondary@127.0.0.1:11500/");
 
         writeConfigurationToFile(conf);
 
         // Get file system instance to be used.
         CachingHadoopFileSystemFactory delegate = new CachingHadoopFileSystemFactory();
 
-        delegate.setUri("igfs://secondary:secondary@127.0.0.1:11500/");
+        delegate.setUri("igfs://secondary@127.0.0.1:11500/");
         delegate.setConfigPaths(SECONDARY_CFG_PATH);
 
         // Configure factory.
@@ -222,41 +222,46 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(name);
         igfsCfg.setDefaultMode(dfltMode);
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
         igfsCfg.setSecondaryFileSystem(secondaryFs);
-        igfsCfg.setInitializeDefaultPathModes(true);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setOffHeapMaxMemory(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
+        if (secondaryFs != null) {
+            Map<String, IgfsMode> modes = new HashMap<>();
+            modes.put("/ignite/sync/", IgfsMode.DUAL_SYNC);
+            modes.put("/ignite/async/", IgfsMode.DUAL_ASYNC);
+            modes.put("/ignite/proxy/", IgfsMode.PROXY);
+
+            igfsCfg.setPathModes(modes);
+        }
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(name);
+        cfg.setIgniteInstanceName(name);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

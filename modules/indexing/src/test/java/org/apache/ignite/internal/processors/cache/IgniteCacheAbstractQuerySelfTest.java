@@ -84,7 +84,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -141,92 +140,108 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
 
-        // Otherwise noop swap space will be chosen on Windows.
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
-        if (!gridName.startsWith("client")) {
-            CacheConfiguration[] ccs = new CacheConfiguration[2];
-
-            for (int i = 0; i < ccs.length; i++) {
-                CacheConfiguration cc = defaultCacheConfiguration();
-
-                if (i > 0)
-                    cc.setName("c" + i);
-
-                cc.setCacheMode(cacheMode());
-                cc.setAtomicityMode(atomicityMode());
-                cc.setNearConfiguration(nearCacheConfiguration());
-                cc.setWriteSynchronizationMode(FULL_SYNC);
-                cc.setCacheStoreFactory(new StoreFactory());
-                cc.setReadThrough(true);
-                cc.setWriteThrough(true);
-                cc.setLoadPreviousValue(true);
-                cc.setRebalanceMode(SYNC);
-                cc.setSwapEnabled(true);
-                cc.setSqlFunctionClasses(SqlFunctions.class);
-                cc.setIndexedTypes(
-                    BadHashKeyObject.class, Byte.class,
-                    ObjectValue.class, Long.class,
-                    Integer.class, Integer.class,
-                    Integer.class, String.class,
-                    Integer.class, ObjectValue.class,
-                    String.class, ObjectValueOther.class,
-                    Integer.class, ArrayObject.class,
-                    Key.class, GridCacheQueryTestValue.class,
-                    UUID.class, Person.class,
-                    IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class,
-                    Long.class, EnumObject.class
-                );
-
-                List<QueryEntity> entityList = new ArrayList<>();
-
-                QueryEntity qryEntity = new QueryEntity();
-
-                qryEntity.setKeyType(Integer.class.getName());
-                qryEntity.setValueType(Type1.class.getName());
-                qryEntity.addQueryField("id", Integer.class.getName(), null);
-                qryEntity.addQueryField("name", String.class.getName(), null);
-                qryEntity.setTableName("Type2");
-                qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
-
-                entityList.add(qryEntity);
-
-                qryEntity = new QueryEntity();
-
-                qryEntity.setKeyType(Integer.class.getName());
-                qryEntity.setValueType(Type2.class.getName());
-                qryEntity.addQueryField("id", Integer.class.getName(), null);
-                qryEntity.addQueryField("name", String.class.getName(), null);
-                qryEntity.setTableName("Type1");
-                qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
-
-                entityList.add(qryEntity);
-
-                cc.setQueryEntities(entityList);
-
-                if (cacheMode() != CacheMode.LOCAL)
-                    cc.setAffinity(new RendezvousAffinityFunction());
-
-                // Explicitly set number of backups equal to number of grids.
-                if (cacheMode() == CacheMode.PARTITIONED)
-                    cc.setBackups(gridCount());
-
-                cc.setSnapshotableIndex(snapshotableIndex());
-
-                ccs[i] = cc;
-            }
-
-            c.setCacheConfiguration(ccs);
-        }
-        else
+        if (igniteInstanceName.startsWith("client"))
             c.setClientMode(true);
 
         return c;
+    }
+
+    /**
+     * @return cache configuration
+     */
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cc = defaultCacheConfiguration();
+
+        cc.setCacheMode(cacheMode());
+        cc.setAtomicityMode(atomicityMode());
+        cc.setNearConfiguration(nearCacheConfiguration());
+        cc.setWriteSynchronizationMode(FULL_SYNC);
+        cc.setCacheStoreFactory(new StoreFactory());
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
+        cc.setRebalanceMode(SYNC);
+        cc.setSqlFunctionClasses(SqlFunctions.class);
+
+        List<QueryEntity> entityList = new ArrayList<>();
+
+        QueryEntity qryEntity = new QueryEntity();
+
+        qryEntity.setKeyType(Integer.class.getName());
+        qryEntity.setValueType(Type1.class.getName());
+        qryEntity.addQueryField("id", Integer.class.getName(), null);
+        qryEntity.addQueryField("name", String.class.getName(), null);
+        qryEntity.setTableName("Type2");
+        qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
+
+        entityList.add(qryEntity);
+
+        qryEntity = new QueryEntity();
+
+        qryEntity.setKeyType(Integer.class.getName());
+        qryEntity.setValueType(Type2.class.getName());
+        qryEntity.addQueryField("id", Integer.class.getName(), null);
+        qryEntity.addQueryField("name", String.class.getName(), null);
+        qryEntity.setTableName("Type1");
+        qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
+
+        entityList.add(qryEntity);
+
+        qryEntity = new QueryEntity();
+
+        qryEntity.setKeyType(Integer.class.getName());
+        qryEntity.setValueType(ObjectValue2.class.getName());
+
+        qryEntity.addQueryField("strVal", String.class.getName(), null);
+
+        final QueryIndex strIdx = new QueryIndex(); // Default index type
+
+        strIdx.setFieldNames(Collections.singletonList("strVal"), true);
+
+        qryEntity.setIndexes(Arrays.asList(strIdx));
+
+        entityList.add(qryEntity);
+
+        cc.setQueryEntities(entityList);
+
+        if (cacheMode() != CacheMode.LOCAL)
+            cc.setAffinity(new RendezvousAffinityFunction());
+
+        // Explicitly set number of backups equal to number of grids.
+        if (cacheMode() == CacheMode.PARTITIONED)
+            cc.setBackups(gridCount());
+
+        //cc.setSnapshotableIndex(snapshotableIndex());
+
+        return cc;
+    }
+
+    /**
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcache(Class<K> clsK, Class<V> clsV) {
+        return jcache(ignite(), clsK, clsV);
+    }
+
+    /**
+     * @param ig Ignite.
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcache(Ignite ig, Class<K> clsK, Class<V> clsV) {
+        IgniteCache<K, V> cache = jcache(ig, cacheConfiguration(), clsK, clsV);
+
+        return cache;
     }
 
     /**
@@ -247,7 +262,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        ignite().cache(null).removeAll();
+        for(String cacheName : ignite().cacheNames())
+            ignite().cache(cacheName).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -271,8 +287,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
-    public void testDifferentKeyTypes() throws Exception {
-        final IgniteCache<Object, Object> cache = ignite().cache(null);
+    public void _testDifferentKeyTypes() throws Exception {
+        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
+
+        final IgniteCache<Object, Object> cache = jcache(Object.class, Object.class);
 
         cache.put(1, "value");
 
@@ -292,7 +310,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        IgniteCache<Integer, Object> cache = ignite().cache(null);
+        IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
 
         cache.put(7, "value");
 
@@ -307,7 +325,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testStringType() throws Exception {
-        IgniteCache<Integer, String> cache = ignite().cache(null);
+        IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
         cache.put(666, "test");
 
@@ -326,7 +344,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testIntegerType() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         int key = 898;
 
@@ -351,7 +369,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testTableAliasInSqlQuery() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         int key = 898;
 
@@ -389,16 +407,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     public void testUserDefinedFunction() throws IgniteCheckedException {
         // Without alias.
-        final IgniteCache<Object, Object> cache = ignite().cache(null);
+        final IgniteCache<Object, Object> cache = jcache(Object.class, Object.class);
 
         QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select square(1), square(2)"));
 
         Collection<List<?>> res = qry.getAll();
 
-        if (cacheMode() == REPLICATED)
-            assertEquals(1, res.size());
-        else
-            assertEquals(gridCount(), res.size());
+        assertEquals(1, res.size());
 
         List<?> row = res.iterator().next();
 
@@ -410,10 +425,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         res = qry.getAll();
 
-        if (cacheMode() == REPLICATED)
-            assertEquals(1, res.size());
-        else
-            assertEquals(gridCount(), res.size());
+        assertEquals(1, res.size());
 
         row = res.iterator().next();
 
@@ -441,10 +453,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testExpiration() throws Exception {
-        ignite().cache(null).
-            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(7, 1);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        cache.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(7, 1);
 
         List<Cache.Entry<Integer, Integer>> qry =
             cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
@@ -474,7 +485,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testIllegalBounds() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         cache.put(1, 1);
         cache.put(2, 2);
@@ -491,7 +502,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testComplexType() throws Exception {
-        IgniteCache<Key, GridCacheQueryTestValue> cache = ignite().cache(null);
+        IgniteCache<Key, GridCacheQueryTestValue> cache = jcache(Key.class, GridCacheQueryTestValue.class);
 
         GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
 
@@ -525,7 +536,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     public void testComplexTypeKeepBinary() throws Exception {
         if (ignite().configuration().getMarshaller() == null || ignite().configuration().getMarshaller() instanceof BinaryMarshaller) {
-            IgniteCache<Key, GridCacheQueryTestValue> cache = ignite().cache(null);
+            IgniteCache<Key, GridCacheQueryTestValue> cache = jcache(Key.class, GridCacheQueryTestValue.class);
 
             GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
 
@@ -596,7 +607,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testSelectQuery() throws Exception {
-        IgniteCache<Integer, String> cache = ignite().cache(null);
+        IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
         cache.put(10, "value");
 
@@ -615,7 +626,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testSimpleCustomTableName() throws Exception {
-        final IgniteCache<Integer, Object> cache = ignite().cache(null);
+        final IgniteCache<Integer, Object> cache = ignite().cache(DEFAULT_CACHE_NAME);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -649,7 +660,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testMixedCustomTableName() throws Exception {
-        final IgniteCache<Integer, Object> cache = ignite().cache(null);
+        final IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -695,7 +706,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDistributedJoinCustomTableName() throws Exception {
-        IgniteCache<Integer, Object> cache = ignite().cache(null);
+        IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -722,7 +733,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testObjectQuery() throws Exception {
-        IgniteCache<Integer, ObjectValue> cache = ignite().cache(null);
+        IgniteCache<Integer, ObjectValue> cache = jcache(Integer.class, ObjectValue.class);
 
         ObjectValue val = new ObjectValue("test", 0);
 
@@ -759,8 +770,42 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
+    public void testObjectWithString() throws Exception {
+        IgniteCache<Integer, ObjectValue2> cache = jcache(Integer.class, ObjectValue2.class);
+
+        cache.put(1, new ObjectValue2("value 1"));
+        cache.put(2, new ObjectValue2("value 2"));
+        cache.put(3, new ObjectValue2("value 3"));
+
+        QueryCursor<Cache.Entry<Integer, ObjectValue2>> qry
+            = cache.query(new SqlQuery<Integer, ObjectValue2>(ObjectValue2.class, "strVal like ?").setArgs("value%"));
+
+        int expCnt = 3;
+
+        List<Cache.Entry<Integer, ObjectValue2>> results = qry.getAll();
+
+        assertEquals(expCnt, results.size());
+
+        qry = cache.query(new SqlQuery<Integer, ObjectValue2>(ObjectValue2.class, "strVal > ?").setArgs("value 1"));
+
+        results = qry.getAll();
+
+        assertEquals(expCnt - 1, results.size());
+
+        qry = cache.query(new TextQuery<Integer, ObjectValue2>(ObjectValue2.class, "value"));
+
+        results = qry.getAll();
+
+        assertEquals(0, results.size()); //Should fail for FULL_TEXT index, but SORTED
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
     public void testEnumObjectQuery() throws Exception {
-        final IgniteCache<Long, EnumObject> cache = ignite().cache(null);
+        final IgniteCache<Long, EnumObject> cache = jcache(Long.class, EnumObject.class);
 
         for (long i = 0; i < 50; i++)
             cache.put(i, new EnumObject(i, i % 2 == 0 ? EnumType.TYPE_A : EnumType.TYPE_B));
@@ -896,8 +941,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
-    public void testObjectQueryWithSwap() throws Exception {
-        IgniteCache<Integer, ObjectValue> cache = ignite().cache(null);
+    public void _testObjectQueryWithSwap() throws Exception {
+        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
+
+        IgniteCache<Integer, ObjectValue> cache = jcache(Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 
@@ -907,7 +954,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, new ObjectValue("test" + i, i));
 
         for (Ignite g : G.allGrids()) {
-            IgniteCache<Integer, ObjectValue> c = g.cache(null);
+            IgniteCache<Integer, ObjectValue> c = g.cache(cache.getName());
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
@@ -915,7 +962,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     c.localEvict(Collections.singleton(i)); // Swap.
 
-                    if (!partitioned || g.affinity(null).mapKeyToNode(i).isLocal()) {
+                    if (!partitioned || g.affinity(cache.getName()).mapKeyToNode(i).isLocal()) {
                         ObjectValue peekVal = c.localPeek(i, CachePeekMode.ONHEAP);
 
                         assertNull("Non-null value for peek [key=" + i + ", val=" + peekVal + ']', peekVal);
@@ -990,7 +1037,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testFullTextSearch() throws Exception {
-        IgniteCache<Integer, ObjectValue> cache = ignite().cache(null);
+        IgniteCache<Integer, ObjectValue> cache = jcache(Integer.class, ObjectValue.class);
 
         // Try to execute on empty cache first.
         QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
@@ -1037,9 +1084,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testScanQuery() throws Exception {
-        IgniteCache<Integer, String> c1 = ignite().cache(null);
+        IgniteCache<Integer, String> c1 = jcache(Integer.class, String.class);
 
-        Map<Integer, String> map = new HashMap(){{
+        Map<Integer, String> map = new HashMap<Integer, String>(){{
             for (int i = 0; i < 5000; i++)
                 put(i, "str" + i);
         }};
@@ -1075,7 +1122,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testScanPartitionQuery() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
 
@@ -1118,8 +1165,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
-    public void testTwoObjectsTextSearch() throws Exception {
-        IgniteCache<Object, Object> c = ignite().cache(null);
+    public void _testTwoObjectsTextSearch() throws Exception {
+        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
+
+        IgniteCache<Object, Object> c = jcache(Object.class, Object.class);
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
@@ -1142,8 +1191,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPrimitiveType() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
-
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
         cache.put(1, 1);
         cache.put(2, 2);
 
@@ -1164,23 +1212,21 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPaginationIteratorDefaultCache() throws Exception {
-        testPaginationIterator(null);
+        testPaginationIterator(jcache(ignite(), cacheConfiguration(), DEFAULT_CACHE_NAME, Integer.class, Integer.class));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPaginationIteratorNamedCache() throws Exception {
-        testPaginationIterator("c1");
+        testPaginationIterator(jcache(ignite(), cacheConfiguration(), Integer.class, Integer.class));
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void testPaginationIterator(@Nullable String cacheName) throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(cacheName);
-
+    private void testPaginationIterator(IgniteCache<Integer, Integer> cache) throws Exception {
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
 
@@ -1206,23 +1252,21 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testPaginationGetDefaultCache() throws Exception {
-        testPaginationGet(null);
+        testPaginationGet(jcache(ignite(), cacheConfiguration(), DEFAULT_CACHE_NAME, Integer.class, Integer.class));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPaginationGetNamedCache() throws Exception {
-        testPaginationGet("c1");
+        testPaginationGet(jcache(ignite(), cacheConfiguration(), Integer.class, Integer.class));
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void testPaginationGet(@Nullable String cacheName) throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(cacheName);
-
+    private void testPaginationGet(IgniteCache<Integer, Integer> cache) throws Exception {
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
 
@@ -1249,7 +1293,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testScanFilters() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
@@ -1285,7 +1329,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws IgniteCheckedException if failed.
      */
     public void testBadHashObjectKey() throws IgniteCheckedException {
-        IgniteCache<BadHashKeyObject, Byte> cache = ignite().cache(null);
+        IgniteCache<BadHashKeyObject, Byte> cache = jcache(BadHashKeyObject.class, Byte.class);
 
         cache.put(new BadHashKeyObject("test_key1"), (byte)1);
         cache.put(new BadHashKeyObject("test_key0"), (byte)10);
@@ -1299,7 +1343,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws IgniteCheckedException if failed.
      */
     public void testTextIndexedKey() throws IgniteCheckedException {
-        IgniteCache<ObjectValue, Long> cache = ignite().cache(null);
+        IgniteCache<ObjectValue, Long> cache = jcache(ObjectValue.class, Long.class);
 
         cache.put(new ObjectValue("test_key1", 10), 19L);
         cache.put(new ObjectValue("test_key0", 11), 11005L);
@@ -1314,7 +1358,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testOrderByOnly() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         for (int i = 0; i < 10; i++)
             cache.put(i, i);
@@ -1344,7 +1388,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testLimitOnly() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         for (int i = 0; i < 10; i++)
             cache.put(i, i);
@@ -1372,9 +1416,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testArray() throws Exception {
-        IgniteCache<Integer, ArrayObject> cache = ignite().cache(null);
+        IgniteCache<Integer, ArrayObject> cache = jcache(Integer.class, ArrayObject.class);
 
-        cache.put(1, new ArrayObject(new Long[]{1L, null, 3L}));
+        cache.put(1, new ArrayObject(new Long[] {1L, null, 3L}));
         cache.put(2, new ArrayObject(new Long[] {4L, 5L, 6L}));
 
         QueryCursor<Cache.Entry<Integer, ArrayObject>> q =
@@ -1402,7 +1446,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testFieldsQueryMetadata() throws Exception {
-        IgniteCache<UUID, Person> cache = ignite().cache(null);
+        IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
 
         for (int i = 0; i < 100; i++)
             cache.put(UUID.randomUUID(), new Person("name-" + i, (i + 1) * 100));
@@ -1425,6 +1469,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     private void checkSqlQueryEvents() throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
+        final IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         IgnitePredicate[] lsnrs = new IgnitePredicate[gridCount()];
 
@@ -1435,7 +1480,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertNull(qe.cacheName());
+                    assertEquals(cache.getName(), qe.cacheName());
                     assertNotNull(qe.clause());
                     assertNull(qe.scanQueryFilter());
                     assertNull(qe.continuousQueryFilter());
@@ -1453,8 +1498,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         }
 
         try {
-            IgniteCache<Integer, Integer> cache = ignite().cache(null);
-
             for (int i = 0; i < 20; i++)
                 cache.put(i, i);
 
@@ -1478,6 +1521,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
+        final IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         IgnitePredicate[] objReadLsnrs = new IgnitePredicate[gridCount()];
         IgnitePredicate[] qryExecLsnrs = new IgnitePredicate[gridCount()];
@@ -1490,7 +1534,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
 
                     assertEquals(SCAN.name(), qe.queryType());
-                    assertNull(qe.cacheName());
+                    assertEquals(cache.getName(), qe.cacheName());
 
                     assertNull(qe.className());
                     assertNull(null, qe.clause());
@@ -1516,7 +1560,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                     assertEquals(SCAN.name(), qe.queryType());
-                    assertNull(qe.cacheName());
+                    assertEquals(cache.getName(), qe.cacheName());
 
                     assertNull(qe.className());
                     assertNull(null, qe.clause());
@@ -1535,8 +1579,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         }
 
         try {
-            IgniteCache<Integer, Integer> cache = ignite().cache(null);
-
             for (int i = 0; i < 20; i++)
                 cache.put(i, i);
 
@@ -1573,6 +1615,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         final Map<UUID, Person> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
+        final IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
 
         IgnitePredicate[] objReadLsnrs = new IgnitePredicate[gridCount()];
         IgnitePredicate[] qryExecLsnrs = new IgnitePredicate[gridCount()];
@@ -1585,7 +1628,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     CacheQueryReadEvent<UUID, Person> qe = (CacheQueryReadEvent<UUID, Person>)evt;
 
                     assertEquals(FULL_TEXT.name(), qe.queryType());
-                    assertNull(qe.cacheName());
+                    assertEquals(cache.getName(), qe.cacheName());
 
                     assertEquals("Person", qe.className());
                     assertEquals("White", qe.clause());
@@ -1611,7 +1654,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                     assertEquals(FULL_TEXT.name(), qe.queryType());
-                    assertNull(qe.cacheName());
+                    assertEquals(cache.getName(), qe.cacheName());
 
                     assertEquals("Person", qe.className());
                     assertEquals("White", qe.clause());
@@ -1630,8 +1673,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         }
 
         try {
-            IgniteCache<UUID, Person> cache = ignite().cache(null);
-
             UUID k1 = UUID.randomUUID();
             UUID k2 = UUID.randomUUID();
             UUID k3 = UUID.randomUUID();
@@ -1665,6 +1706,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     public void testFieldsQueryEvents() throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
+        final IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
 
         IgnitePredicate[] qryExecLsnrs = new IgnitePredicate[gridCount()];
 
@@ -1675,7 +1717,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertNull(qe.cacheName());
+                    assertEquals(cache.getName(), qe.cacheName());
                     assertNotNull(qe.clause());
                     assertNull(qe.scanQueryFilter());
                     assertNull(qe.continuousQueryFilter());
@@ -1692,8 +1734,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         }
 
         try {
-            IgniteCache<UUID,Person> cache = ignite().cache(null);
-
             for (int i = 1; i <= 20; i++)
                 cache.put(UUID.randomUUID(), new Person("Person " + i, i));
 
@@ -2057,6 +2097,54 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ObjectValueOther.class, this);
+        }
+    }
+
+    /**
+     * Another test value object.
+     */
+    private static class ObjectValue2 {
+        /** Value. */
+        private String strVal;
+
+        /**
+         * @param strVal String value.
+         */
+        ObjectValue2(String strVal) {
+            this.strVal = strVal;
+        }
+
+        /**
+         * Gets value.
+         *
+         * @return Value.
+         */
+        public String value() {
+            return strVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectValue2 other = (ObjectValue2)o;
+
+            return strVal == null ? other.strVal == null : strVal.equals(other.strVal);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return strVal != null ? strVal.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ObjectValue2.class, this);
         }
     }
 

@@ -33,10 +33,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="test"/>
-                    <property name="metaCacheName" value="meta"/>
-                    <property name="dataCacheName" value="data"/>
-
-                    <property name="maxSpaceSize" value="#{100L * 1024 * 1024}"/>
 
                     <!-- Loopback endpoint. -->
                     <property name="ipcEndpointConfiguration">
@@ -53,18 +49,29 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Configure type metadata to enable queries. -->
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="java.lang.Integer"/>
                                 <property name="valueType" value="Organization"/>
-                                <property name="ascendingFields">
+                                <property name="fields">
                                     <map>
                                         <entry key="name" value="java.lang.String"/>
                                     </map>
                                 </property>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="name" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                    </list>
+                                </property>
                             </bean>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata2"/>
+                            <bean class="org.apache.ignite.cache.QueryEntity2"/>
                         </list>
                     </property>
                 </bean>

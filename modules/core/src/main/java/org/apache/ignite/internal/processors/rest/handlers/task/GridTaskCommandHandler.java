@@ -143,7 +143,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                     Object topic = U.unmarshal(ctx, req.topicBytes(), U.resolveClassLoader(ctx.config()));
 
-                    ctx.io().send(nodeId, topic, res, SYSTEM_POOL);
+                    ctx.io().sendToCustomTopic(nodeId, topic, res, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job task result response.", e);
@@ -494,7 +494,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             try {
                 byte[] topicBytes = U.marshal(ctx, topic);
 
-                ctx.io().send(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
+                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 String errMsg = "Failed to send task result request [resHolderId=" + resHolderId +

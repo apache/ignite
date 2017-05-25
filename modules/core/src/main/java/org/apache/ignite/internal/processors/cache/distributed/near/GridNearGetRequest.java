@@ -73,10 +73,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
-    /** Partition IDs. */
-    @GridDirectCollection(int.class)
-    private List<Integer> partIds;
-
     /** */
     @GridDirectCollection(boolean.class)
     private Collection<Boolean> flags;
@@ -89,6 +85,9 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
     /** Skip values flag. Used for {@code containsKey} method. */
     private boolean skipVals;
+
+    /** Recovery flag. */
+    private boolean recovery;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -141,7 +140,8 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         long createTtl,
         long accessTtl,
         boolean skipVals,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean recovery
     ) {
         assert futId != null;
         assert miniId != null;
@@ -154,12 +154,10 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
         this.keys = new ArrayList<>(keys.size());
         flags = new ArrayList<>(keys.size());
-        partIds = new ArrayList<>(keys.size());
 
         for (Map.Entry<KeyCacheObject, Boolean> entry : keys.entrySet()) {
             this.keys.add(entry.getKey());
             flags.add(entry.getValue());
-            partIds.add(entry.getKey().partition());
         }
 
         this.readThrough = readThrough;
@@ -170,6 +168,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         this.accessTtl = accessTtl;
         this.skipVals = skipVals;
         this.addDepInfo = addDepInfo;
+        this.recovery = recovery;
     }
 
     /**
@@ -237,6 +236,13 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     }
 
     /**
+     * @return Recovery flag.
+     */
+    public boolean recovery() {
+        return recovery;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -259,7 +265,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
     /**
@@ -301,13 +307,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
             while (keysIt.hasNext())
                 keyMap.put(keysIt.next(), flagsIt.next());
-        }
-
-        if (partIds != null && !partIds.isEmpty()) {
-            assert partIds.size() == keys.size();
-
-            for (int i = 0; i < keys.size(); i++)
-                keys.get(i).partition(partIds.get(i));
         }
     }
 
@@ -368,13 +367,13 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                if (!writer.writeBoolean("readThrough", readThrough))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("readThrough", readThrough))
+                if (!writer.writeBoolean("recovery", recovery))
                     return false;
 
                 writer.incrementState();
@@ -480,7 +479,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 9:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+                readThrough = reader.readBoolean("readThrough");
 
                 if (!reader.isLastRead())
                     return false;
@@ -488,7 +487,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 10:
-                readThrough = reader.readBoolean("readThrough");
+                recovery = reader.readBoolean("recovery");
 
                 if (!reader.isLastRead())
                     return false;
@@ -549,7 +548,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 49;
     }
 

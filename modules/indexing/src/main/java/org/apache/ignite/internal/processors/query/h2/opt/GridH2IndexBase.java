@@ -17,18 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -53,8 +43,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.lang.GridFilteredIterator;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -142,7 +132,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             log = ctx.log(getClass());
 
-            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifier() + '.' + getName());
+            msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, tbl.identifierString() + '.' + getName());
 
             msgLsnr = new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
@@ -200,22 +190,22 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * If the index supports rebuilding it has to creates its own copy.
-     *
-     * @return Rebuilt copy.
-     * @throws InterruptedException If interrupted.
-     */
-    public GridH2IndexBase rebuild() throws InterruptedException {
-        return this;
-    }
-
-    /**
-     * Put row if absent.
+     * Puts row.
      *
      * @param row Row.
      * @return Existing row or {@code null}.
      */
     public abstract GridH2Row put(GridH2Row row);
+
+    /**
+     * Puts row.
+     *
+     * @param row Row.
+     * @return {@code True} if replaced existing row.
+     */
+    public boolean putx(GridH2Row row) {
+        return put(row) != null;
+    }
 
     /**
      * Remove row from index.
@@ -224,6 +214,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Removed row.
      */
     public abstract GridH2Row remove(SearchRow row);
+
+    /**
+     * Remove row from index, does not return removed row.
+     *
+     * @param row Row.
+     */
+    public void removex(SearchRow row) {
+        remove(row);
+    }
+
+    /**
+     * Finds a single row by the given row.
+     *
+     * @param row Search row.
+     * @return Search result.
+     */
+    public abstract GridH2Row findOne(GridH2Row row);
 
     /**
      * Takes or sets existing snapshot to be used in current thread.
@@ -300,7 +307,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      *
      * @return Snapshot or {@code null}.
      */
-    @Nullable protected abstract Object doTakeSnapshot();
+    @Nullable protected abstract IgniteTree doTakeSnapshot();
 
     /**
      * @return Thread local snapshot.
@@ -330,12 +337,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * Filters rows from expired ones and using predicate.
      *
-     * @param iter Iterator over rows.
+     * @param cursor GridCursor over rows.
      * @param filter Optional filter.
      * @return Filtered iterator.
      */
-    protected Iterator<GridH2Row> filter(Iterator<GridH2Row> iter, IndexingQueryFilter filter) {
-        return new FilteringIterator(iter, U.currentTimeMillis(), filter, getTable().spaceName());
+    protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, IndexingQueryFilter filter) {
+        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().cacheName());
     }
 
     /**
@@ -369,7 +376,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public void remove(Session ses) {
-        throw DbException.getUnsupportedException("remove index");
+        // No-op: destroyed from owning table.
     }
 
     /** {@inheritDoc} */
@@ -383,32 +390,41 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
+        GridH2RowDescriptor desc = getTable().rowDescriptor();
 
         int affColId = -1;
         boolean ucast = false;
 
         if (affCol != null) {
             affColId = affCol.column.getColumnId();
-            int[] masks = filter.getMasks();
+            int[] masks = filters[filter].getMasks();
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                    (masks[KEY_COL] & IndexCondition.EQUALITY) != 0;
+                        desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
             }
         }
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
-        boolean isLocal = qctx.distributedJoinMode() == LOCAL_ONLY;
+        return new DistributedLookupBatch(cctx, ucast, affColId);
+    }
 
-        return new DistributedLookupBatch(cctx, ucast, affColId, isLocal);
+    /** {@inheritDoc} */
+    @Override public void removeChildrenAndResources(Session session) {
+        // The sole purpose of this override is to pass session to table.removeIndex
+        assert table instanceof GridH2Table;
+
+        ((GridH2Table)table).removeIndex(session, this);
+        remove(session);
+        database.removeMeta(session, getId());
     }
 
     /**
@@ -482,11 +498,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 if (msg.bounds() != null) {
                     // This is the first request containing all the search rows.
-                    ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> snapshot0 = qctx.getSnapshot(idxId);
+                    IgniteTree snapshotTree = qctx.getSnapshot(idxId);
 
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), snapshot0, qctx.filter());
+                    src = new RangeSource(msg.bounds(), msg.segment(), snapshotTree, qctx.filter());
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -513,6 +529,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                         maxRows -= range.rows().size();
                 }
 
+                assert !ranges.isEmpty();
+
                 if (src.hasMoreRows()) {
                     // Save source for future fetches.
                     if (msg.bounds() != null)
@@ -522,8 +540,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     // Drop saved source.
                     qctx.putSource(node.id(), msg.segment(), msg.batchLookupId(), null);
                 }
-
-                assert !ranges.isEmpty();
 
                 res.ranges(ranges);
                 res.status(STATUS_OK);
@@ -1079,9 +1095,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         final int affColId;
 
         /** */
-        private final boolean localQuery;
-
-        /** */
         GridH2QueryContext qctx;
 
         /** */
@@ -1106,13 +1119,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param cctx Cache Cache context.
          * @param ucast Unicast or broadcast query.
          * @param affColId Affinity column ID.
-         * @param localQuery Local query flag.
          */
-        DistributedLookupBatch(GridCacheContext<?, ?> cctx, boolean ucast, int affColId, boolean localQuery) {
+        DistributedLookupBatch(GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
             this.cctx = cctx;
             this.ucast = ucast;
             this.affColId = affColId;
-            this.localQuery = localQuery;
         }
 
         /**
@@ -1130,7 +1141,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             if (affKeyFirst != null && equal(affKeyFirst, affKeyLast))
                 return affKeyFirst == ValueNull.INSTANCE ? EXPLICIT_NULL : affKeyFirst.getObject();
 
-            if (affColId == KEY_COL)
+            if (getTable().rowDescriptor().isKeyColumn(affColId))
                 return null;
 
             // Try to extract affinity key from primary key.
@@ -1184,25 +1195,26 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             Object affKey = affColId == -1 ? null : getAffinityKey(firstRow, lastRow);
 
+            boolean locQry = localQuery();
+
             List<SegmentKey> segmentKeys;
-            Future<Cursor> fut;
 
             if (affKey != null) {
                 // Affinity key is provided.
                 if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
                     return false;
 
-                segmentKeys = F.asList(rangeSegment(cctx, qctx, affKey, localQuery));
+                segmentKeys = F.asList(rangeSegment(cctx, qctx, affKey, locQry));
             }
             else {
                 // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
                 if (broadcastSegments == null)
-                    broadcastSegments = broadcastSegments(qctx, cctx, localQuery);
+                    broadcastSegments = broadcastSegments(qctx, cctx, locQry);
 
                 segmentKeys = broadcastSegments;
             }
 
-            if (localQuery && segmentKeys.isEmpty())
+            if (locQry && segmentKeys.isEmpty())
                 return false; // Nothing to do
 
             assert !F.isEmpty(segmentKeys) : segmentKeys;
@@ -1243,7 +1255,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     batchFull = true;
             }
 
-            fut = new DoneFuture<>(segmentKeys.size() == 1 ?
+            Future<Cursor> fut = new DoneFuture<>(segmentKeys.size() == 1 ?
                 new UnicastCursor(rangeId, segmentKeys, rangeStreams) :
                 new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
 
@@ -1255,6 +1267,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** {@inheritDoc} */
         @Override public boolean isBatchFull() {
             return batchFull;
+        }
+
+        /**
+         * @return {@code True} if local query execution is enforced.
+         */
+        private boolean localQuery() {
+            assert qctx != null : "Missing query context: " + this;
+
+            return qctx.distributedJoinMode() == LOCAL_ONLY;
         }
 
         /**
@@ -1350,6 +1371,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * Start streaming.
          */
         private void start() {
+            assert ctx != null;
+            assert log != null: getName();
+
             remainingRanges = req.bounds().size();
 
             assert remainingRanges > 0;
@@ -1519,16 +1543,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
         int curRangeId = -1;
 
         /** */
-        Iterator<GridH2Row> curRange = emptyIterator();
-
-        /** */
-        final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
+        final IgniteTree tree;
 
         /** */
         private final int segment;
 
         /** */
         final IndexingQueryFilter filter;
+
+        /** Iterator. */
+        Iterator<GridH2Row> iter = emptyIterator();
 
         /**
          * @param bounds Bounds.
@@ -1538,7 +1562,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
             int segment,
-            ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree,
+            IgniteTree tree,
             IndexingQueryFilter filter
         ) {
             this.segment = segment;
@@ -1550,8 +1574,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /**
          * @return {@code true} If there are more rows in this source.
          */
-        public boolean hasMoreRows() {
-            return boundsIter.hasNext() || curRange.hasNext();
+        public boolean hasMoreRows() throws IgniteCheckedException {
+            return boundsIter.hasNext() || iter.hasNext();
         }
 
         /**
@@ -1561,8 +1585,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         public GridH2RowRange next(int maxRows) {
             assert maxRows > 0 : maxRows;
 
-            for (;;) {
-                if (curRange.hasNext()) {
+            for (; ; ) {
+                if (iter.hasNext()) {
                     // Here we are getting last rows from previously partially fetched range.
                     List<GridH2RowMessage> rows = new ArrayList<>();
 
@@ -1572,19 +1596,19 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     nextRange.rows(rows);
 
                     do {
-                        rows.add(toRowMessage(curRange.next()));
+                        rows.add(toRowMessage(iter.next()));
                     }
-                    while (rows.size() < maxRows && curRange.hasNext());
+                    while (rows.size() < maxRows && iter.hasNext());
 
-                    if (curRange.hasNext())
+                    if (iter.hasNext())
                         nextRange.setPartial();
                     else
-                        curRange = emptyIterator();
+                        iter = emptyIterator();
 
                     return nextRange;
                 }
 
-                curRange = emptyIterator();
+                iter = emptyIterator();
 
                 if (!boundsIter.hasNext()) {
                     boundsIter = emptyIterator();
@@ -1599,11 +1623,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 SearchRow first = toSearchRow(bounds.first());
                 SearchRow last = toSearchRow(bounds.last());
 
-                ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = tree != null ? tree : treeForRead(segment);
+                IgniteTree t = tree != null ? tree : treeForRead(segment);
 
-                curRange = doFind0(t, first, true, last, filter);
+                iter = new CursorIteratorWrapper(doFind0(t, first, true, last, filter));
 
-                if (!curRange.hasNext()) {
+                if (!iter.hasNext()) {
                     // We have to return empty range here.
                     GridH2RowRange emptyRange = new GridH2RowRange();
 
@@ -1619,7 +1643,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param segment Segment Id.
      * @return Snapshot for requested segment if there is one.
      */
-    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int segment) {
+    protected <K, V> IgniteTree<K, V> treeForRead(int segment) {
         throw new UnsupportedOperationException();
     }
 
@@ -1631,7 +1655,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    protected Iterator<GridH2Row> doFind0(ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
+    protected GridCursor<GridH2Row> doFind0(
+        IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
@@ -1640,9 +1665,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * Iterator which filters by expiration time and predicate.
+     * Cursor which filters by expiration time and predicate.
      */
-    protected static class FilteringIterator extends GridFilteredIterator<GridH2Row> {
+    protected static class FilteringCursor implements GridCursor<GridH2Row> {
+        /** */
+        private final GridCursor<GridH2Row> cursor;
         /** */
         private final IgniteBiPredicate<Object, Object> fltr;
 
@@ -1652,22 +1679,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** Is value required for filtering predicate? */
         private final boolean isValRequired;
 
+        /** */
+        private GridH2Row next;
+
         /**
-         * @param iter Iterator.
+         * @param cursor GridCursor.
          * @param time Time for expired rows filtering.
          * @param qryFilter Filter.
-         * @param spaceName Space name.
+         * @param cacheName Cache name.
          */
-        protected FilteringIterator(Iterator<GridH2Row> iter,
-            long time,
-            IndexingQueryFilter qryFilter,
-            String spaceName) {
-            super(iter);
+        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
+            String cacheName) {
+            this.cursor = cursor;
 
             this.time = time;
 
             if (qryFilter != null) {
-                this.fltr = qryFilter.forSpace(spaceName);
+                this.fltr = qryFilter.forCache(cacheName);
 
                 this.isValRequired = qryFilter.isValueRequired();
             }
@@ -1683,11 +1711,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @return If this row was accepted.
          */
         @SuppressWarnings("unchecked")
-        @Override protected boolean accept(GridH2Row row) {
-            if (row instanceof GridH2AbstractKeyValueRow) {
-                if (((GridH2AbstractKeyValueRow) row).expirationTime() <= time)
-                    return false;
-            }
+        protected boolean accept(GridH2Row row) {
+            if (row.expireTime() != 0 && row.expireTime() <= time)
+                return false;
 
             if (fltr == null)
                 return true;
@@ -1700,5 +1726,97 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             return fltr.apply(key, val);
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() throws IgniteCheckedException {
+            next = null;
+
+            while (cursor.next()) {
+                GridH2Row t = cursor.get();
+
+                if (accept(t)) {
+                    next = t;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row get() throws IgniteCheckedException {
+            if (next == null)
+                throw new NoSuchElementException();
+
+            return next;
+        }
     }
+
+    /**
+     *
+     */
+    private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
+        /** */
+        private final GridCursor<GridH2Row> cursor;
+
+        /** Next element. */
+        private GridH2Row next;
+
+        /**
+         * @param cursor Cursor.
+         */
+        private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+            assert cursor != null;
+
+            this.cursor = cursor;
+
+            try {
+                if (cursor.next())
+                    next = cursor.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row next() {
+            try {
+                GridH2Row res = next;
+
+                if (cursor.next())
+                    next = cursor.get();
+                else
+                    next = null;
+
+                return res;
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException("operation is not supported");
+        }
+    }
+
+    /** Empty cursor. */
+    protected static final GridCursor<GridH2Row> EMPTY_CURSOR = new GridCursor<GridH2Row>() {
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row get() {
+            return null;
+        }
+    };
 }

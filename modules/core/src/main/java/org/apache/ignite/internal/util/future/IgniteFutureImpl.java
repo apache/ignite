@@ -53,16 +53,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public long startTime() {
-        return fut.startTime();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long duration() {
-        return fut.duration();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isCancelled() {
         return fut.isCancelled();
     }

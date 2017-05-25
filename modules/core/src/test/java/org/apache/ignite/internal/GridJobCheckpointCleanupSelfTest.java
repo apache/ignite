@@ -50,8 +50,8 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
     private CheckpointSpi checkpointSpi;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setCheckpointSpi(checkpointSpi);
 
@@ -127,7 +127,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 

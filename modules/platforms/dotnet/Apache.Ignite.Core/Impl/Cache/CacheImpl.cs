@@ -58,6 +58,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: no-retries.*/
         private readonly bool _flagNoRetries;
 
+        /** Flag: partition recover.*/
+        private readonly bool _flagPartitionRecover;
+
         /** Transaction manager. */
         private readonly CacheTransactionManager _txManager;
 
@@ -70,8 +73,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagSkipStore">Skip store flag.</param>
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
+        /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
         public CacheImpl(Ignite grid, IUnmanagedTarget target, Marshaller marsh,
-            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries) : base(target, marsh)
+            bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover)
+            : base(target, marsh)
         {
             Debug.Assert(grid != null);
 
@@ -79,6 +84,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagSkipStore = flagSkipStore;
             _flagKeepBinary = flagKeepBinary;
             _flagNoRetries = flagNoRetries;
+            _flagPartitionRecover = flagPartitionRecover;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
                 ? new CacheTransactionManager(grid.GetTransactions())
@@ -150,7 +156,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public CacheConfiguration GetConfiguration()
         {
-            return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(Marshaller.StartUnmarshal(stream)));
+            return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(
+                BinaryUtils.Marshaller.StartUnmarshal(stream)));
         }
 
         /** <inheritDoc /> */
@@ -166,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithSkipStore), Marshaller,
-                true, _flagKeepBinary, true);
+                true, _flagKeepBinary, true, _flagPartitionRecover);
         }
 
         /// <summary>
@@ -190,7 +197,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return new CacheImpl<TK1, TV1>(_ignite, DoOutOpObject((int) CacheOp.WithKeepBinary), Marshaller,
-                _flagSkipStore, true, _flagNoRetries);
+                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -200,7 +207,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
-            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, _flagNoRetries);
+            return new CacheImpl<TK, TV>(_ignite, cache0, Marshaller, _flagSkipStore, _flagKeepBinary, 
+                _flagNoRetries, _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -405,7 +413,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
@@ -416,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
@@ -617,7 +625,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public void PutAll(IDictionary<TK, TV> vals)
+        public void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
@@ -627,7 +635,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        public Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
@@ -817,14 +825,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             return (int) DoOutInOp((int) op, modes0);
         }
 
-        /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
-        {
-            IgniteArgumentCheck.NotNull(keys, "keys");
-
-            DoOutOp(CacheOp.LocPromote, writer => WriteEnumerable(writer, keys));
-        }
-
         /** <inheritdoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
@@ -877,7 +877,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
+        public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -898,7 +898,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
+        public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -1012,7 +1012,38 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return this;
 
             return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithNoRetries), Marshaller,
-                _flagSkipStore, _flagKeepBinary, true);
+                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithPartitionRecover()
+        {
+            if (_flagPartitionRecover)
+                return this;
+
+            return new CacheImpl<TK, TV>(_ignite, DoOutOpObject((int) CacheOp.WithPartitionRecover), Marshaller,
+                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<int> GetLostPartitions()
+        {
+            return DoInOp((int) CacheOp.GetLostPartitions, s =>
+            {
+                var cnt = s.ReadInt();
+
+                var res = new List<int>(cnt);
+
+                if (cnt > 0)
+                {
+                    for (var i = 0; i < cnt; i++)
+                    {
+                        res.Add(s.ReadInt());
+                    }
+                }
+
+                return res;
+            });
         }
 
         #region Queries
@@ -1055,6 +1086,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 writer.WriteBoolean(qry.EnableDistributedJoins);
                 writer.WriteBoolean(qry.EnforceJoinOrder);
+                writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
+                writer.WriteBoolean(qry.ReplicatedOnly);
+                writer.WriteBoolean(qry.Colocated);
             });
         
             return new FieldsQueryCursor<T>(cursor, Marshaller, _flagKeepBinary, readerFunc);
@@ -1169,14 +1203,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <typeparam name="T">The type of the result.</typeparam>
         /// <param name="reader">Stream.</param>
         /// <returns>Results of InvokeAll operation.</returns>
-        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(BinaryReader reader)
+        private ICollection<ICacheEntryProcessorResult<TK, T>> ReadInvokeAllResults<T>(BinaryReader reader)
         {
             var count = reader.ReadInt();
 
             if (count == -1)
                 return null;
 
-            var results = new Dictionary<TK, ICacheEntryProcessorResult<T>>(count);
+            var results = new List<ICacheEntryProcessorResult<TK, T>>(count);
 
             for (var i = 0; i < count; i++)
             {
@@ -1184,9 +1218,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 var hasError = reader.ReadBoolean();
 
-                results[key] = hasError
-                    ? new CacheEntryProcessorResult<T>(ReadException(reader))
-                    : new CacheEntryProcessorResult<T>(reader.ReadObject<T>());
+                results.Add(hasError
+                    ? new CacheEntryProcessorResult<TK, T>(key, ReadException(reader))
+                    : new CacheEntryProcessorResult<TK, T>(key, reader.ReadObject<T>()));
             }
 
             return results;
@@ -1226,7 +1260,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Dictionary.</returns>
-        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReader reader)
+        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader)
         {
             if (reader == null)
                 return null;
@@ -1237,14 +1271,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 int size = stream.ReadInt();
 
-                IDictionary<TK, TV> res = new Dictionary<TK, TV>(size);
+                var res = new List<ICacheEntry<TK, TV>>(size);
 
                 for (int i = 0; i < size; i++)
                 {
                     TK key = reader.ReadObject<TK>();
                     TV val = reader.ReadObject<TV>();
 
-                    res[key] = val;
+                    res.Add(new CacheEntry<TK, TV>(key, val));
                 }
 
                 return res;

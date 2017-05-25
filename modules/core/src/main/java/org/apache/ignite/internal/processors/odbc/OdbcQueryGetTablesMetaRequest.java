@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * ODBC query get tables meta request.
  */
-public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
+public class OdbcQueryGetTablesMetaRequest extends SqlListenerRequest {
     /** Catalog search pattern. */
     private final String catalog;
 
@@ -42,7 +42,7 @@ public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
      * @param tableType Table type search pattern.
      */
     public OdbcQueryGetTablesMetaRequest(String catalog, String schema, String table, String tableType) {
-        super(GET_TABLES_META);
+        super(META_TBLS);
 
         this.catalog = catalog;
         this.schema = schema;

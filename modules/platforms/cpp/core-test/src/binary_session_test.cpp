@@ -155,6 +155,24 @@ BOOST_AUTO_TEST_CASE(TestDate)
     BOOST_REQUIRE(readVal == writeVal);
 }
 
+BOOST_AUTO_TEST_CASE(TestTime)
+{
+    Time writeVal = Time(42);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writeSes(&out, NULL);
+    writeSes.WriteTopObject<Time>(writeVal);
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    Time readVal = reader.ReadTopObject<Time>();
+
+    BOOST_REQUIRE(readVal == writeVal);
+}
+
 BOOST_AUTO_TEST_CASE(TestTimestamp)
 {
     Timestamp writeVal = Timestamp(77);

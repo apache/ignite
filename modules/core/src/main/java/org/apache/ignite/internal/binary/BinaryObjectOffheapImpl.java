@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
@@ -144,6 +145,27 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @Override public byte[] array() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
+        throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
     }
 
     /** {@inheritDoc} */
@@ -323,6 +345,14 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
             }
 
+            case GridBinaryMarshaller.TIME: {
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+
+                val = new Time(time);
+
+                break;
+            }
+
             case GridBinaryMarshaller.UUID: {
                 long most = BinaryPrimitives.readLong(ptr, fieldPos + 1);
                 long least = BinaryPrimitives.readLong(ptr, fieldPos + 1 + 8);
@@ -367,6 +397,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         }
 
         return (F)val;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeFieldByOrder(int fieldOffset, ByteBuffer buf) {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -444,7 +479,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         throw new UnsupportedOperationException();
     }
 

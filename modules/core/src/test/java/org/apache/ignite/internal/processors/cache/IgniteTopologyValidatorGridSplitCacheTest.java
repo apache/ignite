@@ -76,7 +76,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        int idx = getTestGridIndex(gridName);
+        int idx = getTestIgniteInstanceIndex(gridName);
 
         cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, idx % 2));
 
@@ -90,7 +90,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                 CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
 
                 for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(testCacheName(cnt));
                     ccfg.setCacheMode(PARTITIONED);
@@ -130,7 +130,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
     /**
      * Tests topology split scenario.
-     * @throws Exception
+     *
+     * @throws Exception If failed.
      */
     public void testTopologyValidator() throws Exception {
         assertTrue(initLatch.await(10, TimeUnit.SECONDS));
@@ -242,12 +243,15 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         @CacheNameResource
         private String cacheName;
 
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
@@ -263,7 +267,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             }).isEmpty())
                 return false;
 
-            IgniteKernal kernal = (IgniteKernal)ignite.cache(cacheName).unwrap(Ignite.class);
+            IgniteKernal kernal = (IgniteKernal)ignite;
 
             GridDhtCacheAdapter<Object, Object> dht = kernal.context().cache().internalCache(cacheName).context().dht();
 

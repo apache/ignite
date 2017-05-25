@@ -36,16 +36,19 @@ namespace ignite
                 /**
                  * Operation result.
                  */
-                enum OperationResult
+                struct OperationResult
                 {
-                    /** Null. */
-                    ResultNull = 0,
+                    enum Type
+                    {
+                        /** Null. */
+                        AI_NULL = 0,
 
-                    /** Success. */
-                    ResultSuccess = 1,
+                        /** Success. */
+                        AI_SUCCESS = 1,
 
-                    /** Error. */
-                    ResultError = -1
+                        /** Error. */
+                        AI_ERROR = -1
+                    };
                 };
 
                 /**
@@ -69,7 +72,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result.
                  */
-                bool OutOp(int32_t opType, InputOperation& inOp, IgniteError* err);
+                bool OutOp(int32_t opType, InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Internal out operation.
@@ -78,17 +81,26 @@ namespace ignite
                  * @param err Error.
                  * @return Result.
                  */
-                bool OutOp(int32_t opType, IgniteError* err);
+                bool OutOp(int32_t opType, IgniteError& err);
 
                 /**
-                 * Internal out operation.
+                 * Internal in operation.
                  *
                  * @param opType Operation type.
-                 * @param inOp Input.
+                 * @param outOp Output.
                  * @param err Error.
                  * @return Result.
                  */
-                bool InOp(int32_t opType, OutputOperation& outOp, IgniteError* err);
+                bool InOp(int32_t opType, OutputOperation& outOp, IgniteError& err);
+
+                /**
+                 * Internal in Object operation.
+                 *
+                 * @param opType Operation type.
+                 * @param err Error.
+                 * @return Object.
+                 */
+                jobject InOpObject(int32_t opType, IgniteError& err);
 
                 /**
                  * Internal out-in operation.
@@ -99,7 +111,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Internal out-in operation.
@@ -110,7 +122,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * In stream out long operation.
@@ -120,7 +132,7 @@ namespace ignite
                  * @param err Error.
                  * @return Operation result.
                  */
-                OperationResult InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError* err);
+                OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.
@@ -129,7 +141,7 @@ namespace ignite
                 * @param val Value.
                 * @param err Error.
                 */
-                int64_t OutInOpLong(int32_t opType, int64_t val, IgniteError* err);
+                int64_t OutInOpLong(int32_t opType, int64_t val, IgniteError& err);
 
                 /**
                  * Get environment shared pointer.
@@ -179,7 +191,7 @@ namespace ignite
                  * @param err Error.
                  * @return Memory pointer.
                  */
-                int64_t WriteTo(interop::InteropMemory* mem, InputOperation& inOp, IgniteError* err);
+                int64_t WriteTo(interop::InteropMemory* mem, InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Read data from memory.
@@ -188,6 +200,14 @@ namespace ignite
                  * @param outOp Output operation.
                  */
                 void ReadFrom(interop::InteropMemory* mem, OutputOperation& outOp);
+
+                /**
+                 * Read error data from memory.
+                 *
+                 * @param mem Memory.
+                 * @param err Error.
+                 */
+                void ReadError(interop::InteropMemory* mem, IgniteError& err);
             };
         }
     }    

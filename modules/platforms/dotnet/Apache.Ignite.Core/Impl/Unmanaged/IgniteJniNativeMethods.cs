@@ -95,6 +95,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorExtensions")]
         public static extern void* ProcessorExtensions(void* ctx, void* obj);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorExtension")]
+        public static extern void* ProcessorExtension(void* ctx, void* obj, int id);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorAtomicLong")]
         public static extern void* ProcessorAtomicLong(void* ctx, void* obj, sbyte* name, long initVal,
             [MarshalAs(UnmanagedType.U1)] bool create);
@@ -145,6 +148,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetOutObject")]
         public static extern void* TargetOutObject(void* ctx, void* target, int opType);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamAsync")]
+        public static extern void TargetInStreamAsync(void* ctx, void* target, int opType, long memPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAcquire")]
         public static extern void* Acquire(void* ctx, void* target);

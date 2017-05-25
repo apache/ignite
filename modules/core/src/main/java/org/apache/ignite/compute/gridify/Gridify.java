@@ -184,7 +184,17 @@ public @interface Gridify {
     /**
      * Name of the grid to use. By default, no-name default grid is used.
      * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
+     *
+     * @deprecated Use {@link #igniteInstanceName()}. Nonempty {@link #igniteInstanceName()} takes precedence.
      */
     @SuppressWarnings({"JavaDoc"})
+    @Deprecated
     String gridName() default "";
+
+    /**
+     * Name of the Ignite instance to use. By default, no-name default Ignite instance is used.
+     * Refer to {@link org.apache.ignite.Ignition} for information about named Ignite instances.
+     */
+    @SuppressWarnings({"JavaDoc"})
+    String igniteInstanceName() default "";
 }

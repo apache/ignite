@@ -19,7 +19,7 @@ package org.apache.ignite.cache.affinity.local;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -40,30 +40,28 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
 
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(1);
         ccfg.setName(CACHE1);
         ccfg.setCacheMode(CacheMode.LOCAL);
-        ccfg.setAffinity(new FairAffinityFunction());
+        ccfg.setAffinity(new RendezvousAffinityFunction());
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
 
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
         startGrids(NODE_CNT);
     }
 
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
         stopAllGrids();
     }

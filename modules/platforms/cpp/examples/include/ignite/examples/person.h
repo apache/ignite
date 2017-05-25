@@ -79,11 +79,10 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
             IGNITE_BINARY_IS_NULL_FALSE(Person)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
 
-            void Write(BinaryWriter& writer, ignite::examples::Person obj)
+            static void Write(BinaryWriter& writer, const ignite::examples::Person& obj)
             {
                 writer.WriteInt64("orgId", obj.orgId);
                 writer.WriteString("firstName", obj.firstName);
@@ -92,15 +91,13 @@ namespace ignite
                 writer.WriteDouble("salary", obj.salary);
             }
 
-            ignite::examples::Person Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, ignite::examples::Person& dst)
             {
-                int64_t orgId = reader.ReadInt64("orgId");
-                std::string firstName = reader.ReadString("firstName");
-                std::string lastName = reader.ReadString("lastName");
-                std::string resume = reader.ReadString("resume");
-                double salary = reader.ReadDouble("salary");
-
-                return ignite::examples::Person(orgId, firstName, lastName, resume, salary);
+                dst.orgId = reader.ReadInt64("orgId");
+                dst.firstName = reader.ReadString("firstName");
+                dst.lastName = reader.ReadString("lastName");
+                dst.resume = reader.ReadString("resume");
+                dst.salary = reader.ReadDouble("salary");
             }
 
         IGNITE_BINARY_TYPE_END

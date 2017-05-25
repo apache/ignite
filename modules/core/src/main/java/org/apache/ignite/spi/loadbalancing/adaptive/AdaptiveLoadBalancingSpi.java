@@ -50,6 +50,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
@@ -96,13 +97,13 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * You should tune these values based on the level of accuracy needed vs. the additional memory
  * that would be required for storing metrics.
  * <p>
- * You should also keep in mind that metrics for remote nodes are delayed (usually by the
- * heartbeat frequency). So if it is acceptable in your environment, set the heartbeat frequency
- * to be more inline with job execution time. Generally, the more often heartbeats between nodes
+ * You should also keep in mind that metrics for remote nodes are delayed (usually by the metrics
+ * update frequency). So if it is acceptable in your environment, set the metrics update frequency
+ * to be more inline with job execution time. Generally, the more often metrics update between nodes
  * are exchanged, the more precise the metrics are. However, you should keep in mind that if
- * heartbeats are exchanged too often then it may create unnecessary traffic in the network.
- * Heartbeats (or metrics update frequency) can be configured via underlying
- * {@link org.apache.ignite.spi.discovery.DiscoverySpi} used in your grid.
+ * metrics update are exchanged too often then it may create unnecessary traffic in the network.
+ * Metrics update frequency can be configured via underlying
+ * {@link org.apache.ignite.configuration.IgniteConfiguration} used in your grid.
  * <p>
  * Here is an example of how probing can be implemented to use
  * number of active and waiting jobs as probing mechanism:
@@ -254,8 +255,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
-    AdaptiveLoadBalancingSpiMBean {
+public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -279,8 +279,12 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-    /** {@inheritDoc} */
-    @Override public String getLoadProbeFormatted() {
+    /**
+     * Gets text description of current load probing implementation used.
+     *
+     * @return Text description of current load probing implementation used.
+     */
+    public String getLoadProbeFormatted() {
         return probe.toString();
     }
 
@@ -290,16 +294,19 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
      * time on every node.
      *
      * @param probe Implementation of node load probe
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLoadProbe(AdaptiveLoadProbe probe) {
+    public AdaptiveLoadBalancingSpi setLoadProbe(AdaptiveLoadProbe probe) {
         A.ensure(probe != null, "probe != null");
 
         this.probe = probe;
+
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(probe != null, "loadProbe != null");
@@ -307,7 +314,8 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         if (log.isDebugEnabled())
             log.debug(configInfo("loadProbe", probe));
 
-        registerMBean(gridName, this, AdaptiveLoadBalancingSpiMBean.class);
+        registerMBean(igniteInstanceName, new AdaptiveLoadBalancingSpiMBeanImpl(this),
+            AdaptiveLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -606,7 +614,30 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     }
 
     /** {@inheritDoc} */
+    @Override public AdaptiveLoadBalancingSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AdaptiveLoadBalancingSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for AdaptiveLoadBalancingSpi.
+     */
+    private class AdaptiveLoadBalancingSpiMBeanImpl extends IgniteSpiMBeanAdapter
+        implements AdaptiveLoadBalancingSpiMBean {
+        /** {@inheritDoc} */
+        AdaptiveLoadBalancingSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLoadProbeFormatted() {
+            return AdaptiveLoadBalancingSpi.this.getLoadProbeFormatted();
+        }
     }
 }

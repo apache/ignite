@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -108,6 +107,15 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     public abstract BinarySerializedFieldComparator createFieldComparator();
 
     /**
+     * Writes field value defined by the given field offset to the given byte buffer.
+     *
+     * @param fieldOffset Field offset.
+     * @return Boolean flag indicating whether the field was successfully written to the buffer, {@code false}
+     *      if there is no enough space for the field in the buffer.
+     */
+    protected abstract boolean writeFieldByOrder(int fieldOffset, ByteBuffer buf);
+
+    /**
      * @param ctx Reader context.
      * @param fieldName Field name.
      * @return Field value.
@@ -159,9 +167,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             return false;
 
         BinaryIdentityResolver identity = context().identity(typeId());
-
-        if (identity == null)
-            identity = BinaryArrayIdentityResolver.instance();
 
         return identity.equals(this, (BinaryObject)other);
     }

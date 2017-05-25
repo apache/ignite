@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
@@ -60,8 +61,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
@@ -104,9 +105,9 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
 
         spi.blockMessages(GridNearTxPrepareResponse.class, ignite(0).cluster().localNode().id());
 
-        IgniteCache<Object, Object> cache = ignite(0).cache("cache").withAsync();
+        IgniteCache<Object, Object> cache = ignite(0).cache("cache");
 
-        cache.putAll(F.asMap(key1, "val1", key2, new TestValue1()));
+        IgniteFuture futPutAll = cache.putAllAsync(F.asMap(key1, "val1", key2, new TestValue1()));
 
         try {
             Thread.sleep(500);
@@ -123,7 +124,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
 
             spi.stopBlock();
 
-            cache.future().get();
+            futPutAll.get();
 
             fut.get();
         }
@@ -143,9 +144,9 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
 
         spi.blockMessages(GridNearTxPrepareResponse.class, ignite(0).cluster().localNode().id());
 
-        IgniteCache<Object, Object> cache = ignite(0).cache("cache").withAsync();
+        IgniteCache<Object, Object> cache = ignite(0).cache("cache");
 
-        cache.invokeAll(F.asSet(key1, key2), new TestEntryProcessor());
+        IgniteFuture futInvokeAll = cache.invokeAllAsync(F.asSet(key1, key2), new TestEntryProcessor());
 
         try {
             Thread.sleep(500);
@@ -162,7 +163,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
 
             spi.stopBlock();
 
-            cache.future().get();
+            futInvokeAll.get();
 
             fut.get();
         }
@@ -195,8 +196,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
@@ -236,7 +237,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
                 for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                     ClusterNode node = msg.get1();
 
-                    log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                    log.info("Send blocked message: [node=" +
+                        node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                         ", msg=" + msg.get2().message() + ']');
 
                     sendMessage(msg.get1(), msg.get2());

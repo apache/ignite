@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Descriptor of running query.
  */
-public class VisorRunningQuery implements Serializable {
+public class VisorRunningQuery extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,6 +57,15 @@ public class VisorRunningQuery implements Serializable {
     private boolean loc;
 
     /**
+     * Default constructor.
+     */
+    public VisorRunningQuery() {
+        // No-op.
+    }
+
+    /**
+     * Construct data transfer object for running query information.
+     *
      * @param id Query ID.
      * @param qry Query text.
      * @param qryType Query type.
@@ -128,5 +142,34 @@ public class VisorRunningQuery implements Serializable {
      */
     public boolean isLocal() {
         return loc;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(id);
+        U.writeString(out, qry);
+        U.writeEnum(out, qryType);
+        U.writeString(out, cache);
+        out.writeLong(startTime);
+        out.writeLong(duration);
+        out.writeBoolean(cancellable);
+        out.writeBoolean(loc);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        id = in.readLong();
+        qry = U.readString(in);
+        qryType = GridCacheQueryType.fromOrdinal(in.readByte());
+        cache = U.readString(in);
+        startTime = in.readLong();
+        duration = in.readLong();
+        cancellable = in.readBoolean();
+        loc = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorRunningQuery.class, this);
     }
 }

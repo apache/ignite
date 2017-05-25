@@ -72,6 +72,6 @@ include /app/helpers/jade/mixins
                                 +checkbox('Enum', 'model.enum', 'enum', 'Flag indicating that this type is the enum')
 
                 .settings-row
-                    +checkbox('Compact footer', model + '.compactFooter', '"compactFooter"', 'When enabled, Ignite will not write fields metadata when serializing objects(this will increase serialization performance), because internally #[b BinaryMarshaller] already distribute metadata inside cluster')
+                    +checkbox('Compact footer', model + '.compactFooter', '"compactFooter"', 'When enabled, Ignite will not write fields metadata when serializing objects (this will increase serialization performance), because internally <b>BinaryMarshaller</b> already distribute metadata inside cluster')
             .col-sm-6
                 +preview-xml-java(model, 'clusterBinary')

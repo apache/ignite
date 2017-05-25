@@ -29,20 +29,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.NoSuchElementException;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.F0;
@@ -50,30 +45,59 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.GridSerializableCollection;
-import org.apache.ignite.internal.util.GridSerializableIterator;
-import org.apache.ignite.internal.util.GridSerializableList;
-import org.apache.ignite.internal.util.GridSerializableMap;
-import org.apache.ignite.internal.util.GridSerializableSet;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysFalsePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTrueReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EqualsUuidPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.FlatCollectionWrapper;
+import org.apache.ignite.internal.util.lang.gridfunc.FlatIterator;
+import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IdentityClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.IntSumReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsNotAllPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsNotNullPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.LongSumReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.MapFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.MultipleIterator;
+import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.NotEqualPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateSetView;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
+import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.SetFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.ToStringClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ThreadLocalRandom8;
 
@@ -98,258 +122,46 @@ import org.jsr166.ThreadLocalRandom8;
 @SuppressWarnings("unchecked")
 public class GridFunc {
     /** */
-    private static final GridAbsClosure NOOP = new CA() {
-        @Override public void apply() { /* No-op. */ }
-    };
+    private static final GridAbsClosure NOOP = new NoOpClosure();
 
     /** */
-    private static final IgniteClosure IDENTITY = new C1() {
-        /** */
-        private static final long serialVersionUID = -6338573080046225172L;
-
-        @Override public Object apply(Object o) {
-            return o;
-        }
-
-        @Override public String toString() {
-            return "Identity closure.";
-        }
-    };
+    private static final IgniteClosure IDENTITY = new IdentityClosure();
 
     /** */
-    private static final IgnitePredicate<Object> ALWAYS_TRUE = new P1<Object>() {
-        /** */
-        private static final long serialVersionUID = 6101914246981105862L;
-
-        @Override public boolean apply(Object e) {
-            return true;
-        }
-
-        @Override public String toString() {
-            return "Always true predicate.";
-        }
-    };
+    private static final IgnitePredicate<Object> ALWAYS_TRUE = new AlwaysTruePredicate<>();
 
     /** */
-    private static final IgnitePredicate<Object> ALWAYS_FALSE = new P1<Object>() {
-        @Override public boolean apply(Object e) {
-            return false;
-        }
-
-        @Override public String toString() {
-            return "Always false predicate.";
-        }
-    };
+    private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
 
     /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new IgniteCallable<ConcurrentLinkedDeque8>() {
-        @Override public ConcurrentLinkedDeque8 call() {
-            return new ConcurrentLinkedDeque8();
-        }
-
-        @Override public String toString() {
-            return "Deque factory.";
-        }
-    };
+    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
 
     /** */
-    private static final IgnitePredicate<Object> IS_NULL = new P1<Object>() {
-        @Override public boolean apply(Object o) {
-            return o == null;
-        }
-    };
+    private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
 
     /** */
-    private static final IgnitePredicate<Object> IS_NOT_NULL = new P1<Object>() {
-        @Override public boolean apply(Object o) {
-            return o != null;
-        }
-    };
+    private static final IgniteCallable<?> SET_FACTORY = new SetFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> LIST_FACTORY = new IgniteCallable<List>() {
-        @Override public List call() {
-            return new ArrayList();
-        }
-
-        @Override public String toString() {
-            return "Array list factory.";
-        }
-    };
+    private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new AtomicIntegerFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> LINKED_LIST_FACTORY = new IgniteCallable<LinkedList>() {
-        @Override public LinkedList call() {
-            return new LinkedList();
-        }
-
-        @Override public String toString() {
-            return "Linked list factory.";
-        }
-    };
+    private static final IgniteCallable<?> MAP_FACTORY = new MapFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> SET_FACTORY = new IgniteCallable<Set>() {
-        @Override public Set call() {
-            return new HashSet();
-        }
-
-        @Override public String toString() {
-            return "Hash set factory.";
-        }
-    };
+    private static final IgniteCallable<?> CONCURRENT_MAP_FACTORY = new ConcurrentMapFactoryCallable();
 
     /** */
-    private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new IgniteCallable<AtomicInteger>() {
-        @Override public AtomicInteger call() {
-            return new AtomicInteger(0);
-        }
-
-        @Override public String toString() {
-            return "Atomic integer factory.";
-        }
-    };
+    private static final IgniteCallable<?> CONCURRENT_SET_FACTORY = new ConcurrentHashSetFactoryCallable();
 
     /** */
-    private static final IgniteCallable<AtomicLong> ATOMIC_LONG_FACTORY = new IgniteCallable<AtomicLong>() {
-        @Override public AtomicLong call() {
-            return new AtomicLong(0);
-        }
-
-        @Override public String toString() {
-            return "Atomic long factory.";
-        }
-    };
+    private static final IgniteClosure CACHE_ENTRY_VAL_GET = new CacheEntryGetValueClosure();
 
     /** */
-    private static final IgniteCallable<AtomicBoolean> ATOMIC_BOOL_FACTORY = new IgniteCallable<AtomicBoolean>() {
-        @Override public AtomicBoolean call() {
-            return new AtomicBoolean();
-        }
-
-        @Override public String toString() {
-            return "Atomic boolean factory.";
-        }
-    };
+    private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new CacheEntryHasPeekPredicate();
 
     /** */
-    private static final IgniteCallable<?> ATOMIC_REF_FACTORY = new IgniteCallable<AtomicReference>() {
-        @Override public AtomicReference call() {
-            return new AtomicReference();
-        }
-
-        @Override public String toString() {
-            return "Atomic reference factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> MAP_FACTORY = new IgniteCallable<Map>() {
-        @Override public Map call() {
-            return new HashMap();
-        }
-
-        @Override public String toString() {
-            return "Hash map factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> CONCURRENT_MAP_FACTORY = new IgniteCallable<ConcurrentMap>() {
-        @Override public ConcurrentMap call() {
-            return new ConcurrentHashMap8();
-        }
-
-        @Override public String toString() {
-            return "Concurrent hash map factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> CONCURRENT_SET_FACTORY = new IgniteCallable<GridConcurrentHashSet>() {
-        @Override public GridConcurrentHashSet call() {
-            return new GridConcurrentHashSet();
-        }
-
-        @Override public String toString() {
-            return "Concurrent hash set factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure CACHE_ENTRY_KEY = new IgniteClosure() {
-        @Override public Object apply(Object o) {
-            return ((Cache.Entry)o).getKey();
-        }
-
-        @Override public String toString() {
-            return "Map entry to key transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
-        @SuppressWarnings({"unchecked"})
-        @Nullable @Override public Object apply(Object o) {
-            return ((Cache.Entry)o).getValue();
-        }
-
-        @Override public String toString() {
-            return "Cache entry to get-value transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Cache.Entry)o).getValue() != null;
-        }
-
-        @Override public String toString() {
-            return "Cache entry has-peek-value predicate.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new IgniteClosure<ClusterNode, UUID>() {
-        @Override public UUID apply(ClusterNode n) {
-            return n.id();
-        }
-
-        @Override public String toString() {
-            return "Grid node to node ID transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure<ClusterNode, String> NODE2ID8 = new IgniteClosure<ClusterNode, String>() {
-        @Override public String apply(ClusterNode n) {
-            return U.id8(n.id());
-        }
-
-        @Override public String toString() {
-            return "Grid node to node ID8 transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
-        @Override public String apply(UUID id) {
-            return U.id8(id);
-        }
-
-        @Override public String toString() {
-            return "UUID to ID8 transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
-        @Override public boolean apply(IgniteInternalFuture<?> f) {
-            return !f.isDone();
-        }
-    };
+    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -359,11 +171,7 @@ public class GridFunc {
      * @return Return {@code true} only for the node with given local node ID.
      */
     public static <T extends ClusterNode> IgnitePredicate<T> localNode(final UUID locNodeId) {
-        return new P1<T>() {
-            @Override public boolean apply(T n) {
-                return n.id().equals(locNodeId);
-            }
-        };
+        return new HasEqualIdPredicate<>(locNodeId);
     }
 
     /**
@@ -374,11 +182,7 @@ public class GridFunc {
      * @return Return {@code false} for the given local node ID.
      */
     public static <T extends ClusterNode> IgnitePredicate<T> remoteNodes(final UUID locNodeId) {
-        return new P1<T>() {
-            @Override public boolean apply(T n) {
-                return !n.id().equals(locNodeId);
-            }
-        };
+        return new HasNotEqualIdPredicate<>(locNodeId);
     }
 
     /**
@@ -427,15 +231,7 @@ public class GridFunc {
      * @return Passed in element.
      */
     public static <T> IgniteReducer<T, T> identityReducer(final T elem) {
-        return new R1<T, T>() {
-            @Override public boolean collect(T e) {
-                return true;
-            }
-
-            @Override public T reduce() {
-                return elem;
-            }
-        };
+        return new AlwaysTrueReducer<>(elem);
     }
 
     /**
@@ -447,20 +243,7 @@ public class GridFunc {
      */
     @Deprecated
     public static IgniteReducer<Integer, Integer> sumIntReducer() {
-        return new R1<Integer, Integer>() {
-            private AtomicInteger sum = new AtomicInteger(0);
-
-            @Override public boolean collect(Integer e) {
-                if (e != null)
-                    sum.addAndGet(e);
-
-                return true;
-            }
-
-            @Override public Integer reduce() {
-                return sum.get();
-            }
-        };
+        return new IntSumReducer();
     }
 
     /**
@@ -472,20 +255,7 @@ public class GridFunc {
      */
     @Deprecated
     public static IgniteReducer<Long, Long> sumLongReducer() {
-        return new R1<Long, Long>() {
-            private AtomicLong sum = new AtomicLong(0);
-
-            @Override public boolean collect(Long e) {
-                if (e != null)
-                    sum.addAndGet(e);
-
-                return true;
-            }
-
-            @Override public Long reduce() {
-                return sum.get();
-            }
-        };
+        return new LongSumReducer();
     }
 
     /**
@@ -513,42 +283,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets reducer closure that concatenates strings using provided delimiter.
-     *
-     * @param delim Delimiter (optional).
-     * @return Reducer that concatenates strings using provided delimeter.
-     */
-    @Deprecated
-    public static IgniteReducer<String, String> concatReducer(@Nullable final String delim) {
-        return new R1<String, String>() {
-            private SB sb = new SB();
-
-            private boolean first = true;
-
-            private final Object lock = new Object();
-
-            @Override public boolean collect(String s) {
-                synchronized (lock) {
-                    if (!first && !isEmpty(delim))
-                        sb.a(delim);
-
-                    sb.a(s);
-
-                    first = false;
-                }
-
-                return true;
-            }
-
-            @Override public String reduce() {
-                synchronized (lock) {
-                    return sb.toString();
-                }
-            }
-        };
-    }
-
-    /**
      * Concatenates strings using provided delimiter.
      *
      * @param c Input collection.
@@ -558,40 +292,13 @@ public class GridFunc {
     public static String concat(Iterable<String> c, @Nullable String delim) {
         A.notNull(c, "c");
 
-        return reduce(c, concatReducer(delim));
-    }
+        IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-    /**
-     * Gets collections of data items from grid job res casted to specified type.
-     * <p>
-     * Here's the typical example of how this method is used in {@code reduce()} method
-     * implementation (this example sums up all the values of {@code Integer} type):
-     * <pre name="code" class="java">
-     * public Integer reduce(List&lt;ComputeJobResult&gt; res) throws IgniteCheckedException {
-     *     return F.sum(F.&lt;Integer&gt;jobResults(res));
-     * }
-     * </pre>
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates over the input one.
-     *
-     * @param res Collection of grid job res.
-     * @param <T> Type of the data item to cast to. See {@link org.apache.ignite.compute.ComputeJobResult#getData()} method.
-     * @return Collections of data items casted to type {@code T}.
-     * @see org.apache.ignite.compute.ComputeJobResult#getData()
-     */
-    @Deprecated
-    public static <T> Collection<T> jobResults(@Nullable Collection<? extends ComputeJobResult> res) {
-        if (isEmpty(res))
-            return Collections.emptyList();
+        for (String x : c)
+            if (!f.collect(x))
+                break;
 
-        assert res != null;
-
-        Collection<T> c = new ArrayList<>(res.size());
-
-        for (ComputeJobResult r : res)
-            c.add(r.<T>getData());
-
-        return c;
+        return f.reduce();
     }
 
     /**
@@ -609,58 +316,6 @@ public class GridFunc {
             return Collections.emptyList();
 
         return F.viewReadOnly(nodes, node2id());
-    }
-
-    /**
-     * Convenient utility method that returns collection of node ID8s for a given
-     * collection of grid nodes. ID8 is a shorter string representation of node ID,
-     * mainly the first 8 characters.
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates
-     * over the input one.
-     *
-     * @param nodes Collection of grid nodes.
-     * @return Collection of node IDs for given collection of grid nodes.
-     */
-    public static Collection<String> nodeId8s(@Nullable Collection<? extends ClusterNode> nodes) {
-        if (nodes == null || nodes.isEmpty())
-            return Collections.emptyList();
-
-        return F.viewReadOnly(nodes, NODE2ID8);
-    }
-
-    /**
-     * Convenient utility method that returns collection of node ID8s for a given
-     * collection of node IDs. ID8 is a shorter string representation of node ID,
-     * mainly the first 8 characters.
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates
-     * over the input one.
-     *
-     * @param ids Collection of nodeIds.
-     * @return Collection of node IDs for given collection of grid nodes.
-     */
-    @Deprecated
-    public static Collection<String> id8s(@Nullable Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty())
-            return Collections.emptyList();
-
-        return F.viewReadOnly(ids, ID2ID8);
-    }
-
-    /**
-     * Creates absolute closure that does <tt>System.out.println(msg)</tt>.
-     *
-     * @param msg Message to print.
-     * @return Absolute closure that print message.
-     */
-    @Deprecated
-    public static GridAbsClosure println(final String msg) {
-        return new CA() {
-            @Override public void apply() {
-                System.out.println(msg);
-            }
-        };
     }
 
     /**
@@ -739,8 +394,6 @@ public class GridFunc {
                 return l;
             }
 
-            assert c != null;
-
             Collection<T> ret = new ArrayList<>(c.size() + 1);
 
             ret.add(t);
@@ -752,42 +405,7 @@ public class GridFunc {
             if (isEmpty(c))
                 return Collections.singletonList(t);
 
-            assert c != null;
-
-            return new GridSerializableCollection<T>() {
-                @NotNull
-                @Override public Iterator<T> iterator() {
-                    return new GridSerializableIterator<T>() {
-                        private Iterator<T> it;
-
-                        @Override public boolean hasNext() {
-                            return it == null || it.hasNext();
-                        }
-
-                        @Nullable @Override public T next() {
-                            if (it == null) {
-                                it = c.iterator();
-
-                                return t;
-                            }
-
-                            return it.next();
-                        }
-
-                        @Override public void remove() {
-                            throw new UnsupportedOperationException();
-                        }
-                    };
-                }
-
-                @Override public int size() {
-                    return c.size() + 1;
-                }
-
-                @Override public boolean equals(Object obj) {
-                    return obj instanceof Collection && eqNotOrdered(this, (Collection)obj);
-                }
-            };
+            return new ReadOnlyCollectionView<>(c, t);
         }
     }
 
@@ -804,6 +422,7 @@ public class GridFunc {
      * @param <T> Element type.
      * @return Concatenated {@code non-null} collection.
      */
+    @SuppressWarnings("ConstantConditions")
     public static <T> Collection<T> concat(boolean cp, @Nullable final Collection<T> c1,
         @Nullable final Collection<T> c2) {
         if (cp) {
@@ -835,45 +454,7 @@ public class GridFunc {
                 return c;
             }
 
-            return new GridSerializableCollection<T>() {
-                @NotNull
-                @Override public Iterator<T> iterator() {
-                    return new GridSerializableIterator<T>() {
-                        private Iterator<T> it1 = c1.iterator();
-                        private Iterator<T> it2 = c2.iterator();
-
-                        @Override public boolean hasNext() {
-                            if (it1 != null)
-                                if (!it1.hasNext())
-                                    it1 = null;
-                                else
-                                    return true;
-
-                            return it2.hasNext();
-                        }
-
-                        @Override public T next() {
-                            return it1 != null ? it1.next() : it2.next();
-                        }
-
-                        @Override public void remove() {
-                            throw new UnsupportedOperationException();
-                        }
-                    };
-                }
-
-                @Override public boolean contains(Object o) {
-                    return c1.contains(o) || c2.contains(o);
-                }
-
-                @Override public int size() {
-                    return c1.size() + c2.size();
-                }
-
-                @Override public boolean equals(Object obj) {
-                    return obj instanceof Collection && eqNotOrdered(this, (Collection<?>)obj);
-                }
-            };
+            return new ReadOnlyCollectionView2X<>(c1, c2);
         }
     }
 
@@ -923,60 +504,7 @@ public class GridFunc {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
 
-        return new Iterator<T>() {
-            private Iterator<T> it = iters.next();
-
-            private Iterator<T> last;
-
-            private T next;
-
-            {
-                advance();
-            }
-
-            private void advance() {
-                for (;;) {
-                    if (it.hasNext()) {
-                        next = it.next();
-
-                        assert next != null;
-
-                        return;
-                    }
-
-                    if (!iters.hasNext())
-                        return;
-
-                    it = iters.next();
-                }
-            }
-
-            @Override public boolean hasNext() {
-                return next != null;
-            }
-
-            @Override public T next() {
-                T res = next;
-
-                if (res == null)
-                    throw new NoSuchElementException();
-
-                next = null;
-
-                last = it;
-
-                advance();
-
-                return res;
-            }
-
-            @Override public void remove() {
-                if (last == null)
-                    throw new IllegalStateException();
-
-                last.remove();
-            }
-        };
+        return new MultipleIterator<>(iters);
     }
 
     /**
@@ -1079,55 +607,6 @@ public class GridFunc {
     }
 
     /**
-     * Loses all entries in input map which keys are evaluated to {@code true} by all
-     * given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original
-     *      map (or its copy) will be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of map's values.
-     * @return Filtered map.
-     */
-    @Deprecated
-    public static <K, V> Map<K, V> loseKeys(
-        Map<K, V> m,
-        boolean cp,
-        @Nullable final IgnitePredicate<? super K>... p
-    ) {
-        return lose(m, cp, new P1<Map.Entry<K, V>>() {
-            @Override public boolean apply(Map.Entry<K, V> e) {
-                return isAll(e.getKey(), p);
-            }
-        });
-    }
-
-    /**
-     * Loses all entries in input map which values are evaluated to {@code true} by all
-     * given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original
-     *      map (or its copy) will be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of map's values.
-     * @return Filtered map.
-     */
-    @Deprecated
-    public static <K, V> Map<K, V> loseValues(Map<K, V> m, boolean cp,
-        @Nullable final IgnitePredicate<? super V>... p) {
-        return lose(m, cp, new P1<Map.Entry<K, V>>() {
-            @Override public boolean apply(Map.Entry<K, V> e) {
-                return isAll(e.getValue(), p);
-            }
-        });
-    }
-
-    /**
      * Loses all elements in input list that are contained in {@code filter} collection.
      *
      * @param c Input list.
@@ -1138,6 +617,7 @@ public class GridFunc {
      * @param <T> Type of list.
      * @return List of remaining elements
      */
+    @SuppressWarnings("SuspiciousMethodCalls")
     public static <T> List<T> loseList(List<T> c, boolean cp, @Nullable Collection<? super T> filter) {
         A.notNull(c, "c");
 
@@ -1216,14 +696,7 @@ public class GridFunc {
     public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        return new P1<T>() {
-            /** */
-            private static final long serialVersionUID = -7082730222779476623L;
-
-            @Override public boolean apply(ClusterNode e) {
-                return e.id().equals(nodeId);
-            }
-        };
+        return new EqualsClusterNodeIdPredicate<>(nodeId);
     }
 
     /**
@@ -1239,14 +712,7 @@ public class GridFunc {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
-        return new P1<T>() {
-            /** */
-            private static final long serialVersionUID = -5664060422647374863L;
-
-            @Override public boolean apply(ClusterNode e) {
-                return nodeIds.contains(e.id());
-            }
-        };
+        return new ContainsNodeIdsPredicate<>(nodeIds);
     }
 
     /**
@@ -1260,11 +726,7 @@ public class GridFunc {
     public static IgnitePredicate<UUID> idForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        return new P1<UUID>() {
-            @Override public boolean apply(UUID id) {
-                return id.equals(nodeId);
-            }
-        };
+        return new EqualsUuidPredicate(nodeId);
     }
 
     /**
@@ -1361,41 +823,6 @@ public class GridFunc {
     }
 
     /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @param <R> Output type.
-     * @return Curried closure.
-     */
-    @Deprecated
-    public static <T, R> IgniteOutClosure<R> curry(final IgniteClosure<? super T, R> f, final T e) {
-        return new IgniteOutClosure<R>() {
-            @Override public R apply() {
-                return f.apply(e);
-            }
-        };
-    }
-
-    /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @return Curried closure.
-     */
-    @Deprecated
-    public static <T> GridAbsClosure curry(final IgniteInClosure<? super T> f, final T e) {
-        return new GridAbsClosure() {
-            @Override public void apply() {
-                f.apply(e);
-            }
-        };
-    }
-
-    /**
      * Converts array to {@link List}. Note that resulting list cannot
      * be altered in size, as it it based on the passed in array -
      * only current elements can be changed.
@@ -1442,20 +869,7 @@ public class GridFunc {
         if (F.isEmpty(c))
             return Collections.emptyList();
 
-        return new GridSerializableCollection<T>() {
-            @NotNull
-            @Override public Iterator<T> iterator() {
-                return flat((Iterable<? extends Iterable<T>>)c);
-            }
-
-            @Override public int size() {
-                return F.size(iterator());
-            }
-
-            @Override public boolean isEmpty() {
-                return !iterator().hasNext();
-            }
-        };
+        return new FlatCollectionWrapper<>(c);
     }
 
     /**
@@ -1468,54 +882,7 @@ public class GridFunc {
      * @return Iterable over the elements of the inner collections.
      */
     public static <T> GridIterator<T> flat(@Nullable final Iterable<? extends Iterable<T>> c) {
-        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new GridIteratorAdapter<T>() {
-            /** */
-            private Iterator<? extends Iterable<T>> a = c.iterator();
-
-            /** */
-            private Iterator<T> b;
-
-            /** */
-            private boolean moved = true;
-
-            /** */
-            private boolean more;
-
-            @Override public boolean hasNextX() {
-                if (!moved)
-                    return more;
-
-                moved = false;
-
-                if (b != null && b.hasNext())
-                    return more = true;
-
-                while (a.hasNext()) {
-                    b = a.next().iterator();
-
-                    if (b.hasNext())
-                        return more = true;
-                }
-
-                return more = false;
-            }
-
-            @Override public T nextX() {
-                if (hasNext()) {
-                    moved = true;
-
-                    return b.next();
-                }
-
-                throw new NoSuchElementException();
-            }
-
-            @Override public void removeX() {
-                assert b != null;
-
-                b.remove();
-            }
-        };
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
     }
 
     /**
@@ -1527,54 +894,7 @@ public class GridFunc {
      * @return Iterator over the elements of given iterators.
      */
     public static <T> Iterator<T> flatIterators(@Nullable final Iterable<Iterator<T>> c) {
-        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new GridIteratorAdapter<T>() {
-            /** */
-            private Iterator<? extends Iterator<T>> a = c.iterator();
-
-            /** */
-            private Iterator<T> b;
-
-            /** */
-            private boolean moved = true;
-
-            /** */
-            private boolean more;
-
-            @Override public boolean hasNextX() {
-                if (!moved)
-                    return more;
-
-                moved = false;
-
-                if (b != null && b.hasNext())
-                    return more = true;
-
-                while (a.hasNext()) {
-                    b = a.next();
-
-                    if (b.hasNext())
-                        return more = true;
-                }
-
-                return more = false;
-            }
-
-            @Override public T nextX() {
-                if (hasNext()) {
-                    moved = true;
-
-                    return b.next();
-                }
-
-                throw new NoSuchElementException();
-            }
-
-            @Override public void removeX() {
-                assert b != null;
-
-                b.remove();
-            }
-        };
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
     }
 
     /**
@@ -1585,12 +905,7 @@ public class GridFunc {
      */
     @Deprecated
     public static GridAbsClosure as(@Nullable final Runnable r) {
-        return new CA() {
-            @Override public void apply() {
-                if (r != null)
-                    r.run();
-            }
-        };
+        return new RunnableWrapperClosure(r);
     }
 
     /**
@@ -1650,27 +965,7 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        assert c != null;
-
-        return isEmpty(p) || isAlwaysTrue(p) ? c : new GridSerializableCollection<T>() {
-            // Pass through (will fail for readonly).
-            @Override public boolean add(T e) {
-                return isAll(e, p) && c.add(e);
-            }
-
-            @NotNull
-            @Override public Iterator<T> iterator() {
-                return F.iterator0(c, false, p);
-            }
-
-            @Override public int size() {
-                return F.size(c, p);
-            }
-
-            @Override public boolean isEmpty() {
-                return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
-            }
-        };
+        return isEmpty(p) || isAlwaysTrue(p) ? c : new PredicateCollectionView<>(c, p);
     }
 
     /**
@@ -1696,66 +991,7 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        assert c != null;
-
-        return new GridSerializableCollection<T2>() {
-            @NotNull
-            @Override public Iterator<T2> iterator() {
-                return F.<T1, T2>iterator(c, trans, true, p);
-            }
-
-            @Override public int size() {
-                return F.isEmpty(p) ? c.size() : F.size(iterator());
-            }
-
-            @Override public boolean isEmpty() {
-                return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
-            }
-        };
-    }
-
-    /**
-     * Creates read-only light-weight view on given list with provided transformation.
-     * Resulting list will only "have" {@code transformed} elements. Note that only wrapping
-     * list will be created and no duplication of data will occur.
-     *
-     * @param c Input list that serves as a base for the view.
-     * @param trans Transformation closure.
-     * @param <T1> Type of the list.
-     * @return Light-weight view on given list with provided transformation.
-     */
-    @SuppressWarnings("RedundantTypeArguments")
-    @Deprecated
-    public static <T1, T2> List<T2> viewListReadOnly(@Nullable final List<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans) {
-        A.notNull(trans, "trans");
-
-        if (isEmpty(c))
-            return Collections.emptyList();
-
-        assert c != null;
-
-        return new GridSerializableList<T2>() {
-            /** */
-            private static final long serialVersionUID = 3126625219739967068L;
-
-            @Override public T2 get(int idx) {
-                return trans.apply(c.get(idx));
-            }
-
-            @NotNull
-            @Override public Iterator<T2> iterator() {
-                return F.<T1, T2>iterator(c, trans, true);
-            }
-
-            @Override public int size() {
-                return c.size();
-            }
-
-            @Override public boolean isEmpty() {
-                return c.isEmpty();
-            }
-        };
+        return new TransformCollectionView<>(c, trans, p);
     }
 
     /**
@@ -1798,70 +1034,7 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        assert m != null;
-
-        return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
-            /** */
-            private static final long serialVersionUID = 5531745605372387948L;
-
-            /** Entry predicate. */
-            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
-                    return isAll(e.getKey(), p);
-                }
-            };
-
-            @NotNull
-            @Override public Set<Entry<K, V>> entrySet() {
-                return new GridSerializableSet<Map.Entry<K, V>>() {
-                    @NotNull
-                    @Override public Iterator<Entry<K, V>> iterator() {
-                        return iterator0(m.entrySet(), false, ep);
-                    }
-
-                    @Override public int size() {
-                        return F.size(m.keySet(), p);
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Override public boolean remove(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().remove(o);
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Override public boolean contains(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().contains(o);
-                    }
-
-                    @Override public boolean isEmpty() {
-                        return !iterator().hasNext();
-                    }
-                };
-            }
-
-            @Override public boolean isEmpty() {
-                return entrySet().isEmpty();
-            }
-
-            @SuppressWarnings({"unchecked"})
-            @Nullable @Override public V get(Object key) {
-                return isAll((K)key, p) ? m.get(key) : null;
-            }
-
-            @Nullable @Override public V put(K key, V val) {
-                V oldVal = get(key);
-
-                if (isAll(key, p))
-                    m.put(key, val);
-
-                return oldVal;
-            }
-
-            @SuppressWarnings({"unchecked"})
-            @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && m.containsKey(key);
-            }
-        };
+        return isEmpty(p) || isAlwaysTrue(p) ? m : new PredicateMapView<>(m, p);
     }
 
     /**
@@ -1886,103 +1059,7 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        assert m != null;
-
-        final boolean hasPred = p != null && p.length > 0;
-
-        return new GridSerializableMap<K, V1>() {
-            /** Entry predicate. */
-            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
-                    return isAll(e.getKey(), p);
-                }
-            };
-
-            @NotNull
-            @Override public Set<Entry<K, V1>> entrySet() {
-                return new GridSerializableSet<Map.Entry<K, V1>>() {
-                    @NotNull
-                    @Override public Iterator<Entry<K, V1>> iterator() {
-                        return new Iterator<Entry<K, V1>>() {
-                            private Iterator<Entry<K, V>> it = iterator0(m.entrySet(), true, ep);
-
-                            @Override public boolean hasNext() {
-                                return it.hasNext();
-                            }
-
-                            @Override public Entry<K, V1> next() {
-                                final Entry<K, V> e = it.next();
-
-                                return new Entry<K, V1>() {
-                                    @Override public K getKey() {
-                                        return e.getKey();
-                                    }
-
-                                    @Override public V1 getValue() {
-                                        return trans.apply(e.getValue());
-                                    }
-
-                                    @Override public V1 setValue(V1 val) {
-                                        throw new UnsupportedOperationException("Put is not supported for readonly map view.");
-                                    }
-                                };
-                            }
-
-                            @Override public void remove() {
-                                throw new UnsupportedOperationException("Remove is not support for readonly map view.");
-                            }
-                        };
-                    }
-
-                    @Override public int size() {
-                        return hasPred ? F.size(m.keySet(), p) : m.size();
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Override public boolean remove(Object o) {
-                        throw new UnsupportedOperationException("Remove is not support for readonly map view.");
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Override public boolean contains(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().contains(o);
-                    }
-
-                    @Override public boolean isEmpty() {
-                        return hasPred ? !iterator().hasNext() : m.isEmpty();
-                    }
-                };
-            }
-
-            @Override public boolean isEmpty() {
-                return hasPred ? entrySet().isEmpty() : m.isEmpty();
-            }
-
-            @SuppressWarnings({"unchecked"})
-            @Nullable @Override public V1 get(Object key) {
-                if (isAll((K)key, p)) {
-                    V v = m.get(key);
-
-                    if (v != null)
-                        return trans.apply(v);
-                }
-
-                return null;
-            }
-
-            @Nullable @Override public V1 put(K key, V1 val) {
-                throw new UnsupportedOperationException("Put is not supported for readonly map view.");
-            }
-
-            @Override public V1 remove(Object key) {
-                throw new UnsupportedOperationException("Remove is not supported for readonly map view.");
-            }
-
-            @SuppressWarnings({"unchecked"})
-            @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && m.containsKey(key);
-            }
-        };
+        return new TransformMapView<>(m, trans, p);
     }
 
     /**
@@ -2008,102 +1085,7 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        assert m != null;
-
-        return new GridSerializableMap<K, V1>() {
-            /** Entry predicate. */
-            private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
-                    return isAll(e.getKey(), p);
-                }
-            };
-
-            @NotNull
-            @Override public Set<Entry<K, V1>> entrySet() {
-                return new GridSerializableSet<Map.Entry<K, V1>>() {
-                    @NotNull
-                    @Override public Iterator<Entry<K, V1>> iterator() {
-                        return new Iterator<Entry<K, V1>>() {
-                            private Iterator<Entry<K, V>> it = iterator0(m.entrySet(), true, ep);
-
-                            @Override public boolean hasNext() {
-                                return it.hasNext();
-                            }
-
-                            @Override public Entry<K, V1> next() {
-                                final Entry<K, V> e = it.next();
-
-                                return new Entry<K, V1>() {
-                                    @Override public K getKey() {
-                                        return e.getKey();
-                                    }
-
-                                    @Override public V1 getValue() {
-                                        return trans.apply(e.getKey(), e.getValue());
-                                    }
-
-                                    @Override public V1 setValue(V1 val) {
-                                        throw new UnsupportedOperationException(
-                                            "Put is not supported for readonly map view.");
-                                    }
-                                };
-                            }
-
-                            @Override public void remove() {
-                                throw new UnsupportedOperationException("Remove is not support for readonly map view.");
-                            }
-                        };
-                    }
-
-                    @Override public int size() {
-                        return F.size(m.keySet(), p);
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Override public boolean remove(Object o) {
-                        throw new UnsupportedOperationException("Remove is not support for readonly map view.");
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Override public boolean contains(Object o) {
-                        return F.isAll((Map.Entry<K, V>)o, ep) && m.entrySet().contains(o);
-                    }
-
-                    @Override public boolean isEmpty() {
-                        return !iterator().hasNext();
-                    }
-                };
-            }
-
-            @Override public boolean isEmpty() {
-                return entrySet().isEmpty();
-            }
-
-            @SuppressWarnings({"unchecked"})
-            @Nullable @Override public V1 get(Object key) {
-                if (isAll((K)key, p)) {
-                    V v = m.get(key);
-
-                    if (v != null)
-                        return trans.apply((K)key, v);
-                }
-
-                return null;
-            }
-
-            @Nullable @Override public V1 put(K key, V1 val) {
-                throw new UnsupportedOperationException("Put is not supported for readonly map view.");
-            }
-
-            @Override public V1 remove(Object key) {
-                throw new UnsupportedOperationException("Remove is not supported for readonly map view.");
-            }
-
-            @SuppressWarnings({"unchecked"})
-            @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && m.containsKey(key);
-            }
-        };
+        return new TransformMapView2<>(m, trans, p);
     }
 
     /**
@@ -2130,89 +1112,7 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        assert c != null;
-
-        return new GridSerializableMap<K, V>() {
-            /** Entry predicate. */
-            private IgnitePredicate<K> ep = new P1<K>() {
-                @Override public boolean apply(K e) {
-                    return isAll(e, p);
-                }
-            };
-
-            @NotNull @Override public Set<Entry<K, V>> entrySet() {
-                return new GridSerializableSet<Entry<K, V>>() {
-                    @NotNull @Override public Iterator<Entry<K, V>> iterator() {
-                        return new Iterator<Entry<K, V>>() {
-                            private Iterator<K> it = iterator0(c, true, ep);
-
-                            @Override public boolean hasNext() {
-                                return it.hasNext();
-                            }
-
-                            @Override public Entry<K, V> next() {
-                                final K e = it.next();
-
-                                return new Entry<K, V>() {
-                                    @Override public K getKey() {
-                                        return e;
-                                    }
-
-                                    @Override public V getValue() {
-                                        return mapClo.apply(e);
-                                    }
-
-                                    @Override public V setValue(V val) {
-                                        throw new UnsupportedOperationException(
-                                            "Put is not supported for readonly collection view.");
-                                    }
-                                };
-                            }
-
-                            @Override public void remove() {
-                                throw new UnsupportedOperationException(
-                                    "Remove is not support for readonly collection view.");
-                            }
-                        };
-                    }
-
-                    @Override public int size() {
-                        return F.size(c, p);
-                    }
-
-                    @Override public boolean remove(Object o) {
-                        throw new UnsupportedOperationException("Remove is not support for readonly collection view.");
-                    }
-
-                    @Override public boolean isEmpty() {
-                        return !iterator().hasNext();
-                    }
-                };
-            }
-
-            @Override public boolean isEmpty() {
-                return entrySet().isEmpty();
-            }
-
-            @Nullable @Override public V get(Object key) {
-                if (containsKey(key))
-                    return mapClo.apply((K)key);
-
-                return null;
-            }
-
-            @Nullable @Override public V put(K key, V val) {
-                throw new UnsupportedOperationException("Put is not supported for readonly collection view.");
-            }
-
-            @Override public V remove(Object key) {
-                throw new UnsupportedOperationException("Remove is not supported for readonly collection view.");
-            }
-
-            @Override public boolean containsKey(Object key) {
-                return isAll((K)key, p) && c.contains(key);
-            }
-        };
+        return new PredicateSetView<>(c, mapClo, p);
     }
 
     /**
@@ -2313,60 +1213,6 @@ public class GridFunc {
     }
 
     /**
-     * Converts collection of numbers to primitive {@code int[]} array.
-     *
-     * @param col Collection of numbers.
-     * @return Array of integers.
-     */
-    public static int[] toIntArray(Collection<? extends Number> col) {
-        if (col == null)
-            return null;
-
-        int[] res = new int[col.size()];
-
-        Iterator<? extends Number> iter = col.iterator();
-
-        for (int i = 0; i < res.length; i++)
-            res[i] = iter.next().intValue();
-
-        return res;
-    }
-
-    /**
-     * Utility map getter. This method analogous to {@link #addIfAbsent(Map, Object, Callable)}
-     * method but this one doesn't put the default value into the map when key is not found.
-     *
-     * @param map Map to get value from.
-     * @param key Map key (can be {@code null}).
-     * @param c Optional factory closure for the default value to be returned in
-     *      when {@code key} is not found. If closure is not provided - {@code null} will be returned.
-     * @param <K> Map key type.
-     * @param <V> Map value type.
-     * @return Value for the {@code key} or default value produced by {@code c} if key is not
-     *      found (or {@code null} if key is not found and closure is not provided).
-     * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newLinkedList()
-     * @see #newList()
-     * @see #newSet()
-     * @see #newAtomicLong()
-     * @see #newAtomicInt()
-     * @see #newAtomicRef()
-     * @see #newAtomicBoolean()
-     */
-    @Deprecated
-    @Nullable public static <K, V> V returnIfAbsent(Map<? extends K, ? extends V> map, @Nullable K key,
-        @Nullable Callable<V> c) {
-        A.notNull(map, "map");
-
-        try {
-            return !map.containsKey(key) ? c == null ? null : c.call() : map.get(key);
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    /**
      * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
      * Note that this method does not create a new closure but returns a static one.
      *
@@ -2380,20 +1226,6 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link List} instance. Note that this
-     * method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T> IgniteCallable<List<T>> newList() {
-        return (IgniteCallable<List<T>>)LIST_FACTORY;
-    }
-
-    /**
      * Returns a factory closure that creates new {@link AtomicInteger} instance
      * initialized to {@code zero}. Note that this method does not create a new
      * closure but returns a static one.
@@ -2404,61 +1236,6 @@ public class GridFunc {
     @Deprecated
     public static IgniteCallable<AtomicInteger> newAtomicInt() {
         return ATOMIC_INT_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicLong} instance
-     * initialized to {@code zero}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicLong} instance
-     *      initialized to {@code zero} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @Deprecated
-    public static IgniteCallable<AtomicLong> newAtomicLong() {
-        return ATOMIC_LONG_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicReference} instance
-     * initialized to {@code null}. Note that this method does not create a new closure
-     * but returns a static one.
-     *
-     * @param <T> Type of the atomic reference.
-     * @return Factory closure that creates new {@link AtomicReference} instance
-     *      initialized to {@code null} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T> IgniteCallable<AtomicReference<T>> newAtomicRef() {
-        return (IgniteCallable<AtomicReference<T>>)ATOMIC_REF_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicBoolean} instance
-     * initialized to {@code false}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicBoolean} instance
-     *      initialized to {@code false} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @Deprecated
-    public static IgniteCallable<AtomicBoolean> newAtomicBoolean() {
-        return ATOMIC_BOOL_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link LinkedList} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link LinkedList}.
-     * @return Factory closure that creates new {@link LinkedList} instance every time its {@link
-     *         org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T> IgniteCallable<LinkedList<T>> newLinkedList() {
-        return (IgniteCallable<LinkedList<T>>)LINKED_LIST_FACTORY;
     }
 
     /**
@@ -2559,76 +1336,7 @@ public class GridFunc {
         if (isAlwaysFalse(p))
             return F.emptyIterator();
 
-        return new GridIteratorAdapter<T2>() {
-            /** */
-            private T1 elem;
-
-            /** */
-            private boolean moved = true;
-
-            /** */
-            private boolean more;
-
-            /** */
-            private Iterator<? extends T1> iter = c.iterator();
-
-            @Override public boolean hasNextX() {
-                if (isEmpty(p))
-                    return iter.hasNext();
-                else {
-                    if (!moved)
-                        return more;
-                    else {
-                        more = false;
-
-                        while (iter.hasNext()) {
-                            elem = iter.next();
-
-                            boolean isAll = true;
-
-                            for (IgnitePredicate<? super T1> r : p)
-                                if (r != null && !r.apply(elem)) {
-                                    isAll = false;
-
-                                    break;
-                                }
-
-                            if (isAll) {
-                                more = true;
-                                moved = false;
-
-                                return true;
-                            }
-                        }
-
-                        elem = null; // Give to GC.
-
-                        return false;
-                    }
-                }
-            }
-
-            @Nullable @Override public T2 nextX() {
-                if (isEmpty(p))
-                    return trans.apply(iter.next());
-                else {
-                    if (hasNext()) {
-                        moved = true;
-
-                        return trans.apply(elem);
-                    }
-                    else
-                        throw new NoSuchElementException();
-                }
-            }
-
-            @Override public void removeX() {
-                if (readOnly)
-                    throw new UnsupportedOperationException("Cannot modify read-only iterator.");
-
-                iter.remove();
-            }
-        };
+        return new TransformFilteringIterator<>(c.iterator(), trans, readOnly, p);
     }
 
     /**
@@ -2649,76 +1357,7 @@ public class GridFunc {
         if (isAlwaysFalse(p))
             return F.emptyIterator();
 
-        return new GridIteratorAdapter<T2>() {
-            /** */
-            private T1 elem;
-
-            /** */
-            private boolean moved = true;
-
-            /** */
-            private boolean more;
-
-            /** */
-            private Iterator<? extends T1> iter = c;
-
-            @Override public boolean hasNextX() {
-                if (isEmpty(p))
-                    return iter.hasNext();
-                else {
-                    if (!moved)
-                        return more;
-                    else {
-                        more = false;
-
-                        while (iter.hasNext()) {
-                            elem = iter.next();
-
-                            boolean isAll = true;
-
-                            for (IgnitePredicate<? super T1> r : p)
-                                if (r != null && !r.apply(elem)) {
-                                    isAll = false;
-
-                                    break;
-                                }
-
-                            if (isAll) {
-                                more = true;
-                                moved = false;
-
-                                return true;
-                            }
-                        }
-
-                        elem = null; // Give to GC.
-
-                        return false;
-                    }
-                }
-            }
-
-            @Nullable @Override public T2 nextX() {
-                if (isEmpty(p))
-                    return trans.apply(iter.next());
-                else {
-                    if (hasNext()) {
-                        moved = true;
-
-                        return trans.apply(elem);
-                    }
-                    else
-                        throw new NoSuchElementException();
-                }
-            }
-
-            @Override public void removeX() {
-                if (readOnly)
-                    throw new UnsupportedOperationException("Cannot modify read-only iterator.");
-
-                iter.remove();
-            }
-        };
+        return new TransformFilteringIterator<>(c, trans, readOnly, p);
     }
 
     /**
@@ -2793,17 +1432,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate that evaluates to {@code true} if its free variable is {@code null}.
-     *
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if its free variable is {@code null}.
-     */
-    @Deprecated
-    public static <T> IgnitePredicate<T> isNull() {
-        return (IgnitePredicate<T>) IS_NULL;
-    }
-
-    /**
      * Gets predicate that evaluates to {@code true} if its free variable is not {@code null}.
      *
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
@@ -2826,11 +1454,7 @@ public class GridFunc {
      */
     @SafeVarargs
     public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
-        return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new P1<T>() {
-            @Override public boolean apply(T t) {
-                return !isAll(t, p);
-            }
-        };
+        return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new IsNotAllPredicate<>(p);
     }
 
     /**
@@ -2844,11 +1468,7 @@ public class GridFunc {
      */
     @Deprecated
     public static <T> IgnitePredicate<T> equalTo(@Nullable final T target) {
-        return new P1<T>() {
-            @Override public boolean apply(T t) {
-                return eq(t, target);
-            }
-        };
+        return new NotEqualPredicate<>(target);
     }
 
     /**
@@ -2861,30 +1481,7 @@ public class GridFunc {
      *      to {@code target} or both are {@code null}.
      */
     public static <T> IgnitePredicate<T> notEqualTo(@Nullable final T target) {
-        return new P1<T>() {
-            @Override public boolean apply(T t) {
-                return !eq(t, target);
-            }
-        };
-    }
-
-    /**
-     * Gets predicate that evaluates to {@code true} if its free variable is instance of the given class.
-     *
-     * @param cls Class to compare to.
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if its free variable is instance
-     *      of the given class.
-     */
-    @Deprecated
-    public static <T> IgnitePredicate<T> instanceOf(final Class<?> cls) {
-        A.notNull(cls, "cls");
-
-        return new P1<T>() {
-            @Override public boolean apply(T t) {
-                return t != null && cls.isAssignableFrom(t.getClass());
-            }
-        };
+        return new NotEqualPredicate<>(target);
     }
 
     /**
@@ -2930,8 +1527,6 @@ public class GridFunc {
     @Nullable public static <T> T last(@Nullable Iterable<? extends T> c) {
         if (c == null)
             return null;
-
-        assert c != null;
 
         if (c instanceof RandomAccess && c instanceof List) {
             List<T> l = (List<T>)c;
@@ -3006,7 +1601,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
@@ -3018,8 +1613,6 @@ public class GridFunc {
             return F.alwaysTrue();
 
         if (F0.isAllNodePredicates(ps)) {
-            assert ps != null;
-
             Set<UUID> ids = new HashSet<>();
 
             for (IgnitePredicate<? super T> p : ps) {
@@ -3036,19 +1629,8 @@ public class GridFunc {
             // T must be <T extends ClusterNode>.
             return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
-        else {
-            return new P1<T>() {
-                @Override public boolean apply(T t) {
-                    assert ps != null;
-
-                    for (IgnitePredicate<? super T> p : ps)
-                        if (p != null && !p.apply(t))
-                            return false;
-
-                    return true;
-                }
-            };
-        }
+        else
+            return new IsAllPredicate<>(ps);
     }
 
     /**
@@ -3070,11 +1652,7 @@ public class GridFunc {
      */
     @Deprecated
     public static <T> IgniteClosure<T, String> string() {
-        return new C1<T, String>() {
-            @Override public String apply(@Nullable T t) {
-                return String.valueOf(t); // This is null-safe.
-            }
-        };
+        return new ToStringClosure<>();
     }
 
     /**
@@ -3088,13 +1666,7 @@ public class GridFunc {
      *      contained in given collection.
      */
     public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
-        return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
-            @Override public boolean apply(T t) {
-                assert c != null;
-
-                return !c.contains(t);
-            }
-        };
+        return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new NotContainsPredicate<>(c);
     }
 
     /**
@@ -3203,13 +1775,8 @@ public class GridFunc {
      *      found (or {@code null} if key is not found and closure is not provided). Note that
      *      in case when key is not found the default value will be put into the map.
      * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newLinkedList()
-     * @see #newList()
      * @see #newSet()
-     * @see #newAtomicLong()
      * @see #newAtomicInt()
-     * @see #newAtomicRef()
-     * @see #newAtomicBoolean()
      */
     @Nullable public static <K, V> V addIfAbsent(Map<? super K, V> map, @Nullable K key,
         @Nullable Callable<? extends V> c) {
@@ -3259,27 +1826,6 @@ public class GridFunc {
         catch (Exception e) {
             throw wrap(e);
         }
-    }
-
-    /**
-     * Reduces collection into single value using given for-all closure.
-     *
-     * @param c Collection to reduce.
-     * @param f For-all closure used for reduction.
-     * @param <X> Type of the free variable for the closure and type of the
-     *      collection elements.
-     * @param <Y> Type of the closure's return value.
-     * @return Single value as a result of collection reduction.
-     */
-    @Deprecated
-    public static <X, Y> Y reduce(Iterable<? extends X> c, IgniteReducer<? super X, Y> f) {
-        A.notNull(c, "c", f, "f");
-
-        for (X x : c)
-            if (!f.collect(x))
-                break;
-
-        return f.reduce();
     }
 
     /**
@@ -3385,20 +1931,6 @@ public class GridFunc {
             d.add(f.apply(x));
 
         return d;
-    }
-
-    /**
-     * Upcasts collection type.
-     *
-     * @param c Initial collection.
-     * @return Resulting collection.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T extends R, R> Collection<R> upcast(Collection<T> c) {
-        A.notNull(c, "c");
-
-        return (Collection<R>)c;
     }
 
     /**
@@ -3780,8 +2312,6 @@ public class GridFunc {
 
         if (!isEmpty(fs))
             for (D e : c) {
-                assert fs != null;
-
                 for (IgniteBiClosure<? super D, ? super B, B> f : fs)
                     b = f.apply(e, b);
             }
@@ -3912,19 +2442,6 @@ public class GridFunc {
     public static <V1, V2, V3, V4, V5, V6> GridTuple6<V1, V2, V3, V4, V5, V6> t(@Nullable V1 v1, @Nullable V2 v2,
         @Nullable V3 v3, @Nullable V4 v4, @Nullable V5 v5, @Nullable V6 v6) {
         return new GridTuple6<>(v1, v2, v3, v4, v5, v6);
-    }
-
-    /**
-     * Creates vararg tuple with given values.
-     *
-     * @param objs Values for vararg tuple.
-     * @return Vararg tuple with given values.
-     */
-    @Deprecated
-    public static GridTupleV tv(Object... objs) {
-        assert objs != null;
-
-        return new GridTupleV(objs);
     }
 
     /**
@@ -4166,7 +2683,7 @@ public class GridFunc {
      * @param <T> Element's type.
      * @return Created set.
      */
-    @SuppressWarnings( {"RedundantTypeArguments"})
+    @SuppressWarnings({"RedundantTypeArguments"})
     @Deprecated
     public static <T> Set<T> asSet(@Nullable T... t) {
         if (t == null || t.length == 0)
@@ -4202,11 +2719,7 @@ public class GridFunc {
      *  that is contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> contains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new P1<T>() {
-            @Override public boolean apply(T t) {
-                return c.contains(t);
-            }
-        };
+        return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new ContainsPredicate(c);
     }
 
     /**
@@ -4219,11 +2732,7 @@ public class GridFunc {
      *  that is not contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new P1<T>() {
-            @Override public boolean apply(T t) {
-                return !c.contains(t);
-            }
-        };
+        return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new NotContainsPredicate(c);
     }
 
     /**
@@ -4445,75 +2954,6 @@ public class GridFunc {
     }
 
     /**
-     * Compares two arrays. Unlike {@code Arrays#equals(...)} method this implementation
-     * checks two arrays as sets allowing the same elements to be in different indexes.
-     *
-     * @param a1 First array to check.
-     * @param a2 Second array to check.
-     * @param sorted Tells whether or not both arrays are pre-sorted so that binary
-     *      search could be used instead of iteration.
-     * @param dups Tells whether or not arrays can contain duplicates. If arrays contain
-     *      duplicate the implementation will have to do double work.
-     * @return {@code True} if arrays are equal, {@code false} otherwise.
-     */
-    @Deprecated
-    public static boolean eqArray(Object[] a1, Object[] a2, boolean sorted, boolean dups) {
-        if (a1 == a2)
-            return true;
-
-        if (a1 == null || a2 == null || a1.length != a2.length)
-            return false;
-
-        // Short circuit.
-        if (a1.length == 1)
-            return eq(a1[0], a2[0]);
-
-        for (Object o1 : a1) {
-            boolean found = false;
-
-            if (sorted)
-                found = Arrays.binarySearch(a2, o1) >= 0;
-            else {
-                for (Object o2 : a2) {
-                    if (eq(o1, o2)) {
-                        found = true;
-
-                        break;
-                    }
-                }
-            }
-
-            if (!found)
-                return false;
-        }
-
-        // If there are no dups - we can't skip checking seconds array
-        // against first one.
-        if (dups) {
-            for (Object o2 : a2) {
-                boolean found = false;
-
-                if (sorted)
-                    found = Arrays.binarySearch(a1, o2) >= 0;
-                else {
-                    for (Object o1 : a1) {
-                        if (eq(o2, o1)) {
-                            found = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
      * <p>
      * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in Apache Ignite 3.0 the semantic of equality between
@@ -4533,18 +2973,6 @@ public class GridFunc {
     public static boolean eqNodes(Object n1, Object n2) {
         return n1 == n2 || !(n1 == null || n2 == null) && !(!(n1 instanceof ClusterNode) || !(n2 instanceof ClusterNode))
             && ((ClusterNode)n1).id().equals(((ClusterNode)n2).id());
-    }
-
-    /**
-     * Gets closure that returns key for cache entry. The closure internally
-     * delegates to {@link javax.cache.Cache.Entry#getKey()} method.
-     *
-     * @param <K> Key type.
-     * @return Closure that returns key for an entry.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Cache.Entry<K, V>, K> cacheEntry2Key() {
-        return (IgniteClosure<Cache.Entry<K, V>, K>)CACHE_ENTRY_KEY;
     }
 
     /**
@@ -4583,26 +3011,6 @@ public class GridFunc {
     }
 
     /**
-     * Checks if two collections passed in intersect.
-     *
-     * @param <E> Element type.
-     * @param s1 Set1.
-     * @param s2 Set2.
-     * @return {@code True} if there is an intersection, {@code false} otherwise.
-     */
-    @Deprecated
-    public static <E> boolean intersects(Iterable<E> s1, Collection<E>... s2) {
-        for (E e1 : s1) {
-            for (Collection<E> s : s2) {
-                if (s.contains(e1))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Waits until all passed futures will be executed.
      *
      * @param futs Futures. If none provided - this method is no-op.
@@ -4621,7 +3029,8 @@ public class GridFunc {
      * @throws IgniteCheckedException If any of the futures failed.
      */
     @Deprecated
-    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
+    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteInternalFuture<T>> futs)
+        throws IgniteCheckedException {
         awaitAll(timeout, null, futs);
     }
 
@@ -4673,15 +3082,5 @@ public class GridFunc {
         }
 
         return rdc == null ? null : rdc.reduce();
-    }
-
-    /**
-     * Returns predicate for filtering unfinished futures.
-     *
-     * @return Predicate for filtering unfinished futures.
-     */
-    @Deprecated
-    public static IgnitePredicate<IgniteInternalFuture<?>> unfinishedFutures() {
-        return UNFINISHED_FUTURE;
     }
 }

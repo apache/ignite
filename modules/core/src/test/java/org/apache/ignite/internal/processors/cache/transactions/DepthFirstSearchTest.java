@@ -38,22 +38,22 @@ import static org.apache.ignite.internal.processors.cache.transactions.TxDeadloc
  */
 public class DepthFirstSearchTest extends TestCase {
     /** Tx 1. */
-    private static final GridCacheVersion T1 = new GridCacheVersion(1, 0, 0, 0);
+    private static final GridCacheVersion T1 = new GridCacheVersion(1, 0, 0);
 
     /** Tx 2. */
-    private static final GridCacheVersion T2 = new GridCacheVersion(2, 0, 0, 0);
+    private static final GridCacheVersion T2 = new GridCacheVersion(2, 0, 0);
 
     /** Tx 3. */
-    private static final GridCacheVersion T3 = new GridCacheVersion(3, 0, 0, 0);
+    private static final GridCacheVersion T3 = new GridCacheVersion(3, 0, 0);
 
     /** Tx 4. */
-    private static final GridCacheVersion T4 = new GridCacheVersion(4, 0, 0, 0);
+    private static final GridCacheVersion T4 = new GridCacheVersion(4, 0, 0);
 
     /** Tx 5. */
-    private static final GridCacheVersion T5 = new GridCacheVersion(5, 0, 0, 0);
+    private static final GridCacheVersion T5 = new GridCacheVersion(5, 0, 0);
 
     /** Tx 6. */
-    private static final GridCacheVersion T6 = new GridCacheVersion(6, 0, 0, 0);
+    private static final GridCacheVersion T6 = new GridCacheVersion(6, 0, 0);
 
     /** All transactions. */
     private static final List<GridCacheVersion> ALL = Arrays.asList(T1, T2, T3, T4, T5, T6);
@@ -291,19 +291,19 @@ public class DepthFirstSearchTest extends TestCase {
                             int n = rnd.nextInt(nodesCnt);
 
                             if (n != j) {
-                                waitForNodes.add(new GridCacheVersion(n, 0, 0, 0));
+                                waitForNodes.add(new GridCacheVersion(n, 0, 0));
                                 k++;
                             }
                         }
                     }
 
-                    wfg.put(new GridCacheVersion(j, 0, 0, 0), waitForNodes);
+                    wfg.put(new GridCacheVersion(j, 0, 0), waitForNodes);
                 }
             }
 
             for (int j = 0; j < nodesCnt; j++) {
                 try {
-                    List<GridCacheVersion> cycle = findCycle(wfg, new GridCacheVersion(j, 0, 0, 0));
+                    List<GridCacheVersion> cycle = findCycle(wfg, new GridCacheVersion(j, 0, 0));
 
                     if (cycle == null)
                         cyclesNotFound++;

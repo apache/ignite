@@ -299,7 +299,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return col;
         }
 
-        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
+        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal +
+            ",type=" + (appendVal != null ? appendVal.getClass().getSimpleName() : "NULL") + ", old=" + origVal +
+            ",type= " + (origVal != null ? origVal.getClass().getSimpleName() : "NULL") + ']');
     }
 
     /**
@@ -358,7 +360,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestCacheRequest req0 = (GridRestCacheRequest)req;
 
-        final String cacheName = req0.cacheName();
+        final String cacheName = req0.cacheName() == null ? DFLT_CACHE_NAME: req0.cacheName();
 
         final Object key = req0.key();
 

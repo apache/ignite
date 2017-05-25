@@ -40,15 +40,17 @@ include /app/helpers/jade/mixins
                     Note, that either the include event types or the exclude event types can be established')
 
                 .settings-row
-                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', '',
+                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled',
                     '[\
                         {value: "Memory", label: "Memory"},\
-                        {value: "Custom", label: "Custom"}\
+                        {value: "Custom", label: "Custom"},\
+                        {value: undefined, label: "Disabled"}\
                     ]',
                     'Regulate how grid store events locally on node\
                     <ul>\
                         <li>Memory - All events are kept in the FIFO queue in-memory</li>\
                         <li>Custom - Custom implementation of event storage SPI</li>\
+                        <li>Disabled - Events are not collected</li>\
                     </ul>')
 
                 div(ng-show=eventStorageMemory)

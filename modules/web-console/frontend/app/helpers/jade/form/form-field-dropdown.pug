@@ -41,8 +41,7 @@ mixin ignite-form-field-dropdown(label, model, name, disabled, required, multipl
     .ignite-form-field
         +ignite-form-field__label(label, name, required)
         .ignite-form-field__control
-            if tip
-                i.tipField.icon-help(bs-tooltip='' data-title=tip)
+            +tooltip(tip, tipOpts)
 
             if block
                 block

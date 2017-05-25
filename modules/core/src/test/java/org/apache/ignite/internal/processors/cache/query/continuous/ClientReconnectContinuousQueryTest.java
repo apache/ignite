@@ -70,7 +70,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         commSpi.setSlowClientQueueLimit(50);
         commSpi.setIdleConnectionTimeout(300_000);
 
-        if (getTestGridName(CLIENT_IDX).equals(gridName))
+        if (getTestIgniteInstanceName(CLIENT_IDX).equals(gridName))
             cfg.setClientMode(true);
         else {
             CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -96,7 +96,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
             client.events().localListen(new ReconnectListener(), EventType.EVT_CLIENT_NODE_RECONNECTED);
 
-            IgniteCache cache = client.cache(null);
+            IgniteCache cache = client.cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery qry = new ContinuousQuery();
 
@@ -179,7 +179,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     private void putSomeKeys(int cnt) {
         IgniteEx ignite = grid(0);
 
-        IgniteCache<Object, Object> srvCache = ignite.cache(null);
+        IgniteCache<Object, Object> srvCache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             srvCache.put(0, i);

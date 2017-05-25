@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -44,6 +45,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -71,6 +73,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -78,7 +81,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientHeartbeatMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
@@ -86,7 +89,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
@@ -94,6 +97,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -127,8 +131,14 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** */
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
 
+    /** */
+    private static final Object SPI_RECONNECT = "SPI_RECONNECT";
+
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
+
+    /** */
+    private final List<DiscoveryDataPacket> delayDiscoData = new ArrayList<>();
 
     /** Topology history. */
     private final NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
@@ -231,7 +241,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         spi.initLocalNode(
             0,
             true);
@@ -266,9 +276,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         timer.schedule(
-            new HeartbeatSender(),
-            spi.hbFreq,
-            spi.hbFreq);
+            new MetricsSender(),
+            spi.metricsUpdateFreq,
+            spi.metricsUpdateFreq);
 
         spi.printStartInfo();
     }
@@ -587,9 +597,11 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         int connectAttempts = 1;
 
+        int sslConnectAttempts = 3;
+
         UUID locNodeId = getLocalNodeId();
 
-        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi);
+        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
         while (true) {
             boolean openSock = false;
@@ -628,9 +640,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode node = locNode;
 
                     if (locNode.order() > 0)
-                        node = locNode.clientReconnectNode();
+                        node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
 
-                    msg = new TcpDiscoveryJoinRequestMessage(node, spi.collectExchangeData(getLocalNodeId()));
+                    msg = new TcpDiscoveryJoinRequestMessage(
+                            node,
+                            spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId())));
                 }
                 else
                     msg = new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId);
@@ -661,6 +675,22 @@ class ClientImpl extends TcpDiscoveryImpl {
                     errs = new ArrayList<>();
 
                 errs.add(e);
+
+                if (X.hasCause(e, SSLException.class)) {
+                    if (--sslConnectAttempts == 0)
+                        throw new IgniteSpiException("Unable to establish secure connection. " +
+                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
+
+                    continue;
+                }
+
+                if (X.hasCause(e, StreamCorruptedException.class)) {
+                    if (--sslConnectAttempts == 0)
+                        throw new IgniteSpiException("Unable to establish plain connection. " +
+                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
+
+                    continue;
+                }
 
                 if (timeoutHelper.checkFailureTimeoutReached(e))
                     break;
@@ -789,11 +819,26 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public void reconnect() throws IgniteSpiException {
+        msgWorker.addMessage(SPI_RECONNECT);
+    }
+
+    /** {@inheritDoc} */
     @Override public void brakeConnection() {
         SocketStream sockStream = msgWorker.currSock;
 
         if (sockStream != null)
             U.closeQuiet(sockStream.socket());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkRingLatency(int maxHops) {
+        TcpDiscoveryRingLatencyCheckMessage msg = new TcpDiscoveryRingLatencyCheckMessage(getLocalNodeId(), maxHops);
+
+        if (log.isInfoEnabled())
+            log.info("Latency check initiated: " + msg.id());
+
+        sockWriter.sendMessage(msg);
     }
 
     /** {@inheritDoc} */
@@ -830,13 +875,14 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Heartbeat sender.
+     * Metrics sender.
      */
-    private class HeartbeatSender extends TimerTask {
+    private class MetricsSender extends TimerTask {
         /** {@inheritDoc} */
         @Override public void run() {
             if (!spi.getSpiContext().isStopping() && sockWriter.isOnline()) {
-                TcpDiscoveryClientHeartbeatMessage msg = new TcpDiscoveryClientHeartbeatMessage(getLocalNodeId(),
+                TcpDiscoveryClientMetricsUpdateMessage msg = new TcpDiscoveryClientMetricsUpdateMessage(
+                    getLocalNodeId(),
                     spi.metricsProvider.metrics());
 
                 msg.client(true);
@@ -859,9 +905,12 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private UUID rmtNodeId;
 
+        /** */
+        private CountDownLatch stopReadLatch;
+
         /**
          */
-        protected SocketReader() {
+        SocketReader() {
             super(spi.ignite().name(), "tcp-client-disco-sock-reader", log);
         }
 
@@ -869,7 +918,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param sockStream Socket.
          * @param rmtNodeId Rmt node id.
          */
-        public void setSocket(SocketStream sockStream, UUID rmtNodeId) {
+        void setSocket(SocketStream sockStream, UUID rmtNodeId) {
             synchronized (mux) {
                 this.sockStream = sockStream;
 
@@ -879,6 +928,31 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }
 
+        /**
+         * @throws InterruptedException If interrupted.
+         */
+        private void forceStopRead() throws InterruptedException {
+            CountDownLatch stopReadLatch;
+
+            synchronized (mux) {
+                SocketStream stream = sockStream;
+
+                if (stream == null)
+                    return;
+
+                this.stopReadLatch = stopReadLatch = new CountDownLatch(1);
+
+                U.closeQuiet(stream.socket());
+
+                this.sockStream = null;
+                this.rmtNodeId = null;
+
+                mux.notifyAll();
+            }
+
+            stopReadLatch.await();
+        }
+
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             while (!isInterrupted()) {
@@ -886,6 +960,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 UUID rmtNodeId;
 
                 synchronized (mux) {
+                    if (stopReadLatch != null) {
+                        stopReadLatch.countDown();
+
+                        stopReadLatch = null;
+                    }
+
                     if (this.sockStream == null) {
                         mux.wait();
 
@@ -987,18 +1067,21 @@ class ClientImpl extends TcpDiscoveryImpl {
         private final Queue<TcpDiscoveryAbstractMessage> queue = new ArrayDeque<>();
 
         /** */
-        private final long socketTimeout;
+        private final long sockTimeout;
 
         /** */
         private TcpDiscoveryAbstractMessage unackedMsg;
 
+        /** */
+        private CountDownLatch forceLeaveLatch;
+
         /**
          *
          */
-        protected SocketWriter() {
+        SocketWriter() {
             super(spi.ignite().name(), "tcp-client-disco-sock-writer", log);
 
-            socketTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+            sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                 spi.getSocketTimeout();
         }
 
@@ -1011,6 +1094,29 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 mux.notifyAll();
             }
+        }
+
+        /**
+         * Sends {@link TcpDiscoveryNodeLeftMessage} and closes socket.
+         *
+         * @throws InterruptedException If interrupted.
+         */
+        private void forceLeave() throws InterruptedException {
+            CountDownLatch forceLeaveLatch;
+
+            synchronized (mux) {
+                // If writer was stopped.
+                if (sock == null)
+                    return;
+
+                this.forceLeaveLatch = forceLeaveLatch = new CountDownLatch(1);
+
+                unackedMsg = null;
+
+                mux.notifyAll();
+            }
+
+            forceLeaveLatch.await();
         }
 
         /**
@@ -1055,7 +1161,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            TcpDiscoveryAbstractMessage msg;
+            TcpDiscoveryAbstractMessage msg = null;
 
             while (!Thread.currentThread().isInterrupted()) {
                 Socket sock;
@@ -1069,12 +1175,41 @@ class ClientImpl extends TcpDiscoveryImpl {
                         continue;
                     }
 
-                    msg = queue.poll();
+                    if (forceLeaveLatch != null) {
+                        msg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
 
-                    if (msg == null) {
-                        mux.wait();
+                        msg.client(true);
+
+                        try {
+                            spi.writeToSocket(
+                                sock,
+                                msg,
+                                sockTimeout);
+                        }
+                        catch (IOException | IgniteCheckedException e) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Failed to send TcpDiscoveryNodeLeftMessage on force leave [msg=" + msg +
+                                    ", err=" + e.getMessage() + ']');
+                            }
+                        }
+
+                        U.closeQuiet(sock);
+
+                        this.sock = null;
+
+                        clear();
 
                         continue;
+                    }
+                    else {
+                        if (msg == null)
+                            msg = queue.poll();
+
+                        if (msg == null) {
+                            mux.wait();
+
+                            continue;
+                        }
                     }
                 }
 
@@ -1095,7 +1230,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                     spi.writeToSocket(
                         sock,
                         msg,
-                        socketTimeout);
+                        sockTimeout);
+
+                    IgniteUuid latencyCheckId = msg instanceof TcpDiscoveryRingLatencyCheckMessage ?
+                        msg.id() : null;
+
+                    if (latencyCheckId != null && log.isInfoEnabled())
+                        log.info("Latency check message has been written to socket: " + latencyCheckId);
 
                     msg = null;
 
@@ -1124,6 +1265,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             throw new IOException("Failed to get acknowledge for message: " + unacked);
                         }
+
+                        if (latencyCheckId != null && log.isInfoEnabled())
+                            log.info("Latency check message has been acked: " + latencyCheckId);
                     }
                 }
                 catch (InterruptedException ignored) {
@@ -1145,8 +1289,28 @@ class ClientImpl extends TcpDiscoveryImpl {
                     synchronized (mux) {
                         if (sock == this.sock)
                             this.sock = null; // Connection has dead.
+
+                        clear();
                     }
                 }
+            }
+        }
+
+        /**
+         *
+         */
+        private void clear() {
+            assert Thread.holdsLock(mux);
+
+            queue.clear();
+            unackedMsg = null;
+
+            CountDownLatch forceLeaveLatch = this.forceLeaveLatch;
+
+            if (forceLeaveLatch != null) {
+                this.forceLeaveLatch = null;
+
+                forceLeaveLatch.countDown();
             }
         }
     }
@@ -1393,6 +1557,38 @@ class ClientImpl extends TcpDiscoveryImpl {
                         else
                             leaveLatch.countDown();
                     }
+                    else if (msg == SPI_RECONNECT) {
+                        if (state == CONNECTED) {
+                            if (reconnector != null) {
+                                reconnector.cancel();
+                                reconnector.join();
+
+                                reconnector = null;
+                            }
+
+                            sockWriter.forceLeave();
+                            sockReader.forceStopRead();
+
+                            currSock = null;
+
+                            queue.clear();
+
+                            onDisconnected();
+
+                            notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
+
+                            UUID newId = UUID.randomUUID();
+
+                            U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
+                                "to network problems [newId=" + newId +
+                                ", prevId=" + locNode.id() +
+                                ", locNode=" + locNode+ ']');
+
+                            locNode.onClientDisconnected(newId);
+
+                            tryJoin();
+                        }
+                    }
                     else if (msg instanceof TcpDiscoveryNodeFailedMessage &&
                         ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(locNode.id())) {
                         TcpDiscoveryNodeFailedMessage msg0 = (TcpDiscoveryNodeFailedMessage)msg;
@@ -1475,20 +1671,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                         ", failMsg=" + forceFailMsg + ']');
                                 }
 
-                                state = DISCONNECTED;
-
-                                nodeAdded = false;
-
-                                IgniteClientDisconnectedCheckedException err =
-                                    new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
-                                    "client node disconnected.");
-
-                                for (Map.Entry<UUID, GridFutureAdapter<Boolean>> e : pingFuts.entrySet()) {
-                                    GridFutureAdapter<Boolean> fut = e.getValue();
-
-                                    if (pingFuts.remove(e.getKey(), fut))
-                                        fut.onDone(err);
-                                }
+                                onDisconnected();
 
                                 notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
                             }
@@ -1584,6 +1767,28 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         *
+         */
+        private void onDisconnected() {
+            state = DISCONNECTED;
+
+            nodeAdded = false;
+
+            delayDiscoData.clear();
+
+            IgniteClientDisconnectedCheckedException err =
+                new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
+                    "client node disconnected.");
+
+            for (Map.Entry<UUID, GridFutureAdapter<Boolean>> e : pingFuts.entrySet()) {
+                GridFutureAdapter<Boolean> fut = e.getValue();
+
+                if (pingFuts.remove(e.getKey(), fut))
+                    fut.onDone(err);
+            }
+        }
+
+        /**
          * @throws InterruptedException If interrupted.
          */
         private void tryJoin() throws InterruptedException {
@@ -1593,11 +1798,20 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             joinCnt++;
 
-            T2<SocketStream, Boolean> joinRes = joinTopology(false, spi.joinTimeout);
+            T2<SocketStream, Boolean> joinRes;
+
+            try {
+                joinRes = joinTopology(false, spi.joinTimeout);
+            }
+            catch (IgniteSpiException e) {
+                joinError(e);
+
+                return;
+            }
 
             if (joinRes == null) {
                 if (join)
-                    joinError(new IgniteSpiException("Join process timed out."));
+                    joinError(new IgniteSpiException("Join process timed out (timeout = " + spi.joinTimeout + ")."));
                 else {
                     state = SEGMENTED;
 
@@ -1642,8 +1856,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 processNodeLeftMessage((TcpDiscoveryNodeLeftMessage)msg);
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
-            else if (msg instanceof TcpDiscoveryHeartbeatMessage)
-                processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
+            else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
+                processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
             else if (msg instanceof TcpDiscoveryClientReconnectMessage)
                 processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
@@ -1655,7 +1869,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             spi.stats.onMessageProcessingFinished(msg);
 
-            if (spi.ensured(msg) && state == CONNECTED)
+            if (spi.ensured(msg)
+                    && state == CONNECTED
+                    && !(msg instanceof TcpDiscoveryClientReconnectMessage))
                 lastMsgId = msg.id();
         }
 
@@ -1727,11 +1943,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
 
-                        Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
+                        DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                        if (data != null)
-                            spi.onExchange(newNodeId, newNodeId, data,
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                        if (dataPacket != null && dataPacket.hasJoiningNodeData()) {
+                            if (joining())
+                                delayDiscoData.add(dataPacket);
+                            else
+                                spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                        }
                     }
                 }
                 else {
@@ -1750,12 +1969,16 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             if (getLocalNodeId().equals(msg.nodeId())) {
                 if (joining()) {
-                    Map<UUID, Map<Integer, byte[]>> dataMap = msg.clientDiscoData();
+                    DiscoveryDataPacket dataContainer = msg.clientDiscoData();
 
-                    if (dataMap != null) {
-                        for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                    if (dataContainer != null)
+                        spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
+
+                    if (!delayDiscoData.isEmpty()) {
+                        for (DiscoveryDataPacket data : delayDiscoData)
+                            spi.onExchange(data, U.resolveClassLoader(spi.ignite().configuration()));
+
+                        delayDiscoData.clear();
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
@@ -1967,7 +2190,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          * @param msg Message.
          */
-        private void processHeartbeatMessage(TcpDiscoveryHeartbeatMessage msg) {
+        private void processMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
             if (spi.getSpiContext().isStopping())
                 return;
 
@@ -1975,16 +2198,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                 assert msg.senderNodeId() != null;
 
                 if (log.isDebugEnabled())
-                    log.debug("Received heartbeat response: " + msg);
+                    log.debug("Received metrics response: " + msg);
             }
             else {
                 long tstamp = U.currentTimeMillis();
 
                 if (msg.hasMetrics()) {
-                    for (Map.Entry<UUID, TcpDiscoveryHeartbeatMessage.MetricsSet> e : msg.metrics().entrySet()) {
+                    for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
                         UUID nodeId = e.getKey();
 
-                        TcpDiscoveryHeartbeatMessage.MetricsSet metricsSet = e.getValue();
+                        TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
 
                         Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
                             msg.cacheMetrics().get(nodeId) : Collections.<Integer, CacheMetrics>emptyMap();

@@ -30,6 +30,11 @@ namespace ignite_test
     {
         namespace binary
         {
+            inline bool IsBinaryError(const IgniteError& err)
+            {
+                return err.GetCode() == IgniteError::IGNITE_ERR_BINARY;
+            }
+
             template<typename T>
             inline void Write(BinaryRawWriter& writer, T val)
             {
@@ -160,6 +165,18 @@ namespace ignite_test
             inline Date Read(BinaryRawReader& reader)
             {
                 return reader.ReadDate();
+            }
+
+            template<>
+            inline void Write(BinaryRawWriter& writer, Time val)
+            {
+                writer.WriteTime(val);
+            }
+
+            template<>
+            inline Time Read(BinaryRawReader& reader)
+            {
+                return reader.ReadTime();
             }
 
             template<>
@@ -307,6 +324,18 @@ namespace ignite_test
             }
 
             template<>
+            inline void WriteArray(BinaryRawWriter& writer, Time* val, int32_t len)
+            {
+                writer.WriteTimeArray(val, len);
+            }
+
+            template<>
+            inline int32_t ReadArray(BinaryRawReader& reader, Time* val, int32_t len)
+            {
+                return reader.ReadTimeArray(val, len);
+            }
+
+            template<>
             inline void WriteArray(BinaryRawWriter& writer, Timestamp* val, int32_t len)
             {
                 writer.WriteTimestampArray(val, len);
@@ -451,6 +480,18 @@ namespace ignite_test
             }
 
             template<>
+            inline void Write(BinaryWriter& writer, const char* fieldName, Time val)
+            {
+                writer.WriteTime(fieldName, val);
+            }
+
+            template<>
+            inline Time Read(BinaryReader& reader, const char* fieldName)
+            {
+                return reader.ReadTime(fieldName);
+            }
+
+            template<>
             inline void Write(BinaryWriter& writer, const char* fieldName, Timestamp val)
             {
                 writer.WriteTimestamp(fieldName, val);
@@ -592,6 +633,18 @@ namespace ignite_test
             inline int32_t ReadArray(BinaryReader& reader, const char* fieldName, Date* val, int32_t len)
             {
                 return reader.ReadDateArray(fieldName, val, len);
+            }
+
+            template<>
+            inline void WriteArray(BinaryWriter& writer, const char* fieldName, Time* val, int32_t len)
+            {
+                writer.WriteTimeArray(fieldName, val, len);
+            }
+
+            template<>
+            inline int32_t ReadArray(BinaryReader& reader, const char* fieldName, Time* val, int32_t len)
+            {
+                return reader.ReadTimeArray(fieldName, val, len);
             }
 
             template<>

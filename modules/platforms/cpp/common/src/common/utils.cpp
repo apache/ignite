@@ -66,11 +66,12 @@ namespace ignite
                 return dest;
             }
 
-            return NULL;
+            return 0;
         }
 
         void ReleaseChars(char* val)
         {
+            // Its OK to delete null-pointer.
             delete[] val;
         }
 
@@ -116,6 +117,36 @@ namespace ignite
             time_t localTime = common::IgniteTimeLocal(date);
 
             return CTimeToDate(localTime);
+        }
+
+        Time MakeTimeGmt(int hour, int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = 70;
+            date.tm_mon = 0;
+            date.tm_mday = 1;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            return CTmToTime(date);
+        }
+
+        Time MakeTimeLocal(int hour, int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = 70;
+            date.tm_mon = 0;
+            date.tm_mday = 1;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            time_t localTime = common::IgniteTimeLocal(date);
+
+            return CTimeToTime(localTime);
         }
 
         Timestamp MakeTimestampGmt(int year, int month, int day,

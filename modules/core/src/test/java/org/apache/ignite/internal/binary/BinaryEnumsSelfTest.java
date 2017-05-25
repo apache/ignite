@@ -74,8 +74,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (register) {
             BinaryConfiguration bCfg = new BinaryConfiguration();
@@ -90,7 +90,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
@@ -114,6 +114,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         node2 = startGrid(1);
         cache2 = node2.cache(CACHE_NAME);
         cacheBinary2 = cache2.withKeepBinary();
+
+        awaitPartitionMapExchange();
     }
 
     /**

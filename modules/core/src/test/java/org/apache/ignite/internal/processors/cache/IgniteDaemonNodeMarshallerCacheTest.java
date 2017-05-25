@@ -47,8 +47,8 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     private boolean daemon;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDaemon(daemon);
 
@@ -121,7 +121,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
 
         Ignite ignite2 = startGrid(nodeIdx);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setRebalanceMode(SYNC);
         ccfg.setCacheMode(REPLICATED);

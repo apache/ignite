@@ -26,9 +26,7 @@ const DFLT_CLUSTER = {
         networkTimeout: 5000,
         joinTimeout: 0,
         threadPriority: 10,
-        heartbeatFrequency: 2000,
-        maxMissedHeartbeats: 1,
-        maxMissedClientHeartbeats: 5,
+        metricsUpdateFrequency: 2000,
         topHistorySize: 1000,
         reconnectCount: 10,
         statisticsPrintFrequency: 0,
@@ -75,6 +73,12 @@ const DFLT_CLUSTER = {
             Forever: {
                 retryIntervalMs: 1000
             }
+        },
+        Kubernetes: {
+            serviceName: 'ignite',
+            namespace: 'default',
+            masterUrl: 'https://kubernetes.default.svc.cluster.local:443',
+            accountToken: '/var/run/secrets/kubernetes.io/serviceaccount/token'
         }
     },
     atomics: {
@@ -177,12 +181,9 @@ const DFLT_CLUSTER = {
         }
     },
     marshalLocalJobs: false,
-    marshallerCacheKeepAliveTime: 10000,
     metricsHistorySize: 10000,
     metricsLogFrequency: 60000,
     metricsUpdateFrequency: 2000,
-    clockSyncSamples: 8,
-    clockSyncFrequency: 120000,
     timeServerPortBase: 31100,
     timeServerPortRange: 100,
     transactionConfiguration: {

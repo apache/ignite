@@ -114,7 +114,15 @@ struct ApiRobustnessTestSuiteFixture
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartNode("queries-test-noodbc.xml", name);
+        const char* config = NULL;
+
+#ifdef IGNITE_TESTS_32
+        config = "queries-test-noodbc-32.xml";
+#else
+        config = "queries-test-noodbc.xml";
+#endif
+
+        return StartNode(config, name);
     }
 
     /**
@@ -126,7 +134,15 @@ struct ApiRobustnessTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
-        grid = StartNode("queries-test.xml", "NodeMain");
+        const char* config = NULL;
+
+#ifdef IGNITE_TESTS_32
+          config = "queries-test-32.xml";
+#else
+          config = "queries-test.xml";
+#endif
+
+        grid = StartNode(config, "NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
     }
@@ -253,7 +269,6 @@ SQLSMALLINT unsupportedSql[] = {
         SQL_WLONGVARCHAR,
         SQL_REAL,
         SQL_NUMERIC,
-        SQL_TYPE_TIME,
         SQL_INTERVAL_MONTH,
         SQL_INTERVAL_YEAR,
         SQL_INTERVAL_YEAR_TO_MONTH,

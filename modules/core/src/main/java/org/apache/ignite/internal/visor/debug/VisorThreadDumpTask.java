@@ -24,13 +24,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Creates thread dump.
  */
 @GridInternal
-public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<VisorThreadInfo[], long[]>> {
+public class VisorThreadDumpTask extends VisorOneNodeTask<Void, VisorThreadDumpTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +41,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<Vi
     /**
      * Job that take thread dump on node.
      */
-    private static class VisorDumpThreadJob extends VisorJob<Void, IgniteBiTuple<VisorThreadInfo[], long[]>> {
+    private static class VisorDumpThreadJob extends VisorJob<Void, VisorThreadDumpTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -55,7 +54,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<Vi
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<VisorThreadInfo[], long[]> run(Void arg) {
+        @Override protected VisorThreadDumpTaskResult run(Void arg) {
             ThreadMXBean mx = U.getThreadMx();
 
             ThreadInfo[] info = mx.dumpAllThreads(true, true);
@@ -63,9 +62,9 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<Vi
             VisorThreadInfo[] visorInfo = new VisorThreadInfo[info.length];
 
             for (int i = 0; i < info.length; i++)
-                visorInfo[i] = VisorThreadInfo.from(info[i]);
+                visorInfo[i] = new VisorThreadInfo(info[i]);
 
-            return new IgniteBiTuple<>(visorInfo, mx.findDeadlockedThreads());
+            return new VisorThreadDumpTaskResult(visorInfo, mx.findDeadlockedThreads());
         }
 
         /** {@inheritDoc} */

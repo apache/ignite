@@ -76,7 +76,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
             for (Ignite g : G.allGrids()) {
                 if (g.cluster().nodes().size() != GRID_CNT) {
-                    info("Grid has incorrect nodes count [gridName=" + g.name() +
+                    info("Grid has incorrect nodes count [igniteInstanceName=" + g.name() +
                         ", nodesCnt=" + g.cluster().nodes().size() + ']');
 
                     success = false;
@@ -95,8 +95,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPublicThreadPoolSize(RETRIES * 2);
 

@@ -64,8 +64,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -82,8 +82,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
-        spi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(spi);
 
         c.setCacheConfiguration(cc);
@@ -110,12 +110,12 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            IgniteCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
             c.removeAll();
 
-            assertEquals("Cache size mismatch for grid [grid=" + g.name() + ", entrySet=" + entrySet(c) + ']',
-                0, c.size());
+            assertEquals("Cache size mismatch for grid [igniteInstanceName=" + g.name() +
+                    ", entrySet=" + entrySet(c) + ']', 0, c.size());
         }
     }
 
@@ -229,7 +229,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     private void checkDoubleGet(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
         IgniteEx ignite = grid(0);
-        IgniteCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Integer key = 1;
 

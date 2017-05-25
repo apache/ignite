@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -53,8 +53,8 @@ import org.apache.lucene.util.Version;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Lucene fulltext index.
@@ -70,7 +70,7 @@ public class GridLuceneIndex implements AutoCloseable {
     public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
 
     /** */
-    private final String spaceName;
+    private final String cacheName;
 
     /** */
     private final GridQueryTypeDescriptor type;
@@ -95,14 +95,14 @@ public class GridLuceneIndex implements AutoCloseable {
      *
      * @param ctx Kernal context.
      * @param mem Unsafe memory.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
     public GridLuceneIndex(GridKernalContext ctx, @Nullable GridUnsafeMemory mem,
-        @Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
+        @Nullable String cacheName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
         this.ctx = ctx;
-        this.spaceName = spaceName;
+        this.cacheName = cacheName;
         this.type = type;
 
         dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem);
@@ -115,15 +115,7 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        GridQueryIndexDescriptor idx = null;
-
-        for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.type() == GridQueryIndexType.FULLTEXT) {
-                idx = descriptor;
-
-                break;
-            }
-        }
+        GridQueryIndexDescriptor idx = type.textIndex();
 
         if (idx != null) {
             Collection<String> fields = idx.fields();
@@ -148,7 +140,7 @@ public class GridLuceneIndex implements AutoCloseable {
         if (ctx == null)
             return null;
 
-        return ctx.cache().internalCache(spaceName).context().cacheObjectContext();
+        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
     }
 
     /**
@@ -160,7 +152,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(CacheObject k, CacheObject v, byte[] ver, long expires) throws IgniteCheckedException {
+    public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 
         Object key = k.isPlatformType() ? k.value(coctx, false) : k;
@@ -200,7 +192,7 @@ public class GridLuceneIndex implements AutoCloseable {
             if (type.valueClass() != String.class)
                 doc.add(new Field(VAL_FIELD_NAME, v.valueBytes(coctx)));
 
-            doc.add(new Field(VER_FIELD_NAME, ver));
+            doc.add(new Field(VER_FIELD_NAME, ver.toString().getBytes()));
 
             doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
                 DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -282,7 +274,7 @@ public class GridLuceneIndex implements AutoCloseable {
         IgniteBiPredicate<K, V> fltr = null;
 
         if (filters != null)
-            fltr = filters.forSpace(spaceName);
+            fltr = filters.forCache(cacheName);
 
         return new It<>(reader, searcher, docs.scoreDocs, fltr);
     }
@@ -389,7 +381,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 ClassLoader ldr = null;
 
                 if (ctx != null && ctx.deploy().enabled())
-                    ldr = ctx.cache().internalCache(spaceName).context().deploy().globalLoader();
+                    ldr = ctx.cache().internalCache(cacheName).context().deploy().globalLoader();
 
                 K k = unmarshall(org.apache.commons.codec.binary.Base64.decodeBase64(doc.get(KEY_FIELD_NAME)), ldr);
 

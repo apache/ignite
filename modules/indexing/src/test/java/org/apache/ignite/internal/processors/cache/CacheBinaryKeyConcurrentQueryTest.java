@@ -64,8 +64,8 @@ public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
     private static final int KEYS = 1000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -223,7 +223,7 @@ public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setCacheMode(PARTITIONED);

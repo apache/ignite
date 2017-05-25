@@ -49,14 +49,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly IBinaryTypeDescriptor _desc;
 
         /** Values. */
-        private IDictionary<string, BinaryBuilderField> _vals;
+        private SortedDictionary<string, BinaryBuilderField> _vals;
 
         /** Contextual fields. */
         private IDictionary<int, BinaryBuilderField> _cache;
 
-        /** Hash code. */
-        private int? _hashCode;
-        
         /** Current context. */
         private Context _ctx;
 
@@ -93,23 +90,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _parent = parent ?? this;
             _desc = desc;
 
-            if (obj != null)
-            {
-                _obj = obj;
-                _hashCode = obj.GetHashCode();
-            }
-            else
-            {
-                _obj = BinaryFromDescriptor(desc);
-            }
-        }
-
-        /** <inheritDoc /> */
-        public IBinaryObjectBuilder SetHashCode(int hashCode)
-        {
-            _hashCode = hashCode;
-
-            return this;
+            _obj = obj ?? BinaryFromDescriptor(desc);
         }
 
         /** <inheritDoc /> */
@@ -495,7 +476,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private IBinaryObjectBuilder SetField0(string fieldName, BinaryBuilderField val)
         {
             if (_vals == null)
-                _vals = new Dictionary<string, BinaryBuilderField>();
+                _vals = new SortedDictionary<string, BinaryBuilderField>();
 
             _vals[fieldName] = val;
 
@@ -508,13 +489,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="inStream">Input stream with initial object.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="desc">Type descriptor.</param>
-        /// <param name="hashCode">Hash code.</param>
         /// <param name="vals">Values.</param>
         private void Mutate(
             BinaryHeapStream inStream,
             BinaryHeapStream outStream,
             IBinaryTypeDescriptor desc,
-            int? hashCode, 
             IDictionary<string, BinaryBuilderField> vals)
         {
             // Set correct builder to writer frame.
@@ -553,12 +532,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Actual processing.
-                Mutate0(_parent._ctx, inStream, outStream, true, hashCode, vals0);
+                Mutate0(_parent._ctx, inStream, outStream, true, vals0);
 
                 // 3. Handle metadata.
                 if (metaHnd != null)
                 {
-                    IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
+                    IDictionary<string, BinaryField> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
                         _parent._ctx.Writer.SaveMetadata(desc, meta);
@@ -580,11 +559,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="outStream">Output stream.</param>
         /// <param name="ctx">Context.</param>
         /// <param name="changeHash">WHether hash should be changed.</param>
-        /// <param name="hash">New hash.</param>
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
         private void Mutate0(Context ctx, BinaryHeapStream inStream, IBinaryStream outStream,
-            bool changeHash, int? hash, IDictionary<int, BinaryBuilderField> vals)
+            bool changeHash, IDictionary<int, BinaryBuilderField> vals)
         {
             int inStartPos = inStream.Position;
             int outStartPos = outStream.Position;
@@ -613,7 +591,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     inStream.Seek(oldPos, SeekOrigin.Begin);
 
-                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                    Mutate0(ctx, inStream, outStream, false, EmptyVals);
 
                     inStream.Seek(inRetPos, SeekOrigin.Begin);
                 }
@@ -678,7 +656,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                                         // Field is not tracked, re-write as is.
                                         inStream.Seek(inField.Offset + inStartPos, SeekOrigin.Begin);
 
-                                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
                                     }
                                 }
                             }
@@ -697,6 +675,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                             var flags = inHeader.IsUserType
                                 ? BinaryObjectHeader.Flag.UserType
                                 : BinaryObjectHeader.Flag.None;
+
+                            if (inHeader.IsCustomDotNetType)
+                                flags |= BinaryObjectHeader.Flag.CustomDotNetType;
 
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
@@ -740,20 +721,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             if (changeHash)
                             {
-                                if (hash != null)
-                                {
-                                    outHash = hash.Value;
-                                }
-                                else
-                                {
-                                    // Get from identity resolver.
-                                    outHash = _desc.EqualityComparer != null
-                                        ? _desc.EqualityComparer.GetHashCode(outStream,
-                                            outStartPos + BinaryObjectHeader.Size,
-                                            schemaPos - outStartPos - BinaryObjectHeader.Size,
-                                            outSchema, outSchemaId, _binary.Marshaller, _desc)
-                                        : 0;
-                                }
+                                // Get from identity resolver.
+                                outHash = BinaryArrayEqualityComparer.GetHashCode(outStream,
+                                    outStartPos + BinaryObjectHeader.Size,
+                                    schemaPos - outStartPos - BinaryObjectHeader.Size);
                             }
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
@@ -816,7 +787,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 inStream.Seek(port.Offset, SeekOrigin.Begin);
 
                 // Use fresh context to ensure correct binary inversion.
-                Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
+                Mutate0(new Context(), inStream, outStream, false, EmptyVals);
             }
         }
 
@@ -838,7 +809,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     builder._parent._ctx = new Context(_parent._ctx);
 
                 builder.Mutate(inStream, (BinaryHeapStream) outStream, builder._desc,
-                    builder._hashCode, builder._vals);
+                    builder._vals);
             }
         }
 
@@ -965,14 +936,34 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeArrayString:
                 case BinaryUtils.TypeArrayGuid:
                 case BinaryUtils.TypeArrayTimestamp:
-                case BinaryUtils.TypeArrayEnum:
-                case BinaryUtils.TypeArray:
                     int arrLen = inStream.ReadInt();
 
                     outStream.WriteInt(arrLen);
 
                     for (int i = 0; i < arrLen; i++)
-                        Mutate0(ctx, inStream, outStream, false, 0, null);
+                        Mutate0(ctx, inStream, outStream, false, null);
+
+                    break;
+
+                case BinaryUtils.TypeArrayEnum:
+                case BinaryUtils.TypeArray:
+                    int type = inStream.ReadInt();
+
+                    outStream.WriteInt(type);
+
+                    if (type == BinaryUtils.TypeUnregistered)
+                    {
+                        outStream.WriteByte(inStream.ReadByte());  // String header.
+
+                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
+                    }
+
+                    arrLen = inStream.ReadInt();
+
+                    outStream.WriteInt(arrLen);
+
+                    for (int i = 0; i < arrLen; i++)
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
 
                     break;
 
@@ -984,7 +975,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     outStream.WriteByte(inStream.ReadByte());
 
                     for (int i = 0; i < colLen; i++)
-                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
 
                     break;
 
@@ -997,8 +988,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     for (int i = 0; i < dictLen; i++)
                     {
-                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
                     }
 
                     break;
@@ -1010,7 +1001,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
 
                 case BinaryUtils.TypeEnum:
-                    TransferBytes(inStream, outStream, 4); // Integer ordinal.
+                    TransferBytes(inStream, outStream, 8); // int typeId, int value.
 
                     break;
 

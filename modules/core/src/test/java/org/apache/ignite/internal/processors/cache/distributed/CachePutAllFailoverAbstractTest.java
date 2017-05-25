@@ -52,8 +52,8 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     private static final long TEST_TIME = 60_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -77,8 +77,8 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
@@ -142,9 +142,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         });
 
         try {
-            IgniteCache<TestKey, TestValue> cache0 = ignite(0).cache(null);
-
-            final IgniteCache<TestKey, TestValue> cache = test == Test.PUT_ALL_ASYNC ? cache0.withAsync() : cache0;
+            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -184,9 +182,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                     for (int k = 0; k < 100; k++)
                                         map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                    cache.putAll(map);
-
-                                    IgniteFuture<?> fut = cache.future();
+                                    IgniteFuture<?> fut = cache.putAllAsync(map);
 
                                     assertNotNull(fut);
 

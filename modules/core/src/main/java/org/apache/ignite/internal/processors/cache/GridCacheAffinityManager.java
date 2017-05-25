@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -28,17 +33,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Cache affinity manager.
@@ -66,7 +64,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         affMapper = cctx.config().getAffinityMapper();
 
         aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-            cctx.namex(),
+            cctx.name(),
             affFunction,
             cctx.config().getNodeFilter(),
             cctx.config().getBackups(),
@@ -77,7 +75,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (cctx.isLocal())
             // No discovery event needed for local affinity.
-            aff.calculate(LOC_CACHE_TOP_VER, null);
+            aff.calculate(LOC_CACHE_TOP_VER, null, null);
     }
 
     /** {@inheritDoc} */
@@ -89,10 +87,15 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      *
      */
     public void cancelFutures() {
+        if (!starting.get())
+            // Ignoring attempt to stop manager that has never been started.
+            return;
+
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        aff.cancelFutures(err);
+        if (aff != null)
+            aff.cancelFutures(err);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +103,8 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
             "Failed to wait for topology update, client disconnected.");
 
-        aff.cancelFutures(err);
+        if (aff != null)
+            aff.cancelFutures(err);
     }
 
     /**
@@ -111,7 +115,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void stop0(boolean cancel, boolean destroy) {
         aff = null;
     }
 

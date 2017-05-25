@@ -23,7 +23,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,17 +47,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     /** */
     private boolean cache;
 
-    /** */
-    private int aff;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         if (cache) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(CacheMode.PARTITIONED);
             ccfg.setBackups(1);
@@ -66,10 +62,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             ccfg.setNearConfiguration(null);
 
-            if (aff == 0)
-                ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
-            else
-                ccfg.setAffinity(new FairAffinityFunction(PARTS));
+            ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -83,17 +76,6 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testRendezvousAssignment() throws Exception {
-        aff = 0;
-
-        checkAffinityFunction();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFairAssignment() throws Exception {
-        aff = 1;
-
         checkAffinityFunction();
     }
 
@@ -116,15 +98,15 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ((IgniteKernal)ignite3).getCache(null);
+                    ((IgniteKernal)ignite3).getCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }
             }, IllegalArgumentException.class, null);
 
-            assertNotNull(ignite3.cache(null)); // Start client cache.
+            assertNotNull(ignite3.cache(DEFAULT_CACHE_NAME)); // Start client cache.
 
-            ((IgniteKernal)ignite3).getCache(null);
+            ((IgniteKernal)ignite3).getCache(DEFAULT_CACHE_NAME);
 
             checkAffinity(topVer++);
 
@@ -132,15 +114,15 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ((IgniteKernal)ignite4).getCache(null);
+                    ((IgniteKernal)ignite4).getCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }
             }, IllegalArgumentException.class, null);
 
-            assertNotNull(ignite4.cache(null)); // Start client cache.
+            assertNotNull(ignite4.cache(DEFAULT_CACHE_NAME)); // Start client cache.
 
-            ((IgniteKernal)ignite4).getCache(null);
+            ((IgniteKernal)ignite4).getCache(DEFAULT_CACHE_NAME);
 
             checkAffinity(topVer++);
 
@@ -148,7 +130,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ((IgniteKernal)ignite5).getCache(null);
+                    ((IgniteKernal)ignite5).getCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }
@@ -180,14 +162,14 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     private void checkAffinity(long topVer) throws Exception {
         awaitTopology(topVer);
 
-        Affinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (Ignite grid : Ignition.allGrids()) {
             try {
                 if (grid.cluster().localNode().id().equals(grid(0).localNode().id()))
                     continue;
 
-                Affinity<Object> checkAff = grid.affinity(null);
+                Affinity<Object> checkAff = grid.affinity(DEFAULT_CACHE_NAME);
 
                 for (int p = 0; p < PARTS; p++)
                     assertEquals(aff.mapPartitionToPrimaryAndBackups(p), checkAff.mapPartitionToPrimaryAndBackups(p));
@@ -204,7 +186,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      */
     private void awaitTopology(final long topVer) throws Exception {
         for (Ignite grid : Ignition.allGrids()) {
-            final GridCacheAdapter cache = ((IgniteKernal)grid).internalCache(null);
+            final GridCacheAdapter cache = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME);
 
             if (cache == null)
                 continue;
