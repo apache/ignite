@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Deployment;
 
     /// <summary>
     /// Binary writer implementation.
@@ -56,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private bool _detaching;
 
         /** Whether we are directly within peer loading object holder. */
-        private bool _isInPeerHolder;
+        private bool _isInWrapper;
 
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
@@ -1169,17 +1168,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // Peer deployment mode: all user objects are wrapped.
-            if (EnablePeerDeployment && type != typeof(PeerLoadingObjectHolder))
+            // Wrap objects as required.
+            if (WrapperFunc != null && type != WrapperFunc.Method.ReturnType)
             {
-                if (_isInPeerHolder)
+                if (_isInWrapper)
                 {
-                    _isInPeerHolder = false;
+                    _isInWrapper = false;
                 }
                 else
                 {
-                    _isInPeerHolder = true;
-                    Write(new PeerLoadingObjectHolder(obj));
+                    _isInWrapper = true;
+                    Write(WrapperFunc(obj));
 
                     return;
                 }
@@ -1444,11 +1443,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether all user objects
-        /// should be wrapped into <see cref="PeerLoadingObjectHolder"/>.
+        /// Gets or sets a function to wrap all serializer objects.
         /// </summary>
-        // TODO: Abstract away from peer loading, creare a base wrapper class.
-        internal bool EnablePeerDeployment { get; set; }
+        internal Func<object, object> WrapperFunc { get; set; }
 
         /// <summary>
         /// Stream.

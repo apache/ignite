@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Deployment
 {
+    using System;
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -25,6 +26,10 @@ namespace Apache.Ignite.Core.Impl.Deployment
     /// </summary>
     internal static class PeerLoadingExtensions
     {
+        /** */
+        private static readonly Func<object, PeerLoadingObjectHolder> WrapperFunc =
+            x => new PeerLoadingObjectHolder(x);
+
         /// <summary>
         /// Writes the object with peer deployment (when enabled) or normally otherwise.
         /// </summary>
@@ -34,12 +39,12 @@ namespace Apache.Ignite.Core.Impl.Deployment
             {
                 try
                 {
-                    writer.EnablePeerDeployment = true;
+                    writer.WrapperFunc = WrapperFunc;
                     writer.WriteObject(o);
                 }
                 finally
                 {
-                    writer.EnablePeerDeployment = false;
+                    writer.WrapperFunc = null;
                 }
             }
             else
