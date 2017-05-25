@@ -1469,6 +1469,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).RemoveAll());
             Assert.AreEqual(
                 "Operator is not supported: Apache.Ignite.Linq.Impl.Dml.RemoveAllResultOperator", nex.Message);
+
+            // Unconditional.
+            queryable.RemoveAll();
+            Assert.AreEqual(0, cache.GetSize());
         }
 
         /// <summary>
