@@ -134,24 +134,157 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
+        // Misc tests.
+        // TODO: Enable when IGNITE-1094 is fixed.
+        // suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
+        suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
+
+        // Dynamic index create/drop tests.
+        suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
+
         suite.addTest(new TestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexServerBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexServerNodeFIlterBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexClientBasicSelfTest.class));
 
-//        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
+        // H2 tests.
 
-//        suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedTest.class);
-//
-//        suite.addTestSuite(IgniteCacheMergeSqlQuerySelfTest.class);
-//        suite.addTestSuite(IgniteCacheInsertSqlQuerySelfTest.class);
-//
-//        suite.addTestSuite(IgniteCacheDistributedQueryCancelSelfTest.class);
-//
-//        suite.addTestSuite(CacheQueryNewClientSelfTest.class);
-//
-//        suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
+        // TODO: IGNITE-4994: Restore mock.
+        // suite.addTest(new TestSuite(GridH2TableSelfTest.class));
+
+        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
+        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
+
+        // Parsing
+        suite.addTestSuite(GridQueryParsingTest.class);
+
+        // Config.
+        suite.addTestSuite(IgniteCacheDuplicateEntityConfigurationSelfTest.class);
+        suite.addTestSuite(IncorrectQueryEntityTest.class);
+
+        // Queries tests.
+        suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
+        suite.addTestSuite(IgniteSqlSegmentedIndexSelfTest.class);
+        suite.addTestSuite(IgniteSqlSegmentedIndexMultiNodeSelfTest.class);
+        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
+        suite.addTestSuite(GridCacheQueryIndexDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalAtomicQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedSnapshotEnabledQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQueryP2PDisabledSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheQueryIndexSelfTest.class);
+        suite.addTestSuite(IgniteCacheCollocatedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheLargeResultSelfTest.class);
+        suite.addTestSuite(GridCacheQueryInternalKeysSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheOffheapEvictQueryTest.class);
+        suite.addTestSuite(IgniteCacheOffheapIndexScanTest.class);
+
+        suite.addTestSuite(IgniteCacheQueryAbstractDistributedJoinSelfTest.class);
+
+        suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
+        suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
+        suite.addTestSuite(IgniteBinaryObjectFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteBinaryWrappedObjectFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryH2IndexingLeakTest.class);
+        suite.addTestSuite(IgniteCacheQueryNoRebalanceSelfTest.class);
+        suite.addTestSuite(GridCacheQueryTransformerSelfTest.class);
+        suite.addTestSuite(IgniteCachePrimitiveFieldsQuerySelfTest.class);
+
+        suite.addTestSuite(IgniteCacheJoinQueryWithAffinityKeyTest.class);
+        suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedTest.class);
+        suite.addTestSuite(IgniteCrossCachesJoinsQueryTest.class);
+
+        suite.addTestSuite(IgniteCacheMultipleIndexedTypesTest.class);
+
+        // DML.
+        suite.addTestSuite(IgniteCacheMergeSqlQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheInsertSqlQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheUpdateSqlQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheDeleteSqlQuerySelfTest.class);
+
+        suite.addTestSuite(IgniteBinaryObjectQueryArgumentsTest.class);
+        suite.addTestSuite(IgniteBinaryObjectLocalQueryArgumentsTest.class);
+
+        suite.addTestSuite(IndexingSpiQuerySelfTest.class);
+        suite.addTestSuite(IndexingSpiQueryTxSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheMultipleIndexedTypesTest.class);
+        suite.addTestSuite(IgniteSqlQueryMinMaxTest.class);
+
+        // DDL.
+        suite.addTestSuite(H2DynamicIndexTransactionalReplicatedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexTransactionalPartitionedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexTransactionalPartitionedNearSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicReplicatedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicPartitionedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicPartitionedNearSelfTest.class);
+
+        // Fields queries.
+        suite.addTestSuite(SqlFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryROSelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
+
+        suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
+
+        suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
+
+        suite.addTestSuite(CacheQueryEvictDataLostTest.class);
+
+        // Ignite cache and H2 comparison.
+        suite.addTestSuite(BaseH2CompareQueryTest.class);
+        suite.addTestSuite(H2CompareBigQueryTest.class);
+        suite.addTestSuite(H2CompareBigQueryDistributedJoinsTest.class);
+
+        // Cache query metrics.
+        suite.addTestSuite(CacheLocalQueryMetricsSelfTest.class);
+        suite.addTestSuite(CachePartitionedQueryMetricsDistributedSelfTest.class);
+        suite.addTestSuite(CachePartitionedQueryMetricsLocalSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryMetricsDistributedSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryMetricsLocalSelfTest.class);
+
+        // Cache query metrics.
+        suite.addTestSuite(CacheLocalQueryDetailMetricsSelfTest.class);
+        suite.addTestSuite(CachePartitionedQueryDetailMetricsDistributedSelfTest.class);
+        suite.addTestSuite(CachePartitionedQueryDetailMetricsLocalSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryDetailMetricsDistributedSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryDetailMetricsLocalSelfTest.class);
+
+        // Unmarshalling query test.
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
+        suite.addTestSuite(IgniteCacheNoClassQuerySelfTest.class);
+
+        // Cancellation.
+        suite.addTestSuite(IgniteCacheDistributedQueryCancelSelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalQueryCancelOrTimeoutSelfTest.class);
+
+        // Other.
+        suite.addTestSuite(CacheQueryNewClientSelfTest.class);
+        suite.addTestSuite(CacheOffheapBatchIndexingSingleTypeTest.class);
+        suite.addTestSuite(CacheSqlQueryValueCopySelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryCacheDestroySelfTest.class);
+        suite.addTestSuite(IgniteQueryDedicatedPoolTest.class);
+        suite.addTestSuite(IgniteSqlEntryCacheModeAgnosticTest.class);
+        suite.addTestSuite(QueryEntityCaseMismatchTest.class);
+        suite.addTestSuite(IgniteCacheDistributedPartitionQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest.class);
+        suite.addTestSuite(IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class);
+        suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
 
         return suite;
     }
