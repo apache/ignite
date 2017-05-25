@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Deployment
 
     /// <summary>
     /// Peer assembly loading mode.
-    /// See TODO.
+    /// See <see cref="IgniteConfiguration.PeerAssemblyLoadingMode"/>.
     /// </summary>
     public enum PeerAssemblyLoadingMode
     {

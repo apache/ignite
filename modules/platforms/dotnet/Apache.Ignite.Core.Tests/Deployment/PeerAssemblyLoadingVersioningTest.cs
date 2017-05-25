@@ -128,6 +128,7 @@ using System;
 using System.Reflection;
 
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Deployment;
 using Apache.Ignite.Core.Compute;
 using Apache.Ignite.Core.Tests;
 using Apache.Ignite.Core.Discovery;
@@ -140,7 +141,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false)) {ClientMode = true, PeerAssemblyLoadingEnabled = true,
+        using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(false)) {ClientMode = true, PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
                 DiscoverySpi = new TcpDiscoverySpi { IpFinder = new TcpDiscoveryStaticIpFinder { Endpoints = new[] { ""127.0.0.1:47500..47502"" } }, SocketTimeout = TimeSpan.FromSeconds(0.3) }
 }))
         {
