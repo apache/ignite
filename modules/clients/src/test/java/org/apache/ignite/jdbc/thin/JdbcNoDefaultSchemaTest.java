@@ -18,27 +18,22 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Enumeration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
+public class JdbcNoDefaultSchemaTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -66,8 +61,6 @@ public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
-
         return cfg;
     }
 
@@ -89,18 +82,11 @@ public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT);
+
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
 
         Ignite ignite = ignite(0);
 
@@ -137,9 +123,11 @@ public class JdbcNoDefaultSchemaTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoCacheNameQuery() throws Exception {
-        Statement stmt;
+        Connection conn = DriverManager.getConnection(URL);
 
-        stmt = DriverManager.getConnection(URL).createStatement();
+        conn.setSchema("cache1");
+
+        Statement stmt = conn.createStatement();
 
         assertNotNull(stmt);
         assertFalse(stmt.isClosed());

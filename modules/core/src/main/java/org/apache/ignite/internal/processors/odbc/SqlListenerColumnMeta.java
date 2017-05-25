@@ -138,10 +138,7 @@ public class SqlListenerColumnMeta {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
-
-        byte typeId = BinaryUtils.typeByClass(dataType);
-
-        writer.writeByte(typeId);
+        writer.writeByte(BinaryUtils.typeByClass(dataType));
     }
 
     /**
@@ -153,9 +150,6 @@ public class SqlListenerColumnMeta {
         schemaName = reader.readString();
         tableName = reader.readString();
         columnName = reader.readString();
-
-        byte typeId = reader.readByte();
-
-        dataType = null;
+        dataType = BinaryUtils.plainClassByType(reader.readByte());
     }
 }

@@ -21,15 +21,12 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.Enumeration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,7 +35,6 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -59,7 +55,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Prepared statement test.
  */
-public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
+public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -106,16 +102,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        super.beforeTestsStarted();
 
         startGridsMultiThreaded(3);
 
@@ -152,6 +139,8 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
 
         assert conn != null;
         assert !conn.isClosed();

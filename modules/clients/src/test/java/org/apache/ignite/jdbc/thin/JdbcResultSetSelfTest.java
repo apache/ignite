@@ -21,8 +21,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
 import java.sql.Date;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,21 +30,18 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -53,7 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Result set test.
  */
 @SuppressWarnings("FloatingPointEquality")
-public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
+public class JdbcResultSetSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -90,8 +87,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
-
         cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
@@ -99,16 +94,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        super.beforeTestsStarted();
 
         startGridsMultiThreaded(3);
 
@@ -129,7 +115,11 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stmt = DriverManager.getConnection(URL).createStatement();
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema(DEFAULT_CACHE_NAME);
+
+        stmt = conn.createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();
@@ -139,6 +129,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
+
             stmt.close();
 
             assert stmt.isClosed();
@@ -438,18 +429,14 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObjectNotSupported() throws Exception {
-        final ResultSet rs = stmt.executeQuery("select f1 from TestObject where id = 1");
-
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                rs.next();
+                stmt.executeQuery("select f1 from TestObject where id = 1");
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Query execute error: " +
-            "class org.apache.ignite.binary.BinaryObjectException: JDBC doesn't support not embedded objects");
+        }, IgniteCheckedException.class, "JDBC doesn't support custom objects");
     }
-
 
     /**
      * @throws Exception If failed.

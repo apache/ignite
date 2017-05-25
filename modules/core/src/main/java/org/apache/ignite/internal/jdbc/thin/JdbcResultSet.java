@@ -38,15 +38,14 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryMetadataResult;
 
 /**
  * JDBC result set implementation.
@@ -59,13 +58,16 @@ public class JdbcResultSet implements ResultSet {
     private final Long qryId;
 
     /** Table names. */
-    private final List<SqlListenerColumnMeta> meta;
+    private List<SqlListenerColumnMeta> metaRef;
+
+    /** Table names. */
+    private boolean metaInit;
 
     /** Fields iterator. */
-    private Collection<List<Object>> fields;
+    private List<List<Object>> fields;
 
     /** Fields iterator. */
-    private Iterator<List<Object>> fieldsIter;
+    private Iterator<List<Object>> fieldsIt;
 
     /** Finished flag. */
     private boolean finished;
@@ -82,14 +84,8 @@ public class JdbcResultSet implements ResultSet {
     /** Was {@code NULL} flag. */
     private boolean wasNull;
 
-    /** Count of fetched rows. */
-    private long fetched;
-
     /** Fetch size. */
     private int fetchSize;
-
-    /** Fetch size. */
-    private int maxRows;
 
     /** Query flag (false for DML queries). */
     private boolean isQuery;
@@ -99,24 +95,25 @@ public class JdbcResultSet implements ResultSet {
      *
      * @param stmt Statement.
      * @param qryId Query ID.
-     * @param meta Results metadata.
-     * @param isQuery Query flag (false for DML queries).
      * @param fetchSize Fetch size.
-     * @param maxRows Max rows.
+     * @param isQuery Query flag (false for DML queries).
+     * @param finished Finished flag.
+     * @param fields Query result page.
      */
-    @SuppressWarnings("OverlyStrongTypeCast") JdbcResultSet(JdbcStatement stmt, long qryId,
-        Collection<SqlListenerColumnMeta> meta, boolean isQuery, int fetchSize, int maxRows) {
+    @SuppressWarnings("OverlyStrongTypeCast")
+    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, boolean isQuery, boolean finished,
+        List<List<Object>> fields) {
         assert stmt != null;
-        assert meta != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.qryId = qryId;
         this.isQuery = isQuery;
         this.fetchSize = fetchSize;
-        this.maxRows = maxRows;
+        this.fields = fields;
+        this.finished = finished;
 
-        this.meta = (ArrayList<SqlListenerColumnMeta>)(meta);
+        fieldsIt = fields.iterator();
     }
 
     /** {@inheritDoc} */
@@ -124,24 +121,16 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fieldsIter == null && !finished) {
+        if (fieldsIt == null && !finished) {
             try {
-                int fetchSize0 = fetchSize;
-
-                if (maxRows > 0)
-                    fetchSize0 = Math.min(fetchSize, (int)(maxRows - fetched));
-
-                SqlListenerQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize0);
+                SqlListenerQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
 
                 assert qryId == res.queryId();
 
-                fields = ((Collection<List<Object>>)res.items());
+                fields = res.items();
+                finished = res.last();
 
-                fieldsIter = fields.iterator();
-
-                fetched += res.items().size();
-
-                finished = res.last() || fetched == maxRows;
+                fieldsIt = fields.iterator();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -153,21 +142,23 @@ public class JdbcResultSet implements ResultSet {
             }
         }
 
-        if (fieldsIter != null && fieldsIter.hasNext()) {
-            curr = fieldsIter.next();
+        if (fieldsIt != null) {
+            if (fieldsIt.hasNext()) {
+                curr = fieldsIt.next();
 
-            if (!fieldsIter.hasNext())
-                fieldsIter = null;
+                pos++;
 
-            pos++;
+                return true;
+            }
+            else {
+                fieldsIt = null;
+                curr = null;
 
-            return true;
+                return false;
+            }
         }
-        else {
-            curr = null;
-
+        else
             return false;
-        }
     }
 
     /**
@@ -176,7 +167,7 @@ public class JdbcResultSet implements ResultSet {
     void resetIter() {
         assert fields != null;
 
-        fieldsIter = fields.iterator();
+        fieldsIt = fields.iterator();
     }
 
     /** {@inheritDoc} */
@@ -424,7 +415,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcResultSetMetadata(meta);
+        return new JdbcResultSetMetadata(meta());
     }
 
     /** {@inheritDoc} */
@@ -440,6 +431,8 @@ public class JdbcResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public int findColumn(final String colLb) throws SQLException {
         ensureNotClosed();
+
+        List<SqlListenerColumnMeta> meta = meta();
 
         for (int i = 0; i < meta.size(); i++) {
             if (meta.get(i).getColumnName().equalsIgnoreCase(colLb))
@@ -484,7 +477,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIter == null && curr == null;
+        return finished && fieldsIt == null && curr == null;
     }
 
     /** {@inheritDoc} */
@@ -498,7 +491,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIter == null && curr != null;
+        return finished && fieldsIt != null && !fieldsIt.hasNext() && curr != null;
     }
 
     /** {@inheritDoc} */
@@ -1515,6 +1508,32 @@ public class JdbcResultSet implements ResultSet {
     private void ensureHasCurrentRow() throws SQLException {
         if (curr == null)
             throw new SQLException("Result set is not positioned on a row.");
+    }
+
+    /**
+     * @return Results metadata.
+     * @throws SQLException On error.
+     */
+    private List<SqlListenerColumnMeta> meta() throws SQLException {
+        if (!metaInit) {
+            try {
+                SqlListenerQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
+
+                metaRef = res.meta();
+
+                metaInit = true;
+            }
+            catch (IOException e) {
+                stmt.connection().close();
+
+                throw new SQLException("Failed to get query metadata.", e);
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException("Failed to get query metadata.", e);
+            }
+        }
+
+        return metaRef;
     }
 
     /**

@@ -46,7 +46,8 @@ public class OdbcMessageParser extends SqlListenerAbstractMessageParser {
             CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
             marsh = cacheObjProc.marshaller();
-        } else {
+        }
+        else {
             throw new IgniteException("ODBC can only be used with BinaryMarshaller (please set it " +
                 "through IgniteConfiguration.setMarshaller())");
         }
@@ -64,6 +65,4 @@ public class OdbcMessageParser extends SqlListenerAbstractMessageParser {
         return new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(cap),
             BinaryThreadLocalContext.get().schemaHolder(), null);
     }
-
-
 }

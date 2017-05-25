@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
@@ -57,7 +58,7 @@ public class JdbcStatement implements Statement {
     private JdbcResultSet rs;
 
     /** Query arguments. */
-    protected Object[] args;
+    protected ArrayList<Object> args;
 
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
@@ -91,13 +92,14 @@ public class JdbcStatement implements Statement {
 
         try {
 
-            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), sql, args);
+            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), fetchSize, maxRows,
+                sql, args);
+
             assert res != null;
 
             qryId = res.getQueryId();
 
-            rs = new JdbcResultSet(this, qryId, res.getColumnsMetadata(), res.isQuery(),
-                fetchSize, maxRows);
+            rs = new JdbcResultSet(this, qryId, fetchSize, res.isQuery(), res.last(), res.items());
 
             // DML query
             if (!rs.isQuery()) {

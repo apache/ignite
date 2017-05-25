@@ -18,23 +18,19 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
-import java.sql.Driver;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Enumeration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,7 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for complex queries (joins, etc.).
  */
-public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
+public class JdbcComplexQuerySelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -64,8 +60,6 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }
@@ -88,16 +82,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        super.beforeTestsStarted();
 
         startGrids(3);
 
@@ -126,7 +111,11 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stmt = DriverManager.getConnection(URL).createStatement();
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema("pers");
+
+        stmt = conn.createStatement();
 
         assert stmt != null;
         assert !stmt.isClosed();
@@ -136,6 +125,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         if (stmt != null) {
             stmt.getConnection().close();
+
             stmt.close();
 
             assert stmt.isClosed();

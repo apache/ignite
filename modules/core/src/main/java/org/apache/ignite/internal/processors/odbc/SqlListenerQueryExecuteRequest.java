@@ -30,6 +30,12 @@ public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
     /** Cache name. */
     private final String cacheName;
 
+    /** Fetch size. */
+    private final int fetchSize;
+
+    /** Max rows. */
+    private final int maxRows;
+
     /** Sql query. */
     @GridToStringInclude(sensitive = true)
     private final String sqlQry;
@@ -40,15 +46,33 @@ public class SqlListenerQueryExecuteRequest extends SqlListenerRequest {
 
     /**
      * @param cacheName Cache name.
+     * @param fetchSize Fetch size.
+     * @param maxRows Max rows.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public SqlListenerQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+    public SqlListenerQueryExecuteRequest(String cacheName, int fetchSize, int maxRows, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.cacheName = F.isEmpty(cacheName) ? null : cacheName;
+        this.fetchSize = fetchSize;
+        this.maxRows = maxRows;
         this.sqlQry = sqlQry;
         this.args = args;
+    }
+
+    /**
+     * @return Fetch size.
+     */
+    public int fetchSize() {
+        return fetchSize;
+    }
+
+    /**
+     * @return Max rows.
+     */
+    public int maxRows() {
+        return maxRows;
     }
 
     /**

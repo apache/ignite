@@ -26,25 +26,18 @@ public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
     /** Query ID. */
     private final long queryId;
 
-    /** Page size - maximum number of rows to return. */
-    private final int pageSize;
+    /** Fetch size. */
+    private final int fetchSize;
 
     /**
      * @param queryId Query ID.
-     * @param pageSize Page size.
+     * @param fetchSize Fetch size.
      */
-    public SqlListenerQueryFetchRequest(long queryId, int pageSize) {
+    public SqlListenerQueryFetchRequest(long queryId, int fetchSize) {
         super(QRY_FETCH);
 
         this.queryId = queryId;
-        this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
+        this.fetchSize = fetchSize;
     }
 
     /**
@@ -52,6 +45,13 @@ public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
      */
     public long queryId() {
         return queryId;
+    }
+
+    /**
+     * @return Fetch page size.
+     */
+    public int fetchSize() {
+        return fetchSize;
     }
 
     /** {@inheritDoc} */

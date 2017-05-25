@@ -48,8 +48,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Space name. */
-    private final String spaceName;
+    /** Cache name. */
+    private final String cacheName;
 
     /** Table name. */
     private final String tblName;
@@ -61,14 +61,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param tblName Table name.
      * @param cancel Cancellation token.
      */
-    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName,
+    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String cacheName,
         String tblName, SchemaIndexOperationCancellationToken cancel) {
         this.qryProc = qryProc;
-        this.spaceName = spaceName;
+        this.cacheName = cacheName;
         this.tblName = tblName;
         this.cancel = cancel;
 
@@ -190,7 +190,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         /** {@inheritDoc} */
         @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
             long expiration, long link) throws IgniteCheckedException {
-            if (qryProc.belongsToTable(cctx, spaceName, tblName, key, val))
+            if (qryProc.belongsToTable(cctx, cacheName, tblName, key, val))
                 target.apply(key, part, val, ver, expiration, link);
         }
     }

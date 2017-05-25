@@ -36,8 +36,7 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.logger.java.JavaLogger;
+import java.util.logging.Logger;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
@@ -53,6 +52,9 @@ import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
  * See documentation of {@link org.apache.ignite.IgniteJdbcThinDriver} for details.
  */
 public class JdbcConnection implements Connection {
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(JdbcConnection.class.getName());
+
     /** Cache name. */
     private String schemaName;
 
@@ -74,9 +76,6 @@ public class JdbcConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcTcpIo cliIo;
 
-    /** Logger. */
-    private static final IgniteLogger LOG = new JavaLogger();
-
     /**
      * Creates new connection.
      *
@@ -95,16 +94,33 @@ public class JdbcConnection implements Connection {
         boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "false"));
         boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
 
+        String host = props.getProperty(PROP_HOST);
+        String portStr = props.getProperty(PROP_PORT);
+
         try {
-            cliIo = new JdbcTcpIo(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT),
-                distributedJoins, enforceJoinOrder, LOG);
+            int port = Integer.parseInt(portStr);
+
+            if (port <= 0 || port > 0xFFFF)
+                throw new SQLException("Invalid port: " + portStr);
+        }
+        catch (NumberFormatException e) {
+            throw new SQLException("Invalid port: " + portStr, e);
+        }
+
+        if (host == null || host.trim().isEmpty())
+            throw new SQLException("Host name is empty.");
+
+        String endpoint = host.trim() + ":" + portStr.trim();
+
+        try {
+            cliIo = new JdbcTcpIo(endpoint, distributedJoins, enforceJoinOrder);
 
             cliIo.start();
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             cliIo.close();
 
-            throw new SQLException("Failed to start Ignite client.", e);
+            throw new SQLException("Failed to connect to Ignite cluster [host=" + host + ", port=" + portStr + ']', e);
         }
     }
 

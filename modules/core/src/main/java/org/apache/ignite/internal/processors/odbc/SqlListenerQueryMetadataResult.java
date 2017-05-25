@@ -15,25 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.odbc;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import java.util.List;
 
 /**
- * Cache query suite with binary marshaller.
+ * SQL listener query metadata result.
  */
-public class IgniteBinaryCacheQueryTestSuite4 extends TestSuite {
+public class SqlListenerQueryMetadataResult {
+    /** Query ID. */
+    private final long queryId;
+
+    /** Fields metadata. */
+    private final List<SqlListenerColumnMeta> meta;
+
     /**
-     * @return Suite.
-     * @throws Exception In case of error.
+     * @param queryId Query ID.
+     * @param meta Query metadata.
      */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+    public SqlListenerQueryMetadataResult(long queryId, List<SqlListenerColumnMeta> meta){
+        this.queryId = queryId;
+        this.meta = meta;
+    }
 
-        TestSuite suite = IgniteCacheQuerySelfTestSuite4.suite();
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return queryId;
+    }
 
-        return suite;
+    /**
+     * @return Query result rows.
+     */
+    public List<SqlListenerColumnMeta> meta() {
+        return meta;
     }
 }

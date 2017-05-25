@@ -15,14 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.internal.processors.query.h2;
+
+import org.apache.ignite.IgniteCheckedException;
+
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Tests for PRIMARY mode with optimized marshaller.
+ * Special field set iterator based on database result set.
  */
-public class IgfsPrimaryOptimziedMarshallerSelfTest extends IgfsPrimarySelfTest {
+public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * @param data Data.
+     * @throws IgniteCheckedException If failed.
+     */
+    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
+        super(data, false, true);
+    }
+
     /** {@inheritDoc} */
-    @Override protected boolean useOptimizedMarshaller() {
-        return true;
+    @Override protected List<?> createRow() {
+        ArrayList<Object> res = new ArrayList<>(row.length);
+
+        Collections.addAll(res, row);
+
+        return res;
     }
 }

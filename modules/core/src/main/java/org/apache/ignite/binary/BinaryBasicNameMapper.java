@@ -37,7 +37,7 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
     }
 
     /**
-     * @param isSimpleName Whether to use simple name of class or not.
+     * @param isSimpleName Whether to use simple (no package) name of class or not.
      * <p>
      * Defaults to {@link #DFLT_SIMPLE_NAME}.
      */

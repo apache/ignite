@@ -222,7 +222,7 @@ public class CacheQueryExample {
             "where Person.orgId = org.id " +
             "and lower(org.name) = lower(?)";
 
-        SqlQuery qry = new SqlQuery<AffinityKey<Long>, Person>(Person.class, joinSql).
+        SqlQuery qry = new SqlQuery<Long, Person>(Person.class, joinSql).
             setArgs("ApacheIgnite");
 
         // Enable distributed joins for query.

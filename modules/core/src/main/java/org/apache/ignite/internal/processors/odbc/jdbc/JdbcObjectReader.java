@@ -57,6 +57,6 @@ public class JdbcObjectReader extends SqlListenerAbstractObjectReader {
 
     /** {@inheritDoc} */
     @Override protected Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException {
-        throw new BinaryObjectException("JDBC doesn't support not embedded objects.");
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

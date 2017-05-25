@@ -23,24 +23,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
+import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.apache.ignite.internal.processors.odbc.SqlNioListener;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectReader;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectWriter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -59,11 +59,14 @@ public class JdbcTcpIo {
     /** Initial output for query fetch message. */
     private static final int QUERY_FETCH_MSG_SIZE = 13;
 
+    /** Initial output for query fetch message. */
+    private static final int QUERY_META_MSG_SIZE = 9;
+
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Logger. */
-    private final IgniteLogger log;
+    private static final Logger log = Logger.getLogger(JdbcTcpIo.class.getName());
 
     /** Server endpoint address. */
     private final String endpointAddr;
@@ -96,15 +99,13 @@ public class JdbcTcpIo {
      * @param endpointAddr Endpoint.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
-     * @param log Logger to use.
      */
-    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder, IgniteLogger log) {
+    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder= enforceJoinOrder;
-        this.log = log;
     }
 
     /**
@@ -112,7 +113,7 @@ public class JdbcTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws IgniteCheckedException, IOException {
-        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, log);
+        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, null);
 
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());
@@ -134,7 +135,7 @@ public class JdbcTcpIo {
         writer.writeShort(CURRENT_VER.minor());
         writer.writeShort(CURRENT_VER.maintenance());
 
-        writer.writeByte(SqlNioListener.JDBC_CLIENT);
+        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
@@ -157,21 +158,22 @@ public class JdbcTcpIo {
 
         SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
 
-        throw new IgniteCheckedException("Ignite node reject handshake message: " +
-            "the protocol version is not supported by Ignite version: " + ver + (F.isEmpty(err) ? "" : ". " +
-            "The driver protocol version introduced in Ignite version: " + CURRENT_VER.toString() + ". " +
-            "Error message: " + err));
+        throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+            ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
     }
 
     /**
      * @param cache Cache name.
+     * @param fetchSize Fetch size.
+     * @param maxRows Max rows.
      * @param sql SQL statement.
      * @param args Query parameters.
      * @return Execute query results.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public SqlListenerQueryExecuteResult queryExecute(String cache, String sql, Object[] args)
+    public SqlListenerQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
+        String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP),
             null, null);
@@ -179,8 +181,10 @@ public class JdbcTcpIo {
         writer.writeByte((byte)SqlListenerRequest.QRY_EXEC);
 
         writer.writeString(cache);
+        writer.writeInt(fetchSize);
+        writer.writeInt(maxRows);
         writer.writeString(sql);
-        writer.writeInt(args == null ? 0 : args.length);
+        writer.writeInt(args == null ? 0 : args.size());
 
         if (args != null) {
             for (Object arg : args)
@@ -201,30 +205,17 @@ public class JdbcTcpIo {
         }
 
         long qryId = reader.readLong();
-        int metaSize = reader.readInt();
-
-        List<SqlListenerColumnMeta> meta = null;
-
-        if (metaSize > 0) {
-            meta = new ArrayList<>(metaSize);
-
-            for (int i = 0; i < metaSize; ++i) {
-                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
-
-                m.read(reader);
-
-                meta.add(m);
-            }
-        }
-
+        boolean last = reader.readBoolean();
         boolean isQuery = reader.readBoolean();
 
-        return new SqlListenerQueryExecuteResult(qryId, meta, isQuery);
+        List<List<Object>> items = readRows(reader);
+
+        return new SqlListenerQueryExecuteResult(qryId, items, last, isQuery);
     }
 
     /**
      * @param qryId Query ID.
-     * @param fetchSize Fetch page size.
+     * @param fetchSize fetchSize.
      * @return Fetch results.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
@@ -259,12 +250,20 @@ public class JdbcTcpIo {
 
         boolean last = reader.readBoolean();
 
+        List<List<Object>> rows = readRows(reader);
+
+        return new SqlListenerQueryFetchResult(qryId, rows, last);
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return Rows.
+     */
+    private List<List<Object>> readRows(BinaryReaderExImpl reader) {
         int rowsSize = reader.readInt();
 
-        List<List<Object>> rows;
-
         if (rowsSize > 0) {
-            rows = new ArrayList<>(rowsSize);
+            List<List<Object>> rows = new ArrayList<>(rowsSize);
 
             for (int i = 0; i < rowsSize; ++i) {
 
@@ -277,10 +276,72 @@ public class JdbcTcpIo {
 
                 rows.add(col);
             }
-        } else
-            rows = Collections.emptyList();
 
-        return new SqlListenerQueryFetchResult(qryId, rows, last);
+            return rows;
+        } else
+            return Collections.emptyList();
+    }
+
+    /**
+     * @param qryId Query ID.
+     * @return Fetch results.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public SqlListenerQueryMetadataResult queryMeta(Long qryId)
+        throws IOException, IgniteCheckedException {
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_META_MSG_SIZE),
+            null, null);
+
+        writer.writeByte((byte)SqlListenerRequest.QRY_METADATA);
+
+        writer.writeLong(qryId);
+
+        send(writer.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
+
+        byte status = reader.readByte();
+
+        if (status != SqlListenerResponse.STATUS_SUCCESS) {
+            String err = reader.readString();
+
+            throw new IgniteCheckedException("Query execute error: " + err);
+        }
+
+        long respQryId = reader.readLong();
+
+        assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
+            + respQryId + ']';
+
+        return new SqlListenerQueryMetadataResult(qryId, readQueryMeta(reader));
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return Query metadata.
+     */
+    private List<SqlListenerColumnMeta> readQueryMeta(BinaryReaderExImpl reader) {
+        int metaSize = reader.readInt();
+
+        List<SqlListenerColumnMeta> meta;
+
+        if (metaSize > 0) {
+            meta = new ArrayList<>(metaSize);
+
+            for (int i = 0; i < metaSize; ++i) {
+                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
+
+                m.read(reader);
+
+                meta.add(m);
+            }
+        }
+        else
+            meta = Collections.emptyList();
+
+        return meta;
     }
 
     /**
@@ -336,33 +397,36 @@ public class JdbcTcpIo {
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    private  byte[] read() throws IOException, IgniteCheckedException {
-        byte[] sizeBytes = new byte[4];
+    private byte[] read() throws IOException, IgniteCheckedException {
+        byte[] sizeBytes = read(4);
 
-        int readLen = in.read(sizeBytes);
-
-        if (readLen != 4) {
-            close();
-
-            throw new IgniteCheckedException("IO error. Cannot receive the length of message (4 bytes expect) " +
-                "[received = " + readLen + ']');
-        }
-
-        int size  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
-        byte[] msgData = new byte[size];
+        return read(msgSize);
+    }
 
-        readLen = in.read(msgData);
+    /**
+     * @param size Count of bytes to read from stream.
+     * @return Read bytes.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    private byte[] read(int size) throws IOException, IgniteCheckedException {
+        int off = 0;
 
-        if (readLen != size) {
-            close();
+        byte[] data = new byte[size];
 
-            throw new IgniteCheckedException("IO error. Cannot receive massage [received=" + readLen + ", expected="
-                + size + ']');
+        while (off != size) {
+            int res = in.read(data, off, size - off);
+
+            if (res == -1)
+                throw new IgniteCheckedException("Failed to read incoming message (not enough data).");
+
+            off += res;
         }
 
-        return msgData;
+        return data;
     }
 
     /**

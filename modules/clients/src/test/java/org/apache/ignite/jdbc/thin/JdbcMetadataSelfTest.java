@@ -20,26 +20,21 @@ package org.apache.ignite.jdbc.thin;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
@@ -50,12 +45,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metadata tests.
  */
-public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
+public class JdbcMetadataSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/pers";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -66,8 +61,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }
@@ -87,16 +80,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+        super.beforeTestsStarted();
 
         startGridsMultiThreaded(3);
 
@@ -127,7 +111,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testResultSetMetaData() throws Exception {
-        Statement stmt = DriverManager.getConnection(URL).createStatement();
+        Connection conn = DriverManager.getConnection(URL);
+
+        conn.setSchema("pers");
+
+        Statement stmt = conn.createStatement();
 
         ResultSet rs = stmt.executeQuery(
             "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
@@ -159,6 +147,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetTables() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -195,7 +185,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setSchema("pers");
+
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getColumns("", "pers", "Person", "%");
@@ -287,6 +281,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMetadataResultSetClose() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
             int colCnt = tbls.getMetaData().getColumnCount();
@@ -296,7 +292,9 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     tbls.getObject(i + 1);
             }
         }
-        catch (Exception ignored) {
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
             fail();
         }
     }

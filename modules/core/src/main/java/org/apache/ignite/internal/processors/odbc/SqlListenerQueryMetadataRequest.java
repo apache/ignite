@@ -15,24 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.odbc;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheExpiryPolicyTestSuite;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * SQL listener query metadata request.
  */
-public class IgniteBinaryObjectsCacheExpiryPolicyTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+public class SqlListenerQueryMetadataRequest extends SqlListenerRequest {
+    /** Query ID. */
+    private final long queryId;
 
-        return IgniteCacheExpiryPolicyTestSuite.suite();
+    /**
+     * @param queryId Query ID.
+     */
+    public SqlListenerQueryMetadataRequest(long queryId) {
+        super(QRY_METADATA);
+
+        this.queryId = queryId;
+    }
+
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SqlListenerQueryMetadataRequest.class, this);
     }
 }
