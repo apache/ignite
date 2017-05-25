@@ -1465,10 +1465,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res);
             Assert.AreEqual(Enumerable.Range(8, 3), getKeys());
 
-            // Skip/Take.
-            res = queryable.OrderBy(x => x.Key).Skip(1).Take(1).RemoveAll();
-            Assert.AreEqual(1, res);
-            Assert.AreEqual(new[] {8, 10}, getKeys());
+            // Skip/Take are not supported with DELETE.
+            var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).RemoveAll());
+            Assert.AreEqual(
+                "Operator is not supported: Apache.Ignite.Linq.Impl.Dml.RemoveAllResultOperator", nex.Message);
         }
 
         /// <summary>
