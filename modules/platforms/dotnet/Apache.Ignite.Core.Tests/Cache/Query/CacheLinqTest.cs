@@ -1447,15 +1447,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(4, res);
             Assert.AreEqual(Enumerable.Range(7, 4), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
 
+            // Simple join.
+            var qry = queryable
+                .Where(x => x.Key == 7)
+                .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
+
+            res = qry.RemoveAll();
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+
+
             // Complex query with joins.
-            var qry = GetPersonCache()
+            /**qry = GetPersonCache()
                 .AsCacheQueryable()
                 .Where(x => x.Key == 7)
                 .Join(queryable.Where(x => x.Value.Age > 0), p => p.Key, p => p.Key, (p1, p2) => p2);
 
             res = qry.RemoveAll();
             Assert.AreEqual(1, res);
-            Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+            Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());*/
 
             // Skip/Take.
             // TODO
