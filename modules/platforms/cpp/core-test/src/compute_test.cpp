@@ -240,7 +240,7 @@ namespace ignite
 
 IGNITE_EXPORTED_CALL void IgniteModuleInit1(IgniteBindingContext& context)
 {
-    IgniteBinding binding = context.GetBingding();
+    IgniteBinding binding = context.GetBinding();
 
     binding.RegisterComputeFunc<Func1>();
     binding.RegisterComputeFunc<Func2>();

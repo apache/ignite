@@ -46,18 +46,6 @@ namespace ignite
          * Compute c = node.GetCompute();
          * @endcode
          *
-         * The methods are grouped as follows:
-         * - <tt>Apply(...)</tt> methods execute IgniteClosure jobs over nodes
-         *   in the cluster group.
-         * - <tt>Call(...)</tt> methods execute ComputeFunc jobs over nodes in
-         *   the cluster group.
-         * - <tt>Run(...)</tt> methods execute ComputeAction jobs over nodes in
-         *   the cluster group.
-         * - <tt>Broadcast(...)</tt> methods broadcast jobs to all nodes in the
-         *   cluster group.
-         * - <tt>AffinityCall(...)</tt> and <tt>AffinityRun(...)</tt> methods
-         *   collocate jobs with nodes on which a specified key is cached.
-         *
          * @par Load Balancing
          * In all cases other than <tt>Broadcast(...)</tt>, Ignite must select
          * a node for a computation to be executed. The node will be selected
