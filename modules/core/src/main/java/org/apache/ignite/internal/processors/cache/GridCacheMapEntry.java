@@ -169,14 +169,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param cctx Cache context.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     protected GridCacheMapEntry(
         GridCacheContext<?, ?> cctx,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
@@ -186,14 +182,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert key != null;
 
         this.key = key;
-        this.hash = hash;
+        this.hash = key.hashCode();
         this.cctx = cctx;
-
-        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-        synchronized (this) {
-            value(val);
-        }
 
         ver = cctx.versions().next();
 
@@ -3415,7 +3405,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (obsoleteVersionExtras() != null)
                         return true;
 
-                    // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                    // TODO IGNITE-5286: need keep removed entries in heap map, otherwise removes can be lost.
                     if (cctx.deferredDelete() && deletedUnlocked())
                         return false;
 
@@ -3458,7 +3448,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             // Version has changed since entry passed the filter. Do it again.
                             continue;
 
-                        // TODO GG-11241: need keep removed entries in heap map, otherwise removes can be lost.
+                        // TODO IGNITE-5286: need keep removed entries in heap map, otherwise removes can be lost.
                         if (cctx.deferredDelete() && deletedUnlocked())
                             return false;
 

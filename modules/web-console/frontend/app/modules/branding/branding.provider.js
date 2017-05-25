@@ -18,7 +18,7 @@
 export default ['IgniteBranding', [function() {
     let titleSuffix = ' – Apache Ignite Web Console';
 
-    let headerLogo = '/images/ignite-logo.png';
+    let headerLogo = '/images/ignite-logo.svg';
 
     let headerText = 'Management console for Apache Ignite';
 

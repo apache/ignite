@@ -46,7 +46,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -878,46 +877,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Set<K> keySet();
 
     /**
-     * @return Set of keys including internal keys.
-     */
-    public Set<K> keySetx();
-
-    /**
-     * Set of keys for which this node is primary.
-     * This set is dynamic and may change with grid topology changes.
-     * Note that this set will contain mappings for all keys, even if their values are
-     * {@code null} because they were invalidated. You can remove elements from
-     * this set, but you cannot add elements to this set. All removal operation will be
-     * reflected on the cache itself.
-     * <p>
-     * Iterator over this set will not fail if set was concurrently updated
-     * by another thread. This means that iterator may or may not return latest
-     * keys depending on whether they were added before or after current
-     * iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the keys cached on this node.
-     *
-     * @return Primary key set for the current node.
-     */
-    public Set<K> primaryKeySet();
-
-    /**
-     * Collection of values cached on this node. You can remove
-     * elements from this collection, but you cannot add elements to this collection.
-     * All removal operation will be reflected on the cache itself.
-     * <p>
-     * Iterator over this collection will not fail if collection was
-     * concurrently updated by another thread. This means that iterator may or
-     * may not return latest values depending on whether they were added before
-     * or after current iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the values cached on this node.
-     *
-     * @return Collection of cached values.
-     */
-    public Iterable<V> values();
-
-    /**
      * Gets set of all entries cached on this node. You can remove
      * elements from this set, but you cannot add elements to this set.
      * All removal operation will be reflected on the cache itself.
@@ -927,26 +886,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Entries that pass through key filter.
      */
     public Set<Cache.Entry<K, V>> entrySet();
-
-    /**
-     * Gets set containing cache entries that belong to provided partition or {@code null}
-     * if partition is not found locally.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the entries cached on this node.
-     *
-     * @param part Partition.
-     * @return Set containing partition's entries or {@code null} if partition is
-     *      not found locally.
-     */
-    @Nullable public Set<Cache.Entry<K, V>> entrySet(int part);
-
-    /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
-     */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
 
     /**
      * Starts new transaction with the specified concurrency and isolation.

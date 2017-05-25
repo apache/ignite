@@ -731,6 +731,12 @@ namespace Apache.Ignite.Core.Impl
             ResetLostPartitions((IEnumerable<string>) cacheNames);
         }
 
+        /** <inheritdoc /> */
+        public ICollection<IMemoryMetrics> GetMemoryMetrics()
+        {
+            return _prj.GetMemoryMetrics();
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>

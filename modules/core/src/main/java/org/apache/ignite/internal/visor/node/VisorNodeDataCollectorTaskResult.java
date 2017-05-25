@@ -81,6 +81,12 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** Exceptions caught during collecting IGFS from nodes. */
     private Map<UUID, VisorExceptionWrapper> igfssEx = new HashMap<>();
 
+    /** Topology version of latest completed partition exchange from nodes. */
+    private Map<UUID, VisorAffinityTopologyVersion> readyTopVers = new HashMap<>();
+
+    /** Whether pending exchange future exists from nodes. */
+    private Map<UUID, Boolean> pendingExchanges = new HashMap<>();
+
     /**
      * Default constructor.
      */
@@ -103,7 +109,9 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
             cachesEx.isEmpty() &&
             igfss.isEmpty() &&
             igfsEndpoints.isEmpty() &&
-            igfssEx.isEmpty();
+            igfssEx.isEmpty() &&
+            readyTopVers.isEmpty() &&
+            pendingExchanges.isEmpty();
     }
 
     /**
@@ -204,6 +212,20 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         return errCnts;
     }
 
+    /**
+     * @return Topology version of latest completed partition exchange from nodes.
+     */
+    public Map<UUID, VisorAffinityTopologyVersion> getReadyAffinityVersions() {
+        return readyTopVers;
+    }
+
+    /**
+     * @return Whether pending exchange future exists from nodes.
+     */
+    public Map<UUID, Boolean> getPendingExchanges() {
+        return pendingExchanges;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(active);
@@ -219,6 +241,8 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         U.writeMap(out, igfss);
         U.writeMap(out, igfsEndpoints);
         U.writeMap(out, igfssEx);
+        U.writeMap(out, readyTopVers);
+        U.writeMap(out, pendingExchanges);
     }
 
     /** {@inheritDoc} */
@@ -236,6 +260,8 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         igfss = U.readMap(in);
         igfsEndpoints = U.readMap(in);
         igfssEx = U.readMap(in);
+        readyTopVers = U.readMap(in);
+        pendingExchanges = U.readMap(in);
     }
 
     /** {@inheritDoc} */

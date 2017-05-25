@@ -608,7 +608,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 AffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
-                GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
+                GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(
+                    req.futureId(),
+                    cctx.cacheId(),
                     topVer,
                     assignment.assignment());
 

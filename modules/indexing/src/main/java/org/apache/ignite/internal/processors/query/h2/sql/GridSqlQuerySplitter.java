@@ -38,6 +38,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -51,7 +53,6 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -98,11 +99,8 @@ public class GridSqlQuerySplitter {
     /** */
     private int splitId = -1; // The first one will be 0.
 
-    /** */
-    private Set<String> schemas = new HashSet<>();
-
-    /** */
-    private Set<String> tbls = new HashSet<>();
+    /** Query tables. */
+    private Set<QueryTable> tbls = new HashSet<>();
 
     /** */
     private boolean rdcQrySimple;
@@ -233,7 +231,7 @@ public class GridSqlQuerySplitter {
         }
 
         // Setup resulting two step query and return it.
-        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, splitter.schemas, splitter.tbls);
+        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, splitter.tbls);
 
         twoStepQry.reduceQuery(splitter.rdcSqlQry);
 
@@ -1430,7 +1428,7 @@ public class GridSqlQuerySplitter {
         boolean distributedJoins,
         boolean enforceJoinOrder
     ) throws SQLException, IgniteCheckedException {
-        setupConnection(c, distributedJoins, enforceJoinOrder);
+        H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
 
         try (PreparedStatement s = c.prepareStatement(qry)) {
             h2.bindParameters(s, F.asList(params));
@@ -1515,15 +1513,10 @@ public class GridSqlQuerySplitter {
         if (from instanceof GridSqlTable) {
             GridSqlTable tbl = (GridSqlTable)from;
 
-            String schema = tbl.schema();
+            String schemaName = tbl.dataTable().identifier().schema();
+            String tblName = tbl.dataTable().identifier().table();
 
-            boolean addSchema = tbls == null;
-
-            if (tbls != null)
-                addSchema = tbls.add(tbl.dataTable().identifier());
-
-            if (addSchema && schema != null && schemas != null)
-                schemas.add(schema);
+            tbls.add(new QueryTable(schemaName, tblName));
 
             // In case of alias parent we need to replace the alias itself.
             if (!prntAlias)
@@ -2116,7 +2109,7 @@ public class GridSqlQuerySplitter {
         if (right instanceof GridSqlConst) {
             GridSqlConst constant = (GridSqlConst)right;
 
-            return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.spaceName(),
+            return new CacheQueryPartitionInfo(ctx.affinity().partition(tbl.cacheName(),
                 constant.value().getObject()), null, -1);
         }
 
@@ -2124,7 +2117,7 @@ public class GridSqlQuerySplitter {
 
         GridSqlParameter param = (GridSqlParameter) right;
 
-        return new CacheQueryPartitionInfo(-1, tbl.spaceName(), param.index());
+        return new CacheQueryPartitionInfo(-1, tbl.cacheName(), param.index());
     }
 
     /**

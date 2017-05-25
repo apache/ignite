@@ -21,6 +21,7 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
 
         meta(http-equiv='content-type' content='text/html; charset=UTF8')
         meta(http-equiv='content-language' content='en')
+        meta(http-equiv='X-UA-Compatible' content='IE=Edge')
 
         title(ng-bind='$meta.title')
 
@@ -29,7 +30,7 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
         meta(name='keywords' content='{{$meta.keywords}}')
         meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
 
-    body.theme-line.body-overlap.greedy
+    body.theme-line.body-overlap
 
         .splash.splash-max-foreground(hide-on-state-change)
             .splash-wrapper
