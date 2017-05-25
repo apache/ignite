@@ -432,7 +432,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String keyFieldName() {
-        return keyFieldName;
+        return aliases.get(keyFieldName);
     }
 
     /**
@@ -445,6 +445,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String valueFieldName() {
-        return valFieldName;
+        return aliases.get(valFieldName);
     }
 }

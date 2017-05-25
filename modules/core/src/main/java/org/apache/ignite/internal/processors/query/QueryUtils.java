@@ -196,10 +196,8 @@ public class QueryUtils {
         normalEntity.setValueType(entity.getValueType());
         normalEntity.setFields(entity.getFields());
         normalEntity.setKeyFields(entity.getKeyFields());
-
-        // Normalize key/value field names.
-        normalEntity.setKeyFieldName(normalizeObjectName(entity.getKeyFieldName()));
-        normalEntity.setValueFieldName(normalizeObjectName(entity.getValueFieldName()));
+        normalEntity.setKeyFieldName(entity.getKeyFieldName());
+        normalEntity.setValueFieldName(entity.getValueFieldName());
 
         // Normalize table name.
         normalEntity.setTableName(normalizeObjectName(tblName));
