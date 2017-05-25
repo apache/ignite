@@ -1456,6 +1456,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             res = qry.RemoveAll();
             Assert.AreEqual(1, res);
             Assert.AreEqual(Enumerable.Range(8, 3), cache.Select(x => x.Key).OrderBy(x => x).ToArray());
+
+            // Skip/Take.
+            // TODO
         }
 
         /// <summary>
