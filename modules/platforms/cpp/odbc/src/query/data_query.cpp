@@ -170,9 +170,10 @@ namespace ignite
             {
                 const std::string& cacheName = connection.GetCache();
                 int32_t fetchSize = connection.GetConfiguration().GetPageSize();
+                std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
                 QueryExecuteRequest req(cacheName, fetchSize, 0, false, sql, params);
-                QueryExecuteResponse rsp;
+                QueryExecuteResponse rsp(*resultPage);
 
                 try
                 {
@@ -195,6 +196,7 @@ namespace ignite
                 }
 
                 cursor.reset(new Cursor(rsp.GetQueryId()));
+                cursor->UpdateData(resultPage);
 
                 resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 

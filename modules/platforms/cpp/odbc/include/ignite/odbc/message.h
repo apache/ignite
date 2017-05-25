@@ -668,8 +668,15 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param resultPage Where to read first result page.
              */
-            QueryExecuteResponse() : queryId(0), meta()
+            QueryExecuteResponse(ResultPage& resultPage) :
+                queryId(0),
+                isLast(false),
+                isQuery(false),
+                meta(),
+                resultPage(resultPage)
             {
                 // No-op.
             }
@@ -709,14 +716,28 @@ namespace ignite
             {
                 queryId = reader.ReadInt64();
 
+                isLast = reader.ReadBool();
+                isQuery = reader.ReadBool();
+
                 meta::ReadColumnMetaVector(reader, meta);
+
+                resultPage.Read(reader);
             }
 
             /** Query ID. */
             int64_t queryId;
 
+            /** Received data page is the last. */
+            bool isLast;
+
+            /** Is query. */
+            bool isQuery;
+
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
+
+            /** Result page. */
+            ResultPage& resultPage;
         };
 
         /**
