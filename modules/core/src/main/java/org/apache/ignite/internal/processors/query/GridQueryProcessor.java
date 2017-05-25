@@ -1549,7 +1549,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-            idx.store(cacheName, desc.name(), key, partId, val, ver, expirationTime, link);
+            idx.store(cacheName, desc, key, partId, val, ver, expirationTime, link);
         }
         finally {
             busyLock.leaveBusy();

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.util.Map;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -41,6 +41,9 @@ public class H2Schema {
 
     /** */
     private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap8<>();
+
+    /** */
+    private final ConcurrentMap<String, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
 
     /** Cache for deserialized offheap rows. */
     private final CacheLongKeyLIRS<GridH2Row> rowCache;
@@ -99,8 +102,24 @@ public class H2Schema {
     /**
      * @return Tables.
      */
-    public Map<String, H2TableDescriptor> tables() {
-        return tbls;
+    public Collection<H2TableDescriptor> tables() {
+        return tbls.values();
+    }
+
+    /**
+     * @param tblName Table name.
+     * @return Table.
+     */
+    public H2TableDescriptor tableByName(String tblName) {
+        return tbls.get(tblName);
+    }
+
+    /**
+     * @param typeName Type name.
+     * @return Table.
+     */
+    public H2TableDescriptor tableByTypeName(String typeName) {
+        return typeToTbl.get(typeName);
     }
 
     /**
@@ -109,6 +128,9 @@ public class H2Schema {
     public void add(H2TableDescriptor tbl) {
         if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
+
+        if (typeToTbl.putIfAbsent(tbl.typeName(), tbl) != null)
+            throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
     }
 
     /**
@@ -116,6 +138,7 @@ public class H2Schema {
      */
     public void remove(H2TableDescriptor tbl) {
         tbls.remove(tbl.tableName());
+        typeToTbl.remove(tbl.typeName());
     }
 
     /**

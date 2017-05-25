@@ -354,7 +354,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         for (Ignite node : Ignition.allGrids()) {
             IgniteCache<BinaryObject, BinaryObject> nodeCache = node.cache(CACHE_NAME).withKeepBinary();
 
-            SqlQuery qry = new SqlQuery(tableName(ValueClass.class), SQL_SIMPLE_FIELD_1).setArgs(SQL_ARG_1);
+            SqlQuery qry = new SqlQuery(typeName(ValueClass.class), SQL_SIMPLE_FIELD_1).setArgs(SQL_ARG_1);
 
             List<Cache.Entry<BinaryObject, BinaryObject>> res = nodeCache.query(qry).getAll();
 

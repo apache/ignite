@@ -134,8 +134,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
-//        suite.addTest(new TestSuite(SchemaExchangeSelfTest.class)); // TODO: testClientReconnect
-
         suite.addTest(new TestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexServerBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class));
@@ -145,14 +143,14 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 //        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
 
 //        suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedTest.class);
-
+//
 //        suite.addTestSuite(IgniteCacheMergeSqlQuerySelfTest.class);
 //        suite.addTestSuite(IgniteCacheInsertSqlQuerySelfTest.class);
-
+//
 //        suite.addTestSuite(IgniteCacheDistributedQueryCancelSelfTest.class);
-
+//
 //        suite.addTestSuite(CacheQueryNewClientSelfTest.class);
-
+//
 //        suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
 
         return suite;

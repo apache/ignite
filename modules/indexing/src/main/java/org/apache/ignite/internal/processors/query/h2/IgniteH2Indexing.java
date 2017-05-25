@@ -559,14 +559,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void store(String cacheName,
-        String typeName,
+        GridQueryTypeDescriptor type,
         KeyCacheObject k,
         int partId,
         CacheObject v,
         GridCacheVersion ver,
         long expirationTime,
         long link) throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(typeName, cacheName);
+        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
 
         if (tbl == null)
             return; // Type was rejected.
@@ -703,7 +703,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor desc = (schema != null ? schema.tables().get(tblName) : null);
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
 
         if (desc == null)
             throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
@@ -1782,7 +1782,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (schema == null)
             return null;
 
-        return schema.tables().get(type);
+        return schema.tableByTypeName(type);
     }
 
     /**
@@ -2259,7 +2259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
             }
 
-            for (H2TableDescriptor tblDesc : rmv.tables().values())
+            for (H2TableDescriptor tblDesc : rmv.tables())
                 for (Index idx : tblDesc.table().getIndexes())
                     idx.close(null);
 

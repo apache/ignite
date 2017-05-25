@@ -269,7 +269,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static void assertNoIndex(String cacheName, String tblName, String idxName) {
         for (Ignite node : Ignition.allGrids())
-            assertNoIndex((IgniteEx)node, cacheName, tblName, idxName);
+            assertNoIndex(node, cacheName, tblName, idxName);
     }
 
     /**
@@ -361,8 +361,18 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param cls Class.
      * @return Table name.
      */
+    protected static String typeName(Class cls) {
+        return cls.getSimpleName();
+    }
+
+    /**
+     * Get table name for class.
+     *
+     * @param cls Class.
+     * @return Table name.
+     */
     protected static String tableName(Class cls) {
-        return QueryUtils.normalizeObjectName(cls.getSimpleName());
+        return QueryUtils.normalizeObjectName(typeName(cls));
     }
 
     /**

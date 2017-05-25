@@ -107,11 +107,14 @@ public class QueryUtils {
     public static String tableName(QueryEntity entity) {
         String res = entity.getTableName();
 
-        if (res == null)
-            res = typeName(entity.findValueType());
+        if (res == null) {
+            String valTyp = entity.findValueType();
 
-        if (res == null)
-            throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
+            if (valTyp == null)
+                throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
+
+            res = typeName(entity.findValueType());
+        }
 
         return res;
     }
@@ -181,6 +184,8 @@ public class QueryUtils {
             for (QueryIndex idx : entity.getIndexes())
                 idx.setName(indexName(entity, idx));
 
+            validateQueryEntity(entity);
+
             return entity;
         }
 
@@ -231,6 +236,8 @@ public class QueryUtils {
         }
 
         normalEntity.setIndexes(normalIdxs);
+
+        validateQueryEntity(normalEntity);
 
         return normalEntity;
     }
@@ -974,45 +981,34 @@ public class QueryUtils {
     }
 
     /**
-     * Prepare cache configuration.
+     * Validate query entity.
      *
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException If failed.
+     * @param entity Entity.
      */
-    @SuppressWarnings("unchecked")
-    public static void validateCacheConfiguration(CacheConfiguration ccfg) throws IgniteCheckedException {
-        assert ccfg != null;
+    private static void validateQueryEntity(QueryEntity entity) {
+        if (F.isEmpty(entity.findValueType()))
+            throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
 
-        Collection<QueryEntity> entities = ccfg.getQueryEntities();
+        Collection<QueryIndex> idxs = entity.getIndexes();
 
-        if (!F.isEmpty(entities)) {
-            for (QueryEntity entity : entities) {
-                if (F.isEmpty(entity.findValueType()))
-                    throw new IgniteCheckedException("Value type cannot be null or empty [cacheName=" +
-                        ccfg.getName() + ", queryEntity=" + entity + ']');
+        if (!F.isEmpty(idxs)) {
+            Set<String> idxNames = new HashSet<>();
 
-                Collection<QueryIndex> idxs = entity.getIndexes();
+            for (QueryIndex idx : idxs) {
+                String idxName = idx.getName();
 
-                if (!F.isEmpty(idxs)) {
-                    Set<String> idxNames = new HashSet<>();
+                if (idxName == null)
+                    idxName = indexName(entity, idx);
 
-                    for (QueryIndex idx : idxs) {
-                        String idxName = idx.getName();
+                assert !F.isEmpty(idxName);
 
-                        if (idxName == null)
-                            idxName = indexName(entity, idx);
+                if (!idxNames.add(idxName))
+                    throw new IgniteException("Duplicate index name [queryEntity=" + entity +
+                        ", queryIdx=" + idx + ']');
 
-                        assert !F.isEmpty(idxName);
-
-                        if (!idxNames.add(idxName))
-                            throw new IgniteCheckedException("Duplicate index name [cacheName=" + ccfg.getName() +
-                                ", queryEntity=" + entity + ", queryIdx=" + idx + ']');
-
-                        if (idx.getIndexType() == null)
-                            throw new IgniteCheckedException("Index type is not set [cacheName=" + ccfg.getName() +
-                                ", queryEntity=" + entity + ", queryIdx=" + idx + ']');
-                    }
-                }
+                if (idx.getIndexType() == null)
+                    throw new IgniteException("Index type is not set [queryEntity=" + entity +
+                        ", queryIdx=" + idx + ']');
             }
         }
     }

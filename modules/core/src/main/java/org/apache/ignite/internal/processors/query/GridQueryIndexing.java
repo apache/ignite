@@ -208,14 +208,14 @@ public interface GridQueryIndexing {
      * the key should be removed from indexes other than one being updated.
      *
      * @param cacheName Cache name.
-     * @param typeName Type name.
+     * @param type Type descriptor.
      * @param key Key.
      * @param val Value.
      * @param ver Version.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(String cacheName, String typeName, KeyCacheObject key, int partId, CacheObject val,
+    public void store(String cacheName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId, CacheObject val,
         GridCacheVersion ver, long expirationTime, long link) throws IgniteCheckedException;
 
     /**

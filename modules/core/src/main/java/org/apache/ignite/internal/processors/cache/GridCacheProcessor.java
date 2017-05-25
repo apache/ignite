@@ -515,8 +515,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getEvictionPolicy() != null && !cc.isOnheapCacheEnabled())
             throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
                 + U.maskName(cc.getName()) + "]");
-
-        QueryUtils.validateCacheConfiguration(cc);
     }
 
     /**
