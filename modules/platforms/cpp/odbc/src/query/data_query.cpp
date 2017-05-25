@@ -26,9 +26,8 @@ namespace ignite
     {
         namespace query
         {
-            DataQuery::DataQuery(diagnostic::Diagnosable& diag,
-                Connection& connection, const std::string& sql,
-                const app::ParameterBindingMap& params) :
+            DataQuery::DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
+                const std::string& sql, const app::ParameterBindingMap& params) :
                 Query(diag, QueryType::DATA),
                 connection(connection),
                 sql(sql),
@@ -170,8 +169,9 @@ namespace ignite
             SqlResult::Type DataQuery::MakeRequestExecute()
             {
                 const std::string& cacheName = connection.GetCache();
+                int32_t fetchSize = connection.GetConfiguration().GetPageSize();
 
-                QueryExecuteRequest req(cacheName, sql, params);
+                QueryExecuteRequest req(cacheName, fetchSize, 0, false, sql, params);
                 QueryExecuteResponse rsp;
 
                 try

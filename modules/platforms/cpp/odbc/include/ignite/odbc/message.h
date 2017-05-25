@@ -140,12 +140,18 @@ namespace ignite
              * Constructor.
              *
              * @param cache Cache name.
+             * @param fetchSize Fetch page size.
+             * @param maxRows Max number of rows that should be returned by query.
+             * @param includeMeta Include metadata in response.
              * @param sql SQL query.
              * @param params Query arguments.
              */
-            QueryExecuteRequest(const std::string& cache, const std::string& sql,
-                const app::ParameterBindingMap& params) :
+            QueryExecuteRequest(const std::string& cache, int32_t fetchSize, int32_t maxRows,
+                bool includeMeta, const std::string& sql, const app::ParameterBindingMap& params) :
                 cache(cache),
+                fetchSize(fetchSize),
+                maxRows(maxRows),
+                includeMeta(includeMeta),
                 sql(sql),
                 params(params)
             {
@@ -192,6 +198,15 @@ namespace ignite
         private:
             /** Cache name. */
             std::string cache;
+
+            /** Fetch page size. */
+            int32_t fetchSize;
+
+            /** Max number of rows that should be returned by query. */
+            int32_t maxRows;
+
+            /** Include metadata in response. */
+            bool includeMeta;
 
             /** SQL query. */
             std::string sql;
