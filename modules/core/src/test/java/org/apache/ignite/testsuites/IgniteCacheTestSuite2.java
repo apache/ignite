@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheLockReleaseN
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionNotLoadedEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionedNearDisabledTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTransformEventSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
@@ -259,6 +260,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CacheConcurrentReadThroughTest.class));
 
         suite.addTest(new TestSuite(GridNearCacheStoreUpdateTest.class));
+
+        suite.addTest(new TestSuite(IgniteCache150ClientsTest.class));
 
         return suite;
     }
