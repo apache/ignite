@@ -18,13 +18,17 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,6 +62,29 @@ public interface IgniteEx extends Ignite {
      * @return Configured cache instances that satisfy all provided predicates.
      */
     public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p);
+
+    /**
+     * Gets existing cache with the given name or creates new one with the given configuration.
+     * <p>
+     * If a cache with the same name already exists, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return Tuple [Existing or newly created cache; {@code true} if cache was newly crated, {@code false} otherwise]
+     * @throws CacheException If error occurs.
+     */
+    public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg)
+        throws CacheException;
+
+    /**
+     * Stops dynamically started cache.
+     *
+     * @param cacheName Cache name to stop.
+     * @return {@code true} if cache has been stopped as the result of this call, {@code false} otherwise.
+     * @throws CacheException If error occurs.
+     */
+    public boolean destroyCache0(String cacheName) throws CacheException;
 
     /**
      * Checks if the event type is user-recordable.
