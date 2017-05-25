@@ -93,7 +93,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected long nextPartCounter() {
+    @Override protected long nextPartitionCounter() {
         return locPart.nextUpdateCounter();
     }
 

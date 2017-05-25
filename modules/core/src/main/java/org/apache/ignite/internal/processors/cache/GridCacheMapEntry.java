@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,7 +75,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
@@ -984,7 +982,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
                 deletedUnlocked(false);
 
-            updateCntr0 = nextPartCounter(topVer);
+            updateCntr0 = nextPartitionCounter();
 
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
@@ -1163,7 +1161,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            updateCntr0 = nextPartCounter(topVer);
+            updateCntr0 = nextPartitionCounter();
 
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
@@ -1565,7 +1563,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 updateMetrics(op, metrics);
 
             if (lsnrCol != null) {
-                long updateCntr = nextPartCounter(AffinityTopologyVersion.NONE);
+                long updateCntr = nextPartitionCounter();
 
                 cctx.continuousQueries().onEntryUpdated(
                     lsnrCol,
@@ -1725,7 +1723,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         else
                             evtVal = (CacheObject)writeObj;
 
-                        long updateCntr0 = nextPartCounter();
+                        long updateCntr0 = nextPartitionCounter();
 
                         if (updateCntr != null)
                             updateCntr0 = updateCntr;
@@ -2615,7 +2613,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 long updateCntr = 0;
 
                 if (!preload)
-                    updateCntr = nextPartCounter(topVer);
+                    updateCntr = nextPartitionCounter();
 
                 if (walEnabled) {
                     cctx.shared().wal().log(new DataRecord(new DataEntry(
@@ -2673,29 +2671,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @return Update counter.
      */
-    protected long nextPartCounter() {
+    protected long nextPartitionCounter() {
         return 0;
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @return Update counter.
-     */
-    private long nextPartCounter(AffinityTopologyVersion topVer) {
-        long updateCntr;
-
-        if (!cctx.isLocal() && !isNear()) {
-            GridDhtLocalPartition locPart = cctx.topology().localPartition(partition(), topVer, false);
-
-            if (locPart == null)
-                return 0;
-
-            updateCntr = locPart.nextUpdateCounter();
-        }
-        else
-            updateCntr = 0;
-
-        return updateCntr;
     }
 
     /** {@inheritDoc} */
@@ -4411,7 +4388,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     ", locNodeId=" + cctx.localNodeId() + ']';
             }
 
-            long updateCntr0 = entry.nextPartCounter();
+            long updateCntr0 = entry.nextPartitionCounter();
 
             if (updateCntr != null)
                 updateCntr0 = updateCntr;
@@ -4495,7 +4472,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // Must persist inside synchronization in non-tx mode.
                 cctx.store().remove(null, entry.key);
 
-            long updateCntr0 = entry.nextPartCounter();
+            long updateCntr0 = entry.nextPartitionCounter();
 
             if (updateCntr != null)
                 updateCntr0 = updateCntr;

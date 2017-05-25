@@ -922,7 +922,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Next update index.
      */
     public long nextUpdateCounter() {
-        return store.nextUpdateCounter();
+        long nextCntr = store.nextUpdateCounter();
+
+//        if (grp.sharedGroup())
+//            grp.onPartitionCounterUpdate(cacheId, nextCntr);
+
+        return nextCntr;
     }
 
     /**
