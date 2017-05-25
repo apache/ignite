@@ -622,6 +622,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc == null || loc.state() == EVICTED) {
+            if (loc != null) {
+                try {
+                    loc.rent(false).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
             locParts.set(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
             if (cctx.shared().pageStore() != null) {
@@ -675,6 +684,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             boolean belongs = cctx.affinity().partitionLocalNode(p, topVer);
 
             if (loc != null && state == EVICTED) {
+                try {
+                    loc.rent(false).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
                 locParts.set(p, loc = null);
 
                 if (!treatAllPartAsLoc && !belongs)

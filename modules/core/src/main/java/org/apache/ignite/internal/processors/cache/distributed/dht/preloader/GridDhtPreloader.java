@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -340,6 +341,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Error while clearing outdated local partition", e);
+
+                                throw new IgniteException(e);
                             }
 
                             part = top.localPartition(p, topVer, true);
