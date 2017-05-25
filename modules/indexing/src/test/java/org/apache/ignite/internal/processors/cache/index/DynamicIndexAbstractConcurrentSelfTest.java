@@ -169,7 +169,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Test migration from normal server to non-affinity server.
         blockIndexing(srv2Id);
 
-        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        QueryIndex idx2 = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
         IgniteInternalFuture<?> idxFut2 =
             queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx2, false);
@@ -183,7 +183,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         idxFut2.get();
 
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_1);
         assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_ARG_1);
     }
@@ -205,7 +205,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         blockIndexing(srv1);
 
         QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
-        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        QueryIndex idx2 = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
         IgniteInternalFuture<?> idxFut1 =
             queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx1, false);
@@ -227,7 +227,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         idxFut2.get();
 
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
         Thread.sleep(100);
 
@@ -676,11 +676,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         // Update existing index.
-        QueryIndex idx = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        QueryIndex idx = index(IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
 
         queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false).get();
 
-        assertIndex(cli, true, CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndex(cli, true, CACHE_NAME, TBL_NAME, IDX_NAME_2, field(aliasUnescaped(FIELD_NAME_2)));
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
 
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
@@ -688,13 +688,13 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                 if (!restartCache)
                     queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_2, false).get();
 
-                final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+                final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1), field(aliasUnescaped(FIELD_NAME_2)));
 
                 queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false);
             }
         });
 
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(FIELD_NAME_1), field(aliasUnescaped(FIELD_NAME_2)));
         assertIndexUsed(IDX_NAME_2, SQL_COMPOSITE, SQL_ARG_1, SQL_ARG_2);
     }
 
@@ -1026,6 +1026,16 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                 }
             }
         }
+    }
+
+    /**
+     * Get unescaped field alias.
+     *
+     * @param field Field.
+     * @return Alias.
+     */
+    private static String aliasUnescaped(String field) {
+        return alias(field).toUpperCase();
     }
 
     /**
