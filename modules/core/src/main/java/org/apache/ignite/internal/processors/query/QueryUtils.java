@@ -235,8 +235,9 @@ public class QueryUtils {
         if (res == null)
             res = cacheName;
 
-        if (!escape)
-            res = normalizeObjectName(res);
+        // TODO: Uncomment, control through system property.
+//        if (!escape)
+//            res = normalizeObjectName(res);
 
         return res;
     }
