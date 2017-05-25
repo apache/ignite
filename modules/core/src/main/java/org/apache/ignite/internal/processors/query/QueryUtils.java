@@ -256,9 +256,8 @@ public class QueryUtils {
         if (res == null)
             res = cacheName;
 
-        // TODO: Uncomment, control through system property.
-//        if (!escape)
-//            res = normalizeObjectName(res);
+        if (!escape)
+            res = normalizeObjectName(res);
 
         return res;
     }
@@ -306,9 +305,6 @@ public class QueryUtils {
      */
     public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
         List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
-        // TODO: Remove this line
-//        qryEntity = normalizeQueryEntity(qryEntity, escape);
-
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
