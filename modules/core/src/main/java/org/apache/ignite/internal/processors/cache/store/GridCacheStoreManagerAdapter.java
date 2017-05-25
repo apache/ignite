@@ -332,7 +332,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             if (log.isDebugEnabled())
                 log.debug(S.toString("Loaded value from store",
-                    "key", key, false,
+                    "key", key, true,
                     "val", val, true));
 
             if (convert) {
