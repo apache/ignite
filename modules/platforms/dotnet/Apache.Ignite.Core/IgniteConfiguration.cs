@@ -989,6 +989,8 @@ namespace Apache.Ignite.Core
         /// in <see cref="AppDomain"/> on remote nodes. With this option enabled,
         /// Ignite will attempt to send the assembly to remote nodes and load it there automatically.
         /// </summary>
+        // TODO: Enum
+        // TODO: Move to Binary configuration?
         public bool PeerAssemblyLoadingEnabled { get; set; }
     }
 }

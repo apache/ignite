@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary.Deployment
+namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>

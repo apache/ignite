@@ -23,11 +23,11 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Impl.Binary.Deployment;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Binary.Structure;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Deployment;
 
     /// <summary>
     /// Binary writer implementation.
@@ -1447,6 +1447,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets or sets a value indicating whether all user objects
         /// should be wrapped into <see cref="PeerLoadingObjectHolder"/>.
         /// </summary>
+        // TODO: Abstract away from peer loading, creare a base wrapper class.
         internal bool EnablePeerDeployment { get; set; }
 
         /// <summary>

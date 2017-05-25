@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary.Deployment
+namespace Apache.Ignite.Core.Impl.Deployment
 {
+    using Apache.Ignite.Core.Impl.Binary;
+
     /// <summary>
     /// Reader and Writer extensions for peer deployment.
     /// </summary>

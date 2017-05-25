@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary.Deployment
+namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Holds an object which can have it's assembly automatically loaded on remote nodes.

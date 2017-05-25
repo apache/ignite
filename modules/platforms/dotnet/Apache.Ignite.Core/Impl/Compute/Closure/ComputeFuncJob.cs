@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.Deployment;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>

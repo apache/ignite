@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary.Deployment
+namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
