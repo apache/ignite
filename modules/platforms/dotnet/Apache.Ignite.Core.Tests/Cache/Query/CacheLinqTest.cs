@@ -1458,9 +1458,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(Enumerable.Range(8, 3), getKeys());
 
             // Row number limit.
-            res = queryable.OrderBy(x => x.Key).Take(2).RemoveAll();
+            res = queryable.Take(2).RemoveAll();
             Assert.AreEqual(2, res);
-            Assert.AreEqual(10, getKeys().Single());
+            Assert.AreEqual(1, getKeys().Length);
 
             // Unconditional.
             queryable.RemoveAll();
