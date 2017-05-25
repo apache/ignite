@@ -17,88 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.HashSet;
-import java.util.Set;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.ClusterGroupSelfTest;
-import org.apache.ignite.internal.GridReleaseTypeSelfTest;
-import org.apache.ignite.internal.GridVersionSelfTest;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCountSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingErrorTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNearErrorTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
-import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
-import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
-import org.apache.ignite.internal.util.GridHandleTableSelfTest;
-import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
-import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
-import org.apache.ignite.internal.util.nio.GridNioSelfTest;
-import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
-import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
-import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest;
-import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
-import org.apache.ignite.messaging.GridMessagingSelfTest;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  * Basic test suite.
+ * May be removed soon as all tests were moved to {@link IgniteBasicTestSuite}
  */
+@Deprecated
 public class IgniteBinaryBasicTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        TestSuite suite = new TestSuite("GridGain Binary Basic Test Suite");
-
-        Set<Class> ignoredTests = new HashSet<>();
-
-        // Tests that are not ready to be used with PortableMarshaller
-        ignoredTests.add(GridJdkMarshallerSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerEnumSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerTest.class);
-        ignoredTests.add(OptimizedObjectStreamSelfTest.class);
-        ignoredTests.add(GridUnsafeDataOutputArraySizingSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerNodeFailoverTest.class);
-        ignoredTests.add(OptimizedMarshallerSerialPersistentFieldsSelfTest.class);
-        ignoredTests.add(GridNioSslSelfTest.class);
-        ignoredTests.add(GridNioSelfTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingErrorTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingTxErrorTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        ignoredTests.add(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        ignoredTests.add(GridReleaseTypeSelfTest.class);
-        ignoredTests.add(IgniteUtilsSelfTest.class);
-        ignoredTests.add(ClusterGroupSelfTest.class);
-        ignoredTests.add(GridMessagingNoPeerClassLoadingSelfTest.class);
-        ignoredTests.add(GridMessagingSelfTest.class);
-        ignoredTests.add(GridVersionSelfTest.class);
-        ignoredTests.add(GridDeploymentMessageCountSelfTest.class);
-        ignoredTests.add(DynamicProxySerializationMultiJvmSelfTest.class);
-        ignoredTests.add(GridHandleTableSelfTest.class);
-        ignoredTests.add(OptimizedMarshallerPooledSelfTest.class);
-
-        // TODO: check and delete if pass.
-        ignoredTests.add(IgniteDaemonNodeMarshallerCacheTest.class);
-
-        suite.addTest(IgniteBasicTestSuite.suite(ignoredTests));
-
-        suite.addTestSuite(IgniteMarshallerCacheClassNameConflictTest.class);
-        suite.addTestSuite(IgniteMarshallerCacheClientRequestsMappingOnMissTest.class);
-
-        return suite;
+        return new TestSuite("GridGain Binary Basic Test Suite: migrated to Ignite Basic Test Suite");
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +48,6 @@ import org.h2.command.dml.SelectUnion;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -1413,7 +1413,7 @@ public class GridSqlQuerySplitter {
         boolean distributedJoins,
         boolean enforceJoinOrder
     ) throws SQLException, IgniteCheckedException {
-        setupConnection(c, distributedJoins, enforceJoinOrder);
+        H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
 
         try (PreparedStatement s = c.prepareStatement(qry)) {
             h2.bindParameters(s, F.asList(params));

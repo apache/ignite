@@ -218,13 +218,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @return Use optimized marshaller flag.
-     */
-    protected boolean useOptimizedMarshaller() {
-        return false;
-    }
-
-    /**
      * @return Whether append is supported.
      */
     protected boolean appendSupported() {
@@ -385,9 +378,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
-
-        if (useOptimizedMarshaller())
-            cfg.setMarshaller(new OptimizedMarshaller());
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 
