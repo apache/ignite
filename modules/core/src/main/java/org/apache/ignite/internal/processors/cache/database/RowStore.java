@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 
 /**
@@ -29,6 +30,9 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 public class RowStore {
     /** */
     private final FreeList freeList;
+
+    /** */
+    private final GridCacheSharedContext ctx;
 
     /** */
     protected final PageMemory pageMem;
@@ -46,6 +50,7 @@ public class RowStore {
 
         this.freeList = freeList;
 
+        ctx = grp.shared();
         coctx = grp.cacheObjectContext();
         pageMem = grp.memoryPolicy().pageMemory();
     }

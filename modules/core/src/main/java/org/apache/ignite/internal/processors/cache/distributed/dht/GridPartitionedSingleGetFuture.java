@@ -494,13 +494,13 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 if (skipVals)
                     setSkipValueResult(true, verVal.version());
                 else
-                    setResult(verVal.value() , verVal.version());
+                    setResult(verVal.value(), verVal.version());
             }
             else {
                 if (skipVals)
                     setSkipValueResult(false, null);
                 else
-                    setResult(null , null);
+                    setResult(null, null);
             }
         }
         else {

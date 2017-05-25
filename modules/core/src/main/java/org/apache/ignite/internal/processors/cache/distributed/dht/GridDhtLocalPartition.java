@@ -623,11 +623,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 if (update)
                     try {
-                        // TODO IGNITE-5075.
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                     }
                     catch (IgniteCheckedException e) {
-                        log.error("Error while writing to log", e);
+                        U.error(log, "Error while writing to log", e);
                     }
 
                 return update;

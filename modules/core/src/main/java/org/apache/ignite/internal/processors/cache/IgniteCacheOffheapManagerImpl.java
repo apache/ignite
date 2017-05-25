@@ -92,7 +92,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected IgniteLogger log;
 
     /** */
-    // TODO GG-11208 need restore size after restart.
     private CacheDataStore locCacheDataStore;
 
     /** */
@@ -1182,8 +1181,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (oldRow != null) {
                     qryMgr.store(key,
                         partId,
-                        oldRow.value(), oldRow.version(),
-                        newRow.value(), newRow.version(),
+                        oldRow.value(),
+                        oldRow.version(),
+                        newRow.value(),
+                        newRow.version(),
                         expireTime,
                         newRow.link());
                 }
@@ -1191,7 +1192,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     qryMgr.store(key,
                         partId,
                         null, null,
-                        newRow.value(), newRow.version(),
+                        newRow.value(),
+                        newRow.version(),
                         expireTime,
                         newRow.link());
                 }

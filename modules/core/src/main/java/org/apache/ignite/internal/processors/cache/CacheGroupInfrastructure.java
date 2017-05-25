@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -625,6 +626,20 @@ public class CacheGroupInfrastructure {
     }
 
     /**
+     * @return IDs of caches in this group.
+     */
+    public Set<Integer> cacheIds() {
+        List<GridCacheContext> caches = this.caches;
+
+        Set<Integer> ids = U.newHashSet(caches.size());
+
+        for (int i = 0; i < caches.size(); i++)
+            ids.add(caches.get(i).cacheId());
+
+        return ids;
+    }
+
+    /**
      * @return {@code True} if group contains caches.
      */
     boolean hasCaches() {
@@ -692,7 +707,6 @@ public class CacheGroupInfrastructure {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        // TODO IGNITE-5075 get from plugin.
         offheapMgr = new IgniteCacheOffheapManagerImpl();
 
         offheapMgr.start(ctx, this);
