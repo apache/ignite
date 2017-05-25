@@ -44,7 +44,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -133,12 +132,12 @@ public class IgniteWalRecoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         if (walSegmentSize != 0)
             pCfg.setWalSegmentSize(walSegmentSize);
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         cfg.setMarshaller(null);
 

@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.PersistenceConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE;
+import static org.apache.ignite.configuration.PersistentStoreConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE;
 
 /**
  *
@@ -65,8 +65,8 @@ public class IgnitePersistentStoreWalTlbSelfTest extends GridCommonAbstractTest 
 
         cfg.setMemoryConfiguration(memCfg);
 
-        cfg.setPersistenceConfiguration(
-            new PersistenceConfiguration()
+        cfg.setPersistentStoreConfiguration(
+            new PersistentStoreConfiguration()
                 .setCheckpointPageBufferSize(DFLT_CHECKPOINT_PAGE_BUFFER_SIZE + 1)
         );
 

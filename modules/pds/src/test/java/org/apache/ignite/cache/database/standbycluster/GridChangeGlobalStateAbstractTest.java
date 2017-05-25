@@ -26,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -330,13 +330,13 @@ public abstract class GridChangeGlobalStateAbstractTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
-        pCfg.setPersistenceStorePath(testName() + "/db");
+        pCfg.setPersistentStorePath(testName() + "/db");
         pCfg.setWalArchivePath(testName() + "/db/wal/archive");
         pCfg.setWalStorePath(testName() + "/db/wal");
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         final MemoryConfiguration memCfg = new MemoryConfiguration();
 

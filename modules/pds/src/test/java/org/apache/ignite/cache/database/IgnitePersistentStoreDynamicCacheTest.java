@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
@@ -81,7 +81,7 @@ public class IgnitePersistentStoreDynamicCacheTest extends IgniteDbDynamicCacheS
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
+        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
 
         if ("client".equals(gridName))
             cfg.setClientMode(true);

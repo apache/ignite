@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -97,11 +97,11 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         pCfg.setCheckpointFrequency(500);
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 

@@ -40,7 +40,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -111,14 +111,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         pCfg.setWalHistorySize(WAL_HIST_SIZE);
 
         if (checkpointFreq != null)
             pCfg.setCheckpointFrequency(checkpointFreq);
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         cfg.setMarshaller(null);
 

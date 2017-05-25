@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,7 +81,7 @@ public class IgnitePersistentStoreContinuousRestartSelfTest extends GridCommonAb
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistenceConfiguration(new PersistenceConfiguration());
+        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
 
         return cfg;
     }

@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
@@ -63,13 +63,13 @@ public class IgniteNoActualWalHistorySelfTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         pCfg.setWalSegmentSize(4 * 1024 * 1024);
         pCfg.setWalHistorySize(2);
         pCfg.setWalSegments(10);
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         cfg.setMarshaller(null);
 

@@ -19,9 +19,9 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 
 /**
- * Configures persistence module of Ignite node.
+ * Configures Apache Ignite Persistent store.
  */
-public class PersistenceConfiguration implements Serializable {
+public class PersistentStoreConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +48,7 @@ public class PersistenceConfiguration implements Serializable {
     private static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** */
-    private String persistenceStorePath;
+    private String persistenteStorePath;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -80,15 +80,15 @@ public class PersistenceConfiguration implements Serializable {
     /**
      *
      */
-    public String getPersistenceStorePath() {
-        return persistenceStorePath;
+    public String getPersistentStorePath() {
+        return persistenteStorePath;
     }
 
     /**
      * @param persistenceStorePath Persistence store path.
      */
-    public PersistenceConfiguration setPersistenceStorePath(String persistenceStorePath) {
-        this.persistenceStorePath = persistenceStorePath;
+    public PersistentStoreConfiguration setPersistentStorePath(String persistenceStorePath) {
+        this.persistenteStorePath = persistenceStorePath;
 
         return this;
     }
@@ -109,7 +109,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param checkpointFreq Checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setCheckpointFrequency(long checkpointFreq) {
+    public PersistentStoreConfiguration setCheckpointFrequency(long checkpointFreq) {
         this.checkpointFreq = checkpointFreq;
 
         return this;
@@ -130,7 +130,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param lockWaitTime Lock wait time.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setLockWaitTime(int lockWaitTime) {
+    public PersistentStoreConfiguration setLockWaitTime(int lockWaitTime) {
         this.lockWaitTime = lockWaitTime;
 
         return this;
@@ -155,7 +155,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param checkpointPageBufSize Checkpoint page buffer size.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
+    public PersistentStoreConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
         this.checkpointPageBufSize = checkpointPageBufSize;
 
         return this;
@@ -178,7 +178,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param checkpointThreads Number of checkpoint threads.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration  setCheckpointThreads(int checkpointThreads) {
+    public PersistentStoreConfiguration setCheckpointThreads(int checkpointThreads) {
         this.checkpointThreads = checkpointThreads;
 
         return this;
@@ -199,7 +199,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param walHistSize Number of WAL segments to keep after the checkpoint is finished.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setWalHistorySize(int walHistSize) {
+    public PersistentStoreConfiguration setWalHistorySize(int walHistSize) {
         this.walHistSize = walHistSize;
 
         return this;
@@ -221,7 +221,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param walSegments Number of work WAL segments.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setWalSegments(int walSegments) {
+    public PersistentStoreConfiguration setWalSegments(int walSegments) {
         this.walSegments = walSegments;
 
         return this;
@@ -238,7 +238,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param walSegmentSize WAL segment size.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setWalSegmentSize(int walSegmentSize) {
+    public PersistentStoreConfiguration setWalSegmentSize(int walSegmentSize) {
         this.walSegmentSize = walSegmentSize;
 
         return this;
@@ -260,7 +260,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param walStorePath Write-ahead log persistence path, absolute or relative to Ignite work directory.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setWalStorePath(String walStorePath) {
+    public PersistentStoreConfiguration setWalStorePath(String walStorePath) {
         this.walStorePath = walStorePath;
 
         return this;
@@ -281,7 +281,7 @@ public class PersistenceConfiguration implements Serializable {
      * @param walArchivePath WAL archive directory.
      * @return {@code this} for chaining.
      */
-    public PersistenceConfiguration setWalArchivePath(String walArchivePath) {
+    public PersistentStoreConfiguration setWalArchivePath(String walArchivePath) {
         this.walArchivePath = walArchivePath;
 
         return this;
