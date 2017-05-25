@@ -263,7 +263,7 @@ public class QueryUtils {
      * @param str String.
      * @return Escaped string.
      */
-    private static String normalizeObjectName(String str) {
+    public static String normalizeObjectName(String str) {
         assert str != null;
 
         String res = str.replace('.', '_').replace('$', '_');

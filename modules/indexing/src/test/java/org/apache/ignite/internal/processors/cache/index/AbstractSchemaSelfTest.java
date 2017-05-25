@@ -368,7 +368,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @return Table name.
      */
     protected static String tableName(Class cls) {
-        return cls.getSimpleName();
+        return QueryUtils.normalizeObjectName(cls.getSimpleName());
     }
 
     /**
