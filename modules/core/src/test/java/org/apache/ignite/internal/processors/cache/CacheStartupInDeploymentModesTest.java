@@ -73,26 +73,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
-    public void testFailedInIsolatedMode() throws Exception {
-        deploymentMode = DeploymentMode.ISOLATED;
-        marshaller = new OptimizedMarshaller();
-
-        doCheckFailed();
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    public void testFailedInPrivateMode() throws Exception {
-        deploymentMode = DeploymentMode.PRIVATE;
-        marshaller = new OptimizedMarshaller();
-
-        doCheckFailed();
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
     public void testStartedInIsolatedMode() throws Exception {
         deploymentMode = DeploymentMode.ISOLATED;
         marshaller = new BinaryMarshaller();
@@ -130,22 +110,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         IgniteCache pCache = ignite(0).cache(PARTITIONED_CACHE);
 
         checkPutCache(pCache);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doCheckFailed() throws Exception {
-        try {
-            startGridsMultiThreaded(2);
-        }
-        catch (Exception e) {
-            assert e.getMessage().contains("Cache can be started in PRIVATE or ISOLATED deployment mode only ");
-
-            return;
-        }
-
-        fail("Unexpected start of the caches!");
     }
 
     /**
@@ -224,6 +188,5 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
                 ", name='" + name + '\'' +
                 '}';
         }
-
     }
 }

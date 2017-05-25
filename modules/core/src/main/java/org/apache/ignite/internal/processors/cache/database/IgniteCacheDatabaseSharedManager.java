@@ -73,6 +73,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
 
+    /** Maximum initial size on 32-bit JVM */
+    private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
+
     /** */
     protected Map<String, MemoryPolicy> memPlcMap;
 
@@ -103,24 +106,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     public void init() throws IgniteCheckedException {
-        if (memPlcMap == null) {
-            MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
-            if (memCfg == null)
-                memCfg = new MemoryConfiguration();
+        assert memCfg != null;
 
-            validateConfiguration(memCfg);
+        validateConfiguration(memCfg);
 
-            pageSize = memCfg.getPageSize();
+        pageSize = memCfg.getPageSize();
 
-            initPageMemoryPolicies(memCfg);
+        initPageMemoryPolicies(memCfg);
 
-            registerMetricsMBeans();
+        registerMetricsMBeans();
 
-            startMemoryPolicies();
+        startMemoryPolicies();
 
-            initPageMemoryDataStructures(memCfg);
-        }
+        initPageMemoryDataStructures(memCfg);
     }
 
     /**
@@ -217,9 +217,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             memPlcMap = U.newHashMap(2);
             memMetricsMap = U.newHashMap(2);
 
-            addMemoryPolicy(memCfg,
+            addMemoryPolicy(
+                memCfg,
                 memCfg.createDefaultPolicyConfig(),
-                DFLT_MEM_PLC_DEFAULT_NAME);
+                DFLT_MEM_PLC_DEFAULT_NAME
+            );
 
             U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
         }
@@ -231,9 +233,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
                 memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
 
-                addMemoryPolicy(memCfg,
+                addMemoryPolicy(
+                    memCfg,
                     memCfg.createDefaultPolicyConfig(),
-                    DFLT_MEM_PLC_DEFAULT_NAME);
+                    DFLT_MEM_PLC_DEFAULT_NAME
+                );
 
                 U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
             }
@@ -247,27 +251,34 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 addMemoryPolicy(memCfg, memPlcCfg, memPlcCfg.getName());
         }
 
-        addMemoryPolicy(memCfg,
-            createSystemMemoryPolicy(memCfg.getSystemCacheInitialSize(), memCfg.getSystemCacheMaxSize()),
-            SYSTEM_MEMORY_POLICY_NAME);
+        addMemoryPolicy(
+            memCfg,
+            createSystemMemoryPolicy(
+                memCfg.getSystemCacheInitialSize(),
+                memCfg.getSystemCacheMaxSize()
+            ),
+            SYSTEM_MEMORY_POLICY_NAME
+        );
     }
 
     /**
-     * @param dbCfg Database config.
+     * @param memCfg Database config.
      * @param memPlcCfg Memory policy config.
      * @param memPlcName Memory policy name.
      */
-    private void addMemoryPolicy(MemoryConfiguration dbCfg,
-                                 MemoryPolicyConfiguration memPlcCfg,
-                                 String memPlcName) {
-        String dfltMemPlcName = dbCfg.getDefaultMemoryPolicyName();
+    private void addMemoryPolicy(
+        MemoryConfiguration memCfg,
+        MemoryPolicyConfiguration memPlcCfg,
+        String memPlcName
+    ) {
+        String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
 
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
         MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
 
-        MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg, memMetrics);
+        MemoryPolicy memPlc = initMemory(memCfg, memPlcCfg, memMetrics);
 
         memPlcMap.put(memPlcName, memPlc);
 
@@ -325,8 +336,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
 
-        checkSystemMemoryPolicySizeConfiguration(memCfg.getSystemCacheInitialSize(),
-            memCfg.getSystemCacheMaxSize());
+        checkSystemMemoryPolicySizeConfiguration(
+            memCfg.getSystemCacheInitialSize(),
+            memCfg.getSystemCacheMaxSize()
+        );
 
         if (plcCfgs != null) {
             for (MemoryPolicyConfiguration plcCfg : plcCfgs) {
@@ -341,9 +354,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         checkDefaultPolicyConfiguration(
-                memCfg.getDefaultMemoryPolicyName(),
-                memCfg.getDefaultMemoryPolicySize(),
-                plcNames);
+            memCfg.getDefaultMemoryPolicyName(),
+            memCfg.getDefaultMemoryPolicySize(),
+            plcNames
+        );
     }
 
     /**
@@ -352,11 +366,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException In case of validation violation.
      */
-    private void checkSystemMemoryPolicySizeConfiguration(long sysCacheInitSize, long sysCacheMaxSize) throws IgniteCheckedException {
+    private static void checkSystemMemoryPolicySizeConfiguration(
+        long sysCacheInitSize,
+        long sysCacheMaxSize
+    ) throws IgniteCheckedException {
         if (sysCacheInitSize < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("Initial size for system cache must have size more than 10MB (use " +
-                "MemoryConfiguration.systemCacheInitialSize property to set correct size in bytes); " +
-                "size: " + U.readableSize(sysCacheInitSize, true)
+                "MemoryConfiguration.systemCacheInitialSize property to set correct size in bytes) " +
+                "[size=" + U.readableSize(sysCacheInitSize, true) + ']'
+            );
+
+        if (U.jvm32Bit() && sysCacheInitSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
+            throw new IgniteCheckedException("Initial size for system cache exceeds 2GB on 32-bit JVM (use " +
+                "MemoryPolicyConfiguration.systemCacheInitialSize property to set correct size in bytes " +
+                "or use 64-bit JVM) [size=" + U.readableSize(sysCacheInitSize, true) + ']'
             );
 
         if (sysCacheMaxSize < sysCacheInitSize)
@@ -379,7 +402,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         long dfltPlcSize,
         Collection<String> plcNames
     ) throws IgniteCheckedException {
-        if (dfltPlcSize != -1) {
+        if (dfltPlcSize != MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE) {
             if (!F.eq(dfltPlcName, MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME))
                 throw new IgniteCheckedException("User-defined MemoryPolicy configuration " +
                     "and defaultMemoryPolicySize properties are set at the same time. " +
@@ -389,6 +412,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (dfltPlcSize < MIN_PAGE_MEMORY_SIZE)
                 throw new IgniteCheckedException("User-defined default MemoryPolicy size is less than 1MB. " +
                         "Use MemoryConfiguration.defaultMemoryPolicySize property to set correct size.");
+
+            if (U.jvm32Bit() && dfltPlcSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
+                throw new IgniteCheckedException("User-defined default MemoryPolicy size exceeds 2GB on 32-bit JVM " +
+                    "(use MemoryConfiguration.defaultMemoryPolicySize property to set correct size in bytes " +
+                    "or use 64-bit JVM) [size=" + U.readableSize(dfltPlcSize, true) + ']'
+                );
         }
 
         if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName)) {
@@ -413,6 +442,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             );
 
         if (plcCfg.getMaxSize() < plcCfg.getInitialSize()) {
+            // We will know for sure if initialSize has been changed if we compare Longs by "==".
             if (plcCfg.getInitialSize() == DFLT_MEMORY_POLICY_INITIAL_SIZE) {
                 plcCfg.setInitialSize(plcCfg.getMaxSize());
 
@@ -420,13 +450,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     " is smaller than defaultInitialSize=" +
                     U.readableSize(MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE, true) +
                     ", setting initialSize to " + U.readableSize(plcCfg.getMaxSize(), true));
-            } else {
+            }
+            else {
                 throw new IgniteCheckedException("MemoryPolicy maxSize must not be smaller than " +
                     "initialSize [name=" + plcCfg.getName() +
                     ", initSize=" + U.readableSize(plcCfg.getInitialSize(), true) +
                     ", maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) + ']');
             }
         }
+
+        if (U.jvm32Bit() && plcCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
+            throw new IgniteCheckedException("MemoryPolicy initialSize exceeds 2GB on 32-bit JVM (use " +
+                "MemoryPolicyConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
+                "[name=" + plcCfg.getName() +
+                ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]");
     }
 
     /**
@@ -820,7 +857,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         MemoryPolicyConfiguration memPlcCfg,
         MemoryMetricsImpl memMetrics
     ) {
-        return new PageMemoryNoStoreImpl(log, memProvider, cctx, memCfg.getPageSize(), memPlcCfg, memMetrics, false);
+        return new PageMemoryNoStoreImpl(
+            log,
+            memProvider,
+            cctx,
+            memCfg.getPageSize(),
+            memPlcCfg,
+            memMetrics,
+            false
+        );
     }
 
     /**

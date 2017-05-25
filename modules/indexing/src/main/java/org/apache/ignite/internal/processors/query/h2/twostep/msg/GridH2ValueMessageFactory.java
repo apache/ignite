@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -108,6 +109,9 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -35:
                 return new GridH2RowRangeBounds();
+
+            case -54:
+                return new QueryTable();
         }
 
         return null;

@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -614,6 +614,9 @@ public final class IgniteSystemProperties {
      * WAL rebalance threshold.
      */
      public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
+
+    /** Ignite page memory concurrency level. */
+    public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
