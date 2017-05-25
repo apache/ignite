@@ -61,32 +61,23 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
 
-    /** Table name 2. */
-    protected static final String TBL_NAME_2 = tableName(ValueClass2.class);
-
     /** Index name 1. */
-    protected static final String IDX_NAME_1 = "idx_1";
+    protected static final String IDX_NAME_1 = "IDX_1";
 
     /** Index name 2. */
-    protected static final String IDX_NAME_2 = "idx_2";
-
-    /** Index name 3. */
-    protected static final String IDX_NAME_3 = "idx_3";
+    protected static final String IDX_NAME_2 = "IDX_2";
 
     /** Key ID field. */
     protected static final String FIELD_KEY = "id";
+
+    /** Key alias */
+    protected static final String FIELD_KEY_ALIAS = "key";
 
     /** Field 1. */
     protected static final String FIELD_NAME_1 = "field1";
 
     /** Field 1. */
     protected static final String FIELD_NAME_2 = "field2";
-
-    /** Field 3. */
-    protected static final String FIELD_NAME_3 = "field3";
-
-    /** Key alias */
-    protected static final String FIELD_KEY_ALIAS = "key";
 
     /**
      * Get type on the given node for the given cache and table name. Type must exist.
@@ -218,7 +209,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
                         int i = 0;
 
                         for (String idxField : idxFields.keySet()) {
-                            assertEquals(idxField, fields[i].get1());
+                            assertEquals(idxField.toLowerCase(), fields[i].get1().toLowerCase());
                             assertEquals(idxFields.get(idxField), fields[i].get2());
 
                             i++;
@@ -259,8 +250,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
             String expFieldName = fields[i].get1();
             boolean expFieldAsc = fields[i].get2();
 
-            assertEquals("Index field mismatch [pos=" + i + ", expField=" + expFieldName +
-                ", actualField=" + fieldNames.get(i) + ']', expFieldName, fieldNames.get(i));
+            assertEquals("Index field mismatch [pos=" + i + ", expField=" + expFieldName + ", actualField=" +
+                fieldNames.get(i) + ']', expFieldName.toLowerCase(), fieldNames.get(i).toLowerCase());
 
             boolean fieldAsc = !idxDesc.descending(expFieldName);
 
