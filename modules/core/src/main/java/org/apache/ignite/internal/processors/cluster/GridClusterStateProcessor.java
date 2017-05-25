@@ -44,6 +44,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ClusterState;
@@ -439,33 +440,34 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         }
 
         try {
-            if (!client) {
+            if (!client)
                 sharedCtx.database().lock();
 
-                IgnitePageStoreManager pageStore = sharedCtx.pageStore();
+            IgnitePageStoreManager pageStore = sharedCtx.pageStore();
 
-                if (pageStore != null)
-                    pageStore.onActivate(ctx);
+            if (pageStore != null)
+                pageStore.onActivate(ctx);
 
-                if (sharedCtx.wal() != null)
-                    sharedCtx.wal().onActivate(ctx);
+            IgniteWriteAheadLogManager walMgr = sharedCtx.wal();
 
-                sharedCtx.database().initDataBase();
+            if (walMgr != null)
+                walMgr.onActivate(ctx);
 
-                for (CacheConfiguration cfg : cfgs) {
-                    if (CU.isSystemCache(cfg.getName()))
-                        if (pageStore != null)
-                            pageStore.initializeForCache(cfg);
-                }
+            sharedCtx.database().initDataBase();
 
-                for (CacheConfiguration cfg : cfgs) {
-                    if (!CU.isSystemCache(cfg.getName()))
-                        if (pageStore != null)
-                            pageStore.initializeForCache(cfg);
-                }
-
-                sharedCtx.database().onActivate(ctx);
+            for (CacheConfiguration cfg : cfgs) {
+                if (CU.isSystemCache(cfg.getName()))
+                    if (pageStore != null)
+                        pageStore.initializeForCache(cfg);
             }
+
+            for (CacheConfiguration cfg : cfgs) {
+                if (!CU.isSystemCache(cfg.getName()))
+                    if (pageStore != null)
+                        pageStore.initializeForCache(cfg);
+            }
+
+            sharedCtx.database().onActivate(ctx);
 
             if (log.isInfoEnabled())
                 log.info("Success activate wal, dataBase, pageStore [nodeId="
@@ -477,7 +479,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             log.error("Fail activate wal, dataBase, pageStore [nodeId=" + ctx.localNodeId() + ", client=" + client +
                 ", topVer=" + cgsCtx.topVer + "]", e);
 
-            if (!ctx.clientNode())
+            if (!client)
                 sharedCtx.database().unLock();
 
             return e;
@@ -575,17 +577,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         Exception ex = null;
 
         try {
-            if (!client) {
-                sharedCtx.database().onDeActivate(ctx);
+            sharedCtx.database().onDeActivate(ctx);
 
-                if (sharedCtx.pageStore() != null)
-                    sharedCtx.pageStore().onDeActivate(ctx);
+            if (sharedCtx.pageStore() != null)
+                sharedCtx.pageStore().onDeActivate(ctx);
 
-                if (sharedCtx.wal() != null)
-                    sharedCtx.wal().onDeActivate(ctx);
+            if (sharedCtx.wal() != null)
+                sharedCtx.wal().onDeActivate(ctx);
 
-                sharedCtx.affinity().removeAllCacheInfo();
-            }
+            sharedCtx.affinity().removeAllCacheInfo();
         }
         catch (Exception e) {
             ex = e;
