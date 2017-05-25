@@ -1450,14 +1450,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(4, res);
             Assert.AreEqual(Enumerable.Range(7, 4), getKeys());
 
-            // Joins are not supported in H2.
-            var qry = queryable
-                .Where(x => x.Key == 7)
-                .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
-
-            var ex = Assert.Throws<IgniteException>(() => qry.RemoveAll());
-            Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
-
             // Subquery-style join.
             var ids = GetPersonCache().AsCacheQueryable().Where(x => x.Key == 7).Select(x => x.Key);
 
@@ -1465,14 +1457,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(1, res);
             Assert.AreEqual(Enumerable.Range(8, 3), getKeys());
 
-            // Skip/Take are not supported with DELETE.
-            var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).RemoveAll());
-            Assert.AreEqual(
-                "Operator is not supported: Apache.Ignite.Linq.Impl.Dml.RemoveAllResultOperator", nex.Message);
+            // Row number limit.
+            res = queryable.OrderBy(x => x.Key).Take(2).RemoveAll();
+            Assert.AreEqual(2, res);
+            Assert.AreEqual(10, getKeys().Single());
 
             // Unconditional.
             queryable.RemoveAll();
             Assert.AreEqual(0, cache.GetSize());
+
+            // Skip is not supported with DELETE.
+            var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).RemoveAll());
+            Assert.AreEqual(
+                "Operator is not supported: Apache.Ignite.Linq.Impl.Dml.RemoveAllResultOperator", nex.Message);
+
+            // Joins are not supported in H2.
+            var qry = queryable
+                .Where(x => x.Key == 7)
+                .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
+
+            var ex = Assert.Throws<IgniteException>(() => qry.RemoveAll());
+            Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
         }
 
         /// <summary>
