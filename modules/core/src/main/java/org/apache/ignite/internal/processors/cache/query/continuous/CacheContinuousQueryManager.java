@@ -203,6 +203,20 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param ctx Context.
+     * @param part Partition number.
+     * @param cntr Update counter.
+     * @param topVer Topology version.
+     * @return Context.
+     */
+    @Nullable public CounterSkipContext skipUpdateCounter(@Nullable CounterSkipContext ctx,
+        int part,
+        long cntr,
+        AffinityTopologyVersion topVer) {
+        return null;
+    }
+
+    /**
      * @param internal Internal entry flag (internal key or not user cache).
      * @param preload Whether update happened during preloading.
      * @return Registered listeners.

@@ -93,8 +93,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected long nextPartitionCounter() {
-        return locPart.nextUpdateCounter();
+    @Override protected long nextPartitionCounter(AffinityTopologyVersion topVer) {
+        return locPart.nextUpdateCounter(cctx.cacheId(), topVer);
     }
 
     /** {@inheritDoc} */

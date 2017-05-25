@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -663,6 +664,44 @@ public class CacheGroupInfrastructure {
             cctx.continuousQueries().onPartitionEvicted(part);
 
             cctx.dataStructures().onPartitionEvicted(part);
+        }
+    }
+
+    /**
+     * @param cacheId ID of cache initiated counter update.
+     * @param part Partition number.
+     * @param cntr Counter.
+     * @param topVer Topology version for current operation.
+     */
+    public void onPartitionCounterUpdate(int cacheId,
+        int part,
+        long cntr,
+        AffinityTopologyVersion topVer) {
+        assert sharedGroup();
+
+        if (isLocal())
+            return;
+
+        List<GridCacheContext> caches = this.caches;
+
+        CounterSkipContext skipCtx = null;
+
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = caches.get(i);
+
+            if (cacheId != cctx.cacheId())
+                skipCtx = cctx.continuousQueries().skipUpdateCounter(skipCtx, part, cntr, topVer);
+        }
+
+        final List<Runnable> entriesC = skipCtx != null ? skipCtx.readyEntries() : null;
+
+        if (entriesC != null) {
+            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    for (Runnable c : entriesC)
+                        c.run();
+                }
+            });
         }
     }
 
