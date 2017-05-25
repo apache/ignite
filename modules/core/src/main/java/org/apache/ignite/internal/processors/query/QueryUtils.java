@@ -983,6 +983,20 @@ public class QueryUtils {
         if (F.isEmpty(entity.findValueType()))
             throw new IgniteException("Value type cannot be null or empty [queryEntity=" + entity + ']');
 
+        String keyFieldName = entity.getKeyFieldName();
+
+        if (keyFieldName != null && !entity.getFields().containsKey(keyFieldName)) {
+            throw new IgniteException("Key field is not in the field list [queryEntity=" + entity +
+                ", keyFieldName=" + keyFieldName + "]");
+        }
+
+        String valFieldName = entity.getValueFieldName();
+
+        if (valFieldName != null && !entity.getFields().containsKey(valFieldName)) {
+            throw new IgniteException("Value field is not in the field list [queryEntity=" + entity +
+                ", valFieldName=" + valFieldName + "]");
+        }
+
         Collection<QueryIndex> idxs = entity.getIndexes();
 
         if (!F.isEmpty(idxs)) {

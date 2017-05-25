@@ -432,7 +432,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String keyFieldName() {
-        return aliases.get(keyFieldName);
+        return keyFieldName != null ? aliases.get(keyFieldName) : keyFieldName;
     }
 
     /**
@@ -445,6 +445,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String valueFieldName() {
-        return aliases.get(valFieldName);
+        return valFieldName != null ? aliases.get(valFieldName) : valFieldName;
     }
 }

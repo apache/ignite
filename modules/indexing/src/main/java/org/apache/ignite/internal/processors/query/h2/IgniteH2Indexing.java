@@ -1648,16 +1648,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 name.equalsIgnoreCase(VER_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
-
-        if (type.keyFieldName() != null && !type.fields().containsKey(type.keyFieldName())) {
-            throw new IgniteCheckedException(MessageFormat.format("Name ''{0}'' must be amongst fields since it " +
-                "is configured as ''keyFieldName'' [type=" + type.name() + "]", type.keyFieldName()));
-        }
-
-        if (type.valueFieldName() != null && !type.fields().containsKey(type.valueFieldName())) {
-            throw new IgniteCheckedException(MessageFormat.format("Name ''{0}'' must be amongst fields since it " +
-                "is configured as ''valueFieldName'' [type=" + type.name() + "]", type.valueFieldName()));
-        }
     }
 
     /**
