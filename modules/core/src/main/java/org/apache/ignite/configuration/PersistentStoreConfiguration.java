@@ -71,10 +71,10 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Number of WAL segments to keep. */
     private int walSegmentSize = DFLT_WAL_SEGMENT_SIZE;
 
-    /** Write-ahead log persistence path. */
+    /** WAL persistence path. */
     private String walStorePath;
 
-    /** Write-ahead log archive path. */
+    /** WAL archive path. */
     private String walArchivePath;
 
     /**
@@ -184,18 +184,18 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets the number checkpoints to keep in WAL history.
+     * Gets a total number of checkpoints to keep in the WAL history.
      *
-     * @return Number of WAL segments to keep after the checkpoint is finished.
+     * @return Number of WAL segments to keep after a checkpoint is finished.
      */
     public int getWalHistorySize() {
         return walHistSize <= 0 ? DFLT_WAL_HISTORY_SIZE : walHistSize;
     }
 
     /**
-     * Sets the number of checkpoints to keep in WAL history.
+     * Sets a total number of checkpoints to keep in the WAL history.
      *
-     * @param walHistSize Number of WAL segments to keep after the checkpoint is finished.
+     * @param walHistSize Number of WAL segments to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalHistorySize(int walHistSize) {
@@ -205,7 +205,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets a number of Write-Ahead Log segments to work with.
+     * Gets a number of WAL segments to work with.
      *
      * @return Number of work WAL segments.
      */
@@ -214,10 +214,10 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets a number of Write Ahead Log segments to work with. Write-ahead log is written over a fixed number
-     * of pre-allocated file segments of fixed size. This parameter sets the number of these segments.
+     * Sets a number of WAL segments to work with. For performance reasons,
+     * the whole WAL is split into files of fixed length called segments.
      *
-     * @param walSegments Number of work WAL segments.
+     * @param walSegments Number of WAL segments.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalSegments(int walSegments) {
@@ -227,7 +227,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets size of a Write-Ahead Log segment.
+     * Gets size of a WAL segment.
      *
      * @return WAL segment size.
      */
@@ -236,7 +236,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets size of a Write-Ahead Log segment.
+     * Sets size of a WAL segment.
      *
      * @param walSegmentSize WAL segment size. 64 MB is used by default.
      * @return {@code this} for chaining.
@@ -248,19 +248,19 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets a path to the directory where Write-Ahead log is stored.
+     * Gets a path to the directory where WAL is stored.
      *
-     * @return Write-ahead log persistence path, absolute or relative to Ignite work directory.
+     * @return WAL persistence path, absolute or relative to Ignite work directory.
      */
     public String getWalStorePath() {
         return walStorePath;
     }
 
     /**
-     * Sets a path to the directory where Write-Ahead log is stored . If this path is relative, it will be resolved
-     * relative to Ignite work directory.
+     * Sets a path to the directory where WAL is stored . If this path is relative, it will be resolved
+     * relatively to Ignite work directory.
      *
-     * @param walStorePath Write-ahead log persistence path, absolute or relative to Ignite work directory.
+     * @param walStorePath WAL persistence path, absolute or relative to Ignite work directory.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalStorePath(String walStorePath) {
@@ -270,7 +270,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets a path to Write-Ahead log archive. Full WAL segments will be copied to this directory before reuse.
+     * Gets a path to the WAL archive directory.
      *
      *  @return WAL archive directory.
      */
@@ -279,7 +279,8 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets a path to store Write-Ahead log archive. Full WAL segments will be copied to this directory before reuse.
+     * Sets a path for the WAL archive directory. Every WAL segment will be fully copied to this directory before
+     * it can be reused for WAL purposes.
      *
      * @param walArchivePath WAL archive directory.
      * @return {@code this} for chaining.
