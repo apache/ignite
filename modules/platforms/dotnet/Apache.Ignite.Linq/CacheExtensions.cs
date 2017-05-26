@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
@@ -172,6 +173,7 @@ namespace Apache.Ignite.Linq
         /// <returns>
         /// Affected row count.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
             Expression<Func<ICacheEntry<TKey, TValue>, bool>> predicate)
         {
