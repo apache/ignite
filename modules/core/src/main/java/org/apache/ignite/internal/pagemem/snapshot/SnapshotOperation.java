@@ -37,8 +37,8 @@ public class SnapshotOperation implements Serializable {
      */
     private final long snapshotId;
 
-    /** */
-    private final Set<String> cacheNames;
+    /** Cache group ids. */
+    private final Set<Integer> cacheGrpIds;
 
     /** Message. */
     private final String msg;
@@ -49,20 +49,20 @@ public class SnapshotOperation implements Serializable {
     /**
      * @param type Type.
      * @param snapshotId Snapshot id.
-     * @param cacheNames Cache names.
+     * @param cacheGrpIds Cache group ids.
      * @param msg
      * @param extraParam Additional parameter.
      */
     public SnapshotOperation(
         SnapshotOperationType type,
         long snapshotId,
-        Set<String> cacheNames,
+        Set<Integer> cacheGrpIds,
         String msg,
         Object extraParam
     ) {
         this.type = type;
         this.snapshotId = snapshotId;
-        this.cacheNames = cacheNames;
+        this.cacheGrpIds = cacheGrpIds;
         this.msg = msg;
         this.extraParam = extraParam;
     }
@@ -88,8 +88,8 @@ public class SnapshotOperation implements Serializable {
      *
      * @return Cache names.
      */
-    public Set<String> cacheNames() {
-        return cacheNames;
+    public Set<Integer> cacheGroupIds() {
+        return cacheGrpIds;
     }
 
     /**
@@ -169,7 +169,7 @@ public class SnapshotOperation implements Serializable {
         return "SnapshotOperation{" +
             "type=" + type +
             ", snapshotId=" + snapshotId +
-            ", cacheNames=" + cacheNames +
+            ", cacheGroupIds=" + cacheGrpIds +
             ", msg='" + msg + '\'' +
             ", extraParam=" + extraParam +
             '}';
