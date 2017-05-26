@@ -272,6 +272,8 @@ namespace ignite
                         (*it)->Write(writer);
 
                     writer.WriteBool(distributedJoins);
+                    writer.WriteInt32(0);  // Timeout, ms
+                    writer.WriteBool(false);  // ReplicatedOnly
                 }
 
             private:

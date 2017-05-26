@@ -253,11 +253,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             int cnt = io.getCount(pageAddr);
 
             int idx;
+
             if (g.findLast)
-                idx = io.isLeaf()? cnt - 1: -cnt - 1; //(-cnt - 1) mimics not_found result of findInsertionPoint
-                //in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
+                idx = io.isLeaf() ? cnt - 1 : -cnt - 1; // (-cnt - 1) mimics not_found result of findInsertionPoint
+                // in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
             else
-                idx = findInsertionPoint(io, pageAddr, 0, cnt, g.row, g.shift);
+                idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, g.row, g.shift);
 
             boolean found = idx >= 0;
 
@@ -338,7 +339,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert p.btmLvl == 0 : "split is impossible with replace";
 
             final int cnt = io.getCount(pageAddr);
-            final int idx = findInsertionPoint(io, pageAddr, 0, cnt, p.row, 0);
+            final int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, p.row, 0);
 
             if (idx < 0) // Not found, split or merge happened.
                 return RETRY;
@@ -399,7 +400,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return RETRY;
 
             int cnt = io.getCount(pageAddr);
-            int idx = findInsertionPoint(io, pageAddr, 0, cnt, p.row, 0);
+            int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, p.row, 0);
 
             if (idx >= 0) // We do not support concurrent put of the same key.
                 throw new IllegalStateException("Duplicate row in index.");
@@ -451,7 +452,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert cnt <= Short.MAX_VALUE: cnt;
 
-            int idx = findInsertionPoint(io, leafAddr, 0, cnt, r.row, 0);
+            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0);
 
             if (idx < 0)
                 return RETRY; // We've found exact match on search but now it's gone.
@@ -1205,7 +1206,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             validateDownPages(rootPageId, 0L, rootLvl);
 
-            validateDownKeys(rootPageId, null);
+            validateDownKeys(rootPageId, null, rootLvl);
         }
         finally {
             releasePage(metaPageId, metaPage);
@@ -1217,7 +1218,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param minRow Minimum row.
      * @throws IgniteCheckedException If failed.
      */
-    private void validateDownKeys(long pageId, L minRow) throws IgniteCheckedException {
+    private void validateDownKeys(long pageId, L minRow, int lvl) throws IgniteCheckedException {
         long page = acquirePage(pageId);
         try {
             long pageAddr = readLock(pageId, page); // No correctness guaranties.
@@ -1232,7 +1233,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 if (io.isLeaf()) {
                     for (int i = 0; i < cnt; i++) {
-                        if (minRow != null && compare(io, pageAddr, i, minRow) <= 0)
+                        if (minRow != null && compare(lvl, io, pageAddr, i, minRow) <= 0)
                             fail("Wrong sort order: " + U.hexLong(pageId) + " , at " + i + " , minRow: " + minRow);
 
                         minRow = io.getLookupRow(this, pageAddr, i);
@@ -1245,20 +1246,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 for (int i = 0; i < cnt; i++) {
                     L row = io.getLookupRow(this, pageAddr, i);
 
-                    if (minRow != null && compare(io, pageAddr, i, minRow) <= 0)
+                    if (minRow != null && compare(lvl, io, pageAddr, i, minRow) <= 0)
                         fail("Min row violated: " + row + " , minRow: " + minRow);
 
                     long leftId = inner(io).getLeft(pageAddr, i);
 
                     L leafRow = getGreatestRowInSubTree(leftId);
 
-                    int cmp = compare(io, pageAddr, i, leafRow);
+                    int cmp = compare(lvl, io, pageAddr, i, leafRow);
 
                     if (cmp < 0 || (cmp != 0 && canGetRowFromInner))
                         fail("Wrong inner row: " + U.hexLong(pageId) + " , at: " + i + " , leaf:  " + leafRow +
                             " , inner: " + row);
 
-                    validateDownKeys(leftId, minRow);
+                    validateDownKeys(leftId, minRow, lvl - 1);
 
                     minRow = row;
                 }
@@ -1266,7 +1267,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 // Need to handle the rightmost child subtree separately or handle empty routing page.
                 long rightId = inner(io).getLeft(pageAddr, cnt); // The same as getRight(cnt - 1)
 
-                validateDownKeys(rightId, minRow);
+                validateDownKeys(rightId, minRow, lvl - 1);
             }
             finally {
                 readUnlock(pageId, page, pageAddr);
@@ -2694,7 +2695,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 assert fwdPageAddr != 0L;
 
                 // TODO GG-11640 log a correct forward page record.
-                Boolean fwdPageWalPlc = Boolean.TRUE;
+                final Boolean fwdPageWalPlc = Boolean.TRUE;
 
                 try {
                     boolean midShift = splitPage(pageId, page, pageAddr, io, fwdId, fwdPageAddr, idx);
@@ -2742,7 +2743,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             assert newRootAddr != 0L;
 
                             // Never write full new root page, because it is known to be new.
-                            Boolean newRootPageWalPlc = Boolean.FALSE;
+                            final Boolean newRootPageWalPlc = Boolean.FALSE;
 
                             try {
                                 boolean needWal = needWalDeltaRecord(newRootId, newRootPage, newRootPageWalPlc);
@@ -3650,7 +3651,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert tail.type == Tail.EXACT: tail.type;
 
             if (tail.idx == Short.MIN_VALUE) {
-                int idx = findInsertionPoint(tail.io, tail.buf, 0, tail.getCount(), row, 0);
+                int idx = findInsertionPoint(tail.lvl, tail.io, tail.buf, 0, tail.getCount(), row, 0);
 
                 assert checkIndex(idx): idx;
 
@@ -4173,7 +4174,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private byte type;
 
         /** */
-        private final byte lvl;
+        private final int lvl;
 
         /** */
         private short idx = Short.MIN_VALUE;
@@ -4249,7 +4250,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
      * @throws IgniteCheckedException If failed.
      */
-    private int findInsertionPoint(BPlusIO<L> io, long buf, int low, int cnt, L row, int shift)
+    private int findInsertionPoint(int lvl, BPlusIO<L> io, long buf, int low, int cnt, L row, int shift)
         throws IgniteCheckedException {
         assert row != null;
 
@@ -4258,7 +4259,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         while (low <= high) {
             int mid = (low + high) >>> 1;
 
-            int cmp = compare(io, buf, mid, row);
+            int cmp = compare(lvl, io, buf, mid, row);
 
             if (cmp == 0)
                 cmp = -shift; // We need to fix the case when search row matches multiple data rows.
@@ -4327,6 +4328,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     protected abstract int compare(BPlusIO<L> io, long pageAddr, int idx, L row) throws IgniteCheckedException;
+
+    /**
+     * @param lvl Level.
+     * @param io IO.
+     * @param pageAddr Page address.
+     * @param idx Index of row in the given buffer.
+     * @param row Lookup row.
+     * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected int compare(int lvl, BPlusIO<L> io, long pageAddr, int idx, L row) throws IgniteCheckedException {
+        return compare(io, pageAddr, idx, row);
+    }
 
     /**
      * Get a full detached data row.
@@ -4421,11 +4435,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private int findLowerBound(long pageAddr, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+            assert io.isLeaf();
+
             // Compare with the first row on the page.
-            int cmp = compare(io, pageAddr, 0, lowerBound);
+            int cmp = compare(0, io, pageAddr, 0, lowerBound);
 
             if (cmp < 0 || (cmp == 0 && lowerShift == 1)) {
-                int idx = findInsertionPoint(io, pageAddr, 0, cnt, lowerBound, lowerShift);
+                int idx = findInsertionPoint(0, io, pageAddr, 0, cnt, lowerBound, lowerShift);
 
                 assert idx < 0;
 
@@ -4444,11 +4460,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private int findUpperBound(long pageAddr, BPlusIO<L> io, int low, int cnt) throws IgniteCheckedException {
+            assert io.isLeaf();
+
             // Compare with the last row on the page.
-            int cmp = compare(io, pageAddr, cnt - 1, upperBound);
+            int cmp = compare(0, io, pageAddr, cnt - 1, upperBound);
 
             if (cmp > 0) {
-                int idx = findInsertionPoint(io, pageAddr, low, cnt, upperBound, 1);
+                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upperBound, 1);
 
                 assert idx < 0;
 

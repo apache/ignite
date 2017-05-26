@@ -820,9 +820,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /** Node ID. */

@@ -272,7 +272,7 @@ class ClusterCachesInfo {
             if (req.start()) {
                 if (desc == null) {
                     if (req.clientStartOnly()) {
-                        ctx.cache().completeCacheStartFuture(req, new IgniteCheckedException("Failed to start " +
+                        ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException("Failed to start " +
                             "client cache (a cache with the given name is not started): " + req.cacheName()));
                     }
                     else {
@@ -327,7 +327,7 @@ class ClusterCachesInfo {
                     }
                     else {
                         if (req.failIfExists()) {
-                            ctx.cache().completeCacheStartFuture(req,
+                            ctx.cache().completeCacheStartFuture(req, false,
                                 new CacheExistsException("Failed to start cache " +
                                     "(a cache with the same name is already started): " + req.cacheName()));
                         }
@@ -350,8 +350,18 @@ class ClusterCachesInfo {
                 if (!needExchange && desc != null) {
                     if (desc.clientCacheStartVersion() != null)
                         waitTopVer = desc.clientCacheStartVersion();
-                    else
-                        waitTopVer = desc.startTopologyVersion();
+                    else {
+                        AffinityTopologyVersion nodeStartVer =
+                            new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
+
+                        if (desc.startTopologyVersion() != null)
+                            waitTopVer = desc.startTopologyVersion();
+                        else
+                            waitTopVer = desc.receivedFromStartVersion();
+
+                        if (waitTopVer == null || nodeStartVer.compareTo(waitTopVer) > 0)
+                            waitTopVer = nodeStartVer;
+                    }
                 }
             }
             else if (req.globalStateChange())
@@ -410,7 +420,7 @@ class ClusterCachesInfo {
         if (!F.isEmpty(reqsToComplete)) {
             ctx.closure().callLocalSafe(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t :reqsToComplete) {
+                    for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t : reqsToComplete) {
                         final DynamicCacheChangeRequest req = t.get1();
                         AffinityTopologyVersion waitTopVer = t.get2();
 
@@ -418,11 +428,11 @@ class ClusterCachesInfo {
                             ctx.cache().context().exchange().affinityReadyFuture(waitTopVer) : null;
 
                         if (fut == null || fut.isDone())
-                            ctx.cache().completeCacheStartFuture(req, null);
+                            ctx.cache().completeCacheStartFuture(req, false, null);
                         else {
                             fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                                 @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    ctx.cache().completeCacheStartFuture(req, null);
+                                    ctx.cache().completeCacheStartFuture(req, false, null);
                                 }
                             });
                         }

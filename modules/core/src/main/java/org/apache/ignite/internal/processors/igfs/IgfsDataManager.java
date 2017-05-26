@@ -1593,9 +1593,6 @@ public class IgfsDataManager extends IgfsManager {
      * Future that is completed when all participating
      */
     private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** File id to remove future from map. */
         private final IgniteUuid fileId;
 

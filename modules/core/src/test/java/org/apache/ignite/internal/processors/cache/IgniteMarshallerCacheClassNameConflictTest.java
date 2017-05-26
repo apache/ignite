@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -108,7 +109,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
         final AtomicInteger trickCompilerVar = new AtomicInteger(1);
 
         final Organization aOrg1 = new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
-        final OrganizatioN bOrg2 = new OrganizatioN(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
+        final Organization_D4pss2X99lE bOrg2 = new Organization_D4pss2X99lE(2, "Apple", "1 Infinite Loop, Cupertino, CA 95014, USA");
 
         exec1.submit(new Runnable() {
             @Override public void run() {
@@ -206,7 +207,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                             rejectObserved = true;
                             if (conflClsName.contains("Organization"))
                                 bbClsRejected = true;
-                            else if (conflClsName.contains("OrganizatioN"))
+                            else if (conflClsName.contains("Organization_D4pss2X99lE"))
                                 aaClsRejected = true;
                         }
                     }
@@ -254,7 +255,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * Class name is chosen to be in conflict with other class name this test put to cache.
      */
-    private static class OrganizatioN {
+    private static class Organization_D4pss2X99lE {
         /** */
         private final int id;
 
@@ -269,7 +270,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
          * @param name Name.
          * @param addr Address.
          */
-        OrganizatioN(int id, String name, String addr) {
+        Organization_D4pss2X99lE(int id, String name, String addr) {
             this.id = id;
             this.name = name;
             this.addr = addr;
