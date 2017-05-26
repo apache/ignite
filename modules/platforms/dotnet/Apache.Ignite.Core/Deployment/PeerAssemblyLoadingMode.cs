@@ -15,34 +15,24 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Deployment
 {
     using System;
 
     /// <summary>
-    /// Internal generic serializer interface.
+    /// Peer assembly loading mode.
+    /// See <see cref="IgniteConfiguration.PeerAssemblyLoadingMode"/>.
     /// </summary>
-    internal interface IBinarySerializerInternal
+    public enum PeerAssemblyLoadingMode
     {
         /// <summary>
-        /// Write binary object.
+        /// Disabled peer assembly loading. Default mode.
         /// </summary>
-        /// <param name="obj">The object.</param>
-        /// <param name="writer">The writer.</param>
-        void WriteBinary<T>(T obj, BinaryWriter writer);
+        Disabled,
 
         /// <summary>
-        /// Read binary object.
+        /// Automatically load assemblies from remote nodes into the current <see cref="AppDomain"/>.
         /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <param name="desc">The descriptor.</param>
-        /// <param name="pos">The position.</param>
-        /// <param name="typeOverride">Type override, can be null.</param>
-        T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride);
-
-        /// <summary>
-        /// Gets a value indicating whether this serializer supports handles.
-        /// </summary>
-        bool SupportsHandles { get; }
+        CurrentAppDomain
     }
 }

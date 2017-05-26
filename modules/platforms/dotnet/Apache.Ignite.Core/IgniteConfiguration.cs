@@ -33,7 +33,9 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.DataStructures.Configuration;
+    using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
@@ -979,5 +981,17 @@ namespace Apache.Ignite.Core
         /// <see cref="MemoryConfiguration"/> for more details.
         /// </summary>
         public MemoryConfiguration MemoryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
+        /// <para />
+        /// For example, when executing <see cref="ICompute.Call{TRes}(IComputeFunc{TRes})"/>,
+        /// the assembly with corresponding <see cref="IComputeFunc{TRes}"/> should be loaded on remote nodes.
+        /// With this option enabled, Ignite will attempt to send the assembly to remote nodes
+        /// and load it there automatically.
+        /// <para />
+        /// Default is <see cref="Apache.Ignite.Core.Deployment.PeerAssemblyLoadingMode.Disabled"/>.
+        /// </summary>
+        public PeerAssemblyLoadingMode PeerAssemblyLoadingMode { get; set; }
     }
 }
