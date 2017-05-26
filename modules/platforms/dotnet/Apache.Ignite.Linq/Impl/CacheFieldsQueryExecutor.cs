@@ -93,45 +93,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Compiles the query (old method, does not support some scenarios).
-        /// </summary>
-        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Delegate queryCaller)
-        {
-            Debug.Assert(queryModel != null);
-            Debug.Assert(queryCaller != null);
-
-            var qryData = GetQueryData(queryModel);
-
-            var qryText = qryData.QueryText;
-
-            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
-
-            // Compiled query is a delegate with query parameters
-            // Delegate parameters order and query parameters order may differ
-
-            // These are in order of usage in query
-            var qryOrderParams = qryData.ParameterExpressions.OfType<MemberExpression>()
-                .Select(x => x.Member.Name).ToList();
-
-            // These are in order they come from user
-            var userOrderParams = queryCaller.Method.GetParameters().Select(x => x.Name).ToList();
-
-            if ((qryOrderParams.Count != qryData.Parameters.Count) ||
-                (qryOrderParams.Count != userOrderParams.Count))
-                throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
-                    "should come from enclosing delegate parameters.");
-
-            var indices = qryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
-
-            // Check if user param order is already correct
-            if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
-                return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
-
-            // Return delegate with reorder
-            return args => _cache.QueryFields(GetFieldsQuery(qryText,
-                args.Select((x, i) => args[indices[i]]).ToArray()), selector);
-        }
-        /// <summary>
         /// Compiles the query without regard to number or order of arguments.
         /// </summary>
         public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel)
