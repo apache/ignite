@@ -118,6 +118,9 @@
     <ClCompile Include="..\..\src\api_robustness_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\log.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -152,5 +155,6 @@
     <None Include="..\..\config\queries-default.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\queries-test-default.xml" />
   </ItemGroup>
 </Project>

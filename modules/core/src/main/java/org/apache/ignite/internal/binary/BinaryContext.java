@@ -17,6 +17,34 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -36,6 +64,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
@@ -90,35 +119,6 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -461,17 +461,17 @@ public class BinaryContext {
 
                     for (String clsName0 : classesInPackage(pkgName))
                         descs.add(clsName0, mapper, serializer, identity, affFields.get(clsName0),
-                            typeCfg.isEnum(), true);
+                            typeCfg.isEnum(), typeCfg.getEnumValues(), true);
                 }
                 else
                     descs.add(clsName, mapper, serializer, identity, affFields.get(clsName),
-                        typeCfg.isEnum(), false);
+                        typeCfg.isEnum(), typeCfg.getEnumValues(), false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors())
             registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.identity, desc.affKeyFieldName,
-                desc.isEnum);
+                desc.isEnum, desc.enumMap);
 
         BinaryInternalMapper globalMapper = resolveMapper(globalNameMapper, globalIdMapper);
 
@@ -649,7 +649,8 @@ public class BinaryContext {
                         desc0.typeName(),
                         desc0.fieldsMeta(),
                         desc0.affFieldKeyName(),
-                        schemas, desc0.isEnum());
+                        schemas, desc0.isEnum(),
+                        cls.isEnum() ? enumMap(cls) : null);
 
                     metaHnd.addMeta(desc0.typeId(), meta.wrap(this));
 
@@ -799,8 +800,8 @@ public class BinaryContext {
         );
 
         if (!deserialize)
-            metaHnd.addMeta(typeId,
-                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null, desc.isEnum()).wrap(this));
+            metaHnd.addMeta(typeId, new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null,
+                desc.isEnum(), cls.isEnum() ? enumMap(cls) : null).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -1095,6 +1096,7 @@ public class BinaryContext {
      * @param identity Type identity.
      * @param affKeyFieldName Affinity key field name.
      * @param isEnum If enum.
+     * @param enumMap Enum name to ordinal mapping.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
@@ -1103,8 +1105,8 @@ public class BinaryContext {
         @Nullable BinarySerializer serializer,
         @Nullable BinaryIdentityResolver identity,
         @Nullable String affKeyFieldName,
-        boolean isEnum)
-        throws BinaryObjectException {
+        boolean isEnum,
+        @Nullable Map<String, Integer> enumMap) throws BinaryObjectException {
         assert mapper != null;
 
         Class<?> cls = null;
@@ -1172,7 +1174,8 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum).wrap(this));
+        metaHnd.addMeta(id,
+            new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum, enumMap).wrap(this));
     }
 
     /**
@@ -1219,6 +1222,16 @@ public class BinaryContext {
      */
     @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
+    }
+
+    /**
+     *
+     * @param typeId Type ID
+     * @return Meta data.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata0(typeId) : null;
     }
 
     /**
@@ -1351,6 +1364,24 @@ public class BinaryContext {
     }
 
     /**
+     *
+     * @param cls Class
+     * @return Enum name to ordinal mapping.
+     */
+    private static Map<String, Integer> enumMap(Class<?> cls) {
+        assert cls.isEnum();
+
+        Object[] enumVals = cls.getEnumConstants();
+
+        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+        for (Object enumVal : enumVals)
+            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
+
+        return enumMap;
+    }
+
+    /**
      * Type descriptors.
      */
     private static class TypeDescriptors {
@@ -1366,6 +1397,7 @@ public class BinaryContext {
          * @param identity Key hashing mode.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum flag.
+         * @param enumMap Enum constants mapping.
          * @param canOverride Whether this descriptor can be override.
          * @throws BinaryObjectException If failed.
          */
@@ -1375,6 +1407,7 @@ public class BinaryContext {
             BinaryIdentityResolver identity,
             String affKeyFieldName,
             boolean isEnum,
+            Map<String, Integer> enumMap,
             boolean canOverride)
             throws BinaryObjectException {
             TypeDescriptor desc = new TypeDescriptor(clsName,
@@ -1383,6 +1416,7 @@ public class BinaryContext {
                 identity,
                 affKeyFieldName,
                 isEnum,
+                enumMap,
                 canOverride);
 
             TypeDescriptor oldDesc = descs.get(clsName);
@@ -1425,6 +1459,9 @@ public class BinaryContext {
         /** Enum flag. */
         private boolean isEnum;
 
+        /** Enum ordinal to name mapping. */
+        private Map<String, Integer> enumMap;
+
         /** Whether this descriptor can be override. */
         private boolean canOverride;
 
@@ -1436,17 +1473,19 @@ public class BinaryContext {
          * @param identity Key hashing mode.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum type.
+         * @param enumMap Mapping of enum names to ordinals.
          * @param canOverride Whether this descriptor can be override.
          */
         private TypeDescriptor(String clsName, BinaryInternalMapper mapper,
             BinarySerializer serializer, BinaryIdentityResolver identity, String affKeyFieldName, boolean isEnum,
-            boolean canOverride) {
+            Map<String, Integer> enumMap, boolean canOverride) {
             this.clsName = clsName;
             this.mapper = mapper;
             this.serializer = serializer;
             this.identity = identity;
             this.affKeyFieldName = affKeyFieldName;
             this.isEnum = isEnum;
+            this.enumMap = enumMap;
             this.canOverride = canOverride;
         }
 
@@ -1465,6 +1504,7 @@ public class BinaryContext {
                 identity = other.identity;
                 affKeyFieldName = other.affKeyFieldName;
                 isEnum = other.isEnum;
+                enumMap = other.enumMap;
                 canOverride = other.canOverride;
             }
             else if (!other.canOverride)

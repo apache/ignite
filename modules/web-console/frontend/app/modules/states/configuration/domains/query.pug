@@ -66,6 +66,8 @@ mixin table-index-item-edit(prefix, index, sortAvailable, idAddition)
                     label Not available for annotated types
                 div(ng-if=`${model}.queryMetadata === 'Configuration'`)
                     .settings-row
+                        +text('Table name:', `${model}.tableName`, '"tableName"', 'false', 'Enter table name', 'Table name for this query entity')
+                    .settings-row
                         +ignite-form-group(ng-model=queryFields ng-form=queryFieldsForm)
                             ignite-form-field-label(id='queryFields')
                                 | Fields

@@ -164,8 +164,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      */
     private void doTest(Map<String, String> srcProps, boolean conditioned) throws Exception {
         FutureCallback<Herder.Created<ConnectorInfo>> cb = new FutureCallback<>(new Callback<Herder.Created<ConnectorInfo>>() {
-            @Override
-            public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
+            @Override public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
                 if (error != null)
                     throw new RuntimeException("Failed to create a job!", error);
             }

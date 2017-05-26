@@ -18,7 +18,10 @@
 package org.apache.ignite.ml.math.decompositions;
 
 import org.apache.ignite.ml.math.Algebra;
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
 
 /**
  * Compute a singular value decomposition (SVD) of {@code (l x k)} matrix {@code m}.
@@ -33,7 +36,7 @@ import org.apache.ignite.ml.math.Matrix;
  * <p>See also: <a href="https://en.wikipedia.org/wiki/Singular_value_decomposition">Wikipedia article on SVD</a>.</p>
  * <p>Note: complex case is currently not supported.</p>
  */
-public class SingularValueDecomposition extends DecompositionSupport {
+public class SingularValueDecomposition implements Destroyable {
     // U and V.
     /** */
     private final double[][] u;

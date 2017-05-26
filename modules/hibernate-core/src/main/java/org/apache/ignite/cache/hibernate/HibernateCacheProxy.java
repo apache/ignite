@@ -266,33 +266,8 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public Set keySetx() {
-        return delegate.keySetx();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set primaryKeySet() {
-        return delegate.primaryKeySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable values() {
-        return delegate.values();
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<Cache.Entry<Object, Object>> entrySet() {
         return delegate.entrySet();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Set<Cache.Entry<Object,Object>> entrySet(int part) {
-        return delegate.entrySet(part);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<Object, Object>> entrySetx(CacheEntryPredicate... filter) {
-        return delegate.entrySetx(filter);
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
@@ -165,7 +166,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         public IBinaryObject BuildEnum(Type type, int value)
         {
             IgniteArgumentCheck.NotNull(type, "type");
-            IgniteArgumentCheck.Ensure(type.IsEnum, "type", "Type should be an Enum.");
+            IgniteArgumentCheck.Ensure(BinaryUtils.IsIgniteEnum(type), "type", 
+                "Type should be an Enum.");
             
             var desc = Marshaller.GetDescriptor(type);
 
@@ -176,15 +178,53 @@ namespace Apache.Ignite.Core.Impl.Binary
             return new BinaryEnum(desc.TypeId, value, Marshaller);
         }
 
+        /** <inheritDoc /> */
+        public IBinaryObject BuildEnum(string typeName, string valueName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+            IgniteArgumentCheck.NotNullOrEmpty(valueName, "valueName");
+
+            var desc = Marshaller.GetDescriptor(typeName);
+
+            IgniteArgumentCheck.Ensure(desc.IsEnum, "typeName", "Type should be an Enum.");
+
+            _marsh.PutBinaryType(desc);
+
+            var value = GetEnumValueAsInt(typeName, valueName, desc);
+
+            return new BinaryEnum(desc.TypeId, value, Marshaller);
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryObject BuildEnum(Type type, string valueName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(valueName, "valueName");
+
+            var desc = Marshaller.GetDescriptor(type);
+
+            IgniteArgumentCheck.Ensure(desc.IsEnum, "typeName", "Type should be an Enum.");
+
+            _marsh.PutBinaryType(desc);
+
+            var value = GetEnumValueAsInt(type.ToString(), valueName, desc);
+
+            return new BinaryEnum(desc.TypeId, value, Marshaller);
+        }
+
+        /** <inheritDoc /> */
+        public IBinaryType RegisterEnum(string typeName, IEnumerable<KeyValuePair<string, int>> values)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            return Marshaller.Ignite.BinaryProcessor.RegisterEnum(typeName, values);
+        }
+
         /// <summary>
         /// Marshaller.
         /// </summary>
         internal Marshaller Marshaller
         {
-            get
-            {
-                return _marsh;
-            }
+            get { return _marsh; }
         }
 
         /// <summary>
@@ -198,6 +238,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryTypeDescriptor desc)
         {
             return new BinaryObjectBuilder(this, parent, obj, desc);
+        }
+
+        /// <summary>
+        /// Gets the enum value as int.
+        /// </summary>
+        private int GetEnumValueAsInt(string typeName, string valueName, IBinaryTypeDescriptor desc)
+        {
+            var type = Marshaller.GetBinaryType(desc.TypeId);
+
+            var value = type.GetEnumValue(valueName);
+
+            IgniteArgumentCheck.Ensure(value != null, "valueName",
+                string.Format("Enum '{0}' does not have a value {1}", typeName, valueName));
+
+            Debug.Assert(value.HasValue);
+
+            return value.Value;
         }
     }
 }

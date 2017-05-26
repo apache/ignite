@@ -60,6 +60,7 @@
     "nvd3": "1.8.4",
     "raleway-webfont": "3.0.1",
     "roboto-font": "0.1.0",
+    "rxjs": "5.4.0",
     "socket.io-client": "1.7.3",
     "ui-router-metatags": "1.0.3"
   },
@@ -116,6 +117,7 @@
     "resolve-url-loader": "2.0.2",
     "sass-loader": "6.0.3",
     "style-loader": "0.16.1",
+    "svg-sprite-loader": "2.1.0",
     "url": "0.11.0",
     "url-loader": "0.5.8",
     "webpack": "2.3.3",

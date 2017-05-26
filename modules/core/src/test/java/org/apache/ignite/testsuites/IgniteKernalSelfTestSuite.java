@@ -61,10 +61,8 @@ import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelf
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
-import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
@@ -146,10 +144,8 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(ServiceThreadPoolSelfTest.class);
 
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
-        suite.addTestSuite(IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
-        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
 
         return suite;
