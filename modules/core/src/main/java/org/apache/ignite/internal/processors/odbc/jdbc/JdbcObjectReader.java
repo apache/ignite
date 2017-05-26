@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Service
-{
-    using System;
-    using System.Runtime.InteropServices;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-    /// <summary>
-    /// Service description structure.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct ServiceDescription
-    {
-        /** Pointer to description. */
-        public IntPtr desc;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReader;
+
+/**
+ * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
+ */
+@SuppressWarnings("unchecked")
+public class JdbcObjectReader extends SqlListenerAbstractObjectReader {
+    /** {@inheritDoc} */
+    @Override protected Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException {
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.internal.processors.odbc.jdbc;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectWriter;
 
 /**
- * Tests for PRIMARY mode with optimized marshaller.
+ * Binary writer with marshaling non-primitive and non-embedded objects with JDK marshaller..
  */
-public class IgfsPrimaryOptimziedMarshallerSelfTest extends IgfsPrimarySelfTest {
+public class JdbcObjectWriter extends SqlListenerAbstractObjectWriter {
     /** {@inheritDoc} */
-    @Override protected boolean useOptimizedMarshaller() {
-        return true;
+    @Override protected void writeCustomObject(BinaryWriterExImpl writer, Object obj)
+        throws BinaryObjectException {
+        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }
