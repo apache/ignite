@@ -66,7 +66,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest extends GridCommonAbstractTest {
     /** Join query for test. */
     private static final String JOIN_QRY = "select cl._KEY, de.depositId, de.regionId from " +
-        "cl.Client cl, de.Deposit de, re.Region re where cl.clientId=de.clientId and de.regionId=re._KEY";
+        "\"cl\".Client cl, \"de\".Deposit de, \"re\".Region re where cl.clientId=de.clientId and de.regionId=re._KEY";
 
     /** Region node attribute name. */
     private static final String REGION_ATTR_NAME = "reg";

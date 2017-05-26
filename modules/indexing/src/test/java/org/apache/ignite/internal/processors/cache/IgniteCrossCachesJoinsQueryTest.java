@@ -137,7 +137,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         final String keyType = useCollocatedData() ? "other" : "int";
 
-        st.execute("create table " + ACC_CACHE_NAME + ".Account" +
+        st.execute("create table \"" + ACC_CACHE_NAME + "\".Account" +
             "  (" +
             "  _key " + keyType + " not null," +
             "  _val other not null," +
@@ -147,7 +147,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             "  personStrId varchar(255)" +
             "  )");
 
-        st.execute("create table " + PERSON_CACHE_NAME + ".Person" +
+        st.execute("create table \"" + PERSON_CACHE_NAME + "\".Person" +
             "  (" +
             "  _key " + keyType + " not null," +
             "  _val other not null," +
@@ -161,7 +161,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             "  salary int" +
             "  )");
 
-        st.execute("create table " + ORG_CACHE_NAME + ".Organization" +
+        st.execute("create table \"" + ORG_CACHE_NAME + "\".Organization" +
             "  (" +
             "  _key int not null," +
             "  _val other not null," +
@@ -211,7 +211,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      */
     private void insertInDb(Account acc) throws SQLException {
         try (PreparedStatement st = conn.prepareStatement(
-            "insert into " + ACC_CACHE_NAME + ".Account (_key, _val, id, personId, personDateId, personStrId) " +
+            "insert into \"" + ACC_CACHE_NAME + "\".Account (_key, _val, id, personId, personDateId, personStrId) " +
                 "values(?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
@@ -232,7 +232,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      */
     private void insertInDb(Person p) throws SQLException {
         try (PreparedStatement st = conn.prepareStatement(
-            "insert into " + PERSON_CACHE_NAME + ".Person (_key, _val, id, strId, dateId, name, orgId, orgDateId, " +
+            "insert into \"" + PERSON_CACHE_NAME + "\".Person (_key, _val, id, strId, dateId, name, orgId, orgDateId, " +
                 "orgStrId, salary) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
@@ -258,7 +258,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      */
     private void insertInDb(Organization o) throws SQLException {
         try (PreparedStatement st = conn.prepareStatement(
-            "insert into " + ORG_CACHE_NAME + ".Organization (_key, _val, id, strId, dateId, name) " +
+            "insert into \"" + ORG_CACHE_NAME + "\".Organization (_key, _val, id, strId, dateId, name) " +
                 "values(?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
@@ -276,13 +276,13 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /** {@inheritDoc} */
     @Override protected void checkAllDataEquals() throws Exception {
         compareQueryRes0(ignite(0).cache(ACC_CACHE_NAME), "select _key, _val, id, personId, personDateId, personStrId " +
-            "from " + ACC_CACHE_NAME + ".Account");
+            "from \"" + ACC_CACHE_NAME + "\".Account");
 
         compareQueryRes0(ignite(0).cache(PERSON_CACHE_NAME), "select _key, _val, id, strId, dateId, name, orgId, " +
-            "orgDateId, orgStrId, salary from " + PERSON_CACHE_NAME + ".Person");
+            "orgDateId, orgStrId, salary from \"" + PERSON_CACHE_NAME + "\".Person");
 
         compareQueryRes0(ignite(0).cache(ORG_CACHE_NAME), "select _key, _val, id, strId, dateId, name " +
-            "from " + ORG_CACHE_NAME + ".Organization");
+            "from \"" + ORG_CACHE_NAME + "\".Organization");
     }
 
     /** {@inheritDoc} */
@@ -290,7 +290,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         Statement st = conn.createStatement();
 
         for (String cacheName : new String[]{"person", "acc", "org"})
-            st.execute("CREATE SCHEMA " + cacheName + "");
+            st.execute("CREATE SCHEMA \"" + cacheName + "\"");
 
         return st;
     }
@@ -484,9 +484,9 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
             Statement st = conn.createStatement();
 
-            st.execute("drop table " + ACC_CACHE_NAME + ".Account");
-            st.execute("drop table " + PERSON_CACHE_NAME + ".Person");
-            st.execute("drop table " + ORG_CACHE_NAME + ".Organization");
+            st.execute("drop table \"" + ACC_CACHE_NAME + "\".Account");
+            st.execute("drop table \"" + PERSON_CACHE_NAME + "\".Person");
+            st.execute("drop table \"" + ORG_CACHE_NAME + "\".Organization");
 
             conn.commit();
 
@@ -779,7 +779,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         qry = "checkOrganizationPersonsJoin";
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select o.name, p.name " +
-            "from " + ORG_CACHE_NAME + ".Organization o, " + PERSON_CACHE_NAME + ".Person p " +
+            "from \"" + ORG_CACHE_NAME + "\".Organization o, \"" + PERSON_CACHE_NAME + "\".Person p " +
             "where p.orgId = o._key and o._key=?");
 
         qry.setDistributedJoins(distributedJoins());
@@ -788,7 +788,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         if (PERSON_CACHE_NAME.equals(cache.getName())) {
             qry2 = new SqlQuery(Person.class,
-                "from " + ORG_CACHE_NAME + ".Organization, " + PERSON_CACHE_NAME + ".Person " +
+                "from \"" + ORG_CACHE_NAME + "\".Organization, \"" + PERSON_CACHE_NAME + "\".Person " +
                     "where Person.orgId = Organization._key and Organization._key=?"
             );
 
@@ -817,7 +817,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         }
 
         SqlFieldsQuery qry3 = new SqlFieldsQuery("select count(*) " +
-            "from " + ORG_CACHE_NAME + ".Organization o, " + PERSON_CACHE_NAME + ".Person p where p.orgId = o._key");
+            "from \"" + ORG_CACHE_NAME + "\".Organization o, \"" + PERSON_CACHE_NAME + "\".Person p where p.orgId = o._key");
 
         qry3.setDistributedJoins(distributedJoins());
 
@@ -840,49 +840,49 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         List<Query> qrys = new ArrayList<>();
 
         qrys.add(new SqlFieldsQuery("select p.name from " +
-                "" + PERSON_CACHE_NAME + ".Person p, " +
-                "" + ACC_CACHE_NAME + ".Account a " +
+                "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+                "\"" + ACC_CACHE_NAME + "\".Account a " +
                 "where p.id = a.personId and p.id=?")
         );
 
         qrys.add(new SqlFieldsQuery("select p.name from " +
-                "" + PERSON_CACHE_NAME + ".Person p, " +
-                "" + ACC_CACHE_NAME + ".Account a " +
+                "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+                "\"" + ACC_CACHE_NAME + "\".Account a " +
                 "where p.dateId = a.personDateId and p.id=?")
         );
 
         qrys.add(new SqlFieldsQuery("select p.name from " +
-                "" + PERSON_CACHE_NAME + ".Person p, " +
-                "" + ACC_CACHE_NAME + ".Account a " +
+                "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+                "\"" + ACC_CACHE_NAME + "\".Account a " +
                 "where p.strId = a.personStrId and p.id=?")
         );
 
         qrys.add(new SqlFieldsQuery("select p.name from " +
-                "" + PERSON_CACHE_NAME + ".Person p, " +
-                "" + ACC_CACHE_NAME + ".Account a " +
+                "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+                "\"" + ACC_CACHE_NAME + "\".Account a " +
                 "where p.id = a.personId and p.id=?")
         );
 
         qrys.add(new SqlFieldsQuery("select p.name from " +
-                "" + PERSON_CACHE_NAME + ".Person p, " +
-                "" + ACC_CACHE_NAME + ".Account a " +
+                "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+                "\"" + ACC_CACHE_NAME + "\".Account a " +
                 "where p.dateId = a.personDateId and p.id=?")
         );
 
         qrys.add(new SqlFieldsQuery("select p.name from " +
-                "" + PERSON_CACHE_NAME + ".Person p, " +
-                "" + ACC_CACHE_NAME + ".Account a " +
+                "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+                "\"" + ACC_CACHE_NAME + "\".Account a " +
                 "where p.strId = a.personStrId and p.id=?")
         );
 
         if (PERSON_CACHE_NAME.equals(cache.getName())) {
             qrys.add(new SqlQuery(Person.class,
-                    "from " + PERSON_CACHE_NAME + ".Person , " + ACC_CACHE_NAME + ".Account  " +
+                    "from \"" + PERSON_CACHE_NAME + "\".Person , \"" + ACC_CACHE_NAME + "\".Account  " +
                         "where Person.id = Account.personId and Person.id=?")
             );
 
             qrys.add(new SqlQuery(Person.class,
-                    "from " + PERSON_CACHE_NAME + ".Person , " + ACC_CACHE_NAME + ".Account  " +
+                    "from \"" + PERSON_CACHE_NAME + "\".Person , \"" + ACC_CACHE_NAME + "\".Account  " +
                         "where Person.id = Account.personId and Person.id=?")
             );
         }
@@ -915,19 +915,19 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         qrys.clear();
 
         qrys.add(new SqlFieldsQuery("select count(*) " +
-            "from " + PERSON_CACHE_NAME + ".Person p, " + ACC_CACHE_NAME + ".Account" + " a " +
+            "from \"" + PERSON_CACHE_NAME + "\".Person p, \"" + ACC_CACHE_NAME + "\".Account" + " a " +
             "where p.id = a.personId"));
 
         qrys.add(new SqlFieldsQuery("select count(*) " +
-            "from " + PERSON_CACHE_NAME + ".Person p, " + ACC_CACHE_NAME + ".Account" + " a " +
+            "from \"" + PERSON_CACHE_NAME + "\".Person p, \"" + ACC_CACHE_NAME + "\".Account" + " a " +
             "where p.Dateid = a.personDateId"));
 
         qrys.add(new SqlFieldsQuery("select count(*) " +
-            "from " + PERSON_CACHE_NAME + ".Person p, " + ACC_CACHE_NAME + ".Account" + " a " +
+            "from \"" + PERSON_CACHE_NAME + "\".Person p, \"" + ACC_CACHE_NAME + "\".Account" + " a " +
             "where p.strId = a.personStrId"));
 
         qrys.add(new SqlFieldsQuery("select count(*) " +
-            "from " + PERSON_CACHE_NAME + ".Person p, " + ACC_CACHE_NAME + ".Account" + " a " +
+            "from \"" + PERSON_CACHE_NAME + "\".Person p, \"" + ACC_CACHE_NAME + "\".Account" + " a " +
             "where p.id = a.personId"));
 
         long total = 0;
@@ -959,23 +959,23 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         sqlFields.add("select o.name, p.name, a._key " +
             "from " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.orgId = o.id and p.id = a.personId and o.id = ?");
 
         sqlFields.add("select o.name, p.name, a._key " +
             "from " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.orgDateId = o.dateId and p.strId = a.personStrId and o.id = ?");
 
         sqlFields.add("select o.name, p.name, a._key " +
             "from " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.orgStrId = o.strId and p.id = a.personId and o.id = ?");
 
         for (Organization org : data.orgs) {
@@ -986,9 +986,9 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         if (ACC_CACHE_NAME.equals(cache.getName())) {
             for (int orgId = 0; orgId < data.accountsPerOrg.size(); orgId++) {
                 SqlQuery q = new SqlQuery(Account.class, "from " +
-                    "" + ORG_CACHE_NAME + ".Organization , " +
-                    "" + PERSON_CACHE_NAME + ".Person , " +
-                    "" + ACC_CACHE_NAME + ".Account  " +
+                    "\"" + ORG_CACHE_NAME + "\".Organization , " +
+                    "\"" + PERSON_CACHE_NAME + "\".Person , " +
+                    "\"" + ACC_CACHE_NAME + "\".Account  " +
                     "where Person.orgId = Organization.id and Person.id = Account.personId and Organization.id = ?");
 
                 q.setDistributedJoins(distributedJoins());
@@ -1003,9 +1003,9 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         String sql = "select count(*) " +
             "from " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.orgId = o.id and p.id = a.personId";
 
         compareQueryRes0(cache, sql, distributedJoins(), new Object[0], Ordering.RANDOM);
@@ -1021,13 +1021,13 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         qry = "checkUnionAll";
 
         String sql = "select a.id, p.name from " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.id = a.personId and p.id = ? " +
             "union all " +
             "select p.id, o.name from " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + PERSON_CACHE_NAME + ".Person p " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p " +
             "where p.orgStrId = o.strId and o.id = ?";
 
         for (int i = 0; i < 10; i++) {
@@ -1048,13 +1048,13 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         qry = "checkUnion";
 
         String sql = "select a.id, p.name from " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.id = a.personId and p.id = ? " +
             "union " +
             "select p.id, o.name from " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + PERSON_CACHE_NAME + ".Person p " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p " +
             "where p.orgStrId = o.strId and o.id = ?";
 
         for (int i = 0; i < 10; i++) {
@@ -1076,8 +1076,8 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         qry = "checkPersonAccountCrossJoin";
 
         String sql = "select p.name " +
-            "from " + PERSON_CACHE_NAME + ".Person p " +
-            "cross join " + ACC_CACHE_NAME + ".Account a";
+            "from \"" + PERSON_CACHE_NAME + "\".Person p " +
+            "cross join \"" + ACC_CACHE_NAME + "\".Account a";
 
         compareQueryRes0(cache, sql, distributedJoins(), new Object[0], Ordering.RANDOM);
     }
@@ -1093,7 +1093,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         // Max salary per organization.
         SqlFieldsQuery q = new SqlFieldsQuery("select max(p.salary) " +
-            "from " + PERSON_CACHE_NAME + ".Person p join " + ORG_CACHE_NAME + ".Organization o " +
+            "from \"" + PERSON_CACHE_NAME + "\".Person p join \"" + ORG_CACHE_NAME + "\".Organization o " +
             "on p.orgId = o.id " +
             "group by o.name " +
             "having o.id = ?");
@@ -1132,7 +1132,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         // Count accounts per person.
         SqlFieldsQuery q = new SqlFieldsQuery("select count(a.id) " +
-            "from " + PERSON_CACHE_NAME + ".Person p join " + ACC_CACHE_NAME + ".Account a " +
+            "from \"" + PERSON_CACHE_NAME + "\".Person p join \"" + ACC_CACHE_NAME + "\".Account a " +
             "on p.strId = a.personStrId " +
             "group by p.name " +
             "having p.id = ?");
@@ -1174,9 +1174,9 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         // Select persons with count of accounts of person at organization.
         String sql = "select p.id, count(a.id) " +
             "from " +
-            "" + PERSON_CACHE_NAME + ".Person p, " +
-            "" + ORG_CACHE_NAME + ".Organization o, " +
-            "" + ACC_CACHE_NAME + ".Account a " +
+            "\"" + PERSON_CACHE_NAME + "\".Person p, " +
+            "\"" + ORG_CACHE_NAME + "\".Organization o, " +
+            "\"" + ACC_CACHE_NAME + "\".Account a " +
             "where p.id = a.personId and p.orgStrId = o.strId " +
             "group by p.id " +
             "having o.id = ?";
