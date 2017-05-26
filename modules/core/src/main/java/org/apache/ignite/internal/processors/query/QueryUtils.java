@@ -251,8 +251,14 @@ public class QueryUtils {
     public static String normalizeSchemaName(String cacheName, @Nullable String schemaName, boolean escape) {
         String res = schemaName;
 
-        if (res == null)
+        if (res == null) {
             res = cacheName;
+
+            // If schema name is not set explicitly, we will use escaped cache name. The reason is that cache name
+            // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
+            // SQL synthax perspective. We do not want node to fail on startup due to this.
+            escape = true;
+        }
 
         if (!escape)
             res = normalizeObjectName(res);
@@ -285,7 +291,7 @@ public class QueryUtils {
         if (str == null)
             return null;
 
-        String res = str.replace('.', '_').replace('$', '_').replace('-', '_');
+        String res = str.replace('.', '_').replace('$', '_');
 
         return res.toUpperCase();
     }
