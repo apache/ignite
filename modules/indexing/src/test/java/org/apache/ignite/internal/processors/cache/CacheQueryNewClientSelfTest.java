@@ -61,7 +61,6 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Integer> cache1 = srv.createCache(new CacheConfiguration<Integer, Integer>().
                 setName("cache1").setIndexedTypes(Integer.class, Integer.class));
-
             IgniteCache<Integer, Integer> cache2 = srv.createCache(new CacheConfiguration<Integer, Integer>().
                 setName("cache2").setIndexedTypes(Integer.class, Integer.class));
 
@@ -77,7 +76,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache = client.cache("cache1");
 
             List<List<?>> res = cache.query(new SqlFieldsQuery(
-                "select i1._val, i2._val from Integer i1 cross join cache2.Integer i2")).getAll();
+                "select i1._val, i2._val from Integer i1 cross join \"cache2\".Integer i2")).getAll();
 
             assertEquals(100, res.size());
 

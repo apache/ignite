@@ -149,7 +149,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < expectedSize; i++)
             cache.put(i, new Organization("org-" + i));
 
-        String select0 = "select * from org.Organization o";
+        String select0 = "select * from \"org\".Organization o";
 
         // Check for stable results.
         for(int i = 0; i < 10; i++) {
@@ -173,7 +173,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 20; i++)
             cache.put(i, new Organization("org-" + i));
 
-        String select0 = "select name from org.Organization";
+        String select0 = "select name from \"org\".Organization";
 
         List<List<?>> result = cache.query(new SqlFieldsQuery(select0)).getAll();
 
@@ -215,7 +215,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
                     expectedPersons++;
             }
 
-            String select0 = "select o.name n1, p.name n2 from pers.Person p, org.Organization o where p.orgId = o._key";
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
 
             List<List<?>> result = c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll();
 
@@ -249,7 +249,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
                     expectedPersons++;
             }
 
-            String select0 = "select o.name n1, p.name n2 from pers.Person p, org.Organization o where p.orgId = o._key";
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
 
             List<List<?>> result = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
 
