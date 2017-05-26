@@ -43,8 +43,10 @@ import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridQueueSelfTest;
+import org.apache.ignite.util.GridRandomSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
+import org.apache.ignite.util.GridStripedPoolSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 
 /**
@@ -79,6 +81,8 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridIntListSelfTest.class);
         suite.addTestSuite(GridArraysSelfTest.class);
+        suite.addTestSuite(GridRandomSelfTest.class);
+        suite.addTestSuite(GridStripedPoolSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);

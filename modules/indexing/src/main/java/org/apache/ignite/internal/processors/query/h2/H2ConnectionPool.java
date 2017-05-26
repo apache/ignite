@@ -1,12 +1,24 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.SQLException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridStripedPool;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CONNECTION_POOL_PICK_ATTEMPTS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CONNECTION_POOL_STRIPES;
 
 /**
  * Connection pool for H2 indexing.
  */
 public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLException> {
+    /** */
+    private static final int POOL_STRIPES = IgniteSystemProperties.getInteger(
+        IGNITE_H2_INDEXING_CONNECTION_POOL_STRIPES,32);
+
+    /** */
+    private static final int PICK_ATTEMPTS = IgniteSystemProperties.getInteger(
+        IGNITE_H2_INDEXING_CONNECTION_POOL_PICK_ATTEMPTS,4);
+
     /** */
     private final String dbUrl;
 
@@ -14,7 +26,7 @@ public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLExc
      * @param dbUrl Database url.
      */
     public H2ConnectionPool(String dbUrl) {
-        super(32, 4);
+        super(POOL_STRIPES, PICK_ATTEMPTS);
 
         this.dbUrl = dbUrl;
     }

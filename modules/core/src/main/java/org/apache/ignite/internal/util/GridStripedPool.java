@@ -51,6 +51,25 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
         stripes = s;
     }
 
+    /**
+     * @return {@code true} If the pool is closed.
+     */
+    public boolean isClosed() {
+        return closed.get();
+    }
+
+    /**
+     * @return Number of objects in this pool.
+     */
+    public int getPoolSize() {
+        int size = 0;
+
+        for (Queue<T> stripe : stripes)
+            size += stripe.size();
+
+        return size;
+    }
+
     /** {@inheritDoc} */
     @Override public void close() throws E {
         if (closed.compareAndSet(false, true)) {

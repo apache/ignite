@@ -496,6 +496,21 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE = "IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE";
 
     /**
+     * Number of stripes in H2 connection pool.
+     * <p>
+     * Default value is {@code 32}.
+     */
+    public static final String IGNITE_H2_INDEXING_CONNECTION_POOL_STRIPES = "IGNITE_H2_INDEXING_CONNECTION_POOL_STRIPES";
+
+    /**
+     * Number of pick attempts in H2 connection pool.
+     * <p>
+     * Default value is {@code 4}.
+     */
+    public static final String IGNITE_H2_INDEXING_CONNECTION_POOL_PICK_ATTEMPTS =
+        "IGNITE_H2_INDEXING_CONNECTION_POOL_PICK_ATTEMPTS";
+
+    /**
      * Size of the distributed SQL plan cache.
      * <p>
      * Default value is {@code 1024}.
