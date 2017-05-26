@@ -119,7 +119,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         Statement stmt = DriverManager.getConnection(URL).createStatement();
 
         ResultSet rs = stmt.executeQuery(
-            "select p.name, o.id as orgId from pers.Person p, org.Organization o where p.orgId = o.id");
+            "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
 
         assert rs != null;
 
