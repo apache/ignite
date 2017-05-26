@@ -285,7 +285,7 @@ public class QueryUtils {
         if (str == null)
             return null;
 
-        String res = str.replace('.', '_').replace('$', '_');
+        String res = str.replace('.', '_').replace('$', '_').replace('-', '_');
 
         return res.toUpperCase();
     }
