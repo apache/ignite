@@ -423,9 +423,7 @@ public class IgfsDataManager extends IgfsManager {
 
             // Delegate to the secondary file system.
             while (read < blockSize) {
-                synchronized (secReader) {
-                    r = secReader.read(pos + read, res, read, blockSize - read);
-                }
+                r = secReader.read(pos + read, res, read, blockSize - read);
 
                 if (r < 0)
                     break;
