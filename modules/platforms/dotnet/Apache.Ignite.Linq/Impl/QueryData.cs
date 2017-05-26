@@ -20,7 +20,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Linq.Expressions;
 
     /// <summary>
     /// Query data holder.
