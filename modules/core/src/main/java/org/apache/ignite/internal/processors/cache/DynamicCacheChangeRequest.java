@@ -70,7 +70,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Close flag. */
     private boolean close;
 
-    /** SQL flag - whether the cache whose change is requested should be created by SQL command {@code CREATE TABLE}. */
+    /** Whether cache was created through SQL. */
     private boolean sql;
 
     /** Fail if exists flag. */

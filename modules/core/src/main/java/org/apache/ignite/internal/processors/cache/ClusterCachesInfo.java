@@ -31,7 +31,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -383,7 +382,7 @@ class ClusterCachesInfo {
                     if (req.sql() && !desc.sql()) {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
-                            "DROP TABLE [cacheName=" + req.cacheName() + ']'));
+                            "DROP TABLE: " + req.cacheName()));
 
                         continue;
                     }
