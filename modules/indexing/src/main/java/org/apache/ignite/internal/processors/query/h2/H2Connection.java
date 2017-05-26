@@ -24,8 +24,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,7 +59,7 @@ public final class H2Connection implements GridCancelable {
     private final Statement stmt;
 
     /** */
-    private final StatementCache stmtCache = new StatementCache(PREPARED_STMT_CACHE_SIZE);
+    private final H2StatementCache stmtCache = new H2StatementCache(PREPARED_STMT_CACHE_SIZE);
 
     /** */
     private String schema;
@@ -315,36 +313,6 @@ public final class H2Connection implements GridCancelable {
         if (!state.compareAndSet(State.IN_POOL, State.TAKEN_FROM_POOL)) {
             if (state.get() != State.DESTROYED)
                 throw new IllegalStateException("Wrong take/release sequence.");
-        }
-    }
-
-    /**
-     * Statement cache.
-     */
-    private static final class StatementCache extends LinkedHashMap<String, PreparedStatement> {
-        /** */
-        private int maxSize;
-
-        /**
-         * @param maxSize Size.
-         */
-        private StatementCache(int maxSize) {
-            super(Math.min(maxSize, 32), 0.75f, true);
-
-            this.maxSize = maxSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean removeEldestEntry(Map.Entry<String, PreparedStatement> eldest) {
-            boolean rmv = size() > maxSize;
-
-            if (rmv) {
-                PreparedStatement stmt = eldest.getValue();
-
-                U.closeQuiet(stmt);
-            }
-
-            return rmv;
         }
     }
 
