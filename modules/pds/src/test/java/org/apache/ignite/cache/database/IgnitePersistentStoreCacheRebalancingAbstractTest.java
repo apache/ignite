@@ -315,6 +315,8 @@ public abstract class IgnitePersistentStoreCacheRebalancingAbstractTest extends 
      * @throws Exception If fails.
      */
     public void testPartitionLossAndRecover() throws Exception {
+        fail("IGNITE-5302");
+
         Ignite ignite1 = startGrid(0);
         Ignite ignite2 = startGrid(1);
         Ignite ignite3 = startGrid(2);
