@@ -271,12 +271,12 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     @Override protected void checkAllDataEquals() throws Exception {
         compareQueryRes0(cacheCustOrd, "select _key, _val, date, orderId, rootOrderId, alias, archSeq, origOrderId " +
-            "from \"custord\".CustOrder");
+            "from custord.CustOrder");
         compareQueryRes0(cacheReplOrd, "select _key, _val, id, date, orderId, rootOrderId, alias, archSeq, refOrderId " +
-            "from \"replord\".ReplaceOrder");
-        compareQueryRes0(cacheOrdParam, "select _key, _val, id, date, orderId, parentAlgo from \"ordparam\".OrderParams\n");
-        compareQueryRes0(cacheCancel, "select _key, _val, id, date, refOrderId from \"cancel\".Cancel\n");
-        compareQueryRes0(cacheExec, "select _key, _val, date, rootOrderId, execShares, price, lastMkt from \"exec\".Exec\n");
+            "from replord.ReplaceOrder");
+        compareQueryRes0(cacheOrdParam, "select _key, _val, id, date, orderId, parentAlgo from ordparam.OrderParams\n");
+        compareQueryRes0(cacheCancel, "select _key, _val, id, date, refOrderId from cancel.Cancel\n");
+        compareQueryRes0(cacheExec, "select _key, _val, date, rootOrderId, execShares, price, lastMkt from exec.Exec\n");
     }
 
     /**
@@ -301,15 +301,15 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     @Override protected Statement initializeH2Schema() throws SQLException {
         Statement st = super.initializeH2Schema();
 
-        st.execute("CREATE SCHEMA \"custord\"");
-        st.execute("CREATE SCHEMA \"replord\"");
-        st.execute("CREATE SCHEMA \"ordparam\"");
-        st.execute("CREATE SCHEMA \"cancel\"");
-        st.execute("CREATE SCHEMA \"exec\"");
+        st.execute("CREATE SCHEMA custord");
+        st.execute("CREATE SCHEMA replord");
+        st.execute("CREATE SCHEMA ordparam");
+        st.execute("CREATE SCHEMA cancel");
+        st.execute("CREATE SCHEMA exec");
 
         final String keyType = useColocatedData() ? "other" : "int";
 
-        st.execute("create table \"custord\".CustOrder" +
+        st.execute("create table custord.CustOrder" +
             "  (" +
             "  _key int not null," +
             "  _val other not null," +
@@ -321,7 +321,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "  alias varchar(255)" +
             "  )");
 
-        st.execute("create table \"replord\".ReplaceOrder" +
+        st.execute("create table replord.ReplaceOrder" +
             "  (" +
             "  _key " + keyType + " not null," +
             "  _val other not null," +
@@ -334,7 +334,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "  alias varchar(255)" +
             "  )");
 
-        st.execute("create table \"ordparam\".OrderParams" +
+        st.execute("create table ordparam.OrderParams" +
             "  (" +
             "  _key " + keyType + " not null," +
             "  _val other not null," +
@@ -344,7 +344,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "  parentAlgo varchar(255)" +
             "  )");
 
-        st.execute("create table \"cancel\".Cancel" +
+        st.execute("create table cancel.Cancel" +
             "  (" +
             "  _key " + keyType + " not null," +
             "  _val other not null," +
@@ -353,7 +353,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "  refOrderId int" +
             "  )");
 
-        st.execute("create table \"exec\".Exec" +
+        st.execute("create table exec.Exec" +
             "  (" +
             "  _key " + keyType + " not null," +
             "  _val other not null," +
@@ -376,7 +376,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     private void insertInDb(CustOrder o) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"custord\".CustOrder (_key, _val, orderId, rootOrderId, date, alias, archSeq, origOrderId) " +
+            "insert into custord.CustOrder (_key, _val, orderId, rootOrderId, date, alias, archSeq, origOrderId) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
@@ -400,7 +400,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     private void insertInDb(ReplaceOrder o) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"replord\".ReplaceOrder (_key, _val, id, orderId, rootOrderId, date, alias, archSeq, refOrderId) " +
+            "insert into replord.ReplaceOrder (_key, _val, id, orderId, rootOrderId, date, alias, archSeq, refOrderId) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
@@ -425,7 +425,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     private void insertInDb(OrderParams o) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"ordparam\".OrderParams (_key, _val, id, date, orderId, parentAlgo) values(?, ?, ?, ?, ?, ?)")) {
+            "insert into ordparam.OrderParams (_key, _val, id, date, orderId, parentAlgo) values(?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
             st.setObject(++i, o.key(useColocatedData()));
@@ -446,7 +446,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     private void insertInDb(Cancel o) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"cancel\".Cancel (_key, _val, id, date, refOrderId) values(?, ?, ?, ?, ?)")) {
+            "insert into cancel.Cancel (_key, _val, id, date, refOrderId) values(?, ?, ?, ?, ?)")) {
             int i = 0;
 
             st.setObject(++i, o.key(useColocatedData()));
@@ -466,7 +466,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     private void insertInDb(Exec o) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"exec\".Exec (_key, _val, date, rootOrderId, execShares, price, lastMkt) " +
+            "insert into exec.Exec (_key, _val, date, rootOrderId, execShares, price, lastMkt) " +
                 "values(?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
