@@ -571,7 +571,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             exchActions = new ExchangeActions();
 
                             List<DynamicCacheChangeRequest> destroyRequests = getStopCacheRequests(
-                                cctx.cache(), op.cacheNames(), cctx.localNodeId());
+                                cctx.cache(), op.cacheGroupIds(), cctx.localNodeId());
 
                             if (!F.isEmpty(destroyRequests)) { //Emulate destroy cache request
                                 for (DynamicCacheChangeRequest req : destroyRequests) {
