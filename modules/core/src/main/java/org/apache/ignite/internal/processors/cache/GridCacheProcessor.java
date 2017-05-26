@@ -2075,11 +2075,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteWriteAheadLogManager walMgr = null;
 
         if (ctx.config().isPersistentStoreEnabled()) {
-            dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
+            if (ctx.clientNode()) {
+                log.warning("Currently persistence is not supported on client nodes; persistence configuration will be ignored.");
 
-            pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
+                dbMgr = new IgniteCacheDatabaseSharedManager();
+            }
+            else {
+                dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
 
-            walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
+                pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
+
+                walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
+            }
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
