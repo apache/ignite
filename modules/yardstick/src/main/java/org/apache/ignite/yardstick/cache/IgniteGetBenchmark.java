@@ -17,13 +17,7 @@
 
 package org.apache.ignite.yardstick.cache;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
@@ -43,43 +37,11 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
                 "must by less then the range (\"-r\", \"--range\").");
 
-        if (args.preloadAmount() > 0) {
-            List<IgniteCache> caches = grpCaches != null ? grpCaches : (List)Collections.singletonList(cache);
-
-            if (caches.size() > 1) {
-                ExecutorService executor = Executors.newFixedThreadPool(10);
-
-                try {
-                    List<Future<?>> futs = new ArrayList<>();
-
-                    for (final IgniteCache cache : caches) {
-                        futs.add(executor.submit(new Runnable() {
-                            @Override public void run() {
-                                loadCache(cache.getName());
-                            }
-                        }));
-                    }
-
-                    for (Future<?> fut : futs)
-                        fut.get();
-                }
-                finally {
-                    executor.shutdown();
-                }
-            }
-            else
-                loadCache(caches.get(0).getName());
-        }
+        loadCachesData();
     }
 
-    /**
-     * @param cacheName Cache name.
-     */
-    private void loadCache(String cacheName) {
-        println(cfg, "Loading data for cache: " + cacheName);
-
-        long start = System.nanoTime();
-
+    /** {@inheritDoc} */
+    @Override protected void loadCacheData(String cacheName) {
         try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
             for (int i = 0; i < args.preloadAmount(); i++) {
                 dataLdr.addData(i, new SampleValue(i));
@@ -92,9 +54,6 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
                 }
             }
         }
-
-        println(cfg, "Finished populating query data [cache=" + cacheName +
-            ", time=" + ((System.nanoTime() - start) / 1_000_000) + "ms]");
     }
 
     /** {@inheritDoc} */
