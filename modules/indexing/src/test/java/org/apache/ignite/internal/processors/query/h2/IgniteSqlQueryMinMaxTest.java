@@ -277,7 +277,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             QueryCursor<List<?>> cursor = cache.query(
                     new SqlFieldsQuery("select b.groupVal, min(a._key), max(a._key), min(a._val), max(a._val), " +
                             "min(b._key), max(b._key), min(b.idxVal), max(b.idxVal), min(b.nonIdxVal), max(b.nonIdxVal) " +
-                            "from \"intCache\".Integer a, \"valCache\".ValueObj b where a._key = b._key " +
+                            "from intCache.Integer a, valCache.ValueObj b where a._key = b._key " +
                             "group by b.groupVal order by b.groupVal"));
 
             List<List<?>> result = cursor.getAll();
@@ -305,7 +305,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             cursor = cache.query(
                     new SqlFieldsQuery("select b.groupVal, min(a._key), max(a._key), min(a._val), max(a._val), " +
                             "min(b._key), max(b._key), min(b.idxVal), max(b.idxVal), min(b.nonIdxVal), max(b.nonIdxVal) " +
-                            "from \"intCache\".Integer a, \"valCache\".ValueObj b where a._key = b.idxVal " +
+                            "from intCache.Integer a, valCache.ValueObj b where a._key = b.idxVal " +
                             "group by b.groupVal order by b.groupVal")
                             .setDistributedJoins(true));
 
