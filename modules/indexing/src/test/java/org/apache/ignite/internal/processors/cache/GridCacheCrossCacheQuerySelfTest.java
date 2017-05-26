@@ -66,8 +66,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         c.setCacheConfiguration(
             createCache("partitioned", CacheMode.PARTITIONED, Integer.class, FactPurchase.class),
-            createCache("replicated_prod", CacheMode.REPLICATED, Integer.class, DimProduct.class),
-            createCache("replicated_store", CacheMode.REPLICATED, Integer.class, DimStore.class));
+            createCache("replicated-prod", CacheMode.REPLICATED, Integer.class, DimProduct.class),
+            createCache("replicated-store", CacheMode.REPLICATED, Integer.class, DimStore.class));
 
         return c;
     }
@@ -125,7 +125,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         X.println("___ simple");
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select f.productId, p.name, f.price " +
-            "from FactPurchase f, replicated_prod.DimProduct p where p.id = f.productId ");
+            "from FactPurchase f, \"replicated-prod\".DimProduct p where p.id = f.productId ");
 
         for (List<?> o : qryProc.querySqlFields(cache.context(), qry, false).getAll()) {
             X.println("___ -> " + o);
@@ -156,7 +156,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         qry = new SqlFieldsQuery("select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
             "count(nullif(f.price, 5)), (max(f.price) - min(f.price)) * 3 as nn " +
             ", CAST(max(f.price) + 7 AS VARCHAR) " +
-            "from FactPurchase f, replicated_prod.DimProduct p " +
+            "from FactPurchase f, \"replicated-prod\".DimProduct p " +
             "where p.id = f.productId " +
             "group by f.productId, p.name");
 
@@ -172,7 +172,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         X.println("___ SUM HAVING");
 
         qry = new SqlFieldsQuery("select p.name, sum(f.price) s " +
-            "from FactPurchase f, replicated_prod.DimProduct p " +
+            "from FactPurchase f, \"replicated-prod\".DimProduct p " +
             "where p.id = f.productId " +
             "group by f.productId, p.name " +
             "having s >= 15");
@@ -246,8 +246,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private void fillCaches() throws IgniteCheckedException {
         int idGen = 0;
 
-        GridCacheAdapter<Integer, DimProduct> dimCacheProd = ((IgniteKernal)ignite).internalCache("replicated_prod");
-        GridCacheAdapter<Integer, DimStore> dimCacheStore = ((IgniteKernal)ignite).internalCache("replicated_store");
+        GridCacheAdapter<Integer, DimProduct> dimCacheProd = ((IgniteKernal)ignite).internalCache("replicated-prod");
+        GridCacheAdapter<Integer, DimStore> dimCacheStore = ((IgniteKernal)ignite).internalCache("replicated-store");
 
         List<DimStore> dimStores = new ArrayList<>();
 
