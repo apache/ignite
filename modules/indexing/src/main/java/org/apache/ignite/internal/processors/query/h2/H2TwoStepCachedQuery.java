@@ -15,23 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.query.h2;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.util.List;
 
 /**
- *
+ * Cached two-step query.
  */
-public class IgniteBinaryObjectsCacheRestartTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+public class H2TwoStepCachedQuery {
+    /** */
+    final List<GridQueryFieldMetadata> meta;
 
-        return IgniteCacheRestartTestSuite.suite();
+    /** */
+    final GridCacheTwoStepQuery twoStepQry;
+
+    /**
+     * @param meta Fields metadata.
+     * @param twoStepQry Query.
+     */
+    public H2TwoStepCachedQuery(List<GridQueryFieldMetadata> meta, GridCacheTwoStepQuery twoStepQry) {
+        this.meta = meta;
+        this.twoStepQry = twoStepQry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(H2TwoStepCachedQuery.class, this);
     }
 }

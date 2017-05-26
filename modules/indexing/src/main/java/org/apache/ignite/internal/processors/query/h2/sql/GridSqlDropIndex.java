@@ -24,7 +24,7 @@ import org.h2.command.Parser;
  */
 public class GridSqlDropIndex extends GridSqlStatement {
     /** Index name. */
-    private String name;
+    private String idxName;
 
     /** Schema name. */
     private String schemaName;
@@ -35,15 +35,15 @@ public class GridSqlDropIndex extends GridSqlStatement {
     /**
      * @return Index name.
      */
-    public String name() {
-        return name;
+    public String indexName() {
+        return idxName;
     }
 
     /**
-     * @param name Index name.
+     * @param idxName Index name.
      */
-    public void name(String name) {
-        this.name = name;
+    public void indexName(String idxName) {
+        this.idxName = idxName;
     }
 
     /**
@@ -77,6 +77,6 @@ public class GridSqlDropIndex extends GridSqlStatement {
     /** {@inheritDoc} */
     @Override public String getSQL() {
         return "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + Parser.quoteIdentifier(schemaName) + '.' +
-            Parser.quoteIdentifier(name);
+            Parser.quoteIdentifier(idxName);
     }
 }

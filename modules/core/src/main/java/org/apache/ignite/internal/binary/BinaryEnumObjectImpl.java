@@ -97,9 +97,18 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
-        assert arr[0] == GridBinaryMarshaller.ENUM;
 
-        valBytes = arr;
+        if (arr[0] == GridBinaryMarshaller.ENUM)
+            valBytes = arr;
+        else {
+            assert arr[0] == GridBinaryMarshaller.BINARY_ENUM;
+
+            valBytes = new byte[arr.length];
+
+            valBytes[0] = GridBinaryMarshaller.ENUM;
+
+            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+        }
 
         this.ctx = ctx;
 
@@ -184,6 +193,23 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public int enumOrdinal() throws BinaryObjectException {
         return ord;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String enumName() throws BinaryObjectException {
+        BinaryMetadata metadata = ctx.metadata0(typeId);
+
+        if (metadata == null)
+            throw new BinaryObjectException("Failed to get metadata for enum [typeId=" +
+                typeId + ", typeName='" + clsName + "', ordinal=" + ord + "]");
+
+        String name = metadata.getEnumNameByOrdinal(ord);
+
+        if (name == null)
+            throw new BinaryObjectException("Unable to resolve enum constant name [typeId=" +
+                typeId + ", typeName='" + metadata.typeName() + "', ordinal=" + ord + "]");
+
+        return name;
     }
 
     /** {@inheritDoc} */

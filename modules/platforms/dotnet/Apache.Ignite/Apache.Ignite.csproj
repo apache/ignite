@@ -52,7 +52,6 @@
     <Compile Include="Service\IgniteService.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Service\ServiceDescription.cs" />
     <Compile Include="Service\IgniteServiceInstaller.cs">
       <SubType>Component</SubType>
     </Compile>

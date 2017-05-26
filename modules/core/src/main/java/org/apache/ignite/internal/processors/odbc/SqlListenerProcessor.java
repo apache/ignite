@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
@@ -36,14 +35,13 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
  * ODBC processor.
  */
-public class OdbcProcessor extends GridProcessorAdapter {
+public class SqlListenerProcessor extends GridProcessorAdapter {
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
@@ -65,7 +63,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public OdbcProcessor(GridKernalContext ctx) {
+    public SqlListenerProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -77,12 +75,6 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
         if (odbcCfg != null) {
             try {
-                Marshaller marsh = cfg.getMarshaller();
-
-                if (marsh != null && !(marsh instanceof BinaryMarshaller))
-                    throw new IgniteCheckedException("ODBC can only be used with BinaryMarshaller (please set it " +
-                        "through IgniteConfiguration.setMarshaller())");
-
                 HostAndPortRange hostPort;
 
                 if (F.isEmpty(odbcCfg.getEndpointAddress())) {
@@ -134,7 +126,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(host)
                             .port(port)
-                            .listener(new OdbcNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
+                            .listener(new SqlListenerNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())
