@@ -10199,11 +10199,11 @@ public abstract class IgniteUtils {
     public static int nearestPow2(int x, boolean less) {
         assert x > 0 : "can not calculate for less zero";
 
-        int y = 1;
+        long y = 1;
 
         while (y < x){
-            if ((long)y * 2 > Integer.MAX_VALUE)
-                return y;
+            if (y * 2 > Integer.MAX_VALUE)
+                return (int)y;
 
             y *= 2;
         }
@@ -10211,7 +10211,7 @@ public abstract class IgniteUtils {
         if (less)
             y /= 2;
 
-        return y;
+        return (int)y;
     }
 
     /**
