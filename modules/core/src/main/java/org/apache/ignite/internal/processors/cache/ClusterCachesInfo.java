@@ -820,7 +820,9 @@ class ClusterCachesInfo {
                     desc = desc0;
                 }
 
-                if (locCfg != null || joinDiscoData.startCaches() || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
+                if (locCfg != null ||
+                    joinDiscoData.startCaches() ||
+                    CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter()))
                     locJoinStartCaches.add(new T2<>(desc, nearCfg));
             }
         }
@@ -1015,7 +1017,7 @@ class ClusterCachesInfo {
 
         assert old == null : old;
 
-        ctx.discovery().addCacheGroup(grpDesc, startedCacheCfg.getNodeFilter(), startedCacheCfg.getCacheMode());
+        ctx.discovery().addCacheGroup(grpDesc, grpDesc.config().getNodeFilter(), startedCacheCfg.getCacheMode());
 
         if (exchActions != null)
             exchActions.addCacheGroupToStart(grpDesc);

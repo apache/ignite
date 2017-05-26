@@ -836,12 +836,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                         CacheConfiguration c = desc.cacheConfiguration();
-                        IgnitePredicate filter = c.getNodeFilter();
+                        IgnitePredicate filter = desc.groupDescriptor().config().getNodeFilter();
 
                         if (c.getName().equals(conf.getName()) &&
                             ((desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) ||
                                 CU.isSystemCache(c.getName()))) {
-
                             tmpCacheCfg.add(c);
 
                             break;
@@ -1820,7 +1819,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (started != null) {
             for (DynamicCacheDescriptor desc : started) {
-                IgnitePredicate<ClusterNode> filter = desc.cacheConfiguration().getNodeFilter();
+                IgnitePredicate<ClusterNode> filter = desc.groupDescriptor().config().getNodeFilter();
 
                 if (CU.affinityNode(ctx.discovery().localNode(), filter)) {
                     prepareCacheStart(
@@ -1868,7 +1867,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ccfg.setNearConfiguration(null);
         }
-        else if (CU.affinityNode(ctx.discovery().localNode(), ccfg.getNodeFilter()))
+        else if (CU.affinityNode(ctx.discovery().localNode(), grpDesc.config().getNodeFilter()))
             affNode = true;
         else {
             affNode = false;
