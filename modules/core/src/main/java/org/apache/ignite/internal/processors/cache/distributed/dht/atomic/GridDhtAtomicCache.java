@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -196,11 +197,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val);
+                return new GridDhtAtomicCacheEntry(ctx, topVer, key);
             }
         };
     }
@@ -1473,105 +1472,156 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
+        final boolean evt = !skipVals;
+
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
-            Map<K, V> locVals = U.newHashMap(keys.size());
+            try {
+                Map<K, V> locVals = U.newHashMap(keys.size());
 
-            boolean success = true;
+                boolean success = true;
+                boolean readNoEntry = ctx.readNoEntry(expiry, false);
 
-            // Optimistically expect that all keys are available locally (avoid creation of get future).
-            for (KeyCacheObject key : keys) {
-                GridCacheEntryEx entry = null;
+                // Optimistically expect that all keys are available locally (avoid creation of get future).
+                for (KeyCacheObject key : keys) {
+                    if (readNoEntry) {
+                        CacheDataRow row = ctx.offheap().read(key);
 
-                while (true) {
-                    try {
-                        entry = entryEx(key);
+                        if (row != null) {
+                            long expireTime = row.expireTime();
 
-                        // If our DHT cache do has value, then we peek it.
-                        if (entry != null) {
-                            boolean isNew = entry.isNewLocked();
-
-                            EntryGetResult getRes = null;
-                            CacheObject v = null;
-                            GridCacheVersion ver = null;
-
-                            if (needVer) {
-                                getRes = entry.innerGetVersioned(
-                                    null,
-                                    null,
-                                    /*update-metrics*/false,
-                                    /*event*/!skipVals,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiry,
+                            if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                                ctx.addResult(locVals,
+                                    key,
+                                    row.value(),
+                                    skipVals,
+                                    false,
+                                    deserializeBinary,
                                     true,
-                                    null);
+                                    null,
+                                    row.version(),
+                                    0,
+                                    0,
+                                    needVer);
 
-                                if (getRes != null) {
-                                    v = getRes.value();
-                                    ver = getRes.version();
+                                if (evt) {
+                                    ctx.events().readEvent(key,
+                                        null,
+                                        row.value(),
+                                        subjId,
+                                        taskName,
+                                        !deserializeBinary);
                                 }
                             }
-                            else {
-                                v = entry.innerGet(
-                                    null,
-                                    null,
-                                    /*read-through*/false,
-                                    /*update-metrics*/false,
-                                    /*event*/!skipVals,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiry,
-                                    !deserializeBinary);
-                            }
-
-                            // Entry was not in memory or in swap, so we remove it from cache.
-                            if (v == null) {
-                                GridCacheVersion obsoleteVer = context().versions().next();
-
-                                if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
-                                    removeEntry(entry);
-
-                                success = false;
-                            }
                             else
-                                ctx.addResult(locVals, key, v, skipVals, false, deserializeBinary, true,
-                                    getRes, ver, 0, 0, needVer);
+                                success = false;
                         }
                         else
                             success = false;
+                    }
+                    else {
+                        GridCacheEntryEx entry = null;
 
-                        break; // While.
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        // No-op, retry.
-                    }
-                    catch (GridDhtInvalidPartitionException ignored) {
-                        success = false;
+                        while (true) {
+                            try {
+                                entry = entryEx(key);
 
-                        break; // While.
+                                // If our DHT cache do has value, then we peek it.
+                                if (entry != null) {
+                                    boolean isNew = entry.isNewLocked();
+
+                                    EntryGetResult getRes = null;
+                                    CacheObject v = null;
+                                    GridCacheVersion ver = null;
+
+                                    if (needVer) {
+                                        getRes = entry.innerGetVersioned(
+                                            null,
+                                            null,
+                                            /*update-metrics*/false,
+                                            /*event*/evt,
+                                            subjId,
+                                            null,
+                                            taskName,
+                                            expiry,
+                                            true,
+                                            null);
+
+                                        if (getRes != null) {
+                                            v = getRes.value();
+                                            ver = getRes.version();
+                                        }
+                                    }
+                                    else {
+                                        v = entry.innerGet(
+                                            null,
+                                            null,
+                                            /*read-through*/false,
+                                            /*update-metrics*/false,
+                                            /*event*/evt,
+                                            subjId,
+                                            null,
+                                            taskName,
+                                            expiry,
+                                            !deserializeBinary);
+                                    }
+
+                                    // Entry was not in memory or in swap, so we remove it from cache.
+                                    if (v == null) {
+                                        if (isNew && entry.markObsoleteIfEmpty(context().versions().next()))
+                                            removeEntry(entry);
+
+                                        success = false;
+                                    }
+                                    else {
+                                        ctx.addResult(locVals,
+                                            key,
+                                            v,
+                                            skipVals,
+                                            false,
+                                            deserializeBinary,
+                                            true,
+                                            getRes,
+                                            ver,
+                                            0,
+                                            0,
+                                            needVer);
+                                    }
+                                }
+                                else
+                                    success = false;
+
+                                break; // While.
+                            }
+                            catch (GridCacheEntryRemovedException ignored) {
+                                // No-op, retry.
+                            }
+                            catch (GridDhtInvalidPartitionException ignored) {
+                                success = false;
+
+                                break; // While.
+                            }
+                            finally {
+                                if (entry != null)
+                                    ctx.evicts().touch(entry, topVer);
+                            }
+                        }
                     }
-                    catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture<>(e);
-                    }
-                    finally {
-                        if (entry != null)
-                            ctx.evicts().touch(entry, topVer);
-                    }
+
+                    if (!success)
+                        break;
+                    else if (!skipVals && ctx.config().isStatisticsEnabled())
+                        metrics0().onRead(true);
                 }
 
-                if (!success)
-                    break;
-                else if (!skipVals && ctx.config().isStatisticsEnabled())
-                    metrics0().onRead(true);
+                if (success) {
+                    sendTtlUpdateRequest(expiry);
+
+                    return new GridFinishedFuture<>(locVals);
+                }
             }
-
-            if (success) {
-                sendTtlUpdateRequest(expiry);
-
-                return new GridFinishedFuture<>(locVals);
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(e);
             }
         }
 

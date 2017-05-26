@@ -20,6 +20,8 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -257,4 +259,24 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Client mode.")
     public boolean isClientMode() throws IllegalStateException;
+
+    /**
+     * Diagnosis method for determining ring message latency.
+     * On this method call special message will be sent across the ring
+     * and stats about the message will appear in the logs of each node.
+     *
+     * @param maxHops Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).
+     */
+    @MXBeanDescription("Check ring latency.")
+    @MXBeanParametersNames(
+        {
+            "maxHops"
+        }
+    )
+    @MXBeanParametersDescriptions(
+        {
+            "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended)."
+        }
+    )
+    public void checkRingLatency(int maxHops);
 }

@@ -28,13 +28,17 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.KeyMapper;
 import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
  * Distribution-related misc. support.
@@ -118,17 +122,21 @@ public class CacheUtils {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param matrixUuid Matrix UUID.
      * @return Sum obtained using sparse logic.
      */
-    public static <K, V> double sparseSum(String cacheName) {
-        Collection<Double> subSums = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
-            Map<Integer, Double> map = ce.entry().getValue();
+    public static <K, V> double sparseSum(IgniteUuid matrixUuid) {
+        Collection<Double> subSums = fold(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce, Double acc) -> {
+            Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> entry = ce.entry();
+            if (entry.getKey().get2().equals(matrixUuid)) {
+                Map<Integer, Double> map = entry.getValue();
 
-            double sum = sum(map.values());
+                double sum = sum(map.values());
 
-            return acc == null ? sum : acc + sum;
-        });
+                return acc == null ? sum : acc + sum;
+            } else
+                return acc;
+        }, key -> key.get2().equals(matrixUuid));
 
         return sum(subSums);
     }
@@ -172,39 +180,48 @@ public class CacheUtils {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param matrixUuid Matrix UUID.
      * @return Minimum value obtained using sparse logic.
      */
-    public static <K, V> double sparseMin(String cacheName) {
-        Collection<Double> mins = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
-            Map<Integer, Double> map = ce.entry().getValue();
+    public static <K, V> double sparseMin(IgniteUuid matrixUuid) {
+        Collection<Double> mins = fold(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce, Double acc) -> {
+            Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> entry = ce.entry();
 
-            double min = Collections.min(map.values());
+            if (entry.getKey().get2().equals(matrixUuid)) {
+                Map<Integer, Double> map = entry.getValue();
 
-            if (acc == null)
-                return min;
-            else
-                return Math.min(acc, min);
-        });
+                double min = Collections.min(map.values());
+
+                if (acc == null)
+                    return min;
+                else
+                    return Math.min(acc, min);
+            } else
+                return acc;
+        }, key -> key.get2().equals(matrixUuid));
 
         return Collections.min(mins);
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param matrixUuid Matrix UUID.
      * @return Maximum value obtained using sparse logic.
      */
-    public static <K, V> double sparseMax(String cacheName) {
-        Collection<Double> maxes = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
-            Map<Integer, Double> map = ce.entry().getValue();
+    public static <K, V> double sparseMax(IgniteUuid matrixUuid) {
+        Collection<Double> maxes = fold(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce, Double acc) -> {
+            Cache.Entry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> entry = ce.entry();
+            if (entry.getKey().get2().equals(matrixUuid)) {
+                Map<Integer, Double> map = entry.getValue();
 
-            double max = Collections.max(map.values());
+                double max = Collections.max(map.values());
 
-            if (acc == null)
-                return max;
-            else
-                return Math.max(acc, max);
-        });
+                if (acc == null)
+                    return max;
+                else
+                    return Math.max(acc, max);
+            } else
+                return acc;
+        }, key -> key.get2().equals(matrixUuid));
 
         return Collections.max(maxes);
     }
@@ -254,19 +271,20 @@ public class CacheUtils {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param matrixUuid Matrix UUID.
      * @param mapper Mapping {@link IgniteFunction}.
      */
-    public static <K, V> void sparseMap(String cacheName, IgniteFunction<Double, Double> mapper) {
-        foreach(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce) -> {
-            Integer k = ce.entry().getKey();
+    public static <K, V> void sparseMap(IgniteUuid matrixUuid, IgniteFunction<Double, Double> mapper) {
+        foreach(SparseDistributedMatrixStorage.ML_CACHE_NAME, (CacheEntry<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> ce) -> {
+            IgniteBiTuple k = ce.entry().getKey();
+
             Map<Integer, Double> v = ce.entry().getValue();
 
             for (Map.Entry<Integer, Double> e : v.entrySet())
                 e.setValue(mapper.apply(e.getValue()));
 
             ce.cache().put(k, v);
-        });
+        }, key -> key.get2().equals(matrixUuid));
     }
 
     /**
@@ -276,6 +294,17 @@ public class CacheUtils {
      * @param <V> Cache value object type.
      */
     public static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
+        foreach(cacheName, fun, null);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param fun An operation that accepts a cache entry and processes it.
+     * @param keyFilter Cache keys filter.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
+     */
+    public static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun, IgnitePredicate<K> keyFilter) {
         bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
@@ -293,7 +322,7 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == locNode)))
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
                     fun.accept(new CacheEntry<>(entry, cache));
             }
         });
@@ -310,6 +339,20 @@ public class CacheUtils {
      * @return Fold operation result.
      */
     public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
+        return fold(cacheName, folder, null);
+    }
+
+    /**
+     * <b>Currently fold supports only commutative operations.<b/>
+     *
+     * @param cacheName Cache name.
+     * @param folder Fold function operating over cache entries.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
+     * @param <A> Fold result type.
+     * @return Fold operation result.
+     */
+    public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder, IgnitePredicate<K> keyFilter) {
         return bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
@@ -329,7 +372,7 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == locNode)))
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
                     a = folder.apply(new CacheEntry<>(entry, cache), a);
             }
 

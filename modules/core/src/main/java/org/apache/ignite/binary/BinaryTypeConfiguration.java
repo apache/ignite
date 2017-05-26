@@ -23,6 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
  * configuration is optional, as it is generally enough, and also optional, to provide global binary
@@ -46,6 +49,9 @@ public class BinaryTypeConfiguration {
     /** Enum flag. */
     private boolean isEnum;
 
+    /** Enum names to ordinals mapping. */
+    private Map<String, Integer> enumValues;
+
     /**
      * Constructor.
      */
@@ -64,6 +70,7 @@ public class BinaryTypeConfiguration {
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
+        enumValues = other.enumValues != null ? new LinkedHashMap<>(other.enumValues) : null;
         typeName = other.typeName;
     }
 
@@ -177,6 +184,25 @@ public class BinaryTypeConfiguration {
         this.isEnum = isEnum;
 
         return this;
+    }
+
+    /**
+     * Set enum ordinal to names mapping.
+     *
+     * @param values Map of enum name to ordinal.
+     * @return {@code this} for chaining.
+     */
+    public BinaryTypeConfiguration setEnumValues(@Nullable Map<String, Integer> values) {
+        this.enumValues = values;
+
+        return this;
+    }
+
+    /**
+     * @return Enum name to ordinal mapping
+     */
+    @Nullable public Map<String, Integer> getEnumValues() {
+        return enumValues;
     }
 
     /** {@inheritDoc} */

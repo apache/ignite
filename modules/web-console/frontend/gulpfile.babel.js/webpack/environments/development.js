@@ -19,7 +19,7 @@ import {destDir} from '../../paths';
 
 const backendPort = 3000;
 const devServerPort = process.env.PORT || 9000;
-const devServerHost = process.env.HOST;
+const devServerHost = process.env.HOST || '0.0.0.0';
 
 export default {
     devtool: 'source-map',
@@ -33,17 +33,14 @@ export default {
         proxy: {
             '/socket.io': {
                 target: `http://localhost:${backendPort}`,
-                changeOrigin: true,
                 ws: true
             },
             '/agents': {
                 target: `http://localhost:${backendPort}`,
-                changeOrigin: true,
                 ws: true
             },
             '/api/v1/*': {
                 target: `http://localhost:${backendPort}`,
-                changeOrigin: true,
                 pathRewrite: {
                     '^/api/v1': ''
                 }

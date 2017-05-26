@@ -79,14 +79,15 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /**
      * Writes key-value pair to index.
      *
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param key Key.
      * @param val Value.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void store(final String space, final K key, final V val, long expirationTime) throws IgniteCheckedException {
+    public <K, V> void store(final String cacheName, final K key, final V val, long expirationTime)
+        throws IgniteCheckedException {
         assert key != null;
         assert val != null;
         assert enabled();
@@ -98,7 +99,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             if (log.isDebugEnabled())
                 log.debug("Storing key to cache query index [key=" + key + ", value=" + val + "]");
 
-            getSpi().store(space, key, val, expirationTime);
+            getSpi().store(cacheName, key, val, expirationTime);
         }
         finally {
             busyLock.leaveBusy();
@@ -106,12 +107,12 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     }
 
     /**
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key) throws IgniteCheckedException {
+    public void remove(String cacheName, Object key) throws IgniteCheckedException {
         assert key != null;
         assert enabled();
 
@@ -119,7 +120,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            getSpi().remove(space, key);
+            getSpi().remove(cacheName, key);
         }
         finally {
             busyLock.leaveBusy();
@@ -127,14 +128,14 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     }
 
     /**
-     * @param space Space.
+     * @param cacheName Cache name.
      * @param params Parameters collection.
      * @param filters Filters.
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public IgniteSpiCloseableIterator<?> query(String space, Collection<Object> params, IndexingQueryFilter filters)
+    public IgniteSpiCloseableIterator<?> query(String cacheName, Collection<Object> params, IndexingQueryFilter filters)
         throws IgniteCheckedException {
         if (!enabled())
             throw new IgniteCheckedException("Indexing SPI is not configured.");
@@ -143,7 +144,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final Iterator<?> res = getSpi().query(space, params, filters);
+            final Iterator<?> res = getSpi().query(cacheName, params, filters);
 
             if (res == null)
                 return new GridEmptyCloseableIterator<>();

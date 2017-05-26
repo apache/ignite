@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -40,7 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static java.sql.Types.INTEGER;
-import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -192,6 +192,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
+        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -219,7 +220,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 } else if ("AGE".equals(name) || "ORGID".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(primitivesInformationIsLostAfterStore ? 1 : 0, rs.getInt("NULLABLE"));
                 }
 
                 cnt++;

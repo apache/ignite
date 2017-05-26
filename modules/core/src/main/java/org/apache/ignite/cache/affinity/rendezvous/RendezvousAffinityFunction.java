@@ -69,7 +69,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
-public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
+public class RendezvousAffinityFunction implements AffinityFunction, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -83,7 +83,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private int parts;
 
     /** Mask to use in calculation when partitions count is power of 2. */
-    private transient int mask = -1;
+    private int mask = -1;
 
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
@@ -499,22 +499,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(parts);
-        out.writeBoolean(exclNeighbors);
-        out.writeObject(backupFilter);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setPartitions(in.readInt());
-
-        exclNeighbors = in.readBoolean();
-        backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 
     /**
