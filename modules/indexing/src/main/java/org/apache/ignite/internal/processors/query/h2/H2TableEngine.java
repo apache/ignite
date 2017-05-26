@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2SystemIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -40,7 +41,7 @@ public class H2TableEngine implements TableEngine {
     private static H2RowFactory rowFactory0;
 
     /** */
-    private static H2TableDescriptor tblDesc0;
+    private static GridH2SystemIndexFactory idxFactory0;
 
     /** */
     private static GridH2Table resTbl0;
@@ -52,29 +53,30 @@ public class H2TableEngine implements TableEngine {
      * @param sql DDL clause.
      * @param rowDesc Row descriptor.
      * @param rowFactory Row factory.
-     * @param tblDesc Table descriptor.
+     * @param idxFactory Index factory.
      * @throws SQLException If failed.
      * @return Created table.
      */
     public static synchronized GridH2Table createTable(Connection conn, String sql,
-        @Nullable GridH2RowDescriptor rowDesc, H2RowFactory rowFactory, H2TableDescriptor tblDesc)
+        @Nullable GridH2RowDescriptor rowDesc, H2RowFactory rowFactory, GridH2SystemIndexFactory idxFactory)
         throws SQLException {
         rowDesc0 = rowDesc;
         rowFactory0 = rowFactory;
-        tblDesc0 = tblDesc;
+        idxFactory0 = idxFactory;
 
         try {
             try (Statement s = conn.createStatement()) {
                 s.execute(sql + " engine \"" + H2TableEngine.class.getName() + "\"");
             }
 
-            tblDesc.table(resTbl0);
+            if (idxFactory instanceof H2TableDescriptor)
+                ((H2TableDescriptor)idxFactory).table(resTbl0);
 
             return resTbl0;
         }
         finally {
             resTbl0 = null;
-            tblDesc0 = null;
+            idxFactory0 = null;
             rowFactory0 = null;
             rowDesc0 = null;
         }
@@ -82,7 +84,12 @@ public class H2TableEngine implements TableEngine {
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.schema().cacheName());
+        String cacheName = null;
+
+        if (idxFactory0 instanceof H2TableDescriptor)
+            cacheName = ((H2TableDescriptor)idxFactory0).schema().cacheName();
+
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, idxFactory0, cacheName);
 
         return resTbl0;
     }
