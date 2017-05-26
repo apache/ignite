@@ -227,10 +227,14 @@ public class HadoopSkipList extends HadoopMultimapBase {
     }
 
     /**
+     * Naive random level function (geometric distribution) that returns
+     * random level from 0 to 32 inclusively, with the probability of 32th
+     * level 2 times higher than it ideally should be.
+     *
      * @param rnd Random.
      * @return Next level.
      */
-    public static int randomLevel(Random rnd) {
+    private static int randomLevel32(Random rnd) {
         int x = rnd.nextInt();
 
         int level = 0;
@@ -240,6 +244,30 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
             x >>>= 1;
         }
+
+        return level;
+    }
+
+    /**
+     * Random level function (geometric distribution) with corrected last level probability:
+     * it really fairly randomizes until first zero bit encounters, but not
+     * a last bit of a number reached.
+     *
+     * @param rnd The random to use.
+     * @return The level, from 0 (including) to infinity.
+     */
+    public static int randomLevel(Random rnd) {
+        int level = 0;
+        int level32;
+
+        do {
+            level32 = randomLevel32(rnd);
+
+            assert level32 >= 0;
+            assert level32 <= 32;
+
+            level += level32;
+        } while (level32 == 32);
 
         return level;
     }
