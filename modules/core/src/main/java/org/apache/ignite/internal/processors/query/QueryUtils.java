@@ -287,6 +287,7 @@ public class QueryUtils {
      * @param str String.
      * @return Escaped string.
      */
+    // TODO: Remove, pass replace flag explicitly.
     public static @Nullable String normalizeObjectName(@Nullable String str) {
         if (str == null)
             return null;
@@ -294,6 +295,23 @@ public class QueryUtils {
         String res = str.replace('.', '_').replace('$', '_');
 
         return res.toUpperCase();
+    }
+
+    /**
+     * Normalize object name.
+     *
+     * @param str String.
+     * @param replace Whether to perform replace.
+     * @return Escaped string.
+     */
+    private static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
+        if (str == null)
+            return null;
+
+        if (replace)
+            str = str.replace('.', '_').replace('$', '_');
+
+        return str.toUpperCase();
     }
 
     /**
