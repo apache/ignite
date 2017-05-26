@@ -83,8 +83,9 @@ namespace ignite
              * Update current cursor page data.
              *
              * @param newPage New result page.
+             * @param last Last page marker.
              */
-            void UpdateData(std::auto_ptr<ResultPage>& newPage);
+            void UpdateData(std::auto_ptr<ResultPage>& newPage, bool last);
 
             /**
              * Get current row.
@@ -101,6 +102,9 @@ namespace ignite
 
             /** Current page. */
             std::auto_ptr<ResultPage> currentPage;
+
+            /** The last page is loaded. */
+            bool lastPage;
 
             /** Row position in current page. */
             int32_t currentPagePos;

@@ -52,13 +52,13 @@ namespace ignite
 
                 FETCH_SQL_QUERY = 3,
 
-                CLOSE_SQL_QUERY = 4,
+                CLOSE_SQL_QUERY = 5,
 
-                GET_COLUMNS_METADATA = 5,
+                GET_COLUMNS_METADATA = 6,
 
-                GET_TABLES_METADATA = 6,
+                GET_TABLES_METADATA = 7,
 
-                GET_PARAMS_METADATA = 7
+                GET_PARAMS_METADATA = 8
             };
         };
 
@@ -174,6 +174,11 @@ namespace ignite
             {
                 writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY);
                 utility::WriteString(writer, cache);
+
+                writer.WriteInt32(fetchSize);
+                writer.WriteInt32(maxRows);
+                writer.WriteBool(includeMeta);
+
                 utility::WriteString(writer, sql);
 
                 writer.WriteInt32(static_cast<int32_t>(params.size()));
@@ -707,6 +712,15 @@ namespace ignite
                 return meta;
             }
 
+            /**
+             * Check if the page is last.
+             * @return True if the page is last.
+             */
+            bool IsLast() const
+            {
+                return isLast;
+            }
+
         private:
             /**
              * Read response using provided reader.
@@ -772,6 +786,15 @@ namespace ignite
                 return queryId;
             }
 
+            /**
+             * Check if the page is last.
+             * @return True if the page is last.
+             */
+            bool IsLast() const
+            {
+                return isLast;
+            }
+
         private:
             /**
              * Read response using provided reader.
@@ -781,11 +804,16 @@ namespace ignite
             {
                 queryId = reader.ReadInt64();
 
+                isLast = reader.ReadBool();
+
                 resultPage.Read(reader);
             }
 
             /** Query ID. */
             int64_t queryId;
+
+            /** Received data page is the last. */
+            bool isLast;
 
             /** Result page. */
             ResultPage& resultPage;

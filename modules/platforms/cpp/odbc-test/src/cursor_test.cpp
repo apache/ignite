@@ -30,7 +30,7 @@ using namespace ignite::odbc;
 
 const int64_t testQueryId = 42;
 
-std::auto_ptr<ResultPage> CreateTestPage(bool last, int32_t size)
+std::auto_ptr<ResultPage> CreateTestPage(int32_t size)
 {
     using namespace ignite::impl::binary;
     using namespace ignite::impl::interop;
@@ -38,9 +38,6 @@ std::auto_ptr<ResultPage> CreateTestPage(bool last, int32_t size)
     InteropUnpooledMemory mem(1024);
     InteropOutputStream outStream(&mem);
     BinaryWriterImpl writer(&outStream, 0);
-
-    // Last page flag.
-    writer.WriteBool(last);
 
     //Page size.
     writer.WriteInt32(size);
@@ -67,7 +64,6 @@ std::auto_ptr<ResultPage> CreateTestPage(bool last, int32_t size)
     res->Read(reader);
 
     BOOST_REQUIRE(res->GetSize() == size);
-    BOOST_REQUIRE(res->IsLast() == last);
 
     return res;
 }
@@ -120,9 +116,9 @@ BOOST_AUTO_TEST_CASE(TestCursorLast)
 
     Cursor cursor(testQueryId);
 
-    std::auto_ptr<ResultPage> resultPage = CreateTestPage(true, pageSize);
+    std::auto_ptr<ResultPage> resultPage = CreateTestPage(pageSize);
 
-    cursor.UpdateData(resultPage);
+    cursor.UpdateData(resultPage, true);
 
     BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
 
@@ -140,9 +136,9 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdate)
 
     Cursor cursor(testQueryId);
 
-    std::auto_ptr<ResultPage> resultPage = CreateTestPage(false, pageSize);
+    std::auto_ptr<ResultPage> resultPage = CreateTestPage(pageSize);
 
-    cursor.UpdateData(resultPage);
+    cursor.UpdateData(resultPage, false);
 
     BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
 
@@ -155,9 +151,9 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdate)
 
     CheckCursorNeedUpdate(cursor);
 
-    resultPage = CreateTestPage(true, pageSize);
+    resultPage = CreateTestPage(pageSize);
 
-    cursor.UpdateData(resultPage);
+    cursor.UpdateData(resultPage, true);
 
     CheckCursorReady(cursor);
 
@@ -175,9 +171,9 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdateOneRow)
 {
     Cursor cursor(testQueryId);
 
-    std::auto_ptr<ResultPage> resultPage = CreateTestPage(false, 1);
+    std::auto_ptr<ResultPage> resultPage = CreateTestPage(1);
 
-    cursor.UpdateData(resultPage);
+    cursor.UpdateData(resultPage, false);
 
     BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
 
@@ -189,9 +185,9 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdateOneRow)
 
     BOOST_REQUIRE(!cursor.Increment());
 
-    resultPage = CreateTestPage(true, 1);
+    resultPage = CreateTestPage(1);
 
-    cursor.UpdateData(resultPage);
+    cursor.UpdateData(resultPage, true);
 
     CheckCursorReady(cursor);
 

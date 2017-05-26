@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include <ignite/impl/interop/interop_stream_position_guard.h>
-
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/row.h"
 
@@ -24,7 +22,7 @@ namespace ignite
 {
     namespace odbc
     {
-        Row::Row(ignite::impl::interop::InteropUnpooledMemory& pageData) :
+        Row::Row(impl::interop::InteropUnpooledMemory& pageData) :
             rowBeginPos(0), pos(rowBeginPos), size(0), pageData(pageData),
             stream(&pageData), reader(&stream), columns()
         {
@@ -76,8 +74,8 @@ namespace ignite
 
         SqlResult::Type Row::ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf)
         {
-            using namespace ignite::impl::binary;
-            using namespace ignite::impl::interop;
+            using namespace impl::binary;
+            using namespace impl::interop;
 
             if (!EnsureColumnDiscovered(columnIdx))
                 return SqlResult::AI_ERROR;

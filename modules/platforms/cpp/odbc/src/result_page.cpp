@@ -17,15 +17,15 @@
 
 #include <ignite/impl/interop/interop_input_stream.h>
 
-#include "ignite/odbc/result_page.h"
-#include "ignite/odbc/utility.h"
+#include <ignite/odbc/result_page.h>
+#include <ignite/odbc/utility.h>
 
 namespace ignite
 {
     namespace odbc
     {
         ResultPage::ResultPage() :
-            last(false), size(0), data(DEFAULT_ALLOCATED_MEMORY)
+            size(0), data(DEFAULT_ALLOCATED_MEMORY)
         {
             //No-op.
         }
@@ -35,12 +35,11 @@ namespace ignite
             //No-op.
         }
 
-        void ResultPage::Read(ignite::impl::binary::BinaryReaderImpl& reader)
+        void ResultPage::Read(impl::binary::BinaryReaderImpl& reader)
         {
-            last = reader.ReadBool();
             size = reader.ReadInt32();
 
-            ignite::impl::interop::InteropInputStream& stream = *reader.GetStream();
+            impl::interop::InteropInputStream& stream = *reader.GetStream();
 
             int32_t dataToRead = stream.Remaining();
 

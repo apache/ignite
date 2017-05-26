@@ -137,7 +137,7 @@ namespace ignite
                 return columnsMeta;
             }
 
-            SqlResult::Type ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
+            SqlResult::Type ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap& columnBindings)
             {
                 if (!executed)
                 {

@@ -38,7 +38,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            Row(ignite::impl::interop::InteropUnpooledMemory& pageData);
+            Row(impl::interop::InteropUnpooledMemory& pageData);
 
             /**
              * Destructor.
@@ -115,13 +115,13 @@ namespace ignite
             int32_t size;
 
             /** Memory that contains current row data. */
-            ignite::impl::interop::InteropUnpooledMemory& pageData;
+            impl::interop::InteropUnpooledMemory& pageData;
 
             /** Page data input stream. */
-            ignite::impl::interop::InteropInputStream stream;
+            impl::interop::InteropInputStream stream;
 
             /** Data reader. */
-            ignite::impl::binary::BinaryReaderImpl reader;
+            impl::binary::BinaryReaderImpl reader;
 
             /** Columns. */
             std::vector<Column> columns;
