@@ -1136,10 +1136,10 @@ public class BinaryUtils {
     }
 
     /**
-     * Check for represents a Enum.
+     * Check if class represents a Enum.
      *
      * @param cls Class.
-     * @return {@code True} if this is a enum class.
+     * @return {@code True} if this is a Enum class.
      */
     public static boolean isEnum(Class cls) {
         return cls.isEnum() || (cls.getSuperclass() != null && cls.getSuperclass().isEnum());
