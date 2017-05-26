@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -100,19 +101,66 @@ namespace Apache.Ignite.Linq.Impl
         {
             _aliases.Push();
 
-            // SELECT
-            _builder.Append("select ");
+            var hasDelete = VisitRemoveOperator(queryModel);
 
-            // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, includeAllFields);
+            if (!hasDelete)
+            {
+                // SELECT
+                _builder.Append("select ");
+
+                // TOP 1 FLD1, FLD2
+                VisitSelectors(queryModel, includeAllFields);
+            }
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
-            // UNION ...
-            ProcessResultOperatorsEnd(queryModel);
+            if (!hasDelete)
+            {
+                // UNION ...
+                ProcessResultOperatorsEnd(queryModel);
+            }
 
             _aliases.Pop();
+        }
+
+        /// <summary>
+        /// Visits the remove operator. Returns true if it is present.
+        /// </summary>
+        private bool VisitRemoveOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            if (resultOps.LastOrDefault() is RemoveAllResultOperator)
+            {
+                _builder.Append("delete ");
+
+                if (resultOps.Count == 2)
+                {
+                    var resOp = resultOps[0] as TakeResultOperator;
+
+                    if (resOp == null)
+                    {
+                        throw new NotSupportedException(
+                            "RemoveAll can not be combined with result operators (other than Take): " +
+                            resultOps[0].GetType().Name);
+                    }
+
+                    _builder.Append("top ");
+                    BuildSqlExpression(resOp.Count);
+                    _builder.Append(" ");
+                }
+                else if (resultOps.Count > 2)
+                {
+                    throw new NotSupportedException(
+                        "RemoveAll can not be combined with result operators (other than Take): " +
+                        string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+                }
+
+                return true;
+            }
+                
+            return false;
         }
 
         /// <summary>
