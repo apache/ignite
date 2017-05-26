@@ -176,13 +176,13 @@ public class QueryUtils {
      * @return Normalized query entity.
      */
     public static QueryEntity normalizeQueryEntity(QueryEntity entity, boolean escape) {
-        String tblName = tableName(entity);
-
         if (escape) {
+            String tblName = tableName(entity);
+
             entity.setTableName(tblName);
 
             for (QueryIndex idx : entity.getIndexes())
-                idx.setName(indexName(entity, idx));
+                idx.setName(indexName(tblName, idx));
 
             validateQueryEntity(entity);
 
@@ -200,7 +200,12 @@ public class QueryUtils {
         normalEntity.setValueFieldName(entity.getValueFieldName());
 
         // Normalize table name.
-        normalEntity.setTableName(normalizeObjectName(tblName));
+        String normalTblName = entity.getTableName();
+
+        if (normalTblName == null)
+            normalTblName = normalizeObjectName(tableName(entity), true);
+
+        normalEntity.setTableName(normalTblName);
 
         // Normalize field names through aliases.
         Map<String, String> normalAliases = new HashMap<>(normalEntity.getAliases());
@@ -213,7 +218,7 @@ public class QueryUtils {
 
             assert fieldAlias != null;
 
-            normalAliases.put(fieldName, normalizeObjectName(fieldAlias));
+            normalAliases.put(fieldName, normalizeObjectName(fieldAlias, false));
         }
 
         normalEntity.setAliases(normalAliases);
@@ -228,7 +233,7 @@ public class QueryUtils {
             normalIdx.setIndexType(idx.getIndexType());
             normalIdx.setInlineSize(idx.getInlineSize());
 
-            normalIdx.setName(normalizeObjectName(indexName(normalEntity, idx)));
+            normalIdx.setName(normalizeObjectName(indexName(normalTblName, idx), false));
 
             normalIdxs.add(normalIdx);
         }
@@ -261,7 +266,7 @@ public class QueryUtils {
         }
 
         if (!escape)
-            res = normalizeObjectName(res);
+            res = normalizeObjectName(res, false);
 
         return res;
     }
@@ -285,26 +290,10 @@ public class QueryUtils {
      * Normalize object name.
      *
      * @param str String.
-     * @return Escaped string.
-     */
-    // TODO: Remove, pass replace flag explicitly.
-    public static @Nullable String normalizeObjectName(@Nullable String str) {
-        if (str == null)
-            return null;
-
-        String res = str.replace('.', '_').replace('$', '_');
-
-        return res.toUpperCase();
-    }
-
-    /**
-     * Normalize object name.
-     *
-     * @param str String.
      * @param replace Whether to perform replace.
      * @return Escaped string.
      */
-    private static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
+    public static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
         if (str == null)
             return null;
 
@@ -410,7 +399,7 @@ public class QueryUtils {
 
                 if (affField != null) {
                     if (!escape)
-                        affField = normalizeObjectName(affField);
+                        affField = normalizeObjectName(affField, false);
 
                     desc.affinityKey(affField);
                 }
@@ -427,7 +416,7 @@ public class QueryUtils {
 
                 if (affField != null) {
                     if (!escape)
-                        affField = normalizeObjectName(affField);
+                        affField = normalizeObjectName(affField, false);
 
                     desc.affinityKey(affField);
                 }

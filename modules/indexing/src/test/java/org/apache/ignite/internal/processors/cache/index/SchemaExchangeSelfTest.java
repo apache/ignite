@@ -477,8 +477,10 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
             }
         });
 
-        assertIndex(CACHE_NAME, QueryUtils.normalizeObjectName(TBL_NAME), QueryUtils.normalizeObjectName(IDX_NAME_1),
-            field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED)));
+        assertIndex(CACHE_NAME,
+            QueryUtils.normalizeObjectName(TBL_NAME, true),
+            QueryUtils.normalizeObjectName(IDX_NAME_1, false),
+            field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED, false)));
     }
 
     /**
