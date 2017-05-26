@@ -2076,7 +2076,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (ctx.config().isPersistentStoreEnabled()) {
             if (ctx.clientNode()) {
-                log.warning("Currently persistence is not supported on client nodes; persistence configuration will be ignored.");
+                U.warn(log, "Persistence is not supported on client nodes(persistence configuration will be ignored).");
 
                 dbMgr = new IgniteCacheDatabaseSharedManager();
             }
