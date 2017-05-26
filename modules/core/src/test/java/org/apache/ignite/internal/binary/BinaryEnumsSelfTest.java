@@ -432,7 +432,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      * @param registered Registered flag.
      * @throws Exception If failed.
      */
-    public void checkDeclaredBodyEnum(boolean registered) throws Exception {
+    private void checkDeclaredBodyEnum(boolean registered) throws Exception {
         startUp(registered);
 
         cache1.put(1, DeclaredBodyEnumType.ONE);

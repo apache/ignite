@@ -109,8 +109,8 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val.getClass().isEnum()) {
-            String clsName = val.getClass().getName();
+        if (BinaryUtils.isEnum(val.getClass())) {
+            String clsName = ((Enum)val).getDeclaringClass().getName();
 
             int typeId = writer.context().typeId(clsName);
             String typeName = writer.context().userTypeName(clsName);
@@ -120,7 +120,7 @@ class BinaryBuilderSerializer {
             writer.context().updateMetadata(typeId, meta);
 
             // Need register class for marshaller to be able to deserialize enum value.
-            writer.context().descriptorForClass(val.getClass(), false);
+            writer.context().descriptorForClass(((Enum)val).getDeclaringClass(), false);
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(typeId);
