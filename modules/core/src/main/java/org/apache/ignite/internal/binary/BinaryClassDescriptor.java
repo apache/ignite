@@ -125,9 +125,6 @@ public class BinaryClassDescriptor {
     /** Whether stable schema was published. */
     private volatile boolean stableSchemaPublished;
 
-    /** Enum name to ordinal mapping */
-    private Map<String, Integer> enumMap;
-
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -199,13 +196,6 @@ public class BinaryClassDescriptor {
                 "have this class in classpath. To enable binary serialization either implement " +
                 Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method.");
-        }
-
-        if (cls.isEnum()) {
-            Object[] constants = cls.getEnumConstants();
-            enumMap = new LinkedHashMap<>(constants.length);
-            for (Object o: constants)
-                enumMap.put(((Enum)o).name(), ((Enum)o).ordinal());
         }
 
         switch (mode) {
@@ -410,14 +400,7 @@ public class BinaryClassDescriptor {
      * @return {@code True} if enum.
      */
     boolean isEnum() {
-        return mode == BinaryWriteMode.ENUM || mode == BinaryWriteMode.BINARY_ENUM;
-    }
-
-    /**
-     * @return Enum name to ordinal mapping.
-     */
-    public Map<String, Integer> enumMap() {
-        return enumMap;
+        return mode == BinaryWriteMode.ENUM;
     }
 
     /**

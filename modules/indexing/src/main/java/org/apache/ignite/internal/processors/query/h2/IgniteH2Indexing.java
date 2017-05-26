@@ -1815,7 +1815,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public int dataTypeFromClass(Class<?> cls, String userTypeName) {
         String typeName = cls.equals(Object.class) ? userTypeName : cls.getName();
-        
+
         int typeId = ctx.cacheObjects().typeId(typeName);
 
         if (h2CustomDataTypesHandler.isRegistered(typeId))
@@ -1829,7 +1829,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type descriptor.
      */
     private void registerEnumTypes(GridQueryTypeDescriptor type) {
-        registerEnumType(type.keyClass(), type.keyTypeName());        
+        registerEnumType(type.keyClass(), type.keyTypeName());
         registerEnumType(type.valueClass(), type.valueTypeName());
 
         for (String propName: type.fields().keySet()) {
@@ -2144,6 +2144,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.warn(log, "Custom H2 data types handler is already configured, will override.");
 
         h2CustomDataTypesHandler = new GridH2CustomDataTypesHandler();
+
         JdbcUtils.customDataTypesHandler = h2CustomDataTypesHandler;
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
