@@ -61,5 +61,11 @@ namespace Apache.Ignite.Core.Binary
         /// Gets the type identifier.
         /// </summary>
         int TypeId { get; }
+
+        /// <summary>
+        /// Gets the enum values.
+        /// Only valid when <see cref="IsEnum"/> is true.
+        /// </summary>
+        IEnumerable<IBinaryObject> GetEnumValues();
     }
 }
