@@ -15,23 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.query.h2;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.IgniteCheckedException;
+
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Cache full API suite with binary marshaller.
+ * Special field set iterator based on database result set.
  */
-public class IgniteBinaryCacheFullApiTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        return IgniteCacheFullApiSelfTestSuite.suite();
+    /**
+     * @param data Data.
+     * @throws IgniteCheckedException If failed.
+     */
+    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
+        super(data, false, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<?> createRow() {
+        ArrayList<Object> res = new ArrayList<>(row.length);
+
+        Collections.addAll(res, row);
+
+        return res;
     }
 }

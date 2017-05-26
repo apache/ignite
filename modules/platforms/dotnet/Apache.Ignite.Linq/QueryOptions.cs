@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq
 {
+    using System;
     using System.ComponentModel;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
@@ -87,5 +88,27 @@ namespace Apache.Ignite.Linq
         ///   <c>true</c> if join order should be enforced; otherwise, <c>false</c>.
         /// </value>
         public bool EnforceJoinOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        public bool ReplicatedOnly { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query operates on colocated data.
+        /// <para />
+        /// Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+        /// If you know in advance that the elements of your query selection are colocated together on the same
+        /// node and you group by colocated key (primary or affinity key), then Ignite can make significant
+        /// performance and network optimizations by grouping data on remote nodes.
+        /// </summary>
+        public bool Colocated { get; set; }
     }
 }

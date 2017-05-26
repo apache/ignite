@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -1269,12 +1270,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(new QueryOptions
+            var query = cache.AsCacheQueryable(new QueryOptions
             {
                 Local = true,
                 PageSize = 999,
-                EnforceJoinOrder = true
-            }).Where(x => x.Key > 10);
+                EnforceJoinOrder = true,
+                Timeout = TimeSpan.FromSeconds(2.5),
+                ReplicatedOnly = true,
+                Colocated = true
+            }).Where(x => x.Key > 10).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -1288,12 +1292,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(999, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsTrue(fq.EnforceJoinOrder);
+            Assert.IsTrue(fq.ReplicatedOnly);
+            Assert.IsTrue(fq.Colocated);
+            Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
 
             var str = query.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(_T0._key > ?), Arguments=[10], " +
-                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True]]", str);
+                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                            "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -1311,13 +1319,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             str = fieldsQuery.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                             "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False]]", str);
+                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
             
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
                 .Where(x => x.Key > 10 && x.Value.Age > 20 && x.Value.Name.Contains("x"));
 
-            query = (ICacheQueryable) distrQuery;
+            query = distrQuery.ToCacheQueryable();
 
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 
@@ -1326,7 +1335,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
                             "(((_T0._key > ?) and (_T0.age1 > ?)) " +
                             "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False]]", str);
+                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
         }
 
         /// <summary>
@@ -1393,6 +1403,88 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        /// <summary>
+        /// Tests the query timeout.
+        /// </summary>
+        [Test]
+        public void TestTimeout()
+        {
+            var persons = GetPersonCache().AsCacheQueryable(new QueryOptions
+            {
+                Timeout = TimeSpan.FromMilliseconds(1),
+                EnableDistributedJoins = true
+            });
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() =>
+                persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
+
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests the RemoveAll extension.
+        /// </summary>
+        [Test]
+        public void TestRemoveAll()
+        {
+            // Use new cache to avoid touching static data.
+            var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
+                    new QueryEntity(typeof(int), typeof(Person))));
+
+            Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
+            
+            var queryable = cache.AsCacheQueryable();
+
+            Func<int[]> getKeys = () => cache.Select(x => x.Key).OrderBy(x => x).ToArray();
+
+            // Without predicate.
+            var res = queryable.Where(x => x.Key < 3).RemoveAll();
+            Assert.AreEqual(2, res);
+            Assert.AreEqual(Enumerable.Range(3, 8), getKeys());
+
+            // With predicate.
+            res = queryable.RemoveAll(x => x.Key < 7);
+            Assert.AreEqual(4, res);
+            Assert.AreEqual(Enumerable.Range(7, 4), getKeys());
+
+            // Subquery-style join.
+            var ids = GetPersonCache().AsCacheQueryable().Where(x => x.Key == 7).Select(x => x.Key);
+
+            res = queryable.Where(x => ids.Contains(x.Key)).RemoveAll();
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(Enumerable.Range(8, 3), getKeys());
+
+            // Row number limit.
+            res = queryable.Take(2).RemoveAll();
+            Assert.AreEqual(2, res);
+            Assert.AreEqual(1, getKeys().Length);
+
+            // Unconditional.
+            queryable.RemoveAll();
+            Assert.AreEqual(0, cache.GetSize());
+
+            // Skip is not supported with DELETE.
+            var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).RemoveAll());
+            Assert.AreEqual(
+                "RemoveAll can not be combined with result operators (other than Take): SkipResultOperator",
+                nex.Message);
+
+            // Multiple result operators are not supported with DELETE.
+            nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).RemoveAll());
+            Assert.AreEqual(
+                "RemoveAll can not be combined with result operators (other than Take): SkipResultOperator, " +
+                "TakeResultOperator, RemoveAllResultOperator", nex.Message);
+
+            // Joins are not supported in H2.
+            var qry = queryable
+                .Where(x => x.Key == 7)
+                .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
+
+            var ex = Assert.Throws<IgniteException>(() => qry.RemoveAll());
+            Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
         }
 
         /// <summary>
