@@ -78,13 +78,16 @@ public class PersistentStoreConfiguration implements Serializable {
     private String walArchivePath;
 
     /**
-     *
+     * Returns a path the root directory where the Persistent Store will persist data and indexes.
      */
     public String getPersistentStorePath() {
         return persistenteStorePath;
     }
 
     /**
+     * Sets a path to the root directory where the Persistent Store will persist data and indexes.
+     * By default the Persistent Store's files are located under Ignite work directory.
+     *
      * @param persistenceStorePath Persistence store path.
      */
     public PersistentStoreConfiguration setPersistentStorePath(String persistenceStorePath) {
@@ -103,14 +106,58 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets checkpoint frequency. This is a minimal interval at which memory state will be written to a disk
-     * storage. If update rate is high, checkpoints can happen more frequently.
+     * Sets the checkpoint frequency which is a minimal interval when the memory state (updated data, indexes, etc.)
+     * will be written to the Persistent Store. If the rate is high, checkpoints can happen more frequently.
      *
      * @param checkpointFreq Checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setCheckpointFrequency(long checkpointFreq) {
         this.checkpointFreq = checkpointFreq;
+
+        return this;
+    }
+
+    /**
+     * Gets amount of memory allocated for a checkpoint temporary buffer.
+     *
+     * @return Checkpoint page buffer size.
+     */
+    public Long getCheckpointPageBufferSize() {
+        return checkpointPageBufSize;
+    }
+
+    /**
+     * Sets amount of memory allocated for the checkpoint temporary buffer. The buffer is used to create temporary
+     * copies of pages when the checkpoint process is in progress.
+     *
+     * @param checkpointPageBufSize Checkpoint page buffer size.
+     * @return {@code this} for chaining.
+     */
+    public PersistentStoreConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
+        this.checkpointPageBufSize = checkpointPageBufSize;
+
+        return this;
+    }
+
+
+    /**
+     * Gets a number of threads to use for the checkpoint purposes.
+     *
+     * @return Number of checkpoint threads.
+     */
+    public int getCheckpointThreads() {
+        return checkpointThreads;
+    }
+
+    /**
+     * Sets a number of threads to use for the checkpoint purposes
+     *
+     * @param checkpointThreads Number of checkpoint threads. One thread is used by default.
+     * @return {@code this} for chaining.
+     */
+    public PersistentStoreConfiguration setCheckpointThreads(int checkpointThreads) {
+        this.checkpointThreads = checkpointThreads;
 
         return this;
     }
@@ -132,54 +179,6 @@ public class PersistentStoreConfiguration implements Serializable {
      */
     public PersistentStoreConfiguration setLockWaitTime(int lockWaitTime) {
         this.lockWaitTime = lockWaitTime;
-
-        return this;
-    }
-
-
-
-    /**
-     * Gets amount of memory allocated for checkpoint temporary buffer. This buffer is used to create temporary
-     * copies of pages when checkpoint is in progress.
-     *
-     * @return Checkpoint page buffer size.
-     */
-    public Long getCheckpointPageBufferSize() {
-        return checkpointPageBufSize;
-    }
-
-    /**
-     * Sets amount of memory allocated for checkpoint temporary buffer. This buffer is used to create temporary
-     * copies of pages when checkpoint is in progress.
-     *
-     * @param checkpointPageBufSize Checkpoint page buffer size.
-     * @return {@code this} for chaining.
-     */
-    public PersistentStoreConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
-        this.checkpointPageBufSize = checkpointPageBufSize;
-
-        return this;
-    }
-
-
-
-    /**
-     * Gets number of checkpoint threads to run.
-     *
-     * @return Number of checkpoint threads.
-     */
-    public int getCheckpointThreads() {
-        return checkpointThreads;
-    }
-
-    /**
-     * Sets number of checkpoint threads.
-     *
-     * @param checkpointThreads Number of checkpoint threads.
-     * @return {@code this} for chaining.
-     */
-    public PersistentStoreConfiguration setCheckpointThreads(int checkpointThreads) {
-        this.checkpointThreads = checkpointThreads;
 
         return this;
     }
@@ -206,8 +205,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets the number of Write Ahead Log segments to work with. Write-ahead log is written over a fixed number
-     * of preallocated file segments of fixed size. This parameter sets the number of these segments.
+     * Gets a number of Write-Ahead Log segments to work with.
      *
      * @return Number of work WAL segments.
      */
@@ -216,7 +214,8 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets then number of work Write Ahead Log segments.
+     * Sets a number of Write Ahead Log segments to work with. Write-ahead log is written over a fixed number
+     * of pre-allocated file segments of fixed size. This parameter sets the number of these segments.
      *
      * @param walSegments Number of work WAL segments.
      * @return {@code this} for chaining.
@@ -228,6 +227,8 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
+     * Gets size of a Write-Ahead Log segment.
+     *
      * @return WAL segment size.
      */
     public int getWalSegmentSize() {
@@ -235,7 +236,9 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param walSegmentSize WAL segment size.
+     * Sets size of a Write-Ahead Log segment.
+     *
+     * @param walSegmentSize WAL segment size. 64 MB is used by default.
      * @return {@code this} for chaining.
      */
     public PersistentStoreConfiguration setWalSegmentSize(int walSegmentSize) {
@@ -245,8 +248,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets write-ahead log persistence path. If this path is relative, it will be resolved relative to
-     * Ignite work directory.
+     * Gets a path to the directory where Write-Ahead log is stored.
      *
      * @return Write-ahead log persistence path, absolute or relative to Ignite work directory.
      */
@@ -255,7 +257,8 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets write-ahead log persistence path.
+     * Sets a path to the directory where Write-Ahead log is stored . If this path is relative, it will be resolved
+     * relative to Ignite work directory.
      *
      * @param walStorePath Write-ahead log persistence path, absolute or relative to Ignite work directory.
      * @return {@code this} for chaining.
@@ -267,7 +270,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets write-ahead log archive path. Full WAL segments will be copied to this directory before reuse.
+     * Gets a path to Write-Ahead log archive. Full WAL segments will be copied to this directory before reuse.
      *
      *  @return WAL archive directory.
      */
@@ -276,7 +279,7 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets write-ahead log archive path. Full WAL segments will be copied to this directory before reuse.
+     * Sets a path to store Write-Ahead log archive. Full WAL segments will be copied to this directory before reuse.
      *
      * @param walArchivePath WAL archive directory.
      * @return {@code this} for chaining.
