@@ -1746,6 +1746,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Checks if node is a data node for the given cache group.
+     *
+     * @param node Node to check.
+     * @param grpId Cache group ID.
+     * @return {@code True} if node is a cache data node.
+     */
+    public boolean cacheGroupAffinityNode(ClusterNode node, int grpId) {
+        CacheGroupAffinity aff = registeredCacheGrps.get(grpId);
+
+        return CU.affinityNode(node, aff.cacheFilter);
+    }
+
+    /**
      * @param node Node to check.
      * @param cacheName Cache name.
      * @return {@code True} if node has near cache enabled.
