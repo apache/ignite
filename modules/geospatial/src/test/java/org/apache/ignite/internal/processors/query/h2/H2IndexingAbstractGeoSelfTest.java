@@ -168,7 +168,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             .a("INDEX ")
             .a("\"" + idx.getName() + "\"")
             .a(" ON ")
-            .a("\"" + entity.getTableName() + "\"")
+            .a(QueryUtils.tableName(entity))
             .a(" (");
 
         boolean first = true;
@@ -569,8 +569,8 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             }
         }
 
-        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from enemy.Enemy e, " +
-            "camp.EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
+        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, " +
+            "\"camp\".EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
 
         List<List<?>> result = c1.query(query.setDistributedJoins(true)).getAll();
 
@@ -606,8 +606,8 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             }
         }
 
-        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from enemy.Enemy e, " +
-            "camp.EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
+        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, " +
+            "\"camp\".EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
 
         List<List<?>> result = c1.query(query.setLocal(true)).getAll();
 
