@@ -572,7 +572,7 @@ public class GridMapQueryExecutor {
 
                     Objects.requireNonNull(tbl, identifier);
 
-                    tbl.snapshotIndexes(qctx);
+                    tbl.snapshotIndexes(qctx, segmentId);
 
                     snapshotedTbls.add(tbl);
                 }
