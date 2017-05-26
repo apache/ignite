@@ -47,12 +47,6 @@ namespace Apache.Ignite.Linq.Impl
         QueryModel GetQueryModel();
 
         /// <summary>
-        /// Compiles the query (the old way).
-        /// </summary>
-        /// <param name="queryCaller">Caller expression to examine argument order.</param>
-        Func<object[], IQueryCursor<T>> CompileQuery<T>(Delegate queryCaller);
-
-        /// <summary>
         /// Compiles the query.
         /// </summary>
         /// <param name="queryExpression">The query expression.</param>

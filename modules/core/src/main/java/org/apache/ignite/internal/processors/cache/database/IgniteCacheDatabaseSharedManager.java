@@ -340,6 +340,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
                 checkPolicySize(plcCfg);
 
+                checkMetricsProperties(plcCfg);
+
                 checkPolicyEvictionProperties(plcCfg, memCfg);
             }
         }
@@ -348,6 +350,26 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.getDefaultMemoryPolicyName(),
                 memCfg.getDefaultMemoryPolicySize(),
                 plcNames);
+    }
+
+    /**
+     * @param plcCfg Memory policy config.
+     *
+     * @throws IgniteCheckedException if validation of memory metrics properties fails.
+     */
+    private static void checkMetricsProperties(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
+        if (plcCfg.getRateTimeInterval() <= 0)
+            throw new IgniteCheckedException("Rate time interval must be greater than zero " +
+                "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval) " +
+                "[name=" + plcCfg.getName() +
+                ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]"
+            );
+        if (plcCfg.getSubIntervals() <= 0)
+            throw new IgniteCheckedException("Sub intervals must be greater than zero " +
+                "(use MemoryPolicyConfiguration.subIntervals property to adjust the sub intervals) " +
+                "[name=" + plcCfg.getName() +
+                ", subIntervals=" + plcCfg.getSubIntervals() + "]"
+            );
     }
 
     /**
@@ -538,6 +560,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
         else
             return Collections.emptyList();
+    }
+
+    /**
+     * @param memPlcName Name of {@link MemoryPolicy} to obtain {@link MemoryMetrics} for.
+     * @return {@link MemoryMetrics} snapshot for specified {@link MemoryPolicy} or {@code null} if
+     * no {@link MemoryPolicy} is configured for specified name.
+     */
+    @Nullable public MemoryMetrics memoryMetrics(String memPlcName) {
+        if (!F.isEmpty(memMetricsMap)) {
+            MemoryMetrics memMetrics = memMetricsMap.get(memPlcName);
+
+            if (memMetrics == null)
+                return null;
+            else
+                return new MemoryMetricsSnapshot(memMetrics);
+        }
+        else
+            return null;
     }
 
     /**
