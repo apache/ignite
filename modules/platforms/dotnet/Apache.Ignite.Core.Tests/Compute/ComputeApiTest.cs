@@ -122,6 +122,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: IgniteUuid. */
         private const int EchoTypeIgniteUuid = 22;
 
+        /** Echo type: binary enum (created with builder). */
+        private const int EchoTypeBinaryEnum = 23;
+
         /** */
         private const string DefaultCacheName = "default";
 
@@ -934,6 +937,28 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
 
             Assert.AreEqual(PlatformComputeEnum.Bar, res);
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskBinaryEnum()
+        {
+            var res = _grid1.GetCompute().WithKeepBinary()
+                .ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinaryEnum);
+
+            Assert.AreEqual("JavaFoo", res.EnumName);
+            Assert.AreEqual(1, res.EnumValue);
+
+            var binType = res.GetBinaryType();
+
+            Assert.IsTrue(binType.IsEnum);
+            Assert.AreEqual("JavaDynEnum", binType.TypeName);
+
+            var vals = binType.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(new[] {1, 2}, vals.Select(x => x.EnumValue));
+            Assert.AreEqual(new[] {"JavaFoo", "JavaBar"}, vals.Select(x => x.EnumName));
         }
 
         /// <summary>
