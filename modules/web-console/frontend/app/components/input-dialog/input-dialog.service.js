@@ -49,7 +49,6 @@ export default class InputDialog {
                     toValidValue
                 })
             },
-            placement: 'center',
             controller,
             controllerAs: 'ctrl'
         });

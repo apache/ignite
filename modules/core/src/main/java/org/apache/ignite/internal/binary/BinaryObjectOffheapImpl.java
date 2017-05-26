@@ -148,6 +148,27 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
+        throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
+    /** {@inheritDoc} */
     @Override public long offheapAddress() {
         return ptr;
     }
@@ -376,6 +397,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         }
 
         return (F)val;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeFieldByOrder(int fieldOffset, ByteBuffer buf) {
+        return false;
     }
 
     /** {@inheritDoc} */

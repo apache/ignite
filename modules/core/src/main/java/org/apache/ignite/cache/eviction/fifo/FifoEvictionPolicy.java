@@ -22,6 +22,7 @@ import java.util.Collections;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
 
@@ -43,7 +44,7 @@ import org.jsr166.ConcurrentLinkedDeque8.Node;
  * table-like data structures. The {@code FIFO} ordering information is
  * maintained by attaching ordering metadata to cache entries.
  */
-public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements FifoEvictionPolicyMBean {
+public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements IgniteMBeanAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,6 +82,27 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
         return queue.sizex();
+    }
+
+    /** {@inheritDoc} */
+    @Override public FifoEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {
+        super.setMaxMemorySize(maxMemSize);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FifoEvictionPolicy<K, V> setMaxSize(int max) {
+        super.setMaxSize(max);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FifoEvictionPolicy<K, V> setBatchSize(int batchSize) {
+        super.setBatchSize(batchSize);
+
+        return this;
     }
 
     /**
@@ -167,7 +189,57 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     }
 
     /** {@inheritDoc} */
+    @Override public Object getMBean() {
+        return new FifoEvictionPolicyMBeanImpl();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(FifoEvictionPolicy.class, this);
+    }
+
+    /**
+     * MBean implementation for FifoEvictionPolicy.
+     */
+    private class FifoEvictionPolicyMBeanImpl implements FifoEvictionPolicyMBean {
+        /** {@inheritDoc} */
+        @Override public long getCurrentMemorySize() {
+            return FifoEvictionPolicy.this.getCurrentMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentSize() {
+            return FifoEvictionPolicy.this.getCurrentSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxSize() {
+            return FifoEvictionPolicy.this.getMaxSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxSize(int max) {
+            FifoEvictionPolicy.this.setMaxSize(max);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getBatchSize() {
+            return FifoEvictionPolicy.this.getBatchSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setBatchSize(int batchSize) {
+            FifoEvictionPolicy.this.setBatchSize(batchSize);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMemorySize() {
+            return FifoEvictionPolicy.this.getMaxMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxMemorySize(long maxMemSize) {
+            FifoEvictionPolicy.this.setMaxMemorySize(maxMemSize);
+        }
     }
 }

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecove
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -110,20 +111,17 @@ public class IgniteTxHandler {
     /**
      * @param nearNodeId Node ID.
      * @param req Request.
-     * @return Prepare future.
      */
-    private IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
+    private void processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
         }
 
-        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareNearTx(nearNodeId, req, false);
 
-        assert req.txState() != null || fut.error() != null ||
+        assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
-
-        return fut;
     }
 
     /**
@@ -208,41 +206,13 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param nearNodeId Near node ID that initiated transaction.
-     * @param locTx Optional local transaction.
-     * @param req Near prepare request.
-     * @return Future for transaction.
-     */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareTx(
-        UUID nearNodeId,
-        @Nullable GridNearTxLocal locTx,
-        GridNearTxPrepareRequest req
-    ) {
-        assert nearNodeId != null;
-        assert req != null;
-
-        if (locTx != null) {
-            if (req.near()) {
-                // Make sure not to provide Near entries to DHT cache.
-                req.cloneEntries();
-
-                return prepareNearTx(nearNodeId, req);
-            }
-            else
-                return prepareColocatedTx(locTx, req);
-        }
-        else
-            return prepareNearTx(nearNodeId, req);
-    }
-
-    /**
      * Prepares local colocated tx.
      *
      * @param locTx Local transaction.
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareColocatedTx(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareColocatedTx(
         final GridNearTxLocal locTx,
         final GridNearTxPrepareRequest req
     ) {
@@ -307,16 +277,20 @@ public class IgniteTxHandler {
     }
 
     /**
-     * Prepares near transaction.
-     *
      * @param nearNodeId Near node ID that initiated transaction.
      * @param req Near prepare request.
+     * @param locReq Local request flag.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
         final UUID nearNodeId,
-        final GridNearTxPrepareRequest req
+        final GridNearTxPrepareRequest req,
+        boolean locReq
     ) {
+        // Make sure not to provide Near entries to DHT cache.
+        if (locReq)
+            req.cloneEntries();
+
         ClusterNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {
@@ -692,15 +666,18 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
-        GridNearTxFinishRequest req) {
+    @Nullable private IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(
+        UUID nodeId,
+        GridNearTxFinishRequest req
+    ) {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish request [txId=" + req.version() + ", node=" + nodeId + ']');
 
         IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
 
         assert req.txState() != null || (fut != null && fut.error() != null) ||
-            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) :
+            "[req=" + req + ", fut=" + fut + "]";
 
         return fut;
     }
@@ -1163,7 +1140,11 @@ public class IgniteTxHandler {
         else
             sendReply(nodeId, req, true, null);
 
-        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) : req;
+        IgniteInternalTx tx0 = ctx.tm().tx(req.version());
+
+        IgniteInternalTx nearTx0 = ctx.tm().nearTx(req.version());
+
+        assert req.txState() != null || (tx0 == null && nearTx0 == null) : req + " tx=" + tx0 + " nearTx=" + nearTx0;
     }
 
     /**
@@ -1477,55 +1458,63 @@ public class IgniteTxHandler {
                 for (IgniteTxEntry entry : req.writes()) {
                     GridCacheContext cacheCtx = entry.context();
 
-                    tx.addWrite(entry, ctx.deploy().globalLoader());
+                    int part = cacheCtx.affinity().partition(entry.key());
 
-                    if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
-                        invalidateNearEntry(cacheCtx, entry.key(), req.version());
+                    GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(part,
+                        req.topologyVersion(),
+                        false);
 
-                    try {
-                        if (req.needPreloadKey(idx)) {
-                            GridCacheEntryEx cached = entry.cached();
+                    if (locPart != null && locPart.reserve()) {
+                        try {
+                            tx.addWrite(entry, ctx.deploy().globalLoader());
 
-                            if (cached == null)
-                                cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                            if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
+                                invalidateNearEntry(cacheCtx, entry.key(), req.version());
 
-                            GridCacheEntryInfo info = cached.info();
+                            if (req.needPreloadKey(idx)) {
+                                GridCacheEntryEx cached = entry.cached();
 
-                            if (info != null && !info.isNew() && !info.isDeleted())
-                                res.addPreloadEntry(info);
-                        }
+                                if (cached == null)
+                                    cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
 
-                        if (cacheCtx.readThroughConfigured() &&
-                            !entry.skipStore() &&
-                            entry.op() == TRANSFORM &&
-                            entry.oldValueOnPrimary() &&
-                            !entry.hasValue()) {
-                            while (true) {
-                                try {
-                                    GridCacheEntryEx cached = entry.cached();
+                                GridCacheEntryInfo info = cached.info();
 
-                                    if (cached == null)
-                                        cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+                                if (info != null && !info.isNew() && !info.isDeleted())
+                                    res.addPreloadEntry(info);
+                            }
 
-                                    CacheObject val = cached.innerGet(
-                                        /*ver*/null,
-                                        tx,
-                                        /*readSwap*/true,
-                                        /*readThrough*/false,
-                                        /*updateMetrics*/false,
-                                        /*evt*/false,
-                                        /*tmp*/false,
-                                        tx.subjectId(),
-                                        /*transformClo*/null,
-                                        tx.resolveTaskName(),
-                                        /*expiryPlc*/null,
-                                        /*keepBinary*/true);
+                            if (cacheCtx.readThroughConfigured() &&
+                                !entry.skipStore() &&
+                                entry.op() == TRANSFORM &&
+                                entry.oldValueOnPrimary() &&
+                                !entry.hasValue()) {
+                                while (true) {
+                                    try {
+                                        GridCacheEntryEx cached = entry.cached();
 
-                                    if (val == null)
-                                        val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+                                        if (cached == null) {
+                                            cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
 
-                                    if (val != null)
-                                        entry.readValue(val);
+                                            entry.cached(cached);
+                                        }
+
+                                        CacheObject val = cached.innerGet(
+                                            /*ver*/null,
+                                            tx,
+                                            /*readThrough*/false,
+                                            /*updateMetrics*/false,
+                                            /*evt*/false,
+                                            tx.subjectId(),
+                                            /*transformClo*/null,
+                                            tx.resolveTaskName(),
+                                            /*expiryPlc*/null,
+                                            /*keepBinary*/true);
+
+                                        if (val == null)
+                                            val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+
+                                        if (val != null)
+                                            entry.readValue(val);
 
                                     break;
                                 }
@@ -1533,16 +1522,22 @@ public class IgniteTxHandler {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
-                                    entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
+                                        entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch (GridDhtInvalidPartitionException e) {
-                        tx.addInvalidPartition(cacheCtx, e.partition());
+                        catch (GridDhtInvalidPartitionException e) {
+                            tx.addInvalidPartition(cacheCtx, e.partition());
 
-                        tx.clearEntry(entry.txKey());
+                            tx.clearEntry(entry.txKey());
+                        }
+                        finally {
+                            locPart.release();
+                        }
                     }
+                    else
+                        tx.addInvalidPartition(cacheCtx, part);
 
                     idx++;
                 }

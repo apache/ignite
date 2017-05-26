@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 KeyTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _keyType = value;
             }
@@ -141,11 +141,25 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 ValueTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _valueType = value;
             }
         }
+
+        /// <summary>
+        /// Gets or sets the name of the field that is used to denote the entire key.
+        /// <para />
+        /// By default, entite key can be accessed with a special "_key" field name.
+        /// </summary>
+        public string KeyFieldName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the field that is used to denote the entire value.
+        /// <para />
+        /// By default, entite value can be accessed with a special "_val" field name.
+        /// </summary>
+        public string ValueFieldName { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the SQL table.
@@ -197,6 +211,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
+
+            KeyFieldName = reader.ReadString();
+            ValueFieldName = reader.ReadString();
         }
 
         /// <summary>
@@ -250,6 +267,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            writer.WriteString(KeyFieldName);
+            writer.WriteString(ValueFieldName);
         }
 
         /// <summary>

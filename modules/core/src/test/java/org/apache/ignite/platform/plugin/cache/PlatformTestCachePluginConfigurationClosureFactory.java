@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosure
  * Test closure factory.
  */
 public class PlatformTestCachePluginConfigurationClosureFactory
-        implements PlatformCachePluginConfigurationClosureFactory {
+    implements PlatformCachePluginConfigurationClosureFactory {
     /** {@inheritDoc} */
     @Override public int id() {
         return 0;

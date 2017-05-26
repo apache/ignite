@@ -57,7 +57,7 @@ namespace ignite
                  * @param reslen Resulting data length.
                  * @param offset Pointer to buffer and reslen offset pointer.
                  */
-                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer,
+                ApplicationDataBuffer(type_traits::OdbcNativeType::Type type, void* buffer,
                     SqlLen buflen, SqlLen* reslen, int** offset = 0);
 
                 /**
@@ -341,7 +341,7 @@ namespace ignite
                  *
                  * @return Buffer type.
                  */
-                type_traits::IgniteSqlType GetType() const
+                type_traits::OdbcNativeType::Type GetType() const
                 {
                     return type;
                 }
@@ -413,7 +413,7 @@ namespace ignite
                 T* ApplyOffset(T* ptr) const;
 
                 /** Underlying data type. */
-                type_traits::IgniteSqlType type;
+                type_traits::OdbcNativeType::Type type;
 
                 /** Buffer pointer. */
                 void* buffer;

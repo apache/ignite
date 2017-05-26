@@ -122,11 +122,14 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
 
     /**
      * Sets maximum allowed cache size in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setMaxMemorySize(long maxMemSize) {
+    public AbstractEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {
         A.ensure(maxMemSize >= 0, "maxMemSize >= 0");
 
         this.maxMemSize = maxMemSize;
+
+        return this;
     }
 
     /**
@@ -151,11 +154,14 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
      * Sets maximum allowed size of cache before entry will start getting evicted.
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
+     * @return {@code this} for chaining.
      */
-    public void setMaxSize(int max) {
+    public AbstractEvictionPolicy<K, V>  setMaxSize(int max) {
         A.ensure(max >= 0, "max >= 0");
 
         this.max = max;
+
+        return this;
     }
 
     /**
@@ -171,11 +177,14 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
      * Sets batch size.
      *
      * @param batchSize Batch size.
+     * @return {@code this} for chaining.
      */
-    public void setBatchSize(int batchSize) {
+    public AbstractEvictionPolicy<K, V>  setBatchSize(int batchSize) {
         A.ensure(batchSize > 0, "batchSize > 0");
 
         this.batchSize = batchSize;
+
+        return this;
     }
 
     /**

@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys.</param>
         /// <returns>Map of key-value pairs.</returns>
-        IDictionary<TK, TV> GetAll(IEnumerable<TK> keys);
+        ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Retrieves values mapped to the specified keys from cache.
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys.</param>
         /// <returns>Map of key-value pairs.</returns>
-        Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys);
+        Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys);
 
         /// <summary>
         /// Associates the specified value with the specified key in the cache.
@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
-        void PutAll(IDictionary<TK, TV> vals);
+        void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals);
 
         /// <summary>
         /// Stores given key-value pairs in cache.
@@ -522,7 +522,7 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
-        Task PutAllAsync(IDictionary<TK, TV> vals);
+        Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals);
 
         /// <summary>
         /// Attempts to evict all entries associated with keys. Note, that entry will be evicted only
@@ -693,12 +693,6 @@ namespace Apache.Ignite.Core.Cache
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
 
         /// <summary>
-        /// This method unswaps cache entries by given keys, if any, from swap storage into memory.
-        /// </summary>
-        /// <param name="keys">Keys to promote entries for.</param>
-        void LocalPromote(IEnumerable<TK> keys);
-
-        /// <summary>
         /// Queries cache.
         /// </summary>
         /// <param name="qry">Query.</param>
@@ -785,12 +779,12 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
         /// <returns>
-        /// Map of <see cref="ICacheEntryProcessorResult{R}" /> of the processing per key, if any,
+        /// Map of <see cref="ICacheEntryProcessorResult{K, R}" /> of the processing per key, if any,
         /// defined by the <see cref="ICacheEntryProcessor{K,V,A,R}"/> implementation.
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+        ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -809,12 +803,12 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="processor">The processor.</param>
         /// <param name="arg">The argument.</param>
         /// <returns>
-        /// Map of <see cref="ICacheEntryProcessorResult{R}" /> of the processing per key, if any,
+        /// Map of <see cref="ICacheEntryProcessorResult{K, R}" /> of the processing per key, if any,
         /// defined by the <see cref="ICacheEntryProcessor{K,V,A,R}"/> implementation.
         /// No mappings will be returned for processors that return a null value for a key.
         /// </returns>
         /// <exception cref="CacheEntryProcessorException">If an exception has occured during processing.</exception>
-        Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+        Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg);
 
         /// <summary>
@@ -889,5 +883,20 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <returns>Cache with no-retries behavior enabled.</returns>
         ICache<TK, TV> WithNoRetries();
+
+        /// <summary>
+        /// Gets an instance of cache that will be allowed to execute cache operations (read, write)
+        /// regardless of partition loss policy.
+        /// </summary>
+        /// <returns>Cache without partition loss protection.</returns>
+        ICache<TK, TV> WithPartitionRecover();
+
+        /// <summary>
+        /// Gets lost partitions IDs.
+        /// <para />
+        /// See also <see cref="CacheConfiguration.PartitionLossPolicy"/>
+        /// and <see cref="IIgnite.ResetLostPartitions(IEnumerable{string})"/>.
+        /// </summary>
+        ICollection<int> GetLostPartitions();
     }
 }

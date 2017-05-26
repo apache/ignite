@@ -50,9 +50,15 @@ namespace Apache.Ignite.Examples.Misc
             var evt = new ManualResetEvent(false);
             ThreadPool.QueueUserWorkItem(_ => RunServer(evt));
 
-            Ignition.ClientMode = true;
+            // Wait a moment for server to begin startup.
+            Thread.Sleep(200);
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration())
+            var cfg = new IgniteConfiguration(GetIgniteConfiguration())
+            {
+                ClientMode = true
+            };
+
+            using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine(">>> Client node connected to the cluster.");
 
@@ -110,19 +116,10 @@ namespace Apache.Ignite.Examples.Misc
         /// <param name="evt"></param>
         private static void RunServer(WaitHandle evt)
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(GetIgniteConfiguration())
             {
                 // Nodes within a single process are distinguished by GridName property.
                 IgniteInstanceName = "serverNode",
-
-                // Discovery settings are the same as in app.config.
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
-                    {
-                        Endpoints = new[] {"127.0.0.1:47500"}
-                    }
-                },
 
                 CacheConfiguration = new[] {new CacheConfiguration(CacheName)},
 
@@ -154,6 +151,23 @@ namespace Apache.Ignite.Examples.Misc
             {
                 evt.WaitOne();
             }
+        }
+
+        /// <summary>
+        /// Gets the base Ignite configuration.
+        /// </summary>
+        private static IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration
+            {
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500" }
+                    }
+                }
+            };
         }
     }
 }

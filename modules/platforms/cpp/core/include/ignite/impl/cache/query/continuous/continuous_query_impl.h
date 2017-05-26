@@ -24,11 +24,13 @@
 #define _IGNITE_IMPL_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_IMPL
 
 #include <stdint.h>
+#include <memory>
 
 #include <ignite/reference.h>
 
 #include <ignite/cache/event/cache_entry_event_listener.h>
 #include <ignite/binary/binary_raw_reader.h>
+#include <ignite/impl/cache/event/cache_entry_event_filter_holder.h>
 
 namespace ignite
 {
@@ -80,10 +82,11 @@ namespace ignite
                          *
                          * @param loc Whether query should be executed locally.
                          */
-                        explicit ContinuousQueryImplBase(bool loc) :
+                        explicit ContinuousQueryImplBase(bool loc, event::CacheEntryEventFilterHolderBase* filterOp) :
                             local(loc),
                             bufferSize(DEFAULT_BUFFER_SIZE),
-                            timeInterval(DEFAULT_TIME_INTERVAL)
+                            timeInterval(DEFAULT_TIME_INTERVAL),
+                            filterOp(filterOp)
                         {
                             // No-op.
                         }
@@ -183,6 +186,16 @@ namespace ignite
                         }
 
                         /**
+                         * Get remote filter holder.
+                         *
+                         * @return Filter holder.
+                         */
+                        event::CacheEntryEventFilterHolderBase& GetFilterHolder() const
+                        {
+                            return *filterOp;
+                        }
+
+                        /**
                          * Callback that reads and processes cache events.
                          *
                          * @param reader Reader to use.
@@ -221,6 +234,9 @@ namespace ignite
                          * sent only when buffer is full.
                          */
                         int64_t timeInterval;
+
+                        /** Cache entry event filter holder. */
+                        std::auto_ptr<event::CacheEntryEventFilterHolderBase> filterOp;
                     };
 
                     /**
@@ -252,11 +268,13 @@ namespace ignite
                         /**
                          * Constructor.
                          *
-                         * @param lsnr Event listener. Invoked on the node where
+                         * @param lsnr Event listener Invoked on the node where
                          *     continuous query execution has been started.
+                         * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr) :
-                            ContinuousQueryImplBase(false),
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
+                            bool loc) :
+                            ContinuousQueryImplBase(loc, new event::CacheEntryEventFilterHolder<void>()),
                             lsnr(lsnr)
                         {
                             // No-op.
@@ -269,8 +287,10 @@ namespace ignite
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr, bool loc) :
-                            ContinuousQueryImplBase(loc),
+                        template<typename F>
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
+                            bool loc, const Reference<F>& filter) :
+                            ContinuousQueryImplBase(loc, new event::CacheEntryEventFilterHolder<F>(filter)),
                             lsnr(lsnr)
                         {
                             // No-op.
@@ -335,12 +355,36 @@ namespace ignite
                             for (int32_t i = 0; i < cnt; ++i)
                                 events[i].Read(reader);
 
-                            lsnr.Get().OnEvent(events.data(), cnt);
+                            lsnr.Get()->OnEvent(events.data(), cnt);
                         }
 
                     private:
                         /** Cache entry event listener. */
                         Reference<ignite::cache::event::CacheEntryEventListener<K, V> > lsnr;
+                    };
+
+                    /**
+                     * Used to store filter on remote nodes where no
+                     * ContinuousQuery instance were really created.
+                     */
+                    class RemoteFilterHolder : public ContinuousQueryImplBase
+                    {
+                    public:
+                        /**
+                         * Constructor.
+                         */
+                        template<typename F>
+                        RemoteFilterHolder(const Reference<F>& filter):
+                            ContinuousQueryImplBase(false, new event::CacheEntryEventFilterHolder<F>(filter))
+                        {
+                            // No-op.
+                        }
+
+                        virtual void ReadAndProcessEvents(ignite::binary::BinaryRawReader&)
+                        {
+                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                "No listener is registered for the ContinuousQuery instance");
+                        }
                     };
                 }
             }

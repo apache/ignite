@@ -129,7 +129,7 @@ namespace ignite
              * @param columnNum Associated column number.
              * @return DiagnosticRecord associated with the instance.
              */
-            static diagnostic::DiagnosticRecord CreateStatusRecord(SqlState sqlState,
+            static diagnostic::DiagnosticRecord CreateStatusRecord(SqlState::Type sqlState,
                 const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0);
 
             /**
@@ -172,7 +172,7 @@ namespace ignite
              * @param connectStr Connection string.
              * @return Operation result.
              */
-            SqlResult InternalEstablish(const std::string& connectStr);
+            SqlResult::Type InternalEstablish(const std::string& connectStr);
 
             /**
              * Establish connection to ODBC server.
@@ -181,7 +181,7 @@ namespace ignite
              * @param cfg Configuration.
              * @return Operation result.
              */
-            SqlResult InternalEstablish(const config::Configuration cfg);
+            SqlResult::Type InternalEstablish(const config::Configuration cfg);
 
             /**
              * Release established connection.
@@ -189,7 +189,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalRelease();
+            SqlResult::Type InternalRelease();
 
             /**
              * Get info of any type.
@@ -201,7 +201,7 @@ namespace ignite
              * @param reslen Result value length pointer.
              * @return Operation result.
              */
-            SqlResult InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
+            SqlResult::Type InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
 
             /**
              * Create statement associated with the connection.
@@ -210,7 +210,7 @@ namespace ignite
              * @param Pointer to valid instance on success and NULL on failure.
              * @return Operation result.
              */
-            SqlResult InternalCreateStatement(Statement*& statement);
+            SqlResult::Type InternalCreateStatement(Statement*& statement);
 
             /**
              * Perform transaction commit on all the associated connections.
@@ -218,7 +218,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalTransactionCommit();
+            SqlResult::Type InternalTransactionCommit();
 
             /**
              * Perform transaction rollback on all the associated connections.
@@ -226,7 +226,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalTransactionRollback();
+            SqlResult::Type InternalTransactionRollback();
 
             /**
              * Receive specified number of bytes.
@@ -251,7 +251,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult MakeRequestHandshake();
+            SqlResult::Type MakeRequestHandshake();
 
             /**
              * Constructor.

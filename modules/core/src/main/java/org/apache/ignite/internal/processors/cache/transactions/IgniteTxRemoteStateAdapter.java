@@ -49,7 +49,11 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException validateTopology(GridCacheSharedContext cctx, GridDhtTopologyFuture topFut) {
+    @Override public IgniteCheckedException validateTopology(
+        GridCacheSharedContext cctx,
+        boolean read,
+        GridDhtTopologyFuture topFut
+    ) {
         assert false;
 
         return null;
@@ -70,7 +74,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
         throws IgniteCheckedException {
         assert false;
     }

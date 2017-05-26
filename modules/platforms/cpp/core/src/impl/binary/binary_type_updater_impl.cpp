@@ -36,13 +36,16 @@ namespace ignite
     {
         namespace binary
         {
-            enum Operation
+            struct Operation
             {
-                /** Operation: metadata get. */
-                OP_GET_META = 1,
+                enum Type
+                {
+                    /** Operation: metadata get. */
+                    GET_META = 1,
 
-                /** Operation: metadata update. */
-                OP_PUT_META = 3
+                    /** Operation: metadata update. */
+                    PUT_META = 3
+                };
             };
 
             BinaryTypeUpdaterImpl::BinaryTypeUpdaterImpl(IgniteEnvironment& env, jobject javaRef) :
@@ -97,7 +100,7 @@ namespace ignite
 
                 out.Synchronize();
 
-                long long res = env.Context()->TargetInStreamOutLong(javaRef, OP_PUT_META, mem.Get()->PointerLong(), &jniErr);
+                long long res = env.Context()->TargetInStreamOutLong(javaRef, Operation::PUT_META, mem.Get()->PointerLong(), &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
@@ -118,7 +121,7 @@ namespace ignite
 
                 out.Synchronize();
 
-                env.Context()->TargetInStreamOutStream(javaRef, OP_GET_META,
+                env.Context()->TargetInStreamOutStream(javaRef, Operation::GET_META,
                     outMem.Get()->PointerLong(), inMem.Get()->PointerLong(), &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);

@@ -27,6 +27,8 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -340,7 +342,7 @@ public interface Ignite extends AutoCloseable {
      * @return Cache instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -351,7 +353,7 @@ public interface Ignite extends AutoCloseable {
      * @return {@code IgniteCache} instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -378,7 +380,7 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of the cache for the specified name.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name) throws CacheException;
+    public <K, V> IgniteCache<K, V> cache(String name) throws CacheException;
 
     /**
      * Gets the collection of names of currently available caches.
@@ -402,11 +404,11 @@ public interface Ignite extends AutoCloseable {
      * is responsible for loading external data into in-memory data grid. For more information
      * refer to {@link IgniteDataStreamer} documentation.
      *
-     * @param cacheName Cache name ({@code null} for default cache).
+     * @param cacheName Cache name.
      * @return Data streamer.
      * @throws IllegalStateException If node is stopping.
      */
-    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) throws IllegalStateException;
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) throws IllegalStateException;
 
     /**
      * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
@@ -524,7 +526,6 @@ public interface Ignite extends AutoCloseable {
      *      all threads on other nodes waiting to acquire lock are interrupted.
      * @param fair If {@code True}, fair lock will be created.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
-     *      Will re-create lock if the node that stored the lock left topology and there are no backups left.
      * @return ReentrantLock for the given name.
      * @throws IgniteException If reentrant lock could not be fetched or created.
      */
@@ -589,11 +590,52 @@ public interface Ignite extends AutoCloseable {
     @Override public void close() throws IgniteException;
 
     /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
+     * Gets affinity service to provide information about data partitioning and distribution.
+     *
      * @param cacheName Cache name.
      * @param <K> Cache key type.
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     */
+    public void active(boolean active);
+
+    /**
+     * Clears partition's lost state and moves caches to a normal mode.
+     */
+    public void resetLostPartitions(Collection<String> cacheNames);
+
+    /**
+     * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
+     * instance.
+     * Returns the collection that contains the latest snapshots for each memory region
+     * configured with {@link MemoryPolicyConfiguration configuration} on this Ignite node instance.
+     *
+     * @return Collection of {@link MemoryMetrics} snapshots.
+     */
+    public Collection<MemoryMetrics> memoryMetrics();
+
+    /**
+     * Returns the latest {@link MemoryMetrics} snapshot for the memory region of the given name.
+     *
+     * To get the metrics for the default memory region use
+     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} as the name
+     * or a custom name if the default memory region has been renamed.
+     *
+     * @param memPlcName Name of memory region configured with {@link MemoryPolicyConfiguration config}.
+     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     */
+    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 }

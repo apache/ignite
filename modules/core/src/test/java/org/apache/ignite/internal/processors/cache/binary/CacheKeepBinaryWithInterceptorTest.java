@@ -100,7 +100,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             TestInterceptor1.onBeforePut = 0;
             TestInterceptor1.onGet = 0;
 
-            IgniteCache cache = ignite(0).cache(null).withKeepBinary();
+            IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
             cache.put(new TestKey(1), new TestValue(10));
 
@@ -151,7 +151,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             TestInterceptor2.onBeforePut = 0;
             TestInterceptor2.onGet = 0;
 
-            IgniteCache cache = ignite(0).cache(null).withKeepBinary();
+            IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
             cache.put(1, 10);
 
@@ -195,7 +195,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(CacheAtomicityMode atomicityMode, boolean testPrimitives) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setInterceptor(testPrimitives ? new TestInterceptor2() : new TestInterceptor1());

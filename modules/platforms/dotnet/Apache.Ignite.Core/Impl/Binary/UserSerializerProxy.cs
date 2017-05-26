@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
-    using System;
     using System.Diagnostics;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
@@ -48,9 +47,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
+        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos)
         {
-            var obj = FormatterServices.GetUninitializedObject(type);
+            var obj = FormatterServices.GetUninitializedObject(desc.Type);
 
             reader.AddHandle(pos, obj);
 

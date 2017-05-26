@@ -90,6 +90,13 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     }
 
     /**
+     * @return {@code true} If this component is stopping.
+     */
+    protected final boolean isStopping() {
+        return stop.get();
+    }
+
+    /**
      * @param cancel Cancel flag.
      */
     protected void stop0(boolean cancel) {

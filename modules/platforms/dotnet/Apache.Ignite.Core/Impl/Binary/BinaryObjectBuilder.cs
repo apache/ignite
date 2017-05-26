@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly IBinaryTypeDescriptor _desc;
 
         /** Values. */
-        private IDictionary<string, BinaryBuilderField> _vals;
+        private SortedDictionary<string, BinaryBuilderField> _vals;
 
         /** Contextual fields. */
         private IDictionary<int, BinaryBuilderField> _cache;
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private IBinaryObjectBuilder SetField0(string fieldName, BinaryBuilderField val)
         {
             if (_vals == null)
-                _vals = new Dictionary<string, BinaryBuilderField>();
+                _vals = new SortedDictionary<string, BinaryBuilderField>();
 
             _vals[fieldName] = val;
 
@@ -676,6 +676,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                                 ? BinaryObjectHeader.Flag.UserType
                                 : BinaryObjectHeader.Flag.None;
 
+                            if (inHeader.IsCustomDotNetType)
+                                flags |= BinaryObjectHeader.Flag.CustomDotNetType;
+
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
 
@@ -719,12 +722,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                             if (changeHash)
                             {
                                 // Get from identity resolver.
-                                var comparer = BinaryUtils.GetEqualityComparer(_desc);
-
-                                outHash = comparer.GetHashCode(outStream,
+                                outHash = BinaryArrayEqualityComparer.GetHashCode(outStream,
                                     outStartPos + BinaryObjectHeader.Size,
-                                    schemaPos - outStartPos - BinaryObjectHeader.Size,
-                                    outSchema, outSchemaId, _binary.Marshaller, _desc);
+                                    schemaPos - outStartPos - BinaryObjectHeader.Size);
                             }
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
@@ -936,14 +936,34 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeArrayString:
                 case BinaryUtils.TypeArrayGuid:
                 case BinaryUtils.TypeArrayTimestamp:
-                case BinaryUtils.TypeArrayEnum:
-                case BinaryUtils.TypeArray:
                     int arrLen = inStream.ReadInt();
 
                     outStream.WriteInt(arrLen);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, null);
+
+                    break;
+
+                case BinaryUtils.TypeArrayEnum:
+                case BinaryUtils.TypeArray:
+                    int type = inStream.ReadInt();
+
+                    outStream.WriteInt(type);
+
+                    if (type == BinaryUtils.TypeUnregistered)
+                    {
+                        outStream.WriteByte(inStream.ReadByte());  // String header.
+
+                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
+                    }
+
+                    arrLen = inStream.ReadInt();
+
+                    outStream.WriteInt(arrLen);
+
+                    for (int i = 0; i < arrLen; i++)
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
 
                     break;
 

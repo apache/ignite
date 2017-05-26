@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Query.
@@ -52,6 +53,12 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** */
     private boolean distributedJoins;
+
+    /** */
+    private boolean replicatedOnly;
+
+    /** Partitions for query */
+    private int[] parts;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -197,7 +204,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public SqlQuery setType(Class<?> type) {
+    public SqlQuery<K, V> setType(Class<?> type) {
         return setType(QueryUtils.typeName(type));
     }
 
@@ -210,7 +217,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param distributedJoins Distributed joins enabled.
      * @return {@code this} For chaining.
      */
-    public SqlQuery setDistributedJoins(boolean distributedJoins) {
+    public SqlQuery<K, V> setDistributedJoins(boolean distributedJoins) {
         this.distributedJoins = distributedJoins;
 
         return this;
@@ -219,10 +226,54 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * Specify if the query contains only replicated tables.
+     * This is a hint for potentially more effective execution.
+     *
+     * @param replicatedOnly The query contains only replicated tables.
+     * @return {@code this} For chaining.
+     */
+    public SqlQuery<K, V> setReplicatedOnly(boolean replicatedOnly) {
+        this.replicatedOnly = replicatedOnly;
+
+        return this;
+    }
+
+    /**
+     * Check is the query contains only replicated tables.
+     *
+     * @return {@code true} If the query contains only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     * <p>
+     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlQuery setPartitions(@Nullable int... parts) {
+        this.parts = prepare(parts);
+
+        return this;
     }
 
     /** {@inheritDoc} */

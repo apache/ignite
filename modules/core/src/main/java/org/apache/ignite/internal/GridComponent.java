@@ -42,6 +42,9 @@ public interface GridComponent {
         /** */
         CACHE_PROC,
 
+        /** State process. */
+        STATE_PROC,
+
         /** */
         PLUGIN,
 
@@ -49,7 +52,16 @@ public interface GridComponent {
         CLUSTER_PROC,
 
         /** */
-        MARSHALLER_PROC
+        DISCOVERY_PROC,
+
+        /** */
+        MARSHALLER_PROC,
+
+        /** */
+        BINARY_PROC,
+
+        /** Query processor. */
+        QUERY_PROC
     }
 
     /**
@@ -57,7 +69,7 @@ public interface GridComponent {
      *
      * @throws IgniteCheckedException Throws in case of any errors.
      */
-    public void start() throws IgniteCheckedException;
+    public void start(boolean activeOnStart) throws IgniteCheckedException;
 
     /**
      * Stops grid component.
@@ -74,7 +86,7 @@ public interface GridComponent {
      *
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void onKernalStart() throws IgniteCheckedException;
+    public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException;
 
     /**
      * Callback to notify that kernal is about to stop.

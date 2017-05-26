@@ -55,7 +55,7 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(atomicityMode());
@@ -112,13 +112,13 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
                 for (int i = 0; i < 1000; i++) {
                     IndexedEntity entity = new IndexedEntity("indexed " + i);
 
-                    grid(0).cache(null).put(new AffinityKey<>(i, i), entity);
+                    grid(0).cache(DEFAULT_CACHE_NAME).put(new AffinityKey<>(i, i), entity);
                 }
 
                 Ignite started = startGrid(GRID_CNT);
 
                 for (int i = 0; i < 100; i++) {
-                    QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(null)
+                    QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(DEFAULT_CACHE_NAME)
                         .query(new TextQuery<AffinityKey<Integer>, IndexedEntity>(IndexedEntity.class, "indexed"));
 
                     assertEquals(1000, res.getAll().size());

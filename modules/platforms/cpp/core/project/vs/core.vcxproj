@@ -195,6 +195,7 @@
     <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
     <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h" />
     <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h" />
@@ -212,15 +213,19 @@
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
     <ClInclude Include="..\..\include\ignite\ignition.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\bindings.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_base.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_handle_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\helpers.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\handle_registry.h" />
@@ -246,6 +251,7 @@
     <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
     <ClCompile Include="..\..\src\impl\handle_registry.cpp" />

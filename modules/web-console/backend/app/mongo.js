@@ -105,6 +105,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
+        tableName: String,
         databaseSchema: String,
         databaseTable: String,
         keyType: String,
@@ -144,6 +145,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+        partitionLossPolicy: {type: String, enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']},
 
         affinity: {
             kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
@@ -178,10 +180,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
 
         backups: Number,
-        memoryMode: {type: String, enum: ['ONHEAP_TIERED', 'OFFHEAP_TIERED', 'OFFHEAP_VALUES']},
-        offHeapMaxMemory: Number,
-        startSize: Number,
-        swapEnabled: Boolean,
+
+        onheapCacheEnabled: Boolean,
 
         evictionPolicy: {
             kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
@@ -259,19 +259,18 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         writeBehindFlushSize: Number,
         writeBehindFlushFrequency: Number,
         writeBehindFlushThreadCount: Number,
+        writeBehindCoalescing: Boolean,
 
         invalidate: Boolean,
         defaultLockTimeout: Number,
-        atomicWriteOrderMode: {type: String, enum: ['CLOCK', 'PRIMARY']},
         writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
 
         sqlEscapeAll: Boolean,
         sqlSchema: String,
-        sqlOnheapRowCacheSize: Number,
         longQueryWarningTimeout: Number,
         sqlFunctionClasses: [String],
-        snapshotableIndex: Boolean,
         queryDetailMetricsSize: Number,
+        queryParallelism: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
@@ -320,7 +319,11 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                     maxSize: Number
                 }
             }
-        }
+        },
+        evictionFilter: String,
+        memoryPolicyName: String,
+        sqlIndexMaxInlineSize: Number,
+        topologyValidator: String
     });
 
     CacheSchema.index({name: 1, space: 1}, {unique: true});
@@ -334,13 +337,10 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         affinnityGroupSize: Number,
         blockSize: Number,
-        streamBufferSize: Number,
+        bufferSize: Number,
         dataCacheName: String,
         metaCacheName: String,
         defaultMode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']},
-        dualModeMaxPendingPutsSize: Number,
-        dualModePutExecutorService: String,
-        dualModePutExecutorServiceShutdown: Boolean,
         fragmentizerConcurrentFiles: Number,
         fragmentizerEnabled: Boolean,
         fragmentizerThrottlingBlockLength: Number,
@@ -354,7 +354,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             threadCount: Number
         },
         ipcEndpointEnabled: Boolean,
-        maxSpaceSize: Number,
         maximumTaskRangeLength: Number,
         managementPort: Number,
         pathModes: [{path: String, mode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']}}],
@@ -362,7 +361,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         perNodeParallelBatchCount: Number,
         prefetchBlocks: Number,
         sequentialReadsBeforePrefetch: Number,
-        trashPurgeTimeout: Number,
         secondaryFileSystemEnabled: Boolean,
         secondaryFileSystem: {
             uri: String,
@@ -370,7 +368,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             userName: String
         },
         colocateMetadata: Boolean,
-        relaxedConsistency: Boolean
+        relaxedConsistency: Boolean,
+        updateFileLenOnFlush: Boolean
     });
 
     IgfsSchema.index({name: 1, space: 1}, {unique: true});
@@ -382,6 +381,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     const ClusterSchema = new Schema({
         space: {type: ObjectId, ref: 'Space', index: true},
         name: {type: String},
+        activeOnStart: Boolean,
         localHost: String,
         discovery: {
             localAddress: String,
@@ -394,9 +394,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             networkTimeout: Number,
             joinTimeout: Number,
             threadPriority: Number,
-            heartbeatFrequency: Number,
-            maxMissedHeartbeats: Number,
-            maxMissedClientHeartbeats: Number,
+            metricsUpdateFrequency: Number,
             topHistorySize: Number,
             listener: String,
             dataExchange: String,
@@ -407,7 +405,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
-            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper']},
+            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper', 'Kubernetes']},
             Vm: {
                 addresses: [String]
             },
@@ -528,6 +526,12 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 basePath: String,
                 serviceName: String,
                 allowDuplicateRegistrations: Boolean
+            },
+            Kubernetes: {
+                serviceName: String,
+                namespace: String,
+                masterUrl: String,
+                accountToken: String
             }
         },
         atomicConfiguration: {
@@ -549,8 +553,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             compactFooter: Boolean
         },
         caches: [{type: ObjectId, ref: 'Cache'}],
-        clockSyncSamples: Number,
-        clockSyncFrequency: Number,
         deploymentMode: {type: String, enum: ['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']},
         discoveryStartupDelay: Number,
         igfsThreadPoolSize: Number,
@@ -576,8 +578,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             }
         },
         marshalLocalJobs: Boolean,
-        marshallerCacheKeepAliveTime: Number,
-        marshallerCacheThreadPoolSize: Number,
         metricsExpireTime: Number,
         metricsHistorySize: Number,
         metricsLogFrequency: Number,
@@ -635,16 +635,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         peerClassLoadingMissedResourcesCacheSize: Number,
         peerClassLoadingThreadPoolSize: Number,
         publicThreadPoolSize: Number,
-        swapSpaceSpi: {
-            kind: {type: String, enum: ['FileSwapSpaceSpi']},
-            FileSwapSpaceSpi: {
-                baseDirectory: String,
-                readStripesNumber: Number,
-                maximumSparsity: Number,
-                maxWriteQueueSize: Number,
-                writeBufferSize: Number
-            }
-        },
         systemThreadPoolSize: Number,
         timeServerPortBase: Number,
         timeServerPortRange: Number,
@@ -865,6 +855,63 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             Custom: {
                 className: String
             }
+        },
+        warmupClosure: String,
+        hadoopConfiguration: {
+            finishedJobInfoTtl: Number,
+            mapReducePlanner: String,
+            maxParallelTasks: Number,
+            naxTaskQueueSize: Number,
+            nativeLibraryNames: [String]
+        },
+        serviceConfigurations: [{
+            name: String,
+            service: String,
+            maxPerNodeCount: Number,
+            totalCount: Number,
+            nodeFilter: {
+                kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
+                Exclude: {
+                    nodeId: String
+                },
+                IGFS: {
+                    igfs: {type: ObjectId, ref: 'Igfs'}
+                },
+                Custom: {
+                    className: String
+                }
+            },
+            cache: {type: ObjectId, ref: 'Cache'},
+            affinityKey: String
+        }],
+        cacheSanityCheckEnabled: Boolean,
+        classLoader: String,
+        consistentId: String,
+        failureDetectionTimeout: Number,
+        workDirectory: String,
+        lateAffinityAssignment: Boolean,
+        utilityCacheKeepAliveTime: Number,
+        asyncCallbackPoolSize: Number,
+        dataStreamerThreadPoolSize: Number,
+        queryThreadPoolSize: Number,
+        stripedPoolSize: Number,
+        serviceThreadPoolSize: Number,
+        utilityCacheThreadPoolSize: Number,
+        executorConfiguration: [{
+            name: String,
+            poolSize: Number
+        }],
+        memoryConfiguration: {
+            pageSize: Number,
+            systemCacheMemorySize: Number,
+            concurrencyLevel: Number,
+            defaultMemoryPolicyName: String,
+            memoryPolicies: [{
+                name: String,
+                maxSize: Number,
+                swapFilePath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']}
+            }]
         }
     });
 

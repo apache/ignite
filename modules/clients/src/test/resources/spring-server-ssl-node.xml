@@ -127,50 +127,75 @@
 
                     <property name="binaryEnabled" value="true"/>
 
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="valueType" value="GridBinaryPerson"/>
-                                <property name="ascendingFields">
+                                <property name="fields">
                                     <map>
+                                        <entry key="name" value="java.lang.String"/>
+                                        <entry key="address" value="java.lang.String"/>
                                         <entry key="age" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="name" value="java.lang.String"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>address</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="age" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="address" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="valueType" value="GridImplicitBinaryPerson"/>
-                                <property name="ascendingFields">
+                                <property name="fields">
                                     <map>
+                                        <entry key="name" value="java.lang.String"/>
                                         <entry key="age" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="name" value="java.lang.String"/>
-                                    </map>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="age" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                    </list>
                                 </property>
                             </bean>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="valueType" value="GridNoDefBinaryPerson"/>
-                                <property name="ascendingFields">
+                                <property name="fields">
                                     <map>
+                                        <entry key="name" value="java.lang.String"/>
                                         <entry key="age" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="name" value="java.lang.String"/>
-                                    </map>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="age" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                    </list>
                                 </property>
                             </bean>
                         </list>

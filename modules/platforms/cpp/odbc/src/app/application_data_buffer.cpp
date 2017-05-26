@@ -36,7 +36,7 @@ namespace ignite
             using ignite::impl::binary::BinaryUtils;
 
             ApplicationDataBuffer::ApplicationDataBuffer() :
-                type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED),
+                type(type_traits::OdbcNativeType::AI_UNSUPPORTED),
                 buffer(0),
                 buflen(0),
                 reslen(0),
@@ -45,7 +45,7 @@ namespace ignite
                 // No-op.
             }
 
-            ApplicationDataBuffer::ApplicationDataBuffer(type_traits::IgniteSqlType type,
+            ApplicationDataBuffer::ApplicationDataBuffer(type_traits::OdbcNativeType::Type type,
                 void* buffer, SqlLen buflen, SqlLen* reslen, int** offset) :
                 type(type),
                 buffer(buffer),
@@ -92,80 +92,80 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
                     {
                         PutNumToNumBuffer<signed char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
                     {
                         PutNumToNumBuffer<unsigned char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
                     {
                         PutNumToNumBuffer<short>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
                         PutNumToNumBuffer<unsigned short>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_LONG:
                     {
                         PutNumToNumBuffer<long>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
                         PutNumToNumBuffer<unsigned long>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         PutNumToNumBuffer<int64_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         PutNumToNumBuffer<uint64_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                     {
                         PutNumToNumBuffer<float>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         PutNumToNumBuffer<double>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         PutValToStrBuffer<char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         PutValToStrBuffer<wchar_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
                         if (dataPtr)
                         {
@@ -189,8 +189,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         if (dataPtr)
                         {
@@ -215,21 +215,21 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         PutDate(Date(static_cast<int64_t>(value)));
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         PutTimestamp(Timestamp(static_cast<int64_t>(value)));
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         PutTime(Time(static_cast<int64_t>(value)));
 
@@ -383,16 +383,16 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
                         std::stringstream converter;
 
@@ -409,8 +409,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         std::stringstream converter;
 
@@ -427,9 +427,9 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         PutStrToStrBuffer<char>(value);
 
@@ -438,7 +438,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         PutStrToStrBuffer<wchar_t>(value);
 
@@ -467,21 +467,21 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         PutValToStrBuffer<char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         PutValToStrBuffer<wchar_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_GUID:
+                    case OdbcNativeType::AI_GUID:
                     {
                         SQLGUID* guid = reinterpret_cast<SQLGUID*>(GetData());
 
@@ -515,8 +515,8 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         PutRawDataToBuffer(data, len);
 
@@ -525,7 +525,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         std::stringstream converter;
 
@@ -546,7 +546,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         std::wstringstream converter;
 
@@ -595,31 +595,31 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         PutNum<int64_t>(value.ToInt64());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         PutNum<double>(value.ToDouble());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         std::stringstream converter;
 
@@ -630,7 +630,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
                         SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
@@ -663,8 +663,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
-                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
                     default:
                     {
                         if (resLenPtr)
@@ -686,7 +686,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         char* buffer = reinterpret_cast<char*>(dataPtr);
 
@@ -703,7 +703,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(dataPtr);
 
@@ -729,7 +729,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(dataPtr);
 
@@ -743,7 +743,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
 
@@ -757,7 +757,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
 
@@ -775,8 +775,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         if (dataPtr)
                             memcpy(dataPtr, &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
@@ -787,18 +787,18 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
                     default:
                     {
                         if (resLenPtr)
@@ -820,7 +820,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         char* buffer = reinterpret_cast<char*>(dataPtr);
 
@@ -837,7 +837,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(dataPtr);
 
@@ -863,7 +863,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(dataPtr);
 
@@ -877,7 +877,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
 
@@ -891,7 +891,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
 
@@ -909,8 +909,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         if (dataPtr)
                             memcpy(dataPtr, &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
@@ -921,18 +921,18 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
                     default:
                     {
                         if (resLenPtr)
@@ -954,7 +954,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         char* buffer = reinterpret_cast<char*>(dataPtr);
 
@@ -971,7 +971,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(dataPtr);
 
@@ -997,7 +997,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
 
@@ -1011,7 +1011,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
 
@@ -1029,8 +1029,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         if (dataPtr)
                             memcpy(dataPtr, &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
@@ -1041,19 +1041,19 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
+                    case OdbcNativeType::AI_TDATE:
                     default:
                     {
                         if (resLenPtr)
@@ -1069,7 +1069,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         size_t paramLen = GetInputSize();
 
@@ -1085,10 +1085,10 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         std::stringstream converter;
 
@@ -1099,11 +1099,11 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         std::stringstream converter;
 
@@ -1114,7 +1114,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                     {
                         std::stringstream converter;
 
@@ -1125,8 +1125,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         std::stringstream converter;
 
@@ -1182,7 +1182,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         SqlLen paramLen = GetInputSize();
 
@@ -1201,7 +1201,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_GUID:
+                    case OdbcNativeType::AI_GUID:
                     {
                         const SQLGUID* guid = reinterpret_cast<const SQLGUID*>(GetData());
 
@@ -1255,7 +1255,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         SqlLen paramLen = GetInputSize();
 
@@ -1284,68 +1284,68 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const signed char*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const unsigned char*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const signed short*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const unsigned short*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_LONG:
                     {
                         res = static_cast<T>(*reinterpret_cast<const signed long*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
                         res = static_cast<T>(*reinterpret_cast<const unsigned long*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const int64_t*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const uint64_t*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const float*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         res = static_cast<T>(*reinterpret_cast<const double*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
                         const SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
@@ -1373,7 +1373,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
 
@@ -1384,7 +1384,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
 
@@ -1397,7 +1397,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
 
@@ -1411,7 +1411,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         SqlLen paramLen = GetInputSize();
 
@@ -1447,7 +1447,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
 
@@ -1458,7 +1458,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
 
@@ -1471,7 +1471,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
 
@@ -1487,7 +1487,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         SqlLen paramLen = GetInputSize();
 
@@ -1525,7 +1525,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                     {
                         const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
 
@@ -1536,7 +1536,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
 
@@ -1547,7 +1547,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         SqlLen paramLen = GetInputSize();
 
@@ -1575,7 +1575,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         SqlLen paramLen = GetInputSize();
 
@@ -1593,36 +1593,36 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         val.AssignInt64(GetNum<int64_t>());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         val.AssignUint64(GetNum<uint64_t>());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         val.AssignDouble(GetNum<double>());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
                         const SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
@@ -1671,9 +1671,9 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case OdbcNativeType::AI_WCHAR:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
                     {
                         const SqlLen* resLenPtr = GetResLen();
 
@@ -1687,52 +1687,52 @@ namespace ignite
                         else
                             ilen = 0;
 
-                        if (type == IGNITE_ODBC_C_TYPE_WCHAR)
+                        if (type == OdbcNativeType::AI_WCHAR)
                             ilen *= 2;
 
                         return ilen;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
                         return static_cast<SqlLen>(sizeof(short));
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
                         return static_cast<SqlLen>(sizeof(long));
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                         return static_cast<SqlLen>(sizeof(float));
 
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_DOUBLE:
                         return static_cast<SqlLen>(sizeof(double));
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
                         return static_cast<SqlLen>(sizeof(char));
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                         return static_cast<SqlLen>(sizeof(SQLBIGINT));
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                         return static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
 
-                    case IGNITE_ODBC_C_TYPE_TTIME:
+                    case OdbcNativeType::AI_TTIME:
                         return static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                         return static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                         return static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
 
-                    case IGNITE_ODBC_C_TYPE_GUID:
+                    case OdbcNativeType::AI_GUID:
                         return static_cast<SqlLen>(sizeof(SQLGUID));
 
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
-                    case IGNITE_ODBC_C_TYPE_UNSUPPORTED:
+                    case OdbcNativeType::AI_DEFAULT:
+                    case OdbcNativeType::AI_UNSUPPORTED:
                     default:
                         break;
                 }

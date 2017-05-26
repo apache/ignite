@@ -50,6 +50,31 @@ namespace ignite
         TestObject objField;
         std::string strField;
     };
+
+    bool operator==(TestObject const& lhs, TestObject const& rhs)
+    {
+        return lhs.f1 == rhs.f1 && lhs.f2 == rhs.f2;
+    }
+
+    bool operator==(ComplexType const& lhs, ComplexType const& rhs)
+    {
+        return lhs.i32Field == rhs.i32Field && lhs.objField == rhs.objField && lhs.strField == rhs.strField;
+    }
+
+    std::ostream& operator<<(std::ostream& str, TestObject const& obj)
+    {
+        str << "TestObject::f1: " << obj.f1
+            << "TestObject::f2: " << obj.f2;
+        return str;
+    }
+
+    std::ostream& operator<<(std::ostream& str, ComplexType const& obj)
+    {
+        str << "ComplexType::i32Field: " << obj.i32Field
+            << "ComplexType::objField: " << obj.objField
+            << "ComplexType::strField: " << obj.strField;
+        return str;
+    }
 }
 
 namespace ignite
@@ -64,24 +89,19 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestObject)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestObject)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestObject)
             IGNITE_BINARY_IS_NULL_FALSE(TestObject)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestObject)
 
-            void Write(BinaryWriter& writer, TestObject obj)
+            static void Write(BinaryWriter& writer, const TestObject& obj)
             {
                 writer.WriteInt32("f1", obj.f1);
                 writer.WriteString("f2", obj.f2);
             }
 
-            TestObject Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, TestObject& dst)
             {
-                TestObject obj;
-
-                obj.f1 = reader.ReadInt32("f1");
-                obj.f2 = reader.ReadString("f2");
-
-                return obj;
+                dst.f1 = reader.ReadInt32("f1");
+                dst.f2 = reader.ReadString("f2");
             }
 
         IGNITE_BINARY_TYPE_END
@@ -93,26 +113,21 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(ComplexType)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(ComplexType)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(ComplexType)
             IGNITE_BINARY_IS_NULL_FALSE(ComplexType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ComplexType)
 
-            void Write(BinaryWriter& writer, ComplexType obj)
+            static void Write(BinaryWriter& writer, const ComplexType& obj)
             {
                 writer.WriteInt32("i32Field", obj.i32Field);
                 writer.WriteObject("objField", obj.objField);
                 writer.WriteString("strField", obj.strField);
             }
 
-            ComplexType Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, ComplexType& dst)
             {
-                ComplexType obj;
-
-                obj.i32Field = reader.ReadInt32("i32Field");
-                obj.objField = reader.ReadObject<TestObject>("objField");
-                obj.strField = reader.ReadString("strField");
-
-                return obj;
+                dst.i32Field = reader.ReadInt32("i32Field");
+                dst.objField = reader.ReadObject<TestObject>("objField");
+                dst.strField = reader.ReadString("strField");
             }
 
         IGNITE_BINARY_TYPE_END

@@ -29,7 +29,6 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
@@ -47,8 +46,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -89,8 +86,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = false;
 
         assertEquals(0, interceptor.invokeCnt.get());
-
-        atomicClockModeDelay(jcache(0));
     }
 
     /** {@inheritDoc} */
@@ -116,12 +111,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         ccfg.setInterceptor(interceptor);
 
-        if (ccfg.getAtomicityMode() == ATOMIC) {
-            assertNotNull(writeOrderMode());
-
-            ccfg.setAtomicWriteOrderMode(writeOrderMode());
-        }
-
         if (!storeEnabled()) {
             ccfg.setCacheStoreFactory(null);
             ccfg.setReadThrough(false);
@@ -134,13 +123,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /**
-     * @return Atomic cache write order mode.
-     */
-    @Nullable protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return null;
     }
 
     /**
@@ -450,7 +432,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return dataNodes + (storeEnabled() ? 1 : 0); // One call before store is updated.
         else {
             // If update goes through primary node and it is cancelled then backups aren't updated.
-            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 1 : dataNodes;
+            return op == Operation.TRANSFORM ? 1 : dataNodes;
         }
     }
 
@@ -465,7 +447,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             // Update + after update + one call before store is updated.
             return dataNodes * 2 + (storeEnabled() ? 1 : 0);
         else
-            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 2 : dataNodes * 2;
+            return op == Operation.TRANSFORM ? 2 : dataNodes * 2;
     }
 
     /**
@@ -889,8 +871,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Put from grid 1 to be sure grid 0 does not have value for near key.
         jcache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
-
-        atomicClockModeDelay(jcache(1));
 
         interceptor.disabled = false;
 
@@ -1356,7 +1336,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        Affinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1381,7 +1361,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        Affinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         String key = null;
 
@@ -1403,7 +1383,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        Affinity aff = ignite(0).affinity(null);
+        Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         String key = null;
 
@@ -1433,7 +1413,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         try {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(null).get(key));
+                assertEquals("Unexpected value for grid " + i, expVal, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
         }
         finally {
             interceptor.disabled = false;

@@ -97,15 +97,6 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_impl.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\binary\binary_array_identity_resolver.h">
-      <Filter>Code\binary</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\binary\binary_identity_resolver.h">
-      <Filter>Code\binary</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_impl.h">
-      <Filter>Code\impl\binary</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_field_meta.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
@@ -164,9 +155,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\impl\binary\binary_object_impl.cpp">
       <Filter>Code\impl\binary</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\binary\binary_array_identity_resolver.cpp">
-      <Filter>Code\binary</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\binary\binary_field_meta.cpp">
       <Filter>Code\impl\binary</Filter>

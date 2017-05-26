@@ -34,13 +34,17 @@ using namespace boost::unit_test;
  */
 struct ClusterTestSuiteFixture
 {
-    Ignite grid;
+    Ignite node;
 
     /*
      * Constructor.
      */
     ClusterTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-test-32.xml", "ClusterTest"))
+#else
         node(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
+#endif
     {
         // No-op.
     }
@@ -52,8 +56,6 @@ struct ClusterTestSuiteFixture
     {
         Ignition::StopAll(true);
     }
-
-    Ignite node;
 };
 
 BOOST_FIXTURE_TEST_SUITE(ClusterTestSuite, ClusterTestSuiteFixture)

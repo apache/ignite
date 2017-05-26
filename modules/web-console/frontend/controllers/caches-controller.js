@@ -82,22 +82,6 @@ export default ['cachesController', [
             }, []);
         }
 
-        const setOffHeapMode = (item) => {
-            if (_.isNil(item.offHeapMaxMemory))
-                return;
-
-            return item.offHeapMode = Math.sign(item.offHeapMaxMemory);
-        };
-
-        const setOffHeapMaxMemory = (value) => {
-            const item = $scope.backupItem;
-
-            if (_.isNil(value) || value <= 0)
-                return item.offHeapMaxMemory = value;
-
-            item.offHeapMaxMemory = item.offHeapMaxMemory > 0 ? item.offHeapMaxMemory : null;
-        };
-
         $scope.tablePairSave = LegacyTable.tablePairSave;
         $scope.tablePairSaveVisible = LegacyTable.tablePairSaveVisible;
         $scope.tableNewItem = LegacyTable.tableNewItem;
@@ -236,8 +220,6 @@ export default ['cachesController', [
                         form.$setDirty();
                 }, true);
 
-                $scope.$watch('backupItem.offHeapMode', setOffHeapMaxMemory);
-
                 $scope.$watch('ui.activePanels.length', () => {
                     ErrorPopover.hide();
                 });
@@ -280,8 +262,6 @@ export default ['cachesController', [
                     $scope.ui.inputForm.$error = {};
                     $scope.ui.inputForm.$setPristine();
                 }
-
-                setOffHeapMode($scope.backupItem);
 
                 __original_value = ModelNormalizer.normalize($scope.backupItem);
 
@@ -436,17 +416,8 @@ export default ['cachesController', [
             if (LegacyUtils.isEmptyString(item.name))
                 return ErrorPopover.show('cacheNameInput', 'Cache name should not be empty!', $scope.ui, 'general');
 
-            if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 && !LegacyUtils.isDefined(item.evictionPolicy.kind))
-                return ErrorPopover.show('evictionPolicyKindInput', 'Eviction policy should be configured!', $scope.ui, 'memory');
-
             if (!LegacyUtils.checkFieldValidators($scope.ui))
                 return false;
-
-            if (item.memoryMode === 'OFFHEAP_VALUES' && !_.isEmpty(item.domains))
-                return ErrorPopover.show('memoryModeInput', 'Query indexing could not be enabled while values are stored off-heap!', $scope.ui, 'memory');
-
-            if (item.memoryMode === 'OFFHEAP_TIERED' && item.offHeapMaxMemory === -1)
-                return ErrorPopover.show('offHeapModeInput', 'Invalid value!', $scope.ui, 'memory');
 
             if (!checkEvictionPolicy(item.evictionPolicy))
                 return false;
@@ -542,7 +513,7 @@ export default ['cachesController', [
                         ];
 
                         // Show a basic modal from a controller
-                        $modal({scope, templateUrl: infoMessageTemplateUrl, placement: 'center', show: true});
+                        $modal({scope, templateUrl: infoMessageTemplateUrl, show: true});
                     }
 
                     save(item);

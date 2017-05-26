@@ -39,10 +39,10 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
@@ -95,16 +95,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                // Can't hold any locks here - this method is invoked when
-                // holding write-lock on the whole cache map.
-                if (ctx.useOffheapEntry())
-                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val);
-
-                return new GridNearCacheEntry(ctx, key, hash, val);
+                return new GridNearCacheEntry(ctx, key);
             }
         };
     }
@@ -123,7 +116,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
-        map = new GridCacheConcurrentMapImpl(
+        map = new GridCacheLocalConcurrentMap(
             ctx,
             entryFactory(),
             ctx.config().getNearConfiguration().getNearStartSize());
@@ -139,24 +132,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return dht().preloader();
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCacheMapEntry entryEx(KeyCacheObject key, boolean touch) {
-        GridNearCacheEntry entry = null;
-
-        while (true) {
-            try {
-                entry = (GridNearCacheEntry)super.entryEx(key, touch);
-
-                entry.initializeFromDht(ctx.affinity().affinityTopologyVersion());
-
-                return entry;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Got removed near entry while initializing from DHT entry (will retry): " + entry);
-            }
-        }
-    }
 
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
@@ -235,12 +210,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param needVer Need version.
      * @return Loaded values.
      */
-    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(
+        @Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
@@ -266,7 +243,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             skipVal,
             canRemap,
             needVer,
-            false);
+            false,
+            recovery);
 
         // init() will register future for responses if future has remote mappings.
         fut.init(null);
@@ -361,23 +339,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        return dht().entrySet(part);
-    }
-
-    /**
-     * @return Keys for near cache only.
-     */
-    public Set<K> nearKeySet() {
-        return super.keySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V> values() {
-        return new GridCacheValueCollection<>(ctx, entrySet(), ctx.vararg(F.<K, V>cacheHasPeekValue()));
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean evict(K key) {
         // Use unary 'and' to make sure that both sides execute.
         return super.evict(key) & dht().evict(key);
@@ -403,25 +364,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key, boolean deserializeBinary) throws IgniteCheckedException {
-        // Unswap only from dht(). Near cache does not have swap storage.
-        return dht().promote(key, deserializeBinary);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        // Unswap only from dht(). Near cache does not have swap storage.
-        // In near-only cache this is a no-op.
-        if (ctx.affinityNode())
-            dht().promoteAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
-    }
-
-    /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {
         return dht().offHeapEntriesCount();
     }
@@ -432,16 +374,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public long swapSize() throws IgniteCheckedException {
-        return dht().swapSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long swapKeys() throws IgniteCheckedException {
-        return dht().swapKeys();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
         return dht().isIgfsDataCache();
     }
@@ -449,11 +381,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceUsed() {
         return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return dht().igfsDataSpaceMax();
     }
 
     /** {@inheritDoc} */

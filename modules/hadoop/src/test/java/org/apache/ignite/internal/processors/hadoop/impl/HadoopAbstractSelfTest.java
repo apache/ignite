@@ -51,7 +51,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
 
     /** IGFS name. */
-    protected static final String igfsName = null;
+    protected static final String igfsName = "test";
 
     /** IGFS block size. */
     protected static final int igfsBlockSize = 1024;
@@ -176,7 +176,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS meta cache configuration.
      */
     public CacheConfiguration metaCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -189,7 +189,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS data cache configuration.
      */
     protected CacheConfiguration dataCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -236,6 +236,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS scheme for test.
      */
     protected String igfsScheme() {
-        return "igfs://@/";
+        return "igfs://" + igfsName + "@/";
     }
 }

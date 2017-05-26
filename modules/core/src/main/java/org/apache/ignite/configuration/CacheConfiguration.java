@@ -40,17 +40,17 @@ import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -95,7 +95,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of partitions. */
-    public static final int MAX_PARTITIONS_COUNT = 0x4000;
+    public static final int MAX_PARTITIONS_COUNT = 0xFFFF;
 
     /** Default size of rebalance thread pool. */
     @Deprecated
@@ -122,14 +122,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
-    /** Initial default cache size. */
-    public static final int DFLT_START_SIZE = 1500000;
-
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
 
+    /** Default maximum inline size for sql indexes. */
+    public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
+
     /** Initial default near cache size. */
-    public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
+    public static final int DFLT_NEAR_START_SIZE = 1500000 / 4;
 
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
@@ -140,29 +140,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default rebalance batch size in bytes. */
     public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
-    /** Default maximum eviction queue ratio. */
-    public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
-
-    /** Default eviction synchronized flag. */
-    public static final boolean DFLT_EVICT_SYNCHRONIZED = false;
-
-    /** Default eviction key buffer size for batching synchronized evicts. */
-    public static final int DFLT_EVICT_KEY_BUFFER_SIZE = 1024;
-
-    /** Default synchronous eviction timeout in milliseconds. */
-    public static final long DFLT_EVICT_SYNCHRONIZED_TIMEOUT = 10000;
-
-    /** Default synchronous eviction concurrency level. */
-    public static final int DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL = 4;
-
     /** Default value for eager ttl flag. */
     public static final boolean DFLT_EAGER_TTL = true;
-
-    /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
-    public static final long DFLT_OFFHEAP_MEMORY = -1;
-
-    /** Default value for 'swapEnabled' flag. */
-    public static final boolean DFLT_SWAP_ENABLED = false;
 
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
@@ -185,14 +164,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
+    /** Default write coalescing for write-behind cache store. */
+    public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
+
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
-
-    /** Default memory mode. */
-    public static final CacheMemoryMode DFLT_MEMORY_MODE = CacheMemoryMode.ONHEAP_TIERED;
 
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
@@ -206,9 +185,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default number of queries detail metrics to collect. */
     public static final int DFLT_QRY_DETAIL_METRICS_SIZE = 0;
 
-    /** Default size for onheap SQL row cache size. */
-    public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
-
     /** Default value for keep binary in store behavior . */
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
     public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
@@ -216,11 +192,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
 
+    /** Default partition loss policy. */
+    public static final PartitionLossPolicy DFLT_PARTITION_LOSS_POLICY = PartitionLossPolicy.IGNORE;
+
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
     /** Cache name. */
     private String name;
+
+    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    private String memPlcName;
 
     /** Threshold for concurrent loading of keys from {@link CacheStore}. */
     private int storeConcurrentLoadAllThreshold = DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
@@ -235,32 +217,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache expiration policy. */
     private EvictionPolicy evictPlc;
 
-    /** Flag indicating whether eviction is synchronized. */
-    private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
-
-    /** Eviction key buffer size. */
-    private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
-
-    /** Synchronous eviction concurrency level. */
-    private int evictSyncConcurrencyLvl = DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL;
-
-    /** Synchronous eviction timeout. */
-    private long evictSyncTimeout = DFLT_EVICT_SYNCHRONIZED_TIMEOUT;
+    /** */
+    private boolean onheapCache;
 
     /** Eviction filter. */
     private EvictionFilter<?, ?> evictFilter;
-
-    /** Maximum eviction overflow ratio. */
-    private float evictMaxOverflowRatio = DFLT_MAX_EVICTION_OVERFLOW_RATIO;
 
     /** Eager ttl flag. */
     private boolean eagerTtl = DFLT_EAGER_TTL;
 
     /** Default lock timeout. */
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
-
-    /** Default cache start size. */
-    private int startSize = DFLT_START_SIZE;
 
     /** Near cache configuration. */
     private NearCacheConfiguration<K, V> nearCfg;
@@ -289,9 +256,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
-    /** Write ordering mode. */
-    private CacheAtomicWriteOrderMode atomicWriteOrderMode;
-
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
 
@@ -311,16 +275,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Rebalance batches prefetch count. */
-    private long rebalanceBatchesPrefetchCount = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
-
-    /** Off-heap memory size. */
-    private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
-
-    /** */
-    private boolean swapEnabled = DFLT_SWAP_ENABLED;
+    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
+
+    /** Maximum inline size for sql indexes. */
+    private int sqlIdxMaxInlineSize = DFLT_SQL_INDEX_MAX_INLINE_SIZE;
 
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
@@ -337,11 +298,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
 
+    /** Write coalescing flag for write-behind cache store */
+    private boolean writeBehindCoalescing = DFLT_WRITE_BEHIND_COALESCING;
+
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
-
-    /** Memory mode. */
-    private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
     private AffinityKeyMapper affMapper;
@@ -370,9 +331,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
 
-    /** Collection of type metadata. */
-    private Collection<CacheTypeMetadata> typeMeta;
-
     /** Node filter specifying nodes on which this cache should be deployed. */
     private IgnitePredicate<ClusterNode> nodeFilter;
 
@@ -383,13 +341,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean sqlEscapeAll;
 
     /** */
-    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
-
-    /** */
     private transient Class<?>[] indexedTypes;
-
-    /** */
-    private boolean snapshotableIdx;
 
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
@@ -405,6 +357,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
+
+    /** Partition loss policy. */
+    private PartitionLossPolicy partLossPlc = DFLT_PARTITION_LOSS_POLICY;
 
     /** */
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
@@ -441,7 +396,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         aff = cc.getAffinity();
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
-        atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
         backups = cc.getBackups();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
@@ -450,12 +404,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
-        evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
-        evictMaxOverflowRatio = cc.getEvictMaxOverflowRatio();
         evictPlc = cc.getEvictionPolicy();
-        evictSync = cc.isEvictSynchronized();
-        evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
-        evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
         indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
@@ -467,37 +416,35 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
-        offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        memMode = cc.getMemoryMode();
+        memPlcName = cc.getMemoryPolicyName();
+        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
+        onheapCache = cc.isOnheapCacheEnabled();
+        partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
-        rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();
+        rebalanceBatchesPrefetchCnt = cc.getRebalanceBatchesPrefetchCount();
         rebalanceDelay = cc.getRebalanceDelay();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceOrder = cc.getRebalanceOrder();
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
-        snapshotableIdx = cc.isSnapshotableIndex();
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
-        sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
-        startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
-        swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
-        typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
@@ -519,13 +466,33 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache name.
      *
-     * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @param name Cache name. Can not be <tt>null</tt> or empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
-
         this.name = name;
+
+        return this;
+    }
+
+    /**
+     * @return {@link MemoryPolicyConfiguration} name.
+     */
+    public String getMemoryPolicyName() {
+        return memPlcName;
+    }
+
+    /**
+     * Sets a name of {@link MemoryPolicyConfiguration} for this cache.
+     *
+     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used)
+     *                   but should not be empty.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
+        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
+
+        this.memPlcName = memPlcName;
 
         return this;
     }
@@ -549,6 +516,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
+
+        return this;
+    }
+
+    /**
+     * Checks if the on-heap cache is enabled for the off-heap based page memory.
+     *
+     * @return On-heap cache enabled flag.
+     */
+    public boolean isOnheapCacheEnabled() {
+        return onheapCache;
+    }
+
+    /**
+     * Configures on-heap cache for the off-heap based page memory.
+     *
+     * @param onheapCache {@code True} if on-heap cache should be enabled.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean onheapCache) {
+        this.onheapCache = onheapCache;
 
         return this;
     }
@@ -618,153 +606,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.
-     * If this parameter is {@code true} and swap is disabled then {@link IgniteCache#localEvict(Collection)}
-     * will involve all nodes where an entry is kept.  If this property is set to {@code false} then
-     * eviction is done independently on different cache nodes.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED}.
-     * <p>
-     * Note that it's not recommended to set this value to {@code true} if cache
-     * store is configured since it will allow to significantly improve cache
-     * performance.
-     *
-     * @return {@code true} If eviction is synchronized with backup nodes (or the
-     *      rest of the nodes in case of replicated cache), {@code false} if not.
-     */
-    public boolean isEvictSynchronized() {
-        return evictSync;
-    }
-
-    /**
-     * Sets flag indicating whether eviction is synchronized with backup nodes or near caches
-     * (or the rest of the nodes for replicated cache).
-     *
-     * @param evictSync {@code true} if synchronized, {@code false} if not.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronized(boolean evictSync) {
-        this.evictSync = evictSync;
-
-        return this;
-    }
-
-    /**
-     * Gets size of the key buffer for synchronized evictions.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_KEY_BUFFER_SIZE}.
-     *
-     * @return Eviction key buffer size.
-     */
-    public int getEvictSynchronizedKeyBufferSize() {
-        return evictKeyBufSize;
-    }
-
-    /**
-     * Sets eviction key buffer size.
-     *
-     * @param evictKeyBufSize Eviction key buffer size.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronizedKeyBufferSize(int evictKeyBufSize) {
-        this.evictKeyBufSize = evictKeyBufSize;
-
-        return this;
-    }
-
-    /**
-     * Gets concurrency level for synchronized evictions. This flag only makes sense
-     * with {@link #isEvictSynchronized()} set
-     * to {@code true}. When synchronized evictions are enabled, it is possible that
-     * local eviction policy will try to evict entries faster than evictions can be
-     * synchronized with backup or near nodes. This value specifies how many concurrent
-     * synchronous eviction sessions should be allowed before the system is forced to
-     * wait and let synchronous evictions catch up with the eviction policy.
-     * <p>
-     * Note that if synchronous evictions start lagging, it is possible that you have either
-     * too big or too small eviction key buffer size or small eviction timeout. In that case
-     * you will need to adjust {@link #getEvictSynchronizedKeyBufferSize} or
-     * {@link #getEvictSynchronizedTimeout()} values as well.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL}.
-     *
-     * @return Synchronous eviction concurrency level.
-     */
-    public int getEvictSynchronizedConcurrencyLevel() {
-        return evictSyncConcurrencyLvl;
-    }
-
-    /**
-     * Sets concurrency level for synchronized evictions.
-     *
-     * @param evictSyncConcurrencyLvl Concurrency level for synchronized evictions.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronizedConcurrencyLevel(int evictSyncConcurrencyLvl) {
-        this.evictSyncConcurrencyLvl = evictSyncConcurrencyLvl;
-
-        return this;
-    }
-
-    /**
-     * Gets timeout for synchronized evictions.
-     * <p>
-     * Node that initiates eviction waits for responses
-     * from remote nodes within this timeout.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED_TIMEOUT}.
-     *
-     * @return Synchronous eviction timeout.
-     */
-    public long getEvictSynchronizedTimeout() {
-        return evictSyncTimeout;
-    }
-
-    /**
-     * Sets timeout for synchronized evictions.
-     *
-     * @param evictSyncTimeout Timeout for synchronized evictions.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronizedTimeout(long evictSyncTimeout) {
-        this.evictSyncTimeout = evictSyncTimeout;
-
-        return this;
-    }
-
-    /**
-     * This value denotes the maximum size of eviction queue in percents of cache
-     * size in case of distributed cache (replicated and partitioned) and using
-     * synchronized eviction (that is if {@link #isEvictSynchronized()} returns
-     * {@code true}).
-     * <p>
-     * That queue is used internally as a buffer to decrease network costs for
-     * synchronized eviction. Once queue size reaches specified value all required
-     * requests for all entries in the queue are sent to remote nodes and the queue
-     * is cleared.
-     * <p>
-     * Default value is defined by {@link #DFLT_MAX_EVICTION_OVERFLOW_RATIO} and
-     * equals to {@code 10%}.
-     *
-     * @return Maximum size of eviction queue in percents of cache size.
-     */
-    public float getEvictMaxOverflowRatio() {
-        return evictMaxOverflowRatio;
-    }
-
-    /**
-     * Sets maximum eviction overflow ratio.
-     *
-     * @param evictMaxOverflowRatio Maximum eviction overflow ratio.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictMaxOverflowRatio(float evictMaxOverflowRatio) {
-        this.evictMaxOverflowRatio = evictMaxOverflowRatio;
-
-        return this;
-    }
-
-    /**
      * Gets eviction filter to specify which entries should not be evicted
      * (except explicit evict by calling {@link IgniteCache#localEvict(Collection)}).
      * If {@link EvictionFilter#evictAllowed(Cache.Entry)} method
@@ -820,28 +661,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setEagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
-
-        return this;
-    }
-
-    /**
-     * Gets initial cache size which will be used to pre-create internal
-     * hash table after start. Default value is defined by {@link #DFLT_START_SIZE}.
-     *
-     * @return Initial cache size.
-     */
-    public int getStartSize() {
-        return startSize;
-    }
-
-    /**
-     * Initial size for internal hash map.
-     *
-     * @param startSize Cache start size.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setStartSize(int startSize) {
-        this.startSize = startSize;
 
         return this;
     }
@@ -940,9 +759,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets keep binary in store flag.
      *
      * @param storeKeepBinary Keep binary in store flag.
+     * @return {@code this} for chaining.
      */
-    public void setStoreKeepBinary(boolean storeKeepBinary) {
+    public CacheConfiguration<K, V> setStoreKeepBinary(boolean storeKeepBinary) {
         this.storeKeepBinary = storeKeepBinary;
+
+        return this;
     }
 
     /**
@@ -1039,29 +861,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
-
-        return this;
-    }
-
-    /**
-     * Gets cache write ordering mode. This property can be enabled only for {@link CacheAtomicityMode#ATOMIC}
-     * cache (for other atomicity modes it will be ignored).
-     *
-     * @return Cache write ordering mode.
-     */
-    public CacheAtomicWriteOrderMode getAtomicWriteOrderMode() {
-        return atomicWriteOrderMode;
-    }
-
-    /**
-     * Sets cache write ordering mode. This property can be enabled only for {@link CacheAtomicityMode#ATOMIC}
-     * cache (for other atomicity modes it will be ignored).
-     *
-     * @param atomicWriteOrderMode Cache write ordering mode.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
-        this.atomicWriteOrderMode = atomicWriteOrderMode;
 
         return this;
     }
@@ -1249,7 +1048,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return batches count
      */
     public long getRebalanceBatchesPrefetchCount() {
-        return rebalanceBatchesPrefetchCount;
+        return rebalanceBatchesPrefetchCnt;
     }
 
     /**
@@ -1263,29 +1062,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setRebalanceBatchesPrefetchCount(long rebalanceBatchesCnt) {
-        this.rebalanceBatchesPrefetchCount = rebalanceBatchesCnt;
-
-        return this;
-    }
-
-    /**
-     * Flag indicating whether Ignite should use swap storage by default. By default
-     * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
-     *
-     * @return {@code True} if swap storage is enabled.
-     */
-    public boolean isSwapEnabled() {
-        return swapEnabled;
-    }
-
-    /**
-     * Flag indicating whether swap storage is enabled or not.
-     *
-     * @param swapEnabled {@code True} if swap storage is enabled.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSwapEnabled(boolean swapEnabled) {
-        this.swapEnabled = swapEnabled;
+        this.rebalanceBatchesPrefetchCnt = rebalanceBatchesCnt;
 
         return this;
     }
@@ -1315,6 +1092,30 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setMaxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum inline size for sql indexes. If -1 returned then
+     * {@code IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE} system property is used.
+     * <p>
+     * If not set, default value is {@link #DFLT_SQL_INDEX_MAX_INLINE_SIZE}.
+     *
+     * @return Maximum payload size for offheap indexes.
+     */
+    public int getSqlIndexMaxInlineSize() {
+        return sqlIdxMaxInlineSize;
+    }
+
+    /**
+     * Sets maximum inline size for sql indexes.
+     *
+     * @param sqlIdxMaxInlineSize Maximum inline size for sql indexes.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlIndexMaxInlineSize(int sqlIdxMaxInlineSize) {
+        this.sqlIdxMaxInlineSize = sqlIdxMaxInlineSize;
 
         return this;
     }
@@ -1449,6 +1250,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
+
+        return this;
+    }
+
+    /**
+     * Write coalescing flag for write-behind cache store operations. Store operations (get or remove)
+     * with the same key are combined or coalesced to single, resulting operation
+     * to reduce pressure to underlying cache store.
+     * <p/>
+     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
+     *
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
+    }
+
+    /**
+     * Sets write coalescing flag for write-behind cache.
+     *
+     * @param writeBehindCoalescing Write coalescing flag.
+     * @see #getWriteBehindCoalescing()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setWriteBehindCoalescing(boolean writeBehindCoalescing) {
+        this.writeBehindCoalescing = writeBehindCoalescing;
 
         return this;
     }
@@ -1601,53 +1428,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets maximum amount of memory available to off-heap storage. Possible values are
-     * <ul>
-     * <li>{@code -1} - Means that off-heap storage is disabled.</li>
-     * <li>
-     *     {@code 0} - Ignite will not limit off-heap storage (it's up to user to properly
-     *     add and remove entries from cache to ensure that off-heap storage does not grow
-     *     indefinitely.
-     * </li>
-     * <li>Any positive value specifies the limit of off-heap storage in bytes.</li>
-     * </ul>
-     * Default value is {@code -1}, specified by {@link #DFLT_OFFHEAP_MEMORY} constant
-     * which means that off-heap storage is disabled by default.
-     * <p>
-     * Use off-heap storage to load gigabytes of data in memory without slowing down
-     * Garbage Collection. Essentially in this case you should allocate very small amount
-     * of memory to JVM and Ignite will cache most of the data in off-heap space
-     * without affecting JVM performance at all.
-     * <p>
-     * Note that Ignite will throw an exception if max memory is set to {@code -1} and
-     * {@code offHeapValuesOnly} flag is set to {@code true}.
-     *
-     * @return Maximum memory in bytes available to off-heap memory space.
-     */
-    public long getOffHeapMaxMemory() {
-        return offHeapMaxMem;
-    }
-
-    /**
-     * Sets maximum amount of memory available to off-heap storage. Possible values are <ul> <li>{@code -1} - Means that
-     * off-heap storage is disabled.</li> <li> {@code 0} - Ignite will not limit off-heap storage (it's up to user to
-     * properly add and remove entries from cache to ensure that off-heap storage does not grow infinitely. </li>
-     * <li>Any positive value specifies the limit of off-heap storage in bytes.</li> </ul> Default value is {@code -1},
-     * specified by {@link #DFLT_OFFHEAP_MEMORY} constant which means that off-heap storage is disabled by default. <p>
-     * Use off-heap storage to load gigabytes of data in memory without slowing down Garbage Collection. Essentially in
-     * this case you should allocate very small amount of memory to JVM and Ignite will cache most of the data in
-     * off-heap space without affecting JVM performance at all.
-     *
-     * @param offHeapMaxMem Maximum memory in bytes available to off-heap memory space.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setOffHeapMaxMemory(long offHeapMaxMem) {
-        this.offHeapMaxMem = offHeapMaxMem;
-
-        return this;
-    }
-
-    /**
      * Gets maximum number of query iterators that can be stored. Iterators are stored to
      * support query pagination when each page of data is sent to user's node only on demand.
      * Increase this property if you are running and processing lots of queries in parallel.
@@ -1673,30 +1453,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,
-     * off-heap memory, or swap space. Refer to {@link CacheMemoryMode} for more info.
-     * <p>
-     * Default value is {@link #DFLT_MEMORY_MODE}.
-     *
-     * @return Memory mode.
-     */
-    public CacheMemoryMode getMemoryMode() {
-        return memMode;
-    }
-
-    /**
-     * Sets memory mode for cache.
-     *
-     * @param memMode Memory mode.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setMemoryMode(CacheMemoryMode memMode) {
-        this.memMode = memMode;
-
-        return this;
-    }
-
-    /**
      * Gets cache interceptor.
      *
      * @return Cache interceptor.
@@ -1714,28 +1470,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setInterceptor(CacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
-
-        return this;
-    }
-
-    /**
-     * Gets collection of type metadata objects.
-     *
-     * @return Collection of type metadata.
-     */
-    public Collection<CacheTypeMetadata> getTypeMetadata() {
-        return typeMeta;
-    }
-
-    /**
-     * Sets collection of type metadata objects.
-     *
-     * @param typeMeta Collection of type metadata.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setQueryEntities(java.util.Collection)} instead.
-     */
-    public CacheConfiguration<K, V> setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
-        this.typeMeta = new ArrayList<>(typeMeta);
 
         return this;
     }
@@ -1984,7 +1718,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                if (F.eq(entity.findValueType(), converted.findValueType())) {
                     dup = true;
 
                     break;
@@ -1994,57 +1728,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (!dup)
                 qryEntities.add(converted);
         }
-
-        return this;
-    }
-
-    /**
-     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-     * This setting only makes sense when offheap is enabled for this cache.
-     *
-     * @return Cache size.
-     * @see #setOffHeapMaxMemory(long)
-     */
-    public int getSqlOnheapRowCacheSize() {
-        return sqlOnheapRowCacheSize;
-    }
-
-    /**
-     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-     * This setting only makes sense when offheap is enabled for this cache.
-     *
-     * @param size Cache size.
-     * @see #setOffHeapMaxMemory(long)
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSqlOnheapRowCacheSize(int size) {
-        this.sqlOnheapRowCacheSize = size;
-
-        return this;
-    }
-
-    /**
-     * Gets flag indicating whether SQL indexes should support snapshots.
-     *
-     * @return {@code True} if SQL indexes should support snapshots.
-     */
-    public boolean isSnapshotableIndex() {
-        return snapshotableIdx;
-    }
-
-    /**
-     * Sets flag indicating whether SQL indexes should support snapshots.
-     * <p>
-     * Default value is {@code false}.
-     * <p>
-     * <b>Note</b> that this flag is ignored if indexes are stored in offheap memory,
-     * for offheap indexes snapshots are always enabled.
-     *
-     * @param snapshotableIdx {@code True} if SQL indexes should support snapshots.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSnapshotableIndex(boolean snapshotableIdx) {
-        this.snapshotableIdx = snapshotableIdx;
 
         return this;
     }
@@ -2080,20 +1763,48 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
+     * some partition leave the cluster.
+     *
+     * @return Partition loss policy.
+     * @see PartitionLossPolicy
+     */
+    public PartitionLossPolicy getPartitionLossPolicy() {
+        return partLossPlc == null ? DFLT_PARTITION_LOSS_POLICY : partLossPlc;
+    }
+
+    /**
+     * Sets partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
+     * some partition leave the cluster.
+     *
+     * @param partLossPlc Partition loss policy.
+     * @return {@code this} for chaining.
+     * @see PartitionLossPolicy
+     */
+    public CacheConfiguration<K, V> setPartitionLossPolicy(PartitionLossPolicy partLossPlc) {
+        this.partLossPlc = partLossPlc;
+
+        return this;
+    }
+
+    /**
      * Sets query entities configuration.
      *
      * @param qryEntities Query entities.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
-        if (this.qryEntities == null)
+        if (this.qryEntities == null) {
             this.qryEntities = new ArrayList<>(qryEntities);
+
+            return this;
+        }
 
         for (QueryEntity entity : qryEntities) {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                if (F.eq(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;
@@ -2135,7 +1846,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see #getQueryParallelism()
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
+    public CacheConfiguration<K, V> setQueryParallelism(int qryParallelism) {
         this.qryParallelism = qryParallelism;
 
         return this;
@@ -2245,7 +1956,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
 
-        entity.setKeyFields(desc.keyProperties);
+        entity.setKeyFields(desc.keyProps);
 
         QueryIndex txtIdx = null;
 
@@ -2293,10 +2004,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(QueryUtils._VAL), true);
+                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
             }
             else
-                txtIdx.getFields().put(QueryUtils._VAL, true);
+                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
         }
 
         if (txtIdx != null)
@@ -2350,12 +2061,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         @Nullable ClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = QueryUtils._VAL + "_idx";
+                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-                type.addFieldToIndex(idxName, QueryUtils._VAL, 0, false);
+                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
             }
 
             return;
@@ -2399,33 +2110,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
-                }
-            }
-
-            for (Method mtd : c.getDeclaredMethods()) {
-                if (mtd.isBridge())
-                    continue;
-
-                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
-                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
-
-                if (sqlAnn != null || txtAnn != null) {
-                    if (mtd.getParameterTypes().length != 0)
-                        throw new CacheException("Getter with QuerySqlField " +
-                            "annotation cannot have parameters: " + mtd);
-
-                    ClassProperty prop = new ClassProperty(mtd);
-
-                    prop.parent(parent);
-
-                    // Add parent property before its possible nested properties so that
-                    // resulting parent column comes before columns corresponding to those
-                    // nested properties in the resulting table - that way nested
-                    // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
-
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }
             }
         }
@@ -2437,20 +2122,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param key If given class relates to key.
      * @param sqlAnn SQL annotation, can be {@code null}.
      * @param txtAnn H2 text annotation, can be {@code null}.
-     * @param cls Class of field or return type for method.
+     * @param cls Entity class.
+     * @param curCls Current entity class.
+     * @param fldCls Class of field or return type for method.
      * @param prop Current property.
      * @param desc Class description.
      */
     private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, ClassProperty prop, TypeDescriptor desc) {
+        Class<?> cls, Class<?> curCls, Class<?> fldCls, ClassProperty prop, TypeDescriptor desc) {
         if (sqlAnn != null) {
-            processAnnotationsInClass(key, cls, desc, prop);
+            processAnnotationsInClass(key, fldCls, desc, prop);
 
             if (!sqlAnn.name().isEmpty())
                 prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
-                String idxName = prop.alias() + "_idx";
+                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
+
+                if (cls != curCls)
+                    idxName = cls.getSimpleName() + "_" + idxName;
 
                 desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
@@ -2474,6 +2164,70 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStatisticsEnabled(boolean enabled) {
+        super.setStatisticsEnabled(enabled);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setManagementEnabled(boolean enabled) {
+        super.setManagementEnabled(enabled);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheLoaderFactory(Factory<? extends CacheLoader<K, V>> factory) {
+        super.setCacheLoaderFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheWriterFactory(
+        Factory<? extends CacheWriter<? super K, ? super V>> factory) {
+        super.setCacheWriterFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setExpiryPolicyFactory(Factory<? extends ExpiryPolicy> factory) {
+        super.setExpiryPolicyFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setTypes(Class<K> keyType, Class<V> valType) {
+        super.setTypes(keyType, valType);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setReadThrough(boolean isReadThrough) {
+        super.setReadThrough(isReadThrough);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setWriteThrough(boolean isWriteThrough) {
+        super.setWriteThrough(isWriteThrough);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByVal) {
+        super.setStoreByValue(isStoreByVal);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
     }
@@ -2481,18 +2235,23 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      *  Filter that accepts all nodes.
      */
-    public static class IgniteAllNodesPredicate  implements IgnitePredicate<ClusterNode> {
+    public static class IgniteAllNodesPredicate implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode clusterNode) {
+        @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             return obj != null && obj.getClass().equals(this.getClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "IgniteAllNodesPredicate []";
         }
     }
 
@@ -2510,7 +2269,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** */
         @GridToStringInclude
-        private final Set<String> keyProperties = new HashSet<>();
+        private final Set<String> keyProps = new HashSet<>();
 
         /** */
         @GridToStringInclude
@@ -2540,15 +2299,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          *
          * @param idxName Index name.
          * @param type Index type.
+         * @param inlineSize Inline size.
          * @return Index descriptor.
          */
-        public IndexDescriptor addIndex(String idxName, QueryIndexType type) {
-            IndexDescriptor idx = new IndexDescriptor(type);
+        public IndexDescriptor addIndex(String idxName, QueryIndexType type, int inlineSize) {
+            IndexDescriptor idx = new IndexDescriptor(type, inlineSize);
 
             if (indexes.put(idxName, idx) != null)
                 throw new CacheException("Index with name '" + idxName + "' already exists.");
 
             return idx;
+        }
+
+        /**
+         * Adds index.
+         *
+         * @param idxName Index name.
+         * @param type Index type.
+         * @return Index descriptor.
+         */
+        public IndexDescriptor addIndex(String idxName, QueryIndexType type) {
+            return addIndex(idxName, type, -1);
         }
 
         /**
@@ -2632,7 +2403,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             fields.put(name, prop.type());
 
             if (key)
-                keyProperties.add(name);
+                keyProps.add(name);
         }
 
         /**
@@ -2678,13 +2449,30 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         private final QueryIndexType type;
 
+        /** */
+        private final int inlineSize;
+
+        /**
+         * @param type Type.
+         * @param inlineSize Inline size.
+         */
+        private IndexDescriptor(QueryIndexType type, int inlineSize) {
+            assert type != null;
+
+            this.type = type;
+            this.inlineSize = inlineSize;
+        }
+
         /**
          * @param type Type.
          */
         private IndexDescriptor(QueryIndexType type) {
-            assert type != null;
+            this(type, -1);
+        }
 
-            this.type = type;
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2714,7 +2502,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             if (descending) {
                 if (descendings == null)
-                    descendings  = new HashSet<>();
+                    descendings = new HashSet<>();
 
                 descendings.add(field);
             }
@@ -2723,6 +2511,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** {@inheritDoc} */
         @Override public QueryIndexType type() {
             return type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int inlineSize() {
+            return inlineSize;
         }
 
         /** {@inheritDoc} */

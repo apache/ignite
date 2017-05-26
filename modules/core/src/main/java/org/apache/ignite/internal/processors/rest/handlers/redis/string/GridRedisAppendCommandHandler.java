@@ -81,6 +81,7 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
         appendReq.key(msg.key());
         appendReq.value(val);
         appendReq.command(CACHE_APPEND);
+        appendReq.cacheName(CACHE_NAME);
 
         Object resp = hnd.handle(appendReq).getResponse();
         if (resp != null && !(boolean)resp) {
@@ -91,6 +92,7 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
             setReq.key(msg.key());
             setReq.value(val);
             setReq.command(CACHE_PUT);
+            setReq.cacheName(CACHE_NAME);
 
             hnd.handle(setReq);
         }
@@ -98,6 +100,7 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
+        getReq.cacheName(CACHE_NAME);
 
         return getReq;
     }

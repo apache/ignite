@@ -176,13 +176,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // Missing attribute.
             var ex = Assert.Throws<IgniteException>(() => check(new[] { new NoAttributeConfig(),  }));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0} of type {1} has no {2}", typeof(IPluginConfiguration),
-                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.Message);
+                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.InnerException.Message);
 
             // Empty plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[] {new EmptyNameConfig()}));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0}.Name should not be null or empty: {1}", typeof(IPluginProvider<>),
-                typeof(EmptyNamePluginProvider)), ex.Message);
+                typeof(EmptyNamePluginProvider)), ex.InnerException.Message);
 
             // Duplicate plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[]
@@ -190,17 +192,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 new TestIgnitePluginConfiguration(),
                 new TestIgnitePluginConfiguration()
             }));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("Duplicate plugin name 'TestPlugin1' is used by plugin providers " +
-                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
+                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)),
+                                          ex.InnerException.Message);
 
             // Provider throws an exception.
             PluginLog.Clear();
 
-            var ioex = Assert.Throws<IOException>(() => check(new IPluginConfiguration[]
+            ex = Assert.Throws<IgniteException>(() => check(new IPluginConfiguration[]
             {
                 new NormalConfig(), new ExceptionConfig()
             }));
-            Assert.AreEqual("Failure in plugin provider", ioex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsInstanceOf<IOException>(ex.InnerException);
+            Assert.AreEqual("Failure in plugin provider", ex.InnerException.Message);
 
             // Verify that plugins are started and stopped in correct order:
             Assert.AreEqual(

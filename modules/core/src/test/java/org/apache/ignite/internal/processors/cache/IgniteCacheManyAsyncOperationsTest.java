@@ -74,7 +74,7 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
         try (Ignite client = startGrid(gridCount())) {
             assertTrue(client.configuration().isClientMode());
 
-            IgniteCache<Object, Object> cache = client.cache(null);
+            IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             final int ASYNC_OPS = cache.getConfiguration(CacheConfiguration.class).getMaxConcurrentAsyncOperations();
 

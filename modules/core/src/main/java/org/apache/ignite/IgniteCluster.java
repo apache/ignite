@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -105,56 +103,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      supports topology history.
      */
     public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
-
-    /**
-     * This method provides ability to detect which cache keys are mapped to which nodes
-     * on cache instance with given name. Use it to determine which nodes are storing which
-     * keys prior to sending jobs that access these keys.
-     * <p>
-     * This method works as following:
-     * <ul>
-     * <li>For local caches it returns only local node mapped to all keys.</li>
-     * <li>
-     *      For fully replicated caches, {@link AffinityFunction} is
-     *      used to determine which keys are mapped to which groups of nodes.
-     * </li>
-     * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
-     * </ul>
-     *
-     * @param cacheName Cache name, if {@code null}, then default cache instance is used.
-     * @param keys Cache keys to map to nodes.
-     * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
-     * @throws IgniteException If failed to map cache keys.
-     * @deprecated Use {@link Affinity#mapKeysToNodes(Collection)} instead.
-     */
-    @Deprecated
-    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteException;
-
-    /**
-     * This method provides ability to detect which cache keys are mapped to which nodes
-     * on cache instance with given name. Use it to determine which nodes are storing which
-     * keys prior to sending jobs that access these keys.
-     * <p>
-     * This method works as following:
-     * <ul>
-     * <li>For local caches it returns only local node ID.</li>
-     * <li>
-     *      For fully replicated caches first node ID returned by {@link AffinityFunction}
-     *      is returned.
-     * </li>
-     * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
-     * </ul>
-     *
-     * @param cacheName Cache name, if {@code null}, then default cache instance is used.
-     * @param key Cache key to map to a node.
-     * @return Primary node for the key or {@code null} if cache with given name
-     *      is not present in the grid.
-     * @throws IgniteException If failed to map key.
-     * @deprecated Use {@link Affinity#mapKeyToNode(Object)} instead.
-     */
-    @Deprecated
-    public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).

@@ -45,17 +45,14 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSource;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
-import org.apache.ignite.internal.processors.clock.GridJvmClockSource;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -67,8 +64,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -155,10 +151,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSwapSpaceManager swapspaceMgr;
-
-    /** */
-    @GridToStringExclude
     private GridIndexingManager indexingMgr;
 
     /*
@@ -168,7 +160,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private OdbcProcessor odbcProc;
+    private SqlListenerProcessor sqlListenerProc;
 
     /** */
     @GridToStringInclude
@@ -185,10 +177,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridTimeoutProcessor timeProc;
-
-    /** */
-    @GridToStringInclude
-    private GridClockSyncProcessor clockSyncProc;
 
     /** */
     @GridToStringInclude
@@ -210,6 +198,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringInclude
     private GridCacheProcessor cacheProc;
 
+    /** Cluster state process. */
+    @GridToStringInclude
+    private GridClusterStateProcessor stateProc;
+
     /** */
     @GridToStringInclude
     private GridTaskSessionProcessor sesProc;
@@ -217,10 +209,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridPortProcessor portProc;
-
-    /** */
-    @GridToStringInclude
-    private GridOffHeapProcessor offheapProc;
 
     /** */
     @GridToStringInclude
@@ -304,6 +292,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService svcExecSvc;
+
+    /** */
+    @GridToStringExclude
     protected ExecutorService sysExecSvc;
 
     /** */
@@ -348,6 +340,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService schemaExecSvc;
+
+    /** */
+    @GridToStringExclude
+    Map<String, ? extends ExecutorService> customExecSvcs;
+
+    /** */
+    @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
@@ -364,9 +364,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Network segmented flag. */
     private volatile boolean segFlag;
-
-    /** Time source. */
-    private GridClockSource clockSrc = new GridJvmClockSource();
 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
@@ -407,8 +404,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
+     * @param schemaExecSvc Schema executor service.
+     * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
-     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -418,6 +416,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
         ExecutorService execSvc,
+        ExecutorService svcExecSvc,
         ExecutorService sysExecSvc,
         StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
@@ -429,6 +428,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
+        ExecutorService schemaExecSvc,
+        @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins
     ) {
         assert grid != null;
@@ -440,6 +441,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.gw = gw;
         this.utilityCachePool = utilityCachePool;
         this.execSvc = execSvc;
+        this.svcExecSvc = svcExecSvc;
         this.sysExecSvc = sysExecSvc;
         this.stripedExecSvc = stripedExecSvc;
         this.p2pExecSvc = p2pExecSvc;
@@ -451,6 +453,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.idxExecSvc = idxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
         this.qryExecSvc = qryExecSvc;
+        this.schemaExecSvc = schemaExecSvc;
+        this.customExecSvcs = customExecSvcs;
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -511,8 +515,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             authProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
-        else if (comp instanceof GridSwapSpaceManager)
-            swapspaceMgr = (GridSwapSpaceManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
 
@@ -527,14 +529,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             jobProc = (GridJobProcessor)comp;
         else if (comp instanceof GridTimeoutProcessor)
             timeProc = (GridTimeoutProcessor)comp;
-        else if (comp instanceof GridClockSyncProcessor)
-            clockSyncProc = (GridClockSyncProcessor)comp;
         else if (comp instanceof GridResourceProcessor)
             rsrcProc = (GridResourceProcessor)comp;
         else if (comp instanceof GridJobMetricsProcessor)
             metricsProc = (GridJobMetricsProcessor)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
+        else if (comp instanceof GridClusterStateProcessor)
+            stateProc =(GridClusterStateProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -555,8 +557,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
-        else if (comp instanceof GridOffHeapProcessor)
-            offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
@@ -567,8 +567,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
-        else if (comp instanceof OdbcProcessor)
-            odbcProc = (OdbcProcessor)comp;
+        else if (comp instanceof SqlListenerProcessor)
+            sqlListenerProc = (SqlListenerProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -653,11 +653,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridClockSyncProcessor clockSync() {
-        return clockSyncProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridResourceProcessor resource() {
         return rsrcProc;
     }
@@ -670,6 +665,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridCacheProcessor cache() {
         return cacheProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClusterStateProcessor state() {
+        return stateProc;
     }
 
     /** {@inheritDoc} */
@@ -690,11 +690,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridOffHeapProcessor offheap() {
-        return offheapProc;
     }
 
     /** {@inheritDoc} */
@@ -745,11 +740,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridLoadBalancerManager loadBalancing() {
         return loadMgr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSwapSpaceManager swap() {
-        return swapspaceMgr;
     }
 
     /** {@inheritDoc} */
@@ -834,8 +824,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public OdbcProcessor odbc() {
-        return odbcProc;
+    @Override public SqlListenerProcessor sqlListener() {
+        return sqlListenerProc;
     }
 
     /** {@inheritDoc} */
@@ -861,20 +851,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public boolean segmented() {
         return segFlag;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridClockSource timeSource() {
-        return clockSrc;
-    }
-
-    /**
-     * Sets time source. For test purposes only.
-     *
-     * @param clockSrc Time source.
-     */
-    public void timeSource(GridClockSource clockSrc) {
-        this.clockSrc = clockSrc;
     }
 
     /** {@inheritDoc} */
@@ -969,6 +945,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public ExecutorService getServiceExecutorService() {
+        return svcExecSvc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService getSystemExecutorService() {
         return sysExecSvc;
     }
@@ -1016,6 +997,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getQueryExecutorService() {
         return qryExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getSchemaExecutorService() {
+        return schemaExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    public Map<String, ? extends ExecutorService> customExecutors() {
+        return customExecSvcs;
     }
 
     /** {@inheritDoc} */

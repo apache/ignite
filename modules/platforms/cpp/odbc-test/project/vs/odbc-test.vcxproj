@@ -157,6 +157,7 @@
     <ClCompile Include="..\..\..\odbc\src\config\configuration.cpp" />
     <ClCompile Include="..\..\..\odbc\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\..\odbc\src\cursor.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\log.cpp" />
     <ClCompile Include="..\..\..\odbc\src\protocol_version.cpp" />
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc\src\row.cpp" />
@@ -209,7 +210,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\queries-default.xml" />
+    <None Include="..\..\config\queries-test-noodbc-32.xml" />
     <None Include="..\..\config\queries-test-noodbc.xml" />
+    <None Include="..\..\config\queries-test-default.xml" />
+    <None Include="..\..\config\queries-test-32.xml" />
     <None Include="..\..\config\queries-test.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

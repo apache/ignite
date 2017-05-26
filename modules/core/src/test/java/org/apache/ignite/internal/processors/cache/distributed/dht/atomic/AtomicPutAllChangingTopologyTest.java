@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -68,7 +68,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
         return new CacheConfiguration<Integer, Integer>()
             .setAtomicityMode(ATOMIC)
             .setCacheMode(REPLICATED)
-            .setAffinity(new FairAffinityFunction(false, 1))
+            .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setWriteSynchronizationMode(FULL_SYNC)
             .setRebalanceMode(SYNC)
             .setName(CACHE_NAME);

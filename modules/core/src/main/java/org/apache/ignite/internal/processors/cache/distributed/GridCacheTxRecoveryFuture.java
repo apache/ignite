@@ -28,11 +28,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -49,7 +49,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 /**
  * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
-public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolean> implements GridCacheFuture<Boolean> {
+public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<Boolean> {
     /** */         
     private static final long serialVersionUID = 0L;
     
@@ -426,7 +426,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -547,9 +547,6 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
      *
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Mini future ID. */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

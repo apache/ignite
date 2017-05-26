@@ -55,7 +55,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -339,8 +341,14 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 updateCntr,
                 topVer);
 
-            CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
-                cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
+            IgniteCacheProxy jcache = cctx.kernalContext().cache().jcacheProxy(cctx.name());
+
+            assert jcache != null : "Failed to get cache proxy [name=" + cctx.name() +
+                ", locStart=" + cctx.startTopologyVersion() +
+                ", locNode=" + cctx.localNode() +
+                ", stopping=" + cctx.kernalContext().isStopping();
+
+            CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(jcache, cctx, e0);
 
             lsnr.onEntryUpdated(evt, primary, recordIgniteEvt, fut);
         }
@@ -647,7 +655,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         if (notifyExisting) {
-            final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
+            final Iterator<CacheDataRow> it = cctx.offheap().iterator(true, true, AffinityTopologyVersion.NONE);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {
                 @Override public Iterator<CacheEntryEvent> iterator() {
@@ -684,13 +692,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 if (!it.hasNext())
                                     break;
 
-                                GridCacheEntryEx e = it.next();
+                                CacheDataRow e = it.next();
 
                                 CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
                                     cctx.cacheId(),
                                     CREATED,
                                     e.key(),
-                                    e.rawGet(),
+                                    e.value(),
                                     null,
                                     keepBinary,
                                     0,

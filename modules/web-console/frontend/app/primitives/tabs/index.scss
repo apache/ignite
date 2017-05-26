@@ -27,6 +27,8 @@ ul.tabs {
     list-style: none;
 
     padding-left: 0;
+    margin-bottom: 0;
+
     border-bottom: 1px solid $nav-tabs-border-color;
 
     li {
@@ -46,6 +48,7 @@ ul.tabs {
 
             color: $text-color;
             font-size: $font-size;
+            font-family: Roboto;
             text-align: center;
             line-height: $height - 2*$offset-vertical;
 
@@ -68,6 +71,18 @@ ul.tabs {
 
         & + li {
             margin-left: 45px;
+        }
+    }
+}
+
+ul.tabs.tabs--blue {
+    li {
+        &.active {
+            border-color: #0067b9;
+        }
+
+        &:not(.active):hover {
+            border-color: #94bbdd;
         }
     }
 }

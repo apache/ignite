@@ -31,8 +31,9 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.*;
-
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -560,18 +561,10 @@ public class WebSessionFilter implements Filter {
 
         chain.doFilter(httpReq, res);
 
-        if (!cached.isValid())
-            binaryCache.remove(cached.id());
-        // Changed session ID.
-        else if (!cached.getId().equals(sesId)) {
-            final String oldId = cached.getId();
+        WebSessionV2 cachedNew = (WebSessionV2)httpReq.getSession(false);
 
-            cached.invalidate();
-
-            binaryCache.remove(oldId);
-        }
-        else
-            updateAttributesV2(cached.getId(), cached);
+        if (cachedNew != null && cachedNew.isValid())
+            updateAttributesV2(cachedNew.getId(), cachedNew);
 
         return sesId;
     }
@@ -762,6 +755,7 @@ public class WebSessionFilter implements Filter {
      */
     public void destroySession(String sesId) {
         assert sesId != null;
+
         for (int i = 0; i < retries; i++) {
             try {
                 if (cache.remove(sesId) && log.isDebugEnabled())
@@ -1016,7 +1010,7 @@ public class WebSessionFilter implements Filter {
                     }
                 }
                 else
-                    return null;
+                    ses = null;
             }
 
             return ses;

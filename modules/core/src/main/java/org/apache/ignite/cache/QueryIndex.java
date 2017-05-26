@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.cache;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,10 +41,14 @@ public class QueryIndex implements Serializable {
     private String name;
 
     /** */
+    @GridToStringInclude
     private LinkedHashMap<String, Boolean> fields;
 
     /** */
     private QueryIndexType type = DFLT_IDX_TYP;
+
+    /** */
+    private int inlineSize = -1;
 
     /**
      * Creates an empty index. Should be populated via setters.
@@ -238,5 +245,28 @@ public class QueryIndex implements Serializable {
         this.type = type;
 
         return this;
+    }
+
+    /**
+     * Gets inline size.
+     *
+     * @return inline size.
+     */
+    public int getInlineSize() {
+        return inlineSize;
+    }
+
+    /**
+     * Sets inline size.
+     *
+     * @param inlineSize Inline size.
+     */
+    public void setInlineSize(int inlineSize) {
+        this.inlineSize = inlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryIndex.class, this);
     }
 }

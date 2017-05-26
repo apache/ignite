@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
@@ -46,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -66,7 +66,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  *
  */
-public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
+public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -114,7 +114,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         this.tx = tx;
         this.commit = commit;
 
-        ignoreInterrupts(true);
+        ignoreInterrupts();
 
         mappings = tx.mappings();
 
@@ -189,7 +189,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (!isDone()) {
             FinishMiniFuture finishFut = null;
 
-            synchronized (sync) {
+            synchronized (this) {
                 int size = futuresCountNoLock();
 
                 for (int i = 0; i < size; i++) {
@@ -642,7 +642,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param mapping Mapping to finish.
      */
     private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
-        if (mapping.near()) {
+        if (mapping.hasNearCacheEntries()) {
             GridCacheVersion xidVer = tx.xidVersion();
 
             mapping.dhtVersion(xidVer, xidVer);
@@ -676,7 +676,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
-        assert !m.empty();
+        assert !m.empty() : m;
 
         CacheWriteSynchronizationMode syncMode = tx.syncMode();
 
@@ -698,7 +698,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            completedVer, // Reuse 'baseVersion'  to do not add new fields in message.
+            completedVer, // Reuse 'baseVersion' to do not add new fields in message.
             null,
             null,
             tx.size(),
@@ -878,9 +878,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private class FinishMiniFuture extends MinFuture {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Keys. */
         @GridToStringInclude
         private GridDistributedTxMapping m;
@@ -926,7 +923,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         if (!F.isEmpty(backups)) {
                             final CheckRemoteTxMiniFuture mini;
 
-                            synchronized (sync) {
+                            synchronized (GridNearTxFinishFuture.this) {
                                 int futId = Integer.MIN_VALUE + futuresCountNoLock();
 
                                 mini = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));

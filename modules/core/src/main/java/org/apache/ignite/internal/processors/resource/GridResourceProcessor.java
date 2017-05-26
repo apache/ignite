@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -77,7 +76,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Started resource processor.");
     }

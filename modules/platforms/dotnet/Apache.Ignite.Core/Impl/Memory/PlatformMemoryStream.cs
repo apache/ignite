@@ -893,7 +893,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
                 SynchronizeOutput();

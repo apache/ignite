@@ -44,12 +44,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.resources.IgniteInstanceResource;;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -1224,13 +1226,22 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             synchronized (mux) {
                 if (blockCustomEvt) {
                     DiscoveryCustomMessage msg0 = GridTestUtils.getFieldValue(msg, "delegate");
+
+                    if (msg0 instanceof MappingProposedMessage || msg0 instanceof MappingAcceptedMessage){
+                        super.sendCustomEvent(msg);
+
+                        return;
+                    }
+
                     if (msg0 instanceof StopRoutineDiscoveryMessage || msg0 instanceof StartRoutineDiscoveryMessage) {
                         log.info("Block custom message: " + msg0);
+
                         blockedMsgs.add(msg);
 
                         mux.notifyAll();
+
+                        return;
                     }
-                    return;
                 }
             }
 

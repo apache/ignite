@@ -20,14 +20,14 @@
 
 #include <stdint.h>
 
-#include "ignite/common/utils.h"
+#include <ignite/common/utils.h>
 
-#include "ignite/guid.h"
-#include "ignite/date.h"
-#include "ignite/timestamp.h"
-#include "ignite/time.h"
+#include <ignite/guid.h>
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
+#include <ignite/time.h>
 
-#include "ignite/binary/binary_type.h"
+#include <ignite/binary/binary_type.h>
 
 namespace ignite
 {
@@ -470,9 +470,11 @@ namespace ignite
                 template<typename T>
                 static T GetDefaultValue()
                 {
-                    ignite::binary::BinaryType<T> binType;
+                    T res;
 
-                    return binType.GetNull();
+                    ignite::binary::BinaryType<T>::GetNull(res);
+
+                    return res;
                 }
             };
 

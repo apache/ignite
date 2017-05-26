@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -134,8 +133,6 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
-        cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-        cfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
         return cfg;
     }
 }

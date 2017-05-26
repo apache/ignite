@@ -51,7 +51,7 @@ struct BinaryType<T> \
  * Implementation of GetTypeId() which returns predefined constant.
  */
 #define IGNITE_BINARY_GET_TYPE_ID_AS_CONST(id) \
-int32_t GetTypeId() \
+static int32_t GetTypeId() \
 { \
     return id; \
 }
@@ -61,7 +61,7 @@ int32_t GetTypeId() \
  * Implementation of GetTypeId() which returns hash of passed type name.
  */
 #define IGNITE_BINARY_GET_TYPE_ID_AS_HASH(typeName) \
-int32_t GetTypeId() \
+static int32_t GetTypeId() \
 { \
     return GetBinaryStringHashCode(#typeName); \
 }
@@ -71,9 +71,9 @@ int32_t GetTypeId() \
  * Implementation of GetTypeName() which returns type name as is.
  */
 #define IGNITE_BINARY_GET_TYPE_NAME_AS_IS(typeName) \
-std::string GetTypeName() \
+static void GetTypeName(std::string& dst) \
 { \
-    return #typeName; \
+    dst = #typeName; \
 }
 
 /**
@@ -81,19 +81,9 @@ std::string GetTypeName() \
  * Default implementation of GetFieldId() function which returns Java-way hash code of the string.
  */
 #define IGNITE_BINARY_GET_FIELD_ID_AS_HASH \
-int32_t GetFieldId(const char* name) \
+static int32_t GetFieldId(const char* name) \
 { \
     return GetBinaryStringHashCode(name); \
-}
-
-/**
- * @def IGNITE_BINARY_GET_HASH_CODE_ZERO(T)
- * Implementation of GetHashCode() function which always returns 0.
- */
-#define IGNITE_BINARY_GET_HASH_CODE_ZERO(T) \
-int32_t GetHashCode(const T& obj) \
-{ \
-    return 0; \
 }
 
 /**
@@ -101,7 +91,7 @@ int32_t GetHashCode(const T& obj) \
  * Implementation of IsNull() function which always returns false.
  */
 #define IGNITE_BINARY_IS_NULL_FALSE(T) \
-bool IsNull(const T& obj) \
+static bool IsNull(const T& obj) \
 { \
     return false; \
 }
@@ -111,7 +101,7 @@ bool IsNull(const T& obj) \
  * Implementation of IsNull() function which return true if passed object is null pointer.
  */
 #define IGNITE_BINARY_IS_NULL_IF_NULLPTR(T) \
-bool IsNull(const T& obj) \
+static bool IsNull(const T& obj) \
 { \
     return obj; \
 }
@@ -121,9 +111,9 @@ bool IsNull(const T& obj) \
  * Implementation of GetNull() function which returns an instance created with defult constructor.
  */
 #define IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T) \
-T GetNull() \
+static void GetNull(T& dst) \
 { \
-    return T(); \
+    dst = T(); \
 }
 
 /**
@@ -131,10 +121,11 @@ T GetNull() \
  * Implementation of GetNull() function which returns NULL pointer.
  */
 #define IGNITE_BINARY_GET_NULL_NULLPTR(T) \
-T GetNull() \
+static void GetNull(T& dst) \
 { \
-    return NULL; \
+    dst = 0; \
 }
+
 
 namespace ignite
 {
@@ -155,82 +146,7 @@ namespace ignite
          * Binary type structure. Defines a set of functions required for type to be serialized and deserialized.
          */
         template<typename T>
-        struct IGNITE_IMPORT_EXPORT BinaryType
-        {
-            /**
-             * Get binary object type ID.
-             *
-             * @return Type ID.
-             */
-            int32_t GetTypeId()
-            {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetTypeId function is not defined for binary type.");
-            }
-
-            /**
-             * Get binary object type name.
-             *
-             * @return Type name.
-             */
-            std::string GetTypeName()
-            {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetTypeName function is not defined for binary type.");
-            }
-
-            /**
-             * Get binary object field ID.
-             *
-             * @param name Field name.
-             * @return Field ID.
-             */
-            int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            /**
-             * Write binary object.
-             *
-             * @param writer Writer.
-             * @param obj Object.
-             */
-            void Write(BinaryWriter& writer, const T& obj)
-            {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "Write function is not defined for binary type.");
-            }
-
-            /**
-             * Read binary object.
-             *
-             * @param reader Reader.
-             * @return Object.
-             */
-            T Read(BinaryReader& reader)
-            {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "Read function is not defined for binary type.");
-            }
-
-            /**
-             * Check whether passed binary object should be interpreted as NULL.
-             *
-             * @param obj Binary object to test.
-             * @return True if binary object should be interpreted as NULL.
-             */
-            bool IsNull(const T& obj)
-            {
-                return false;
-            }
-
-            /**
-             * Get NULL value for the given binary type.
-             *
-             * @return NULL value.
-             */
-            T GetNull()
-            {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetNull function is not defined for binary type.");
-            }
-        };
+        struct IGNITE_IMPORT_EXPORT BinaryType { };
 
         /**
          * Templated binary type specification for pointers.
@@ -239,53 +155,82 @@ namespace ignite
         struct IGNITE_IMPORT_EXPORT BinaryType<T*>
         {
             /** Actual type. */
-            BinaryType<T> typ;
+            typedef BinaryType<T> BinaryTypeDereferenced;
 
             /**
-             * Constructor.
+             * Get binary object type ID.
+             *
+             * @return Type ID.
              */
-            BinaryType() : typ()
+            static int32_t GetTypeId()
             {
-                // No-op.
+                return BinaryTypeDereferenced::GetTypeId();
             }
 
-            int32_t GetTypeId()
+            /**
+             * Get binary object type name.
+             *
+             * @param dst Output type name.
+             */
+            static void GetTypeName(std::string& dst)
             {
-                return typ.GetTypeId();
+                BinaryTypeDereferenced::GetTypeName(dst);
             }
 
-            std::string GetTypeName()
+            /**
+             * Get binary object field ID.
+             *
+             * @param name Field name.
+             * @return Field ID.
+             */
+            static int32_t GetFieldId(const char* name)
             {
-                return typ.GetTypeName();
+                return BinaryTypeDereferenced::GetFieldId(name);
             }
 
-            int32_t GetFieldId(const char* name)
+            /**
+             * Write binary object.
+             *
+             * @param writer Writer.
+             * @param obj Object.
+             */
+            static void Write(BinaryWriter& writer, T* const& obj)
             {
-                return typ.GetFieldId(name);
+                BinaryTypeDereferenced::Write(writer, *obj);
             }
 
-            void Write(BinaryWriter& writer, T* const& obj)
+            /**
+             * Read binary object.
+             *
+             * @param reader Reader.
+             * @param dst Output object.
+             */
+            static void Read(BinaryReader& reader, T*& dst)
             {
-                typ.Write(writer, *obj);
+                dst = new T();
+
+                BinaryTypeDereferenced::Read(reader, *dst);
             }
 
-            T* Read(BinaryReader& reader)
+            /**
+             * Check whether passed binary object should be interpreted as NULL.
+             *
+             * @param obj Binary object to test.
+             * @return True if binary object should be interpreted as NULL.
+             */
+            static bool IsNull(T* const& obj)
             {
-                T* res = new T();
-
-                *res = typ.Read(reader);
-
-                return res;
+                return !obj || BinaryTypeDereferenced::IsNull(*obj);
             }
 
-            bool IsNull(T* const& obj)
+            /**
+             * Get NULL value for the given binary type.
+             *
+             * @param dst Null value for the type.
+             */
+            static void GetNull(T*& dst)
             {
-                return !obj || typ.IsNull(*obj);
-            }
-
-            T* GetNull()
-            {
-                return 0;
+                dst = 0;
             }
         };
     }

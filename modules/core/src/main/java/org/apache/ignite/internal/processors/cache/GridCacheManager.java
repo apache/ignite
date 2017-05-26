@@ -36,8 +36,9 @@ public interface GridCacheManager<K, V> {
      * Stops manager.
      *
      * @param cancel Cancel flag.
+     * @param destroy Cache destroy flag.
      */
-    public void stop(boolean cancel);
+    public void stop(boolean cancel, boolean destroy);
 
     /**
      * @throws IgniteCheckedException If failed.

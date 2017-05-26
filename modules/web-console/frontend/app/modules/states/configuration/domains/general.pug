@@ -18,6 +18,7 @@ include /app/helpers/jade/mixins
 
 -var form = 'general'
 -var model = 'backupItem'
+-var generatePojo = `${model}.generatePojo`
 
 .panel.panel-default(ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle)
@@ -32,7 +33,7 @@ include /app/helpers/jade/mixins
         .panel-body
             .col-sm-6
                 .settings-row
-                    +checkbox('Generate POJO classes', `${model}.generatePojo`, '"generatePojo"', 'If selected then POJO classes will be generated from database tables')
+                    +checkbox('Generate POJO classes', generatePojo, '"generatePojo"', 'If selected then POJO classes will be generated from database tables')
                 .settings-row
                     +caches(model, 'Select caches to associate domain model with cache')
                 .settings-row
@@ -42,7 +43,6 @@ include /app/helpers/jade/mixins
                             <li>Java annotations like @QuerySqlField</li>\
                             <li>Configuration via QueryEntity class</li>\
                         </ul>')
-                -var generatePojo = `${model}.generatePojo`
                 .settings-row
                     +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', 'javaBuiltInClasses', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
                 .settings-row

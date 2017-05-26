@@ -21,14 +21,16 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -46,17 +48,8 @@ public class VisorQueryUtils {
     /** Prefix for node local key for SCAN queries. */
     public static final String SCAN_QRY_NAME = "VISOR_SCAN_QUERY";
 
-    /** Prefix for node local key for SCAN near queries. */
-    public static final String SCAN_NEAR_CACHE = "VISOR_SCAN_NEAR_CACHE";
-
-    /** Prefix for node local key for SCAN near queries. */
-    public static final String SCAN_CACHE_WITH_FILTER = "VISOR_SCAN_CACHE_WITH_FILTER";
-
-    /** Prefix for node local key for SCAN near queries. */
-    public static final String SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE = "VISOR_SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE";
-
     /** Columns for SCAN queries. */
-    public static final Collection<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
+    public static final List<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
         new VisorQueryField(null, null, "Key Class", ""), new VisorQueryField(null, null, "Key", ""),
         new VisorQueryField(null, null, "Value Class", ""), new VisorQueryField(null, null, "Value", "")
     );
@@ -263,5 +256,33 @@ public class VisorQueryUtils {
         }
 
         return rows;
+    }
+
+    /**
+     * @param qryId Unique query result id.
+     */
+    public static void scheduleResultSetHolderRemoval(final String qryId, final IgniteEx ignite) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
+            @Override public void onTimeout() {
+                ConcurrentMap<String, VisorQueryCursor> storage = ignite.cluster().nodeLocalMap();
+
+                VisorQueryCursor cur = storage.get(qryId);
+
+                if (cur != null) {
+                    // If cursor was accessed since last scheduling, set access flag to false and reschedule.
+                    if (cur.accessed()) {
+                        cur.accessed(false);
+
+                        scheduleResultSetHolderRemoval(qryId, ignite);
+                    }
+                    else {
+                        // Remove stored cursor otherwise.
+                        storage.remove(qryId);
+
+                        cur.close();
+                    }
+                }
+            }
+        });
     }
 }

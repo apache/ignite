@@ -37,15 +37,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -61,11 +62,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  *
  */
-public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> implements GridCacheFuture<Object>,
+public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements GridCacheFuture<Object>,
     CacheGetFuture {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -118,6 +116,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean keepCacheObjects;
 
     /** */
+    private boolean recovery;
+
+    /** */
     @GridToStringInclude
     private ClusterNode node;
 
@@ -149,7 +150,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        boolean recovery
     ) {
         assert key != null;
 
@@ -173,6 +175,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.canRemap = canRemap;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+        this.recovery = recovery;
         this.topVer = topVer;
 
         futId = IgniteUuid.randomUuid();
@@ -187,6 +190,16 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     public void init() {
         AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
             canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+
+        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, key, null) : null;
+
+        if (err != null) {
+            onDone(err);
+
+            return;
+        }
 
         map(topVer);
     }
@@ -218,7 +231,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc,
-                skipVals);
+                skipVals,
+                recovery);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -275,9 +289,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 expiryPlc != null ? expiryPlc.forCreate() : -1L,
                 expiryPlc != null ? expiryPlc.forAccess() : -1L,
                 skipVals,
-                /**add reader*/false,
+                /*add reader*/false,
                 needVer,
-                cctx.deploymentEnabled());
+                cctx.deploymentEnabled(),
+                recovery);
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -333,74 +348,101 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
         GridDhtCacheAdapter colocated = cctx.dht();
 
+        boolean readNoEntry = cctx.readNoEntry(expiryPlc, false);
+        boolean evt = !skipVals;
+
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                    colocated.peekEx(key);
+                CacheObject v = null;
+                GridCacheVersion ver = null;
 
-                // If our DHT cache do has value, then we peek it.
-                if (entry != null) {
-                    boolean isNew = entry.isNewLocked();
+                boolean skipEntry = readNoEntry;
 
-                    CacheObject v = null;
-                    GridCacheVersion ver = null;
+                if (readNoEntry) {
+                    CacheDataRow row = cctx.offheap().read(key);
 
-                    if (needVer) {
-                        EntryGetResult res = entry.innerGetVersioned(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true,
-                            null);
+                    if (row != null) {
+                        long expireTime = row.expireTime();
 
-                        if (res != null) {
-                            v = res.value();
-                            ver = res.version();
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                            v = row.value();
+
+                            if (needVer)
+                                ver = row.version();
+
+                            if (evt) {
+                                cctx.events().readEvent(key,
+                                    null,
+                                    row.value(),
+                                    subjId,
+                                    taskName,
+                                    !deserializeBinary);
+                            }
+                        }
+                        else
+                            skipEntry = false;
+                    }
+                }
+
+                if (!skipEntry) {
+                    GridCacheEntryEx entry = colocated.entryEx(key);
+
+                    // If our DHT cache do has value, then we peek it.
+                    if (entry != null) {
+                        boolean isNew = entry.isNewLocked();
+
+                        if (needVer) {
+                            EntryGetResult res = entry.innerGetVersioned(
+                                null,
+                                null,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                true,
+                                null);
+
+                            if (res != null) {
+                                v = res.value();
+                                ver = res.version();
+                            }
+                        }
+                        else {
+                            v = entry.innerGet(
+                                null,
+                                null,
+                                /*read-through*/false,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                true);
+                        }
+
+                        colocated.context().evicts().touch(entry, topVer);
+
+                        // Entry was not in memory or in swap, so we remove it from cache.
+                        if (v == null) {
+                            if (isNew && entry.markObsoleteIfEmpty(ver))
+                                colocated.removeEntry(entry);
                         }
                     }
-                    else {
-                        v = entry.innerGet(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*read-through*/false,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            /*temporary*/false,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true);
-                    }
+                }
 
-                    colocated.context().evicts().touch(entry, topVer);
+                if (v != null) {
+                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                        cctx.cache().metrics0().onRead(true);
 
-                    // Entry was not in memory or in swap, so we remove it from cache.
-                    if (v == null) {
-                        if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeEntry(entry);
-                    }
-                    else {
-                        if (!skipVals && cctx.config().isStatisticsEnabled())
-                            cctx.cache().metrics0().onRead(true);
+                    if (!skipVals)
+                        setResult(v, ver);
+                    else
+                        setSkipValueResult(true, ver);
 
-                        if (!skipVals)
-                            setResult(v, ver);
-                        else
-                            setSkipValueResult(true, ver);
-
-                        return true;
-                    }
+                    return true;
                 }
 
                 boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());

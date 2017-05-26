@@ -75,7 +75,8 @@ public class QueryWords {
                     List<?> row = stats.get(0);
 
                     if (row.get(0) != null)
-                        System.out.printf("Query results [avg=%.2f, min=%d, max=%d]%n", row.get(0), row.get(1), row.get(2));
+                        System.out.printf("Query results [avg=%d, min=%d, max=%d]%n",
+                            row.get(0), row.get(1), row.get(2));
 
                     // Print top 10 words.
                     ExamplesUtils.printQueryResults(top10);

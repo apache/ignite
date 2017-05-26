@@ -26,7 +26,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,7 +37,6 @@ import org.apache.ignite.transactions.Transaction;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -57,11 +55,6 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     /** {@inheritDoc} */
     @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */
@@ -197,9 +190,9 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    IgniteCache<Integer, String> cache = ignite.cache(null);
+                    IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                    info("Partition: " + ignite.affinity(null).partition(1));
+                    info("Partition: " + ignite.affinity(DEFAULT_CACHE_NAME).partition(1));
 
                     try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");

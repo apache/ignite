@@ -74,8 +74,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(mode);
         cc.setEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
-        cc.setEvictSynchronized(false);
-        cc.setSwapEnabled(false);
+        cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionFilter(notSerializableProxy(filter, org.apache.ignite.cache.eviction.EvictionFilter.class));
         cc.setRebalanceMode(SYNC);
@@ -144,7 +143,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            IgniteCache<Object, Object> c = g.cache(null);
+            IgniteCache<Object, Object> c = g.cache(DEFAULT_CACHE_NAME);
 
             int cnt = 1;
 
@@ -199,7 +198,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        IgniteCache<Object, Object> cache = g.cache(null);
+        IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
         try {
             int id = 1;

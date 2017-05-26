@@ -136,6 +136,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(preloadMode);
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
+        cacheCfg.setOnheapCacheEnabled(onheapCacheEnabled());
 
         return cacheCfg;
     }
@@ -160,6 +161,13 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
+    }
+
+    /**
+     * @return {@code True} if on-heap cache is enabled.
+     */
+    protected boolean onheapCacheEnabled() {
+        return false;
     }
 
     /**
@@ -228,7 +236,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             putKeys(cache1, keyCnt);
             checkKeys(cache1, keyCnt, F.asList(ignite1));
@@ -239,7 +247,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 checkKeys(c, keyCnt, ignites);
             }
@@ -314,7 +322,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             assert last != null;
 
-            IgniteCache<Integer, String> lastCache = last.cache(null);
+            IgniteCache<Integer, String> lastCache = last.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(lastCache);
 
@@ -344,7 +352,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             error("Test failed.", e);
 
             throw e;
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -355,7 +364,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     private void checkActiveState(Iterable<Ignite> grids) {
         // Check that nodes don't have non-active information about other nodes.
         for (Ignite g : grids) {
-            IgniteCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
 
@@ -432,7 +441,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         checkNodes(1000, 4, false, false);
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -498,7 +506,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             putKeys(cache1, keyCnt);
             checkKeys(cache1, keyCnt, F.asList(ignite1));
@@ -509,7 +517,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 checkKeys(c, keyCnt, ignites);
             }
@@ -549,17 +557,16 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<Event>() {
-                            @Override public boolean apply(Event e) {
-                                CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
+                        @Override public boolean apply(Event e) {
+                            CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
 
-                                ClusterNode node = evt.discoveryNode();
+                            ClusterNode node = evt.discoveryNode();
 
-                                return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
-                                    (evt.discoveryEventType() == EVT_NODE_LEFT ||
+                            return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
+                                (evt.discoveryEventType() == EVT_NODE_LEFT ||
                                     evt.discoveryEventType() == EVT_NODE_FAILED);
-                            }
-                        }, EVT_CACHE_REBALANCE_STOPPED));
-
+                        }
+                    }, EVT_CACHE_REBALANCE_STOPPED));
 
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
@@ -573,7 +580,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 // Check all left nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.cache(null);
+                    IgniteCache<Integer, String> c = gg.cache(DEFAULT_CACHE_NAME);
 
                     checkKeys(c, keyCnt, ignites);
                 }
@@ -581,7 +588,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             assert last != null;
 
-            IgniteCache<Integer, String> lastCache = last.cache(null);
+            IgniteCache<Integer, String> lastCache = last.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(lastCache);
 
@@ -607,7 +614,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             error("Test failed.", e);
 
             throw e;
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -643,7 +651,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             assert !affNodes.isEmpty();
 
             if (affNodes.contains(loc)) {
-                String val = sync ? cache.localPeek(i, CachePeekMode.ONHEAP) : cache.get(i);
+                String val = sync ? cache.localPeek(i) : cache.get(i);
 
                 ClusterNode primaryNode = F.first(affNodes);
 
@@ -651,10 +659,11 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 boolean primary = primaryNode.equals(loc);
 
-                assert Integer.toString(i).equals(val) : "Key check failed [igniteInstanceName=" + ignite.name() +
-                    ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
-                    ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
-                    ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']';
+                assertEquals("Key check failed [igniteInstanceName=" + ignite.name() +
+                        ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
+                        ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
+                        ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']',
+                    Integer.toString(i), val);
             }
         }
     }
@@ -663,12 +672,12 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param grids Grids
      * @return String representation of all partitions and their state.
      */
-    @SuppressWarnings( {"ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     private String top2string(Iterable<Ignite> grids) {
         Map<String, String> map = new HashMap<>();
 
         for (Ignite g : grids) {
-            IgniteCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
 

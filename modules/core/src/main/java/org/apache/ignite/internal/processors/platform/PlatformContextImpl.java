@@ -31,7 +31,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageF
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,6 +82,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -128,7 +127,6 @@ public class PlatformContextImpl implements PlatformContext {
         addEventTypes(evtTyps0, EventType.EVTS_CHECKPOINT);
         addEventTypes(evtTyps0, EventType.EVTS_DISCOVERY_ALL);
         addEventTypes(evtTyps0, EventType.EVTS_JOB_EXECUTION);
-        addEventTypes(evtTyps0, EventType.EVTS_SWAPSPACE);
         addEventTypes(evtTyps0, EventType.EVTS_TASK_EXECUTION);
 
         evtTyps = Collections.unmodifiableSet(evtTyps0);
@@ -374,7 +372,18 @@ public class PlatformContextImpl implements PlatformContext {
                             }
                         });
 
+                    Map<String, Integer> enumMap = null;
+
                     boolean isEnum = reader.readBoolean();
+
+                    if (isEnum) {
+                        int size = reader.readInt();
+
+                        enumMap = new LinkedHashMap<>(size);
+
+                        for (int idx = 0; idx < size; idx++)
+                            enumMap.put(reader.readString(), reader.readInt());
+                    }
 
                     // Read schemas
                     int schemaCnt = reader.readInt();
@@ -396,7 +405,7 @@ public class PlatformContextImpl implements PlatformContext {
                         }
                     }
 
-                    return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum);
+                    return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
                 }
             }
         );
@@ -430,10 +439,12 @@ public class PlatformContextImpl implements PlatformContext {
         if (schema == null) {
             BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
 
-            for (BinarySchema typeSchema : meta.metadata().schemas()) {
-                if (schemaId == typeSchema.schemaId()) {
-                    schema = typeSchema;
-                    break;
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
                 }
             }
 
@@ -475,7 +486,20 @@ public class PlatformContextImpl implements PlatformContext {
                 writer.writeInt(e.getValue().fieldId());
             }
 
-            writer.writeBoolean(meta.isEnum());
+            if (meta.isEnum()) {
+                writer.writeBoolean(true);
+
+                Map<String, Integer> enumMap = meta0.enumMap();
+
+                writer.writeInt(enumMap.size());
+
+                for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
+                    writer.writeString(e.getKey());
+                    writer.writeInt(e.getValue());
+                }
+            }
+            else
+                writer.writeBoolean(false);
         }
     }
 
@@ -607,14 +631,6 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeObject(event0.jobId());
             writeNode(writer, event0.taskNode());
             writer.writeUuid(event0.taskSubjectId());
-        }
-        else if (evt0 instanceof SwapSpaceEvent) {
-            writer.writeInt(9);
-            writeCommonEventData(writer, evt0);
-
-            SwapSpaceEvent event0 = (SwapSpaceEvent)evt0;
-
-            writer.writeString(event0.space());
         }
         else if (evt0 instanceof TaskEvent) {
             writer.writeInt(10);

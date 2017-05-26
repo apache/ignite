@@ -83,6 +83,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -748,7 +749,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    public final void errorWhenCommitting() {
+    @Override public final void errorWhenCommitting() {
         synchronized (this) {
             TransactionState prev = state;
 
@@ -1185,8 +1186,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht)) {
             try {
                 if (writeEntries != null) {
-                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
-                    List<Object> rmvCol = null;
+                    Map<KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> putMap = null;
+                    List<KeyCacheObject> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
                     boolean skipNonPrimary = near() && isWriteToStoreFromDht;
@@ -1251,7 +1252,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                     new CacheLazyEntry(
                                         cacheCtx,
                                         key,
-                                        e.cached().rawGetOrUnmarshal(true),
+                                        e.cached().rawGet(),
                                         e.keepBinary()),
                                     cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
 
@@ -1268,7 +1269,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                 if (putMap == null)
                                     putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                                putMap.put(key, F.<Object, GridCacheVersion>t(val, ver));
+                                putMap.put(key, F.t(val, ver));
                             }
                         }
                         else if (op == DELETE) {
@@ -1297,7 +1298,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true), e.keepBinary()));
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGet(), e.keepBinary()));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -1365,6 +1366,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     sessionEnd(stores, false);
             }
         }
+        else
+            sessionEnd(stores, true);
     }
 
     /**
@@ -1379,6 +1382,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         IgniteTxEntry txEntry,
         boolean metrics,
         @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
+
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1402,20 +1407,25 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             final boolean keepBinary = txEntry.keepBinary();
 
-            CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
-                txEntry.cached().innerGet(
+            CacheObject cacheVal;
+
+            if (txEntry.hasValue())
+                cacheVal = txEntry.value();
+            else if (txEntry.hasOldValue())
+                cacheVal = txEntry.oldValue();
+            else {
+                cacheVal = txEntry.cached().innerGet(
                     null,
                     this,
-                    /*swap*/false,
                     /*read through*/false,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
-                    /*temporary*/true,
                     /*subjId*/subjId,
-                    /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
+                    /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
                     keepBinary);
+            }
 
             boolean modified = false;
 

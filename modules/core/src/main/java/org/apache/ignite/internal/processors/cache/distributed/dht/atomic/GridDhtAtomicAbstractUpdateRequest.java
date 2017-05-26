@@ -56,6 +56,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /** */
     private static final int DHT_ATOMIC_REPLY_WITHOUT_DELAY = 0x10;
 
+    /** */
+    protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -119,6 +122,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         boolean keepBinary,
         boolean skipStore
     ) {
+        assert topVer.topologyVersion() > 0 : topVer;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
@@ -135,6 +140,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
     }
 
+    /** {@inheritDoc} */
+    @Override public final AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @param nearNodeId Near node ID.
+     * @param nearFutId Future ID on near node.
+     */
     void nearReplyInfo(UUID nearNodeId, long nearFutId) {
         assert nearNodeId != null;
 
@@ -142,10 +156,16 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         this.nearFutId = nearFutId;
     }
 
+    /**
+     * @return {@code True} if backups should reply immediately.
+     */
     boolean replyWithoutDelay() {
         return isFlag(DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
 
+    /**
+     * @param replyWithoutDelay {@code True} if backups should reply immediately.
+     */
     void replyWithoutDelay(boolean replyWithoutDelay) {
         setFlag(replyWithoutDelay, DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
@@ -341,6 +361,17 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      * @return Key.
      */
     public abstract KeyCacheObject key(int idx);
+
+    /**
+     * @return Obsolete near cache keys size.
+     */
+    public abstract int obsoleteNearKeysSize();
+
+    /**
+     * @param idx Obsolete near cache key index.
+     * @return Obsolete near cache key.
+     */
+    public abstract KeyCacheObject obsoleteNearKey(int idx);
 
     /**
      * @param updCntr Update counter.

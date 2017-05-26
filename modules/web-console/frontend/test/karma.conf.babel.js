@@ -20,6 +20,12 @@ import path from 'path';
 
 const basePath = path.resolve('./');
 
+// Webpack chunk plugin has to be removed during test runs due to incompatibility issues,
+// otherwise tests would not run at all.
+// https://github.com/webpack-contrib/karma-webpack/issues/24#issuecomment-257613167
+const chunkPluginIndex = webpack.plugins.findIndex((plugin) => plugin.chunkNames);
+webpack.plugins.splice(chunkPluginIndex, 1);
+
 export default (config) => {
     config.set({
         // Base path that will be used to resolve all patterns (eg. files, exclude).

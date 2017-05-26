@@ -106,7 +106,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -122,6 +121,7 @@ import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -184,15 +184,12 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  * <li>Node local port number (see {@link #setLocalPort(int)})</li>
  * <li>Local port range (see {@link #setLocalPortRange(int)}</li>
  * <li>Connections per node (see {@link #setConnectionsPerNode(int)})</li>
- * <li>Connection buffer flush frequency (see {@link #setConnectionBufferFlushFrequency(long)})</li>
- * <li>Connection buffer size (see {@link #setConnectionBufferSize(int)})</li>
  * <li>Idle connection timeout (see {@link #setIdleConnectionTimeout(long)})</li>
  * <li>Direct or heap buffer allocation (see {@link #setDirectBuffer(boolean)})</li>
  * <li>Direct or heap buffer allocation for sending (see {@link #setDirectSendBuffer(boolean)})</li>
  * <li>Count of selectors and selector threads for NIO server (see {@link #setSelectorsCount(int)})</li>
  * <li>{@code TCP_NODELAY} socket option for sockets (see {@link #setTcpNoDelay(boolean)})</li>
  * <li>Message queue limit (see {@link #setMessageQueueLimit(int)})</li>
- * <li>Minimum buffered message count (see {@link #setMinimumBufferedMessageCount(int)})</li>
  * <li>Connect timeout (see {@link #setConnectTimeout(long)})</li>
  * <li>Maximum connect timeout (see {@link #setMaxConnectTimeout(long)})</li>
  * <li>Reconnect attempts count (see {@link #setReconnectCount(int)})</li>
@@ -241,8 +238,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class TcpCommunicationSpi extends IgniteSpiAdapter
-    implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
+public class TcpCommunicationSpi extends IgniteSpiAdapter implements CommunicationSpi<Message> {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -271,8 +267,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
     public static final int DFLT_SHMEM_PORT = -1;
 
-    /** Default idle connection timeout (value is <tt>30000</tt>ms). */
-    public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
+    /** Default idle connection timeout (value is <tt>10</tt>min). */
+    public static final long DFLT_IDLE_CONN_TIMEOUT = 10 * 60_000;
 
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
@@ -475,6 +471,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 HandshakeMessage msg0 = (HandshakeMessage)msg;
 
+                if (log.isDebugEnabled())
+                    log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
+                        ", msg=" + msg0 + ']');
+
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
@@ -569,7 +569,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (log.isDebugEnabled())
                             log.debug("Received incoming connection from remote node " +
-                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
+                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved +
+                                ", recovery=" + recoveryDesc + ']');
 
                         if (reserved) {
                             try {
@@ -1100,12 +1101,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Sets address resolver.
      *
      * @param addrRslvr Address resolver.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setAddressResolver(AddressResolver addrRslvr) {
+    public TcpCommunicationSpi setAddressResolver(AddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
+
+        return this;
     }
 
     /**
@@ -1130,16 +1134,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param locAddr IP address. Default value is any available local
      *      IP address.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLocalAddress(String locAddr) {
+    public TcpCommunicationSpi setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
             this.locAddr = locAddr;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getLocalAddress() {
+    /**
+     * See {@link #setLocalAddress(String)}.
+     *
+     * @return Grid node IP address.
+     */
+    public String getLocalAddress() {
         return locAddr;
     }
 
@@ -1149,14 +1160,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@link #DFLT_PORT}.
      *
      * @param locPort Port number.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLocalPort(int locPort) {
+    public TcpCommunicationSpi setLocalPort(int locPort) {
         this.locPort = locPort;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getLocalPort() {
+    /**
+     * See {@link #setLocalPort(int)}.
+     *
+     * @return Port number.
+     */
+    public int getLocalPort() {
         return locPort;
     }
 
@@ -1175,19 +1193,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@link #DFLT_PORT_RANGE}.
      *
      * @param locPortRange New local port range.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setLocalPortRange(int locPortRange) {
+    public TcpCommunicationSpi setLocalPortRange(int locPortRange) {
         this.locPortRange = locPortRange;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getLocalPortRange() {
+    /**
+     * See {@link #setLocalPortRange(int)}.
+     *
+     * @return Local Port range.
+     */
+    public int getLocalPortRange() {
         return locPortRange;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isUsePairedConnections() {
+    /**
+     * See {@link #setUsePairedConnections(boolean)}.
+     *
+     * @return {@code true} to use paired connections and {@code false} otherwise.
+     */
+    public boolean isUsePairedConnections() {
         return usePairedConnections;
     }
 
@@ -1205,9 +1234,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param usePairedConnections {@code true} to use paired connections and {@code false} otherwise.
      * @see #getConnectionsPerNode()
+     * @return {@code this} for chaining.
      */
-    public void setUsePairedConnections(boolean usePairedConnections) {
+    public TcpCommunicationSpi setUsePairedConnections(boolean usePairedConnections) {
         this.usePairedConnections = usePairedConnections;
+
+        return this;
     }
 
     /**
@@ -1217,13 +1249,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @param maxConnectionsPerNode Number of connections per node.
      * @see #isUsePairedConnections()
+     * @return {@code this} for chaining.
      */
-    public void setConnectionsPerNode(int maxConnectionsPerNode) {
+    public TcpCommunicationSpi setConnectionsPerNode(int maxConnectionsPerNode) {
         this.connectionsPerNode = maxConnectionsPerNode;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getConnectionsPerNode() {
+    /**
+     * See {@link #setConnectionsPerNode(int)}.
+     *
+     *  @return Number of connections per node.
+     */
+    public int getConnectionsPerNode() {
         return connectionsPerNode;
     }
 
@@ -1235,14 +1274,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@link #DFLT_SHMEM_PORT}.
      *
      * @param shmemPort Port number.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setSharedMemoryPort(int shmemPort) {
+    public TcpCommunicationSpi setSharedMemoryPort(int shmemPort) {
         this.shmemPort = shmemPort;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getSharedMemoryPort() {
+    /**
+     * See {@link #setSharedMemoryPort(int)}.
+     *
+     * @return Port number.
+     */
+    public int getSharedMemoryPort() {
         return shmemPort;
     }
 
@@ -1253,19 +1299,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@link #DFLT_IDLE_CONN_TIMEOUT}.
      *
      * @param idleConnTimeout Maximum idle connection time.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setIdleConnectionTimeout(long idleConnTimeout) {
+    public TcpCommunicationSpi setIdleConnectionTimeout(long idleConnTimeout) {
         this.idleConnTimeout = idleConnTimeout;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getIdleConnectionTimeout() {
+    /**
+     * See {@link #setIdleConnectionTimeout(long)}.
+     *
+     * @return Maximum idle connection time.
+     */
+    public long getIdleConnectionTimeout() {
         return idleConnTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getSocketWriteTimeout() {
+    /**
+     * See {@link #setSocketWriteTimeout(long)}.
+     *
+     * @return Socket write timeout for TCP connections.
+     */
+    public long getSocketWriteTimeout() {
         return sockWriteTimeout;
     }
 
@@ -1276,14 +1333,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Default to {@link #DFLT_SOCK_WRITE_TIMEOUT}.
      *
      * @param sockWriteTimeout Socket write timeout for TCP connection.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setSocketWriteTimeout(long sockWriteTimeout) {
+    public TcpCommunicationSpi setSocketWriteTimeout(long sockWriteTimeout) {
         this.sockWriteTimeout = sockWriteTimeout;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getAckSendThreshold() {
+    /**
+     * See {@link #setAckSendThreshold(int)}.
+     *
+     * @return Number of received messages after which acknowledgment is sent.
+     */
+    public int getAckSendThreshold() {
         return ackSndThreshold;
     }
 
@@ -1293,14 +1357,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Default to {@link #DFLT_ACK_SND_THRESHOLD}.
      *
      * @param ackSndThreshold Number of received messages after which acknowledgment is sent.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setAckSendThreshold(int ackSndThreshold) {
+    public TcpCommunicationSpi setAckSendThreshold(int ackSndThreshold) {
         this.ackSndThreshold = ackSndThreshold;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getUnacknowledgedMessagesBufferSize() {
+    /**
+     * See {@link #setUnacknowledgedMessagesBufferSize(int)}.
+     *
+     * @return Maximum number of unacknowledged messages.
+     */
+    public int getUnacknowledgedMessagesBufferSize() {
         return unackedMsgsBufSize;
     }
 
@@ -1310,42 +1381,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * closed and reconnect is attempted.
      *
      * @param unackedMsgsBufSize Maximum number of unacknowledged messages.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setUnacknowledgedMessagesBufferSize(int unackedMsgsBufSize) {
+    public TcpCommunicationSpi setUnacknowledgedMessagesBufferSize(int unackedMsgsBufSize) {
         this.unackedMsgsBufSize = unackedMsgsBufSize;
-    }
 
-    /**
-     * Sets connection buffer size. If set to {@code 0} connection buffer is disabled.
-     *
-     * @param connBufSize Connection buffer size.
-     * @see #setConnectionBufferFlushFrequency(long)
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    @IgniteSpiConfiguration(optional = true)
-    public void setConnectionBufferSize(int connBufSize) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public int getConnectionBufferSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @IgniteSpiConfiguration(optional = true)
-    @Override public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public long getConnectionBufferFlushFrequency() {
-        return 0;
+        return this;
     }
 
     /**
@@ -1359,16 +1401,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * When this property is explicitly set {@link IgniteConfiguration#getFailureDetectionTimeout()} is ignored.
      *
      * @param connTimeout Connect timeout.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setConnectTimeout(long connTimeout) {
+    public TcpCommunicationSpi setConnectTimeout(long connTimeout) {
         this.connTimeout = connTimeout;
 
         failureDetectionTimeoutEnabled(false);
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getConnectTimeout() {
+    /**
+     * See {@link #setConnectTimeout(long)}.
+     *
+     * @return Connect timeout.
+     */public long getConnectTimeout() {
         return connTimeout;
     }
 
@@ -1385,16 +1433,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * When this property is explicitly set {@link IgniteConfiguration#getFailureDetectionTimeout()} is ignored.
      *
      * @param maxConnTimeout Maximum connect timeout.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMaxConnectTimeout(long maxConnTimeout) {
+    public TcpCommunicationSpi setMaxConnectTimeout(long maxConnTimeout) {
         this.maxConnTimeout = maxConnTimeout;
 
         failureDetectionTimeoutEnabled(false);
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMaxConnectTimeout() {
+    /**
+     * Gets maximum connect timeout.
+     *
+     * @return Maximum connect timeout.
+     */
+    public long getMaxConnectTimeout() {
         return maxConnTimeout;
     }
 
@@ -1407,16 +1462,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * When this property is explicitly set {@link IgniteConfiguration#getFailureDetectionTimeout()} is ignored.
      *
      * @param reconCnt Maximum number of reconnection attempts.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setReconnectCount(int reconCnt) {
+    public TcpCommunicationSpi setReconnectCount(int reconCnt) {
         this.reconCnt = reconCnt;
 
         failureDetectionTimeoutEnabled(false);
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getReconnectCount() {
+    /**
+     * Gets maximum number of reconnect attempts used when establishing connection
+     * with remote nodes.
+     *
+     * @return Reconnects count.
+     */
+    public int getReconnectCount() {
         return reconCnt;
     }
 
@@ -1428,32 +1491,46 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@code true}.
      *
      * @param directBuf Flag indicates to allocate direct or heap buffer in SPI.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setDirectBuffer(boolean directBuf) {
+    public TcpCommunicationSpi setDirectBuffer(boolean directBuf) {
         this.directBuf = directBuf;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isDirectBuffer() {
+    /**
+     * Gets flag that indicates whether direct or heap allocated buffer is used.
+     *
+     * @return Flag that indicates whether direct or heap allocated buffer is used.
+     */
+    public boolean isDirectBuffer() {
         return directBuf;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isDirectSendBuffer() {
+    /**
+     * Gets flag defining whether direct send buffer should be used.
+     *
+     * @return {@code True} if direct buffers should be used.
+     */
+    public boolean isDirectSendBuffer() {
         return directSndBuf;
     }
 
     /**
      * Sets whether to use direct buffer for sending.
-     * <p>
+     *
      * If not provided default is {@code false}.
      *
      * @param directSndBuf {@code True} to use direct buffers for send.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setDirectSendBuffer(boolean directSndBuf) {
+    public TcpCommunicationSpi setDirectSendBuffer(boolean directSndBuf) {
         this.directSndBuf = directSndBuf;
+
+        return this;
     }
 
     /**
@@ -1462,19 +1539,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@link #DFLT_SELECTORS_CNT}.
      *
      * @param selectorsCnt Selectors count.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setSelectorsCount(int selectorsCnt) {
+    public TcpCommunicationSpi setSelectorsCount(int selectorsCnt) {
         this.selectorsCnt = selectorsCnt;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getSelectorsCount() {
+    /**
+     * See {@link #setSelectorsCount(int)}.
+     *
+     * @return Count of selectors in TCP server.
+     */
+    public int getSelectorsCount() {
         return selectorsCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getSelectorSpins() {
+    /**
+     * See {@link #setSelectorSpins(long)}.
+     *
+     * @return Selector thread busy-loop iterations.
+     */
+    public long getSelectorSpins() {
         return selectorSpins;
     }
 
@@ -1484,9 +1572,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Can be set to {@code Long.MAX_VALUE} so selector threads will never block.
      *
      * @param selectorSpins Selector thread busy-loop iterations.
+     * @return {@code this} for chaining.
      */
-    public void setSelectorSpins(long selectorSpins) {
+    public TcpCommunicationSpi setSelectorSpins(long selectorSpins) {
         this.selectorSpins = selectorSpins;
+
+        return this;
     }
 
     /**
@@ -1502,14 +1593,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default value is {@link #DFLT_TCP_NODELAY}.
      *
      * @param tcpNoDelay {@code True} to disable TCP delay.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setTcpNoDelay(boolean tcpNoDelay) {
+    public TcpCommunicationSpi setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isTcpNoDelay() {
+    /**
+     * Gets value for {@code TCP_NODELAY} socket option.
+     *
+     * @return {@code True} if TCP delay is disabled.
+     */
+    public boolean isTcpNoDelay() {
         return tcpNoDelay;
     }
 
@@ -1519,14 +1617,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @param sockRcvBuf Socket receive buffer size.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setSocketReceiveBuffer(int sockRcvBuf) {
+    public TcpCommunicationSpi setSocketReceiveBuffer(int sockRcvBuf) {
         this.sockRcvBuf = sockRcvBuf;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getSocketReceiveBuffer() {
+    /**
+     * See {@link #setSocketReceiveBuffer(int)}.
+     *
+     * @return Socket receive buffer size.
+     */
+    public int getSocketReceiveBuffer() {
         return sockRcvBuf;
     }
 
@@ -1536,14 +1641,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @param sockSndBuf Socket send buffer size.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setSocketSendBuffer(int sockSndBuf) {
+    public TcpCommunicationSpi setSocketSendBuffer(int sockSndBuf) {
         this.sockSndBuf = sockSndBuf;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getSocketSendBuffer() {
+    /**
+     * See {@link #setSocketSendBuffer(int)}.
+     *
+     * @return Socket send buffer size.
+     */
+    public int getSocketSendBuffer() {
         return sockSndBuf;
     }
 
@@ -1556,19 +1668,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * If not provided, default is {@link #DFLT_MSG_QUEUE_LIMIT}.
      *
      * @param msgQueueLimit Send queue size limit.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMessageQueueLimit(int msgQueueLimit) {
+    public TcpCommunicationSpi setMessageQueueLimit(int msgQueueLimit) {
         this.msgQueueLimit = msgQueueLimit;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMessageQueueLimit() {
+    /**
+     * Gets message queue limit for incoming and outgoing messages.
+     *
+     * @return Send queue size limit.
+     */
+    public int getMessageQueueLimit() {
         return msgQueueLimit;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getSlowClientQueueLimit() {
+    /**
+     * See {@link #setSlowClientQueueLimit(int)}.
+     *
+     * @return Slow client queue limit.
+     */
+    public int getSlowClientQueueLimit() {
         return slowClientQueueLimit;
     }
 
@@ -1583,28 +1706,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * which means {@code unlimited}.
      *
      * @param slowClientQueueLimit Slow client queue limit.
+     * @return {@code this} for chaining.
      */
-    public void setSlowClientQueueLimit(int slowClientQueueLimit) {
+    public TcpCommunicationSpi setSlowClientQueueLimit(int slowClientQueueLimit) {
         this.slowClientQueueLimit = slowClientQueueLimit;
-    }
 
-    /**
-     * Sets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @param minBufferedMsgCnt Minimum buffered message count.
-     * @deprecated Not used any more.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public void setMinimumBufferedMessageCount(int minBufferedMsgCnt) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated
-    @Override public int getMinimumBufferedMessageCount() {
-        return 0;
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -1656,8 +1763,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         rcvdBytesCnt.add(-rcvdBytesCnt.sum());
     }
 
-    /** {@inheritDoc} */
-    @Override public void dumpStats() {
+    /**
+     * Dumps SPI per-connection stats to logs.
+     */
+    public void dumpStats() {
         IgniteLogger log = this.log;
 
         if (log != null) {
@@ -1879,7 +1988,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
 
-        registerMBean(igniteInstanceName, this, TcpCommunicationSpiMBean.class);
+        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this), TcpCommunicationSpiMBean.class);
 
         connectGate = new ConnectGateway();
 
@@ -2618,7 +2727,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         long connTimeout0 = connTimeout;
 
-        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
+        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
+            !node.isClient());
 
         while (true) {
             GridCommunicationClient client;
@@ -2775,22 +2885,27 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
 
-        for (InetSocketAddress addr : addrs)
-            allInetAddrs.add(addr.getAddress());
+        for (InetSocketAddress addr : addrs) {
+            // Skip unresolved as addr.getAddress() can return null.
+            if(!addr.isUnresolved())
+                allInetAddrs.add(addr.getAddress());
+        }
 
         List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
 
         if (reachableInetAddrs.size() < allInetAddrs.size()) {
             LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
 
+            List<InetSocketAddress> unreachableInetAddr = new ArrayList<>(allInetAddrs.size() - reachableInetAddrs.size());
+
             for (InetSocketAddress addr : addrs) {
                 if (reachableInetAddrs.contains(addr.getAddress()))
                     addrs0.add(addr);
+                else
+                    unreachableInetAddr.add(addr);
             }
-            for (InetSocketAddress addr : addrs) {
-                if (!reachableInetAddrs.contains(addr.getAddress()))
-                    addrs0.add(addr);
-            }
+
+            addrs0.addAll(unreachableInetAddr);
 
             addrs = addrs0;
         }
@@ -2809,7 +2924,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             int attempt = 1;
 
-            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
+            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
+                !node.isClient());
 
             while (!conn) { // Reconnection on handshake timeout.
                 try {
@@ -3161,7 +3277,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
 
                         if (log.isDebugEnabled())
-                            log.debug("Write handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
+                            log.debug("Writing handshake message [locNodeId=" + locNode.id() +
+                                ", rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
                         buf = ByteBuffer.allocate(msgSize);
 
@@ -3199,10 +3316,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             assert sslHnd != null;
 
                             buf = ByteBuffer.allocate(1000);
-
-                            ByteBuffer decode = null;
-
                             buf.order(ByteOrder.nativeOrder());
+
+                            ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
+                            decode.order(ByteOrder.nativeOrder());
 
                             for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);
@@ -3213,12 +3330,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 buf.flip();
 
-                                decode = sslHnd.decode(buf);
+                                ByteBuffer decode0 = sslHnd.decode(buf);
 
-                                i += decode.remaining();
+                                i += decode0.remaining();
+
+                                decode = appendAndResizeIfNeeded(decode, decode0);
 
                                 buf.clear();
                             }
+
+                            decode.flip();
 
                             rcvCnt = decode.getLong(Message.DIRECT_TYPE_SIZE);
 
@@ -3308,6 +3429,31 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * @param target Target buffer to append to.
+     * @param src Source buffer to get data.
+     * @return Original or expanded buffer.
+     */
+    private ByteBuffer appendAndResizeIfNeeded(ByteBuffer target, ByteBuffer src) {
+        if (target.remaining() < src.remaining()) {
+            int newSize = Math.max(target.capacity() * 2, target.capacity() + src.remaining());
+
+            ByteBuffer tmp = ByteBuffer.allocate(newSize);
+
+            tmp.order(target.order());
+
+            target.flip();
+
+            tmp.put(target);
+
+            target = tmp;
+        }
+
+        target.put(src);
+
+        return target;
+    }
+
+    /**
      * Stops service threads to simulate node failure.
      *
      * FOR TEST PURPOSES ONLY!!!
@@ -3381,6 +3527,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         GridNioRecoveryDescriptor recovery = recoveryDescs.get(key);
 
         if (recovery == null) {
+            if (log.isDebugEnabled())
+                log.debug("Missing recovery descriptor for the node (will create a new one) " +
+                    "[locNodeId=" + getLocalNode().id() +
+                    ", key=" + key + ", rmtNode=" + node + ']');
+
             int maxSize = Math.max(msgQueueLimit, ackSndThreshold);
 
             int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 128);
@@ -3388,8 +3539,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridNioRecoveryDescriptor old = recoveryDescs.putIfAbsent(key,
                 recovery = new GridNioRecoveryDescriptor(pairedConnections, queueLimit, node, log));
 
-            if (old != null)
+            if (old != null) {
                 recovery = old;
+
+                if (log.isDebugEnabled())
+                    log.debug("Will use existing recovery descriptor: " + recovery);
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Initialized recovery descriptor [desc=" + recovery + ", maxSize=" + maxSize +
+                        ", queueLimit=" + queueLimit + ']');
+            }
         }
 
         return recovery;
@@ -3421,6 +3581,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             id = locNode.id();
 
         return new NodeIdMessage(id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpCommunicationSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -3854,9 +4021,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      */
     private static class ConnectFuture extends GridFutureAdapter<GridCommunicationClient> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         // No-op.
     }
 
@@ -4561,5 +4725,155 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @return Thread connection index.
          */
         int connectionIndex();
+    }
+
+    /**
+     * MBean implementation for TcpCommunicationSpi.
+     */
+    private class TcpCommunicationSpiMBeanImpl extends IgniteSpiMBeanAdapter implements TcpCommunicationSpiMBean {
+        /** {@inheritDoc} */
+        TcpCommunicationSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLocalAddress() {
+            return TcpCommunicationSpi.this.getLocalAddress();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPort() {
+            return TcpCommunicationSpi.this.getLocalPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPortRange() {
+            return TcpCommunicationSpi.this.getLocalPortRange();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isUsePairedConnections() {
+            return TcpCommunicationSpi.this.isUsePairedConnections();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getConnectionsPerNode() {
+            return TcpCommunicationSpi.this.getConnectionsPerNode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSharedMemoryPort() {
+            return TcpCommunicationSpi.this.getSharedMemoryPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getIdleConnectionTimeout() {
+            return TcpCommunicationSpi.this.getIdleConnectionTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSocketWriteTimeout() {
+            return TcpCommunicationSpi.this.getSocketWriteTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getAckSendThreshold() {
+            return TcpCommunicationSpi.this.getAckSendThreshold();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getUnacknowledgedMessagesBufferSize() {
+            return TcpCommunicationSpi.this.getUnacknowledgedMessagesBufferSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getConnectTimeout() {
+            return TcpCommunicationSpi.this.getConnectTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxConnectTimeout() {
+            return TcpCommunicationSpi.this.getMaxConnectTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReconnectCount() {
+            return TcpCommunicationSpi.this.getReconnectCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDirectBuffer() {
+            return TcpCommunicationSpi.this.isDirectBuffer();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDirectSendBuffer() {
+            return TcpCommunicationSpi.this.isDirectSendBuffer();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSelectorsCount() {
+            return TcpCommunicationSpi.this.getSelectorsCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSelectorSpins() {
+            return TcpCommunicationSpi.this.getSelectorSpins();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isTcpNoDelay() {
+            return TcpCommunicationSpi.this.isTcpNoDelay();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSocketReceiveBuffer() {
+            return TcpCommunicationSpi.this.getSocketReceiveBuffer();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSocketSendBuffer() {
+            return TcpCommunicationSpi.this.getSocketSendBuffer();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMessageQueueLimit() {
+            return TcpCommunicationSpi.this.getMessageQueueLimit();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSlowClientQueueLimit() {
+            return TcpCommunicationSpi.this.getSlowClientQueueLimit();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dumpStats() {
+            TcpCommunicationSpi.this.dumpStats();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSentMessagesCount() {
+            return TcpCommunicationSpi.this.getSentMessagesCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSentBytesCount() {
+            return TcpCommunicationSpi.this.getSentBytesCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReceivedMessagesCount() {
+            return TcpCommunicationSpi.this.getReceivedMessagesCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getReceivedBytesCount() {
+            return TcpCommunicationSpi.this.getReceivedBytesCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOutboundMessagesQueueSize() {
+            return TcpCommunicationSpi.this.getOutboundMessagesQueueSize();
+        }
     }
 }

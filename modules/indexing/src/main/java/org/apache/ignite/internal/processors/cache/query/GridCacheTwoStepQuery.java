@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -49,13 +48,7 @@ public class GridCacheTwoStepQuery {
     private String originalSql;
 
     /** */
-    private Collection<String> spaces;
-
-    /** */
-    private Set<String> schemas;
-
-    /** */
-    private Set<String> tbls;
+    private Set<QueryTable> tbls;
 
     /** */
     private boolean distributedJoins;
@@ -64,22 +57,17 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /** */
-    private List<Integer> caches;
-
-    /** */
-    private List<Integer> extraCaches;
+    private List<Integer> cacheIds;
 
     /** */
     private boolean local;
 
     /**
      * @param originalSql Original query SQL.
-     * @param schemas Schema names in query.
      * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(String originalSql, Set<String> schemas, Set<String> tbls) {
+    public GridCacheTwoStepQuery(String originalSql, Set<QueryTable> tbls) {
         this.originalSql = originalSql;
-        this.schemas = schemas;
         this.tbls = tbls;
     }
 
@@ -95,7 +83,7 @@ public class GridCacheTwoStepQuery {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean distributedJoins() {
         return distributedJoins;
@@ -146,12 +134,23 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param qry SQL Query.
-     * @return {@code this}.
      */
-    public GridCacheTwoStepQuery addMapQuery(GridCacheSqlQuery qry) {
+    public void addMapQuery(GridCacheSqlQuery qry) {
         mapQrys.add(qry);
+    }
 
-        return this;
+    /**
+     * @return {@code true} If all the map queries contain only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        assert !mapQrys.isEmpty();
+
+        for (GridCacheSqlQuery mapQry : mapQrys) {
+            if (mapQry.isPartitioned())
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -176,31 +175,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Caches.
+     * @return Cache IDs.
      */
-    public List<Integer> caches() {
-        return caches;
+    public List<Integer> cacheIds() {
+        return cacheIds;
     }
 
     /**
-     * @param caches Caches.
+     * @param cacheIds Cache IDs.
      */
-    public void caches(List<Integer> caches) {
-        this.caches = caches;
-    }
-
-    /**
-     * @return Caches.
-     */
-    public List<Integer> extraCaches() {
-        return extraCaches;
-    }
-
-    /**
-     * @param extraCaches Caches.
-     */
-    public void extraCaches(List<Integer> extraCaches) {
-        this.extraCaches = extraCaches;
+    public void cacheIds(List<Integer> cacheIds) {
+        this.cacheIds = cacheIds;
     }
 
     /**
@@ -208,27 +193,6 @@ public class GridCacheTwoStepQuery {
      */
     public String originalSql() {
         return originalSql;
-    }
-
-    /**
-     * @return Spaces.
-     */
-    public Collection<String> spaces() {
-        return spaces;
-    }
-
-    /**
-     * @param spaces Spaces.
-     */
-    public void spaces(Collection<String> spaces) {
-        this.spaces = spaces;
-    }
-
-    /**
-     * @return Schemas.
-     */
-    public Set<String> schemas() {
-        return schemas;
     }
 
     /**
@@ -246,32 +210,36 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param args New arguments to copy with.
      * @return Copy.
      */
-    public GridCacheTwoStepQuery copy(Object[] args) {
+    public GridCacheTwoStepQuery copy() {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, schemas, tbls);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, tbls);
 
-        cp.caches = caches;
-        cp.extraCaches = extraCaches;
-        cp.spaces = spaces;
-        cp.rdc = rdc.copy(args);
+        cp.cacheIds = cacheIds;
+        cp.rdc = rdc.copy();
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
 
         for (int i = 0; i < mapQrys.size(); i++)
-            cp.mapQrys.add(mapQrys.get(i).copy(args));
+            cp.mapQrys.add(mapQrys.get(i).copy());
 
         return cp;
     }
 
     /**
+     * @return Nuumber of tables.
+     */
+    public int tablesCount() {
+        return tbls.size();
+    }
+
+    /**
      * @return Tables.
      */
-    public Set<String> tables() {
+    public Set<QueryTable> tables() {
         return tbls;
     }
 

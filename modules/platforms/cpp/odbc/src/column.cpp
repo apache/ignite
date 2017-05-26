@@ -326,22 +326,22 @@ namespace ignite
             size = sizeTmp;
         }
 
-        SqlResult Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
+        SqlResult::Type Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
         {
             if (!IsValid())
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
 
             if (GetUnreadDataLength() == 0)
             {
                 dataBuf.PutNull();
 
-                return SQL_RESULT_NO_DATA;
+                return SqlResult::AI_NO_DATA;
             }
 
             InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
 
             InteropStreamPositionGuard<InteropInputStream> guard(*stream);
 
@@ -451,7 +451,7 @@ namespace ignite
                     int32_t len;
 
                     if (!GetObjectLength(*stream, len))
-                        return SQL_RESULT_ERROR;
+                        return SqlResult::AI_ERROR;
 
                     std::vector<int8_t> data(len);
 
@@ -521,11 +521,11 @@ namespace ignite
                 default:
                 {
                     // This is a fail case. Return false.
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
             }
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
         void Column::IncreaseOffset(int32_t value)

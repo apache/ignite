@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -100,6 +101,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -117,7 +119,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             skipVals,
             canRemap,
             needVer,
-            keepCacheObjects);
+            keepCacheObjects,
+            recovery);
 
         this.topVer = topVer;
 
@@ -183,7 +186,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param nodeId Sender.
      * @param res Result.
      */
-    public void onResult(UUID nodeId, GridNearGetResponse res) {
+    @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         for (IgniteInternalFuture<Map<K, V>> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
@@ -239,6 +242,16 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return;
         }
 
+        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, null, keys) : null;
+
+        if (err != null) {
+            onDone(err);
+
+            return;
+        }
+
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
 
         final int keysSize = keys.size();
@@ -284,7 +297,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         expiryPlc,
-                        skipVals);
+                        skipVals,
+                        recovery);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -338,7 +352,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     expiryPlc != null ? expiryPlc.forCreate() : -1L,
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
                     skipVals,
-                    cctx.deploymentEnabled());
+                    cctx.deploymentEnabled(),
+                    recovery);
 
                 add(fut); // Append new future.
 
@@ -431,79 +446,107 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         GridDhtCacheAdapter<K, V> cache = cache();
 
+        boolean readNoEntry = cctx.readNoEntry(expiryPlc, false);
+        boolean evt = !skipVals;
+
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
+                boolean skipEntry = readNoEntry;
 
-                // If our DHT cache do has value, then we peek it.
-                if (entry != null) {
-                    boolean isNew = entry.isNewLocked();
+                EntryGetResult getRes = null;
+                CacheObject v = null;
+                GridCacheVersion ver = null;
 
-                    EntryGetResult getRes = null;
-                    CacheObject v = null;
-                    GridCacheVersion ver = null;
+                if (readNoEntry) {
+                    CacheDataRow row = cctx.offheap().read(key);
 
-                    if (needVer) {
-                        getRes = entry.innerGetVersioned(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            !deserializeBinary,
-                            null);
+                    if (row != null) {
+                        long expireTime = row.expireTime();
 
-                        if (getRes != null) {
-                            v = getRes.value();
-                            ver = getRes.version();
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                            v = row.value();
+
+                            if (needVer)
+                                ver = row.version();
+
+                            if (evt) {
+                                cctx.events().readEvent(key,
+                                    null,
+                                    row.value(),
+                                    subjId,
+                                    taskName,
+                                    !deserializeBinary);
+                            }
+                        }
+                        else
+                            skipEntry = false;
+                    }
+                }
+
+                if (!skipEntry) {
+                    GridCacheEntryEx entry = cache.entryEx(key);
+
+                    // If our DHT cache do has value, then we peek it.
+                    if (entry != null) {
+                        boolean isNew = entry.isNewLocked();
+
+                        if (needVer) {
+                            getRes = entry.innerGetVersioned(
+                                null,
+                                null,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                !deserializeBinary,
+                                null);
+
+                            if (getRes != null) {
+                                v = getRes.value();
+                                ver = getRes.version();
+                            }
+                        }
+                        else {
+                            v = entry.innerGet(
+                                null,
+                                null,
+                                /*read-through*/false,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                !deserializeBinary);
+                        }
+
+                        cache.context().evicts().touch(entry, topVer);
+
+                        // Entry was not in memory or in swap, so we remove it from cache.
+                        if (v == null) {
+                            if (isNew && entry.markObsoleteIfEmpty(ver))
+                                cache.removeEntry(entry);
                         }
                     }
-                    else {
-                        v = entry.innerGet(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*read-through*/false,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            /*temporary*/false,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            !deserializeBinary);
-                    }
+                }
 
-                    cache.context().evicts().touch(entry, topVer);
+                if (v != null) {
+                    cctx.addResult(locVals,
+                        key,
+                        v,
+                        skipVals,
+                        keepCacheObjects,
+                        deserializeBinary,
+                        true,
+                        getRes,
+                        ver,
+                        0,
+                        0,
+                        needVer);
 
-                    // Entry was not in memory or in swap, so we remove it from cache.
-                    if (v == null) {
-                        if (isNew && entry.markObsoleteIfEmpty(ver))
-                            cache.removeEntry(entry);
-                    }
-                    else {
-                        cctx.addResult(locVals,
-                            key,
-                            v,
-                            skipVals,
-                            keepCacheObjects,
-                            deserializeBinary,
-                            true,
-                            getRes,
-                            ver,
-                            0,
-                            0,
-                            needVer);
-
-                        return true;
-                    }
+                    return true;
                 }
 
                 boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
@@ -595,9 +638,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Map<K, V>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

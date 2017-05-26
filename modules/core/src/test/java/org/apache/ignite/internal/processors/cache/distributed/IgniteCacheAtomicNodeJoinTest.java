@@ -17,21 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  *
  */
 public class IgniteCacheAtomicNodeJoinTest extends IgniteCacheNodeJoinAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {

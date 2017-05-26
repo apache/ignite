@@ -70,7 +70,7 @@ namespace ignite
          * @param cfg Configuration.
          * @param binding Binding.
          */
-        IgniteBindingContext(const IgniteConfiguration& cfg, IgniteBinding binding) :
+        IgniteBindingContext(const IgniteConfiguration& cfg, const IgniteBinding& binding) :
             cfg(cfg),
             binding(binding)
         {

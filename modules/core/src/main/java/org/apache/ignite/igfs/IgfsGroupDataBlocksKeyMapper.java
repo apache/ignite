@@ -124,9 +124,12 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
      * Set group size. See {@link #getGroupSize()} for more information.
      *
      * @param grpSize Group size.
+     * @return {@code this} for chaining.
      */
-    public void setGroupSize(int grpSize) {
+    public IgfsGroupDataBlocksKeyMapper setGroupSize(int grpSize) {
         this.grpSize = grpSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */

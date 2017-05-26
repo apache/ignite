@@ -30,6 +30,11 @@ namespace ignite
         namespace concurrent
         {
             /**
+             * Type tag for static pointer cast.
+             */
+            struct StaticTag {};
+
+            /**
              * Default deleter implementation.
              *
              * @param obj Object to be deleted.
@@ -198,6 +203,20 @@ namespace ignite
                 }
 
                 /**
+                 * Static-cast constructor.
+                 *
+                 * @param other Instance to copy.
+                 */
+                template<typename T2>
+                SharedPointer(const SharedPointer<T2>& other, StaticTag) :
+                    ptr(static_cast<T*>(other.ptr)),
+                    impl(other.impl)
+                {
+                    if (impl)
+                        impl->Increment();
+                }
+
+                /**
                  * Assignment operator.
                  *
                  * @param other Other instance.
@@ -311,6 +330,17 @@ namespace ignite
                 /** Implementation. */
                 SharedPointerImpl* impl;
             };
+
+            /**
+             * Enables static-cast semantics for SharedPointer.
+             *
+             * @param val Value to cast.
+             */
+            template<class T1, class T2>
+            SharedPointer<T1> StaticPointerCast(const SharedPointer<T2>& val)
+            {
+                return SharedPointer<T1>(val, StaticTag());
+            }
 
             /**
              * The class provides functionality that allows objects of derived

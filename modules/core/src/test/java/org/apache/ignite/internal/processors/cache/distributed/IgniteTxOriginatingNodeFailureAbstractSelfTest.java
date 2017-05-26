@@ -28,7 +28,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -134,7 +133,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).cache(DEFAULT_CACHE_NAME).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -146,7 +145,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(grid(1).affinity(null).mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(txNode);
 
@@ -163,7 +162,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> cache = txIgniteNode.cache(null);
+                IgniteCache<Integer, String> cache = txIgniteNode.cache(DEFAULT_CACHE_NAME);
 
                 assertNotNull(cache);
 
@@ -225,11 +224,11 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        IgniteCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
@@ -242,7 +241,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                 UUID locNodeId = g.cluster().localNode().id();
 
                 assertEquals("Check failed for node: " + locNodeId, partial ? initVal : e.getValue(),
-                    g.cache(null).get(e.getKey()));
+                    g.cache(DEFAULT_CACHE_NAME).get(e.getKey()));
             }
         }
     }

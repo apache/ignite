@@ -169,7 +169,6 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setOffHeapMaxMemory(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 

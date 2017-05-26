@@ -100,7 +100,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes((int[])null);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -409,7 +409,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     static class TestMessage2 extends GridCacheMessage {
         /** */
-        public static final short DIRECT_TYPE = 205;
+        public static final short DIRECT_TYPE = 201;
 
         /** Node id. */
         private UUID nodeId;

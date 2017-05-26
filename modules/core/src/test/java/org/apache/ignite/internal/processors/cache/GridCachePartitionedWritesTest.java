@@ -56,7 +56,6 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         assert store != null;

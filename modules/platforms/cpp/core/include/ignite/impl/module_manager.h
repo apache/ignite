@@ -19,6 +19,7 @@
 #define _IGNITE_IMPL_MODULE_MANAGER
 
 #include <vector>
+#include <sstream>
 
 #include <ignite/common/common.h>
 #include <ignite/common/dynamic_load_os.h>
@@ -29,6 +30,11 @@
  * Function name in which user Invoke callbacks are registred.
  */
 #define IGNITE_MODULE_INIT_CALLBACK_NAME "IgniteModuleInit"
+
+/**
+ * Max number of additional init callbacks
+ */
+#define IGNITE_MODULE_ADDITIONAL_INIT_CALLBACKS_MAX_NUM 100
 
 #define IGNITE_EXPORTED_CALL \
     extern "C" IGNITE_IMPORT_EXPORT
@@ -102,6 +108,16 @@ namespace ignite
 
                 if (callback)
                     callback(bindingContext);
+
+                for (int i = 0; i < IGNITE_MODULE_ADDITIONAL_INIT_CALLBACKS_MAX_NUM; ++i)
+                {
+                    ModuleInitCallback* callback0 = GetAdditionalModuleInitCallback(module, i);
+
+                    if (!callback0)
+                        break;
+
+                    callback0(bindingContext);
+                }
             }
 
         private:
@@ -117,6 +133,16 @@ namespace ignite
             {
                 return reinterpret_cast<ModuleInitCallback*>(
                     module.FindSymbol(IGNITE_MODULE_INIT_CALLBACK_NAME));
+            }
+
+            static ModuleInitCallback* GetAdditionalModuleInitCallback(Module& module, int num)
+            {
+                std::stringstream tmp;
+
+                tmp << IGNITE_MODULE_INIT_CALLBACK_NAME << num;
+
+                return reinterpret_cast<ModuleInitCallback*>(
+                    module.FindSymbol(tmp.str()));
             }
 
             /** Collection of loaded modules. */

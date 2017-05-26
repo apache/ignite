@@ -110,6 +110,10 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
+    @SuppressWarnings("unused")
+    public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -262,6 +266,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME_ARR] = "Time[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
 
         if (wrapTrees()) {
             CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
@@ -971,6 +976,14 @@ public class BinaryUtils {
 
             boolean changed = false;
 
+            Map<String, Integer> mergedEnumMap = null;
+
+            if (!F.isEmpty(newMeta.enumMap())) {
+                mergedEnumMap = mergeEnumValues(oldMeta.typeName(), oldMeta.enumMap(), newMeta.enumMap());
+
+                changed = mergedEnumMap.size() > oldMeta.enumMap().size();
+            }
+
             for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
                 BinaryFieldMetadata oldFieldMeta = mergedFields.put(newField.getKey(), newField.getValue());
 
@@ -1001,7 +1014,7 @@ public class BinaryUtils {
 
             // Return either old meta if no changes detected, or new merged meta.
             return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
-                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum()) : oldMeta;
+                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum(), mergedEnumMap) : oldMeta;
         }
     }
 
@@ -1102,6 +1115,8 @@ public class BinaryUtils {
             return BinaryWriteMode.MAP;
         else if (cls.isEnum())
             return BinaryWriteMode.ENUM;
+        else if (cls == BinaryEnumObjectImpl.class)
+            return BinaryWriteMode.BINARY_ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
         else if (Proxy.class.isAssignableFrom(cls))
@@ -1447,7 +1462,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx) {
+    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1463,7 +1478,15 @@ public class BinaryUtils {
             byte[] arr = doReadByteArray(in);
             int start = in.readInt();
 
-            return new BinaryObjectImpl(ctx, arr, start);
+            BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
+
+            if (detach) {
+                binO.detachAllowed(true);
+
+                return binO.detach();
+            }
+
+            return binO;
         }
     }
 
@@ -1562,7 +1585,7 @@ public class BinaryUtils {
         Class cls;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
         else {
             String clsName = doReadClassName(in);
 
@@ -1608,6 +1631,17 @@ public class BinaryUtils {
         }
 
         return cls;
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param in Input stream.
+     * @param ctx Binary context.
+     * @return Enum.
+     */
+    public static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
     }
 
     /**
@@ -1888,9 +1922,10 @@ public class BinaryUtils {
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
-                return doReadBinaryObject(in, ctx);
+                return doReadBinaryObject(in, ctx, detach);
 
             case GridBinaryMarshaller.ENUM:
+            case GridBinaryMarshaller.BINARY_ENUM:
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
@@ -2341,6 +2376,85 @@ public class BinaryUtils {
      */
     public static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
+    }
+
+    /**
+     * Checks enum values mapping.
+     *
+     * @param typeName Name of the type.
+     * @param enumValues Enum name to ordinal mapping.
+     * @throws BinaryObjectException
+     */
+    public static void validateEnumValues(String typeName, @Nullable Map<String, Integer> enumValues)
+            throws BinaryObjectException {
+
+        if (enumValues == null)
+            return;
+
+        Map<Integer, String> tmpMap = new LinkedHashMap<>(enumValues.size());
+        for (Map.Entry<String, Integer> e: enumValues.entrySet()) {
+
+            String prevName = tmpMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null)
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+        }
+    }
+
+    /**
+     * Merges enum value mappings and checks for conflicts.
+     *
+     * Possible conflicts:
+     * - same name is used for different ordinal values.
+     * - ordinal value is used more than once.
+     *
+     * @param typeName Name of the type.
+     * @param oldValues Old enum value mapping.
+     * @param newValues New enum value mapping.
+     * @throws BinaryObjectException in case of name or value conflict.
+     */
+    public static Map<String, Integer> mergeEnumValues(String typeName,
+            @Nullable Map<String, Integer> oldValues,
+            Map<String, Integer> newValues)
+            throws BinaryObjectException {
+
+        assert newValues != null;
+
+        int size = (oldValues != null) ? oldValues.size() + newValues.size() : newValues.size();
+
+        Map<Integer, String> revMap = new LinkedHashMap<>(size);
+        Map<String, Integer> mergedMap = new LinkedHashMap<>(size);
+
+        if (oldValues != null) {
+            //assuming that old values were validated earlier once.
+            for (Map.Entry<String, Integer> e : oldValues.entrySet()) {
+                revMap.put(e.getValue(), e.getKey());
+                mergedMap.put(e.getKey(), e.getValue());
+            }
+        }
+
+        for (Map.Entry<String, Integer> e: newValues.entrySet()) {
+            String prevName = revMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null && !prevName.equals(e.getKey()))
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+
+            Integer prevVal = mergedMap.put(e.getKey(), e.getValue());
+
+            if (prevVal != null && !prevVal.equals(e.getValue()))
+                throw new BinaryObjectException("Conflicting enum values. Value (" + e.getValue() +
+                        ") has name '" + e.getKey() +
+                        "' that is also used for value '" + prevVal +
+                        "' [typeName='" + typeName + "']");
+        }
+
+        return mergedMap;
     }
 
     /**

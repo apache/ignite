@@ -40,7 +40,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
-                    <property name="startSize" value="10"/>
                 </bean>
             </list>
         </property>
@@ -61,16 +60,6 @@
                             <property name="enum" value="true" />
                         </bean>
                     </list>
-                </property>
-                <property name="idMapper">
-                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
-                        <constructor-arg value="true"/>
-                    </bean>
-                </property>
-                <property name="nameMapper">
-                    <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
-                        <constructor-arg value="true"/>
-                    </bean>
                 </property>
             </bean>
         </property>

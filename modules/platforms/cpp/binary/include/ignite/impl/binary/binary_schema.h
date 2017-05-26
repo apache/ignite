@@ -38,16 +38,19 @@ namespace ignite
             /**
              * Schema size variants.
              */
-            enum BinaryOffsetType
+            struct BinaryOffsetType
             {
-                /** Means all field offsets can be fit in one byte. */
-                OFFSET_TYPE_ONE_BYTE,
+                enum Type
+                {
+                    /** Means all field offsets can be fit in one byte. */
+                    ONE_BYTE,
 
-                /** Means all field offsets can be fit in two bytes. */
-                OFFSET_TYPE_TWO_BYTES,
+                    /** Means all field offsets can be fit in two bytes. */
+                    TWO_BYTES,
 
-                /** Means field offsets should be stored in four bytes. */
-                OFFSET_TYPE_FOUR_BYTES
+                    /** Means field offsets should be stored in four bytes. */
+                    FOUR_BYTES
+                };
             };
 
             /**
@@ -108,7 +111,7 @@ namespace ignite
                  *
                  * @return Type of schema.
                  */
-                BinaryOffsetType GetType() const;
+                BinaryOffsetType::Type GetType() const;
 
             private:
                 /**

@@ -184,6 +184,8 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         // Generate discovery group.
         static clusterDiscovery(discovery, cfg = this.igniteConfigurationBean()) {
             if (discovery) {
+                // TODO IGNITE-4988 cfg.intProperty('metricsUpdateFrequency')
+
                 let discoveryCfg = cfg.findProperty('discovery');
 
                 if (_.isNil(discoveryCfg)) {
@@ -200,9 +202,6 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
                     .intProperty('networkTimeout')
                     .intProperty('joinTimeout')
                     .intProperty('threadPriority')
-                    .intProperty('heartbeatFrequency')
-                    .intProperty('maxMissedHeartbeats')
-                    .intProperty('maxMissedClientHeartbeats')
                     .intProperty('topHistorySize')
                     .intProperty('reconnectCount')
                     .intProperty('statisticsPrintFrequency')
@@ -282,6 +281,8 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
                     .intProperty('readFromBackup');
             }
 
+            ccfg.enumProperty('partitionLossPolicy');
+
             ccfg.intProperty('copyOnRead');
 
             if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
@@ -292,23 +293,14 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
         // Generate cache memory group.
         static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
-            ccfg.enumProperty('memoryMode');
-
-            if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
-                ccfg.intProperty('offHeapMaxMemory');
-
             // this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
-
-            ccfg.intProperty('startSize')
-                .boolProperty('swapEnabled', 'EnableSwap');
 
             return ccfg;
         }
 
         // Generate cache queries & Indexing group.
         static cacheQuery(cache, domains, ccfg = this.cacheConfigurationBean(cache)) {
-            ccfg.intProperty('sqlOnheapRowCacheSize')
-                .intProperty('longQueryWarningTimeout');
+            ccfg.intProperty('longQueryWarningTimeout');
 
             return ccfg;
         }
@@ -414,7 +406,6 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         static cacheConcurrency(cache, ccfg = this.cacheConfigurationBean(cache)) {
             ccfg.intProperty('maxConcurrentAsyncOperations')
                 .intProperty('defaultLockTimeout')
-                .enumProperty('atomicWriteOrderMode')
                 .enumProperty('writeSynchronizationMode');
 
             return ccfg;

@@ -560,7 +560,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteCollection(CollectionType typ)
+            int32_t BinaryWriterImpl::WriteCollection(CollectionType::Type typ)
             {
                 StartContainerSession(true);
 
@@ -571,7 +571,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteCollection(const char* fieldName, CollectionType typ)
+            int32_t BinaryWriterImpl::WriteCollection(const char* fieldName, CollectionType::Type typ)
             {
                 StartContainerSession(false);
                 
@@ -584,7 +584,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteMap(ignite::binary::MapType typ)
+            int32_t BinaryWriterImpl::WriteMap(ignite::binary::MapType::Type typ)
             {
                 StartContainerSession(true);
 
@@ -595,7 +595,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteMap(const char* fieldName, ignite::binary::MapType typ)
+            int32_t BinaryWriterImpl::WriteMap(const char* fieldName, ignite::binary::MapType::Type typ)
             {
                 StartContainerSession(false);
 
@@ -785,7 +785,7 @@ namespace ignite
                 else
                 {
                     int32_t schemaId = schema.GetId();
-                    BinaryOffsetType schemaType = schema.GetType();
+                    BinaryOffsetType::Type schemaType = schema.GetType();
 
                     WriteAndClearSchema();
 
@@ -796,9 +796,9 @@ namespace ignite
 
                     flags |= IGNITE_BINARY_FLAG_HAS_SCHEMA;
 
-                    if (schemaType == OFFSET_TYPE_ONE_BYTE)
+                    if (schemaType == BinaryOffsetType::ONE_BYTE)
                         flags |= IGNITE_BINARY_FLAG_OFFSET_ONE_BYTE;
-                    else if (schemaType == OFFSET_TYPE_TWO_BYTES)
+                    else if (schemaType == BinaryOffsetType::TWO_BYTES)
                         flags |= IGNITE_BINARY_FLAG_OFFSET_TWO_BYTES;
 
                     stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, flags);

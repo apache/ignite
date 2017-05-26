@@ -17,14 +17,12 @@
 
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
-    using System;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
     /// Example cache entry predicate.
     /// </summary>
-    [Serializable]
     public class EmployeeStorePredicate : ICacheEntryFilter<int, Employee>
     {
         /// <summary>

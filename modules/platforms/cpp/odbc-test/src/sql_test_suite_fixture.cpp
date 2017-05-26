@@ -29,7 +29,11 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
+#ifdef IGNITE_TESTS_32
+        grid = StartNode("queries-test-32.xml");
+#else
         grid = StartNode("queries-test.xml");
+#endif
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -306,7 +310,7 @@ namespace ignite
         Date actual = common::MakeDateGmt(res.year, res.month, res.day);
         BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
     }
-    
+
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected)
     {

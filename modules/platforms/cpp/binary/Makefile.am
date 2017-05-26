@@ -52,7 +52,6 @@ libignite_binary_la_SOURCES = \
     src/binary/binary_reader.cpp \
     src/binary/binary_type.cpp \
     src/binary/binary_raw_reader.cpp \
-    src/binary/binary_array_identity_resolver.cpp \
     src/impl/binary/binary_type_manager.cpp \
     src/impl/binary/binary_utils.cpp \
     src/impl/binary/binary_reader_impl.cpp \

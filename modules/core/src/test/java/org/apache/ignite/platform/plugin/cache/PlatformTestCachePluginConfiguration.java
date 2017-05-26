@@ -52,9 +52,4 @@ public class PlatformTestCachePluginConfiguration implements CachePluginConfigur
     void setPluginProperty(String pluginProperty) {
         this.pluginProperty = pluginProperty;
     }
-
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createProvider(CachePluginContext ctx) {
-        return new PlatformTestCachePluginProvider();
-    }
 }

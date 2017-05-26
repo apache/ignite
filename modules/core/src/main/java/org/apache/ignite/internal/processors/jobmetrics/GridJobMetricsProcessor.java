@@ -127,7 +127,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         assertParameter(histSize > 0, "metricsHistorySize > 0");
         assertParameter(expireTime > 0, "metricsExpireTime > 0");
 
@@ -324,9 +324,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private GridJobMetricsSnapshot lastSnapshot;
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public boolean collect(GridJobMetricsSnapshot s) {
             assert s != null;
 

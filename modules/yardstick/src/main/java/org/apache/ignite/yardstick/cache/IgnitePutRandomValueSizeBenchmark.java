@@ -36,6 +36,6 @@ public class IgnitePutRandomValueSizeBenchmark extends IgniteCacheAbstractBenchm
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-offheap");
+        return ignite().cache("atomic");
     }
 }

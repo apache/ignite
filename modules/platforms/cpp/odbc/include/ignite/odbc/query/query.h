@@ -33,14 +33,11 @@ namespace ignite
     {
         namespace query
         {
-            /**
-             * Query.
-             */
-            class Query
+            /** Query type. */
+            struct QueryType
             {
-            public:
-                /** Query type. */
-                enum Type {
+                enum Type
+                {
                     /** Column metadata query type. */
                     COLUMN_METADATA,
 
@@ -62,7 +59,14 @@ namespace ignite
                     /** Type info query type. */
                     TYPE_INFO
                 };
+            };
 
+            /**
+             * Query.
+             */
+            class Query
+            {
+            public:
                 /**
                  * Destructor.
                  */
@@ -76,7 +80,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual SqlResult Execute() = 0;
+                virtual SqlResult::Type Execute() = 0;
 
                 /**
                  * Fetch next result row to application buffers.
@@ -84,7 +88,7 @@ namespace ignite
                  * @param columnBindings Application buffers to put data to.
                  * @return Operation result.
                  */
-                virtual SqlResult FetchNextRow(app::ColumnBindingMap& columnBindings) = 0;
+                virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings) = 0;
 
                 /**
                  * Get data of the specified column in the result set.
@@ -93,14 +97,14 @@ namespace ignite
                  * @param buffer Buffer to put column data to.
                  * @return Operation result.
                  */
-                virtual SqlResult GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer) = 0;
+                virtual SqlResult::Type GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer) = 0;
 
                 /**
                  * Close query.
                  *
                  * @return True on success.
                  */
-                virtual SqlResult Close() = 0;
+                virtual SqlResult::Type Close() = 0;
 
                 /**
                  * Get column metadata.
@@ -128,7 +132,7 @@ namespace ignite
                  *
                  * @return Query type.
                  */
-                Type GetType() const
+                QueryType::Type GetType() const
                 {
                     return type;
                 }
@@ -137,7 +141,7 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                Query(diagnostic::Diagnosable& diag, Type type) :
+                Query(diagnostic::Diagnosable& diag, QueryType::Type type) :
                     diag(diag),
                     type(type)
                 {
@@ -148,7 +152,7 @@ namespace ignite
                 diagnostic::Diagnosable& diag;
 
                 /** Query type. */
-                Type type;
+                QueryType::Type type;
             };
         }
     }

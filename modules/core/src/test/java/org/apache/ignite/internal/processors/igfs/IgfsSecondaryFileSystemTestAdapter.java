@@ -104,7 +104,7 @@ public interface IgfsSecondaryFileSystemTestAdapter {
      * Get times for path.
      *
      * @param path Path.
-     * @return Times for path.
+     * @return Times for path (modification time, access time).
      * @throws IOException If failed.
      */
     T2<Long, Long> times(String path) throws IOException;

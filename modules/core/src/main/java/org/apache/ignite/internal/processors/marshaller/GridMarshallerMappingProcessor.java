@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -101,7 +100,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
         GridIoManager ioMgr = ctx.io();
 
@@ -110,6 +109,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                 mappingExchangeSyncMap,
                 clientReqSyncMap
         );
+
         marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
         discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
@@ -137,10 +137,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /**
      * Adds a listener to be notified when mapping changes.
      *
-     * @param mappingUpdatedListener listener for mapping updated events.
+     * @param lsnr listener for mapping updated events.
      */
-    public void addMappingUpdatedListener(MappingUpdatedListener mappingUpdatedListener) {
-        mappingUpdatedLsnrs.add(mappingUpdatedListener);
+    public void addMappingUpdatedListener(MappingUpdatedListener lsnr) {
+        mappingUpdatedLsnrs.add(lsnr);
     }
 
     /**

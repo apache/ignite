@@ -24,99 +24,99 @@ namespace ignite
 {
     namespace odbc
     {
-        int SqlResultToReturnCode(SqlResult result)
+        int SqlResultToReturnCode(SqlResult::Type result)
         {
             switch (result)
             {
-                case SQL_RESULT_SUCCESS: 
+                case SqlResult::AI_SUCCESS: 
                     return SQL_SUCCESS;
 
-                case SQL_RESULT_SUCCESS_WITH_INFO:
+                case SqlResult::AI_SUCCESS_WITH_INFO:
                     return SQL_SUCCESS_WITH_INFO;
 
-                case SQL_RESULT_NO_DATA:
+                case SqlResult::AI_NO_DATA:
                     return SQL_NO_DATA;
 
-                case SQL_RESULT_NEED_DATA:
+                case SqlResult::AI_NEED_DATA:
                     return SQL_NEED_DATA;
 
-                case SQL_RESULT_ERROR:
+                case SqlResult::AI_ERROR:
                 default:
                     return SQL_ERROR;
             }
         }
 
-        DiagnosticField DiagnosticFieldToInternal(int16_t field)
+        DiagnosticField::Type DiagnosticFieldToInternal(int16_t field)
         {
             switch (field)
             {
                 case SQL_DIAG_CURSOR_ROW_COUNT:
-                    return IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT;
+                    return DiagnosticField::HEADER_CURSOR_ROW_COUNT;
 
                 case SQL_DIAG_DYNAMIC_FUNCTION:
-                    return IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION;
+                    return DiagnosticField::HEADER_DYNAMIC_FUNCTION;
 
                 case SQL_DIAG_DYNAMIC_FUNCTION_CODE:
-                    return IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE;
+                    return DiagnosticField::HEADER_DYNAMIC_FUNCTION_CODE;
 
                 case SQL_DIAG_NUMBER:
-                    return IGNITE_SQL_DIAG_HEADER_NUMBER;
+                    return DiagnosticField::HEADER_NUMBER;
 
                 case SQL_DIAG_RETURNCODE:
-                    return IGNITE_SQL_DIAG_HEADER_RETURNCODE;
+                    return DiagnosticField::HEADER_RETURNCODE;
 
                 case SQL_DIAG_ROW_COUNT:
-                    return IGNITE_SQL_DIAG_HEADER_ROW_COUNT;
+                    return DiagnosticField::HEADER_ROW_COUNT;
 
                 case SQL_DIAG_CLASS_ORIGIN:
-                    return IGNITE_SQL_DIAG_STATUS_CLASS_ORIGIN;
+                    return DiagnosticField::STATUS_CLASS_ORIGIN;
 
                 case SQL_DIAG_COLUMN_NUMBER:
-                    return IGNITE_SQL_DIAG_STATUS_COLUMN_NUMBER;
+                    return DiagnosticField::STATUS_COLUMN_NUMBER;
 
                 case SQL_DIAG_CONNECTION_NAME:
-                    return IGNITE_SQL_DIAG_STATUS_CONNECTION_NAME;
+                    return DiagnosticField::STATUS_CONNECTION_NAME;
 
                 case SQL_DIAG_MESSAGE_TEXT:
-                    return IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT;
+                    return DiagnosticField::STATUS_MESSAGE_TEXT;
 
                 case SQL_DIAG_NATIVE:
-                    return IGNITE_SQL_DIAG_STATUS_NATIVE;
+                    return DiagnosticField::STATUS_NATIVE;
 
                 case SQL_DIAG_ROW_NUMBER:
-                    return IGNITE_SQL_DIAG_STATUS_ROW_NUMBER;
+                    return DiagnosticField::STATUS_ROW_NUMBER;
 
                 case SQL_DIAG_SERVER_NAME:
-                    return IGNITE_SQL_DIAG_STATUS_SERVER_NAME;
+                    return DiagnosticField::STATUS_SERVER_NAME;
 
                 case SQL_DIAG_SQLSTATE:
-                    return IGNITE_SQL_DIAG_STATUS_SQLSTATE;
+                    return DiagnosticField::STATUS_SQLSTATE;
 
                 case SQL_DIAG_SUBCLASS_ORIGIN:
-                    return IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN;
+                    return DiagnosticField::STATUS_SUBCLASS_ORIGIN;
 
                 default:
                     break;
             }
 
-            return IGNITE_SQL_DIAG_UNKNOWN;
+            return DiagnosticField::UNKNOWN;
         }
 
-        EnvironmentAttribute EnvironmentAttributeToInternal(int32_t attr)
+        EnvironmentAttribute::Type EnvironmentAttributeToInternal(int32_t attr)
         {
             switch (attr)
             {
                 case SQL_ATTR_ODBC_VERSION:
-                    return IGNITE_SQL_ENV_ATTR_ODBC_VERSION;
+                    return EnvironmentAttribute::ODBC_VERSION;
 
                 case SQL_ATTR_OUTPUT_NTS:
-                    return IGNITE_SQL_ENV_ATTR_OUTPUT_NTS;
+                    return EnvironmentAttribute::OUTPUT_NTS;
 
                 default:
                     break;
             }
 
-            return IGNITE_SQL_ENV_ATTR_UNKNOWN;
+            return EnvironmentAttribute::UNKNOWN;
         }
     }
 }

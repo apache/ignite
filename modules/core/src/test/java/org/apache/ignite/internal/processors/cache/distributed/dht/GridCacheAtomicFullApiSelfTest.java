@@ -23,27 +23,17 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * Multi node test for disabled near cache.
  */
 public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiSelfTest {
-    /**
-     * @return Write order mode for atomic cache.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -62,15 +52,6 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
     /** {@inheritDoc} */
     @Override protected boolean lockingEnabled() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
-
-        return ccfg;
     }
 
     /**

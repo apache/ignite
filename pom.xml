@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -56,6 +56,7 @@
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
+        <module>modules/spring-data</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -79,6 +80,7 @@
         <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/hibernate-core</module>
         <module>modules/camel</module>
         <module>modules/storm</module>
         <module>modules/osgi-paxlogging</module>
@@ -90,9 +92,45 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
+        <module>modules/rocketmq</module>
     </modules>
 
     <profiles>
+        <profile>
+            <id>all-java</id> <!-- used to update project versions and check all modules compilation -->
+            <modules> <!-- sorted alphabetically -->
+                <module>examples</module>
+                <module>modules/benchmarks</module>
+                <module>modules/geospatial</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
+                <module>modules/schedule</module>
+                <module>modules/web-console/web-agent</module>
+                <module>modules/yardstick</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
+            <modules><!-- sorted alphabetically -->
+                <module>modules/scalar-2.10</module>
+                <module>modules/scalar</module>
+                <module>modules/spark-2.10</module>
+                <module>modules/spark</module>
+                <module>modules/visor-console-2.10</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
+            <modules> <!-- sorted alphabetically -->
+                <module>modules/ml</module> <!-- it uses Java8 and can't be compiled by Java7 used to compile Ignite -->
+                <module>modules/web-console</module>
+            </modules>
+        </profile>
+
         <profile>
             <id>test</id>
             <build>
@@ -161,7 +199,8 @@
         <profile>
             <id>lgpl</id>
             <modules>
-                <module>modules/hibernate</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
@@ -340,11 +379,6 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <replaceregexp file="${basedir}/target/release-package/examples/schema-import/pom.xml" byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version" />
-                                            <substitution expression="${project.version}" />
-                                        </replaceregexp>
-
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
                                         <!--
@@ -490,7 +524,7 @@
                                         <mkdir dir="${basedir}/target/release-package/benchmarks" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/">
-                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
+                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/" />
                                         </copy>
 
                                         <!--todo: only required jars should be exported to /benchmarks/libs during compilation-->
@@ -507,47 +541,44 @@
                                         <delete>
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config/">
                                                 <include name="*.*" />
-                                                <exclude name="benchmark.properties"/>
-                                                <exclude name="benchmark-remote.properties"/>
-                                                <exclude name="benchmark-sample.properties"/>
-                                                <exclude name="benchmark-remote-sample.properties"/>
-                                                <exclude name="benchmark-multicast.properties"/>
-                                                <exclude name="ignite-base-config.xml"/>
-                                                <exclude name="ignite-localhost-config.xml"/>
-                                                <exclude name="ignite-remote-config.xml"/>
-                                                <exclude name="ignite-multicast-config.xml"/>
+                                                <exclude name="benchmark.properties" />
+                                                <exclude name="benchmark-remote.properties" />
+                                                <exclude name="benchmark-sample.properties" />
+                                                <exclude name="benchmark-remote-sample.properties" />
+                                                <exclude name="benchmark-multicast.properties" />
+                                                <exclude name="ignite-base-config.xml" />
+                                                <exclude name="ignite-localhost-config.xml" />
+                                                <exclude name="ignite-remote-config.xml" />
+                                                <exclude name="ignite-multicast-config.xml" />
                                             </fileset>
                                         </delete>
 
                                         <mkdir dir="${basedir}/target/release-package/benchmarks/sources/src" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/sources/src/">
-                                            <fileset dir="${basedir}/modules/yardstick/src"/>
+                                            <fileset dir="${basedir}/modules/yardstick/src" />
                                         </copy>
 
                                         <mkdir dir="${basedir}/target/release-package/benchmarks/sources/config" />
 
                                         <copy todir="${basedir}/target/release-package/benchmarks/sources/config/">
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/config" />
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
+                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml" tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml" />
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
-                                            <substitution expression="${project.version}"/>
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
-                                                <include name="pom.xml"/>
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/">
+                                                <include name="pom.xml" />
                                             </fileset>
                                         </replaceregexp>
 
-                                        <copy file="${basedir}/modules/yardstick/README.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
+                                        <copy file="${basedir}/modules/yardstick/README.txt" tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt" tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt" />
                                     </target>
                                 </configuration>
                             </execution>
@@ -605,7 +636,6 @@
             <id>examples</id>
             <modules>
                 <module>examples</module>
-                <module>examples/schema-import</module>
             </modules>
         </profile>
 
@@ -788,125 +818,10 @@
         </profile>
 
         <profile>
-            <id>java8-schema-import</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/lib/ext/jfxrt.jar</exists>
-                </file>
-            </activation>
-            <modules>
-                <module>modules/schema-import</module>
-                <module>modules/schema-import-db</module>
-            </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-
-                        <executions>
-                            <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>schema-import-scripts</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>schema-import</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/lib/jfxrt.jar</exists>
-                </file>
-            </activation>
-            <modules>
-                <module>modules/schema-import</module>
-                <module>modules/schema-import-db</module>
-            </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-
-                        <executions>
-                            <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>schema-import-scripts</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>web-console</id>
             <modules>
                 <module>modules/web-console</module>
                 <module>modules/web-console/web-agent</module>
-                <module>modules/schema-import-db</module>
             </modules>
         </profile>
 
@@ -1051,6 +966,13 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>ml</id>
+            <modules>
+                <module>modules/ml</module>
+            </modules>
         </profile>
     </profiles>
 

@@ -159,7 +159,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         if (notifyEnabled.get()) {
             try {
                 verChecker = new GridUpdateNotifier(ctx.igniteInstanceName(),

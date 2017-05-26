@@ -40,8 +40,6 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
-
                     <property name="backups" value="1"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -56,8 +54,6 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
-
                     <property name="backups" value="1"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -71,8 +67,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
                 </bean>

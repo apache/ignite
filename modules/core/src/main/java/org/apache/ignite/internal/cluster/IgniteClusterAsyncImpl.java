@@ -98,17 +98,6 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) {
-        return cluster.mapKeysToNodes(cacheName, keys);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
-        return cluster.mapKeyToNode(cacheName, key);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(File file,
         boolean restart,
         int timeout,

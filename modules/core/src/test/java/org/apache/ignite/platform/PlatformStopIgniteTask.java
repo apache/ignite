@@ -38,7 +38,16 @@ public class PlatformStopIgniteTask extends ComputeTaskAdapter<String, Boolean> 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) throws IgniteException {
-        return Collections.singletonMap(new PlatformStopIgniteJob(arg), F.first(subgrid));
+        ClusterNode node = subgrid.get(0);
+
+        for (ClusterNode n : subgrid) {
+            if (n.isLocal()) {
+                node = n;
+                break;
+            }
+        }
+
+        return Collections.singletonMap(new PlatformStopIgniteJob(arg), node);
     }
 
     /** {@inheritDoc} */

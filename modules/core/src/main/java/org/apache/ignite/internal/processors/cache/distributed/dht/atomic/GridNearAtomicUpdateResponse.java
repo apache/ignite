@@ -320,6 +320,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param e Error cause.
      */
     public synchronized void addFailedKey(KeyCacheObject key, Throwable e) {
+        assert key != null;
+        assert e != null;
+
         if (errs == null)
             errs = new UpdateErrors();
 

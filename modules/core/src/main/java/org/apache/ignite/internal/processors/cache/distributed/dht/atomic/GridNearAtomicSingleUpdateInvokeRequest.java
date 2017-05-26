@@ -73,8 +73,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
 
     /**
      * Constructor.
-     *
-     * @param cacheId Cache ID.
+     *  @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
@@ -105,6 +104,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo
     ) {
         super(
@@ -121,6 +121,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             needPrimaryRes,
             skipStore,
             keepBinary,
+            recovery,
             addDepInfo
         );
 

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
@@ -77,6 +78,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public Marshaller Marshaller
         {
             get { return _marsh; }
+        }
+
+        /// <summary>
+        /// Gets the mode.
+        /// </summary>
+        public BinaryMode Mode
+        {
+            get { return _mode; }
         }
 
         /** <inheritdoc /> */
@@ -392,6 +401,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return default(T);
 
                 case BinaryUtils.TypeEnum:
+                case BinaryUtils.TypeBinaryEnum:
                     // Never read enums in binary mode when reading a field (we do not support half-binary objects)
                     return ReadEnum0<T>(this, false);  
 
@@ -402,9 +412,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return ReadObject<T>(); 
 
                 default:
-                    throw new BinaryObjectException(
-                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
-                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+                    throw new BinaryObjectException(string.Format(
+                        "Invalid header on enum deserialization. Expected: {0} or {1} or {2} but was: {3}",
+                            BinaryUtils.TypeEnum, BinaryUtils.TypeBinaryEnum, BinaryUtils.HdrFull, hdr));
             }
         }
 
@@ -562,6 +572,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryUtils.TypeEnum:
+                case BinaryUtils.TypeBinaryEnum:
                     res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                     return true;
@@ -571,6 +582,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return true;
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
+        }
+                
+        /// <summary>
+        /// Gets the flag indicating that there is custom type information in raw region.
+        /// </summary>
+        public bool GetCustomTypeDataFlag()
+        {
+            return _frame.Hdr.IsCustomDotNetType;
         }
 
         /// <summary>
@@ -676,7 +695,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                 {
                     // Find descriptor.
-                    var desc = _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);
+                    var desc = hdr.TypeId == BinaryUtils.TypeUnregistered
+                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true))
+                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true);
 
                     // Instantiate object. 
                     if (desc.Type == null)
@@ -685,13 +706,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             throw new BinaryObjectException(string.Format(
                                 "Unknown type ID: {0}. " +
-                                "This usually indicates missing BinaryConfiguration." +
+                                "This usually indicates missing BinaryConfiguration. " +
                                 "Make sure that all nodes have the same BinaryConfiguration.", hdr.TypeId));
                         }
 
                         throw new BinaryObjectException(string.Format(
-                            "No matching type found for object [typeId={0}, typeName={1}]." +
-                            "This usually indicates that assembly with specified type is not loaded on a node." +
+                            "No matching type found for object [typeId={0}, typeName={1}]. " +
+                            "This usually indicates that assembly with specified type is not loaded on a node. " +
                             "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter.",
                             desc.TypeId, desc.TypeName));
                     }
@@ -707,7 +728,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _frame.Raw = false;
 
                     // Read object.
-                    var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc, pos);
 
                     _frame.Struct.UpdateReaderStructure();
 
@@ -758,8 +779,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Get schema from Java
                 var ignite = Marshaller.Ignite;
 
-                var schema = ignite == null 
-                    ? null 
+                Debug.Assert(typeId != BinaryUtils.TypeUnregistered);
+
+                var schema = ignite == null
+                    ? null
                     : ignite.BinaryProcessor.GetSchema(_frame.Hdr.TypeId, _frame.Hdr.SchemaId);
 
                 if (schema == null)
@@ -850,6 +873,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Seeks to raw data.
+        /// </summary>
+        internal void SeekToRaw()
+        {
+            Stream.Seek(_frame.Pos + _frame.Hdr.GetRawOffset(Stream, _frame.Pos), SeekOrigin.Begin);
+        }
+
+        /// <summary>
         /// Mark current output as raw. 
         /// </summary>
         private void MarkRaw()
@@ -858,7 +889,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 _frame.Raw = true;
 
-                Stream.Seek(_frame.Pos + _frame.Hdr.GetRawOffset(Stream, _frame.Pos), SeekOrigin.Begin);
+                SeekToRaw();
             }
         }
 
@@ -965,7 +996,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var enumValue = reader.ReadInt();
 
             if (!keepBinary)
+            {
                 return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
+            }
 
             return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }

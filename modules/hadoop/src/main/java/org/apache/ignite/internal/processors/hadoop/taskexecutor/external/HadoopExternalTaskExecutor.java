@@ -882,9 +882,6 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      *
      */
     private class HadoopProcessFuture extends GridFutureAdapter<IgniteBiTuple<Process, HadoopProcessDescriptor>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Child process ID. */
         private UUID childProcId;
 
@@ -964,7 +961,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 if (err == null) {
                     if (log.isDebugEnabled())
                         log.debug("Initialized child process for external task execution [jobId=" + jobId +
-                            ", desc=" + desc + ", initTime=" + duration() + ']');
+                            ", desc=" + desc + ']');
                 }
                 else
                     U.error(log, "Failed to initialize child process for external task execution [jobId=" + jobId +

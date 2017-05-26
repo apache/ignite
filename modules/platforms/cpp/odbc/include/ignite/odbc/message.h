@@ -34,28 +34,42 @@ namespace ignite
 {
     namespace odbc
     {
-        enum RequestType
+        struct ClientType
         {
-            REQUEST_TYPE_HANDSHAKE = 1,
-
-            REQUEST_TYPE_EXECUTE_SQL_QUERY = 2,
-
-            REQUEST_TYPE_FETCH_SQL_QUERY = 3,
-
-            REQUEST_TYPE_CLOSE_SQL_QUERY = 4,
-
-            REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
-
-            REQUEST_TYPE_GET_TABLES_METADATA = 6,
-
-            REQUEST_TYPE_GET_PARAMS_METADATA = 7
+            enum Type
+            {
+                ODBC = 0
+            };
         };
 
-        enum ResponseStatus
+        struct RequestType
         {
-            RESPONSE_STATUS_SUCCESS = 0,
+            enum Type
+            {
+                HANDSHAKE = 1,
 
-            RESPONSE_STATUS_FAILED = 1
+                EXECUTE_SQL_QUERY = 2,
+
+                FETCH_SQL_QUERY = 3,
+
+                CLOSE_SQL_QUERY = 4,
+
+                GET_COLUMNS_METADATA = 5,
+
+                GET_TABLES_METADATA = 6,
+
+                GET_PARAMS_METADATA = 7
+            };
+        };
+
+        struct ResponseStatus
+        {
+            enum Type
+            {
+                SUCCESS = 0,
+
+                FAILED = 1
+            };
         };
 
         /**
@@ -71,7 +85,7 @@ namespace ignite
              * @param distributedJoins Distributed joins flag.
              * @param enforceJoinOrder Enforce join order flag.
              */
-            HandshakeRequest(int64_t version, bool distributedJoins, bool enforceJoinOrder) :
+            HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder) :
                 version(version),
                 distributedJoins(distributedJoins),
                 enforceJoinOrder(enforceJoinOrder)
@@ -93,9 +107,13 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
+                writer.WriteInt8(RequestType::HANDSHAKE);
 
-                writer.WriteInt64(version);
+                writer.WriteInt16(version.GetMajor());
+                writer.WriteInt16(version.GetMinor());
+                writer.WriteInt16(version.GetMaintenance());
+                
+                writer.WriteInt8(ClientType::ODBC);
 
                 writer.WriteBool(distributedJoins);
                 writer.WriteBool(enforceJoinOrder);
@@ -103,7 +121,7 @@ namespace ignite
 
         private:
             /** Protocol version. */
-            int64_t version;
+            ProtocolVersion version;
 
             /** Distributed joins flag. */
             bool distributedJoins;
@@ -148,7 +166,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_EXECUTE_SQL_QUERY);
+                writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY);
                 utility::WriteString(writer, cache);
                 utility::WriteString(writer, sql);
 
@@ -213,7 +231,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_CLOSE_SQL_QUERY);
+                writer.WriteInt8(RequestType::CLOSE_SQL_QUERY);
                 writer.WriteInt64(queryId);
             }
 
@@ -255,7 +273,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
+                writer.WriteInt8(RequestType::FETCH_SQL_QUERY);
                 writer.WriteInt64(queryId);
                 writer.WriteInt32(pageSize);
             }
@@ -303,7 +321,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_GET_COLUMNS_METADATA);
+                writer.WriteInt8(RequestType::GET_COLUMNS_METADATA);
                 
                 utility::WriteString(writer, schema);
                 utility::WriteString(writer, table);
@@ -359,7 +377,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_GET_TABLES_METADATA);
+                writer.WriteInt8(RequestType::GET_TABLES_METADATA);
 
                 utility::WriteString(writer, catalog);
                 utility::WriteString(writer, schema);
@@ -390,10 +408,8 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param catalog Catalog search pattern.
-             * @param schema Schema search pattern.
-             * @param table Table search pattern.
-             * @param tableTypes Table types search pattern.
+             * @param cacheName Cache name.
+             * @param sqlQuery SQL query itself.
              */
             QueryGetParamsMetaRequest(const std::string& cacheName, const std::string& sqlQuery) :
                 cacheName(cacheName),
@@ -416,7 +432,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_GET_PARAMS_METADATA);
+                writer.WriteInt8(RequestType::GET_PARAMS_METADATA);
 
                 utility::WriteString(writer, cacheName);
                 utility::WriteString(writer, sqlQuery);
@@ -431,7 +447,7 @@ namespace ignite
         };
 
         /**
-         * Query close response.
+         * General response.
          */
         class Response
         {
@@ -439,7 +455,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            Response() : status(RESPONSE_STATUS_FAILED), error()
+            Response() : status(ResponseStatus::FAILED), error()
             {
                 // No-op.
             }
@@ -460,7 +476,7 @@ namespace ignite
             {
                 status = reader.ReadInt8();
 
-                if (status == RESPONSE_STATUS_SUCCESS)
+                if (status == ResponseStatus::SUCCESS)
                     ReadOnSuccess(reader);
                 else
                     utility::ReadString(reader, error);;
@@ -486,7 +502,7 @@ namespace ignite
 
         protected:
             /**
-             * Read data if response status is RESPONSE_STATUS_SUCCESS.
+             * Read data if response status is ResponseStatus::SUCCESS.
              */
             virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl&)
             {
@@ -504,7 +520,7 @@ namespace ignite
         /**
          * Handshake response.
          */
-        class HandshakeResponse : public Response
+        class HandshakeResponse
         {
         public:
             /**
@@ -512,8 +528,8 @@ namespace ignite
              */
             HandshakeResponse() :
                 accepted(false),
-                protoVerSince(),
-                currentVer()
+                currentVer(),
+                error()
             {
                 // No-op.
             }
@@ -536,47 +552,52 @@ namespace ignite
             }
 
             /**
-             * Get host Apache Ignite version when protocol version has been introduced.
-             * @return Host Apache Ignite version when protocol version has been introduced.
+             * Get optional error.
+             * @return Optional error message.
              */
-            const std::string& ProtoVerSince() const
+            const std::string& GetError() const
             {
-                return protoVerSince;
+                return error;
             }
 
             /**
              * Current host Apache Ignite version.
              * @return Current host Apache Ignite version.
              */
-            const std::string& CurrentVer() const
+            const ProtocolVersion& GetCurrentVer() const
             {
                 return currentVer;
             }
 
-        private:
             /**
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            void Read(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 accepted = reader.ReadBool();
 
                 if (!accepted)
                 {
-                    utility::ReadString(reader, protoVerSince);
-                    utility::ReadString(reader, currentVer);
+                    int16_t major = reader.ReadInt16();
+                    int16_t minor = reader.ReadInt16();
+                    int16_t maintenance = reader.ReadInt16();
+
+                    currentVer = ProtocolVersion(major, minor, maintenance);
+
+                    utility::ReadString(reader, error);
                 }
             }
 
+        private:
             /** Handshake accepted. */
             bool accepted;
 
-            /** Host Apache Ignite version when protocol version has been introduced. */
-            std::string protoVerSince;
+            /** Node's protocol version. */
+            ProtocolVersion currentVer;
 
-            /** Current host Apache Ignite version. */
-            std::string currentVer;
+            /** Optional error message. */
+            std::string error;
         };
 
         /**
