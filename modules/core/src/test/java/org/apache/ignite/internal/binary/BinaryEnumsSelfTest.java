@@ -409,6 +409,50 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test operations on simple type with declared body which is registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeclaredBodyEnumRegistered() throws Exception {
+        checkDeclaredBodyEnum(true);
+    }
+
+    /**
+     * Test operations on simple type with declared body which is not registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeclaredBodyEnumNotRegistered() throws Exception {
+        checkDeclaredBodyEnum(false);
+    }
+
+    /**
+     * Check enums with declared body.
+     *
+     * @param registered Registered flag.
+     * @throws Exception If failed.
+     */
+    public void checkDeclaredBodyEnum(boolean registered) throws Exception {
+        startUp(registered);
+
+        cache1.put(1, DeclaredBodyEnumType.ONE);
+
+        if (registered) {
+            assertEquals(DeclaredBodyEnumType.ONE, cache1.get(1));
+            assertEquals(DeclaredBodyEnumType.ONE, cache2.get(1));
+        }
+
+        BinaryObject obj = (BinaryObject) cacheBinary1.get(1);
+        assertTrue(obj.type().isEnum());
+
+        assertEquals(node1.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
+        assertEquals(node2.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
+
+        assertEquals(DeclaredBodyEnumType.ONE.ordinal(), obj.enumOrdinal());
+    }
+
+
+    /**
      * Validate simple array.
      *
      * @param registered Registered flag.
@@ -505,5 +549,23 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public enum EnumType {
         ONE,
         TWO
+    }
+
+    /**
+     * Enumeration for tests.
+     */
+    public enum DeclaredBodyEnumType {
+        ONE {
+            @Override boolean isSupported() {
+                return false;
+            }
+        },
+        TWO {
+            @Override boolean isSupported() {
+                return false;
+            }
+        };
+
+        abstract boolean isSupported();
     }
 }

@@ -1104,7 +1104,7 @@ public class BinaryUtils {
             return BinaryWriteMode.COL;
         else if (isSpecialMap(cls))
             return BinaryWriteMode.MAP;
-        else if (cls.isEnum())
+        else if (cls.isEnum() || (cls.getSuperclass() != null && cls.getSuperclass().isEnum()))
             return BinaryWriteMode.ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
