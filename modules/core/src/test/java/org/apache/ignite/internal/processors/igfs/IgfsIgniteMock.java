@@ -546,6 +546,13 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        throwUnsupported();
+
+        return null;
+    }
+
     /**
      * Throw {@link UnsupportedOperationException}.
      */

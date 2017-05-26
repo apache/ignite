@@ -43,9 +43,6 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private readonly List<Expression> _parameterExpressions = new List<Expression>();
-
-        /** */
         private readonly AliasDictionary _aliases = new AliasDictionary();
 
         /// <summary>
@@ -63,7 +60,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var qryText = _builder.ToString();
 
-            return new QueryData(qryText, _parameters, _parameterExpressions);
+            return new QueryData(qryText, _parameters);
         }
 
         /// <summary>
@@ -80,14 +77,6 @@ namespace Apache.Ignite.Linq.Impl
         public IList<object> Parameters
         {
             get { return _parameters; }
-        }
-
-        /// <summary>
-        /// Gets the parameters.
-        /// </summary>
-        public IList<Expression> ParameterExpressions
-        {
-            get { return _parameterExpressions; }
         }
 
         /// <summary>
