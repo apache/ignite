@@ -288,7 +288,7 @@ public class MetadataStorage implements MetaStore {
         PageUtils.putByte(dstPageAddr, dstOff, len);
         dstOff++;
 
-        PageHandler.copyMemory(srcPageAddr, srcOff, dstPageAddr, dstOff, len);
+        PageHandler.copyMemory(srcPageAddr, dstPageAddr, srcOff,  dstOff, len);
         srcOff += len;
         dstOff += len;
 
