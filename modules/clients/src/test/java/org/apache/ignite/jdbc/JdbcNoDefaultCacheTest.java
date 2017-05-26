@@ -133,14 +133,14 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
         assertNotNull(stmt);
         assertFalse(stmt.isClosed());
 
-        stmt.execute("select t._key, t._val from cache1.Integer t");
+        stmt.execute("select t._key, t._val from \"cache1\".Integer t");
 
         ResultSet rs = stmt.getResultSet();
 
         while(rs.next())
             assertEquals(rs.getInt(2), rs.getInt(1) * 2);
 
-        stmt.execute("select t._key, t._val from cache2.Integer t");
+        stmt.execute("select t._key, t._val from \"cache2\".Integer t");
 
         rs = stmt.getResultSet();
 
@@ -148,7 +148,7 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
             assertEquals(rs.getInt(2), rs.getInt(1) * 3);
 
         stmt.execute("select t._key, t._val, v._val " +
-            "from cache1.Integer t join cache2.Integer v on t._key = v._key");
+            "from \"cache1\".Integer t join \"cache2\".Integer v on t._key = v._key");
 
         rs = stmt.getResultSet();
 
