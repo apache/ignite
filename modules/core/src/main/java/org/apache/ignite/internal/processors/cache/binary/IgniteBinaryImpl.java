@@ -170,11 +170,11 @@ public class IgniteBinaryImpl implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    public BinaryType defineEnum(String typeName, Map<String, Integer> vals) {
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
         guard();
 
         try {
-            return proc.defineEnum(typeName, vals);
+            return proc.registerEnum(typeName, vals);
         }
         finally {
             unguard();

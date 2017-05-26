@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueEnum;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
-
-import java.nio.ByteBuffer;
-
 
 /**
  * H2 Enum message
@@ -46,6 +43,7 @@ public class GridH2Enum  extends GridH2ValueMessage {
     /** */
     public GridH2Enum(Value val) {
         assert val instanceof GridH2ValueEnum;
+
         typeId = val.getType();
         ordinal = val.getInt();
     }

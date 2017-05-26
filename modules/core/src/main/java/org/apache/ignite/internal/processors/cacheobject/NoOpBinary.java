@@ -81,7 +81,7 @@ public class NoOpBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType defineEnum(String typeName, Map<String, Integer> vals) {
+    @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) {
         throw unsupported();
     }
 

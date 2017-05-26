@@ -646,6 +646,7 @@ public abstract class BinaryFieldAccessor {
                     writer.writeEnumField((Enum<?>)val);
 
                     break;
+
                 case BINARY_ENUM:
                     writer.doWriteBinaryEnum((BinaryEnumObjectImpl)val);
 
@@ -869,6 +870,7 @@ public abstract class BinaryFieldAccessor {
 
                 case BINARY_ENUM:
                     val = reader.readBinaryEnum(id);
+
                     break;
 
                 case BINARY:

@@ -977,15 +977,11 @@ public class BinaryUtils {
             boolean changed = false;
 
             Map<String, Integer> mergedEnumMap = null;
+
             if (!F.isEmpty(newMeta.enumMap())) {
-                if (F.isEmpty(oldMeta.enumMap()))
-                    mergedEnumMap = newMeta.enumMap();
-                else {
-                    mergedEnumMap = new LinkedHashMap<>(oldMeta.enumMap());
-                    for (Map.Entry<String, Integer> e: newMeta.enumMap().entrySet())
-                        mergedEnumMap.put(e.getKey(), e.getValue());
-                }
-                changed = true;
+                mergedEnumMap = mergeEnumValues(oldMeta.typeName(), oldMeta.enumMap(), newMeta.enumMap());
+
+                changed = mergedEnumMap.size() > oldMeta.enumMap().size();
             }
 
             for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
@@ -1642,7 +1638,6 @@ public class BinaryUtils {
      *
      * @param in Input stream.
      * @param ctx Binary context.
-     * @param type Plain type.
      * @return Enum.
      */
     public static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
@@ -2381,6 +2376,85 @@ public class BinaryUtils {
      */
     public static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
+    }
+
+    /**
+     * Checks enum values mapping.
+     *
+     * @param typeName Name of the type.
+     * @param enumValues Enum name to ordinal mapping.
+     * @throws BinaryObjectException
+     */
+    public static void validateEnumValues(String typeName, @Nullable Map<String, Integer> enumValues)
+            throws BinaryObjectException {
+
+        if (enumValues == null)
+            return;
+
+        Map<Integer, String> tmpMap = new LinkedHashMap<>(enumValues.size());
+        for (Map.Entry<String, Integer> e: enumValues.entrySet()) {
+
+            String prevName = tmpMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null)
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+        }
+    }
+
+    /**
+     * Merges enum value mappings and checks for conflicts.
+     *
+     * Possible conflicts:
+     * - same name is used for different ordinal values.
+     * - ordinal value is used more than once.
+     *
+     * @param typeName Name of the type.
+     * @param oldValues Old enum value mapping.
+     * @param newValues New enum value mapping.
+     * @throws BinaryObjectException in case of name or value conflict.
+     */
+    public static Map<String, Integer> mergeEnumValues(String typeName,
+            @Nullable Map<String, Integer> oldValues,
+            Map<String, Integer> newValues)
+            throws BinaryObjectException {
+
+        assert newValues != null;
+
+        int size = (oldValues != null) ? oldValues.size() + newValues.size() : newValues.size();
+
+        Map<Integer, String> revMap = new LinkedHashMap<>(size);
+        Map<String, Integer> mergedMap = new LinkedHashMap<>(size);
+
+        if (oldValues != null) {
+            //assuming that old values were validated earlier once.
+            for (Map.Entry<String, Integer> e : oldValues.entrySet()) {
+                revMap.put(e.getValue(), e.getKey());
+                mergedMap.put(e.getKey(), e.getValue());
+            }
+        }
+
+        for (Map.Entry<String, Integer> e: newValues.entrySet()) {
+            String prevName = revMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null && !prevName.equals(e.getKey()))
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+
+            Integer prevVal = mergedMap.put(e.getKey(), e.getValue());
+
+            if (prevVal != null && !prevVal.equals(e.getValue()))
+                throw new BinaryObjectException("Conflicting enum values. Value (" + e.getValue() +
+                        ") has name '" + e.getKey() +
+                        "' that is also used for value '" + prevVal +
+                        "' [typeName='" + typeName + "']");
+        }
+
+        return mergedMap;
     }
 
     /**

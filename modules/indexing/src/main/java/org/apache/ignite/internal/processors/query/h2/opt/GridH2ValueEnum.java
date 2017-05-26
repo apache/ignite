@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
@@ -32,10 +34,6 @@ import org.h2.value.ValueInt;
 import org.h2.value.ValueBytes;
 import org.h2.value.ValueString;
 import org.h2.value.ValueJavaObject;
-
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
 
 /**
  * H2 Value over enum
@@ -65,6 +63,7 @@ public class GridH2ValueEnum extends Value {
     /** */
     public GridH2ValueEnum(GridKernalContext ctx, int type, int val, String name, CacheObject obj) {
         assert ctx != null;
+
         this.ctx = ctx;
         this.type = type;
         this.ordinal = val;
@@ -98,12 +97,14 @@ public class GridH2ValueEnum extends Value {
             return name;
 
         BinaryMetadata binMeta = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).metadata0(type);
+
         if (binMeta == null || !binMeta.isEnum())
             throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1,
-                    new IgniteCheckedException("Cannot get enum string representation. " +
-                            "Unknown enum type " + type));
+                new IgniteCheckedException("Cannot get enum string representation. " +
+                "Unknown enum type " + type));
 
         name = binMeta.getEnumNameByOrdinal(ordinal);
+
         if (name == null)
             throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, "Unable to resolve enum constant name [typeId=" +
                 type + ", typeName='" + binMeta.typeName() + "', ordinal=" + ordinal + "]");
@@ -117,11 +118,13 @@ public class GridH2ValueEnum extends Value {
             return obj;
 
         CacheObjectBinaryProcessorImpl binaryProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
         BinaryMetadata binMeta = binaryProc.metadata0(type);
+
         if (binMeta == null || !binMeta.isEnum())
             throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1,
-                    new IgniteCheckedException("Cannot get enum object representation. " +
-                            "Unknown enum type " + type));
+                new IgniteCheckedException("Cannot get enum object representation. " +
+                "Unknown enum type " + type));
 
         obj = new BinaryEnumObjectImpl(binaryProc.binaryContext(), type, null, ordinal);
 
@@ -136,6 +139,7 @@ public class GridH2ValueEnum extends Value {
     /** {@inheritDoc} */
     @Override protected int compareSecure(Value v, CompareMode mode) {
         assert v instanceof GridH2ValueEnum;
+
         GridH2ValueEnum other = (GridH2ValueEnum)v;
 
         if (type != other.type)
@@ -158,6 +162,7 @@ public class GridH2ValueEnum extends Value {
             return false;
 
         GridH2ValueEnum enumVal = (GridH2ValueEnum)other;
+
         return type == enumVal.type && enumVal.ordinal == ordinal;
     }
 

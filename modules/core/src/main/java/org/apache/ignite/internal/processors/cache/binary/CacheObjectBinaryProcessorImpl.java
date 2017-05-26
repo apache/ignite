@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -72,6 +71,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
@@ -171,6 +171,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }
 
+                @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+                    return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
+                }
+
                 @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
                 }
@@ -205,10 +209,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                                 Arrays.asList(
                                     c.getIdMapper() != null ? c.getIdMapper().getClass() : null,
                                     c.getSerializer() != null ? c.getSerializer().getClass() : null,
-                                    c.isEnum(),
-                                    c.getEnumValues()
+                                    c.isEnum()
                                 )
                             );
+
+                            if (c.isEnum())
+                                BinaryUtils.validateEnumValues(c.getTypeName(), c.getEnumValues());
                         }
 
                         map.put("typeCfgs", typeCfgsMap);
@@ -401,8 +407,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap) throws BinaryObjectException {
-        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum, enumMap);
+        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap)
+        throws BinaryObjectException {
+        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum,
+            enumMap);
 
         binaryCtx.updateMetadata(typeId, meta);
     }
@@ -435,13 +443,16 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) {
-        BinaryMetadata metadata = metadata0(typeId);
-        if (metadata != null)
-            return metadata.wrap(binaryCtx);
-        return null;
+        BinaryMetadata meta = metadata0(typeId);
+
+        return meta != null ? meta.wrap(binaryCtx) : null;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param typeId Type ID.
+     * @return Meta data.
+     * @throws IgniteException In case of error.
+     */
     @Nullable public BinaryMetadata metadata0(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
@@ -557,39 +568,56 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
+    @Override public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);
+
+        updateMetadata(typeId, typeName, null, null, true, null);
 
         return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject buildEnum(String typeName, String name) throws IgniteException {
+    @Override public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+        A.notNullOrEmpty(name, "enum name");
+
         int typeId = binaryCtx.typeId(typeName);
+
+        BinaryMetadata metadata = metadata0(typeId);
+
+        if (metadata == null)
+            throw new BinaryObjectException("Failed to get metadata for type [typeId=" +
+                    typeId + ", typeName='" + typeName + "']");
+
+        Integer ordinal = metadata.getEnumOrdinalByName(name);
 
         typeName = binaryCtx.userTypeName(typeName);
 
-        Integer ordinal = metadata0(typeId).getEnumOrdinalByName(name);
         if (ordinal == null)
-            throw new IgniteException("Failed to resolve enum ordinal by name [typeId=" +
+            throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
 
         return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ordinal);
     }
 
     /** {@inheritDoc} */
-    public BinaryType defineEnum(String typeName, Map<String, Integer> vals) throws IgniteException {
+    @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);
+
+        BinaryUtils.validateEnumValues(typeName, vals);
 
         updateMetadata(typeId, typeName, null, null, true, vals);
 
         return binaryCtx.metadata(typeId);
     }
-
 
     /** {@inheritDoc} */
     @Override public IgniteBinary binary() throws IgniteException {

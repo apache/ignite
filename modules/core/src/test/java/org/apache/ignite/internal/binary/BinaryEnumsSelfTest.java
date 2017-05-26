@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -48,6 +47,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static String CACHE_NAME = "cache";
+
+    /** Name of the node that starts with bad config */
+    private static String WRONG_CONF_NODE_NAME = "WrongConfNode";
 
     /** Whether to register types or not. */
     private boolean register;
@@ -88,8 +90,19 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             BinaryConfiguration bCfg = new BinaryConfiguration();
 
             BinaryTypeConfiguration enumCfg = new BinaryTypeConfiguration(EnumType.class.getName());
+
             enumCfg.setEnum(true);
-            enumCfg.setEnumValues(EnumType.ONE.name(), EnumType.TWO.name());
+
+            if (igniteInstanceName.equals(WRONG_CONF_NODE_NAME))
+                enumCfg.setEnumValues(F.asMap(EnumType.ONE.name(),
+                        EnumType.ONE.ordinal(),
+                        EnumType.TWO.name(),
+                        EnumType.ONE.ordinal()));
+            else
+                enumCfg.setEnumValues(F.asMap(EnumType.ONE.name(),
+                        EnumType.ONE.ordinal(),
+                        EnumType.TWO.name(),
+                        EnumType.TWO.ordinal()));
 
             bCfg.setTypeConfigurations(Arrays.asList(enumCfg, new BinaryTypeConfiguration(EnumHolder.class.getName())));
 
@@ -247,9 +260,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void checkSimple(boolean registered) throws Exception {
         startUp(registered);
 
-        if (!registered)
-            defineEnum();
-
         cache1.put(1, EnumType.ONE);
 
         validateSimple(1, EnumType.ONE, registered);
@@ -264,9 +274,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     private void checkNested(boolean registered) throws Exception {
         startUp(registered);
 
-        if (!registered)
-            defineEnum();
-
         cache1.put(1, new EnumHolder(EnumType.ONE));
 
         validateNested(1, EnumType.ONE, registered);
@@ -280,9 +287,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
      */
     private void checkNestedBuilder(boolean registered) throws Exception {
         startUp(registered);
-
-        if (!registered)
-            defineEnum();
 
         BinaryObject obj = node1.binary().builder(EnumHolder.class.getName()).setField("val", EnumType.ONE).build();
 
@@ -334,11 +338,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void checkSimpleBuilder(boolean registered) throws Exception {
         startUp(registered);
 
-        if (!registered)
-            defineEnum();
-
         BinaryObject binaryOne = node1.binary().buildEnum(EnumType.class.getName(), EnumType.ONE.ordinal());
-        BinaryObject binaryTwo = node1.binary().buildEnum(EnumType.class.getName(), EnumType.TWO.name());
+        BinaryObject binaryTwo = node1.binary().buildEnum(EnumType.class.getName(), EnumType.TWO.ordinal());
 
         cacheBinary1.put(EnumType.ONE.ordinal(), binaryOne);
         cacheBinary1.put(EnumType.TWO.ordinal(), binaryTwo);
@@ -392,9 +393,6 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void checkSimpleArray(boolean registered) throws Exception {
         startUp(registered);
 
-        if (!registered)
-            defineEnum();
-
         cache1.put(1, new EnumType[] { EnumType.ONE, EnumType.TWO });
 
         validateSimpleArray(registered);
@@ -409,11 +407,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void checkSimpleBuilderArray(boolean registered) throws Exception {
         startUp(registered);
 
-        if (!registered)
-            defineEnum();
-
         BinaryObject binaryOne = node1.binary().buildEnum(EnumType.class.getName(), EnumType.ONE.ordinal());
-        BinaryObject binaryTwo = node1.binary().buildEnum(EnumType.class.getName(), EnumType.TWO.name());
+        BinaryObject binaryTwo = node1.binary().buildEnum(EnumType.class.getName(), EnumType.TWO.ordinal());
 
         cacheBinary1.put(1, new BinaryObject[] { binaryOne, binaryTwo });
 
@@ -453,6 +448,94 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         Collection<BinaryObject> vals = binaryOne.type().enumValues();
 
         assertEqualsCollections(F.asList(binaryOne, binaryTwo), vals);
+    }
+
+    /**
+     * Checks the enum configuration validation during start up
+     *
+     * @throws Exception
+     */
+    public void testEnumWrongBinaryConfig() throws Exception {
+        this.register = true;
+
+        GridTestUtils.assertThrows(log, new Callable<Object> (){
+            @Override public Object call() throws Exception {
+                startGrid(WRONG_CONF_NODE_NAME);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Conflicting enum values");
+    }
+
+    /**
+     * Checks the enum validation during type registration
+     *
+     * @throws Exception
+     */
+    public void testEnumValidation() throws Exception {
+        startUp(false);
+
+        GridTestUtils.assertThrows(log, new Callable<Object> (){
+
+            @Override public Object call() throws Exception {
+
+                node1.binary().registerEnum("invalidEnumType1",
+                    F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal(),
+                    EnumType.TWO.name(), EnumType.ONE.ordinal()));
+
+                return null;
+            }
+        }, BinaryObjectException.class, "Conflicting enum values");
+    }
+
+    /**
+     * Checks the enum merge
+     *
+     * @throws Exception
+     */
+    public void testEnumMerge() throws Exception {
+        startUp(false);
+
+        final String enumName = "mergedEnum";
+
+        node1.binary().registerEnum(enumName,
+                F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal()));
+
+        GridTestUtils.assertThrows(log, new Callable<Object> (){
+
+            @Override public Object call() throws Exception {
+
+                node2.binary().registerEnum(enumName,
+                        F.asMap(EnumType.TWO.name(), EnumType.ONE.ordinal()));
+
+                return null;
+            }
+        }, BinaryObjectException.class, "Conflicting enum values. Name ");
+
+        GridTestUtils.assertThrows(log, new Callable<Object> (){
+            @Override public Object call() throws Exception {
+
+                node2.binary().registerEnum(enumName,
+                        F.asMap(EnumType.ONE.name(), EnumType.TWO.ordinal()));
+
+                return null;
+            }
+        }, BinaryObjectException.class, "Conflicting enum values. Value ");
+
+        node2.binary().registerEnum(enumName,
+                F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal(),
+                        EnumType.TWO.name(), EnumType.TWO.ordinal()));
+
+        Collection<BinaryObject> vals = node1.binary().type(enumName).enumValues();
+        BinaryObject[] values = vals.toArray(new BinaryObject[vals.size()]);
+
+        assertEquals(2, values.length);
+
+        assertEquals(EnumType.ONE.ordinal(), values[0].enumOrdinal());
+        assertEquals(EnumType.TWO.ordinal(), values[1].enumOrdinal());
+
+        assertEquals(EnumType.ONE.name(), values[0].enumName());
+        assertEquals(EnumType.TWO.name(), values[1].enumName());
     }
 
     /**
@@ -519,12 +602,14 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         assertEquals(node2.binary().typeId(EnumType.class.getName()), obj.type().typeId());
 
         assertEquals(val.ordinal(), obj.enumOrdinal());
-        assertEquals(val.name(), obj.enumName());
+
+        if (register)
+            assertEquals(val.name(), obj.enumName());
     }
 
     /** Register enum */
     private void defineEnum() {
-        node1.binary().defineEnum(EnumType.class.getName(),
+        node1.binary().registerEnum(EnumType.class.getName(),
                 F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal(),
                         EnumType.TWO.name(), EnumType.TWO.ordinal()));
     }

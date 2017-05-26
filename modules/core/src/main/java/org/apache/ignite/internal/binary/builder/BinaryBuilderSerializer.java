@@ -116,10 +116,12 @@ class BinaryBuilderSerializer {
             int typeId = writer.context().typeId(clsName);
             String typeName = writer.context().userTypeName(clsName);
 
-            Object[] constants = val.getClass().getEnumConstants();
-            Map<String, Integer> enumMap = new LinkedHashMap<>(constants.length);
-            for (Object o: constants)
-                enumMap.put(((Enum)o).name(), ((Enum)o).ordinal());
+            Object[] enumVals = val.getClass().getEnumConstants();
+
+            Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+            for (Object enumVal : enumVals)
+                enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
 
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true, enumMap);
 

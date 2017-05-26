@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -31,11 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
 
 /**
  * Tests enums in queries
@@ -84,6 +84,7 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.beforeTestsStarted();
+
         stopAllGrids();
     }
 
@@ -100,21 +101,23 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
         BinaryTypeConfiguration binEnumCfg = new BinaryTypeConfiguration(CFG_ENUM_NAME);
-        binEnumCfg.setEnumValues(Color.NAMES);
+
+        binEnumCfg.setEnum(true);
+        binEnumCfg.setEnumValues(Color.VALUES);
 
         binCfg.setTypeConfigurations(F.asList(binEnumCfg));
+
         cfg.setBinaryConfiguration(binCfg);
 
         cfg.setCacheConfiguration(
-                getCacheConfiguration(CACHE_NAME_ENUM_KEY),
-                getCacheConfiguration(CACHE_NAME_ENUM_VAL),
-                getCacheConfiguration(CACHE_NAME_ENUM_FIELD),
-                getCacheConfiguration(CACHE_NAME_ENUM_FIELD_IDX),
-                getCacheConfiguration(CACHE_NAME_CFG_ENUM_KEY),
-                getCacheConfiguration(CACHE_NAME_CFG_ENUM_VAL),
-                getCacheConfiguration(CACHE_NAME_CFG_ENUM_FIELD),
-                getCacheConfiguration(CACHE_NAME_CFG_ENUM_FIELD_IDX));
-
+            getCacheConfiguration(CACHE_NAME_ENUM_KEY),
+            getCacheConfiguration(CACHE_NAME_ENUM_VAL),
+            getCacheConfiguration(CACHE_NAME_ENUM_FIELD),
+            getCacheConfiguration(CACHE_NAME_ENUM_FIELD_IDX),
+            getCacheConfiguration(CACHE_NAME_CFG_ENUM_KEY),
+            getCacheConfiguration(CACHE_NAME_CFG_ENUM_VAL),
+            getCacheConfiguration(CACHE_NAME_CFG_ENUM_FIELD),
+            getCacheConfiguration(CACHE_NAME_CFG_ENUM_FIELD_IDX));
 
         if ("client".equals(gridName))
             cfg.setClientMode(true);
@@ -124,24 +127,28 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
 
     /** */
     private CacheConfiguration getCacheConfiguration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration<>(name);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(name);
+
         if (name.equals(CACHE_NAME_ENUM_KEY))
             ccfg.setIndexedTypes(Color.class, Integer.class);
         else if (name.equals(CACHE_NAME_ENUM_VAL))
             ccfg.setIndexedTypes(Integer.class, Color.class);
         else if (name.equals(CACHE_NAME_CFG_ENUM_KEY)) {
             QueryEntity qe = new QueryEntity(CFG_ENUM_NAME, Integer.class.getName());
+
             ccfg.setQueryEntities(F.asList(qe));
         }
         else if (name.equals(CACHE_NAME_CFG_ENUM_VAL)) {
             QueryEntity qe = new QueryEntity(Integer.class.getName(), CFG_ENUM_NAME);
+
             ccfg.setQueryEntities(F.asList(qe));
         }
         else if (name.equals(CACHE_NAME_ENUM_FIELD) ||
-                name.equals(CACHE_NAME_ENUM_FIELD_IDX) ||
-                name.equals(CACHE_NAME_CFG_ENUM_FIELD) ||
-                name.equals(CACHE_NAME_CFG_ENUM_FIELD_IDX)) {
+            name.equals(CACHE_NAME_ENUM_FIELD_IDX) ||
+            name.equals(CACHE_NAME_CFG_ENUM_FIELD) ||
+            name.equals(CACHE_NAME_CFG_ENUM_FIELD_IDX)) {
             QueryEntity entity = new QueryEntity();
+
             entity.setKeyType(Integer.class.getName());
 
             if (name.equals(CACHE_NAME_CFG_ENUM_FIELD) ||
@@ -165,7 +172,9 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
             if (name.equals(CACHE_NAME_ENUM_FIELD_IDX) ||
                 name.equals(CACHE_NAME_CFG_ENUM_FIELD_IDX)) {
                 ArrayList<QueryIndex> idxs = new ArrayList<>();
+
                 QueryIndex idx = new QueryIndex("color");
+
                 idxs.add(idx);
 
                 entity.setIndexes(idxs);
@@ -201,6 +210,7 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
         assertEquals(Color.GREEN.ordinal(), result.get(0).get(1));
 
         result = cache.query(new SqlFieldsQuery("select * from Integer where _key = 'BLACK'")).getAll();
+
         assertEquals(1, result.size());
         assertEquals(Color.BLACK, result.get(0).get(0));
         assertEquals(Color.BLACK.ordinal(), result.get(0).get(1));
@@ -216,27 +226,39 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
             cache.put(color.ordinal(), color);
 
         List<List<?>> result = cache.query(new SqlFieldsQuery("select * from Color where _val = 0")).getAll();
+
         assertEquals(Color.BLACK.ordinal(), ((Number) result.get(0).get(0)).intValue());
         assertEquals(Color.BLACK, result.get(0).get(1));
 
         result = cache.query(new SqlFieldsQuery("select _key from Color where _val = 'RED'")).getAll();
+
         assertEquals(Color.RED.ordinal(), ((Number) result.get(0).get(0)).intValue());
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?").setArgs(Color.RED.toString())).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?")
+            .setArgs(Color.RED.toString())).getAll();
+
         assertEquals(Color.RED.ordinal(), ((Number) result.get(0).get(0)).intValue());
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?").setArgs(Color.RED)).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?")
+            .setArgs(Color.RED)).getAll();
+
         assertEquals(Color.RED.ordinal(), ((Number) result.get(0).get(0)).intValue());
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?").setArgs(Color.RED.ordinal())).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?")
+            .setArgs(Color.RED.ordinal())).getAll();
+
         assertEquals(Color.RED.ordinal(), ((Number) result.get(0).get(0)).intValue());
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val in ('RED', 'GREEN', 'BLUE') order by _key asc")).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color " +
+            "where _val in ('RED', 'GREEN', 'BLUE') order by _key asc")).getAll();
+
         assertEquals(Color.RED.ordinal(), ((Number) result.get(0).get(0)).intValue());
         assertEquals(Color.GREEN.ordinal(), ((Number) result.get(1).get(0)).intValue());
         assertEquals(Color.BLUE.ordinal(), ((Number) result.get(2).get(0)).intValue());
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val > 'RED' and _val < 'BLUE'")).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color " +
+            "where _val > 'RED' and _val < 'BLUE'")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), ((Number) result.get(0).get(0)).intValue());
     }
 
@@ -258,34 +280,44 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
      * Test that SQL queries can use enums constants
      */
     public void testSqlQueryEnumValueUnavailableClass() throws Exception {
-        IgniteCache cache = grid("client").cache(CACHE_NAME_CFG_ENUM_VAL).withKeepBinary();
+        IgniteCache<?, ?> cache = grid("client").cache(CACHE_NAME_CFG_ENUM_VAL).withKeepBinary();
 
-        cache.query(new SqlFieldsQuery("insert into Color (_key, _val) values (0, 'BLACK'), (?, ?), (?, ?), (?, ?), (?, ?)")
-                .setArgs(Color.WHITE.ordinal(), Color.WHITE.ordinal(),
-                        Color.RED.ordinal(), Color.RED.name(),
-                        Color.GREEN.ordinal(), Color.GREEN.ordinal(),
-                        Color.BLUE.ordinal(), Color.BLUE.ordinal()
-                ));
+        cache.query(new SqlFieldsQuery("insert into Color (_key, _val) " +
+            "values (0, 'BLACK'), (?, ?), (?, ?), (?, ?), (?, ?)")
+            .setArgs(Color.WHITE.ordinal(), Color.WHITE.ordinal(),
+            Color.RED.ordinal(), Color.RED.name(),
+            Color.GREEN.ordinal(), Color.GREEN.ordinal(),
+            Color.BLUE.ordinal(), Color.BLUE.ordinal()));
 
         List<List<?>> result = cache.query(new SqlFieldsQuery("select * from Color where _val = 0")).getAll();
+
         assertEquals(Color.BLACK.ordinal(), result.get(0).get(0));
         assertEquals(Color.BLACK.ordinal(), ((BinaryObject)result.get(0).get(1)).enumOrdinal());
 
         result = cache.query(new SqlFieldsQuery("select _key from Color where _val = 'RED'")).getAll();
+
         assertEquals(Color.RED.ordinal(), result.get(0).get(0));
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?").setArgs(Color.RED.toString())).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?")
+            .setArgs(Color.RED.toString())).getAll();
+
         assertEquals(Color.RED.ordinal(), result.get(0).get(0));
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?").setArgs(Color.RED.ordinal())).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color where _val = ?")
+            .setArgs(Color.RED.ordinal())).getAll();
+
         assertEquals(Color.RED.ordinal(), result.get(0).get(0));
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val in ('RED', 'GREEN', 'BLUE') order by _key asc")).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color " +
+            "where _val in ('RED', 'GREEN', 'BLUE') order by _key asc")).getAll();
+
         assertEquals(Color.RED.ordinal(), result.get(0).get(0));
         assertEquals(Color.GREEN.ordinal(), result.get(1).get(0));
         assertEquals(Color.BLUE.ordinal(), result.get(2).get(0));
 
-        result = cache.query(new SqlFieldsQuery("select _key from Color where _val > 'RED' and _val < 'BLUE'")).getAll();
+        result = cache.query(new SqlFieldsQuery("select _key from Color " +
+            "where _val > 'RED' and _val < 'BLUE'")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), result.get(0).get(0));
     }
 
@@ -295,78 +327,92 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
     public void testSqlQueryEnumFieldUnavailableClass() throws Exception {
         IgniteCache<Integer, Object> cache = grid("client").cache(CACHE_NAME_CFG_ENUM_FIELD).withKeepBinary();
 
-        cache.query(new SqlFieldsQuery("insert into Object (_key, name, color) values (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)")
-                .setArgs(Color.BLACK.ordinal(), "Black Hole", Color.BLACK.name(),
-                        Color.WHITE.ordinal(), "White Hole", Color.WHITE.ordinal(),
-                        Color.RED.ordinal(), "Achenar", Color.RED.name(),
-                        Color.GREEN.ordinal(), "Antares B", Color.GREEN.ordinal(),
-                        Color.BLUE.ordinal(), "Rigel", Color.BLUE.ordinal()
-                ));
+        cache.query(new SqlFieldsQuery("insert into Object (_key, name, color) " +
+            "values (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)")
+            .setArgs(Color.BLACK.ordinal(), "Black Hole", Color.BLACK.name(),
+            Color.WHITE.ordinal(), "White Hole", Color.WHITE.ordinal(),
+            Color.RED.ordinal(), "Achenar", Color.RED.name(),
+            Color.GREEN.ordinal(), "Antares B", Color.GREEN.ordinal(),
+            Color.BLUE.ordinal(), "Rigel", Color.BLUE.ordinal()));
 
-        List<List<?>> result = cache.query(new SqlFieldsQuery("select _key from Object where color = ?").setArgs(Color.BLUE.name())).getAll();
+        List<List<?>> result = cache.query(new SqlFieldsQuery("select _key from Object where color = ?")
+            .setArgs(Color.BLUE.name())).getAll();
+
         assertEquals(Color.BLUE.ordinal(), ((Number) result.get(0).get(0)).intValue());
 
         result = cache.query(new SqlFieldsQuery("select color from Object where name='Antares B'")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), ((BinaryObject)result.get(0).get(0)).enumOrdinal());
 
         result = cache.query(new SqlFieldsQuery("select _key from Object where color='GREEN'")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), result.get(0).get(0));
 
-
         result = cache.query(new SqlFieldsQuery("select _key from Object where color=3")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), result.get(0).get(0));
 
         //update
         cache.query(new SqlFieldsQuery("update Object set color='RED' where color=3")).getAll();
-        result = cache.query(new SqlFieldsQuery("select color from Object where name='Antares B'")).getAll();
-        assertEquals(Color.RED.ordinal(), ((BinaryObject)result.get(0).get(0)).enumOrdinal());
 
+        result = cache.query(new SqlFieldsQuery("select color from Object where name='Antares B'")).getAll();
+
+        assertEquals(Color.RED.ordinal(), ((BinaryObject)result.get(0).get(0)).enumOrdinal());
     }
 
     /** */
     private void checkFields(String cacheName) throws Exception {
         IgniteCache<Integer, Star> cache = grid("client").cache(cacheName);
 
-        cache.query(new SqlFieldsQuery("insert into Star (_key, _val) values (?,?), (?, ?), (?, ?), (?, ?), (?, ?)")
-                .setArgs(Color.BLACK.ordinal(), new Star("Black Hole", Color.BLACK),
-                        Color.WHITE.ordinal(), new Star("White Hole", Color.WHITE),
-                        Color.RED.ordinal(), new Star("Achenar", Color.RED),
-                        Color.GREEN.ordinal(), new Star("Antares B", Color.GREEN),
-                        Color.BLUE.ordinal(), new Star("Rigel", Color.BLUE)
-                ));
+        cache.query(new SqlFieldsQuery("insert into Star (_key, _val) " +
+            "values (?,?), (?, ?), (?, ?), (?, ?), (?, ?)")
+            .setArgs(Color.BLACK.ordinal(), new Star("Black Hole", Color.BLACK),
+            Color.WHITE.ordinal(), new Star("White Hole", Color.WHITE),
+            Color.RED.ordinal(), new Star("Achenar", Color.RED),
+            Color.GREEN.ordinal(), new Star("Antares B", Color.GREEN),
+            Color.BLUE.ordinal(), new Star("Rigel", Color.BLUE)));
 
-        List<List<?>> result = cache.query(new SqlFieldsQuery("select _key from Star where color = ?").setArgs(Color.BLUE)).getAll();
+        List<List<?>> result = cache.query(new SqlFieldsQuery("select _key from Star where color = ?")
+            .setArgs(Color.BLUE)).getAll();
+
         assertEquals(Color.BLUE.ordinal(), ((Number) result.get(0).get(0)).intValue());
 
         result = cache.query(new SqlFieldsQuery("select color from Star where name='Antares B'")).getAll();
+
         assertEquals(Color.GREEN, result.get(0).get(0));
 
         result = cache.query(new SqlFieldsQuery("select _key from Star where color='GREEN'")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), result.get(0).get(0));
 
-
         result = cache.query(new SqlFieldsQuery("select _key from Star where color=3")).getAll();
+
         assertEquals(Color.GREEN.ordinal(), result.get(0).get(0));
 
         //update
         cache.query(new SqlFieldsQuery("update Star set color='RED' where color=3")).getAll();
+
         result = cache.query(new SqlFieldsQuery("select color from Star where name='Antares B'")).getAll();
+
         assertEquals(Color.RED, result.get(0).get(0));
     }
 
     /**
-     * @param inEnumClass Enum class.
+     * @param cls Enum class.
      * @param <T> Enum type parameter.
-     * @return Array of enum names.
+     * @return Enum names to ordinal mapping.
      */
-    private static <T extends Enum<?>> String[] getEnumNames(Class<T> inEnumClass){
-        T [] values = inEnumClass.getEnumConstants();
-        int len = values.length;
-        String[] names = new String[len];
-        for(int i=0;i<values.length;i++){
-            names[i] = values[i].name();
-        }
-        return names;
+    private static <T extends Enum<?>> Map<String, Integer> getEnumValues(Class<T> cls){
+        T [] values = cls.getEnumConstants();
+
+        int size = values.length;
+
+        Map<String, Integer> result = new LinkedHashMap<>(size);
+
+        for (T val : values)
+            result.put(val.name(), val.ordinal());
+
+        return result;
     }
 
     /** */
@@ -377,12 +423,15 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
         GREEN,
         BLUE;
 
-        public static final String[] NAMES = getEnumNames(Color.class);
+        public static final Map<String, Integer> VALUES = getEnumValues(Color.class);
     }
 
     /** */
     public static class Star {
+        /** */
         private String name;
+
+        /** */
         private Color color;
 
         /** */
@@ -400,9 +449,12 @@ public class IgniteSqlQueryEnumTest extends GridCommonAbstractTest {
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
+
             if (!(o instanceof Star))
                 return false;
+
             Star other = (Star)o;
+
             return this.name.equals(other.name) && this.color.equals(other.color);
         }
     }

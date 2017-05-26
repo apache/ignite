@@ -70,7 +70,7 @@ public class BinaryTypeConfiguration {
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
-        enumValues = other.enumValues;
+        enumValues = other.enumValues != null ? new LinkedHashMap<>(other.enumValues) : null;
         typeName = other.typeName;
     }
 
@@ -187,40 +187,21 @@ public class BinaryTypeConfiguration {
     }
 
     /**
-     * Sets enum name to ordinal mapping.
-     *
-     * @param values Array of enum constants names.
-     * @return {@code this} for chaining.
-     */
-    public BinaryTypeConfiguration setEnumValues(String... values) {
-        if (values == null) {
-            this.enumValues = null;
-            return this;
-        }
-
-        Map<String, Integer> enumValues = new LinkedHashMap<>(values.length);
-        for (int idx = 0; idx < values.length; ++idx)
-            enumValues.put(values[idx], idx);
-
-        return setEnumValues(enumValues);
-    }
-
-    /**
      * Set enum ordinal to names mapping.
      *
      * @param values Map of enum name to ordinal.
      * @return {@code this} for chaining.
      */
-    public BinaryTypeConfiguration setEnumValues(Map<String, Integer> values) {
-        this.isEnum = true;
+    public BinaryTypeConfiguration setEnumValues(@Nullable Map<String, Integer> values) {
         this.enumValues = values;
+
         return this;
     }
 
     /**
      * @return Enum name to ordinal mapping
      */
-    public Map<String, Integer> getEnumValues() {
+    @Nullable public Map<String, Integer> getEnumValues() {
         return enumValues;
     }
 

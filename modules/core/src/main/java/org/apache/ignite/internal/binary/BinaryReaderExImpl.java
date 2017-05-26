@@ -1428,7 +1428,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /**
      * @param fieldId Field ID.
      * @return Binary Enum
-     * @throws BinaryObjectException
+     * @throws BinaryObjectException If failed.
      */
     @Nullable BinaryEnumObjectImpl readBinaryEnum(int fieldId) throws BinaryObjectException {
         return findFieldById(fieldId) ? BinaryUtils.doReadBinaryEnum(in, ctx) : null;
@@ -1947,6 +1947,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     obj = ((BinaryObject)obj).deserialize();
 
                 break;
+
             case CLASS:
                 obj = BinaryUtils.doReadClass(in, ctx, ldr);
 
