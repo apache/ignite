@@ -151,6 +151,7 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TValue">Value type.</typeparam>
         /// <param name="query">The query.</param>
         /// <returns>Affected row count.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query)
         {
             IgniteArgumentCheck.NotNull(query, "query");
@@ -174,6 +175,7 @@ namespace Apache.Ignite.Linq
         /// Affected row count.
         /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         public static int RemoveAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, 
             Expression<Func<ICacheEntry<TKey, TValue>, bool>> predicate)
         {
