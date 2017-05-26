@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -385,19 +384,6 @@ public class GridH2QueryContext {
 
         if (qctxs.putIfAbsent(x.key, x) != null)
             throw new IllegalStateException("Query context is already set.");
-    }
-
-    /**
-     * Sets current session local query context. This method must be called when all the
-     * non-volatile properties are already set to ensure visibility for other threads.
-     *
-     * @param c Connection.
-     * @param x Query context.
-     */
-     public static void set(H2Connection c, GridH2QueryContext x) {
-         assert x != null;
-
-         c.setQueryContextForSession(x);
     }
 
     /**

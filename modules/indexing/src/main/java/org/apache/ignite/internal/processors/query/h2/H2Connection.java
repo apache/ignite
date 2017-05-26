@@ -50,7 +50,7 @@ public final class H2Connection implements GridCancelable {
     private static final int PREPARED_STMT_CACHE_SIZE = IgniteSystemProperties.getInteger(
         IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE, 256);
 
-    /** */
+    /** Session local query contexts. */
     private static final ConcurrentMap<Session,GridH2QueryContext> sesLocQctx =
         new ConcurrentHashMap<>();
 
@@ -93,16 +93,16 @@ public final class H2Connection implements GridCancelable {
 
     /**
      * @param ses Session.
-     * @return Session local query context.
+     * @return Session local query context or {@code null} if none.
      */
-    public static GridH2QueryContext getQueryContextForSession(Session ses) {
+    public static GridH2QueryContext getQueryContext(Session ses) {
         return ses == null ? null : sesLocQctx.get(ses);
     }
 
     /**
-     * @param qctx Current session query context.
+     * @param qctx Query context for this H2 session.
      */
-    public void setQueryContextForSession(GridH2QueryContext qctx) {
+    public void setQueryContext(GridH2QueryContext qctx) {
         assert qctx != null;
 
         if (sesLocQctx.put(ses, qctx) != null)
@@ -329,7 +329,7 @@ public final class H2Connection implements GridCancelable {
          * @param maxSize Size.
          */
         private StatementCache(int maxSize) {
-            super(maxSize, (float)0.75, true);
+            super(Math.min(maxSize, 32), 0.75f, true);
 
             this.maxSize = maxSize;
         }

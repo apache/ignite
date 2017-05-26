@@ -750,12 +750,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Cannot prepare query metadata", e);
         }
 
-        final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+        final GridH2QueryContext qctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
             .filter(filter).distributedJoinMode(OFF);
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                GridH2QueryContext.set(conn, ctx);
+                conn.setQueryContext(qctx);
 
                 GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
                     cacheName, U.currentTimeMillis(), cancel, true, conn);
@@ -1068,8 +1068,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             conn.setupConnection(false, false);
 
-            GridH2QueryContext.set(conn, new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
-                .distributedJoinMode(OFF));
+            conn.setQueryContext(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+                    .filter(filter).distributedJoinMode(OFF));
 
             GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, cacheName,
                 U.currentTimeMillis(), null, true, conn);
@@ -1212,7 +1212,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Here we will just parse the statement, no need to optimize it at all.
             c.setupConnection(/*distributedJoins*/false, /*enforceJoinOrder*/true);
 
-            GridH2QueryContext.set(c, new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
+            c.setQueryContext(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoinMode(distributedJoinMode));
 
             PreparedStatement stmt;

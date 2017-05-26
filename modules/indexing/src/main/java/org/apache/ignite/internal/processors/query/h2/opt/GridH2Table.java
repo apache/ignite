@@ -57,7 +57,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.processors.query.h2.H2Connection.getQueryContextForSession;
+import static org.apache.ignite.internal.processors.query.h2.H2Connection.getQueryContext;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
@@ -248,10 +248,12 @@ public class GridH2Table extends TableBase {
         }
 
         if (snapshotInLock(ses)) {
-            final GridH2QueryContext qctx = getQueryContextForSession(ses);
+            final GridH2QueryContext qctx = getQueryContext(ses);
 
             assert qctx != null;
 
+            // Intentionally pass null instead of qctx because index snapshots
+            // must not be added to the qctx here, they will be released on unlock.
             snapshotIndexes(null, qctx.segment());
         }
 
@@ -266,7 +268,7 @@ public class GridH2Table extends TableBase {
         if (!snapshotEnabled)
             return false;
 
-        GridH2QueryContext qctx = getQueryContextForSession(ses);
+        GridH2QueryContext qctx = getQueryContext(ses);
 
         // On MAP queries with distributed joins we lock tables before the queries.
         return qctx == null || qctx.type() != MAP || !qctx.hasIndexSnapshots();

@@ -592,7 +592,7 @@ public class GridMapQueryExecutor {
 
                         conn.setupConnection(distributedJoinMode != OFF, enforceJoinOrder);
 
-                        GridH2QueryContext.set(conn, qctx);
+                        conn.setQueryContext(qctx);
 
                         rs = h2.executeSqlQueryWithTimer(h2.schema(mainCctx.name()), conn, qry.query(),
                             qry.parameters(params),
