@@ -10186,6 +10186,29 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param x X.
+     */
+    public static int nearestPow2(int x) {
+        return nearestPow2(x, true);
+    }
+
+    /**
+     * @param x X.
+     * @param less Less.
+     */
+    public static int nearestPow2(int x, boolean less) {
+        int y = 1;
+
+        while (y < x)
+            y *= 2;
+
+        if (less)
+            y /= 2;
+
+        return y;
+    }
+
+    /**
      * @param lock Lock.
      */
     public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
