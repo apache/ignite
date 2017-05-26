@@ -10197,10 +10197,16 @@ public abstract class IgniteUtils {
      * @param less Less.
      */
     public static int nearestPow2(int x, boolean less) {
+        assert x > 0 : "can not calculate for less zero";
+
         int y = 1;
 
-        while (y < x)
+        while (y < x){
+            if ((long)y * 2 > Integer.MAX_VALUE)
+                return y;
+
             y *= 2;
+        }
 
         if (less)
             y /= 2;
