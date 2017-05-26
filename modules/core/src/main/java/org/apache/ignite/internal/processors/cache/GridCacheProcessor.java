@@ -1400,7 +1400,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheOffheapManager offheapMgr;
 
-        if (ctx.config().getPersistenceConfiguration() != null) {
+        if (ctx.config().getPersistentStoreConfiguration() != null) {
             ClassLoader clsLdr = U.gridClassLoader();
 
             try {
@@ -2074,7 +2074,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
 
-        if (ctx.config().isPersistentEnable()) {
+        if (ctx.config().isPersistentStoreEnabled()) {
             dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
 
             pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);

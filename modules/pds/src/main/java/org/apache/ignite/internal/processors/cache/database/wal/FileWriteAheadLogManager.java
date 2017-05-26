@@ -45,7 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -133,7 +133,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private long maxWalSegmentSize;
 
     /** */
-    private final PersistenceConfiguration dbCfg;
+    private final PersistentStoreConfiguration dbCfg;
 
     /** */
     private IgniteConfiguration igCfg;
@@ -187,7 +187,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public FileWriteAheadLogManager(GridKernalContext ctx) {
         igCfg = ctx.config();
 
-        PersistenceConfiguration dbCfg = igCfg.getPersistenceConfiguration();
+        PersistentStoreConfiguration dbCfg = igCfg.getPersistentStoreConfiguration();
 
         assert dbCfg != null : "WAL should not be created if persistence is disabled.";
 
@@ -1154,7 +1154,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Validate files depending on {@link PersistenceConfiguration#getWalSegments()}  and create if need.
+     * Validate files depending on {@link PersistentStoreConfiguration#getWalSegments()}  and create if need.
      * Check end when exit condition return false or all files are passed.
      *
      * @param startWith Start with.
@@ -1991,7 +1991,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final FileArchiver archiver;
 
         /** */
-        private final PersistenceConfiguration dbCfg;
+        private final PersistentStoreConfiguration dbCfg;
 
         /** */
         private final RecordSerializer serializer;
@@ -2037,7 +2037,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File walArchiveDir,
             FileWALPointer start,
             FileWALPointer end,
-            PersistenceConfiguration dbCfg,
+            PersistentStoreConfiguration dbCfg,
             RecordSerializer serializer,
             FileArchiver archiver,
             IgniteLogger log,
