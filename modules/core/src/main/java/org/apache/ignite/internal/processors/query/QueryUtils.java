@@ -203,7 +203,11 @@ public class QueryUtils {
         String normalTblName = entity.getTableName();
 
         if (normalTblName == null)
+            // Replace special characters for auto-generated table name.
             normalTblName = normalizeObjectName(tableName(entity), true);
+        else
+            // No replaces for manually defined table.
+            normalTblName = normalizeObjectName(normalTblName, false);
 
         normalEntity.setTableName(normalTblName);
 
