@@ -442,13 +442,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             assertEquals(DeclaredBodyEnumType.ONE, cache2.get(1));
         }
 
-        BinaryObject obj = (BinaryObject) cacheBinary1.get(1);
-        assertTrue(obj.type().isEnum());
-
-        assertEquals(node1.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
-        assertEquals(node2.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
-
-        assertEquals(DeclaredBodyEnumType.ONE.ordinal(), obj.enumOrdinal());
+        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnumType.ONE);
+        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnumType.ONE);
     }
 
 
@@ -514,6 +509,21 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(node1.binary().typeId(EnumType.class.getName()), obj.type().typeId());
         assertEquals(node2.binary().typeId(EnumType.class.getName()), obj.type().typeId());
+
+        assertEquals(val.ordinal(), obj.enumOrdinal());
+    }
+
+    /**
+     * Validate single value.
+     *
+     * @param obj Binary value.
+     * @param val Expected value.
+     */
+    private void validate(BinaryObject obj, DeclaredBodyEnumType val) {
+        assertTrue(obj.type().isEnum());
+
+        assertEquals(node1.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
+        assertEquals(node2.binary().typeId(DeclaredBodyEnumType.class.getName()), obj.type().typeId());
 
         assertEquals(val.ordinal(), obj.enumOrdinal());
     }
