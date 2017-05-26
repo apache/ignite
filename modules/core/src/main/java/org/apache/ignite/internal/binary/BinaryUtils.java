@@ -1136,7 +1136,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Check for enum.
+     * Check for represents a Enum.
      *
      * @param cls Class.
      * @return {@code True} if this is a enum class.
