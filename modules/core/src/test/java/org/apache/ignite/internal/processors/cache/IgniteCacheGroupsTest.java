@@ -35,11 +35,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,6 +57,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -2416,6 +2418,98 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             assertEquals(part, aff5.partition(k));
             assertEquals(part, aff6.partition(k));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueriesMultipleGroups1() throws Exception {
+        continuousQueriesMultipleGroups(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueriesMultipleGroups2() throws Exception {
+        continuousQueriesMultipleGroups(4);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @throws Exception If failed.
+     */
+    private void continuousQueriesMultipleGroups(int srvs) throws Exception {
+        Ignite srv0 = startGrids(srvs);
+
+        client = true;
+
+        Ignite client = startGrid(srvs);
+
+        client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
+        client.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1, false));
+
+        client.createCache(cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1, false));
+        client.createCache(cacheConfiguration(GROUP2, "c5", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 1, false));
+
+        client.createCache(cacheConfiguration(null, "c7", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(null, "c8", PARTITIONED, TRANSACTIONAL, 1, false));
+
+        String[] cacheNames = {"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"};
+
+        AtomicInteger c1 = registerListener(client, "c1");
+
+        for (String cache : cacheNames)
+            srv0.cache(cache).put(1, 1);
+
+        waitForEvents(c1, 1);
+
+        for (String cache : cacheNames)
+            srv0.cache(cache).put(1, 1);
+
+        waitForEvents(c1, 1);
+    }
+
+    /**
+     * @param cntr Counter.
+     * @param expEvts Expected events number.
+     * @throws Exception If failed.
+     */
+    private void waitForEvents(final AtomicInteger cntr, final int expEvts) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                if (cntr.get() < expEvts)
+                    log.info("Wait for events [rcvd=" + cntr.get() + ", exp=" + expEvts + ']');
+
+                return false;
+            }
+        }, 5000);
+
+        assertEquals(expEvts, cntr.get());
+        assertTrue(cntr.compareAndSet(expEvts, 0));
+    }
+
+    /**
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return Received events counter.
+     */
+    private AtomicInteger registerListener(Ignite node, String cacheName) {
+        ContinuousQuery qry = new ContinuousQuery();
+
+        final AtomicInteger cntr = new AtomicInteger();
+
+        qry.setLocalListener(new CacheEntryUpdatedListener() {
+            @Override public void onUpdated(Iterable iterable) {
+                for (Object evt : iterable)
+                    cntr.incrementAndGet();
+            }
+        });
+
+        node.cache(cacheName).query(qry);
+
+        return cntr;
     }
 
     /**
