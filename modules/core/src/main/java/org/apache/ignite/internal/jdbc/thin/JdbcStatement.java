@@ -25,7 +25,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
 
@@ -39,6 +38,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  */
 public class JdbcStatement implements Statement {
     /** Default queryFetch size. */
+    // TODO: Rename to page size.
     private static final int DFLT_FETCH_SIZE = 1024;
 
     /** Ignite endpoint and I/O protocol implementation. */
@@ -86,7 +86,6 @@ public class JdbcStatement implements Statement {
             throw new SQLException("SQL query is empty");
 
         try {
-
             SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), fetchSize, maxRows,
                 sql, args);
 

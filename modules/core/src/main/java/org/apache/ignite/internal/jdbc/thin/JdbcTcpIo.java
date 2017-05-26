@@ -213,6 +213,7 @@ public class JdbcTcpIo {
 
         List<List<Object>> items = readRows(reader);
 
+        // TODO: Return SqlListenerResponse and analyze result up the stack
         return new SqlListenerQueryExecuteResult(qryId, meta, items, last, isQuery);
     }
 
