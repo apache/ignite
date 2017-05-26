@@ -735,13 +735,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             return;
 
         if (addEvicting()) {
-            // Attempt to evict partition entries from cache.
-            clearAll();
+            try {
+                // Attempt to evict partition entries from cache.
+                clearAll();
 
-            if (isEmpty() && getSize(state) == 0 && casState(state, EVICTED)) {
-                if (log.isDebugEnabled())
-                    log.debug("Evicted partition: " + this);
-
+                if (isEmpty() && getSize(state) == 0 && casState(state, EVICTED)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Evicted partition: " + this);
+                    // finishDestroy() will be initiated by clearEvicting().
+                }
+            }
+            finally {
                 clearEvicting();
             }
         }
