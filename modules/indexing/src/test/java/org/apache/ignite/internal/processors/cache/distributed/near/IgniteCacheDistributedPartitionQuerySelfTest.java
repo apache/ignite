@@ -78,7 +78,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDis
         for (Cache.Entry<ClientKey, Client> client : clients)
             assertEquals("Incorrect partition", parts[0], affinity.partition(client.getKey()));
 
-        SqlFieldsQuery qry2 = new SqlFieldsQuery("select cl._KEY, cl._VAL from \"cl\".Client cl");
+        SqlFieldsQuery qry2 = new SqlFieldsQuery("select cl._KEY, cl._VAL from cl.Client cl");
         qry2.setLocal(true);
         qry2.setPartitions(parts[0]);
 
