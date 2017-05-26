@@ -17,7 +17,13 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
@@ -29,9 +35,6 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * Ignite benchmark that performs get operations.
  */
 public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
-    /** */
-    private static final String CACHE_NAME = "atomic";
-
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -40,8 +43,39 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
                 "must by less then the range (\"-r\", \"--range\").");
 
-        String cacheName = cache().getName();
+        if (args.preloadAmount() > 0) {
+            List<IgniteCache> caches = grpCaches != null ? grpCaches : (List)Collections.singletonList(cache);
 
+            if (caches.size() > 1) {
+                ExecutorService executor = Executors.newFixedThreadPool(10);
+
+                try {
+                    List<Future<?>> futs = new ArrayList<>();
+
+                    for (final IgniteCache cache : caches) {
+                        futs.add(executor.submit(new Runnable() {
+                            @Override public void run() {
+                                loadCache(cache.getName());
+                            }
+                        }));
+                    }
+
+                    for (Future<?> fut : futs)
+                        fut.get();
+                }
+                finally {
+                    executor.shutdown();
+                }
+            }
+            else
+                loadCache(caches.get(0).getName());
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private void loadCache(String cacheName) {
         println(cfg, "Loading data for cache: " + cacheName);
 
         long start = System.nanoTime();
@@ -59,12 +93,15 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
             }
         }
 
-        println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
+        println(cfg, "Finished populating query data [cache=" + cacheName +
+            ", time=" + ((System.nanoTime() - start) / 1_000_000) + "ms]");
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.get(key);
 
@@ -73,6 +110,6 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache(CACHE_NAME);
+        return ignite().cache("atomic");
     }
 }

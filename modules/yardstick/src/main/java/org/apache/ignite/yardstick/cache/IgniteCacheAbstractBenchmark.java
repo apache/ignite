@@ -30,7 +30,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.IgniteNode;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
@@ -42,10 +44,26 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     protected IgniteCache<K, V> cache;
 
     /** */
+    protected List<IgniteCache> grpCaches;
+
+    /** */
     private ThreadLocal<ThreadRange> threadRange = new ThreadLocal<>();
 
     /** */
     private AtomicInteger threadIdx = new AtomicInteger();
+
+    /** */
+    private int cachesInGrp;
+
+    /**
+     * @return Cache for benchmark operation.
+     */
+    protected final IgniteCache<K, V> cacheForOperation() {
+        if (cachesInGrp > 1)
+          return grpCaches.get(ThreadLocalRandom.current().nextInt(cachesInGrp));
+
+        return cache;
+    }
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -53,9 +71,46 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
 
         cache = cache();
 
+        CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+        String grpName = ccfg.getGroupName();
+
         BenchmarkUtils.println(cfg, "Benchmark setUp [name=" + getClass().getSimpleName() +
             ", cacheName="+ cache.getName() +
+            ", cacheGroup="+ grpName +
             ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
+
+
+        cachesInGrp = args.cachesInGroup();
+
+        if (cachesInGrp > 1) {
+            if (grpName == null)
+                throw new IllegalArgumentException("Group is not configured for cache: " + cache.getName());
+
+            JdkMarshaller marsh = new JdkMarshaller();
+
+            ccfg = marsh.unmarshal(marsh.marshal(ccfg), null);
+
+            List<CacheConfiguration> toCreate = new ArrayList<>();
+
+            for (int i = 0; i < cachesInGrp - 1; i++) {
+                CacheConfiguration<?, ?> ccfg0 = new CacheConfiguration<>(ccfg);
+
+                ccfg0.setName(cache.getName() + "-" + i);
+                ccfg0.setGroupName(grpName);
+
+                toCreate.add(ccfg0);
+            }
+
+            Collection<IgniteCache> caches = ignite().getOrCreateCaches(toCreate);
+
+            grpCaches = new ArrayList<>(caches);
+
+            grpCaches.add(cache);
+
+            BenchmarkUtils.println(cfg, "Created additional caches for group [cachesInGrp=" + grpCaches.size() +
+                ", grp=" + grpName + ']');
+        }
 
         if (args.printPartitionStatistics()) {
             Map<ClusterNode, T2<List<Integer>, List<Integer>>> parts = new HashMap<>();

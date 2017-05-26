@@ -31,6 +31,8 @@ public class IgnitePutIfAbsentIndexedValue1Benchmark extends IgniteCacheAbstract
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         int key = insCnt.getAndIncrement();
 
         cache.putIfAbsent(key, new Person1(key));
