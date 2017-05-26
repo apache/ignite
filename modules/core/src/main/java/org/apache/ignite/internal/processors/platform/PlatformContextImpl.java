@@ -31,7 +31,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageF
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -128,7 +126,6 @@ public class PlatformContextImpl implements PlatformContext {
         addEventTypes(evtTyps0, EventType.EVTS_CHECKPOINT);
         addEventTypes(evtTyps0, EventType.EVTS_DISCOVERY_ALL);
         addEventTypes(evtTyps0, EventType.EVTS_JOB_EXECUTION);
-        addEventTypes(evtTyps0, EventType.EVTS_SWAPSPACE);
         addEventTypes(evtTyps0, EventType.EVTS_TASK_EXECUTION);
 
         evtTyps = Collections.unmodifiableSet(evtTyps0);
@@ -609,14 +606,6 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeObject(event0.jobId());
             writeNode(writer, event0.taskNode());
             writer.writeUuid(event0.taskSubjectId());
-        }
-        else if (evt0 instanceof SwapSpaceEvent) {
-            writer.writeInt(9);
-            writeCommonEventData(writer, evt0);
-
-            SwapSpaceEvent event0 = (SwapSpaceEvent)evt0;
-
-            writer.writeString(event0.space());
         }
         else if (evt0 instanceof TaskEvent) {
             writer.writeInt(10);

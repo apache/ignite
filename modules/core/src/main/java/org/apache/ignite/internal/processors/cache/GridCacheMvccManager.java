@@ -262,16 +262,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             for (GridCacheFuture<?> fut : activeFutures())
                 fut.onNodeLeft(discoEvt.eventNode().id());
 
-            for (GridCacheAtomicFuture<?> cacheFut : atomicFuts.values()) {
+            for (GridCacheAtomicFuture<?> cacheFut : atomicFuts.values())
                 cacheFut.onNodeLeft(discoEvt.eventNode().id());
-
-                if (cacheFut.isCancelled() || cacheFut.isDone()) {
-                    long futId = cacheFut.id();
-
-                    if (futId > 0)
-                        atomicFuts.remove(futId, cacheFut);
-                }
-            }
         }
     };
 
@@ -1369,9 +1361,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      */
     private class DataStreamerFuture extends GridFutureAdapter<Void> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Topology version. Instance field for toString method only. */
         @GridToStringInclude
         private final AffinityTopologyVersion topVer;

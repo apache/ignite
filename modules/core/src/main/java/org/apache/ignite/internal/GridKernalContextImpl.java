@@ -64,7 +64,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -160,7 +160,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private OdbcProcessor odbcProc;
+    private SqlListenerProcessor sqlListenerProc;
 
     /** */
     @GridToStringInclude
@@ -340,6 +340,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService schemaExecSvc;
+
+    /** */
+    @GridToStringExclude
+    Map<String, ? extends ExecutorService> customExecSvcs;
+
+    /** */
+    @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
@@ -396,8 +404,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
+     * @param schemaExecSvc Schema executor service.
+     * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
-     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -419,6 +428,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
+        ExecutorService schemaExecSvc,
+        @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins
     ) {
         assert grid != null;
@@ -442,6 +453,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.idxExecSvc = idxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
         this.qryExecSvc = qryExecSvc;
+        this.schemaExecSvc = schemaExecSvc;
+        this.customExecSvcs = customExecSvcs;
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -554,8 +567,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
-        else if (comp instanceof OdbcProcessor)
-            odbcProc = (OdbcProcessor)comp;
+        else if (comp instanceof SqlListenerProcessor)
+            sqlListenerProc = (SqlListenerProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -811,8 +824,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public OdbcProcessor odbc() {
-        return odbcProc;
+    @Override public SqlListenerProcessor sqlListener() {
+        return sqlListenerProc;
     }
 
     /** {@inheritDoc} */
@@ -984,6 +997,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getQueryExecutorService() {
         return qryExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getSchemaExecutorService() {
+        return schemaExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    public Map<String, ? extends ExecutorService> customExecutors() {
+        return customExecSvcs;
     }
 
     /** {@inheritDoc} */

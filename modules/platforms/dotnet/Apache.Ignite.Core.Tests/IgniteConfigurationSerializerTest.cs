@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleHandlers>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
                                             <fields>
@@ -134,6 +134,11 @@ namespace Apache.Ignite.Core.Tests
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
                             <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
+                            <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheInitialSize='67' systemCacheMaxSize='68'>
+                                <memoryPolicies>
+                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' />
+                                </memoryPolicies>
+                            </memoryConfiguration>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -169,6 +174,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.WriteThrough);
             Assert.IsInstanceOf<MyPolicyFactory>(cacheCfg.ExpiryPolicyFactory);
             Assert.IsTrue(cacheCfg.EnableStatistics);
+            Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
+            Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -248,6 +255,24 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(eventStorage);
             Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
             Assert.AreEqual(129, eventStorage.MaxEventCount);
+
+            var memCfg = cfg.MemoryConfiguration;
+            Assert.IsNotNull(memCfg);
+            Assert.AreEqual(3, memCfg.ConcurrencyLevel);
+            Assert.AreEqual("dfPlc", memCfg.DefaultMemoryPolicyName);
+            Assert.AreEqual(45, memCfg.PageSize);
+            Assert.AreEqual(67, memCfg.SystemCacheInitialSize);
+            Assert.AreEqual(68, memCfg.SystemCacheMaxSize);
+
+            var memPlc = memCfg.MemoryPolicies.Single();
+            Assert.AreEqual(1, memPlc.EmptyPagesPoolSize);
+            Assert.AreEqual(0.2, memPlc.EvictionThreshold);
+            Assert.AreEqual("dfPlc", memPlc.Name);
+            Assert.AreEqual(DataPageEvictionMode.RandomLru, memPlc.PageEvictionMode);
+            Assert.AreEqual("abc", memPlc.SwapFilePath);
+            Assert.AreEqual(89, memPlc.InitialSize);
+            Assert.AreEqual(98, memPlc.MaxSize);
+            Assert.IsTrue(memPlc.MetricsEnabled);
         }
 
         /// <summary>
@@ -639,7 +664,9 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 KeyType = typeof (string),
                                 ValueType = typeof (long),
-                                TableName = "table-1"
+                                TableName = "table-1",
+                                KeyFieldName = "k",
+                                ValueFieldName = "v"
                             },
                         },
                         ReadFromBackup = false,
@@ -649,12 +676,12 @@ namespace Apache.Ignite.Core.Tests
                         RebalanceThrottle = TimeSpan.FromHours(44),
                         RebalanceTimeout = TimeSpan.FromMinutes(8),
                         SqlEscapeAll = true,
-                        StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
                         WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),
                         WriteBehindFlushSize = 66,
                         WriteBehindFlushThreadCount = 2,
+                        WriteBehindCoalescing = false,
                         WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
                         NearConfiguration = new NearCacheConfiguration
                         {
@@ -678,7 +705,9 @@ namespace Apache.Ignite.Core.Tests
                         PluginConfigurations = new[]
                         {
                             new MyPluginConfiguration()
-                        }
+                        },
+                        MemoryPolicyName = "somePolicy",
+                        PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll
                     }
                 },
                 ClientMode = true,
@@ -701,13 +730,10 @@ namespace Apache.Ignite.Core.Tests
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
-                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 49900,
                     LocalPortRange = 13,
-                    MaxMissedClientHeartbeats = 9,
-                    MaxMissedHeartbeats = 7,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
@@ -769,11 +795,42 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
+                ClientFailureDetectionTimeout = TimeSpan.FromMinutes(3),
                 PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
                     ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
                     MaxEventCount = 257
+                },
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    ConcurrencyLevel = 3,
+                    DefaultMemoryPolicyName = "somePolicy",
+                    PageSize = 4,
+                    SystemCacheInitialSize = 5,
+                    SystemCacheMaxSize = 6,
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myDefaultPlc",
+                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            InitialSize = 245 * 1024 * 1024,
+                            MaxSize = 345 * 1024 * 1024,
+                            EvictionThreshold = 0.88,
+                            EmptyPagesPoolSize = 77,
+                            SwapFilePath = "myPath1"
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "customPlc",
+                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            EvictionThreshold = 0.77,
+                            EmptyPagesPoolSize = 66,
+                            SwapFilePath = "somePath2",
+                            MetricsEnabled = true
+                        }
+                    }
                 }
             };
         }

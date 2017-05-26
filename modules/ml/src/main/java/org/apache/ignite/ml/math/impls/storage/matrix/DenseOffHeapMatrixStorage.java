@@ -27,18 +27,25 @@ import org.apache.ignite.ml.math.MatrixStorage;
  * Local, dense off-heap matrix storage.
  */
 public class DenseOffHeapMatrixStorage implements MatrixStorage {
-    /** */ private int rows;
-    /** */ private int cols;
-    /** */ private transient long ptr;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
+    /** */
+    private transient long ptr;
     //TODO: temp solution.
-    /** */ private int ptrInitHash;
+    /** */
+    private int ptrInitHash;
 
     /** */
     public DenseOffHeapMatrixStorage() {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     */
     public DenseOffHeapMatrixStorage(int rows, int cols) {
         assert rows > 0;
         assert cols > 0;
@@ -49,7 +56,9 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         allocateMemory(rows, cols);
     }
 
-    /** */
+    /**
+     * @param data Backing data array.
+     */
     public DenseOffHeapMatrixStorage(double[][] data) {
         assert data != null;
         assert data[0] != null;
@@ -147,7 +156,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         GridUnsafe.freeMemory(ptr);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private long pointerOffset(int x, int y) {
         return ptr + x * cols * Double.BYTES + y * Double.BYTES;
     }

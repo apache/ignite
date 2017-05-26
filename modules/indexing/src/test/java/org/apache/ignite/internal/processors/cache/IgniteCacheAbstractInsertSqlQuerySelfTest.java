@@ -244,6 +244,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         ignite(0).cache("K2P").clear();
         ignite(0).cache("K22P").clear();
         ignite(0).cache("I2I").clear();
+        ignite(0).cache("I2AT").clear();
 
         super.afterTest();
     }
@@ -295,8 +296,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
-        return new CacheConfiguration()
+    static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)

@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         private const string CacheName = "cacheName";
 
         /** */
+        private const string DefaultCacheName = "default";
+
+        /** */
         private const string CacheName2 = "cacheName2";
 
         /** */
@@ -59,12 +62,24 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CacheConfiguration = new List<CacheConfiguration>
                 {
-                    new CacheConfiguration(),
+                    new CacheConfiguration(DefaultCacheName),
                     GetCustomCacheConfiguration(),
                     GetCustomCacheConfiguration2()
                 },
                 IgniteInstanceName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myMemPolicy",
+                            InitialSize = 77 * 1024 * 1024,
+                            MaxSize = 99 * 1024 * 1024
+                        }
+                    }
+                }
             };
 
             _ignite = Ignition.Start(cfg);
@@ -85,11 +100,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestDefaultConfiguration()
         {
-            AssertConfigIsDefault(new CacheConfiguration());
+            AssertConfigIsDefault(new CacheConfiguration(DefaultCacheName));
 
-            AssertConfigIsDefault(_ignite.GetCache<int, int>(null).GetConfiguration());
+            AssertConfigIsDefault(_ignite.GetCache<int, int>(DefaultCacheName).GetConfiguration());
 
-            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == null));
+            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == DefaultCacheName));
         }
 
         /// <summary>
@@ -183,7 +198,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultAtomicityMode, cfg.AtomicityMode);
             Assert.AreEqual(CacheConfiguration.DefaultCacheMode, cfg.CacheMode);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
-            Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultEagerTtl, cfg.EagerTtl);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
             Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
@@ -196,12 +210,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceMode, cfg.RebalanceMode);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceThrottle, cfg.RebalanceThrottle);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceTimeout, cfg.RebalanceTimeout);
-            Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
-            Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindBatchSize, cfg.WriteBehindBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindEnabled, cfg.WriteBehindEnabled);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushFrequency, cfg.WriteBehindFlushFrequency);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushSize, cfg.WriteBehindFlushSize);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushThreadCount, cfg.WriteBehindFlushThreadCount);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
+            Assert.AreEqual(CacheConfiguration.DefaultPartitionLossPolicy, cfg.PartitionLossPolicy);
         }
 
         /// <summary>
@@ -213,7 +228,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.AtomicityMode, y.AtomicityMode);
             Assert.AreEqual(x.CacheMode, y.CacheMode);
             Assert.AreEqual(x.CopyOnRead, y.CopyOnRead);
-            Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.EagerTtl, y.EagerTtl);
             Assert.AreEqual(x.Invalidate, y.Invalidate);
             Assert.AreEqual(x.KeepBinaryInStore, y.KeepBinaryInStore);
@@ -226,13 +240,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.RebalanceMode, y.RebalanceMode);
             Assert.AreEqual(x.RebalanceThrottle, y.RebalanceThrottle);
             Assert.AreEqual(x.RebalanceTimeout, y.RebalanceTimeout);
-            Assert.AreEqual(x.StartSize, y.StartSize);
-            Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.WriteBehindBatchSize, y.WriteBehindBatchSize);
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+            Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
+            Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -282,8 +296,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.IsNull(y);
                 return;
             }
-
-            Assert.AreEqual(x.NearStartSize, y.NearStartSize);
 
             AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
         }
@@ -471,7 +483,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new CacheConfiguration
             {
                 Name = name ?? CacheName,
-                StartSize = 2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
@@ -499,6 +510,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CacheStoreFactory = new CacheStoreFactoryTest(),
                 ReadThrough = true,
                 WriteThrough = true,
+                WriteBehindCoalescing = false,
                 QueryEntities = new[]
                 {
                     new QueryEntity
@@ -546,6 +558,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
+                MemoryPolicyName = "myMemPolicy",
+                PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
                 PluginConfigurations = new[] { new MyPluginConfiguration() }
             };
         }
@@ -557,7 +571,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new CacheConfiguration
             {
                 Name = name ?? CacheName2,
-                StartSize = 2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),

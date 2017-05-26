@@ -86,7 +86,7 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
 
         assertTrue(ignite.configuration().isClientMode());
 
-        IgniteCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(((IgniteCacheProxy)cache).context().isNear());
 
@@ -109,11 +109,11 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
         // Check size of near entries via reflection because entries is filtered for size() API call.
         IgniteEx igniteEx = (IgniteEx)ignite;
         GridCacheConcurrentMap map = GridTestUtils.getFieldValue(
-            ((GridCacheProxyImpl)igniteEx.cachex(null)).delegate(),
+            ((GridCacheProxyImpl)igniteEx.cachex(DEFAULT_CACHE_NAME)).delegate(),
             GridCacheAdapter.class,
             "map");
 
-        assertEquals(KEYS_COUNT, map.size());
+        assertEquals(KEYS_COUNT, map.publicSize());
 
         assertEquals(KEYS_COUNT, cache.size());
 

@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
-
 /**
  * Data transfer object for IGFS configuration properties.
  */
@@ -71,23 +69,11 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /** Map of paths to IGFS modes. */
     private Map<String, IgfsMode> pathModes;
 
-    /** Dual mode PUT operations executor service. */
-    private String dualModePutExecutorSrvc;
-
-    /** Dual mode PUT operations executor service shutdown flag. */
-    private boolean dualModePutExecutorSrvcShutdown;
-
-    /** Maximum amount of data in pending puts. */
-    private long dualModeMaxPendingPutsSize;
-
     /** Maximum range length. */
     private long maxTaskRangeLen;
 
     /** Fragmentizer concurrent files. */
     private int fragmentizerConcurrentFiles;
-
-    /** Fragmentizer local writes ratio. */
-    private float fragmentizerLocWritesRatio;
 
     /** Fragmentizer enabled flag. */
     private boolean fragmentizerEnabled;
@@ -104,17 +90,20 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled;
 
-    /** Maximum space. */
-    private long maxSpace;
-
     /** Management port. */
     private int mgmtPort;
 
     /** Amount of sequential block reads before prefetch is triggered. */
     private int seqReadsBeforePrefetch;
 
-    /** Trash purge await timeout. */
-    private long trashPurgeTimeout;
+    /** Metadata co-location flag. */
+    private boolean colocateMeta;
+
+    /** Relaxed consistency flag. */
+    private boolean relaxedConsistency;
+
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush;
 
     /**
      * Default constructor.
@@ -139,12 +128,8 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
 
         dfltMode = igfs.getDefaultMode();
         pathModes = igfs.getPathModes();
-        dualModePutExecutorSrvc = compactClass(igfs.getDualModePutExecutorService());
-        dualModePutExecutorSrvcShutdown = igfs.getDualModePutExecutorServiceShutdown();
-        dualModeMaxPendingPutsSize = igfs.getDualModeMaxPendingPutsSize();
         maxTaskRangeLen = igfs.getMaximumTaskRangeLength();
         fragmentizerConcurrentFiles = igfs.getFragmentizerConcurrentFiles();
-        fragmentizerLocWritesRatio = igfs.getFragmentizerLocalWritesRatio();
         fragmentizerEnabled = igfs.isFragmentizerEnabled();
         fragmentizerThrottlingBlockLen = igfs.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = igfs.getFragmentizerThrottlingDelay();
@@ -154,10 +139,12 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
 
         ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
-        maxSpace = igfs.getMaxSpaceSize();
         mgmtPort = igfs.getManagementPort();
         seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
-        trashPurgeTimeout = igfs.getTrashPurgeTimeout();
+
+        colocateMeta = igfs.isColocateMetadata();
+        relaxedConsistency = igfs.isRelaxedConsistency();
+        updateFileLenOnFlush = igfs.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -248,27 +235,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Dual mode PUT operations executor service.
-     */
-    public String getDualModePutExecutorService() {
-        return dualModePutExecutorSrvc;
-    }
-
-    /**
-     * @return Dual mode PUT operations executor service shutdown flag.
-     */
-    public boolean getDualModePutExecutorServiceShutdown() {
-        return dualModePutExecutorSrvcShutdown;
-    }
-
-    /**
-     * @return Maximum amount of data in pending puts.
-     */
-    public long getDualModeMaxPendingPutsSize() {
-        return dualModeMaxPendingPutsSize;
-    }
-
-    /**
      * @return Maximum range length.
      */
     public long getMaxTaskRangeLength() {
@@ -280,13 +246,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
      */
     public int getFragmentizerConcurrentFiles() {
         return fragmentizerConcurrentFiles;
-    }
-
-    /**
-     * @return Fragmentizer local writes ratio.
-     */
-    public float getFragmentizerLocalWritesRatio() {
-        return fragmentizerLocWritesRatio;
     }
 
     /**
@@ -325,13 +284,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Maximum space.
-     */
-    public long getMaxSpace() {
-        return maxSpace;
-    }
-
-    /**
      * @return Management port.
      */
     public int getManagementPort() {
@@ -346,10 +298,24 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Trash purge await timeout.
+     * @return {@code True} if metadata co-location is enabled.
      */
-    public long getTrashPurgeTimeout() {
-        return trashPurgeTimeout;
+    public boolean isColocateMetadata() {
+        return colocateMeta;
+    }
+
+    /**
+     * @return {@code True} if relaxed consistency is enabled.
+     */
+    public boolean isRelaxedConsistency() {
+        return relaxedConsistency;
+    }
+
+    /**
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
     }
 
     /** {@inheritDoc} */
@@ -364,21 +330,18 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         out.writeInt(perNodeParallelBatchCnt);
         U.writeEnum(out, dfltMode);
         U.writeMap(out, pathModes);
-        U.writeString(out, dualModePutExecutorSrvc);
-        out.writeBoolean(dualModePutExecutorSrvcShutdown);
-        out.writeLong(dualModeMaxPendingPutsSize);
         out.writeLong(maxTaskRangeLen);
         out.writeInt(fragmentizerConcurrentFiles);
-        out.writeFloat(fragmentizerLocWritesRatio);
         out.writeBoolean(fragmentizerEnabled);
         out.writeLong(fragmentizerThrottlingBlockLen);
         out.writeLong(fragmentizerThrottlingDelay);
         U.writeString(out, ipcEndpointCfg);
         out.writeBoolean(ipcEndpointEnabled);
-        out.writeLong(maxSpace);
         out.writeInt(mgmtPort);
         out.writeInt(seqReadsBeforePrefetch);
-        out.writeLong(trashPurgeTimeout);
+        out.writeBoolean(colocateMeta);
+        out.writeBoolean(relaxedConsistency);
+        out.writeBoolean(updateFileLenOnFlush);
     }
 
     /** {@inheritDoc} */
@@ -393,21 +356,18 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         perNodeParallelBatchCnt = in.readInt();
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
         pathModes = U.readMap(in);
-        dualModePutExecutorSrvc = U.readString(in);
-        dualModePutExecutorSrvcShutdown = in.readBoolean();
-        dualModeMaxPendingPutsSize = in.readLong();
         maxTaskRangeLen = in.readLong();
         fragmentizerConcurrentFiles = in.readInt();
-        fragmentizerLocWritesRatio = in.readFloat();
         fragmentizerEnabled = in.readBoolean();
         fragmentizerThrottlingBlockLen = in.readLong();
         fragmentizerThrottlingDelay = in.readLong();
         ipcEndpointCfg = U.readString(in);
         ipcEndpointEnabled = in.readBoolean();
-        maxSpace = in.readLong();
         mgmtPort = in.readInt();
         seqReadsBeforePrefetch = in.readInt();
-        trashPurgeTimeout = in.readLong();
+        colocateMeta = in.readBoolean();
+        relaxedConsistency = in.readBoolean();
+        updateFileLenOnFlush = in.readBoolean();
     }
 
     /** {@inheritDoc} */

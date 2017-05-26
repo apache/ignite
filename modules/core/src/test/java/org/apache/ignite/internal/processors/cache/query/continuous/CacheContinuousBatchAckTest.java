@@ -252,7 +252,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         int backups,
         CacheAtomicityMode atomicityMode,
         boolean filter) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);

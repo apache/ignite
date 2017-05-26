@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -54,7 +54,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
      * @param sharedCtx Shared context.
      */
     public Random2LruPageEvictionTracker(
-        PageMemory pageMem,
+        PageMemoryNoStoreImpl pageMem,
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
@@ -62,7 +62,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         MemoryConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
 
-        assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
+        assert plcCfg.getMaxSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
         log = sharedCtx.logger(getClass());
     }

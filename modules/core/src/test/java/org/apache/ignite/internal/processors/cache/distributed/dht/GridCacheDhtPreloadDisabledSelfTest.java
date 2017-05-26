@@ -120,7 +120,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @return Topology.
      */
     private GridDhtPartitionTopology topology(int i) {
-        return near(grid(i).cache(null)).dht().topology();
+        return near(grid(i).cache(DEFAULT_CACHE_NAME)).dht().topology();
     }
 
     /** @throws Exception If failed. */
@@ -177,7 +177,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             int keyCnt = 10;
 
@@ -198,7 +198,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < keyCnt; i++)
                     assertNull(c.localPeek(i));
@@ -207,7 +207,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
             Collection<Integer> keys = new LinkedList<>();
 
             for (int i = 0; i < keyCnt; i++)
-                if (ignite1.affinity(null).mapKeyToNode(i).equals(ignite1.cluster().localNode()))
+                if (ignite1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i).equals(ignite1.cluster().localNode()))
                     keys.add(i);
 
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
@@ -222,7 +222,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                 // Check all nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.cache(null);
+                    IgniteCache<Integer, String> c = gg.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < keyCnt; i++)
                         assertNull(c.localPeek(i));

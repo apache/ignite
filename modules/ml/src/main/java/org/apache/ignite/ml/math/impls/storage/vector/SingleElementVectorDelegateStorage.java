@@ -28,8 +28,10 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
  * Single value view storage over another vector.
  */
 public class SingleElementVectorDelegateStorage implements VectorStorage {
-    /** */ private int idx;
-    /** */ private Vector vec;
+    /** */
+    private int idx;
+    /** */
+    private Vector vec;
 
     /**
      *
@@ -51,16 +53,14 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Index of the element in the parent vector.
      */
     public int index() {
         return idx;
     }
 
     /**
-     *
-     *
+     * @return Parent vector.
      */
     public Vector delegate() {
         return vec;

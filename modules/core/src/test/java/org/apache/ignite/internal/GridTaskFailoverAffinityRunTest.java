@@ -64,7 +64,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -134,7 +134,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
                 for (int i = 0; i < 1000; i++) {
-                    IgniteFuture<?> fut0 = grid(0).compute().affinityCallAsync((String)null, i, new TestJob());
+                    IgniteFuture<?> fut0 = grid(0).compute().affinityCallAsync(DEFAULT_CACHE_NAME, i, new TestJob());
 
                     assertNotNull(fut0);
 

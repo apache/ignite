@@ -215,7 +215,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @Override public String name() {
         return igfs.name();
     }
 
@@ -258,8 +258,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
-        igfs.setTimes(path, accessTime, modificationTime);
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) {
+        igfs.setTimes(path, modificationTime, accessTime);
     }
 
     /** {@inheritDoc} */

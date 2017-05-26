@@ -1,0 +1,158 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+web-console-header {
+    @import "./../../../public/stylesheets/variables.scss";
+
+    $nav-item-margin: 42px;
+    $bottom-border-width: 4px;
+
+    display: block;
+    font-family: Roboto;
+    font-size: 16px;
+    border-bottom: $bottom-border-width solid red;
+    background: white;
+    position: relative;
+
+    &:after {
+        // Shows header shadow over absoluteley positioned child content,
+        // otherwise z ordering issues happen.
+        display: block;
+        width: 100%;
+        content: '';
+        height: 20px;
+        position: absolute;
+        overflow: hidden;
+        box-shadow: 0 4px 4px -2px rgba(0, 0, 0, 0.3);
+        bottom: -4px;
+    }
+
+    .wch-slot {
+        &>* {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            padding-top: 7px;
+        }
+
+        &.wch-slot-left {
+            margin-left: 105px;
+        }
+
+        &.wch-slot-right {
+            margin: 0 0 0 auto;
+        }
+    }
+
+    .wch-content {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 18.5px 0;
+        position: relative;
+    }
+
+    .wch-logo {
+        height: 40px;
+    }
+
+    .wch-nav-item {
+        cursor: pointer;
+        font-size: 16px;
+        white-space: nowrap;
+
+        $color-default: $text-color;
+        $color-hover: $brand-primary;
+        $color-active: $brand-primary;
+
+        &, a {
+            color: $color-default;
+            text-decoration: none;
+        }
+
+        &, ul {
+            margin: 0;
+            list-style: none;
+            -webkit-padding-start: 0;
+        }
+
+        &:hover {
+            color: $color-hover;
+        }
+        
+        :focus, .active {
+            color: $color-active;
+        }
+
+        &[disabled] {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        .caret {
+            margin-left: 4px;
+        }
+
+        &:not(:last-child) {
+            margin-right: $nav-item-margin;
+        }
+    }
+
+    .wch-demo-toggle {
+        margin-right: 10px;
+
+        // When in demo mode and clusters are hidden
+        &:nth-last-child(2) {
+            margin-right: $nav-item-margin;
+        }
+    }
+
+    .wch-revert-identity {
+        font-size: $font-size-base;
+        line-height: 16px;
+        padding: 4px;
+        background: $brand-warning;
+        text-align: center;
+        
+        .link-info {
+            color: $brand-info;
+        }
+
+        &+.wch-revert-identity {
+            border-top: 1px solid darken($brand-warning, 15%);
+        }
+    }
+
+    .wch-web-agent-download {
+        border-bottom-right-radius: $ignite-button-border-radius;
+        border-bottom-left-radius: $ignite-button-border-radius;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: $bottom-border-width;
+        // If defined on button, shadow would conflict with already present
+        // shadows of .btn-ignite, so we shadow wrapper instead.
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+
+        .btn-ignite--primary {
+            border-top-right-radius: 0;
+            border-top-left-radius: 0;
+        }
+    }
+}

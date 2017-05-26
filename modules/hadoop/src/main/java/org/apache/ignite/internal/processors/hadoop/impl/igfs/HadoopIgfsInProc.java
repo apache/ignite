@@ -297,7 +297,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         try {
             IgfsUserContext.doAs(user, new IgniteOutClosure<Void>() {
                 @Override public Void apply() {
-                    igfs.setTimes(path, accessTime, modificationTime);
+                    igfs.setTimes(path, modificationTime, accessTime);
 
                     return null;
                 }

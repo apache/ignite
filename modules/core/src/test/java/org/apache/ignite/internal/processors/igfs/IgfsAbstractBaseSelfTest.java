@@ -211,23 +211,9 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @return Relaxed consistency flag.
-     */
-    protected boolean initializeDefaultPathModes() {
-        return false;
-    }
-
-    /**
      * @return Client flag.
      */
     protected boolean client() {
-        return false;
-    }
-
-    /**
-     * @return Use optimized marshaller flag.
-     */
-    protected boolean useOptimizedMarshaller() {
         return false;
     }
 
@@ -369,8 +355,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
         igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
 
-        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
-
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setNearConfiguration(null);
@@ -394,9 +378,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
-
-        if (useOptimizedMarshaller())
-            cfg.setMarshaller(new OptimizedMarshaller());
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 

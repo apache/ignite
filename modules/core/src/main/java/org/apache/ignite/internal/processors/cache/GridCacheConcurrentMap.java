@@ -38,7 +38,6 @@ public interface GridCacheConcurrentMap {
     /**
      * @param topVer Topology version.
      * @param key Key.
-     * @param val Value.
      * @param create Create flag.
      * @return Existing or new GridCacheMapEntry. Will return {@code null} if entry is obsolete or absent and create
      * flag is set to {@code false}. Will also return {@code null} if create flag is set to {@code true}, but entry
@@ -47,7 +46,6 @@ public interface GridCacheConcurrentMap {
     @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
-        @Nullable CacheObject val,
         boolean create,
         boolean touch);
 
@@ -65,7 +63,7 @@ public interface GridCacheConcurrentMap {
      *
      * @return the number of key-value mappings in this map.
      */
-    public int size();
+    public int internalSize();
 
     /**
      * Returns the number of publicly available key-value mappings in this map.
@@ -89,11 +87,6 @@ public interface GridCacheConcurrentMap {
      * @param e Entry that caused public size change.
      */
     public void decrementPublicSize(GridCacheEntryEx e);
-
-    /**
-     * @return Random entry out of hash map.
-     */
-    public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{487c5422-915c-4851-892d-c1599ea69e0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\putget_example.cpp">
@@ -26,5 +29,10 @@
     <ClInclude Include="..\..\..\include\ignite\examples\organization.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\example-cache.xml">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
 </Project>

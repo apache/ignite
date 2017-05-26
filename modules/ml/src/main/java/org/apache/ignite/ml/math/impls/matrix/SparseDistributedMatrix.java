@@ -26,6 +26,7 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -37,14 +38,14 @@ import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixSto
 
 /**
  * Sparse distributed matrix implementation based on data grid.
- *
+ * <p>
  * Unlike {@link CacheMatrix} that is based on existing cache, this implementation creates distributed
- * cache internally and doesn't rely on pre-existing cache.
- *
+ * cache internally and doesn't rely on pre-existing cache.</p>
+ * <p>
  * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
- * matrix.
- *
- * <b>Currently fold supports only commutative operations.<b/>
+ * matrix.</p>
+ * <p>
+ * <b>Currently fold supports only commutative operations.<b/></p>
  */
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {
     /**
@@ -55,10 +56,10 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /**
-     * @param rows
-     * @param cols
-     * @param stoMode
-     * @param acsMode
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param stoMode Matrix storage mode.
+     * @param acsMode Matrix elements access mode.
      */
     public SparseDistributedMatrix(int rows, int cols, int stoMode, int acsMode) {
         assert rows > 0;
@@ -80,7 +81,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     /**
      * Return the same matrix with updates values (broken contract).
      *
-     * @param d
+     * @param d Value to divide to.
      */
     @Override public Matrix divide(double d) {
         return mapOverValues((Double v) -> v / d);
@@ -89,7 +90,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     /**
      * Return the same matrix with updates values (broken contract).
      *
-     * @param x
+     * @param x Value to add.
      */
     @Override public Matrix plus(double x) {
         return mapOverValues((Double v) -> v + x);
@@ -98,7 +99,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     /**
      * Return the same matrix with updates values (broken contract).
      *
-     * @param x
+     * @param x Value to multiply.
      */
     @Override public Matrix times(double x) {
         return mapOverValues((Double v) -> v * x);
@@ -115,27 +116,28 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /**
-     * @param mapper
+     * @param mapper Mapping function.
+     * @return Matrix with mapped values.
      */
     private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
-        CacheUtils.sparseMap(storage().cache().getName(), mapper);
+        CacheUtils.sparseMap(getUUID(), mapper);
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override public double sum() {
-        return CacheUtils.sparseSum(storage().cache().getName());
+        return CacheUtils.sparseSum(getUUID());
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
-        return CacheUtils.sparseMax(storage().cache().getName());
+        return CacheUtils.sparseMax(getUUID());
     }
 
     /** {@inheritDoc} */
     @Override public double minValue() {
-        return CacheUtils.sparseMin(storage().cache().getName());
+        return CacheUtils.sparseMin(getUUID());
     }
 
     /** {@inheritDoc} */
@@ -145,11 +147,16 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        throw new UnsupportedOperationException();
+        return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
     }
 
     /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
+    }
+
+    /** */
+    private IgniteUuid getUUID(){
+        return ((SparseDistributedMatrixStorage) getStorage()).getUUID();
     }
 }

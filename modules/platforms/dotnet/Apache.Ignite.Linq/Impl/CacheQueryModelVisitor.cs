@@ -43,9 +43,6 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private readonly List<Expression> _parameterExpressions = new List<Expression>();
-
-        /** */
         private readonly AliasDictionary _aliases = new AliasDictionary();
 
         /// <summary>
@@ -63,7 +60,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var qryText = _builder.ToString();
 
-            return new QueryData(qryText, _parameters, _parameterExpressions);
+            return new QueryData(qryText, _parameters);
         }
 
         /// <summary>
@@ -83,14 +80,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the parameters.
-        /// </summary>
-        public IList<Expression> ParameterExpressions
-        {
-            get { return _parameterExpressions; }
-        }
-
-        /// <summary>
         /// Gets the aliases.
         /// </summary>
         public AliasDictionary Aliases
@@ -107,7 +96,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool forceStar)
+        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
         {
             _aliases.Push();
 
@@ -115,7 +104,7 @@ namespace Apache.Ignite.Linq.Impl
             _builder.Append("select ");
 
             // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, forceStar);
+            VisitSelectors(queryModel, includeAllFields);
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
@@ -129,14 +118,14 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the selectors.
         /// </summary>
-        public void VisitSelectors(QueryModel queryModel, bool forceStar)
+        public void VisitSelectors(QueryModel queryModel, bool includeAllFields)
         {
             var parenCount = ProcessResultOperatorsBegin(queryModel);
 
             if (parenCount >= 0)
             {
                 // FIELD1, FIELD2
-                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
+                BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0, includeAllFields);
                 _builder.Append(')', parenCount).Append(" ");
             }
         }
@@ -512,9 +501,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
         }
     }
 }

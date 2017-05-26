@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -240,17 +239,6 @@ public class GridDhtPartitionDemander {
         return
             !cctx.affinity().affinityTopologyVersion().equals(fut.topologyVersion()) || // Topology already changed.
                 fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
-    }
-
-    /**
-     * @param part Partition.
-     * @param type Type.
-     * @param discoEvt Discovery event.
-     */
-    private void preloadEvent(int part, int type, DiscoveryEvent discoEvt) {
-        assert discoEvt != null;
-
-        cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
     }
 
     /**
@@ -628,7 +616,7 @@ public class GridDhtPartitionDemander {
                         boolean reserved = part.reserve();
 
                         assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                            cctx.igniteInstanceName() + ", cacheName=" + cctx.namex() + ", part=" + part + ']';
+                            cctx.igniteInstanceName() + ", cacheName=" + cctx.name() + ", part=" + part + ']';
 
                         part.lock();
 
@@ -743,17 +731,6 @@ public class GridDhtPartitionDemander {
 
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
-
-                if (cctx.dht().isIgfsDataCache() &&
-                    cctx.dht().igfsDataSpaceUsed() > cctx.dht().igfsDataSpaceMax()) {
-                    LT.error(log, null, "Failed to rebalance IGFS data cache (IGFS space size exceeded maximum " +
-                        "value, will ignore rebalance entries)");
-
-                    if (cached.markObsoleteIfEmpty(null))
-                        cached.context().cache().removeEntry(cached);
-
-                    return true;
-                }
 
                 if (preloadPred == null || preloadPred.apply(entry)) {
                     if (cached.initialValue(

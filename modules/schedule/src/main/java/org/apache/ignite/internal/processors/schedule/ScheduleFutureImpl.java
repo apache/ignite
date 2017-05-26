@@ -618,7 +618,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
      * @return Chained future.
      */
     private <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb, @Nullable Executor exec) {
-        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
             }

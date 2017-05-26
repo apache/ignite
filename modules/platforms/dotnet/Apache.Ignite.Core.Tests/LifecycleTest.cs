@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+// ReSharper disable MemberCanBeProtected.Global
+// ReSharper disable UnassignedField.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -171,16 +175,8 @@ namespace Apache.Ignite.Core.Tests
         {
             ThrowErr = true;
 
-            try
-            {
-                Start(CfgNoBeans);
-
-                Assert.Fail("Should not reach this place.");
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(typeof(IgniteException), e.GetType());
-            }
+            var ex = Assert.Throws<IgniteException>(() => Start(CfgNoBeans));
+            Assert.AreEqual("Lifecycle exception.", ex.Message);
         }
 
         /// <summary>
@@ -190,17 +186,11 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Grid.</returns>
         private static IIgnite Start(string cfgPath)
         {
-            TestUtils.JvmDebug = true;
-
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = cfgPath;
-
-            cfg.LifecycleHandlers = new List<ILifecycleHandler> { new Bean(), new Bean() };
-
-            return Ignition.Start(cfg);
+            return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = cfgPath,
+                LifecycleHandlers = new List<ILifecycleHandler> {new Bean(), new Bean()}
+            });
         }
 
         /// <summary>
@@ -249,12 +239,13 @@ namespace Apache.Ignite.Core.Tests
             if (LifecycleTest.ThrowErr)
                 throw new Exception("Lifecycle exception.");
 
-            Event evt = new Event();
-
-            evt.Grid1 = Grid1;
-            evt.Grid2 = Grid2;
-            evt.Prop1 = Property1;
-            evt.Prop2 = Property2;
+            Event evt = new Event
+            {
+                Grid1 = Grid1,
+                Grid2 = Grid2,
+                Prop1 = Property1,
+                Prop2 = Property2
+            };
 
             switch (evtType)
             {

@@ -470,7 +470,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Folded value of these vectors.
      * @throws CardinalityException Thrown when cardinalities mismatch.
      */
-    public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun,
+    public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
+        IgniteBiFunction<Double, Double, Double> combFun,
         T zeroVal);
 
     /**

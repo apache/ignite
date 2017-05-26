@@ -89,7 +89,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("myCache");
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -536,8 +536,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void run() {
+        @Override public void run() {
 
             IgniteCountDownLatch latch1 = createLatch1();
             IgniteCountDownLatch latch2 = createLatch2();

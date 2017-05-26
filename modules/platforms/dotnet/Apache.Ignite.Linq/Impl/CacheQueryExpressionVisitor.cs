@@ -51,18 +51,24 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, string> FieldNameMap =
             new CopyOnWriteConcurrentDictionary<MemberInfo, string>();
 
+        /** */
+        private readonly bool _includeAllFields;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
         /// </summary>
         /// <param name="modelVisitor">The _model visitor.</param>
         /// <param name="useStar">Flag indicating that star '*' qualifier should be used
         /// for the whole-table select instead of _key, _val.</param>
-        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar)
+        /// <param name="includeAllFields">Flag indicating that star '*' qualifier should be used
+        /// for the whole-table select as well as _key, _val.</param>
+        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields)
         {
             Debug.Assert(modelVisitor != null);
 
             _modelVisitor = modelVisitor;
             _useStar = useStar;
+            _includeAllFields = includeAllFields;
         }
 
         /// <summary>
@@ -271,7 +277,11 @@ namespace Apache.Ignite.Linq.Impl
         {
             // Count, sum, max, min expect a single field or *
             // In other cases we need both parts of cache entry
-            var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
+            var format = _includeAllFields
+                ? "{0}.*, {0}._key, {0}._val"
+                : _useStar
+                    ? "{0}.*"
+                    : "{0}._key, {0}._val";
 
             var tableName = Aliases.GetTableAlias(expression);
 
@@ -303,19 +313,9 @@ namespace Apache.Ignite.Linq.Impl
                 ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
-                AppendParameter(RegisterEvaluatedParameter(expression));
+                AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
 
             return expression;
-        }
-
-        /// <summary>
-        /// Registers query parameter that is evaluated from a lambda expression argument.
-        /// </summary>
-        public object RegisterEvaluatedParameter(Expression expression)
-        {
-            _modelVisitor.ParameterExpressions.Add(expression);
-
-            return ExpressionWalker.EvaluateExpression<object>(expression);
         }
 
         /// <summary>

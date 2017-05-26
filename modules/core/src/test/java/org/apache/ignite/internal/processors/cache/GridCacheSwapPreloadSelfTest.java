@@ -102,7 +102,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             Set<Integer> keys = new HashSet<>();
 
@@ -128,7 +128,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            int size = grid(1).cache(null).localSize(CachePeekMode.ALL);
+            int size = grid(1).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL);
 
             info("New node cache size: " + size);
 
@@ -165,7 +165,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 
@@ -207,7 +207,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             fut = null;
 
-            int size = grid(1).cache(null).localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP,
+            int size = grid(1).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP,
                 CachePeekMode.NEAR, CachePeekMode.ONHEAP);
 
             info("New node cache size: " + size);
@@ -217,7 +217,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
                 int next = 0;
 
-                for (IgniteCache.Entry<Integer, Integer> e : grid(1).<Integer, Integer>cache(null).localEntries())
+                for (IgniteCache.Entry<Integer, Integer> e : grid(1).<Integer, Integer>cache(DEFAULT_CACHE_NAME).localEntries())
                     keySet.add(e.getKey());
 
                 for (Integer i : keySet) {

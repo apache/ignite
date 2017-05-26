@@ -115,6 +115,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpCacheMetrics = 24;
         
+        /** */
+        private const int OpResetLostPartitions = 25;
+
+        /** */
+        private const int OpMemoryMetrics = 26;
+
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -511,6 +517,30 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /// <summary>
+        /// Resets the lost partitions.
+        /// </summary>
+        public void ResetLostPartitions(IEnumerable<string> cacheNames)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpResetLostPartitions, w =>
+            {
+                var pos = w.Stream.Position;
+
+                var count = 0;
+                w.WriteInt(count);  // Reserve space.
+
+                foreach (var cacheName in cacheNames)
+                {
+                    w.WriteString(cacheName);
+                    count++;
+                }
+
+                w.Stream.WriteInt(pos, count);
+            });
+        }
+
+        /// <summary>
         /// Gets the cache metrics within this cluster group.
         /// </summary>
         /// <param name="cacheName">Name of the cache.</param>
@@ -522,6 +552,28 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
                 return new CacheMetricsImpl(reader);
+            });
+        }
+
+        /// <summary>
+        /// Gets the memory metrics.
+        /// </summary>
+        public ICollection<IMemoryMetrics> GetMemoryMetrics()
+        {
+            return DoInOp(OpMemoryMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                var cnt = reader.ReadInt();
+
+                var res = new List<IMemoryMetrics>(cnt);
+
+                for (int i = 0; i < cnt; i++)
+                {
+                    res.Add(new MemoryMetrics(reader));
+                }
+
+                return res;
             });
         }
 

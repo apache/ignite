@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Connection. */
     protected Connection conn;
@@ -121,7 +121,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         U.closeQuiet(conn);
 
-        ignite(0).cache(null).clear();
+        ignite(0).cache(DEFAULT_CACHE_NAME).clear();
 
         super.afterTest();
     }
@@ -133,7 +133,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         conn = createConnection(false);
 
         for (int i = 10; i <= 100; i += 10)
-            ignite(0).cache(null).put(i, i * 100);
+            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
@@ -151,9 +151,9 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // Now let's check it's all there.
         for (int i = 1; i <= 100; i++) {
             if (i % 10 != 0)
-                assertEquals(i, grid(0).cache(null).get(i));
+                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
             else // All that divides by 10 evenly should point to numbers 100 times greater - see above
-                assertEquals(i * 100, grid(0).cache(null).get(i));
+                assertEquals(i * 100, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
         }
     }
 
@@ -164,7 +164,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         conn = createConnection(true);
 
         for (int i = 10; i <= 100; i += 10)
-            ignite(0).cache(null).put(i, i * 100);
+            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
@@ -182,6 +182,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // Now let's check it's all there.
         // i should point to i at all times as we've turned overwrites on above.
         for (int i = 1; i <= 100; i++)
-            assertEquals(i, grid(0).cache(null).get(i));
+            assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
     }
 }

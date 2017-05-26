@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
@@ -167,6 +168,8 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteClientDiscoveryDataStructuresTest.class));
 
         suite.addTest(new TestSuite(IgnitePartitionedQueueNoBackupsTest.class));
+
+        suite.addTestSuite(AtomicCacheAffinityConfigurationTest.class);
 
         return suite;
     }

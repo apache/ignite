@@ -93,17 +93,17 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi().setForceServerMode(true);
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
         if (isDebug())
             disco.setAckTimeout(Integer.MAX_VALUE);
 
-        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
-        eventSpi.setExpireCount(100);
+        MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
+        evtSpi.setExpireCount(100);
 
-        cfg.setEventStorageSpi(eventSpi);
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
+
+        cfg.setEventStorageSpi(evtSpi);
 
         cfg.setDiscoverySpi(disco);
 
@@ -216,7 +216,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(null);
+        return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**

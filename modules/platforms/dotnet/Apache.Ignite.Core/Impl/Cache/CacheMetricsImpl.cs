@@ -110,9 +110,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly long _offHeapAllocatedSize;
 
         /** */
-        private readonly long _offHeapMaxSize;
-
-        /** */
         private readonly int _size;
 
         /** */
@@ -248,7 +245,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _offHeapPrimaryEntriesCount = reader.ReadLong();
             _offHeapBackupEntriesCount = reader.ReadLong();
             _offHeapAllocatedSize = reader.ReadLong();
-            _offHeapMaxSize = reader.ReadLong();
             _size = reader.ReadInt();
             _keySize = reader.ReadInt();
             _isEmpty = reader.ReadBoolean();
@@ -368,9 +364,6 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public long OffHeapAllocatedSize { get { return _offHeapAllocatedSize; } }
-
-        /** <inheritDoc /> */
-        public long OffHeapMaxSize { get { return _offHeapMaxSize; } }
 
         /** <inheritDoc /> */
         public int Size { get { return _size; } }

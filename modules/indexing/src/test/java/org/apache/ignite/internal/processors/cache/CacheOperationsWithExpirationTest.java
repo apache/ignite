@@ -57,7 +57,7 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     private CacheConfiguration<String, TestIndexedType> cacheConfiguration(CacheAtomicityMode atomicityMode,
         long offheapMem,
         boolean idx) {
-        CacheConfiguration<String, TestIndexedType> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<String, TestIndexedType> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(1);

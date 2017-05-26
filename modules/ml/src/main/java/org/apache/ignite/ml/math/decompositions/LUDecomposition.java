@@ -17,37 +17,48 @@
 
 package org.apache.ignite.ml.math.decompositions;
 
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 
+import static org.apache.ignite.ml.math.util.MatrixUtil.copy;
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
+import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
+
 /**
  * Calculates the LU-decomposition of a square matrix.
- *
- * This class inspired by class from Apache Common Math with similar name.
+ * <p>
+ * This class is inspired by class from Apache Common Math with similar name.</p>
  *
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
+ *
+ * TODO: Maybe we should make this class (and other decompositions) Externalizable.
  */
-public class LUDecomposition extends DecompositionSupport {
+public class LUDecomposition implements Destroyable {
     /** Default bound to determine effective singularity in LU decomposition. */
     private static final double DEFAULT_TOO_SMALL = 1e-11;
 
     /** Pivot permutation associated with LU decomposition. */
     private final Vector pivot;
+
     /** Parity of the permutation associated with the LU decomposition. */
     private boolean even;
     /** Singularity indicator. */
     private boolean singular;
+
     /** Cached value of L. */
     private Matrix cachedL;
     /** Cached value of U. */
     private Matrix cachedU;
     /** Cached value of P. */
     private Matrix cachedP;
+
     /** Original matrix. */
     private Matrix matrix;
+
     /** Entries of LU decomposition. */
     private Matrix lu;
 
@@ -274,7 +285,10 @@ public class LUDecomposition extends DecompositionSupport {
         return determinant;
     }
 
-    /** */
+    /**
+     * @param b Vector to solve using this decomposition.
+     * @return Solution vector.
+     */
     public Vector solve(Vector b) {
         final int m = pivot.size();
 
@@ -310,7 +324,10 @@ public class LUDecomposition extends DecompositionSupport {
         return b.like(m).assign(bp);
     }
 
-    /** */
+    /**
+     * @param b Matrix to solve using this decomposition.
+     * @return Solution matrix.
+     */
     public Matrix solve(Matrix b) {
         final int m = pivot.size();
 

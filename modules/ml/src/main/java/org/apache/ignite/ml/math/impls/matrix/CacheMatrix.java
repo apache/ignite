@@ -42,11 +42,11 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     /**
      * Creates new matrix over existing cache.
      *
-     * @param rows
-     * @param cols
-     * @param cache
-     * @param keyMapper
-     * @param valMapper
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
+     * @param cache Ignite cache.
+     * @param keyMapper {@link MatrixKeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
     public CacheMatrix(
         int rows,
@@ -90,7 +90,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     /**
      * Return the same matrix with updates values (broken contract).
      *
-     * @param d
+     * @param d Value to divide to.
      */
     @Override public Matrix divide(double d) {
         return mapOverValues((Double v) -> v / d);
@@ -99,7 +99,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     /**
      * Return the same matrix with updates values (broken contract).
      *
-     * @param x
+     * @param x Value to add.
      */
     @Override public Matrix plus(double x) {
         return mapOverValues((Double v) -> v + x);
@@ -108,7 +108,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     /**
      * Return the same matrix with updates values (broken contract).
      *
-     * @param x
+     * @param x Value to multiply to.
      */
     @Override public Matrix times(double x) {
         return mapOverValues((Double v) -> v * x);
@@ -146,7 +146,8 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     }
 
     /**
-     * @param mapper
+     * @param mapper Mapping function.
+     * @return Matrix with mapped values.
      */
     private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
         CacheMatrixStorage<K, V> sto = storage();

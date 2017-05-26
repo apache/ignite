@@ -46,6 +46,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteAtomicLong;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -124,7 +126,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
+import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
@@ -162,6 +164,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -169,7 +172,6 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
@@ -308,6 +310,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private ObjectName qryExecSvcMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName schemaExecSvcMBean;
 
     /** */
     @GridToStringExclude
@@ -694,6 +700,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
+     * @param schemaExecSvc Schema executor service.
+     * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -714,6 +722,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
+        ExecutorService schemaExecSvc,
+        Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd
     )
         throws IgniteCheckedException
@@ -828,6 +838,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 idxExecSvc,
                 callbackExecSvc,
                 qryExecSvc,
+                schemaExecSvc,
+                customExecSvcs,
                 plugins
             );
 
@@ -914,7 +926,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
             startProcessor(new GridCacheProcessor(ctx));startProcessor(new GridClusterStateProcessor(ctx));
             startProcessor(new GridQueryProcessor(ctx));
-            startProcessor(new OdbcProcessor(ctx));
+            startProcessor(new SqlListenerProcessor(ctx));
             startProcessor(new GridServiceProcessor(ctx));
             startProcessor(new GridTaskSessionProcessor(ctx));
             startProcessor(new GridJobProcessor(ctx));
@@ -1019,7 +1031,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Register MBeans.
             registerKernalMBean();
             registerLocalNodeMBean();
-            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc);
+            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc,
+                schemaExecSvc);
+
             registerStripedExecutorMBean(stripedExecSvc);
 
             // Lifecycle bean notifications.
@@ -1611,11 +1625,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param execSvc
-     * @param sysExecSvc
-     * @param p2pExecSvc
-     * @param mgmtExecSvc
-     * @param restExecSvc
+     * @param execSvc Public executor service.
+     * @param sysExecSvc System executor service.
+     * @param p2pExecSvc P2P executor service.
+     * @param mgmtExecSvc Management executor service.
+     * @param restExecSvc Query executor service.
+     * @param schemaExecSvc Schema executor service.
      * @throws IgniteCheckedException If failed.
      */
     private void registerExecutorMBeans(ExecutorService execSvc,
@@ -1623,12 +1638,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService restExecSvc,
-        ExecutorService qryExecSvc) throws IgniteCheckedException {
+        ExecutorService qryExecSvc,
+        ExecutorService schemaExecSvc) throws IgniteCheckedException {
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
         qryExecSvcMBean = registerExecutorMBean(qryExecSvc, "GridQueryExecutor");
+        schemaExecSvcMBean = registerExecutorMBean(schemaExecSvc, "GridSchemaExecutor");
 
         ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
@@ -2151,6 +2168,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(locNodeMBean) &
                     unregisterMBean(restExecSvcMBean) &
                     unregisterMBean(qryExecSvcMBean) &
+                    unregisterMBean(schemaExecSvcMBean) &
                     unregisterMBean(stripedExecSvcMBean)
             ))
                 errOnStop = false;
@@ -2267,27 +2285,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * USED ONLY FOR TESTING.
      *
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Internal cache instance.
-     */
-    /*@java.test.only*/
-    public <K, V> GridCacheAdapter<K, V> internalCache() {
-        checkClusterState();
-
-        return internalCache(null);
-    }
-
-    /**
-     * USED ONLY FOR TESTING.
-     *
      * @param name Cache name.
      * @param <K>  Key type.
      * @param <V>  Value type.
      * @return Internal cache instance.
      */
     /*@java.test.only*/
-    public <K, V> GridCacheAdapter<K, V> internalCache(@Nullable String name) {
+    public <K, V> GridCacheAdapter<K, V> internalCache(String name) {
+        CU.validateCacheName(name);
         checkClusterState();
 
         return ctx.cache().internalCache(name);
@@ -2431,7 +2436,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
 
         U.log(log, "System cache's MemoryPolicy size is configured to " +
-            (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) + " MB. " +
+            (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
             "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
@@ -2674,7 +2679,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> IgniteInternalCache<K, V> getCache(@Nullable String name) {
+    public <K, V> IgniteInternalCache<K, V> getCache(String name) {
+        CU.validateCacheName(name);
+
         guard();
 
         try {
@@ -2688,7 +2695,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(String name) {
+        CU.validateCacheName(name);
+
         guard();
 
         try {
@@ -2707,6 +2716,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
+        CU.validateCacheName(cacheCfg.getName());
 
         guard();
 
@@ -2734,6 +2744,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
         A.notNull(cacheCfgs, "cacheCfgs");
+        CU.validateConfigurationCacheNames(cacheCfgs);
 
         guard();
 
@@ -2759,6 +2770,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         guard();
 
         try {
@@ -2778,15 +2791,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        return getOrCreateCache0(cacheCfg).get1();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
+        CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
+        CU.validateCacheName(cacheCfg.getName());
 
         guard();
 
         try {
             checkClusterState();
 
+            Boolean res = false;
+
             if (ctx.cache().cache(cacheCfg.getName()) == null) {
-                ctx.cache().dynamicStartCache(cacheCfg,
+                res = ctx.cache().dynamicStartCache(cacheCfg,
                     cacheCfg.getName(),
                     null,
                     false,
@@ -2794,7 +2817,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     true).get();
             }
 
-            return ctx.cache().publicJCache(cacheCfg.getName());
+            return new IgniteBiTuple<>((IgniteCache<K, V>)ctx.cache().publicJCache(cacheCfg.getName()), res);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2807,6 +2830,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) {
         A.notNull(cacheCfgs, "cacheCfgs");
+        CU.validateConfigurationCacheNames(cacheCfgs);
 
         guard();
 
@@ -2836,6 +2860,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         NearCacheConfiguration<K, V> nearCfg
     ) {
         A.notNull(cacheCfg, "cacheCfg");
+        CU.validateCacheName(cacheCfg.getName());
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2864,6 +2889,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
         A.notNull(cacheCfg, "cacheCfg");
+        CU.validateCacheName(cacheCfg.getName());
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2904,6 +2930,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        CU.validateCacheName(cacheName);
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2933,8 +2960,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(String cacheName,
         NearCacheConfiguration<K, V> nearCfg) {
+        CU.validateCacheName(cacheName);
         A.notNull(nearCfg, "nearCfg");
 
         guard();
@@ -2989,10 +3017,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        IgniteInternalFuture stopFut = destroyCacheAsync(cacheName, true);
+        destroyCache0(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean destroyCache0(String cacheName) throws CacheException {
+        CU.validateCacheName(cacheName);
+
+        IgniteInternalFuture<Boolean> stopFut = destroyCacheAsync(cacheName, true);
 
         try {
-            stopFut.get();
+            return stopFut.get();
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -3001,6 +3036,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCaches(Collection<String> cacheNames) {
+        CU.validateCacheNames(cacheNames);
+
         IgniteInternalFuture stopFut = destroyCachesAsync(cacheNames, true);
 
         try {
@@ -3016,7 +3053,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Ignite future.
      */
-    public IgniteInternalFuture<?> destroyCacheAsync(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<Boolean> destroyCacheAsync(String cacheName, boolean checkThreadTx) {
+        CU.validateCacheName(cacheName);
+
         guard();
 
         try {
@@ -3035,6 +3074,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @return Ignite future.
      */
     public IgniteInternalFuture<?> destroyCachesAsync(Collection<String> cacheNames, boolean checkThreadTx) {
+        CU.validateCacheNames(cacheNames);
+
         guard();
 
         try {
@@ -3047,6 +3088,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         guard();
 
         try {
@@ -3071,6 +3114,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @return Future that will be completed when cache is deployed.
      */
     public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, boolean checkThreadTx) {
+        CU.validateCacheName(cacheName);
+
         guard();
 
         try {
@@ -3089,6 +3134,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
+        CU.validateCacheName(cacheCfg.getName());
 
         guard();
 
@@ -3150,27 +3196,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex(String name) {
+        CU.validateCacheName(name);
+
         guard();
 
         try {
             checkClusterState();
 
             return ctx.cache().cache(name);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.cache().cache();
         }
         finally {
             unguard();
@@ -3193,7 +3227,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         guard();
 
         try {
@@ -3208,6 +3244,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         guard();
 
         try {
@@ -3226,7 +3265,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         guard();
 
         try {
@@ -3315,8 +3357,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Ignition.stop(igniteInstanceName, true);
     }
 
-    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
+        CU.validateCacheName(cacheName);
         checkClusterState();
 
         GridCacheAdapter<K, ?> cache = ctx.cache().internalCache(cacheName);
@@ -3356,6 +3398,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        CU.validateCacheNames(cacheNames);
+
         guard();
 
         try {
@@ -3371,7 +3415,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return ctx.cache().context().database().memoryMetrics();
+        guard();
+
+        try {
+            return ctx.cache().context().database().memoryMetrics();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        guard();
+
+        try {
+            return ctx.cache().context().database().memoryMetrics(memPlcName);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
@@ -3922,6 +3985,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void runIoTest(
+        long warmup,
+        long duration,
+        int threads,
+        long maxLatency,
+        int rangesCnt,
+        int payLoadSize,
+        boolean procFromNioThread
+    ) {
+        ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize, procFromNioThread,
+            new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
     }
 
     /** {@inheritDoc} */

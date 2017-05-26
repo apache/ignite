@@ -37,25 +37,6 @@ hr {
     outline: none;
 }
 
-.navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
-    position: absolute;
-    left: 0;
-    text-align: center;
-}
-
-.navbar-brand {
-    padding: 5px 0;
-    margin: 10px 0;
-}
-
-.modal.center .modal-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateX(-50%) translateY(-50%);
-    transform: translateX(-50%) translateY(-50%);
-}
-
 .border-left {
     box-shadow: 1px 0 0 0 $gray-lighter inset;
 }
@@ -74,10 +55,6 @@ hr {
     font-size: 22px;
 }
 
-.theme-line .footer {
-    text-align: center;
-}
-
 .table.table-vertical-middle tbody > tr > td {
   vertical-align: middle;
 }
@@ -87,7 +64,7 @@ hr {
     padding-right: 10px;
 }
 
-ul.navbar-nav, .sidebar-nav {
+.sidebar-nav {
     li.active > a {
         color: $link-color;
     }
@@ -266,21 +243,6 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 12px;
 }
 
-.theme-line header {
-    border-bottom: 8px solid $ignite-border-bottom-color;
-
-    p {
-        color: $ignite-header-color;
-    }
-}
-
-.header .title {
-    margin: 20px 0 5px 0;
-    padding: 0 15px;
-
-    font-size: 1.4em;
-}
-
 .nav > li {
     > a {
         color: $navbar-default-link-color;
@@ -302,17 +264,6 @@ ul.navbar-nav, .sidebar-nav {
     }
 }
 
-.theme-line header .navbar-nav {
-    a {
-        line-height: 25px;
-        font-size: 18px;
-    }
-
-    > li > a {
-        padding-right: 0;
-    }
-}
-
 .theme-line .section-right {
     padding-left: 30px;
 }
@@ -330,6 +281,7 @@ ul.navbar-nav, .sidebar-nav {
 
 body {
     font-weight: 400;
+    background-color: $ignite-new-background-color;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -337,74 +289,18 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 10px;
 }
 
-.container-footer {
-    margin-top: 20px;
-    margin-bottom: 20px;
-
-    p {
-        font-size: 12px;
-        margin-bottom: 0;
-    }
-}
-
 /* Modal */
-.modal {
-    display: block;
-    overflow: hidden;
-}
-
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    float: none;
-}
-
-.modal-header {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-// Close icon
-.modal-header .close {
-    margin-right: -2px;
-}
-
-// Modal icon
-.modal-header h4 > i.fa {
-    cursor: default;
-    float: left;
-    line-height: $modal-title-line-height;
-}
-
-.modal .modal-dialog {
-    width: 650px;
-}
-
-.modal .modal-content {
-    background-color: $gray-lighter;
-
-    .input-tip {
-        padding-top: 1px;
-    }
-}
-
-.modal .modal-content .modal-header {
-    background-color: $ignite-background-color;
-    text-align: center;
-    color: $ignite-header-color;
-    padding: 15px 25px 15px 15px;
-}
-
-.modal .modal-content .modal-header h4 {
-    font-size: 22px;
-}
-
-.modal .modal-content .modal-footer {
+.login-header {
     margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 2em;
 }
 
-.modal-footer {
+.login-footer {
+    padding: 15px 0;
+    text-align: right;
+    border-top: 1px solid #e5e5e5;
+
     label {
         float: left;
         margin: 0;
@@ -417,34 +313,10 @@ h1, h2, h3, h4, h5, h6 {
     .checkbox {
         margin: 0;
     }
-}
-
-.login-header {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 2em;
-}
-
-.login-footer {
-    @extend .modal-footer;
-
-    padding-left: 0;
-    padding-right: 0;
 
     .btn {
         margin-right: 0;
     }
-}
-
-.modal-body {
-    margin-left: 20px;
-    margin-right: 20px;
-}
-
-.modal-body-with-scroll {
-    max-height: 420px;
-    overflow-y: auto;
-    margin: 0;
 }
 
 .greedy {
@@ -456,9 +328,23 @@ h1, h2, h3, h4, h5, h6 {
     height: #{"calc(100vh - 300px)"};
 }
 
-@media (min-width: 768px) {
-    .navbar-nav > li > a {
-        padding: 0 15px;
+body {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+body > .wrapper,
+    // Nested ui-view, like on password reset state
+body > .wrapper > ui-view {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    flex: 1 0 auto;
+
+    .body-container {
+        flex: 1 0 auto;
+        padding-bottom: 30px;
     }
 }
 
@@ -1525,11 +1411,6 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
 .theme-line .nav-tabs > li > a {
     padding: 5px 5px;
     color: $ignite-header-color;
-}
-
-.viewedUser {
-    text-align: center;
-    background-color: $brand-warning;
 }
 
 a {

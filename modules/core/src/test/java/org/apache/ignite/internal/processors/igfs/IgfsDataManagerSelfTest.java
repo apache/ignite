@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -109,7 +110,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);

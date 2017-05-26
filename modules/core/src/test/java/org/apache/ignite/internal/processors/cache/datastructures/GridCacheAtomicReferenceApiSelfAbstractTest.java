@@ -43,10 +43,10 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      * @throws Exception If failed.
      */
     public void testPrepareAtomicReference() throws Exception {
-        /** Name of first atomic. */
+        /* Name of first atomic. */
         String atomicName1 = UUID.randomUUID().toString();
 
-        /** Name of second atomic. */
+        /* Name of second atomic. */
         String atomicName2 = UUID.randomUUID().toString();
 
         String initVal = "1";
@@ -144,7 +144,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("myCache");
         cfg.setAtomicityMode(TRANSACTIONAL);

@@ -19,8 +19,8 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -54,7 +54,7 @@ public class TcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest 
         if (flag)
             cfg.setMarshaller(new JdkMarshaller());
         else
-            cfg.setMarshaller(sameMarsh ? new JdkMarshaller() : new OptimizedMarshaller());
+            cfg.setMarshaller(sameMarsh ? new JdkMarshaller() : new BinaryMarshaller());
 
         // Flip flag.
         flag = !flag;

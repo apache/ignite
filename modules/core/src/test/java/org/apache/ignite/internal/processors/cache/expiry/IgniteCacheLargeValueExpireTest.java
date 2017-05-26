@@ -76,14 +76,14 @@ public class IgniteCacheLargeValueExpireTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkExpire(Ignite ignite, boolean eagerTtl) throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setEagerTtl(eagerTtl);
 
         ignite.createCache(ccfg);
 
         try {
             IgniteCache<Object, Object> cache =
-                ignite.cache(null).withExpiryPolicy(new TouchedExpiryPolicy(new Duration(0, 500)));
+                ignite.cache(DEFAULT_CACHE_NAME).withExpiryPolicy(new TouchedExpiryPolicy(new Duration(0, 500)));
 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

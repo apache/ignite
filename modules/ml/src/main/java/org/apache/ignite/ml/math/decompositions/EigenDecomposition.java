@@ -17,9 +17,13 @@
 
 package org.apache.ignite.ml.math.decompositions;
 
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.Functions;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
+import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
 
 /**
  * This class provides EigenDecomposition of given matrix. The class is based on
@@ -27,7 +31,7 @@ import org.apache.ignite.ml.math.functions.Functions;
  *
  * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a>
  */
-public class EigenDecomposition extends DecompositionSupport {
+public class EigenDecomposition implements Destroyable {
     /** Row and column dimension (square matrix). */
     private final int n;
 
@@ -39,12 +43,17 @@ public class EigenDecomposition extends DecompositionSupport {
     /** Array for internal storage of eigenvalues. */
     private final Vector e;
 
-    /** */
+    /**
+     * @param matrix Matrix to decompose.
+     */
     public EigenDecomposition(Matrix matrix) {
         this(matrix, isSymmetric(matrix));
     }
 
-    /** */
+    /**
+     * @param matrix Matrix to decompose.
+     * @param isSymmetric {@code true} if matrix passes symmetry check, {@code false otherwise}.
+     */
     public EigenDecomposition(Matrix matrix, boolean isSymmetric) {
         n = matrix.columnSize();
 
@@ -69,7 +78,7 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Return the eigen vector matrix
+     * Return the eigen vector matrix.
      *
      * @return V
      */
@@ -85,7 +94,9 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Return the imaginary parts of the eigenvalues
+     * Return the imaginary parts of the eigenvalues.
+     *
+     * @return Vector of imaginary parts.
      */
     public Vector getImagEigenvalues() {
         return e;
@@ -285,7 +296,9 @@ public class EigenDecomposition extends DecompositionSupport {
         return hessenBerg;
     }
 
-    /** Symmetric tridiagonal QL algorithm. */
+    /**
+     * Symmetric tridiagonal QL algorithm.
+     */
     private void tql2() {
         //  This is derived from the Algol procedures tql2, by
         //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for

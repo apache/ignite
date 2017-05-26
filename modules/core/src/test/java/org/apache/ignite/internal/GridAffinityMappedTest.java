@@ -54,9 +54,12 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+
         disco.setIpFinder(ipFinder);
+
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         if (igniteInstanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
@@ -110,18 +113,18 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         //Key 0 is mapped to partition 0, first node.
         //Key 1 is mapped to partition 1, second node.
         //key 2 is mapped to partition 0, first node because mapper substitutes key 2 with affinity key 0.
-        Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(null).mapKeysToNodes(F.asList(0));
+        Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList(0));
 
         assertNotNull(map);
         assertEquals("Invalid map size: " + map.size(), 1, map.size());
         assertEquals(F.first(map.keySet()), first);
 
-        UUID id1 = g1.affinity(null).mapKeyToNode(1).id();
+        UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1).id();
 
         assertNotNull(id1);
         assertEquals(second.id(),  id1);
 
-        UUID id2 = g1.affinity(null).mapKeyToNode(2).id();
+        UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(2).id();
 
         assertNotNull(id2);
         assertEquals(first.id(),  id2);

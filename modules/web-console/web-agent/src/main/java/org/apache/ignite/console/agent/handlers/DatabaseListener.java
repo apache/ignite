@@ -59,18 +59,18 @@ public class DatabaseListener {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
-            if (args.containsKey("driverPath"))
-                driverPath = args.get("driverPath").toString();
+            if (args.containsKey("jdbcDriverJar"))
+                driverPath = args.get("jdbcDriverJar").toString();
 
-            if (!args.containsKey("driverClass"))
+            if (!args.containsKey("jdbcDriverClass"))
                 throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-            String driverCls = args.get("driverClass").toString();
+            String driverCls = args.get("jdbcDriverClass").toString();
 
-            if (!args.containsKey("url"))
+            if (!args.containsKey("jdbcUrl"))
                 throw new IllegalArgumentException("Missing url in arguments: " + args);
 
-            String url = args.get("url").toString();
+            String url = args.get("jdbcUrl").toString();
 
             if (!args.containsKey("info"))
                 throw new IllegalArgumentException("Missing info in arguments: " + args);
@@ -88,18 +88,18 @@ public class DatabaseListener {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
-            if (args.containsKey("driverPath"))
-                driverPath = args.get("driverPath").toString();
+            if (args.containsKey("jdbcDriverJar"))
+                driverPath = args.get("jdbcDriverJar").toString();
 
-            if (!args.containsKey("driverClass"))
+            if (!args.containsKey("jdbcDriverClass"))
                 throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-            String driverCls = args.get("driverClass").toString();
+            String driverCls = args.get("jdbcDriverClass").toString();
 
-            if (!args.containsKey("url"))
+            if (!args.containsKey("jdbcUrl"))
                 throw new IllegalArgumentException("Missing url in arguments: " + args);
 
-            String url = args.get("url").toString();
+            String url = args.get("jdbcUrl").toString();
 
             if (!args.containsKey("info"))
                 throw new IllegalArgumentException("Missing info in arguments: " + args);

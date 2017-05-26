@@ -64,7 +64,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         affMapper = cctx.config().getAffinityMapper();
 
         aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-            cctx.namex(),
+            cctx.name(),
             affFunction,
             cctx.config().getNodeFilter(),
             cctx.config().getBackups(),

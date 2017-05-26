@@ -100,7 +100,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      * @return Cache.
      */
     protected IgniteCache getCache(){
-        return grid(1).cache(null);
+        return grid(1).cache(DEFAULT_CACHE_NAME);
     }
 
     /**

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -112,10 +111,5 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
     @SuppressWarnings({"unchecked"})
     @Override public boolean containsKey(Object key) {
         return GridFunc.isAll((K)key, preds) && map.containsKey(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PredicateMapView.class, this);
     }
 }

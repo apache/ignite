@@ -18,10 +18,9 @@ package org.apache.ignite.internal.processors.cache.database.evict;
 
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -39,13 +38,13 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     private static final int COMPACT_TS_SHIFT = 8; // Enough if grid works for less than 17 years.
 
     /** Millis in day. */
-    private final static int DAY = 24 * 60 * 60 * 1000;
+    private static final int DAY = 24 * 60 * 60 * 1000;
 
     /** Page memory. */
-    protected final PageMemory pageMem;
+    protected final PageMemoryNoStoreImpl pageMem;
 
     /** Tracking array size. */
-    final int trackingSize;
+    protected final int trackingSize;
 
     /** Base compact timestamp. */
     private final long baseCompactTs;
@@ -53,21 +52,13 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Shared context. */
     private final GridCacheSharedContext sharedCtx;
 
-    /* TODO: IGNITE-4921: Will be removed after segments refactoring >>>> */
-    protected final int segBits;
-    protected final int idxBits;
-    protected final int segMask;
-    protected final int idxMask;
-    protected final int segmentPageCount;
-    /* <<<< */
-
     /**
      * @param pageMem Page memory.
      * @param plcCfg Memory policy configuration.
      * @param sharedCtx Shared context.
      */
     PageAbstractEvictionTracker(
-        PageMemory pageMem,
+        PageMemoryNoStoreImpl pageMem,
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext sharedCtx
     ) {
@@ -75,33 +66,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         this.sharedCtx = sharedCtx;
 
-        MemoryConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
-
-        /* TODO: IGNITE-4921: Will be removed after segments refactoring >>>> */
-        int concurrencyLevel = memCfg.getConcurrencyLevel();
-
-        if (concurrencyLevel < 1)
-            concurrencyLevel = Runtime.getRuntime().availableProcessors();
-
-        int pageSize = memCfg.getPageSize();
-
-        long segSize = plcCfg.getSize() / concurrencyLevel;
-
-        if (segSize < 1024 * 1024)
-            segSize = 1024 * 1024;
-
-        segmentPageCount = (int)(segSize / pageSize);
-
-        segBits = Integer.SIZE - Integer.numberOfLeadingZeros(concurrencyLevel - 1);
-
-        idxBits = PageIdUtils.PAGE_IDX_SIZE - segBits;
-
-        segMask = ~(-1 << segBits);
-
-        idxMask = ~(-1 << idxBits);
-        /* <<<< */
-
-        trackingSize = segmentPageCount << segBits;
+        trackingSize = pageMem.totalPages();
 
         baseCompactTs = (U.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
         // We subtract day to avoid fail in case of daylight shift or timezone change.
@@ -161,7 +126,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             if (!cacheCtx.userCache())
                 continue;
 
-            GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(dataRow.key());
+            GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
+                cacheCtx.cache().entryEx(dataRow.key());
 
             evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
         }
@@ -190,15 +156,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
      * @return Position of page in tracking array.
      */
     int trackingIdx(int pageIdx) {
-        int inSegmentPageIdx = inSegmentPageIdx(pageIdx);
-
-        assert inSegmentPageIdx < segmentPageCount : inSegmentPageIdx;
-
-        int trackingIdx = segmentIdx(pageIdx) * segmentPageCount + inSegmentPageIdx;
-
-        assert trackingIdx < trackingSize : trackingIdx;
-
-        return trackingIdx;
+        return pageMem.pageSequenceNumber(pageIdx);
     }
 
     /**
@@ -208,36 +166,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
      * @return Page index.
      */
     int pageIdx(int trackingIdx) {
-        assert trackingIdx < trackingSize;
-
-        long res = 0;
-
-        long segIdx = trackingIdx / segmentPageCount;
-        long pageIdx = trackingIdx % segmentPageCount;
-
-        res = (res << segBits) | (segIdx & segMask);
-        res = (res << idxBits) | (pageIdx & idxMask);
-
-        assert (res & (-1L << 32)) == 0 : res;
-
-        return (int)res;
+        return pageMem.pageIndex(trackingIdx);
     }
-
-    /* TODO: IGNITE-4921: Will be removed after segments refactoring >>>> */
-    /**
-     * @param pageIdx Page index.
-     * @return Number of segment.
-     */
-    private int segmentIdx(int pageIdx) {
-        return (pageIdx >> idxBits) & segMask;
-    }
-
-    /**
-     * @param pageIdx Page index.
-     * @return Number of page inside segment.
-     */
-    private int inSegmentPageIdx(int pageIdx) {
-        return pageIdx & idxMask;
-    }
-    /* <<<< */
 }

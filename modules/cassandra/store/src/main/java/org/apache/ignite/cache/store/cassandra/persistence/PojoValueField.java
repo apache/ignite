@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.store.cassandra.persistence;
 
 import java.beans.PropertyDescriptor;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.w3c.dom.Element;
 
 /**
@@ -134,10 +133,5 @@ public class PojoValueField extends PojoField {
             builder.append(" ").append(idxOptions);
 
         return builder.append(";").toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void init(QuerySqlField sqlField) {
-        // No-op.
     }
 }
