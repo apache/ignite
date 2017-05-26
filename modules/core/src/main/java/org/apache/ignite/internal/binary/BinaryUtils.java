@@ -1153,7 +1153,12 @@ public class BinaryUtils {
      * @return {@code True} if this is a Enum class.
      */
     public static boolean isEnum(Class cls) {
-        return cls.isEnum() || (cls.getSuperclass() != null && cls.getSuperclass().isEnum());
+        if (cls.isEnum())
+            return true;
+
+        Class sCls = cls.getSuperclass();
+
+        return sCls != null && sCls.isEnum();
     }
 
     /**
