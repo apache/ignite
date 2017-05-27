@@ -1794,8 +1794,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
-        if (this.qryEntities == null)
+        if (this.qryEntities == null) {
             this.qryEntities = new ArrayList<>(qryEntities);
+
+            return this;
+        }
 
         for (QueryEntity entity : qryEntities) {
             boolean found = false;
@@ -1811,6 +1814,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (!found)
                 this.qryEntities.add(entity);
         }
+
+        return this;
+    }
+
+    /**
+     * Clear query entities.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> clearQueryEntities() {
+        this.qryEntities = null;
 
         return this;
     }

@@ -668,7 +668,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             synchronized (stateMux) {
+                boolean escape = cctx.config().isSqlEscapeAll();
+
                 String cacheName = cctx.name();
+
+                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema(), escape);
 
                 // Prepare candidates.
                 List<Class<?>> mustDeserializeClss = new ArrayList<>();
@@ -680,7 +684,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
                         QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity,
-                            mustDeserializeClss);
+                            mustDeserializeClss, escape);
 
                         cands.add(cand);
                     }
@@ -755,7 +759,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
 
                 // Ready to register at this point.
-                registerCache0(cacheName, cctx, cands);
+                registerCache0(cacheName, schemaName, cctx, cands);
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
@@ -978,7 +982,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
 
         for (QueryEntity entity : schema.entities()) {
-            String tblName = QueryUtils.tableName(entity);
+            String tblName = entity.getTableName();
 
             QueryEntity oldEntity = tblMap.put(tblName, entity);
 
@@ -989,7 +993,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             for (QueryIndex entityIdx : entity.getIndexes()) {
-                String idxName = QueryUtils.indexName(entity, entityIdx);
+                String idxName = entityIdx.getName();
 
                 T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
 
@@ -1266,18 +1270,71 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Create cache and table from given query entity.
+     *
+     * @param schemaName Schema name to create table in.
+     * @param entity Entity to create table from.
+     * @param templateCacheName Cache name to take settings from.
+     * @param ifNotExists Quietly ignore this command if table already exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
+        throws IgniteCheckedException {
+        CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
+
+        if (templateCfg == null)
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
+
+        if (!F.isEmpty(templateCfg.getQueryEntities()))
+            throw new SchemaOperationException("Template cache already contains query entities which it should not " +
+                "[cacheName=" + templateCacheName + ']');
+
+        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
+
+        newCfg.setName(entity.getTableName());
+
+        newCfg.setQueryEntities(Collections.singleton(entity));
+
+        // We want to preserve user specified names as they are
+        newCfg.setSqlEscapeAll(true);
+
+        boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
+
+        if (!res && !ifNotExists)
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+    }
+
+    /**
+     * Drop table by destroying its cache if it's an 1:1 per cache table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param ifExists Quietly ignore this command if table does not exist.
+     * @throws SchemaOperationException if {@code ifExists} is {@code false} and cache was not found.
+     */
+    @SuppressWarnings("unchecked")
+    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) throws SchemaOperationException {
+        boolean res = ctx.grid().destroyCache0(tblName);
+
+        if (!res && !ifExists)
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+    }
+
+    /**
      * Register cache in indexing SPI.
      *
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param cands Candidates.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCache0(String cacheName, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
-        throws IgniteCheckedException {
+    private void registerCache0(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
+        Collection<QueryTypeCandidate> cands) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
-                idx.registerCache(cacheName, cctx, cctx.config());
+                idx.registerCache(cacheName, schemaName, cctx, cctx.config());
 
             try {
                 for (QueryTypeCandidate cand : cands) {
@@ -1544,7 +1601,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-            idx.store(cacheName, desc.name(), key, partId, val, ver, expirationTime, link);
+            idx.store(cacheName, desc, key, partId, val, ver, expirationTime, link);
         }
         finally {
             busyLock.leaveBusy();

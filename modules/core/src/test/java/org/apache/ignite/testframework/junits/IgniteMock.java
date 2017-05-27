@@ -446,6 +446,11 @@ public class IgniteMock implements Ignite {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        return null;
+    }
+
     /**
      * @param staticCfg Configuration.
      */
