@@ -30,7 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
@@ -105,7 +104,8 @@ public class DmlStatementsProcessor {
     private static final int PLAN_CACHE_SIZE = 1024;
 
     /** Update plans cache. */
-    private final ConcurrentMap<String, ConcurrentMap<String, UpdatePlan>> planCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<H2DmlPlanKey, UpdatePlan> planCache =
+        new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
     /**
      * Constructor.
@@ -125,7 +125,14 @@ public class DmlStatementsProcessor {
      * @param cacheName Cache name.
      */
     public void onCacheStop(String cacheName) {
-        planCache.remove(idx.schema(cacheName));
+        Iterator<Map.Entry<H2DmlPlanKey, UpdatePlan>> iter = planCache.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            UpdatePlan plan = iter.next().getValue();
+
+            if (F.eq(cacheName, plan.tbl.cacheName()))
+                iter.remove();
+        }
     }
 
     /**
@@ -410,17 +417,9 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared(prepStmt);
 
-        ConcurrentMap<String, UpdatePlan> cachePlans = planCache.get(schema);
+        H2DmlPlanKey planKey = new H2DmlPlanKey(schema, p.getSQL());
 
-        if (cachePlans == null) {
-            cachePlans = new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
-
-            cachePlans = U.firstNotNull(planCache.putIfAbsent(schema, cachePlans), cachePlans);
-        }
-
-        // getSQL returns field value, so it's fast
-        // Don't look for re-runs in cache, we don't cache them
-        UpdatePlan res = (errKeysPos == null ? cachePlans.get(p.getSQL()) : null);
+        UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
 
         if (res != null)
             return res;
@@ -429,7 +428,7 @@ public class DmlStatementsProcessor {
 
         // Don't cache re-runs
         if (errKeysPos == null)
-            return U.firstNotNull(cachePlans.putIfAbsent(p.getSQL(), res), res);
+            return U.firstNotNull(planCache.putIfAbsent(planKey, res), res);
         else
             return res;
     }
