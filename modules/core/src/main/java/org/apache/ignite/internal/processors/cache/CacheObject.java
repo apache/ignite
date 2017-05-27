@@ -50,7 +50,7 @@ public interface CacheObject extends Message {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
+    public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.

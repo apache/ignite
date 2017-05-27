@@ -286,7 +286,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext cacheCtx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext cacheCtx) throws IgniteCheckedException {
         if (valBytes != null)
             return valBytes;
 
