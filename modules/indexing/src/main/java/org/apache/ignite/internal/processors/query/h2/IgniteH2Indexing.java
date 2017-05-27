@@ -1344,8 +1344,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
-            twoStepQry = cachedQry.twoStepQry.copy();
-            meta = cachedQry.meta;
+            twoStepQry = cachedQry.query().copy();
+            meta = cachedQry.meta();
         }
         else {
             final UUID locNodeId = ctx.localNodeId();
