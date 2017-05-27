@@ -1713,7 +1713,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
-        return cacheObjCtx.unwrapBinariesIfNeeded(col, keepBinary);
+        return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, keepBinary);
     }
 
     /**
@@ -1724,7 +1724,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped object.
      */
     public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
-        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary);
+        return unwrapBinaryIfNeeded(o, keepBinary, true);
     }
 
     /**
