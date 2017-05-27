@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -57,23 +59,26 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         cpy = cpy && needCopy(ctx);
 
         try {
+            GridKernalContext kernalCtx = ctx.kernalContext();
+            IgniteCacheObjectProcessor proc = ctx.processor();
+
             if (cpy) {
                 if (valBytes == null) {
                     assert val != null;
 
-                    valBytes = ctx.processor().marshal(ctx, val);
+                    valBytes = proc.marshal(ctx, val);
                 }
 
                 ClassLoader clsLdr;
 
                 if (val != null)
                     clsLdr = val.getClass().getClassLoader();
-                else if (ctx.kernalContext().config().isPeerClassLoadingEnabled())
-                    clsLdr = ctx.kernalContext().cache().context().deploy().globalLoader();
+                else if (kernalCtx.config().isPeerClassLoadingEnabled())
+                    clsLdr = kernalCtx.cache().context().deploy().globalLoader();
                 else
                     clsLdr = null;
 
-                return (T)ctx.processor().unmarshal(ctx, valBytes, clsLdr);
+                return (T)proc.unmarshal(ctx, valBytes, clsLdr);
             }
 
             if (val != null)
@@ -81,9 +86,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            Object val = ctx.processor().unmarshal(ctx, valBytes,
-                ctx.kernalContext().config().isPeerClassLoadingEnabled() ?
-                    ctx.kernalContext().cache().context().deploy().globalLoader() : null);
+            Object val = proc.unmarshal(ctx, valBytes, kernalCtx.config().isPeerClassLoadingEnabled() ?
+                kernalCtx.cache().context().deploy().globalLoader() : null);
 
             if (ctx.storeValue())
                 this.val = val;
