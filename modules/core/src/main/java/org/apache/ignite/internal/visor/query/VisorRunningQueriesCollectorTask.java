@@ -90,7 +90,6 @@ public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<VisorRu
             long curTime = U.currentTimeMillis();
 
             for (GridRunningQueryInfo qry : queries)
-                // TODO: Create ticket: schema instead of cache.
                 res.add(new VisorRunningQuery(qry.id(), qry.query(), qry.queryType(), qry.schemaName(),
                     qry.startTime(), curTime - qry.startTime(),
                     qry.cancelable(), qry.local()));
