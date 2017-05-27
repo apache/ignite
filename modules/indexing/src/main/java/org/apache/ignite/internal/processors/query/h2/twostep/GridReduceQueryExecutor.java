@@ -499,7 +499,7 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param cctx Cache context.
+     * @param schemaName Schema name.
      * @param qry Query.
      * @param keepPortable Keep portable.
      * @param enforceJoinOrder Enforce join order of tables.
@@ -510,7 +510,7 @@ public class GridReduceQueryExecutor {
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
-        GridCacheContext<?, ?> cctx,
+        String schemaName,
         GridCacheTwoStepQuery qry,
         boolean keepPortable,
         boolean enforceJoinOrder,
@@ -538,8 +538,6 @@ public class GridReduceQueryExecutor {
             }
 
             final long qryReqId = qryIdGen.incrementAndGet();
-
-            String schemaName = h2.schema(cctx.name());
 
             final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
                 h2.connectionForSchema(schemaName), qry.mapQueries().size(), qry.pageSize(),

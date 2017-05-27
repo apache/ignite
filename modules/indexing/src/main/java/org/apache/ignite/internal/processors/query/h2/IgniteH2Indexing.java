@@ -1232,7 +1232,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param cctx Cache context.
+     * @param schemaName Schema name.
      * @param qry Query.
      * @param keepCacheObj Flag to keep cache object.
      * @param enforceJoinOrder Enforce join order of tables.
@@ -1240,7 +1240,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(
-        final GridCacheContext<?,?> cctx,
+        final String schemaName,
         final GridCacheTwoStepQuery qry,
         final boolean keepCacheObj,
         final boolean enforceJoinOrder,
@@ -1251,7 +1251,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     ) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params,
+                return rdcQryExec.query(schemaName, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params,
                     parts);
             }
         };
@@ -1328,9 +1328,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String cacheName = cctx.name();
         final String sqlQry = qry.getSql();
 
-        String schema = schema(cctx.name());
+        String schemaName = schema(cacheName);
 
-        Connection c = connectionForSchema(schema);
+        Connection c = connectionForSchema(schemaName);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins();
@@ -1416,7 +1416,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            return dmlProc.updateSqlFieldsDistributed(schema, stmt, qry, cancel);
+                            return dmlProc.updateSqlFieldsDistributed(schemaName, stmt, qry, cancel);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
@@ -1486,7 +1486,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
+            runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
                 qry.getArgs(), qry.getPartitions()), cancel);
 
         cursor.fieldsMeta(meta);
