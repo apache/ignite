@@ -154,8 +154,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         }
 
         final List<String> fieldsList = Arrays.asList(fields);
-        keyAliasColumnId = (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldName()) : -1;
-        valueAliasColumnId = (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldName()) : -1;
+
+        keyAliasColumnId =
+            (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : -1;
+
+        valueAliasColumnId =
+            (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
 
         // Index is not snapshotable in db-x.
         snapshotableIdx = false;

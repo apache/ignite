@@ -432,8 +432,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String keyFieldName() {
-        // All fields should have aliases after normalization.
-        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+        return keyFieldName;
     }
 
     /**
@@ -446,7 +445,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String valueFieldName() {
-        // All fields should have aliases after normalization.
+        return valFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String keyFieldAlias() {
+        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+    }
+
+    @Nullable @Override public String valueFieldAlias() {
         return valFieldName != null ? aliases.get(valFieldName) : null;
     }
 }
