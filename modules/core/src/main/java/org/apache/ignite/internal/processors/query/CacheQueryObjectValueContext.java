@@ -26,7 +26,16 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
  */
 public class CacheQueryObjectValueContext implements CacheObjectValueContext {
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    public CacheQueryObjectValueContext(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
     /** {@inheritDoc} */
     @Override public GridKernalContext kernalContext() {

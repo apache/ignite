@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -302,6 +304,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     protected volatile GridKernalContext ctx;
+
+    /** Cache object value context. */
+    protected CacheQueryObjectValueContext valCtx;
 
     /** */
     private DmlStatementsProcessor dmlProc;
@@ -1113,7 +1118,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx.cacheObjectContext(), keepBinary);
+                        return new GridQueryCacheObjectsIterator(res.iterator(), valueContext(), keepBinary);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -1998,6 +2003,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             this.ctx = ctx;
 
+            valCtx = new CacheQueryObjectValueContext(ctx);
+
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
 
@@ -2027,6 +2034,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
+    }
+
+    /**
+     * @return Value context.
+     */
+    public CacheObjectValueContext valueContext() {
+        return valCtx;
     }
 
     /**

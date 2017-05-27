@@ -820,7 +820,7 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
-                return new GridQueryCacheObjectsIterator(resIter, cctx.cacheObjectContext(), keepPortable);
+                return new GridQueryCacheObjectsIterator(resIter, h2.valueContext(), keepPortable);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.connection());
