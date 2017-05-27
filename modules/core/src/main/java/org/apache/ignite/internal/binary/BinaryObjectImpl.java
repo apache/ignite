@@ -38,6 +38,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -135,7 +136,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         Object obj0 = obj;
 
         if (obj0 == null || (cpy && needCopy(ctx)))
@@ -787,9 +788,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param coCtx CacheObjectContext.
      * @return Object.
      */
-    private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
-        BinaryReaderExImpl reader = reader(null,
-            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
+    private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
+        BinaryReaderExImpl reader = reader(null, coCtx != null ?
+            coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
 
         Object obj0 = reader.deserialize();
 
@@ -807,7 +808,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param ctx Context.
      * @return {@code True} need to copy value returned to user.
      */
-    private boolean needCopy(CacheObjectContext ctx) {
+    private boolean needCopy(CacheObjectValueContext ctx) {
         return ctx.copyOnGet() && obj != null && !ctx.kernalContext().cacheObjects().immutable(obj);
     }
 
@@ -819,7 +820,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+        boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 

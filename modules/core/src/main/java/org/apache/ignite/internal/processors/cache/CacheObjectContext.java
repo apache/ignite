@@ -27,14 +27,13 @@ import java.util.Map;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class CacheObjectContext {
+public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private GridKernalContext kernalCtx;
 
@@ -81,24 +80,18 @@ public class CacheObjectContext {
         return cacheName;
     }
 
-    /**
-     * @return {@code True} if deployment info should be associated with the objects of this cache.
-     */
-    public boolean addDeploymentInfo() {
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
 
-    /**
-     * @return Copy on get flag.
-     */
-    public boolean copyOnGet() {
+    /** {@inheritDoc} */
+    @Override public boolean copyOnGet() {
         return cpyOnGet;
     }
 
-    /**
-     * @return {@code True} if should store unmarshalled value in cache.
-     */
-    public boolean storeValue() {
+    /** {@inheritDoc} */
+    @Override public boolean storeValue() {
         return storeVal;
     }
 
@@ -109,11 +102,14 @@ public class CacheObjectContext {
         return dfltAffMapper;
     }
 
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext() {
+    /** {@inheritDoc} */
+    @Override public GridKernalContext kernalContext() {
         return kernalCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean binaryEnabled() {
+        return false;
     }
 
     /**
