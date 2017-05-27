@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.query.h2;
  */
 public class H2TwoStepCachedQueryKey {
     /** */
-    private final String cacheName;
+    private final String schemaName;
 
     /** */
     private final String sql;
@@ -40,32 +40,25 @@ public class H2TwoStepCachedQueryKey {
     private final boolean isLocal;
 
     /**
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql Sql.
      * @param grpByCollocated Collocated GROUP BY.
      * @param distributedJoins Distributed joins enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param isLocal Query is local flag.
      */
-    H2TwoStepCachedQueryKey(String cacheName,
+    H2TwoStepCachedQueryKey(String schemaName,
         String sql,
         boolean grpByCollocated,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean isLocal) {
-        this.cacheName = cacheName;
+        this.schemaName = schemaName;
         this.sql = sql;
         this.grpByCollocated = grpByCollocated;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.isLocal = isLocal;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
     }
 
     /** {@inheritDoc} */
@@ -87,7 +80,7 @@ public class H2TwoStepCachedQueryKey {
         if (enforceJoinOrder != that.enforceJoinOrder)
             return false;
 
-        if (cacheName != null ? !cacheName.equals(that.cacheName) : that.cacheName != null)
+        if (schemaName != null ? !schemaName.equals(that.schemaName) : that.schemaName != null)
             return false;
 
         return isLocal == that.isLocal && sql.equals(that.sql);
@@ -95,7 +88,7 @@ public class H2TwoStepCachedQueryKey {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = cacheName != null ? cacheName.hashCode() : 0;
+        int res = schemaName != null ? schemaName.hashCode() : 0;
         res = 31 * res + sql.hashCode();
         res = 31 * res + (grpByCollocated ? 1 : 0);
         res = res + (distributedJoins ? 2 : 0);

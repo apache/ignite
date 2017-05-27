@@ -1325,10 +1325,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx,
         SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel) {
-        final String cacheName = cctx.name();
         final String sqlQry = qry.getSql();
 
-        String schemaName = schema(cacheName);
+        String schemaName = schema(cctx.name());
 
         Connection c = connectionForSchema(schemaName);
 
@@ -1341,13 +1340,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheTwoStepQuery twoStepQry = null;
         List<GridQueryFieldMetadata> meta;
 
-        final H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(cacheName, sqlQry, grpByCollocated,
+        final H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder, qry.isLocal());
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
-            twoStepQry = cachedQry.twoStepQry.copy();
-            meta = cachedQry.meta;
+            twoStepQry = cachedQry.query().copy();
+            meta = cachedQry.meta();
         }
         else {
             final UUID locNodeId = ctx.localNodeId();
@@ -2261,11 +2260,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 for (Index idx : tblDesc.table().getIndexes())
                     idx.close(null);
 
+            int cacheId = CU.cacheId(cacheName);
+
             for (Iterator<Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery>> it =
                 twoStepCache.entrySet().iterator(); it.hasNext();) {
                 Map.Entry<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> e = it.next();
 
-                if (F.eq(e.getKey().cacheName(), cacheName))
+                GridCacheTwoStepQuery qry = e.getValue().query();
+
+                if (!F.isEmpty(qry.cacheIds()) && qry.cacheIds().contains(cacheId))
                     it.remove();
             }
         }
