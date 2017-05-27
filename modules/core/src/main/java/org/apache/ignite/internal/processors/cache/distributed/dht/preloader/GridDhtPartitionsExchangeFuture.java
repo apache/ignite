@@ -570,8 +570,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             exchActions = new ExchangeActions();
 
+                            Set<String> cacheNames = new HashSet<>();
+
+                            for (Integer grpId : op.cacheGroupIds()) {
+                                CacheGroupInfrastructure cacheGrp = cctx.cache().cacheGroup(grpId);
+
+                                if (cacheGrp == null)
+                                    continue;
+
+                                for (Integer cacheId : cacheGrp.cacheIds())
+                                    cacheNames.add(cctx.cacheContext(cacheId).name());
+                            }
+
                             List<DynamicCacheChangeRequest> destroyRequests = getStopCacheRequests(
-                                cctx.cache(), op.cacheGroupIds(), cctx.localNodeId());
+                                cctx.cache(), cacheNames, cctx.localNodeId());
 
                             if (!F.isEmpty(destroyRequests)) { //Emulate destroy cache request
                                 for (DynamicCacheChangeRequest req : destroyRequests) {

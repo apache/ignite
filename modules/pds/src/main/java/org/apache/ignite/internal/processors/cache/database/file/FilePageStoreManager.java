@@ -549,11 +549,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheName Cache name.
-     * @return Store dir for given cache.
+     * @param ccfg Cache configuration.
      */
-    public File cacheWorkDir(String cacheName) {
-        return new File(storeWorkDir, "cache-" + cacheName);
+    public File cacheWorkDir(CacheConfiguration ccfg) {
+        String dirName = ccfg.getGroupName() == null ?
+            CACHE_DIR_PREFIX + ccfg.getName() : CACHE_GRP_DIR_PREFIX + ccfg.getGroupName();
+
+        return new File(storeWorkDir, dirName);
     }
 
     /**
