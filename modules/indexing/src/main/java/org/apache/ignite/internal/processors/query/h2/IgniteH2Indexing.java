@@ -1837,7 +1837,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Cursor cursor = hashIdx.find((Session)null, null, null);
 
-        int cacheId = CU.cacheId(tbl.schema().cacheName());
+        int cacheId = CU.cacheId(cacheName);
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
@@ -2243,7 +2243,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Schema rmv = schemas.remove(schema);
 
         if (rmv != null) {
-            cacheName2schema.remove(rmv.cacheName());
+            cacheName2schema.remove(cacheName);
             mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 
