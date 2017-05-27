@@ -21,7 +21,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -32,19 +33,20 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     private final Iterator<List<?>> iter;
 
     /** */
-    private final CacheObjectContext cacheObjCtx;
+    private final CacheObjectValueContext cacheObjValCtx;
 
     /** */
     private final boolean keepBinary;
 
     /**
      * @param iter Iterator.
-     * @param cacheObjCtx Cache object context.
+     * @param cacheObjValCtx Cache object context.
      * @param keepBinary Keep binary.
      */
-    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, CacheObjectContext cacheObjCtx, boolean keepBinary) {
+    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, CacheObjectValueContext cacheObjValCtx,
+        boolean keepBinary) {
         this.iter = iter;
-        this.cacheObjCtx = cacheObjCtx;
+        this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }
 
@@ -62,7 +64,8 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<?> next() {
-        return ((List<?>)cacheObjCtx.unwrapBinariesIfNeeded((Collection<Object>)iter.next(), keepBinary));
+        return ((List<?>)CacheObjectUtils.unwrapBinariesIfNeeded(
+            cacheObjValCtx, (Collection<Object>)iter.next(), keepBinary));
     }
 
     /** {@inheritDoc} */
