@@ -339,14 +339,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @return Connection.
-     */
-    public Connection connectionForCache(String cacheName) {
-        return connectionForSchema(schema(cacheName));
-    }
-
-    /**
      * @param schema Schema.
      * @return Connection.
      */
@@ -403,7 +395,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException {
-        return prepareStatement(connectionForCache(cacheName), sql, true);
+        String schemaName = schema(cacheName);
+
+        return prepareStatement(connectionForSchema(schemaName), sql, true);
     }
 
     /** {@inheritDoc} */
@@ -918,7 +912,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public long streamUpdateQuery(String cacheName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-        final Connection conn = connectionForCache(cacheName);
+        String schemaName = schema(cacheName);
+
+        final Connection conn = connectionForSchema(schemaName);
 
         final PreparedStatement stmt;
 
@@ -1901,12 +1897,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed or {@code -1} if the type is unknown.
      */
     long size(String cacheName, String typeName) throws IgniteCheckedException {
+        String schemaName = schema(cacheName);
+
         H2TableDescriptor tbl = tableDescriptor(typeName, cacheName);
 
         if (tbl == null)
             return -1;
 
-        Connection conn = connectionForCache(cacheName);
+        Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, false);
 

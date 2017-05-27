@@ -579,7 +579,9 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            Connection conn = h2.connectionForCache(mainCctx.name());
+            String schemaName = h2.schema(mainCctx.name());
+
+            Connection conn = h2.connectionForSchema(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
