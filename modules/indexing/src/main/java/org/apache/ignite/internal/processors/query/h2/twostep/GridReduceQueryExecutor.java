@@ -539,11 +539,9 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = qryIdGen.incrementAndGet();
 
-            final String cacheName = cctx.name();
+            String schemaName = h2.schema(cctx.name());
 
-            String schemaName = h2.schema(cacheName);
-
-            final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), cacheName,
+            final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
                 h2.connectionForSchema(schemaName), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
@@ -794,14 +792,12 @@ public class GridReduceQueryExecutor {
                             .pageSize(r.pageSize()).distributedJoinMode(OFF));
 
                         try {
-                            String schema = h2.schema(cacheName);
-
                             if (qry.explain())
-                                return explainPlan(r.connection(), schema, qry, params);
+                                return explainPlan(r.connection(), schemaName, qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            ResultSet res = h2.executeSqlQueryWithTimer(schema,
+                            ResultSet res = h2.executeSqlQueryWithTimer(schemaName,
                                 r.connection(),
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),

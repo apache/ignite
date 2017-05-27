@@ -61,16 +61,16 @@ class ReduceQueryRun {
      *
      * @param id Query ID.
      * @param qry Query text.
-     * @param cache Cache where query was executed.
+     * @param schemaName Schema name.
      * @param conn Connection.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param startTime Start time.
      * @param cancel Query cancel handler.
      */
-    ReduceQueryRun(Long id, String qry, String cache, Connection conn, int idxsCnt, int pageSize, long startTime,
+    ReduceQueryRun(Long id, String qry, String schemaName, Connection conn, int idxsCnt, int pageSize, long startTime,
         GridQueryCancel cancel) {
-        this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, cache, startTime, cancel, false);
+        this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, schemaName, startTime, cancel, false);
 
         this.conn = (JdbcConnection)conn;
 
