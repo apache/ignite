@@ -218,9 +218,9 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
             CacheObject co = (CacheObject)obj;
 
             if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(co, idx.valueContext());
+                return new GridH2ValueCacheObject(co, idx.objectContext());
 
-            obj = co.value(idx.valueContext(), false);
+            obj = co.value(idx.objectContext(), false);
         }
 
         switch (type) {

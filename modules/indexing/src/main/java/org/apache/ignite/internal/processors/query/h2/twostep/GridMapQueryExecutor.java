@@ -1147,7 +1147,7 @@ public class GridMapQueryExecutor {
                             GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
                             row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(),
-                                GridMapQueryExecutor.this.h2.valueContext()) {
+                                GridMapQueryExecutor.this.h2.objectContext()) {
                                 @Override public Object getObject() {
                                     return getObject(true);
                                 }

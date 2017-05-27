@@ -145,6 +145,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
+    /** Value object context. */
+    private final CacheQueryObjectValueContext valCtx;
+
     /** All indexes. */
     private final ConcurrentMap<QueryIndexKey, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
 
@@ -202,6 +205,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        valCtx = new CacheQueryObjectValueContext(ctx);
 
         ioLsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -2373,6 +2378,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         catch (Exception e) {
             return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
         }
+    }
+
+
+    /**
+     * @return Value object context.
+     */
+    public CacheQueryObjectValueContext objectContext() {
+        return valCtx;
     }
 
     /**
