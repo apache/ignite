@@ -1587,10 +1587,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             CacheObjectContext coctx = cacheObjectContext(cacheName);
 
-            QueryTypeDescriptorImpl desc = typeByValue(coctx, key, val, true);
+            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
 
             if (prevVal != null) {
-                QueryTypeDescriptorImpl prevValDesc = typeByValue(coctx, key, prevVal, false);
+                QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName, coctx, key, prevVal, false);
 
                 if (prevValDesc != null && prevValDesc != desc)
                     idx.remove(cacheName, prevValDesc, key, partId, prevVal, prevVer);
@@ -1607,6 +1607,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheName Cache name.
      * @param coctx Cache context.
      * @param key Key.
      * @param val Value.
@@ -1615,7 +1616,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If type check failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Nullable private QueryTypeDescriptorImpl typeByValue(CacheObjectContext coctx,
+    @Nullable private QueryTypeDescriptorImpl typeByValue(String cacheName,
+        CacheObjectContext coctx,
         KeyCacheObject key,
         CacheObject val,
         boolean checkType)
@@ -1629,12 +1631,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (binaryVal) {
             int typeId = ctx.cacheObjects().typeId(val);
 
-            id = new QueryTypeIdKey(coctx.cacheName(), typeId);
+            id = new QueryTypeIdKey(cacheName, typeId);
         }
         else {
             valCls = val.value(coctx, false).getClass();
 
-            id = new QueryTypeIdKey(coctx.cacheName(), valCls);
+            id = new QueryTypeIdKey(cacheName, valCls);
         }
 
         QueryTypeDescriptorImpl desc = types.get(id);
@@ -2078,7 +2080,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             CacheObjectContext coctx = cacheObjectContext(cacheName);
 
-            QueryTypeDescriptorImpl desc = typeByValue(coctx, key, val, false);
+            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, false);
 
             if (desc == null)
                 return;
