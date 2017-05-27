@@ -59,6 +59,9 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /** */
     private final H2Schema schema;
 
+    /** Cache name. */
+    private final String cacheName;
+
     /** */
     private GridH2Table tbl;
 
@@ -74,11 +77,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param idx Indexing.
      * @param schema Schema.
      * @param type Type descriptor.
+     * @param cacheName Cache name.
      */
-    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type) {
+    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type, String cacheName) {
         this.idx = idx;
         this.type = type;
         this.schema = schema;
+        this.cacheName = cacheName;
 
         fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
     }
@@ -137,6 +142,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      */
     String typeName() {
         return type.name();
+    }
+
+    /**
+     * @return Cache name.
+     */
+    String cacheName() {
+        return cacheName;
     }
 
     /**

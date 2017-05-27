@@ -1600,7 +1600,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheName);
 
         try {
             Connection conn = connectionForThread(schemaName);
