@@ -42,6 +42,13 @@ public class H2TwoStepCachedQuery {
         this.twoStepQry = twoStepQry;
     }
 
+    /**
+     * @return Query.
+     */
+    public GridCacheTwoStepQuery query() {
+        return twoStepQry;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2TwoStepCachedQuery.class, this);
