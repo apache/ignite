@@ -933,7 +933,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (err == null) {
                 String idxName = op0.index().getName();
 
-                QueryIndexKey idxKey = new QueryIndexKey(cacheName, idxName);
+                QueryIndexKey idxKey = new QueryIndexKey(op.schemaName(), idxName);
 
                 if (idxs.get(idxKey) != null) {
                     if (op0.ifNotExists())
@@ -948,7 +948,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = op0.indexName();
 
-            QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(cacheName, idxName));
+            QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(op.schemaName(), idxName));
 
             if (oldIdx == null) {
                 if (op0.ifExists())
@@ -1159,7 +1159,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Local operation finished successfully [opId=" + op.id() + ']');
 
-            String cacheName = op.cacheName();
+            String schemaName = op.schemaName();
 
             try {
                 if (op instanceof SchemaIndexCreateOperation) {
@@ -1169,7 +1169,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
 
-                    QueryIndexKey idxKey = new QueryIndexKey(cacheName, op0.indexName());
+                    QueryIndexKey idxKey = new QueryIndexKey(schemaName, op0.indexName());
 
                     idxs.put(idxKey, idxDesc);
                 }
@@ -1180,7 +1180,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     QueryUtils.processDynamicIndexChange(op0.indexName(), null, type);
 
-                    QueryIndexKey idxKey = new QueryIndexKey(cacheName, op0.indexName());
+                    QueryIndexKey idxKey = new QueryIndexKey(schemaName, op0.indexName());
 
                     idxs.remove(idxKey);
                 }
@@ -1251,12 +1251,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor =
                     new SchemaIndexCacheVisitorImpl(this, cache.context(), cacheName, op0.tableName(), cancelTok);
 
-                idx.dynamicIndexCreate(cacheName, op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
+                idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
             else if (op instanceof SchemaIndexDropOperation) {
                 SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
 
-                idx.dynamicIndexDrop(cacheName, op0.indexName(), op0.ifExists());
+                idx.dynamicIndexDrop(op0.schemaName(), op0.indexName(), op0.ifExists());
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -1293,10 +1293,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
 
         newCfg.setName(entity.getTableName());
-
         newCfg.setQueryEntities(Collections.singleton(entity));
 
-        // We want to preserve user specified names as they are
+        // Preserve user specified names as they are.
         newCfg.setSqlEscapeAll(true);
 
         boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
@@ -1308,14 +1307,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Drop table by destroying its cache if it's an 1:1 per cache table.
      *
-     * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param tblName Table name.
      * @param ifExists Quietly ignore this command if table does not exist.
      * @throws SchemaOperationException if {@code ifExists} is {@code false} and cache was not found.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) throws SchemaOperationException {
-        boolean res = ctx.grid().destroyCache0(tblName);
+    public void dynamicTableDrop(String cacheName, String tblName, boolean ifExists) throws SchemaOperationException {
+        boolean res = ctx.grid().destroyCache0(cacheName);
 
         if (!res && !ifExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
@@ -1352,13 +1351,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         types.put(altTypeId, desc);
 
                     for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
-                        QueryIndexKey idxKey = new QueryIndexKey(cacheName, idx.name());
+                        QueryIndexKey idxKey = new QueryIndexKey(schemaName, idx.name());
 
                         QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
 
                         if (oldIdx != null) {
                             throw new IgniteException("Duplicate index name [cache=" + cacheName +
-                                ", idxName=" + idx.name() + ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+                                ", schemaName=" + schemaName + ", idxName=" + idx.name() +
+                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
                                 ", table=" + desc.tableName() + ']');
                         }
                     }
@@ -1409,9 +1409,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             while (idxIt.hasNext()) {
                 Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl> idxEntry = idxIt.next();
 
-                QueryIndexKey idxKey = idxEntry.getKey();
-
-                if (F.eq(cacheName, idxKey.cacheName()))
+                if (F.eq(cacheName, idxEntry.getValue().typeDescriptor().cacheName()))
                     idxIt.remove();
             }
 
