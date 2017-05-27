@@ -181,6 +181,20 @@ public class QueryUtils {
 
             entity.setTableName(tblName);
 
+            Map<String, String> aliases = new HashMap<>(entity.getAliases());
+
+            for (String fieldName : entity.getFields().keySet()) {
+                String fieldAlias = entity.getAliases().get(fieldName);
+
+                if (fieldAlias == null) {
+                    fieldAlias = aliasForFieldName(fieldName);
+
+                    aliases.put(fieldName, fieldAlias);
+                }
+            }
+
+            entity.setAliases(aliases);
+
             for (QueryIndex idx : entity.getIndexes())
                 idx.setName(indexName(tblName, idx));
 
