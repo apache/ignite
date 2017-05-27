@@ -117,5 +117,5 @@ public interface CacheObject extends Message {
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException;
+    public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException;
 }

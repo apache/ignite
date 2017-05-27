@@ -793,7 +793,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
