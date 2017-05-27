@@ -148,8 +148,8 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(final CacheObjectContext ctx,
-            final ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(final CacheObjectValueContext ctx, final ClassLoader ldr)
+            throws IgniteCheckedException {
             // No-op
         }
 
