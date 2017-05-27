@@ -55,8 +55,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** */
     private IgniteBinary noOpBinary = new NoOpBinary();
 
-    /**
-     *
+    /*
+     * Static initializer
      */
     static {
         IMMUTABLE_CLS.add(String.class);
@@ -166,7 +166,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.processor().unmarshal(ctx, bytes, null), bytes, -1);
+                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
@@ -392,14 +392,18 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
-                if (!ctx.processor().immutable(val)) {
-                    if (valBytes == null)
-                        valBytes = ctx.processor().marshal(ctx, val);
+                IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
 
-                    ClassLoader ldr = ctx.p2pEnabled() ?
+                if (!proc.immutable(val)) {
+                    if (valBytes == null)
+                        valBytes = proc.marshal(ctx, val);
+
+                    boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
+
+                    ClassLoader ldr = p2pEnabled ?
                         IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
 
-                    Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+                    Object val = proc.unmarshal(ctx, valBytes, ldr);
 
                     KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
 
@@ -450,15 +454,19 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
+                IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
+
                 if (valBytes == null)
-                    valBytes = ctx.processor().marshal(ctx, val);
+                    valBytes = proc.marshal(ctx, val);
 
                 if (ctx.storeValue()) {
-                    ClassLoader ldr = ctx.p2pEnabled() ?
+                    boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
+
+                    ClassLoader ldr = p2pEnabled ?
                         IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
-                    Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
-                        ctx.processor().unmarshal(ctx, valBytes, ldr);
+                    Object val = this.val != null && proc.immutable(this.val) ? this.val :
+                        proc.unmarshal(ctx, valBytes, ldr);
 
                     return new CacheObjectImpl(val, valBytes);
                 }

@@ -51,7 +51,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return {@code True} need to copy value returned to user.
      */
     protected boolean needCopy(CacheObjectContext ctx) {
-        return ctx.copyOnGet() && val != null && !ctx.processor().immutable(val);
+        return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
     }
 
     /** {@inheritDoc} */

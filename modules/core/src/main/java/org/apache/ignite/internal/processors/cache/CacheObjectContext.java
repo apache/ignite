@@ -39,9 +39,6 @@ public class CacheObjectContext {
     private GridKernalContext kernalCtx;
 
     /** */
-    private IgniteCacheObjectProcessor proc;
-
-    /** */
     private String cacheName;
 
     /** */
@@ -52,9 +49,6 @@ public class CacheObjectContext {
 
     /** */
     private boolean storeVal;
-
-    /** */
-    private boolean p2pEnabled;
 
     /** */
     private boolean addDepInfo;
@@ -78,9 +72,6 @@ public class CacheObjectContext {
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
         this.addDepInfo = addDepInfo;
-
-        p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
-        proc = kernalCtx.cacheObjects();
     }
 
     /**
@@ -88,13 +79,6 @@ public class CacheObjectContext {
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * @return {@code True} if peer class loading is enabled.
-     */
-    public boolean p2pEnabled() {
-        return p2pEnabled;
     }
 
     /**
@@ -130,13 +114,6 @@ public class CacheObjectContext {
      */
     public GridKernalContext kernalContext() {
         return kernalCtx;
-    }
-
-    /**
-     * @return Processor.
-     */
-    public IgniteCacheObjectProcessor processor() {
-        return proc;
     }
 
     /**

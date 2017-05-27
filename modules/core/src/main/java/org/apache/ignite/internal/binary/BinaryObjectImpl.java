@@ -188,7 +188,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).binaryContext();
+        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext();
     }
 
     /** {@inheritDoc} */
@@ -808,7 +808,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return {@code True} need to copy value returned to user.
      */
     private boolean needCopy(CacheObjectContext ctx) {
-        return ctx.copyOnGet() && obj != null && !ctx.processor().immutable(obj);
+        return ctx.copyOnGet() && obj != null && !ctx.kernalContext().cacheObjects().immutable(obj);
     }
 
     /**

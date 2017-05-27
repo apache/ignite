@@ -60,7 +60,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
         try {
             GridKernalContext kernalCtx = ctx.kernalContext();
-            IgniteCacheObjectProcessor proc = ctx.processor();
+            IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
 
             if (cpy) {
                 if (valBytes == null) {
@@ -102,7 +102,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.processor().marshal(ctx, val);
+            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
 
         return valBytes;
     }
@@ -120,7 +120,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         assert val != null || valBytes != null;
 
         if (val == null && ctx.storeValue())
-            val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
     }
 
     /** {@inheritDoc} */
