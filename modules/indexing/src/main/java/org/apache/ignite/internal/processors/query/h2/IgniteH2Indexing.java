@@ -1113,7 +1113,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
+                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx.cacheObjectContext(), keepBinary);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);

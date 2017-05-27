@@ -275,7 +275,8 @@ public class DmlStatementsProcessor {
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
+                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx.cacheObjectContext(),
+                            cctx.keepBinary());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -365,7 +366,8 @@ public class DmlStatementsProcessor {
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
+                        return new GridQueryCacheObjectsIterator(res.iterator(), cctx.cacheObjectContext(),
+                            cctx.keepBinary());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
