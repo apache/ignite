@@ -605,7 +605,7 @@
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
-                                    <skip>true</skip>
+                                    <ascDirectory>${basedir}</ascDirectory>
                                 </configuration>
                             </execution>
                         </executions>
