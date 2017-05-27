@@ -1819,6 +1819,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Clear query entities.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> clearQueryEntities() {
+        this.qryEntities = null;
+
+        return this;
+    }
+
+    /**
      * Defines a hint to query execution engine on desired degree of parallelism within a single node.
      * Query executor may or may not use this hint depending on estimated query costs. Query executor may define
      * certain restrictions on parallelism depending on query type and/or cache type.

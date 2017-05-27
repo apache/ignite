@@ -668,7 +668,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             synchronized (stateMux) {
+                boolean escape = cctx.config().isSqlEscapeAll();
+
                 String cacheName = cctx.name();
+
+                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema(), escape);
 
                 // Prepare candidates.
                 List<Class<?>> mustDeserializeClss = new ArrayList<>();
@@ -680,7 +684,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (!F.isEmpty(qryEntities)) {
                     for (QueryEntity qryEntity : qryEntities) {
                         QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(cacheName, cctx, qryEntity,
-                            mustDeserializeClss);
+                            mustDeserializeClss, escape);
 
                         cands.add(cand);
                     }
@@ -755,7 +759,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
 
                 // Ready to register at this point.
-                registerCache0(cacheName, cctx, cands);
+                registerCache0(cacheName, schemaName, cctx, cands);
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
@@ -978,7 +982,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
 
         for (QueryEntity entity : schema.entities()) {
-            String tblName = QueryUtils.tableName(entity);
+            String tblName = entity.getTableName();
 
             QueryEntity oldEntity = tblMap.put(tblName, entity);
 
@@ -989,7 +993,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             for (QueryIndex entityIdx : entity.getIndexes()) {
-                String idxName = QueryUtils.indexName(entity, entityIdx);
+                String idxName = entityIdx.getName();
 
                 T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
 
@@ -1321,15 +1325,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Register cache in indexing SPI.
      *
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param cands Candidates.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerCache0(String cacheName, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
-        throws IgniteCheckedException {
+    private void registerCache0(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
+        Collection<QueryTypeCandidate> cands) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
-                idx.registerCache(cacheName, cctx, cctx.config());
+                idx.registerCache(cacheName, schemaName, cctx, cctx.config());
 
             try {
                 for (QueryTypeCandidate cand : cands) {
@@ -1596,7 +1601,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-            idx.store(cacheName, desc.name(), key, partId, val, ver, expirationTime, link);
+            idx.store(cacheName, desc, key, partId, val, ver, expirationTime, link);
         }
         finally {
             busyLock.leaveBusy();

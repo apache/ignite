@@ -692,6 +692,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         @Override public String valueFieldName() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String keyFieldAlias() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String valueFieldAlias() {
+            return null;
+        }
     }
 
     /**

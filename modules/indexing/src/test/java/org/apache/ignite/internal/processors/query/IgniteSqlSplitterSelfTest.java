@@ -615,9 +615,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(5, new Person2(3, "p3"));
 
             String select = "select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
-                            " where p.orgId = o._key and o._key=1" +
-                            " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
-                            " where p.orgId = o._key and o._key=2";
+                " where p.orgId = o._key and o._key=1" +
+                " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
+                " where p.orgId = o._key and o._key=2";
 
             String plan = c1.query(new SqlFieldsQuery("explain " + select)
                 .setDistributedJoins(true).setEnforceJoinOrder(true))
@@ -1615,11 +1615,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     public void testJoinWithSubquery() throws Exception {
         IgniteCache<Integer, Contract> c1 = ignite(0).createCache(
             cacheConfig("Contract", true,
-            Integer.class, Contract.class));
+                Integer.class, Contract.class));
 
         IgniteCache<Integer, PromoContract> c2 = ignite(0).createCache(
             cacheConfig("PromoContract", true,
-            Integer.class, PromoContract.class));
+                Integer.class, PromoContract.class));
 
         for (int i = 0; i < 100; i++) {
             int coId = i % 10;
