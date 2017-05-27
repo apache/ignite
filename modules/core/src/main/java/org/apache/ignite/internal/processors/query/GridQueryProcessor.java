@@ -1307,14 +1307,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Drop table by destroying its cache if it's an 1:1 per cache table.
      *
-     * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param tblName Table name.
      * @param ifExists Quietly ignore this command if table does not exist.
      * @throws SchemaOperationException if {@code ifExists} is {@code false} and cache was not found.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) throws SchemaOperationException {
-        boolean res = ctx.grid().destroyCache0(tblName);
+    public void dynamicTableDrop(String cacheName, String tblName, boolean ifExists) throws SchemaOperationException {
+        boolean res = ctx.grid().destroyCache0(cacheName);
 
         if (!res && !ifExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
