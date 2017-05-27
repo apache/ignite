@@ -1293,10 +1293,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
 
         newCfg.setName(entity.getTableName());
-
         newCfg.setQueryEntities(Collections.singleton(entity));
 
-        // We want to preserve user specified names as they are
+        // Preserve user specified names as they are.
         newCfg.setSqlEscapeAll(true);
 
         boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
