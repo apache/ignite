@@ -59,6 +59,9 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /** */
     private final H2Schema schema;
 
+    /** Cache name. */
+    private final String cacheName;
+
     /** */
     private GridH2Table tbl;
 
@@ -74,11 +77,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param idx Indexing.
      * @param schema Schema.
      * @param type Type descriptor.
+     * @param cacheName Cache name.
      */
-    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type) {
+    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type, String cacheName) {
         this.idx = idx;
         this.type = type;
         this.schema = schema;
+        this.cacheName = cacheName;
 
         fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
     }
@@ -140,6 +145,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
+     * @return Cache name.
+     */
+    String cacheName() {
+        return cacheName;
+    }
+
+    /**
      * @return Type.
      */
     GridQueryTypeDescriptor type() {
@@ -167,7 +179,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
         GridCacheContext cctx = schema.cacheContext();
 
-        if (cctx.affinityNode() && cctx.offheapIndex())
+        if (cctx.affinityNode())
             return new H2RowFactory(rowDesc, cctx);
 
         return null;
@@ -209,7 +221,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (type().valueClass() == String.class) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), schema.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -222,7 +234,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (textIdx != null) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), schema.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -319,7 +331,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     private Index createHashIndex(H2Schema schema, GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         GridCacheContext cctx = schema.cacheContext();
 
-        if (cctx.affinityNode() && cctx.offheapIndex()) {
+        if (cctx.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
             pkHashIdx = new H2PkHashIndex(cctx, tbl, idxName, cols);

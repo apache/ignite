@@ -1417,14 +1417,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if should use offheap (PageMemory) index.
-     */
-    public boolean offheapIndex() {
-        // TODO GG-10884.
-        return true;
-    }
-
-    /**
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {

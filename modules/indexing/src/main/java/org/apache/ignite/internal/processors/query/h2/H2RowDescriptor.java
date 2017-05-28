@@ -218,9 +218,9 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
             CacheObject co = (CacheObject)obj;
 
             if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(idx.cacheContext(schema.cacheName()), co);
+                return new GridH2ValueCacheObject(co, idx.objectContext());
 
-            obj = co.value(idx.objectContext(schema.cacheName()), false);
+            obj = co.value(idx.objectContext(), false);
         }
 
         switch (type) {
@@ -280,8 +280,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime) throws IgniteCheckedException {
+        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
@@ -298,15 +297,11 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
 
-        GridCacheContext cctx = idx.cacheContext(schema.cacheName());
+        row.ver = ver;
 
-        if (cctx.offheapIndex()) {
-            row.ver = ver;
-
-            row.key = key;
-            row.val = val;
-            row.partId = partId;
-        }
+        row.key = key;
+        row.val = val;
+        row.partId = partId;
 
         return row;
     }

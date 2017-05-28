@@ -62,7 +62,6 @@ import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -577,27 +576,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (tbl.luceneIndex() != null)
             tbl.luceneIndex().store(k, v, ver, expirationTime);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Cache object context.
-     */
-    public CacheObjectContext objectContext(String cacheName) {
-        GridCacheContext cctx = cacheContext(cacheName);
-
-        return cctx != null ? cctx.cacheObjectContext() : null;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Cache object context.
-     */
-    public GridCacheContext cacheContext(String cacheName) {
-        if (ctx == null)
-            return null;
-
-        return ctx.cache().internalCache(cacheName).context();
     }
 
     /** {@inheritDoc} */
@@ -1118,7 +1096,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), valueContext(), keepBinary);
+                        return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -1443,10 +1421,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (tblCnt > 0) {
                     caches0.add(cctx.cacheId());
 
-                    for (QueryTable table : twoStepQry.tables()) {
-                        String tblCacheName = cacheName(table.schema());
+                    for (QueryTable tblKey : twoStepQry.tables()) {
+                        GridH2Table tbl = dataTable(tblKey);
 
-                        int cacheId = CU.cacheId(tblCacheName);
+                        int cacheId = CU.cacheId(tbl.cacheName());
 
                         caches0.add(cacheId);
                     }
@@ -1600,7 +1578,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheName);
 
         try {
             Connection conn = connectionForThread(schemaName);
@@ -1837,7 +1815,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Cursor cursor = hashIdx.find((Session)null, null, null);
 
-        int cacheId = CU.cacheId(tbl.schema().cacheName());
+        int cacheId = CU.cacheId(cacheName);
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
@@ -2036,10 +2014,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Value context.
+     * @return Value object context.
      */
-    public CacheObjectValueContext valueContext() {
-        return valCtx;
+    public CacheObjectValueContext objectContext() {
+        return ctx.query().objectContext();
     }
 
     /**
@@ -2243,7 +2221,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Schema rmv = schemas.remove(schema);
 
         if (rmv != null) {
-            cacheName2schema.remove(rmv.cacheName());
+            cacheName2schema.remove(cacheName);
             mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 

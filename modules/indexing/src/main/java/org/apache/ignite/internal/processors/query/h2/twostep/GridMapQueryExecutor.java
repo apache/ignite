@@ -1146,17 +1146,13 @@ public class GridMapQueryExecutor {
                         if (val instanceof GridH2ValueCacheObject) {
                             GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
-                            GridCacheContext cctx = valCacheObj.getCacheContext();
+                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                                @Override public Object getObject() {
+                                    return getObject(true);
+                                }
+                            };
 
-                            if (cctx != null && cctx.needValueCopy()) {
-                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
-                                    @Override public Object getObject() {
-                                        return getObject(true);
-                                    }
-                                };
-
-                                copied = true;
-                            }
+                            copied = true;
                         }
                     }
 
