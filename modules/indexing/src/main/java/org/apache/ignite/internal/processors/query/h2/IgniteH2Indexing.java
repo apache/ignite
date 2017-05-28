@@ -1421,10 +1421,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (tblCnt > 0) {
                     caches0.add(cctx.cacheId());
 
-                    for (QueryTable table : twoStepQry.tables()) {
-                        String tblCacheName = cacheName(table.schema());
+                    for (QueryTable tblKey : twoStepQry.tables()) {
+                        GridH2Table tbl = dataTable(tblKey);
 
-                        int cacheId = CU.cacheId(tblCacheName);
+                        int cacheId = CU.cacheId(tbl.cacheName());
 
                         caches0.add(cacheId);
                     }
