@@ -564,7 +564,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheVersion ver,
         long expirationTime,
         long link) throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), type.name());
 
         if (tbl == null)
             return; // Type was rejected.
@@ -588,7 +588,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
-        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), type.name());
 
         if (tbl == null)
             return;
@@ -787,7 +787,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexingQueryFilter filters) throws IgniteCheckedException {
         String schemaName = schema(cacheName);
 
-        H2TableDescriptor tbl = tableDescriptor(typeName, cacheName);
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
             GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, schemaName,
@@ -809,7 +809,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void unregisterType(String cacheName, String typeName)
         throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(typeName, cacheName);
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), typeName);
 
         if (tbl != null)
             removeTable(tbl);
@@ -1181,7 +1181,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
         String schemaName = schema(cacheName);
 
-        final H2TableDescriptor tbl = tableDescriptor(type, cacheName);
+        final H2TableDescriptor tbl = tableDescriptor(schemaName, type);
 
         if (tbl == null)
             throw new IgniteSQLException("Failed to find SQL table for type: " + type,
@@ -1244,9 +1244,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?, ?> cctx,
         SqlQuery qry, boolean keepBinary) {
         String type = qry.getType();
-        String cacheName = cctx.name();
 
-        H2TableDescriptor tblDesc = tableDescriptor(type, cacheName);
+        H2TableDescriptor tblDesc = tableDescriptor(schema(cctx.name()), type);
 
         if (tblDesc == null)
             throw new IgniteSQLException("Failed to find SQL table for type: " + type,
@@ -1272,6 +1271,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
+        // TODO: 5317
         final QueryCursor<List<?>> res = queryDistributedSqlFields(cctx, fqry, keepBinary, null);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
@@ -1736,23 +1736,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Gets table descriptor by type and cache names.
+     * Get table descriptor.
      *
+     * @param schemaName Schema name.
      * @param type Type name.
-     * @param cacheName Cache name.
-     * @return Table descriptor.
+     * @return Descriptor.
      */
-    // TODO: Rework, use schema name instead.
-    @Nullable private H2TableDescriptor tableDescriptor(String type, String cacheName) {
-        String schemaName = schema(cacheName);
-
+    @Nullable private H2TableDescriptor tableDescriptor(String schemaName, String type) {
         H2Schema schema = schemas.get(schemaName);
 
         if (schema == null)
             return null;
 
         return schema.tableByTypeName(type);
-    }
+    };
+
 
     /**
      * Gets database schema from cache name.
@@ -1807,7 +1805,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override public void rebuildIndexesFromHash(String cacheName,
         GridQueryTypeDescriptor type) throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), type.name());
 
         if (tbl == null)
             return;
@@ -1865,7 +1863,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markForRebuildFromHash(String cacheName, GridQueryTypeDescriptor type) {
-        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), type.name());
 
         if (tbl == null)
             return;
@@ -1873,40 +1871,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert tbl.table() != null;
 
         tbl.table().markRebuildFromHashInProgress(true);
-    }
-
-    /**
-     * Gets size (for tests only).
-     *
-     * @param cacheName Cache name.
-     * @param typeName Type name.
-     * @return Size.
-     * @throws IgniteCheckedException If failed or {@code -1} if the type is unknown.
-     */
-    long size(String cacheName, String typeName) throws IgniteCheckedException {
-        String schemaName = schema(cacheName);
-
-        H2TableDescriptor tbl = tableDescriptor(typeName, cacheName);
-
-        if (tbl == null)
-            return -1;
-
-        Connection conn = connectionForSchema(schemaName);
-
-        H2Utils.setupConnection(conn, false, false);
-
-        try {
-            ResultSet rs = executeSqlQuery(conn, prepareStatement(conn, "SELECT COUNT(*) FROM " + tbl.fullTableName(),
-                false), 0, null);
-
-            if (!rs.next())
-                throw new IllegalStateException();
-
-            return rs.getLong(1);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
     }
 
     /**
