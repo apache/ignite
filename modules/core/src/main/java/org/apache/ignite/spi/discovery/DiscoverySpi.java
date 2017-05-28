@@ -115,7 +115,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param exchange Discovery data exchange handler.
      * @return {@code this} for chaining.
      */
-    public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
+    public DiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
@@ -125,7 +125,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param metricsProvider Provider of metrics data.
      * @return {@code this} for chaining.
      */
-    public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
+    public DiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling

@@ -2132,7 +2132,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         static volatile int marshalledItems;
 
         /** {@inheritDoc} */
-        @Override public TcpDiscoverySpi setDataExchange(final DiscoverySpiDataExchange exchange) {
+        @Override public DiscoverySpi setDataExchange(final DiscoverySpiDataExchange exchange) {
             return super.setDataExchange(new DiscoverySpiDataExchange() {
                 @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
                     DiscoveryDataBag bag = exchange.collect(dataBag);
