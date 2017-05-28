@@ -785,10 +785,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
         String cacheName, String qry, String typeName,
         IndexingQueryFilter filters) throws IgniteCheckedException {
+        String schemaName = schema(cacheName);
+
         H2TableDescriptor tbl = tableDescriptor(typeName, cacheName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
-            GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, cacheName,
+            GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, schemaName,
                 U.currentTimeMillis(), null, true);
 
             try {
@@ -830,9 +832,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridQueryFieldsResult queryLocalSqlFields(final String cacheName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
-        final String schema = schema(cacheName);
+        final String schemaName = schema(cacheName);
 
-        final Connection conn = connectionForSchema(schema);
+        final Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder);
 
@@ -849,7 +851,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setEnforceJoinOrder(enforceJoinOrder);
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
-            return dmlProc.updateSqlFieldsLocal(schema, stmt, fldsQry, filter, cancel);
+            return dmlProc.updateSqlFieldsLocal(schemaName, stmt, fldsQry, filter, cancel);
         }
         else if (DdlStatementsProcessor.isDdlStatement(p))
             throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
@@ -874,12 +876,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 GridH2QueryContext.set(ctx);
 
                 GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
-                    cacheName, U.currentTimeMillis(), cancel, true);
+                    schemaName, U.currentTimeMillis(), cancel, true);
 
                 runs.putIfAbsent(run.id(), run);
 
                 try {
-                    ResultSet rs = executeSqlQueryWithTimer(schema, stmt, conn, qry, params, timeout, cancel);
+                    ResultSet rs = executeSqlQueryWithTimer(schemaName, stmt, conn, qry, params, timeout, cancel);
 
                     return new H2FieldsIterator(rs);
                 }
@@ -1177,6 +1179,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String cacheName,
         final String qry, String alias, @Nullable final Collection<Object> params, String type,
         final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
+        String schemaName = schema(cacheName);
+
         final H2TableDescriptor tbl = tableDescriptor(type, cacheName);
 
         if (tbl == null)
@@ -1192,13 +1196,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
             .distributedJoinMode(OFF));
 
-        GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, cacheName,
+        GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, schemaName,
             U.currentTimeMillis(), null, true);
 
         runs.put(run.id(), run);
 
         try {
-            ResultSet rs = executeSqlQueryWithTimer(schema(cacheName), conn, sql, params, true, 0, cancel);
+            ResultSet rs = executeSqlQueryWithTimer(schemaName, conn, sql, params, true, 0, cancel);
 
             return new H2KeyValueIterator(rs);
         }
@@ -1738,6 +1742,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cacheName Cache name.
      * @return Table descriptor.
      */
+    // TODO: Rework, use schema name instead.
     @Nullable private H2TableDescriptor tableDescriptor(String type, String cacheName) {
         String schemaName = schema(cacheName);
 
