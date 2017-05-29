@@ -110,6 +110,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: ignite uuid. */
     private static final int TYPE_IGNITE_UUID = 22;
 
+    /** Type: binary enum. */
+    private static final int TYPE_BINARY_ENUM = 23;
+
     /** Default cache name. */
     public static final String DEFAULT_CACHE_NAME = "default";
 
@@ -227,6 +230,16 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
 
                 case TYPE_IGNITE_UUID:
                     return ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_IGNITE_UUID);
+
+                case TYPE_BINARY_ENUM: {
+                    Map<String, Integer> values = new HashMap<>(2);
+                    values.put("JavaFoo", 1);
+                    values.put("JavaBar", 2);
+
+                    ignite.binary().registerEnum("JavaDynEnum", values);
+
+                    return ignite.binary().buildEnum("JavaDynEnum", "JavaFoo");
+                }
 
                 default:
                     throw new IgniteException("Unknown type: " + type);

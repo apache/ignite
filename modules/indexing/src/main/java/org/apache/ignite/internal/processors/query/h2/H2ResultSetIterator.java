@@ -75,12 +75,13 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
                 if (val instanceof GridH2ValueCacheObject) {
                     GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)values[c];
 
-                    GridCacheContext cctx = valCacheObj.getCacheContext();
 
-                    row[c] = valCacheObj.getObject(cctx != null && cctx.needValueCopy());
-                }
-                else
-                    row[c] = val.getObject();
+
+                        row[c] = valCacheObj.getObject(true);
+                    }
+                    else
+                        row[c] = val.getObject();
+
             }
 
             return true;

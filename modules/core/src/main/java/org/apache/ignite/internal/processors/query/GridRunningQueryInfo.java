@@ -33,8 +33,8 @@ public class GridRunningQueryInfo {
     /** Query type. */
     private final GridCacheQueryType qryType;
 
-    /** */
-    private final String cache;
+    /** Schema name. */
+    private final String schemaName;
 
     /** */
     private final long startTime;
@@ -52,18 +52,18 @@ public class GridRunningQueryInfo {
      * @param id Query ID.
      * @param qry Query text.
      * @param qryType Query type.
-     * @param cache Cache where query was executed.
+     * @param schemaName Schema name.
      * @param startTime Query start time.
      * @param cancel Query cancel.
      * @param loc Local query flag.
      * @param conn Connection.
      */
-    public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String cache, long startTime,
+    public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String schemaName, long startTime,
         GridQueryCancel cancel, boolean loc, GridCancelable conn) {
         this.id = id;
         this.qry = qry;
         this.qryType = qryType;
-        this.cache = cache;
+        this.schemaName = schemaName;
         this.startTime = startTime;
         this.cancel = cancel;
         this.loc = loc;
@@ -92,10 +92,10 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Cache where query was executed.
+     * @return Schema name.
      */
-    public String cache() {
-        return cache;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**

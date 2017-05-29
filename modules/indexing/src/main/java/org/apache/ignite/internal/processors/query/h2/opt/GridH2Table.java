@@ -139,10 +139,8 @@ public class GridH2Table extends TableBase {
             int affKeyColId = -1;
 
             if (affKey != null) {
-                String colName = desc.context().config().isSqlEscapeAll() ? affKey : affKey.toUpperCase();
-
-                if (doesColumnExist(colName))
-                    affKeyColId = getColumn(colName).getColumnId();
+                if (doesColumnExist(affKey))
+                    affKeyColId = getColumn(affKey).getColumnId();
                 else
                     affinityColExists = false;
             }
