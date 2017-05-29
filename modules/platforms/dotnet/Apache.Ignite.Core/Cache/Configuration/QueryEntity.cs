@@ -202,7 +202,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 return null;
             }
 
-            _aliases = Aliases.ToDictionary(x => x.FullName, x => x.Alias);
+            _aliases = new Dictionary<string, string>(Aliases.Count, StringComparer.InvariantCulture);
+
+            foreach (var alias in Aliases)
+            {
+                _aliases[alias.FullName] = alias.Alias;
+            }
 
             string res;
             return _aliases.TryGetValue(fieldName, out res) ? res : null;
