@@ -1894,6 +1894,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
+        final String schemaName = idx.schema(cctx.name());
+
         try {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
@@ -1909,8 +1911,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.getArgs(),
                             cctx.name());
 
-                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), qry.getPartitions()),
-                            keepBinary);
+                        if (cctx.config().getQueryParallelism() > 1) {
+                            qry.setDistributedJoins(true);
+
+                            return idx.queryDistributedSql(cctx, qry, keepBinary);
+                        }
+                        else
+                            return idx.queryLocalSql(schemaName, qry, idx.backupFilter(requestTopVer.get(),
+                                qry.getPartitions()), keepBinary);
                     }
                 }, true);
         }
