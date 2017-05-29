@@ -68,7 +68,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePersistentStoreTxCacheRebalancingTest.class);
         suite.addTestSuite(IgniteWalHistoryReservationsSelfTest.class);
 
-        suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
+        // TODO IGNITE-5075
+        //suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
 
         return suite;
     }
