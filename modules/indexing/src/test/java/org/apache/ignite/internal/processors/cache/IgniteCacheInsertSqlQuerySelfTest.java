@@ -30,6 +30,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.*;
+
 /**
  *
  */
@@ -187,15 +189,20 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
      *
      */
     public void testNestedFieldsHandling() {
-        IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p = ignite(0).cache("I2AT");
+        IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
 
-        p.query(new SqlFieldsQuery("insert into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) " +
-            "values (1, ?, ?, ?, 'sss')") .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType(50L),
-            new ArrayList<>(Arrays.asList(3L, 2L, 1L)), new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
+        p.query(new SqlFieldsQuery(
+            "insert into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) values (1, ?, ?, ?, 'sss')").
+            setArgs(
+                new AllTypes.InnerType(50L),
+                new ArrayList<>(Arrays.asList(3L, 2L, 1L)),
+                new AllTypes(1L)
+            )
+        );
 
-        IgniteCacheUpdateSqlQuerySelfTest.AllTypes res = p.get(1);
+        AllTypes res = p.get(1);
 
-        IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType resInner = new IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType(50L);
+        AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
 
         resInner.innerStrCol = "sss";
         resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
@@ -208,17 +215,17 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p = ignite(0).cache("I2AT");
 
         p.query(new SqlFieldsQuery("insert into AllTypes(_key, _val) values (1, ?)")
-            .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
+            .setArgs(new AllTypes(1L)));
 
         p.destroy();
 
         p = ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
-            IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class));
+            AllTypes.class));
 
         p.query(new SqlFieldsQuery("insert into AllTypes(_key, _val, dateCol) values (1, ?, null)")
-            .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
+            .setArgs(new AllTypes(1L)));
 
-        IgniteCacheUpdateSqlQuerySelfTest.AllTypes exp = new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L);
+        AllTypes exp = new AllTypes(1L);
 
         exp.dateCol = null;
 

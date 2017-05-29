@@ -15,19 +15,56 @@
  * limitations under the License.
  */
 
-import {destDir} from '../../paths';
+import webpack from 'webpack';
+import merge from 'webpack-merge';
 
-const backendPort = 3000;
+import path from 'path';
+
+import commonCfg from './webpack.common';
+
+import ExtractTextPlugin from 'extract-text-webpack-plugin';
+
+const backendPort = process.env.BACKEND_PORT || 3000;
 const devServerPort = process.env.PORT || 9000;
 const devServerHost = process.env.HOST || '0.0.0.0';
 
-export default {
+export default merge(commonCfg, {
     devtool: 'source-map',
     watch: true,
+    module: {
+        rules: [
+            {
+                test: /\.css$/,
+                use: ['style', 'css']
+            },
+            {
+                test: /\.scss$/,
+                // Version without extract plugin fails on some machines. https://github.com/sass/node-sass/issues/1895
+                use: ExtractTextPlugin.extract({
+                    fallback: 'style-loader',
+                    use: [
+                        {
+                            loader: 'css',
+                            options: {
+                                sourceMap: true
+                            }
+                        },
+                        {
+                            loader: 'sass',
+                            options: {
+                                sourceMap: true
+                            }
+                        }
+                    ]
+                })
+            }
+        ]
+    },
     devServer: {
         compress: true,
         historyApiFallback: true,
-        contentBase: destDir,
+        disableHostCheck: true,
+        contentBase: path.resolve('build'),
         // hot: true,
         inline: true,
         proxy: {
@@ -56,5 +93,8 @@ export default {
         },
         host: devServerHost,
         port: devServerPort
-    }
-};
+    },
+    plugins: [
+        new webpack.optimize.CommonsChunkPlugin({name: 'vendor'})
+    ]
+});
