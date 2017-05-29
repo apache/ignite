@@ -1302,7 +1302,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, query.Ignite);
 
             var fq = query.GetFieldsQuery();
-            Assert.AreEqual("select _T0._key, _T0._val from \"person_org\".Person as _T0 where (_T0._key > ?)", 
+            Assert.AreEqual("select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where (_T0._KEY > ?)", 
                 fq.Sql);
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
@@ -1316,8 +1316,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var str = query.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
-                            "(_T0._key > ?), Arguments=[10], " +
+                            "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
+                            "(_T0._KEY > ?), Arguments=[10], " +
                             "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
                             "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
 
@@ -1350,8 +1350,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             str = distrQuery.ToString();
             Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
-                            "(((_T0._key > ?) and (_T0.age1 > ?)) " +
+                            "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
+                            "(((_T0._KEY > ?) and (_T0.age1 > ?)) " +
                             "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
                             "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
                             "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);

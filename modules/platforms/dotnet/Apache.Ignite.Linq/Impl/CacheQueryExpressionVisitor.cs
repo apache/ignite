@@ -278,10 +278,10 @@ namespace Apache.Ignite.Linq.Impl
             // Count, sum, max, min expect a single field or *
             // In other cases we need both parts of cache entry
             var format = _includeAllFields
-                ? "{0}.*, {0}._key, {0}._val"
+                ? "{0}.*, {0}._KEY, {0}._VAL"
                 : _useStar
                     ? "{0}.*"
-                    : "{0}._key, {0}._val";
+                    : "{0}._KEY, {0}._VAL";
 
             var tableName = Aliases.GetTableAlias(expression);
 
