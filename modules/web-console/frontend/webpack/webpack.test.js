@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-import webpack from 'webpack';
+import merge from 'webpack-merge';
 
-const NODE_ENV = process.env.NODE_ENV || 'production';
+import commonCfg from './webpack.common';
 
-export default {
+export default merge(commonCfg, {
     cache: true,
     node: {
         fs: 'empty'
@@ -29,16 +29,5 @@ export default {
     entry: null,
 
     // Output system.
-    output: null,
-
-    // Load plugins.
-    plugins: [
-        new webpack.ProvidePlugin({
-            $: 'jquery',
-            jQuery: 'jquery',
-            _: 'lodash',
-            nv: 'nvd3'
-        }),
-        new webpack.DefinePlugin({NODE_ENV: JSON.stringify(NODE_ENV)})
-    ]
-};
+    output: null
+});
