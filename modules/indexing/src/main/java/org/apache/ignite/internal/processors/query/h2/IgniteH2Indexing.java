@@ -757,11 +757,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
-        String cacheName, String qry, String typeName,
-        IndexingQueryFilter filters) throws IgniteCheckedException {
-        String schemaName = schema(cacheName);
-
+    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String qry,
+        String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {

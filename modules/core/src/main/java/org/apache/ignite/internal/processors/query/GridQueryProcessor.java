@@ -2115,8 +2115,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                         String typeName = typeName(cacheName, resType);
+                        String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(cacheName, clause, typeName, filters);
+                        return idx.queryLocalText(schemaName, clause, typeName, filters);
                     }
                 }, true);
         }

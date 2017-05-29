@@ -129,14 +129,14 @@ public interface GridQueryIndexing {
     /**
      * Executes text query.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param qry Text query.
      * @param typeName Type name.
      * @param filter Cache name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String cacheName, String qry,
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String qry,
         String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
