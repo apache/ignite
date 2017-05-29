@@ -392,14 +392,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // No dot notation for indexes
+                    // Dot notation is required for nested SQL fields.
+                    if (parentPropName != null)
+                    {
+                        columnName = parentPropName + "." + columnName;
+                    }
+
                     if (attr.IsIndexed)
+                    {
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
                             attr.IndexGroups));
-
-                    // Dot notation is required for nested SQL fields
-                    if (parentPropName != null)
-                        columnName = parentPropName + "." + columnName;
+                    }
 
                     fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
 
@@ -410,11 +413,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // No dot notation for FullText index names
-                    indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
-
                     if (parentPropName != null)
+                    {
                         columnName = parentPropName + "." + columnName;
+                    }
+
+                    indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
 
                     fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
 
