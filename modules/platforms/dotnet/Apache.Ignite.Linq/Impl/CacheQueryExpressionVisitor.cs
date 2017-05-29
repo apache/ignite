@@ -357,7 +357,9 @@ namespace Apache.Ignite.Linq.Impl
 
             while ((member = member.Expression as MemberExpression) != null &&
                    member.Member.DeclaringType != queryable.ElementType)
+            {
                 fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
+            }
 
             var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
                 .Select(x => x.Alias).FirstOrDefault();
