@@ -310,11 +310,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 var fieldName = GetFieldName(expression, queryable);
 
-                ResultBuilder.AppendFormat(
-                    queryable.CacheConfiguration.SqlEscapeAll
-                        ? "{0}.\"{1}\""
-                        : "{0}.{1}",
-                    Aliases.GetTableAlias(expression), fieldName);
+                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
                 AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
@@ -323,17 +319,21 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the name of the field from a member expression.
+        /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
         private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
         {
             var fieldName = GetMemberFieldName(expression.Member);
+            var sqlEscapeAll = queryable.CacheConfiguration.SqlEscapeAll;
 
             // Look for a field alias
             var cacheCfg = queryable.CacheConfiguration;
 
             if (cacheCfg.QueryEntities == null || cacheCfg.QueryEntities.All(x => x.Aliases == null))
-                return fieldName;  // There are no aliases defined - early exit
+            {
+                // There are no aliases defined - early exit.
+                return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
+            }
 
             // Find query entity by key-val types
             var keyValTypes = queryable.ElementType.GetGenericArguments();
@@ -346,7 +346,9 @@ namespace Apache.Ignite.Linq.Impl
                 (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
 
             if (entity == null)
+            {
                 return fieldName;
+            }
 
             // There are some aliases for the current query type
             // Calculate full field name and look for alias
@@ -360,7 +362,9 @@ namespace Apache.Ignite.Linq.Impl
             var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
                 .Select(x => x.Alias).FirstOrDefault();
 
-            return alias ?? fieldName;
+            fieldName = alias ?? fieldName;
+
+            return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
         }
 
         /// <summary>
@@ -381,7 +385,7 @@ namespace Apache.Ignite.Linq.Impl
                 if (m.DeclaringType != null &&
                     m.DeclaringType.IsGenericType &&
                     m.DeclaringType.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
-                    return "_" + m.Name.ToLowerInvariant().Substring(0, 3);
+                    return "_" + m.Name.ToUpperInvariant().Substring(0, 3);
 
                 var qryFieldAttr = m.GetCustomAttributes(true)
                     .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
