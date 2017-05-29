@@ -870,10 +870,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public long streamUpdateQuery(String cacheName, String qry,
+    @Override public long streamUpdateQuery(String schemaName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-        String schemaName = schema(cacheName);
-
         final Connection conn = connectionForSchema(schemaName);
 
         final PreparedStatement stmt;

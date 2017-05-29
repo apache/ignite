@@ -1797,9 +1797,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             GridCacheContext cctx = ctx.cache().cache(cacheName).context();
 
+            final String schemaName = idx.schema(cacheName);
+
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
-                    return idx.streamUpdateQuery(cacheName, qry, args, streamer);
+                    return idx.streamUpdateQuery(schemaName, qry, args, streamer);
                 }
             }, true);
         }
