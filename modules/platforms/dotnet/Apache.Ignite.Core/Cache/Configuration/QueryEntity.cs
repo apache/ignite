@@ -202,6 +202,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 return null;
             }
 
+            // PERF: No ToDictionary.
             _aliases = new Dictionary<string, string>(Aliases.Count, StringComparer.InvariantCulture);
 
             foreach (var alias in Aliases)

@@ -384,10 +384,18 @@ namespace Apache.Ignite.Linq.Impl
 
             Debug.Assert(keyValTypes.Length == 2);
 
-            return cacheCfg.QueryEntities.FirstOrDefault(e =>
-                e.Aliases != null &&
-                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
-                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
+            // PERF: No LINQ.
+            foreach (var e in cacheCfg.QueryEntities)
+            {
+                if (e.Aliases != null
+                    && (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName)
+                    && (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName))
+                {
+                    return e;
+                }
+            }
+            
+            return null;
         }
 
         /// <summary>
