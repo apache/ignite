@@ -676,11 +676,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Cache configuration.
+     * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
      * @param caches Caches map.
      * @param templates Templates map.
      * @throws IgniteCheckedException If failed.
      */
-    private void addCacheOnJoin(CacheConfiguration cfg,
+    private void addCacheOnJoin(CacheConfiguration cfg, boolean sql,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates) throws IgniteCheckedException {
         CU.validateCacheName(cfg.getName());
@@ -717,10 +718,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else
                 stopSeq.addFirst(cfg.getName());
 
-            caches.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cfg, cacheType, (byte)0));
+            caches.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cfg, cacheType, sql, (byte)0));
         }
         else
-            templates.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cfg, CacheType.USER, (byte)0));
+            templates.put(cfg.getName(), new CacheJoinNodeDiscoveryData.CacheInfo(cfg, CacheType.USER, false, (byte)0));
     }
 
     /**
@@ -741,7 +742,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cfgs[i] = cfg; // Replace original configuration value.
 
-            addCacheOnJoin(cfg, caches, templates);
+            addCacheOnJoin(cfg, false, caches, templates);
         }
     }
 
@@ -771,7 +772,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
                     if (cfg != null)
-                        addCacheOnJoin(cfg, caches, templates);
+                        addCacheOnJoin(cfg, false, caches, templates);
                 }
             }
         }

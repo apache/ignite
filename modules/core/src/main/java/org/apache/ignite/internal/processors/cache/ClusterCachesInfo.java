@@ -382,7 +382,7 @@ class ClusterCachesInfo {
                     if (req.sql() && !desc.sql()) {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
-                            "DROP TABLE: " + req.cacheName()));
+                            "DROP TABLE [cacheName=" + req.cacheName() + ']'));
 
                         continue;
                     }
@@ -819,7 +819,7 @@ class ClusterCachesInfo {
                     false,
                     nodeId,
                     true,
-                    false,
+                    cacheInfo.sql(),
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
 

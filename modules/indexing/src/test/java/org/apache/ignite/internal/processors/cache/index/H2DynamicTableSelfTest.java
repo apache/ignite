@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
@@ -91,6 +92,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             IgniteEx node = grid(i);
 
             assertNotNull(node.cache("Person"));
+
+            DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor("Person");
+
+            assertNotNull(cacheDesc);
+
+            assertTrue(cacheDesc.sql());
 
             QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
 
@@ -210,7 +217,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    cache().query(new SqlFieldsQuery("DROP TABLE \"cache_idx\""));
+                    cache().query(new SqlFieldsQuery("DROP TABLE \"Integer\""));
 
                     return null;
                 }
