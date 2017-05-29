@@ -1189,9 +1189,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?, ?> cctx,
         SqlQuery qry, boolean keepBinary) {
+        String schemaName = schema(cctx.name());
+        int mainCacheId = CU.cacheId(cctx.name());
+
         String type = qry.getType();
 
-        H2TableDescriptor tblDesc = tableDescriptor(schema(cctx.name()), type);
+        H2TableDescriptor tblDesc = tableDescriptor(schemaName, type);
 
         if (tblDesc == null)
             throw new IgniteSQLException("Failed to find SQL table for type: " + type,
@@ -1217,8 +1220,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        // TODO: 5317
-        final QueryCursor<List<?>> res = queryDistributedSqlFields(cctx, fqry, keepBinary, null);
+        final QueryCursor<List<?>> res = queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1251,11 +1253,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(GridCacheContext<?, ?> cctx,
-        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel) {
+    @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName,
+        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, int mainCacheId) {
         final String sqlQry = qry.getSql();
-
-        String schemaName = schema(cctx.name());
 
         Connection c = connectionForSchema(schemaName);
 
@@ -1367,9 +1367,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 int tblCnt = twoStepQry.tablesCount();
 
-                if (tblCnt > 0) {
-                    caches0.add(cctx.cacheId());
+                caches0.add(mainCacheId);
 
+                if (tblCnt > 0) {
                     for (QueryTable tblKey : twoStepQry.tables()) {
                         GridH2Table tbl = dataTable(tblKey);
 
@@ -1378,8 +1378,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         caches0.add(cacheId);
                     }
                 }
-                else
-                    caches0.add(cctx.cacheId());
 
                 //Prohibit usage indices with different numbers of segments in same query.
                 List<Integer> cacheIds = new ArrayList<>(caches0);

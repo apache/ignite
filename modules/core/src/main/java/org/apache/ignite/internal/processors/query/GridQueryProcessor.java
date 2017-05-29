@@ -1739,6 +1739,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             final String schemaName = idx.schema(cctx.name());
+            final int mainCacheId = CU.cacheId(cctx.name());
 
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
 
@@ -1752,7 +1753,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
 
-                            cursor = idx.queryDistributedSqlFields(cctx, qry, keepBinary, cancel);
+                            cursor = idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId);
                         }
                         else {
                             IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
@@ -1784,7 +1785,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
                     @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(cctx, qry, keepBinary, null);
+                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId);
                     }
                 };
             }
