@@ -371,10 +371,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             if (cctx.affinityNode()) {
-                if (!cctx.kernalContext().cache().context().database().persistenceEnabled())
+                if (!cctx.kernalContext().cache().context().database().persistenceEnabled()) {
                     tree.destroy();
 
-                cctx.offheap().dropRootPageForIndex(tree.getName());
+                    cctx.offheap().dropRootPageForIndex(tree.getName());
+                }
             }
         }
         catch (IgniteCheckedException e) {
