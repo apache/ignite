@@ -487,6 +487,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 onEntryUpdated(evt, primary, false, null);
             }
 
+            @Override public CounterSkipContext skipUpdateCounter(GridCacheContext cctx,
+                @Nullable CounterSkipContext ctx,
+                int part,
+                long cntr,
+                AffinityTopologyVersion topVer) {
+                CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, part);
+
+                if (ctx == null)
+                    ctx = new CounterSkipContext(part, cntr, topVer);
+
+                buf.processEntry(ctx.entry(), true);
+
+                return ctx;
+            }
+
             @Override public void onPartitionEvicted(int part) {
                 entryBufs.remove(part);
             }

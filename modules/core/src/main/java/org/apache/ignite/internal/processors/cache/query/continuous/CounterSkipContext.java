@@ -26,27 +26,35 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CounterSkipContext {
     /** */
-    private CacheContinuousQueryEntry entry;
+    private final CacheContinuousQueryEntry entry;
 
     /** */
     private List<Runnable> readySendC;
 
-    CacheContinuousQueryEntry entry(int part, long cntr, AffinityTopologyVersion topVer) {
-        if (entry == null) {
-            entry = new CacheContinuousQueryEntry(0,
-                null,
-                null,
-                null,
-                null,
-                false,
-                part,
-                cntr,
-                topVer,
-                (byte)0);
+    /**
+     * @param part Partition.
+     * @param cntr Filtered counter.
+     * @param topVer Topology version.
+     */
+    CounterSkipContext(int part, long cntr, AffinityTopologyVersion topVer) {
+        entry = new CacheContinuousQueryEntry(0,
+            null,
+            null,
+            null,
+            null,
+            false,
+            part,
+            cntr,
+            topVer,
+            (byte)0);
 
-            entry.markFiltered();
-        }
+        entry.markFiltered();
+    }
 
+    /**
+     * @return Entry for filtered counter.
+     */
+    CacheContinuousQueryEntry entry() {
         return entry;
     }
 
