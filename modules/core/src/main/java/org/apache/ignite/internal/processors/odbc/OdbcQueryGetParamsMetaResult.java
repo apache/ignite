@@ -45,12 +45,17 @@ public class OdbcQueryGetParamsMetaResult implements RawBinarylizable {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
-        writer.writeByteArray(typeIds);
+        objWriter.writeObject(writer, typeIds);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
-        typeIds = reader.readByteArray();
+        Object obj = objReader.readObject(reader);
+
+        if (obj instanceof byte[])
+            typeIds = (byte[])obj;
+        else
+            throw new BinaryObjectException("Unexpected object: [obj=" + obj + ']');
     }
 }

@@ -46,7 +46,6 @@ public class OdbcQueryGetColumnsMetaResult implements RawBinarylizable {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
-
         SqlListenerAbstractMessageParser.writeColumnsMeta(writer, objWriter, meta);
     }
 
