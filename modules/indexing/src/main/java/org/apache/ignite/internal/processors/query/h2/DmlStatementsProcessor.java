@@ -215,7 +215,7 @@ public class DmlStatementsProcessor {
         UpdateResult res = updateSqlFields(schema, stmt, fieldsQry, false, null, cancel);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(res.cnt)), null, false);
+            (Collections.singletonList(res.cnt)), cancel, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
