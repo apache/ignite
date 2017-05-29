@@ -1623,13 +1623,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
 
                     for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg0.partitions().entrySet()) {
-                        Integer cacheId = entry.getKey();
-                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                        Integer grpId = entry.getKey();
+                        CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
-                        GridDhtPartitionTopology top = cacheCtx != null ? cacheCtx.topology() :
-                            cctx.exchange().clientTopology(cacheId, this);
+                        GridDhtPartitionTopology top = grp != null ? grp.topology() :
+                            cctx.exchange().clientTopology(grpId, this);
 
-                        Map<Integer, T2<Long, Long>> cntrs = msg0.partitionUpdateCounters(cacheId);
+                        Map<Integer, T2<Long, Long>> cntrs = msg0.partitionUpdateCounters(grpId);
 
                         if (cntrs != null)
                             top.applyUpdateCounters(cntrs);

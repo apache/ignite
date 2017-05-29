@@ -41,7 +41,10 @@ public class CounterSkipContext {
                 false,
                 part,
                 cntr,
-                topVer);
+                topVer,
+                (byte)0);
+
+            entry.markFiltered();
         }
 
         return entry;
