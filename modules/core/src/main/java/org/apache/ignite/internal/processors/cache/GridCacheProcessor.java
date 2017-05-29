@@ -862,22 +862,33 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.query().onCacheKernalStart();
 
             // Start dynamic caches received from collect discovery data.
-            for (DynamicCacheDescriptor desc : cacheDescriptors()) {
-                if (ctx.config().isDaemon())
-                    continue;
+            if (!ctx.config().isDaemon()) {
+                List<DynamicCacheDescriptor> startSeq = new ArrayList<>(registeredCaches.size());
 
-                desc.clearRemoteConfigurations();
+                for (DynamicCacheDescriptor desc : cacheDescriptors()) {
+                    desc.clearRemoteConfigurations();
 
-                CacheConfiguration ccfg = desc.cacheConfiguration();
+                    CacheConfiguration ccfg = desc.cacheConfiguration();
 
-                IgnitePredicate filter = ccfg.getNodeFilter();
+                    IgnitePredicate filter = ccfg.getNodeFilter();
 
-                boolean loc = desc.locallyConfigured();
+                    boolean loc = desc.locallyConfigured();
 
-                if (loc || (desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter))) {
+                    // Start system caches first.
+                    if (loc || (desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter))) {
+                        if (CU.isSystemCache(desc.cacheConfiguration().getName()))
+                            startSeq.add(0, desc);
+                        else
+                            startSeq.add(desc);
+                    }
+                }
+
+                for (DynamicCacheDescriptor desc : startSeq) {
                     boolean started = desc.onStart();
 
                     assert started : "Failed to change started flag for locally configured cache: " + desc;
+
+                    CacheConfiguration ccfg = desc.cacheConfiguration();
 
                     CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
