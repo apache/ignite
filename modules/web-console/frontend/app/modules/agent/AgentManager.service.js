@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
-
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 const maskNull = (val) => _.isNil(val) ? 'null' : val;
