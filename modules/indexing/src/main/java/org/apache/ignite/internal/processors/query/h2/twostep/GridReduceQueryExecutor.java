@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -404,7 +404,7 @@ public class GridReduceQueryExecutor {
 
             List<ClusterNode> partNodes = assignment.get(partId);
 
-            if (partNodes.size() > 0) {
+            if (!partNodes.isEmpty()) {
                 ClusterNode prim = partNodes.get(0);
 
                 if (!needPartsFilter) {
@@ -501,7 +501,7 @@ public class GridReduceQueryExecutor {
     /**
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param keepPortable Keep portable.
+     * @param keepBinary Keep binary.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param timeoutMillis Timeout in milliseconds.
      * @param cancel Query cancel.
@@ -512,7 +512,7 @@ public class GridReduceQueryExecutor {
     public Iterator<List<?>> query(
         String schemaName,
         GridCacheTwoStepQuery qry,
-        boolean keepPortable,
+        boolean keepBinary,
         boolean enforceJoinOrder,
         int timeoutMillis,
         GridQueryCancel cancel,
@@ -818,7 +818,7 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
-                return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepPortable);
+                return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 U.closeQuiet(r.connection());

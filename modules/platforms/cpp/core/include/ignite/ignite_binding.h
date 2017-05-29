@@ -121,6 +121,31 @@ namespace ignite
         }
 
         /**
+         * Register type as Compute function.
+         *
+         * Registred type should be a child of ignite::compute::ComputeFunc
+         * class.
+         */
+        template<typename F>
+        void RegisterComputeFunc()
+        {
+            impl::IgniteBindingImpl *im = impl.Get();
+
+            int32_t typeId = binary::BinaryType<F>::GetTypeId();
+
+            if (im)
+            {
+                im->RegisterCallback(impl::IgniteBindingImpl::CallbackType::COMPUTE_JOB_CREATE,
+                    typeId, impl::binding::ComputeJobCreate<F, typename F::ReturnType>);
+            }
+            else
+            {
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    "Instance is not usable (did you check for error?).");
+            }
+        }
+
+        /**
          * Check if the instance is valid.
          *
          * Invalid instance can be returned if some of the previous operations
