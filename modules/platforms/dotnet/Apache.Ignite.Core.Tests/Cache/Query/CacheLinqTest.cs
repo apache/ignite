@@ -1305,7 +1305,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(
                 GetSqlEscapeAll()
-                    ? "select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where (_T0._KEY > ?)"
+                    ? "select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where (_T0.\"_KEY\" > ?)"
                     : "select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where (_T0._KEY > ?)",
                 fq.Sql);
 
@@ -1323,7 +1323,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(GetSqlEscapeAll()
                 ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
                   "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where " +
-                  "(_T0._KEY > ?), Arguments=[10], " +
+                  "(_T0.\"_KEY\" > ?), Arguments=[10], " +
                   "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
                   "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]"
                 : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
@@ -1339,17 +1339,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
 
             fq = fieldsQuery.GetFieldsQuery();
-            Assert.AreEqual("select _T0.Name from \"person_org\".Person as _T0", fq.Sql);
+            Assert.AreEqual(GetSqlEscapeAll()
+                    ? "select _T0.\"Name\" from \"person_org\".\"Person\" as _T0"
+                    : "select _T0.Name from \"person_org\".PERSON as _T0",
+                fq.Sql);
+
             Assert.IsFalse(fq.Local);
             Assert.AreEqual(SqlFieldsQuery.DefaultPageSize, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
 
             str = fieldsQuery.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
-                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
+            Assert.AreEqual(GetSqlEscapeAll()
+                ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0.\"Name\" from \"person_org\".\"Person\" as _T0, Arguments=[], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]"
+                : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
             
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
@@ -1360,12 +1369,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 
             str = distrQuery.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
-                            "(((_T0._KEY > ?) and (_T0.age1 > ?)) " +
-                            "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
-                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
+            Assert.AreEqual(GetSqlEscapeAll()
+                ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where " +
+                  "(((_T0.\"_KEY\" > ?) and (_T0.\"age1\" > ?)) " +
+                  "and (_T0.\"Name\" like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]"
+                : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
+                  "(((_T0._KEY > ?) and (_T0.age1 > ?)) " +
+                  "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
         }
 
         /// <summary>
