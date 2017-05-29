@@ -2036,7 +2036,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException {
         checkxEnabled();
 
-        return idx.prepareNativeStatement(cacheName, sql);
+        String schemaName = idx.schema(cacheName);
+
+        return idx.prepareNativeStatement(schemaName, sql);
     }
 
     /**
@@ -2047,21 +2049,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         checkxEnabled();
 
         return idx.cacheName(schema);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param nativeStmt Native statement.
-     * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
-     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
-     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
-     * @param allowOverwrite Overwrite existing cache values on key duplication.
-     * @see IgniteDataStreamer#allowOverwrite
-     * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata.
-     */
-    public IgniteDataStreamer<?, ?> createStreamer(String cacheName, PreparedStatement nativeStmt, long autoFlushFreq,
-        int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
-        return idx.createStreamer(cacheName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
     }
 
     /**

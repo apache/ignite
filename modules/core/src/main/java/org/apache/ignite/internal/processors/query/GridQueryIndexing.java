@@ -264,11 +264,11 @@ public interface GridQueryIndexing {
     /**
      * Prepare native statement to retrieve JDBC metadata from.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException;
+    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
 
     /**
      * Gets cache name from database schema.
@@ -299,15 +299,18 @@ public interface GridQueryIndexing {
     public void cancelAllQueries();
 
     /**
-     * @param cacheName Cache name.
-     * @param nativeStmt Native statement.
-     * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
-     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
-     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
-     * @param allowOverwrite Overwrite existing cache values on key duplication.
-     * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
-     * {@code null} if given statement is a query.
+     * Gets database schema from cache name.
+     *
+     * @param cacheName Cache name. {@code null} would be converted to an empty string.
+     * @return Schema name. Should not be null since we should not fail for an invalid cache name.
      */
-    public IgniteDataStreamer<?,?> createStreamer(String cacheName, PreparedStatement nativeStmt, long autoFlushFreq,
-        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
+    public String schema(String cacheName);
+
+    /**
+     * Check if passed statement is insert statemtn.
+     *
+     * @param nativeStmt Native statement.
+     * @return {@code True} if insert.
+     */
+    public boolean isInsertStatement(PreparedStatement nativeStmt);
 }

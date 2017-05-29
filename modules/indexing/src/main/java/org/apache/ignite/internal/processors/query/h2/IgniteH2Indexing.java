@@ -398,35 +398,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException {
-        String schemaName = schema(cacheName);
+    @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
+        Connection conn = connectionForSchema(schemaName);
 
-        return prepareStatement(connectionForSchema(schemaName), sql, true);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public IgniteDataStreamer<?, ?> createStreamer(String cacheName, PreparedStatement nativeStmt,
-        long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
-        Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
-
-        if (!(prep instanceof Insert))
-            throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        IgniteDataStreamer streamer = ctx.grid().dataStreamer(cacheName);
-
-        streamer.autoFlushFrequency(autoFlushFreq);
-
-        streamer.allowOverwrite(allowOverwrite);
-
-        if (nodeBufSize > 0)
-            streamer.perNodeBufferSize(nodeBufSize);
-
-        if (nodeParOps > 0)
-            streamer.perNodeParallelOperations(nodeParOps);
-
-        return streamer;
+        return prepareStatement(conn, sql, true);
     }
 
     /**
@@ -1755,19 +1730,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
 
-    /**
-     * Gets database schema from cache name.
-     *
-     * @param cacheName Cache name. {@code null} would be converted to an empty string.
-     * @return Schema name. Should not be null since we should not fail for an invalid cache name.
-     */
-    public String schema(String cacheName) {
+    /** {@inheritDoc} */
+    @Override  public String schema(String cacheName) {
         String res = cacheName2schema.get(cacheName);
 
         if (res == null)
             res = "";
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
+        Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
+
+        return prep instanceof Insert;
     }
 
     /**
