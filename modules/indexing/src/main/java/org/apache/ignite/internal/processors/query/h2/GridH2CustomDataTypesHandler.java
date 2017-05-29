@@ -262,7 +262,7 @@ public class GridH2CustomDataTypesHandler implements CustomDataTypesHandler {
      * Checks if type identifier is registered.
      *
      * @param typeId Type identifier.
-     * @return
+     * @return true, if registered.
      */
     public boolean isRegistered(int typeId) {
         return dataTypesById.containsKey(typeId);
