@@ -541,6 +541,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void prepare(CacheConfiguration cfg, Collection<Object> objs) throws IgniteCheckedException {
         prepare(cfg, cfg.getEvictionPolicy(), false);
+        prepare(cfg, cfg.getAffinity(), false);
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
@@ -577,6 +578,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = cctx.config();
 
         cleanup(cfg, cfg.getEvictionPolicy(), false);
+        cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cfg.getEvictionFilter(), false);
         cleanup(cfg, cfg.getInterceptor(), false);
@@ -1219,12 +1221,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
-        if (log.isInfoEnabled()) {
-            log.info("Started cache [name=" + cfg.getName() +
-                (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
-                ", memoryPolicyName=" + cfg.getMemoryPolicyName() +
-                ", mode=" + cfg.getCacheMode() + ", atomicity=" + cfg.getAtomicityMode() + ']');
-        }
+        if (log.isInfoEnabled()){
+            log.info("Started cache [name=" + cfg.getName() +(cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") + ", memoryPolicyName=" + cfg.getMemoryPolicyName() + ", mode=" + cfg.getCacheMode() +", atomicity=" + cfg.getAtomicityMode() + ']');}
     }
 
     /**
@@ -3531,6 +3529,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Iterable<Object> lifecycleAwares(CacheConfiguration ccfg, Object... objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);
 
+        ret.add(ccfg.getAffinity());
         ret.add(ccfg.getAffinityMapper());
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
