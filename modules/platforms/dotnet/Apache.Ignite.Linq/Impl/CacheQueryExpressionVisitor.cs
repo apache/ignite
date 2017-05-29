@@ -308,7 +308,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (queryable != null)
             {
-                var fieldName = GetFieldName(expression, queryable);
+                var fieldName = GetEscapedFieldName(expression, queryable);
 
                 ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
@@ -321,10 +321,20 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
+        private static string GetEscapedFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
+        {
+            var sqlEscapeAll = queryable.CacheConfiguration.SqlEscapeAll;
+            var fieldName = GetFieldName(expression, queryable);
+
+            return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
+        }
+
+        /// <summary>
+        /// Gets the name of the field from a member expression, with quotes when necessary.
+        /// </summary>
         private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
         {
             var fieldName = GetMemberFieldName(expression.Member);
-            var sqlEscapeAll = queryable.CacheConfiguration.SqlEscapeAll;
 
             // Look for a field alias
             var cacheCfg = queryable.CacheConfiguration;
@@ -332,7 +342,7 @@ namespace Apache.Ignite.Linq.Impl
             if (cacheCfg.QueryEntities == null || cacheCfg.QueryEntities.All(x => x.Aliases == null))
             {
                 // There are no aliases defined - early exit.
-                return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
+                return fieldName;
             }
 
             // Find query entity by key-val types
@@ -366,7 +376,7 @@ namespace Apache.Ignite.Linq.Impl
 
             fieldName = alias ?? fieldName;
 
-            return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
+            return fieldName;
         }
 
         /// <summary>
