@@ -234,12 +234,15 @@ public interface GridDhtPartitionTopology {
     /**
      * @param exchId Exchange ID.
      * @param parts Partitions.
-     * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
     @Nullable public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
+        GridDhtPartitionMap parts);
+
+    /**
+     * @param cntrMap Counters map.
+     */
+    public void applyUpdateCounters(Map<Integer, T2<Long, Long>> cntrMap);
 
     /**
      * Checks if there is at least one owner for each partition in the cache topology.
