@@ -1773,20 +1773,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return schema.cacheName();
     }
 
-    /**
-     * Rebuild indexes from hash index.
-     *
-     * @param cacheName Cache name.
-     * @param type Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override public void rebuildIndexesFromHash(String cacheName, GridQueryTypeDescriptor type)
+    @Override public void rebuildIndexesFromHash(GridCacheContext cctx, String schemaName, String typeName)
         throws IgniteCheckedException {
-        int cacheId = CU.cacheId(cacheName);
-        String schemaName = schema(cacheName);
-
-        H2TableDescriptor tbl = tableDescriptor(schemaName, type.name());
+        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
 
         if (tbl == null)
             return;
@@ -1798,8 +1789,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2PkHashIndex hashIdx = tbl.primaryKeyHashIndex();
 
         Cursor cursor = hashIdx.find((Session)null, null, null);
-
-        GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
         while (cursor.next()) {
             CacheDataRow dataRow = (CacheDataRow)cursor.get();
@@ -1841,10 +1830,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void markForRebuildFromHash(String cacheName, GridQueryTypeDescriptor type) {
-        String schemaName = schema(cacheName);
-
-        H2TableDescriptor tbl = tableDescriptor(schemaName, type.name());
+    @Override public void markForRebuildFromHash(String schemaName, String typeName) {
+        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
 
         if (tbl == null)
             return;
