@@ -59,6 +59,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
@@ -170,6 +172,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }
 
+                @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+                    return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
+                }
+
                 @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
                 }
@@ -207,6 +213,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                                     c.isEnum()
                                 )
                             );
+
+                            if (c.isEnum())
+                                BinaryUtils.validateEnumValues(c.getTypeName(), c.getEnumValues());
                         }
 
                         map.put("typeCfgs", typeCfgsMap);
@@ -399,8 +408,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum) throws BinaryObjectException {
-        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum);
+        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap)
+        throws BinaryObjectException {
+        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum,
+            enumMap);
 
         binaryCtx.updateMetadata(typeId, meta);
     }
@@ -433,6 +444,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) {
+        BinaryMetadata meta = metadata0(typeId);
+
+        return meta != null ? meta.wrap(binaryCtx) : null;
+    }
+
+    /**
+     * @param typeId Type ID.
+     * @return Meta data.
+     * @throws IgniteException In case of error.
+     */
+    @Nullable public BinaryMetadata metadata0(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         if (holder == null) {
@@ -466,7 +488,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
 
-            return holder.metadata().wrap(binaryCtx);
+            return holder.metadata();
         }
         else
             return null;
@@ -477,7 +499,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         if (ctx.clientNode()) {
-            if (holder == null || (holder != null && !holder.metadata().hasSchema(schemaId))) {
+            if (holder == null || !holder.metadata().hasSchema(schemaId)) {
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
 
@@ -547,14 +569,55 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
+    @Override public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+
         int typeId = binaryCtx.typeId(typeName);
 
         typeName = binaryCtx.userTypeName(typeName);
 
-        updateMetadata(typeId, typeName, null, null, true);
+        updateMetadata(typeId, typeName, null, null, true, null);
 
         return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+        A.notNullOrEmpty(name, "enum name");
+
+        int typeId = binaryCtx.typeId(typeName);
+
+        BinaryMetadata metadata = metadata0(typeId);
+
+        if (metadata == null)
+            throw new BinaryObjectException("Failed to get metadata for type [typeId=" +
+                    typeId + ", typeName='" + typeName + "']");
+
+        Integer ordinal = metadata.getEnumOrdinalByName(name);
+
+        typeName = binaryCtx.userTypeName(typeName);
+
+        if (ordinal == null)
+            throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
+                    typeId + ", typeName='" + typeName + "', name='" + name + "']");
+
+        return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ordinal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException {
+        A.notNullOrEmpty(typeName, "enum type name");
+
+        int typeId = binaryCtx.typeId(typeName);
+
+        typeName = binaryCtx.userTypeName(typeName);
+
+        BinaryUtils.validateEnumValues(typeName, vals);
+
+        updateMetadata(typeId, typeName, null, null, true, vals);
+
+        return binaryCtx.metadata(typeId);
     }
 
     /** {@inheritDoc} */
@@ -673,8 +736,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx).binaryEnabled() || binaryMarsh == null)
+    @Override public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException {
+        if (!ctx.binaryEnabled() || binaryMarsh == null)
             return super.marshal(ctx, val);
 
         byte[] arr = binaryMarsh.marshal(val);
@@ -685,22 +748,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
+    @Override public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx).binaryEnabled() || binaryMarsh == null)
+        if (!ctx.binaryEnabled() || binaryMarsh == null)
             return super.unmarshal(ctx, bytes, clsLdr);
 
         return binaryMarsh.unmarshal(bytes, clsLdr);
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toCacheKeyObject(
-        CacheObjectContext ctx,
-        @Nullable GridCacheContext cctx,
-        Object obj,
-        boolean userObj
-    ) {
-        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
+    @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, @Nullable GridCacheContext cctx,
+        Object obj, boolean userObj) {
+        if (!ctx.binaryEnabled())
             return super.toCacheKeyObject(ctx, cctx, obj, userObj);
 
         if (obj instanceof KeyCacheObject) {
@@ -731,7 +790,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj) {
-        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
+        if (!ctx.binaryEnabled())
             return super.toCacheObject(ctx, obj, userObj);
 
         if (obj == null || obj instanceof CacheObject)
@@ -756,7 +815,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException {
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
+        throws IgniteCheckedException {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
@@ -765,7 +825,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
-        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
+        if (!ctx.cacheObjectContext().binaryEnabled())
             return obj;
 
         if (obj instanceof BinaryObjectOffheapImpl)

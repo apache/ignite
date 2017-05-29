@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Log;
 
@@ -97,13 +98,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (typeCfgs != null)
                 foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
-                    AddUserType(cfg, typeCfg, typeResolver);
+                    AddUserType(typeCfg, typeResolver);
 
             var typeNames = _cfg.Types;
 
             if (typeNames != null)
                 foreach (string typeName in typeNames)
-                    AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver);
+                    AddUserType(new BinaryTypeConfiguration(typeName), typeResolver);
         }
 
         /// <summary>
@@ -289,14 +290,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Metadata or null.</returns>
-        public IBinaryType GetBinaryType(int typeId)
+        public BinaryType GetBinaryType(int typeId)
         {
             if (Ignite != null)
             {
-                IBinaryType meta = Ignite.BinaryProcessor.GetBinaryType(typeId);
+                var meta = Ignite.BinaryProcessor.GetBinaryType(typeId);
 
                 if (meta != null)
+                {
                     return meta;
+                }
             }
 
             return BinaryType.Empty;
@@ -314,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (Ignite != null)
             {
-                ICollection<BinaryType> metas = new[] {new BinaryType(desc)};
+                ICollection<BinaryType> metas = new[] {new BinaryType(desc, this)};
                 Ignite.BinaryProcessor.PutBinaryTypes(metas);
             }
         }
@@ -337,7 +340,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                         IDictionary<int, BinaryTypeHolder> metas0 =
                             new Dictionary<int, BinaryTypeHolder>(_metas);
 
-                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, desc.IsEnum);
+                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName,
+                            desc.IsEnum, this);
 
                         metas0[desc.TypeId] = holder;
 
@@ -366,16 +370,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             foreach (var meta in newMetas)
             {
-                var mergeInfo = new Dictionary<int, Tuple<string, BinaryField>>(meta.GetFieldsMap().Count);
-
-                foreach (var fieldMeta in meta.GetFieldsMap())
-                {
-                    int fieldId = BinaryUtils.FieldId(meta.TypeId, fieldMeta.Key, null, null);
-
-                    mergeInfo[fieldId] = new Tuple<string, BinaryField>(fieldMeta.Key, fieldMeta.Value);
-                }
-
-                _metas[meta.TypeId].Merge(mergeInfo);
+                _metas[meta.TypeId].Merge(meta);
             }
         }
 
@@ -391,7 +386,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryFullTypeDescriptor desc;
 
             if (!_typeToDesc.TryGetValue(type, out desc) || !desc.IsRegistered)
+            {
                 desc = RegisterType(type, desc);
+            }
 
             return desc;
         }
@@ -405,10 +402,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             BinaryFullTypeDescriptor desc;
 
-            return _typeNameToDesc.TryGetValue(typeName, out desc)
-                ? (IBinaryTypeDescriptor) desc
-                : new BinarySurrogateTypeDescriptor(_cfg,
-                    GetTypeId(typeName, _cfg.IdMapper), typeName);
+            if (_typeNameToDesc.TryGetValue(typeName, out desc))
+            {
+                return desc;
+            }
+
+            var typeId = GetTypeId(typeName, _cfg.IdMapper);
+
+            return GetDescriptor(true, typeId, typeName: typeName);
         }
 
         /// <summary>
@@ -416,18 +417,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="userType">User type flag.</param>
         /// <param name="typeId">Type id.</param>
-        /// <param name="requiresType">
-        /// If set to true, resulting descriptor must have Type property populated.
+        /// <param name="requiresType">If set to true, resulting descriptor must have Type property populated.
         /// <para />
         /// When working in binary mode, we don't need Type. And there is no Type at all in some cases.
         /// So we should not attempt to call BinaryProcessor right away.
         /// Only when we really deserialize the value, requiresType is set to true
-        /// and we attempt to resolve the type by all means.
-        /// </param>
+        /// and we attempt to resolve the type by all means.</param>
+        /// <param name="typeName">Known type name.</param>
+        /// <param name="knownType">Optional known type.</param>
         /// <returns>
         /// Descriptor.
         /// </returns>
-        public IBinaryTypeDescriptor GetDescriptor(bool userType, int typeId, bool requiresType = false)
+        public IBinaryTypeDescriptor GetDescriptor(bool userType, int typeId, bool requiresType = false,
+            string typeName = null, Type knownType = null)
         {
             BinaryFullTypeDescriptor desc;
 
@@ -442,17 +444,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (requiresType && _ignite != null)
             {
                 // Check marshaller context for dynamically registered type.
-                var typeName = _ignite.BinaryProcessor.GetTypeName(typeId);
+                var type = knownType;
 
-                if (typeName != null)
+                if (type == null && _ignite != null)
                 {
-                    var type = new TypeResolver().ResolveType(typeName, nameMapper: 
-                        _cfg.NameMapper ?? GetDefaultNameMapper());
+                    typeName = typeName ?? _ignite.BinaryProcessor.GetTypeName(typeId);
 
-                    if (type != null)
+                    if (typeName != null)
                     {
-                        return AddUserType(type, typeId, GetTypeName(type), true, desc);
+                        type = new TypeResolver().ResolveType(typeName,
+                            nameMapper: _cfg.NameMapper ?? GetDefaultNameMapper());
+
+                        if (type == null)
+                        {
+                            // Type is registered, but assembly is not present.
+                            return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
+                        }
                     }
+                }
+
+                if (type != null)
+                {
+                    return AddUserType(type, typeId, GetTypeName(type), true, desc);
                 }
             }
 
@@ -460,15 +473,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (meta != BinaryType.Empty)
             {
-                desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false,
-                    meta.AffinityKeyFieldName, meta.IsEnum);
+                var typeCfg = new BinaryTypeConfiguration(meta.TypeName)
+                {
+                    IsEnum = meta.IsEnum,
+                    AffinityKeyFieldName = meta.AffinityKeyFieldName
+                };
 
-                _idToDesc.GetOrAdd(typeKey, _ => desc);
-
-                return desc;
+                return AddUserType(typeCfg, new TypeResolver());
             }
 
-            return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
+            return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
         }
 
         /// <summary>
@@ -507,7 +521,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             desc = desc == null
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
-                    _cfg.IdMapper, ser, false, null, type.IsEnum, registered)
+                    _cfg.IdMapper, ser, false, null, BinaryUtils.IsIgniteEnum(type), registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
             if (RegistrationDisabled)
@@ -540,11 +554,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Add user type.
         /// </summary>
-        /// <param name="cfg">The binary configuration.</param>
         /// <param name="typeCfg">Type configuration.</param>
         /// <param name="typeResolver">The type resolver.</param>
         /// <exception cref="BinaryObjectException"></exception>
-        private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
+        private BinaryFullTypeDescriptor AddUserType(BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
             IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.NameMapper ?? GetDefaultNameMapper();
@@ -560,23 +573,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 ValidateUserType(type);
 
-                if (typeCfg.IsEnum != type.IsEnum)
+                if (typeCfg.IsEnum != BinaryUtils.IsIgniteEnum(type))
                 {
                     throw new BinaryObjectException(
                         string.Format(
                             "Invalid IsEnum flag in binary type configuration. " +
-                            "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
-                            typeCfg.IsEnum, type.IsEnum));
+                            "Configuration value: IsEnum={0}, actual type: IsEnum={1}, type={2}",
+                            typeCfg.IsEnum, type.IsEnum, type));
                 }
 
                 // Type is found.
                 var typeName = GetTypeName(type, nameMapper);
                 int typeId = GetTypeId(typeName, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
-                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
+                var serializer = GetSerializer(_cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
-                AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    affKeyFld, type.IsEnum);
+                return AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
+                    affKeyFld, BinaryUtils.IsIgniteEnum(type));
             }
             else
             {
@@ -585,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 int typeId = GetTypeId(typeName, idMapper);
 
-                AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
+                return AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
         }
@@ -593,7 +606,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the serializer.
         /// </summary>
-        private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg, 
+        private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg,
             BinaryTypeConfiguration typeCfg, Type type, int typeId, IBinaryNameMapper nameMapper,
             IBinaryIdMapper idMapper, ILogger log)
         {
@@ -653,7 +666,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        private void AddType(Type type, int typeId, string typeName, bool userType,
+        private BinaryFullTypeDescriptor AddType(Type type, int typeId, string typeName, bool userType,
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
             IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum)
         {
@@ -685,6 +698,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _typeNameToDesc.GetOrAdd(typeName, x => descriptor);
 
             _idToDesc.GetOrAdd(typeKey, _ => descriptor);
+
+            return descriptor;
         }
 
         /// <summary>
@@ -730,6 +745,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
             AddSystemType(BinaryUtils.TypeIgniteUuid, r => new IgniteGuid(r));
+            AddSystemType(0, r => new GetAssemblyFunc());
+            AddSystemType(0, r => new AssemblyRequest(r));
+            AddSystemType(0, r => new AssemblyRequestResult(r));
+            AddSystemType<PeerLoadingObjectHolder>(0, null, serializer: new PeerLoadingObjectHolderSerializer());
         }
 
         /// <summary>

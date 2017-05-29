@@ -21,7 +21,7 @@ import './style.scss';
 export default {
     template,
     controller: class {
-        static $inject = ['$scope', '$state', 'IgniteBranding'];
+        static $inject = ['$rootScope', '$scope', '$state', 'IgniteBranding'];
 
         static webAgentDownloadVisibleStates = [
             'base.configuration',
@@ -29,8 +29,8 @@ export default {
             'base.settings'
         ];
 
-        constructor($scope, $state, branding) {
-            Object.assign(this, {$scope, $state, branding});
+        constructor($rootScope, $scope, $state, branding) {
+            Object.assign(this, {$rootScope, $scope, $state, branding});
         }
 
         $onInit() {

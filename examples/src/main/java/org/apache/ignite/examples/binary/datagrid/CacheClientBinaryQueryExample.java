@@ -149,9 +149,9 @@ public class CacheClientBinaryQueryExample {
         employeeEntity.setIndexes(Arrays.asList(
             new QueryIndex("name"),
             new QueryIndex("salary"),
-            new QueryIndex("zip"),
+            new QueryIndex("addr.zip"),
             new QueryIndex("organizationId"),
-            new QueryIndex("street", QueryIndexType.FULLTEXT)
+            new QueryIndex("addr.street", QueryIndexType.FULLTEXT)
         ));
 
         return employeeEntity;
