@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
@@ -138,9 +137,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
-import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcStatement;
@@ -1876,10 +1873,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-        while (cursor.next()) {
-            CacheDataRow dataRow = (CacheDataRow)cursor.get();
+        IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
 
-            boolean done = false;
+        for (int p = 0; p < cctx.affinity().partitions(); p++) {
+            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.cacheKeysIterator(cctx.cacheId(), p)) {
+                while (keyIter.hasNext()) {
+                    cctx.shared().database().checkpointReadLock();
 
                     try {
                         KeyCacheObject key = keyIter.next();
@@ -1889,20 +1888,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 GridCacheEntryEx entry = cctx.isNear() ?
                                     cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
 
-                        for (int i = 2; i < indexes.size(); i++) {
-                            Index idx = indexes.get(i);
+                                entry.ensureIndexed();
 
-                            if (idx instanceof H2TreeIndex)
-                                ((H2TreeIndex)idx).put(row);
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                // Retry.
+                            }
+                            catch (GridDhtInvalidPartitionException ignore) {
+                                break;
+                            }
                         }
-
-                        done = true;
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
-                catch (GridCacheEntryRemovedException e) {
-                    // No-op
-                }
             }
+        }
 
         for (H2TableDescriptor tblDesc : tables(cacheName))
             tblDesc.table().markRebuildFromHashInProgress(false);

@@ -849,7 +849,7 @@ public class CacheGroupInfrastructure {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        if (ctx.kernalContext().config().getPersistenceConfiguration() != null) {
+        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
             ClassLoader clsLdr = U.gridClassLoader();
 
             try {
