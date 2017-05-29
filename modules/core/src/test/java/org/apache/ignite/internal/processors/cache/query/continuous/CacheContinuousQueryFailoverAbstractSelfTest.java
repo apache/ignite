@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -400,7 +401,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
     /**
      * @param ignite Ignite.
-     * @param topVer Topology version.
+     * @param topVer Major topology version.
+     * @param minorVer Minor topology version.
      * @throws Exception If failed.
      */
     private void waitRebalanceFinished(Ignite ignite, long topVer, int minorVer) throws Exception {
@@ -511,9 +513,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param nodes Count nodes.
      * @param killedNodeIdx Killed node index.
      * @param updCntrs Update counters.
-     * @return {@code True} if counters matches.
      */
-    private boolean checkPartCounter(int nodes, int killedNodeIdx, Map<Integer, Long> updCntrs) {
+    private void checkPartCounter(int nodes, int killedNodeIdx, Map<Integer, Long> updCntrs) {
         for (int i = 0; i < nodes; i++) {
             if (i == killedNodeIdx)
                 continue;
@@ -527,8 +528,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     assertEquals(e.getValue(), act.get(e.getKey()).get2());
             }
         }
-
-        return true;
     }
 
     /**
@@ -753,8 +752,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         assert GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 // (SRV_NODES + 1 client node) - 1 primary - backup nodes.
-                return qryClient.cluster().nodes().size() == (SRV_NODES + 1 /** client node */)
-                    - 1 /** Primary node */ - backups;
+                return qryClient.cluster().nodes().size() == (SRV_NODES + 1 /* client node */)
+                    - 1 /* Primary node */ - backups;
             }
         }, 5000L);
 
@@ -1253,6 +1252,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @param expEvts Expected events.
      * @param lsnr Listener.
+     * @throws Exception If failed.
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener3 lsnr,
         boolean allowLoseEvt) throws Exception {
@@ -1347,9 +1347,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         QueryCursor<?> cur = qryClient.cache(DEFAULT_CACHE_NAME).query(qry);
 
-        final Collection<Object> backupQueue = backupQueue(ignite(1));
-
-        assertEquals(0, backupQueue.size());
+        assertEquals(0, backupQueue(ignite(1)).size());
 
         IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1367,11 +1365,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return backupQueue.isEmpty();
+                return backupQueue(ignite(1)).isEmpty();
             }
         }, 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
+        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)),
+            backupQueue(ignite(1)).size() < BACKUP_ACK_THRESHOLD);
 
         if (!latch.await(5, SECONDS))
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
@@ -1389,11 +1388,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return backupQueue.isEmpty();
+                return backupQueue(ignite(1)).isEmpty();
             }
         }, ACK_FREQ + 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.isEmpty());
+        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)), backupQueue(ignite(1)).isEmpty());
 
         if (!latch.await(5, SECONDS))
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
@@ -1421,9 +1420,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         QueryCursor<?> cur = qryClient.cache(DEFAULT_CACHE_NAME).query(qry);
 
-        final Collection<Object> backupQueue = backupQueue(ignite(0));
-
-        assertEquals(0, backupQueue.size());
+        assertEquals(0, backupQueue(ignite(0)).size());
 
         long ttl = 100;
 
@@ -1433,9 +1430,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final List<Integer> keys = primaryKeys(ignite(1).cache(DEFAULT_CACHE_NAME), BACKUP_ACK_THRESHOLD);
 
-        CountDownLatch latch = new CountDownLatch(keys.size());
-
-        lsnr.latch = latch;
+        lsnr.latch = new CountDownLatch(keys.size());
 
         for (Integer key : keys) {
             log.info("Put: " + key);
@@ -1445,11 +1440,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return backupQueue.isEmpty();
+                return backupQueue(ignite(0)).isEmpty();
             }
         }, 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
+        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)),
+            backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
 
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -1461,14 +1457,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return backupQueue.isEmpty();
+                return backupQueue(ignite(0)).isEmpty();
             }
         }, 2000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
+        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(0)), backupQueue(ignite(0)).size() < BACKUP_ACK_THRESHOLD);
 
-        if (backupQueue.size() != 0) {
-            for (Object o : backupQueue) {
+        if (backupQueue(ignite(0)).size() != 0) {
+            for (Object o : backupQueue(ignite(0))) {
                 CacheContinuousQueryEntry e = (CacheContinuousQueryEntry)o;
 
                 assertNotSame("Evicted entry added to backup queue.", -1L, e.updateCounter());
@@ -1494,9 +1490,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         QueryCursor<?> cur = cache.query(qry);
 
-        final Collection<Object> backupQueue = backupQueue(ignite(1));
-
-        assertEquals(0, backupQueue.size());
+        assertEquals(0, backupQueue(ignite(1)).size());
 
         List<Integer> keys = primaryKeys(cache, BACKUP_ACK_THRESHOLD);
 
@@ -1512,11 +1506,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return backupQueue.isEmpty();
+                return backupQueue(ignite(1)).isEmpty();
             }
         }, 3000);
 
-        assertTrue("Backup queue is not cleared: " + backupQueue, backupQueue.size() < BACKUP_ACK_THRESHOLD);
+        assertTrue("Backup queue is not cleared: " + backupQueue(ignite(1)),
+            backupQueue(ignite(1)).size() < BACKUP_ACK_THRESHOLD);
 
         if (!latch.await(5, SECONDS))
             fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + lsnr.latch.getCount() + ']');
@@ -1533,19 +1528,24 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         ConcurrentMap<Object, Object> infos = GridTestUtils.getFieldValue(proc, "rmtInfos");
 
-        Collection<Object> backupQueue = null;
+        Collection<Object> backupQueue = new ArrayList<>();
 
         for (Object info : infos.values()) {
             GridContinuousHandler hnd = GridTestUtils.getFieldValue(info, "hnd");
 
-            if (hnd.isQuery() && DEFAULT_CACHE_NAME.equals(hnd.cacheName())) {
-                backupQueue = GridTestUtils.getFieldValue(hnd, CacheContinuousQueryHandler.class, "backupQueue");
+            if (hnd.isQuery() && hnd.cacheName().equals(DEFAULT_CACHE_NAME)) {
+                Map<Integer, CacheContinuousQueryEventBuffer> map = GridTestUtils.getFieldValue(hnd,
+                    CacheContinuousQueryHandler.class, "entryBufs");
 
-                break;
+                for (CacheContinuousQueryEventBuffer buf : map.values()) {
+                    Collection<Object> q = GridTestUtils.getFieldValue(buf,
+                        CacheContinuousQueryEventBuffer.class, "backupQ");
+
+                    if (q != null)
+                        backupQueue.addAll(q);
+                }
             }
         }
-
-        assertNotNull(backupQueue);
 
         return backupQueue;
     }
@@ -2422,7 +2422,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         private ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
         /** */
-        private List<CacheEntryEvent<?, ?>> allEvts;
+        private final CopyOnWriteArrayList<CacheEntryEvent<?, ?>> allEvts;
 
         /** */
         @LoggerResource
@@ -2432,8 +2432,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
          * @param saveAll Save all events flag.
          */
         CacheEventListener1(boolean saveAll) {
-            if (saveAll)
-                allEvts = new ArrayList<>();
+            allEvts = saveAll ? new CopyOnWriteArrayList<CacheEntryEvent<?, ?>>() : null;
         }
 
         /** {@inheritDoc} */

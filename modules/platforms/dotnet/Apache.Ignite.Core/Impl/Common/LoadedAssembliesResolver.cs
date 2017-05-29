@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
 
@@ -29,7 +30,8 @@ namespace Apache.Ignite.Core.Impl.Common
     internal class LoadedAssembliesResolver
     {
         // The lazy singleton instance.
-        private static readonly Lazy<LoadedAssembliesResolver> LazyInstance = new Lazy<LoadedAssembliesResolver>();
+        private static readonly Lazy<LoadedAssembliesResolver> LazyInstance =
+            new Lazy<LoadedAssembliesResolver>(() => new LoadedAssembliesResolver());
 
         // Assemblies map.
         private volatile Dictionary<string, Assembly> _map;
@@ -37,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Initializes a new instance of the <see cref="LoadedAssembliesResolver"/> class.
         /// </summary>
-        public LoadedAssembliesResolver()
+        private LoadedAssembliesResolver()
         {
             lock (this)
             {
@@ -89,6 +91,8 @@ namespace Apache.Ignite.Core.Impl.Common
         [SuppressMessage("ReSharper", "InconsistentlySynchronizedField")]
         public Assembly GetAssembly(string assemblyName)
         {
+            Debug.Assert(!string.IsNullOrWhiteSpace(assemblyName));
+
             Assembly asm;
 
             return _map.TryGetValue(assemblyName, out asm) ? asm : null;
