@@ -27,13 +27,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public class QueryEntity
+    public class QueryEntity : IQueryEntityInternal
     {
         /** */
         private Type _keyType;
@@ -205,7 +206,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets the alias by field name, or null when no match found.
         /// This method constructs a dictionary lazily to perform lookups.
         /// </summary>
-        public string GetAlias(string fieldName)
+        string IQueryEntityInternal.GetAlias(string fieldName)
         {
             if (Aliases == null || Aliases.Count == 0)
             {

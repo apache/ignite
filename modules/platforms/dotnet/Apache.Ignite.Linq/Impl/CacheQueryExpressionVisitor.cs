@@ -29,6 +29,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
@@ -365,7 +366,7 @@ namespace Apache.Ignite.Linq.Impl
                 fullFieldName = GetFieldName(member, queryable, true) + "." + fullFieldName;
             }
 
-            var alias = ignoreAlias ? null : entity.GetAlias(fullFieldName);
+            var alias = ignoreAlias ? null : ((IQueryEntityInternal)entity).GetAlias(fullFieldName);
 
             return alias ?? fieldName;
         }
