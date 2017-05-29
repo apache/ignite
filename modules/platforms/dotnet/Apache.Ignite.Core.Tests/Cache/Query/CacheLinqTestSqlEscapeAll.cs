@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-import commonConfig from './common';
-import devConfig from './environments/development';
-import prodConfig from './environments/production';
+namespace Apache.Ignite.Core.Tests.Cache.Query
+{
+    using NUnit.Framework;
 
-// TODO check test config
-import testConfig from './environments/test';
-
-const env = process.env.NODE_ENV || 'production';
-
-// Config by environments.
-const configs = {
-    production: prodConfig,
-    development: devConfig,
-    test: testConfig
-};
-
-// Load config file by environment
-export default _.merge(commonConfig, configs[env]);
+    /// <summary>
+    /// LINQ test with simple name mapper.
+    /// </summary>
+    [TestFixture]
+    public class CacheLinqTestSqlEscapeAll : CacheLinqTest
+    {
+        /** <inheritdoc /> */
+        protected override bool GetSqlEscapeAll()
+        {
+            return true;
+        }
+    }
+}

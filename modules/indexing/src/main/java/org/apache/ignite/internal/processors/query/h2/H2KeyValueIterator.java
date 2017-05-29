@@ -17,14 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.sql.ResultSet;
+
 /**
- * Geo-indexing test for binary mode.
+ * Special key/value iterator based on database result set.
  */
-public class H2IndexingBinaryGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
+public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Constructor.
+     * @param data Data array.
+     * @throws IgniteCheckedException If failed.
      */
-    public H2IndexingBinaryGeoSelfTest() {
-        super(true, false);
+    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
+        super(data, false, true);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected IgniteBiTuple<K, V> createRow() {
+        K key = (K)row[0];
+        V val = (V)row[1];
+
+        return new IgniteBiTuple<>(key, val);
     }
 }

@@ -3067,7 +3067,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 maxReqWireTimeTs = now;
             }
 
-            long resWireTimeMillis = msg.responseRecievedTsMillis() - msg.requestSendTsMillis();
+            long resWireTimeMillis = msg.responseReceivedTsMillis() - msg.requestSendTsMillis();
 
             if (maxResWireTimeMillis < resWireTimeMillis) {
                 maxResWireTimeMillis = resWireTimeMillis;

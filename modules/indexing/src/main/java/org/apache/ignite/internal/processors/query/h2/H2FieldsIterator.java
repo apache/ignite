@@ -17,14 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.IgniteCheckedException;
+
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
- * Geo-indexing test for binary mode and segmented cache.
+ * Special field set iterator based on database result set.
  */
-public class H2IndexingBinarySegmentedGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
+public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Constructor.
+     * @param data Data.
+     * @throws IgniteCheckedException If failed.
      */
-    public H2IndexingBinarySegmentedGeoSelfTest() {
-        super(true, true);
+    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
+        super(data, false, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<?> createRow() {
+        ArrayList<Object> res = new ArrayList<>(row.length);
+
+        Collections.addAll(res, row);
+
+        return res;
     }
 }
