@@ -59,6 +59,9 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGES_NUM = 128_000;
 
+    /** Cache name. */
+    private final String cacheName = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -67,6 +70,8 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(createDbConfig());
 
+        cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
+
         return cfg;
     }
 
@@ -74,19 +79,19 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
      * @return DB config.
      */
     private MemoryConfiguration createDbConfig() {
-        final MemoryConfiguration dbCfg = new MemoryConfiguration();
+        final MemoryConfiguration memCfg = new MemoryConfiguration();
 
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
         memPlcCfg.setInitialSize(MEMORY_LIMIT);
         memPlcCfg.setMaxSize(MEMORY_LIMIT);
         memPlcCfg.setName("dfltMemPlc");
 
-        dbCfg.setPageSize(PAGE_SIZE);
-        dbCfg.setConcurrencyLevel(NUMBER_OF_SEGMENTS);
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setPageSize(PAGE_SIZE);
+        memCfg.setConcurrencyLevel(NUMBER_OF_SEGMENTS);
+        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
 
-        return dbCfg;
+        return memCfg;
     }
 
 
@@ -111,11 +116,10 @@ public class PageStoreEvictionSelfTest extends GridCommonAbstractTest {
      */
     public void testPageEviction() throws Exception {
         final IgniteEx ig = startGrid(0);
-        ig.getOrCreateCache(new CacheConfiguration<>("partitioned"));
 
         final PageMemory memory = getMemory(ig);
 
-        writeData(ig, memory, CU.cacheId("partitioned"));
+        writeData(ig, memory, CU.cacheId(cacheName));
     }
 
     /**

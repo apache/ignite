@@ -151,7 +151,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         IgniteSystemProperties.getLong(IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY, 30_000);
 
     /** */
-    private final int ggWalRebalanceThreshold = IgniteSystemProperties.getInteger(
+    private final int walRebalanceThreshold = IgniteSystemProperties.getInteger(
         IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
 
     /** Checkpoint lock hold count. */
@@ -356,15 +356,36 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             );
 
         // Intentionally use identity comparison to check if configuration default has changed.
-        //noinspection NumberEquality
+        // Noinspection NumberEquality.
         if (cpBufSize == PersistentStoreConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE) {
             MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
-            // Limit the checkpoint page buffer size by 2GB.
-            //TODO find max page cache and use it instead of memCfg.getPageCacheSize() (replaced with Long.MAX_VALUE now)
-            long adjusted = Math.min(Long.MAX_VALUE / 4, 2 * 1024L * 1024L * 1024L);
+            assert memCfg != null;
 
-            if (memCfg != null && cpBufSize < adjusted) {
+            long totalSize = memCfg.getSystemCacheMaxSize();
+
+            if (memCfg.getMemoryPolicies() == null)
+                totalSize += MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
+            else {
+                for (MemoryPolicyConfiguration memPlc : memCfg.getMemoryPolicies()) {
+                    if (Long.MAX_VALUE - memPlc.getMaxSize() > totalSize)
+                        totalSize += memPlc.getMaxSize();
+                    else {
+                        totalSize = Long.MAX_VALUE;
+
+                        break;
+                    }
+                }
+
+                assert totalSize > 0;
+            }
+
+            // Limit the checkpoint page buffer size by 2GB.
+            long dfltSize = 2 * 1024L * 1024L * 1024L;
+
+            long adjusted = Math.min(totalSize / 4, dfltSize);
+
+            if (cpBufSize < adjusted) {
                 U.quietAndInfo(log,
                     "Default checkpoint page buffer size is too small, setting to an adjusted value: "
                         + U.readableSize(adjusted, false)
@@ -556,7 +577,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         return new PageMemoryImpl(
             memProvider,
-            calculateFragmentSizes(memCfg.getConcurrencyLevel(), plcCfg.getMaxSize()),
+            calculateFragmentSizes(
+                memCfg.getConcurrencyLevel(),
+                plcCfg.getMaxSize()
+            ),
             cctx,
             memCfg.getPageSize(),
             new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
@@ -884,7 +908,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (part.state() != GridDhtPartitionState.OWNING || part.dataStore().fullSize() <= ggWalRebalanceThreshold)
+                if (part.state() != GridDhtPartitionState.OWNING || part.dataStore().fullSize() <= walRebalanceThreshold)
                     continue;
 
                 CheckpointEntry cpEntry = searchCheckpointEntry(grp.groupId(), part.id(), null);

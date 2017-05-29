@@ -45,6 +45,9 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Cache name. */
+    private final String cacheName = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -52,7 +55,10 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        cfg.setCacheConfiguration(new CacheConfiguration().setCopyOnRead(true));
+        cfg.setCacheConfiguration(
+            new CacheConfiguration(cacheName)
+                .setCopyOnRead(true)
+        );
 
         BinaryConfiguration bcfg = new BinaryConfiguration();
 
@@ -84,7 +90,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
-        IgniteCache<String, Value> cache = grid.cache(null);
+        IgniteCache<String, Value> cache = grid.cache(cacheName);
 
         cache.put(TEST_KEY, new Value());
 
