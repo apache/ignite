@@ -172,7 +172,7 @@ namespace ignite
                 int32_t fetchSize = connection.GetConfiguration().GetPageSize();
                 std::auto_ptr<ResultPage> resultPage(new ResultPage());
 
-                QueryExecuteRequest req(cacheName, fetchSize, 0, false, sql, params);
+                QueryExecuteRequest req(cacheName, fetchSize, 0, true, sql, params);
                 QueryExecuteResponse rsp(*resultPage);
 
                 try
