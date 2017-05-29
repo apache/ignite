@@ -17,28 +17,37 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 import java.util.Objects;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * ODBC table-related metadata.
  */
-public class OdbcTableMeta {
+public class OdbcTableMeta implements RawBinarylizable {
     /** Catalog name. */
-    private final String catalog;
+    private String catalog;
 
     /** Schema name. */
-    private final String schema;
+    private String schema;
 
     /** Table name. */
-    private final String table;
+    private String table;
 
     /** Table type. */
-    private final String tableType;
+    private String tableType;
 
     /**
-     * @param catalog Catalog name.
+     * Default constructor is used for serialization.
+     */
+    public OdbcTableMeta() {
+    }
+
+    /**
+    * @param catalog Catalog name.
      * @param schema Schema name.
      * @param table Table name.
      * @param tableType Table type.
@@ -74,15 +83,21 @@ public class OdbcTableMeta {
         return false;
     }
 
-    /**
-     * Write in a binary format.
-     *
-     * @param writer Binary writer.
-     */
-    public void writeBinary(BinaryRawWriterEx writer) {
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
         writer.writeString(catalog);
         writer.writeString(schema);
         writer.writeString(table);
         writer.writeString(tableType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        catalog = reader.readString();
+        schema = reader.readString();
+        table = reader.readString();
+        tableType = reader.readString();
     }
 }

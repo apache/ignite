@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -27,31 +30,54 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class OdbcQueryGetTablesMetaResult implements RawBinarylizable {
     /** Query result rows. */
-    private final Collection<OdbcTableMeta> meta;
+    private List<OdbcTableMeta> meta;
 
     /**
      * @param meta Column metadata.
      */
-    public OdbcQueryGetTablesMetaResult(Collection<OdbcTableMeta> meta) {
+    public OdbcQueryGetTablesMetaResult(List<OdbcTableMeta> meta) {
         this.meta = meta;
     }
 
     /**
      * @return Query result rows.
      */
-    public Collection<OdbcTableMeta> meta() {
+    public List<OdbcTableMeta> meta() {
         return meta;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        if (meta == null) {
+            writer.writeInt(0);
 
+            return;
+        }
+
+        writer.writeInt(meta.size());
+
+        for (OdbcTableMeta tblMeta : meta)
+            tblMeta.writeBinary(writer, objWriter);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        int metaSize = reader.readInt();
 
+        if (metaSize > 0) {
+            meta = new ArrayList<>(metaSize);
+
+            for (int i = 0; i < metaSize; ++i) {
+                OdbcTableMeta m = new OdbcTableMeta();
+
+                m.readBinary(reader, objReader);
+
+                meta.add(m);
+            }
+        }
+        else
+            meta = Collections.emptyList();
     }
 }

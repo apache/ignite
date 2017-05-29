@@ -20,13 +20,14 @@ package org.apache.ignite.internal.jdbc.thin;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractObjectReader;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcObjectReader;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
 @SuppressWarnings("unchecked")
-public class JdbcSqlObjectReader extends SqlListenerAbstractObjectReader {
+public class JdbcSqlObjectReader extends JdbcObjectReader {
     /** {@inheritDoc} */
     @Nullable @Override public Object readObject(BinaryReaderExImpl reader) throws BinaryObjectException {
         Object obj = super.readObject(reader);
@@ -49,10 +50,5 @@ public class JdbcSqlObjectReader extends SqlListenerAbstractObjectReader {
         }
 
         return obj;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object readCustomObject(BinaryReaderExImpl reader) throws BinaryObjectException {
-        throw new BinaryObjectException("JDBC doesn't support custom objects.");
     }
 }

@@ -87,7 +87,7 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
      * @param meta Column metadata.
      */
     public static void writeColumnsMeta(BinaryWriterExImpl writer, SqlListenerAbstractObjectWriter objWriter,
-        Collection<SqlListenerColumnMeta> meta) {
+        List<SqlListenerColumnMeta> meta) {
         if (meta == null) {
             writer.writeInt(0);
 

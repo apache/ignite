@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -27,19 +27,19 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class OdbcQueryGetColumnsMetaResult implements RawBinarylizable {
     /** Query result rows. */
-    private final Collection<SqlListenerColumnMeta> meta;
+    private List<SqlListenerColumnMeta> meta;
 
     /**
      * @param meta Column metadata.
      */
-    public OdbcQueryGetColumnsMetaResult(Collection<SqlListenerColumnMeta> meta) {
+    public OdbcQueryGetColumnsMetaResult(List<SqlListenerColumnMeta> meta) {
         this.meta = meta;
     }
 
     /**
      * @return Query result rows.
      */
-    public Collection<SqlListenerColumnMeta> meta() {
+    public List<SqlListenerColumnMeta> meta() {
         return meta;
     }
 
@@ -47,11 +47,12 @@ public class OdbcQueryGetColumnsMetaResult implements RawBinarylizable {
     @Override public void writeBinary(BinaryWriterExImpl writer,
         SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
 
+        SqlListenerAbstractMessageParser.writeColumnsMeta(writer, objWriter, meta);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
-
+        meta = SqlListenerAbstractMessageParser.readColumnsMeta(reader, objReader);
     }
 }

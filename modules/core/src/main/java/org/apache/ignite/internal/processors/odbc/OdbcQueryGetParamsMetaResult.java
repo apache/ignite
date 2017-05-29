@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class OdbcQueryGetParamsMetaResult implements RawBinarylizable {
     /** List of parameter type IDs. */
-    private final byte[] typeIds;
+    private byte[] typeIds;
 
     /**
      * @param typeIds List of parameter type IDs.
@@ -45,12 +45,12 @@ public class OdbcQueryGetParamsMetaResult implements RawBinarylizable {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer,
         SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
-
+        writer.writeByteArray(typeIds);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
-
+        typeIds = reader.readByteArray();
     }
 }
