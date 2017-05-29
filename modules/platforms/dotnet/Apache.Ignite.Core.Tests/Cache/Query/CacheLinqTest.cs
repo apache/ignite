@@ -1302,8 +1302,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, query.Ignite);
 
             var fq = query.GetFieldsQuery();
-            Assert.AreEqual("select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where (_T0._KEY > ?)", 
+
+            Assert.AreEqual(
+                GetSqlEscapeAll()
+                    ? "select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where (_T0._KEY > ?)"
+                    : "select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where (_T0._KEY > ?)",
                 fq.Sql);
+
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
             Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
@@ -1315,11 +1320,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
 
             var str = query.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
-                            "(_T0._KEY > ?), Arguments=[10], " +
-                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
-                            "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
+            Assert.AreEqual(GetSqlEscapeAll()
+                ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where " +
+                  "(_T0._KEY > ?), Arguments=[10], " +
+                  "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                  "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]"
+                : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
+                  "(_T0._KEY > ?), Arguments=[10], " +
+                  "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                  "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
