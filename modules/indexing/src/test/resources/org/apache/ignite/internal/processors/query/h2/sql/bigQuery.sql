@@ -21,9 +21,9 @@ from (
   from (
 	select  date, orderId, rootOrderId, origOrderId, archSeq, alias 
 	from "custord".CustOrder where alias='CUSTOM'
-	
+
 	union all
-	
+
 	select  date, orderId, rootOrderId, refOrderId as origOrderId, archSeq, alias
 	from "replord".ReplaceOrder where alias='CUSTOM'
   ) co,
@@ -45,9 +45,9 @@ from (
     and h.origOrderId = co.origOrderId and h.date = co.date
     and co.archSeq = h.maxArchSeq
 	and co.alias='CUSTOM'
-) cop 
+) cop
 inner join (
-  select e.date, e.rootOrderId as eRootOrderId, e.rootOrderId, sum(e.execShares) as execShares, 
+  select e.date, e.rootOrderId as eRootOrderId, e.rootOrderId, sum(e.execShares) as execShares,
 	sum(e.execShares*e.price)/sum(e.execShares) as price,
 	case when min(e.lastMkt) = max(e.lastMkt) then min(e.lastMkt) else min('XOFF') end as execMeet
   from "exec".Exec e

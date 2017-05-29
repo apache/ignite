@@ -102,12 +102,12 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(final CacheObjectContext ctx, final boolean cpy) {
+        @Nullable @Override public <T> T value(final CacheObjectValueContext ctx, final boolean cpy) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public byte[] valueBytes(final CacheObjectValueContext ctx) throws IgniteCheckedException {
             return new byte[0];
         }
 
@@ -148,13 +148,13 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(final CacheObjectContext ctx,
-            final ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(final CacheObjectValueContext ctx, final ClassLoader ldr)
+            throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(final CacheObjectValueContext ctx) throws IgniteCheckedException {
             // No-op
         }
 

@@ -822,8 +822,13 @@ class ClusterCachesInfo {
 
                 if (locCfg != null ||
                     joinDiscoData.startCaches() ||
-                    CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter()))
-                    locJoinStartCaches.add(new T2<>(desc, nearCfg));
+                    CU.affinityNode(ctx.discovery().localNode(), desc.groupDescriptor().config().getNodeFilter())) {
+                    // Move system and internal caches first.
+                    if (desc.cacheType().userCache())
+                        locJoinStartCaches.add(new T2<>(desc, nearCfg));
+                    else
+                        locJoinStartCaches.add(0, new T2<>(desc, nearCfg));
+                }
             }
         }
     }

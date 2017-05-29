@@ -29,8 +29,8 @@ public class QueryIndexKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache name. */
-    private final String cacheName;
+    /** Schema name. */
+    private final String schemaName;
 
     /** Name. */
     private final String name;
@@ -38,31 +38,17 @@ public class QueryIndexKey implements Serializable {
     /**
      * Constructor.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param name Name.
      */
-    public QueryIndexKey(String cacheName, String name) {
-        this.cacheName = cacheName;
+    public QueryIndexKey(String schemaName, String name) {
+        this.schemaName = schemaName;
         this.name = name;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
-    }
-
-    /**
-     * @return Name.
-     */
-    public String name() {
-        return name;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * (cacheName != null ? cacheName.hashCode() : 0) + (name != null ? name.hashCode() : 0);
+        return 31 * (schemaName != null ? schemaName.hashCode() : 0) + (name != null ? name.hashCode() : 0);
     }
 
     /** {@inheritDoc} */
@@ -75,7 +61,7 @@ public class QueryIndexKey implements Serializable {
 
         QueryIndexKey other = (QueryIndexKey)o;
 
-        return F.eq(name, other.name) && F.eq(cacheName, other.cacheName);
+        return F.eq(name, other.name) && F.eq(schemaName, other.schemaName);
     }
 
     /** {@inheritDoc} */

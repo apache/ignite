@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import requireDir from 'require-dir';
+package org.apache.ignite.internal.processors.cache.binary;
 
-// Require all tasks in gulpfile.js/tasks, including subfolders.
-requireDir('./tasks', { recurse: true });
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-// Default no-arg task.
-gulp.task('default', ['build']);
-
+/**
+ *
+ */
+public class BinaryAtomicCacheLocalEntriesSelfTest extends BinaryTxCacheLocalEntriesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
+}
