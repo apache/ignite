@@ -1285,17 +1285,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExceptions()
         {
-            Assert.Throws<IgniteException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+            Assert.Throws<AggregateException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
 
-            Assert.Throws<IgniteException>(
+            Assert.Throws<AggregateException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
 
             // Local.
-            var ex = Assert.Throws<IgniteException>(() =>
+            var ex = Assert.Throws<AggregateException>(() =>
                 _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
-            Assert.AreEqual("Async operation has failed, examine InnerException for details.", ex.Message);
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", 
                 ex.InnerException.Message);
@@ -1303,10 +1302,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
 
             // Remote.
-            ex = Assert.Throws<IgniteException>(() =>
+            ex = Assert.Throws<AggregateException>(() =>
                 _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
-            Assert.AreEqual("Async operation has failed, examine InnerException for details.", ex.Message);
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
                 ex.InnerException.Message);

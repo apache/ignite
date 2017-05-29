@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using System.IO;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Impl;
@@ -47,8 +46,10 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             TestDeployment(remoteCompute =>
             {
-                var ex = Assert.Throws<IgniteException>(() => remoteCompute.Call(new ProcessNameFunc()));
+                var ex = Assert.Throws<AggregateException>(() => remoteCompute.Call(new ProcessNameFunc()))
+                    .InnerException;
 
+                Assert.IsNotNull(ex);
                 Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.", 
                     ex.Message);
 

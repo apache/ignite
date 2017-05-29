@@ -52,18 +52,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the result.
         /// </summary>
+        /// <exception cref="AggregateException" />
         public T Get()
         {
-            try
-            {
-                return Task.Result;
-            }
-            catch (AggregateException ex)
-            {
-                var innerEx = ex.InnerExceptions.Count > 1 ? ex : ex.InnerException;
-
-                throw new IgniteException("Async operation has failed, examine InnerException for details.", innerEx);
-            }
+            return Task.Result;
         }
 
         /// <summary>
