@@ -197,6 +197,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 buf.putLong(partDataRec.updateCounter());
                 buf.putLong(partDataRec.globalRemoveId());
                 buf.putInt(partDataRec.partitionSize());
+                buf.putLong(partDataRec.countersPageId());
                 buf.put(partDataRec.state());
                 buf.putInt(partDataRec.allocatedIndexCandidate());
 
@@ -756,10 +757,11 @@ public class RecordV1Serializer implements RecordSerializer {
                 long updCntr = in.readLong();
                 long rmvId = in.readLong();
                 int partSize = in.readInt();
+                long countersPageId = in.readLong();
                 byte state = in.readByte();
                 int allocatedIdxCandidate = in.readInt();
 
-                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId, partSize, state, allocatedIdxCandidate);
+                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId, partSize, countersPageId, state, allocatedIdxCandidate);
 
                 break;
 
@@ -1244,7 +1246,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 return 1 + /*cache ID*/4 + /*page ID*/8 + /*ioType*/2  + /*ioVer*/2 +  /*tree root*/8 + /*reuse root*/8 +  /*CRC*/4;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                return 1 + /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*state*/ 1
+                return 1 + /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
                     + /*allocatedIdxCandidate*/ 4 + /*CRC*/4;
 
             case MEMORY_RECOVERY:

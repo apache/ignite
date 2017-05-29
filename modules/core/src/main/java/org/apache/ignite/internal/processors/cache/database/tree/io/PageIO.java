@@ -169,6 +169,9 @@ public abstract class PageIO {
     /** */
     public static final short T_CACHE_ID_AWARE_PENDING_REF_LEAF = 19;
 
+    /** */
+    public static final short T_PART_CNTRS = 20;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
 
@@ -441,6 +444,9 @@ public abstract class PageIO {
 
             case T_PART_META:
                 return (Q)PagePartitionMetaIO.VERSIONS.forVersion(ver);
+
+            case T_PART_CNTRS:
+                return (Q)PagePartitionCountersIO.VERSIONS.forVersion(ver);
 
             case T_PAGE_UPDATE_TRACKING:
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);

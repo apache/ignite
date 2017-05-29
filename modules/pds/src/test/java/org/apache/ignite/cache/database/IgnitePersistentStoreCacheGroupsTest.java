@@ -94,6 +94,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
+        cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         if (ccfgs != null) {
