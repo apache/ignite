@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Resource;
 
@@ -108,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(Job));
+            writer0.WithDetach(w => w.WriteWithPeerDeployment(Job));
         }
 
         /// <summary>

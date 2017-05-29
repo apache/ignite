@@ -124,6 +124,9 @@ namespace ignite
         /** Binary error. */
         static const int IGNITE_ERR_BINARY = 1002;
 
+        /** Standard library exception. */
+        static const int IGNITE_ERR_STD = 1003;
+
         /** Generic %Ignite error. */
         static const int IGNITE_ERR_GENERIC = 2000;
 
