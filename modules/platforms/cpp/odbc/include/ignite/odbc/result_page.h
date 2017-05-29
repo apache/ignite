@@ -51,7 +51,7 @@ namespace ignite
              * Read result page using provided reader.
              * @param reader Reader.
              */
-            void Read(ignite::impl::binary::BinaryReaderImpl& reader);
+            void Read(impl::binary::BinaryReaderImpl& reader);
 
             /**
              * Get page size.
@@ -63,19 +63,10 @@ namespace ignite
             }
 
             /**
-             * Check if the page is last.
-             * @return True if the page is last.
-             */
-            bool IsLast() const
-            {
-                return last;
-            }
-
-            /**
              * Get page data.
              * @return Page data.
              */
-            ignite::impl::interop::InteropUnpooledMemory& GetData()
+            impl::interop::InteropUnpooledMemory& GetData()
             {
                 return data;
             }
@@ -83,14 +74,11 @@ namespace ignite
         private:
             IGNITE_NO_COPY_ASSIGNMENT(ResultPage);
 
-            /** Last page flag. */
-            bool last;
-
             /** Page size in rows. */
             int32_t size;
 
             /** Memory that contains current row page data. */
-            ignite::impl::interop::InteropUnpooledMemory data;
+            impl::interop::InteropUnpooledMemory data;
         };
     }
 }

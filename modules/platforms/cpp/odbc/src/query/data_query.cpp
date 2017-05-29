@@ -70,18 +70,16 @@ namespace ignite
                 if (!cursor->HasData())
                     return SqlResult::AI_NO_DATA;
 
-                cursor->Increment();
-
                 if (cursor->NeedDataUpdate())
                 {
                     SqlResult::Type result = MakeRequestFetch();
 
                     if (result != SqlResult::AI_SUCCESS)
                         return result;
-                }
 
-                if (!cursor->HasData())
-                    return SqlResult::AI_NO_DATA;
+                    if (!cursor->HasData())
+                        return SqlResult::AI_NO_DATA;
+                }
 
                 Row* row = cursor->GetRow();
 
@@ -108,6 +106,8 @@ namespace ignite
                         return SqlResult::AI_ERROR;
                     }
                 }
+
+                cursor->Increment();
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -196,7 +196,7 @@ namespace ignite
                 }
 
                 cursor.reset(new Cursor(rsp.GetQueryId()));
-                cursor->UpdateData(resultPage);
+                cursor->UpdateData(resultPage, rsp.IsLast());
 
                 resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 
@@ -269,7 +269,7 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                cursor->UpdateData(resultPage);
+                cursor->UpdateData(resultPage, rsp.IsLast());
 
                 return SqlResult::AI_SUCCESS;
             }
