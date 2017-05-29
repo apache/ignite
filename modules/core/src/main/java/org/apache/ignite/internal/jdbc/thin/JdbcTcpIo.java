@@ -190,7 +190,7 @@ public class JdbcTcpIo {
      */
     public <R extends RawBinarylizable> R sendRequest(SqlListenerRequest req, Class<R> resClass)
         throws IOException, IgniteCheckedException {
-
+        // TODO: No classes and reflection, use something like enum or constants.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP),
             null, null);
 

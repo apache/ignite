@@ -163,6 +163,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
+        // TODO: Return if already closed.
         closed = true;
 
         if (stmt.connection().isClosed())

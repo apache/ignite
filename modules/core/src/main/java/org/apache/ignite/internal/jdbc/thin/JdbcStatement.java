@@ -71,7 +71,9 @@ public class JdbcStatement implements Statement {
 
         this.conn = conn;
     }
+
     /** {@inheritDoc} */
+    // TODO: Override in JdbcPreparedStatement, throw SQLException as per spec.
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         JdbcResultSet rs = execute0(sql);
 
@@ -89,10 +91,11 @@ public class JdbcStatement implements Statement {
     public JdbcResultSet execute0(String sql) throws SQLException {
         ensureNotClosed();
 
-        if (rs != null)
+        if (rs != null) {
             rs.close();
 
-        rs = null;
+            rs = null;
+        }
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty");
@@ -391,6 +394,7 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    // TODO: What is "automatically closed"?
     @Override public boolean isClosed() throws SQLException {
         return conn.isClosed() || closed;
     }
