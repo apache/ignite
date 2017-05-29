@@ -48,7 +48,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         private string _keyTypeName;
 
         /** */
-        private Dictionary<string, string> _aliases;
+        private Dictionary<string, string> _aliasMap;
+
+        private ICollection<QueryAlias> _aliases;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
@@ -183,7 +185,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Example: {"parent.name" -> "parentName"}.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<QueryAlias> Aliases { get; set; }
+        public ICollection<QueryAlias> Aliases
+        {
+            get { return _aliases; }
+            set
+            {
+                _aliases = value;
+                _aliasMap = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the query indexes.
@@ -203,18 +213,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
 
             // PERF: No ToDictionary.
-            if (_aliases == null)
+            if (_aliasMap == null)
             {
-                _aliases = new Dictionary<string, string>(Aliases.Count, StringComparer.InvariantCulture);
+                _aliasMap = new Dictionary<string, string>(Aliases.Count, StringComparer.InvariantCulture);
 
                 foreach (var alias in Aliases)
                 {
-                    _aliases[alias.FullName] = alias.Alias;
+                    _aliasMap[alias.FullName] = alias.Alias;
                 }
             }
 
             string res;
-            return _aliases.TryGetValue(fieldName, out res) ? res : null;
+            return _aliasMap.TryGetValue(fieldName, out res) ? res : null;
         }
 
         /// <summary>
