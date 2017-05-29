@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -56,7 +54,8 @@ public class SqlListenerQueryExecuteResult implements RawBinarylizable {
      * @param last Flag indicates the query has no unfetched results.
      * @param isQuery Flag indicates the query is SELECT query. {@code false} for DML/DDL queries
      */
-    public SqlListenerQueryExecuteResult(long queryId, List<SqlListenerColumnMeta> meta, List<List<Object>> items, boolean last, boolean isQuery) {
+    public SqlListenerQueryExecuteResult(long queryId, List<SqlListenerColumnMeta> meta, List<List<Object>> items,
+        boolean last, boolean isQuery) {
         this.queryId = queryId;
         this.meta = meta;
         this.items = items;
