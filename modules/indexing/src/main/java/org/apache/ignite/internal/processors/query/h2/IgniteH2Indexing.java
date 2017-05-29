@@ -782,9 +782,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterType(String cacheName, String typeName)
+    @Override public void unregisterType(String schemaName, String typeName)
         throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), typeName);
+        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
 
         if (tbl != null)
             removeTable(tbl);

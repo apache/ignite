@@ -196,11 +196,11 @@ public interface GridQueryIndexing {
     /**
      * Unregisters type and removes all corresponding data.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param typeName Type name.
      * @throws IgniteCheckedException If failed.
      */
-    public void unregisterType(String cacheName, String typeName) throws IgniteCheckedException;
+    public void unregisterType(String schemaName, String typeName) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
