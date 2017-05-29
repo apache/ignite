@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -1269,7 +1270,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache();
 
             // Check regular query
-            var query = (ICacheQueryable) cache.AsCacheQueryable(new QueryOptions
+            var query = cache.AsCacheQueryable(new QueryOptions
             {
                 Local = true,
                 PageSize = 999,
@@ -1277,7 +1278,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Timeout = TimeSpan.FromSeconds(2.5),
                 ReplicatedOnly = true,
                 Colocated = true
-            }).Where(x => x.Key > 10);
+            }).Where(x => x.Key > 10).ToCacheQueryable();
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
@@ -1325,7 +1326,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
                 .Where(x => x.Key > 10 && x.Value.Age > 20 && x.Value.Name.Contains("x"));
 
-            query = (ICacheQueryable) distrQuery;
+            query = distrQuery.ToCacheQueryable();
 
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 
@@ -1421,6 +1422,69 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests the RemoveAll extension.
+        /// </summary>
+        [Test]
+        public void TestRemoveAll()
+        {
+            // Use new cache to avoid touching static data.
+            var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
+                    new QueryEntity(typeof(int), typeof(Person))));
+
+            Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
+            
+            var queryable = cache.AsCacheQueryable();
+
+            Func<int[]> getKeys = () => cache.Select(x => x.Key).OrderBy(x => x).ToArray();
+
+            // Without predicate.
+            var res = queryable.Where(x => x.Key < 3).RemoveAll();
+            Assert.AreEqual(2, res);
+            Assert.AreEqual(Enumerable.Range(3, 8), getKeys());
+
+            // With predicate.
+            res = queryable.RemoveAll(x => x.Key < 7);
+            Assert.AreEqual(4, res);
+            Assert.AreEqual(Enumerable.Range(7, 4), getKeys());
+
+            // Subquery-style join.
+            var ids = GetPersonCache().AsCacheQueryable().Where(x => x.Key == 7).Select(x => x.Key);
+
+            res = queryable.Where(x => ids.Contains(x.Key)).RemoveAll();
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(Enumerable.Range(8, 3), getKeys());
+
+            // Row number limit.
+            res = queryable.Take(2).RemoveAll();
+            Assert.AreEqual(2, res);
+            Assert.AreEqual(1, getKeys().Length);
+
+            // Unconditional.
+            queryable.RemoveAll();
+            Assert.AreEqual(0, cache.GetSize());
+
+            // Skip is not supported with DELETE.
+            var nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).RemoveAll());
+            Assert.AreEqual(
+                "RemoveAll can not be combined with result operators (other than Take): SkipResultOperator",
+                nex.Message);
+
+            // Multiple result operators are not supported with DELETE.
+            nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).RemoveAll());
+            Assert.AreEqual(
+                "RemoveAll can not be combined with result operators (other than Take): SkipResultOperator, " +
+                "TakeResultOperator, RemoveAllResultOperator", nex.Message);
+
+            // Joins are not supported in H2.
+            var qry = queryable
+                .Where(x => x.Key == 7)
+                .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
+
+            var ex = Assert.Throws<IgniteException>(() => qry.RemoveAll());
+            Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
         }
 
         /// <summary>

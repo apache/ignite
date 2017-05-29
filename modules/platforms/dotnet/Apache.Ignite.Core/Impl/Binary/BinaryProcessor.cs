@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
-    /// Binary metadata processor.
+    /// Binary metadata processor, delegates to PlatformBinaryProcessor in Java.
     /// </summary>
     internal class BinaryProcessor : PlatformTarget
     {
@@ -38,7 +38,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             PutMeta = 3,
             GetSchema = 4,
             RegisterType = 5,
-            GetType = 6
+            GetType = 6,
+            RegisterEnum = 7
         }
 
         /// <summary>
@@ -54,9 +55,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets metadata for specified type.
         /// </summary>
-        public IBinaryType GetBinaryType(int typeId)
+        public BinaryType GetBinaryType(int typeId)
         {
-            return DoOutInOp<IBinaryType>((int) Op.GetMeta,
+            return DoOutInOp((int) Op.GetMeta,
                 writer => writer.WriteInt(typeId),
                 stream =>
                 {
@@ -126,7 +127,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                         w.WriteInt(field.Value.FieldId);
                     }
 
+                    // Enum data
                     w.WriteBoolean(meta.IsEnum);
+
+                    if (meta.IsEnum)
+                    {
+                        if (meta.EnumValuesMap != null)
+                        {
+                            w.WriteInt(meta.EnumValuesMap.Count);
+
+                            foreach (var pair in meta.EnumValuesMap)
+                            {
+                                w.WriteString(pair.Key);
+                                w.WriteInt(pair.Value);
+                            }
+                        }
+                        else
+                        {
+                            w.WriteInt(0);
+                        }
+                    }
 
                     // Send schemas
                     var desc = meta.Descriptor;
@@ -172,6 +192,43 @@ namespace Apache.Ignite.Core.Impl.Binary
                 w.WriteInt(id);
                 w.WriteString(typeName);
             }) == True;
+        }
+
+        /// <summary>
+        /// Registers the enum.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="values">The values.</param>
+        /// <returns>Resulting binary type.</returns>
+        public BinaryType RegisterEnum(string typeName, IEnumerable<KeyValuePair<string, int>> values)
+        {
+            Debug.Assert(typeName != null);
+
+            return DoOutInOp((int) Op.RegisterEnum, w =>
+            {
+                w.WriteString(typeName);
+
+                if (values == null)
+                {
+                    w.WriteInt(0);
+                }
+                else
+                {
+                    var countPos = w.Stream.Position;
+                    w.WriteInt(0);
+                    var count = 0;
+
+                    foreach (var enumPair in values)
+                    {
+                        w.WriteString(enumPair.Key);
+                        w.WriteInt(enumPair.Value);
+
+                        count++;
+                    }
+
+                    w.Stream.WriteInt(countPos, count);
+                }
+            }, s => s.ReadBool() ? new BinaryType(Marshaller.StartUnmarshal(s)) : null);
         }
 
         /// <summary>

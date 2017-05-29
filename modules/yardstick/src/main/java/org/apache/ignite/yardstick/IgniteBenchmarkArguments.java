@@ -102,6 +102,10 @@ public class IgniteBenchmarkArguments {
     private boolean storeEnabled;
 
     /** */
+    @Parameter(names = {"-cwd", "--cleanWorkDirectory"}, description = "Clean Work Directory")
+    private boolean cleanWorkDirectory = false;
+
+    /** */
     @Parameter(names = {"-wb", "--writeBehind"}, description = "Enable or disable writeBehind for cache store")
     private boolean writeBehind;
 
@@ -182,6 +186,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-cg", "--cacheGrp"}, description = "Cache group for caches")
     private String cacheGrp;
+
+    /** */
+    @Parameter(names = {"-cig", "--cachesInGrp"}, description = "Number of caches to create in configured group")
+    private int cachesInGrp = 1;
 
     /**
      * @return List of enabled load test operations.
@@ -427,10 +435,24 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Flag for cleaning working directory.
+     */
+    public boolean cleanWorkDirectory() {
+        return cleanWorkDirectory;
+    }
+
+    /**
      * @return Name of cache group to be set for caches.
      */
     @Nullable public String cacheGroup() {
         return cacheGrp;
+    }
+
+    /**
+     * @return Number of caches to create in configured group.
+     */
+    public int cachesInGroup() {
+        return cachesInGrp;
     }
 
     /**

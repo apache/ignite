@@ -648,7 +648,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             if (ctx.pageStore() != null) {
                 try {
-                    // TODO IGNITE-5075.
                     ctx.pageStore().onPartitionCreated(grp.groupId(), p);
                 }
                 catch (IgniteCheckedException e) {

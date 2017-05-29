@@ -214,9 +214,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = null;
         }
 
-        if (coctx == null)
-            // TODO IGNITE-5075 Possible null pointer in case cacheId is not stored
+        if (coctx == null) {
+            // coctx can be null only when grp is null too, this means that
+            // we are in process of eviction and cacheId is mandatory part of data.
+            assert cacheId != 0;
+
             coctx = sharedCtx.cacheContext(cacheId).cacheObjectContext();
+        }
 
         // Read key.
         if (key == null) {

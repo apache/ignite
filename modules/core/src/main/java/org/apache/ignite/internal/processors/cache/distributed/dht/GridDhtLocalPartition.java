@@ -912,10 +912,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @param cacheId ID of cache initiated counter update.
+     * @param topVer Topology version for current operation.
      * @return Next update index.
      */
-    public long nextUpdateCounter() {
-        return store.nextUpdateCounter();
+    long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer) {
+        long nextCntr = store.nextUpdateCounter();
+
+        if (grp.sharedGroup())
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer);
+
+        return nextCntr;
     }
 
     /**
