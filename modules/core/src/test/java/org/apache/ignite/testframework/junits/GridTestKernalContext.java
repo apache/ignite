@@ -39,7 +39,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     /**
      * @param log Logger to use in context config.
      */
-    public GridTestKernalContext(IgniteLogger log) throws IgniteCheckedException {
+    public GridTestKernalContext(IgniteLogger log) {
         this(log, new IgniteConfiguration());
     }
 
@@ -47,7 +47,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @param log Logger to use in context config.
      * @param cfg Configuration to use in Test
      */
-    public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
+    public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) {
         super(new GridLoggerProxy(log, null, null, null),
                 new IgniteKernal(null),
                 cfg,
@@ -63,7 +63,13 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                U.allPluginProviders());
+                null,
+                null,
+                null,
+                null,
+                null,
+                U.allPluginProviders()
+        );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
 
@@ -77,7 +83,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void start() throws IgniteCheckedException {
         for (GridComponent comp : this)
-            comp.start();
+            comp.start(config().isActiveOnStart());
     }
 
     /**
@@ -96,11 +102,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridTestKernalContext.class, this, super.toString());
-    }
-
     /**
      * Sets system executor service.
      *
@@ -110,7 +111,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this.sysExecSvc = sysExecSvc;
     }
 
-
     /**
      * Sets executor service.
      *
@@ -118,5 +118,10 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void setExecutorService(ExecutorService execSvc){
         this.execSvc = execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridTestKernalContext.class, this, super.toString());
     }
 }

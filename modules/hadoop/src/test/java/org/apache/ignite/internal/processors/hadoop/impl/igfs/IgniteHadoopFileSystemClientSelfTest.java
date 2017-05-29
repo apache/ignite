@@ -33,10 +33,6 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.igfs.common.IgfsLogger;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfs;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutProc;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsOutputStream;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsStreamDelegate;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
@@ -74,8 +70,8 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
@@ -84,8 +80,8 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setDataCacheConfiguration(dataCacheConfiguration());
+        igfsCfg.setMetaCacheConfiguration(metaCacheConfiguration());
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
 
@@ -96,7 +92,6 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
@@ -107,27 +102,36 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
      *
      * @return Cache configuration.
      */
-    protected CacheConfiguration[] cacheConfiguration() {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration dataCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setName("partitioned");
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setNearConfiguration(null);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setEvictionPolicy(null);
+        ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        return ccfg;
+    }
 
-        metaCacheCfg.setName("replicated");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        metaCacheCfg.setEvictionPolicy(null);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+    /**
+     * Gets cache configuration.
+     *
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration metaCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
+        ccfg.setName("replicated");
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setEvictionPolicy(null);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+
+        return ccfg;
     }
 
     /**
@@ -142,7 +146,7 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
         try {
             switchHandlerErrorFlag(true);
 
-            HadoopIgfs client = new HadoopIgfsOutProc("127.0.0.1", 10500, getTestGridName(0), "igfs", LOG, null);
+            HadoopIgfs client = new HadoopIgfsOutProc("127.0.0.1", 10500, "igfs", LOG, null);
 
             client.handshake(null);
 

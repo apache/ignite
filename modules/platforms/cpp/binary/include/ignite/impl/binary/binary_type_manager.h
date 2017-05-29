@@ -49,25 +49,24 @@ namespace ignite
                 /**
                  * Get handler.
                  *
+                 * @param typeName Type name.
                  * @param typeId Type ID.
                  */
-                ignite::common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(int32_t typeId);
+                common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName, int32_t typeId);
 
                 /**
                  * Submit handler for processing.
-                 * 
-                 * @param typeName Type name.
-                 * @param typeId Type ID.
+                 *
                  * @param hnd Handler.
                  */
-                void SubmitHandler(std::string typeName, int32_t typeId, BinaryTypeHandler* hnd);
+                void SubmitHandler(BinaryTypeHandler& hnd);
 
                 /**
                  * Get current type manager version.
                  *
                  * @return Version.
                  */
-                int32_t GetVersion();
+                int32_t GetVersion() const;
 
                 /**
                  * Check whether something is updated since the given version.
@@ -75,26 +74,46 @@ namespace ignite
                  * @param oldVer Old version.
                  * @return True if updated and it is very likely that pending type exists.
                  */
-                bool IsUpdatedSince(int32_t oldVer);
+                bool IsUpdatedSince(int32_t oldVer) const;
 
                 /**
                  * Process pending updates.
                  *
-                 * @param updater Updater.
                  * @param err Error.
                  * @return In case of success.
                  */
-                bool ProcessPendingUpdates(BinaryTypeUpdater* updater, IgniteError* err);
+                bool ProcessPendingUpdates(IgniteError& err);
+
+                /**
+                 * Set updater.
+                 *
+                 * @param updater Updater.
+                 */
+                void SetUpdater(BinaryTypeUpdater* updater)
+                {
+                    this->updater = updater;
+                }
+
+                /**
+                 * Get metadata snapshop for the type.
+                 *
+                 * @param typeId Type ID.
+                 * @return Metadata snapshot.
+                 */
+                SPSnap GetMeta(int32_t typeId);
 
             private:
                 /** Current snapshots. */
-                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap>> snapshots;
+                std::map<int32_t, SPSnap>* snapshots;
 
                 /** Pending snapshots. */
                 std::vector<SPSnap>* pending;
 
                 /** Critical section. */
-                ignite::common::concurrent::CriticalSection* cs;
+                common::concurrent::CriticalSection cs;
+
+                /** Type updater */
+                BinaryTypeUpdater* updater;
 
                 /** Version of pending changes. */
                 int32_t pendingVer;
@@ -103,15 +122,6 @@ namespace ignite
                 int32_t ver;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeManager);
-
-                /**
-                 * Copy fields from a snapshot into relevant collections.
-                 *
-                 * @param snap Target snapshot.
-                 * @param fieldIds Field IDs.
-                 * @param fields Fields.
-                 */
-                void CopyFields(Snap* snap, std::set<int32_t>* fieldIds, std::map<std::string, int32_t>* fields);
             };
         }
     }    

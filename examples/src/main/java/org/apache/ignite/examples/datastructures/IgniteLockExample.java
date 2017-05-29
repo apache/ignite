@@ -87,11 +87,11 @@ public class IgniteLockExample {
 
             // Start consumers on all cluster nodes.
             for (int i = 0; i < NUM_CONSUMERS; i++)
-                ignite.compute().withAsync().run(new Consumer(reentrantLockName));
+                ignite.compute().runAsync(new Consumer(reentrantLockName));
 
             // Start producers on all cluster nodes.
             for (int i = 0; i < NUM_PRODUCERS; i++)
-                ignite.compute().withAsync().run(new Producer(reentrantLockName));
+                ignite.compute().runAsync(new Producer(reentrantLockName));
 
             System.out.println("Master node is waiting for all other nodes to finish...");
 

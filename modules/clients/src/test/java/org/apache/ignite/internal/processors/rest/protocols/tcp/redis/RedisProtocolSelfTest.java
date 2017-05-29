@@ -80,8 +80,8 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(HOST);
 
@@ -114,7 +114,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).cache(null);
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -221,6 +221,9 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSet() throws Exception {
+        long EXPIRE_MS = 1000L;
+        int EXPIRE_SEC = 1;
+
         try (Jedis jedis = pool.getResource()) {
             jedis.set("setKey1", "1");
             jedis.set("setKey2".getBytes(), "b0".getBytes());
@@ -230,16 +233,22 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
             // test options.
             jedis.set("setKey1", "2", "nx");
-            jedis.set("setKey3", "3", "nx");
+            jedis.set("setKey3", "3", "nx", "px", EXPIRE_MS);
 
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("3", jcache().get("setKey3"));
 
-            jedis.set("setKey1", "2", "xx");
+            jedis.set("setKey1", "2", "xx", "ex", EXPIRE_SEC);
             jedis.set("setKey4", "4", "xx");
 
             Assert.assertEquals("2", jcache().get("setKey1"));
             Assert.assertNull(jcache().get("setKey4"));
+
+            // wait for expiration.
+            Thread.sleep((long)(EXPIRE_MS * 1.2));
+
+            Assert.assertNull(jcache().get("setKey1"));
+            Assert.assertNull(jcache().get("setKey3"));
         }
     }
 

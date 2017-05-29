@@ -49,7 +49,7 @@ public class GridCacheReturn implements Externalizable, Message {
     private static final long serialVersionUID = 0L;
 
     /** Value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private volatile Object v;
 
@@ -126,12 +126,10 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /**
-     * Checks if value is not {@code null}.
      *
-     * @return {@code True} if value is not {@code null}.
      */
-    public boolean hasValue() {
-        return v != null;
+    public boolean emptyResult() {
+        return !invokeRes && v  == null && cacheObj == null && success;
     }
 
     /**
@@ -353,7 +351,7 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 88;
     }
 

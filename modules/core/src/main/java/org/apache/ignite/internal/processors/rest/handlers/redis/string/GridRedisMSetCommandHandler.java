@@ -71,6 +71,7 @@ public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
         restReq.key(msg.key());
 
         restReq.command(CACHE_PUT_ALL);
+        restReq.cacheName(CACHE_NAME);
 
         List<String> els = msg.auxMKeys();
         Map<Object, Object> mset = U.newHashMap(els.size() / 2);

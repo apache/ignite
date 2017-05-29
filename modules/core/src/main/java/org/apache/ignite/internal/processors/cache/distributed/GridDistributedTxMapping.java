@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -33,19 +29,15 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Transaction node mapping.
  */
-public class GridDistributedTxMapping implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDistributedTxMapping {
     /** Mapped node. */
     @GridToStringExclude
-    private ClusterNode node;
+    private ClusterNode primary;
 
     /** Entries. */
     @GridToStringInclude
@@ -60,24 +52,17 @@ public class GridDistributedTxMapping implements Externalizable {
     /** {@code True} if this is last mapping for node. */
     private boolean last;
 
-    /** {@code True} if mapping is for near caches, {@code false} otherwise. */
-    private boolean near;
+    /** Near cache entries count. */
+    private int nearEntries;
 
     /** {@code True} if this is first mapping for optimistic tx on client node. */
     private boolean clientFirst;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * @param primary Primary node.
      */
-    public GridDistributedTxMapping() {
-        // No-op.
-    }
-
-    /**
-     * @param node Mapped node.
-     */
-    public GridDistributedTxMapping(ClusterNode node) {
-        this.node = node;
+    public GridDistributedTxMapping(ClusterNode primary) {
+        this.primary = primary;
 
         entries = new LinkedHashSet<>();
     }
@@ -111,24 +96,24 @@ public class GridDistributedTxMapping implements Externalizable {
     }
 
     /**
-     * @return {@code True} if mapping is for near caches, {@code false} otherwise.
+     * @return {@code True} if has colocated cache entries.
      */
-    public boolean near() {
-        return near;
+    public boolean hasColocatedCacheEntries() {
+        return entries.size() > nearEntries;
     }
 
     /**
-     * @param near {@code True} if mapping is for near caches, {@code false} otherwise.
+     * @return {@code True} if has near cache entries.
      */
-    public void near(boolean near) {
-        this.near = near;
+    public boolean hasNearCacheEntries() {
+        return nearEntries > 0;
     }
 
     /**
      * @return Node.
      */
-    public ClusterNode node() {
-        return node;
+    public ClusterNode primary() {
+        return primary;
     }
 
     /**
@@ -136,6 +121,15 @@ public class GridDistributedTxMapping implements Externalizable {
      */
     public Collection<IgniteTxEntry> entries() {
         return entries;
+    }
+
+    /**
+     * @return Near cache entries.
+     */
+    @Nullable public Collection<IgniteTxEntry> nearCacheEntries() {
+        assert nearEntries > 0;
+
+        return F.view(entries, CU.FILTER_NEAR_CACHE_ENTRY);
     }
 
     /**
@@ -174,21 +168,58 @@ public class GridDistributedTxMapping implements Externalizable {
      * @return Reads.
      */
     public Collection<IgniteTxEntry> reads() {
-        return F.view(entries, CU.reads());
+        return F.view(entries, CU.READ_FILTER);
     }
 
     /**
      * @return Writes.
      */
     public Collection<IgniteTxEntry> writes() {
-        return F.view(entries, CU.writes());
+        return F.view(entries, CU.WRITE_FILTER);
+    }
+
+    /**
+     * @return Near cache reads.
+     */
+    public Collection<IgniteTxEntry> nearEntriesReads() {
+        assert hasNearCacheEntries();
+
+        return F.view(entries, CU.READ_FILTER_NEAR);
+    }
+
+    /**
+     * @return Near cache writes.
+     */
+    public Collection<IgniteTxEntry> nearEntriesWrites() {
+        assert hasNearCacheEntries();
+
+        return F.view(entries, CU.WRITE_FILTER_NEAR);
+    }
+
+    /**
+     * @return Colocated cache reads.
+     */
+    public Collection<IgniteTxEntry> colocatedEntriesReads() {
+        assert hasColocatedCacheEntries();
+
+        return F.view(entries, CU.READ_FILTER_COLOCATED);
+    }
+
+    /**
+     * @return Colocated cache writes.
+     */
+    public Collection<IgniteTxEntry> colocatedEntriesWrites() {
+        assert hasColocatedCacheEntries();
+
+        return F.view(entries, CU.WRITE_FILTER_COLOCATED);
     }
 
     /**
      * @param entry Adds entry.
      */
     public void add(IgniteTxEntry entry) {
-        entries.add(entry);
+        if (entries.add(entry) && entry.context().isNear())
+            nearEntries++;
     }
 
     /**
@@ -235,21 +266,7 @@ public class GridDistributedTxMapping implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(node);
-
-        U.writeCollection(out, entries);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        node = (ClusterNode)in.readObject();
-
-        entries = U.readCollection(in);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedTxMapping.class, this, "node", node.id());
+        return S.toString(GridDistributedTxMapping.class, this, "node", primary.id());
     }
 }

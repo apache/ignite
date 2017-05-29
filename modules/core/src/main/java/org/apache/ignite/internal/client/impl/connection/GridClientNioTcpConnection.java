@@ -58,6 +58,7 @@ import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimize
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
@@ -229,7 +230,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridNioFuture<?> sslHandshakeFut = null;
 
             if (sslCtx != null) {
-                sslHandshakeFut = new GridNioFutureImpl<>();
+                sslHandshakeFut = new GridNioFutureImpl<>(null);
 
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
@@ -804,6 +805,26 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                     return fut.get().getResult();
                 }
             });
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<?> changeState(boolean active, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        GridClientStateRequest msg = new GridClientStateRequest();
+
+        msg.active(active);
+
+        return makeRequest(msg, destNodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<Boolean> currentState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        GridClientStateRequest msg = new GridClientStateRequest();
+
+        msg.requestCurrentState();
+
+        return makeRequest(msg, destNodeId);
     }
 
     /** {@inheritDoc} */

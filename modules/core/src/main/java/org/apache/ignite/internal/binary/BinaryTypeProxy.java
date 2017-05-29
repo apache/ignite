@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary type proxy. Is used to delay or completely avoid metadata lookup.
@@ -34,21 +36,26 @@ public class BinaryTypeProxy implements BinaryType {
     private final BinaryContext ctx;
 
     /** Type ID. */
-    private final int typeId;
+    private int typeId;
+
+    /** Raw data. */
+    private final String clsName;
 
     /** Target type. */
     @GridToStringExclude
     private volatile BinaryType target;
 
     /**
-     * Constrcutor.
+     * Constructor.
      *
      * @param ctx Context.
      * @param typeId Type ID.
+     * @param clsName Class name.
      */
-    public BinaryTypeProxy(BinaryContext ctx, int typeId) {
+    public BinaryTypeProxy(BinaryContext ctx, int typeId, @Nullable String clsName) {
         this.ctx = ctx;
         this.typeId = typeId;
+        this.clsName = clsName;
     }
 
     /** {@inheritDoc} */
@@ -86,6 +93,11 @@ public class BinaryTypeProxy implements BinaryType {
         return target().isEnum();
     }
 
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryObject> enumValues() {
+        return target().enumValues();
+    }
+
     /**
      * @return Target type.
      */
@@ -93,6 +105,9 @@ public class BinaryTypeProxy implements BinaryType {
         if (target == null) {
             synchronized (this) {
                 if (target == null) {
+                    if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID && clsName != null)
+                        typeId = ctx.typeId(clsName);
+
                     target = ctx.metadata(typeId);
 
                     if (target == null)

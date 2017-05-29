@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,9 +30,9 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -53,10 +54,8 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Test for query with BinaryMarshaller and different serialization modes.
@@ -108,29 +107,28 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
             cfg.setBinaryConfiguration(binCfg);
         }
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cacheCfg.setName(null);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        List<CacheTypeMetadata> metas = new ArrayList<>();
+        List<QueryEntity> queryEntities = new ArrayList<>();
 
-        metas.add(metaForClass(EntityPlain.class));
-        metas.add(metaForClass(EntitySerializable.class));
-        metas.add(metaForClass(EntityExternalizable.class));
-        metas.add(metaForClass(EntityBinarylizable.class));
-        metas.add(metaForClass(EntityWriteReadObject.class));
+        queryEntities.add(entityForClass(EntityPlain.class));
+        queryEntities.add(entityForClass(EntitySerializable.class));
+        queryEntities.add(entityForClass(EntityExternalizable.class));
+        queryEntities.add(entityForClass(EntityBinarylizable.class));
+        queryEntities.add(entityForClass(EntityWriteReadObject.class));
 
-        cacheCfg.setTypeMetadata(metas);
+        cacheCfg.setQueryEntities(queryEntities);
 
         cfg.setCacheConfiguration(cacheCfg);
 
         ignite = Ignition.start(cfg);
 
-        cache = ignite.cache(null);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -139,14 +137,13 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
      * @param cls Class.
      * @return Type metadata.
      */
-    private static CacheTypeMetadata metaForClass(Class cls) {
-        CacheTypeMetadata meta = new CacheTypeMetadata();
+    private static QueryEntity entityForClass(Class cls) {
+        QueryEntity entity = new QueryEntity(Integer.class.getName(), cls.getName());
 
-        meta.setKeyType(Integer.class);
-        meta.setValueType(cls);
-        meta.setAscendingFields(Collections.<String, Class<?>>singletonMap("val", Integer.class));
+        entity.addQueryField("val", Integer.class.getName(), null);
+        entity.setIndexes(Collections.singletonList(new QueryIndex("val", true)));
 
-        return meta;
+        return entity;
     }
 
     /** {@inheritDoc} */

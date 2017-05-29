@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.h2.command.Parser;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
 import org.h2.table.Table;
@@ -44,10 +45,7 @@ import org.h2.value.ValueInt;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
-
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 
 /**
  * AST utils for DML
@@ -85,7 +83,7 @@ public final class DmlAstUtils {
             for (int i = 0; i < cols.length; i++) {
                 GridSqlArray arr = new GridSqlArray(rows.size());
 
-                String colName = IgniteH2Indexing.escapeName(cols[i].columnName(), desc.quoteAllIdentifiers());
+                String colName = cols[i].columnName();
 
                 GridSqlAlias alias = new GridSqlAlias(colName, arr);
 
@@ -95,7 +93,7 @@ public final class DmlAstUtils {
 
                 args[i] = arr;
 
-                GridSqlColumn newCol = new GridSqlColumn(null, from, colName, "TABLE." + colName);
+                GridSqlColumn newCol = new GridSqlColumn(null, from, null,"TABLE", colName);
 
                 newCol.resultType(cols[i].resultType());
 
@@ -146,10 +144,10 @@ public final class DmlAstUtils {
 
         Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
 
-        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
 
-        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName(), h2ValCol.getSQL());
+        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName());
         valCol.resultType(GridSqlType.fromColumn(h2ValCol));
 
         mapQry.addColumn(keyCol, true);
@@ -176,8 +174,15 @@ public final class DmlAstUtils {
         if (filter == null)
             return null;
 
-        if (update.cols().size() != 1 ||
-            !IgniteH2Indexing.VAL_FIELD_NAME.equalsIgnoreCase(update.cols().get(0).columnName()))
+        if (update.cols().size() != 1)
+            return null;
+
+        Table tbl = update.cols().get(0).column().getTable();
+        if (!(tbl instanceof GridH2Table))
+            return null;
+
+        GridH2RowDescriptor desc = ((GridH2Table)tbl).rowDescriptor();
+        if (!desc.isValueColumn(update.cols().get(0).column().getColumnId()))
             return null;
 
         GridSqlElement set = update.set().get(update.cols().get(0).columnName());
@@ -234,7 +239,7 @@ public final class DmlAstUtils {
 
         // Does this WHERE limit only by _key?
         if (isKeyEqualityCondition(whereOp))
-            return new IgnitePair<>(whereOp.child(1), null);
+            return new IgnitePair<>((GridSqlElement)whereOp.child(1), null);
 
         // Or maybe it limits both by _key and _val?
         if (whereOp.operationType() != GridSqlOperationType.AND)
@@ -255,13 +260,13 @@ public final class DmlAstUtils {
             if (!isValueEqualityCondition(rightOp))
                 return null;
 
-            return new IgnitePair<>(leftOp.child(1), rightOp.child(1));
+            return new IgnitePair<>((GridSqlElement)leftOp.child(1), (GridSqlElement)rightOp.child(1));
         }
         else if (isKeyEqualityCondition(rightOp)) { // _val = ? and _key = ?
             if (!isValueEqualityCondition(leftOp))
                 return null;
 
-            return new IgnitePair<>(rightOp.child(1), leftOp.child(1));
+            return new IgnitePair<>((GridSqlElement)rightOp.child(1), (GridSqlElement)leftOp.child(1));
         }
         else // Neither
             return null;
@@ -269,19 +274,29 @@ public final class DmlAstUtils {
 
     /**
      * @param op Operation.
-     * @param colName Column name to check.
+     * @param key true - check for key equality condition,
+     *            otherwise check for value equality condition
      * @return Whether this condition is of form {@code colName} = ?
      */
-    private static boolean isEqualityCondition(GridSqlOperation op, String colName) {
+    private static boolean isEqualityCondition(GridSqlOperation op, boolean key) {
         if (op.operationType() != GridSqlOperationType.EQUAL)
             return false;
 
         GridSqlElement left = op.child(0);
         GridSqlElement right = op.child(1);
 
-        return left instanceof GridSqlColumn &&
-            colName.equals(((GridSqlColumn) left).columnName()) &&
-            (right instanceof GridSqlConst || right instanceof GridSqlParameter);
+        if (!(left instanceof GridSqlColumn))
+            return false;
+
+        GridSqlColumn column = (GridSqlColumn)left;
+        if (!(column.column().getTable() instanceof GridH2Table))
+            return false;
+
+        GridH2RowDescriptor desc =((GridH2Table) column.column().getTable()).rowDescriptor();
+
+        return  (key ? desc.isKeyColumn(column.column().getColumnId()) :
+                       desc.isValueColumn(column.column().getColumnId())) &&
+                (right instanceof GridSqlConst || right instanceof GridSqlParameter);
     }
 
     /**
@@ -289,7 +304,7 @@ public final class DmlAstUtils {
      * @return Whether this condition is of form _key = ?
      */
     private static boolean isKeyEqualityCondition(GridSqlOperation op) {
-        return isEqualityCondition(op, IgniteH2Indexing.KEY_FIELD_NAME);
+        return isEqualityCondition(op, true);
     }
 
     /**
@@ -297,7 +312,7 @@ public final class DmlAstUtils {
      * @return Whether this condition is of form _val = ?
      */
     private static boolean isValueEqualityCondition(GridSqlOperation op) {
-        return isEqualityCondition(op, IgniteH2Indexing.VAL_FIELD_NAME);
+        return isEqualityCondition(op, false);
     }
 
 
@@ -329,17 +344,17 @@ public final class DmlAstUtils {
 
         Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
 
-        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
 
-        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName(), h2ValCol.getSQL());
+        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName());
         valCol.resultType(GridSqlType.fromColumn(h2ValCol));
 
         mapQry.addColumn(keyCol, true);
         mapQry.addColumn(valCol, true);
 
         for (GridSqlColumn c : update.cols()) {
-            String newColName = "_upd_" + c.columnName();
+            String newColName = Parser.quoteIdentifier("_upd_" + c.columnName());
             // We have to use aliases to cover cases when the user
             // wants to update _val field directly (if it's a literal)
             GridSqlAlias alias = new GridSqlAlias(newColName, elementOrDefault(update.set().get(c.columnName()), c), true);
@@ -382,7 +397,7 @@ public final class DmlAstUtils {
         try {
             dfltVal = dfltExpr != null ? dfltExpr.getValue(null) : null;
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             throw new IgniteSQLException("Failed to evaluate default value for a column " + col.columnName());
         }
 
@@ -397,8 +412,6 @@ public final class DmlAstUtils {
             dfltVal = ValueInt.get(0).convertTo(type);
         else if (dt.type == Value.TIMESTAMP)
             dfltVal = ValueTimestamp.fromMillis(U.currentTimeMillis());
-        else if (dt.type == Value.TIMESTAMP_UTC)
-            dfltVal = ValueTimestampUtc.fromMillis(U.currentTimeMillis());
         else if (dt.type == Value.TIME)
             dfltVal = ValueTime.fromNanos(0);
         else if (dt.type == Value.DATE)
@@ -424,7 +437,7 @@ public final class DmlAstUtils {
 
         sel.from(from);
 
-        GridSqlColumn col = new GridSqlColumn(null, from, "_IGNITE_ERR_KEYS", "TABLE._IGNITE_ERR_KEYS");
+        GridSqlColumn col = new GridSqlColumn(null, from, null, "TABLE", "_IGNITE_ERR_KEYS");
 
         sel.addColumn(col, true);
 
@@ -459,8 +472,8 @@ public final class DmlAstUtils {
         findParams(union.left(), params, target, paramIdxs);
         findParams(union.right(), params, target, paramIdxs);
 
-        findParams(qry.limit(), params, target, paramIdxs);
-        findParams(qry.offset(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.limit(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.offset(), params, target, paramIdxs);
 
         return target;
     }
@@ -477,16 +490,16 @@ public final class DmlAstUtils {
         if (params.length == 0)
             return target;
 
-        for (GridSqlElement el : qry.columns(false))
-            findParams(el, params, target, paramIdxs);
+        for (GridSqlAst el : qry.columns(false))
+            findParams((GridSqlElement)el, params, target, paramIdxs);
 
-        findParams(qry.from(), params, target, paramIdxs);
-        findParams(qry.where(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.from(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.where(), params, target, paramIdxs);
 
         // Don't search in GROUP BY and HAVING since they expected to be in select list.
 
-        findParams(qry.limit(), params, target, paramIdxs);
-        findParams(qry.offset(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.limit(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.offset(), params, target, paramIdxs);
 
         return target;
     }
@@ -524,10 +537,10 @@ public final class DmlAstUtils {
             paramIdxs.add(idx);
         }
         else if (el instanceof GridSqlSubquery)
-            findParams(((GridSqlSubquery)el).select(), params, target, paramIdxs);
+            findParams(((GridSqlSubquery)el).subquery(), params, target, paramIdxs);
         else
-            for (GridSqlElement child : el)
-                findParams(child, params, target, paramIdxs);
+            for (int i = 0; i < el.size(); i++)
+                findParams((GridSqlElement)el.child(i), params, target, paramIdxs);
     }
 
     /**
@@ -546,17 +559,17 @@ public final class DmlAstUtils {
 
         if (from instanceof GridSqlJoin) {
             // Left and right.
-            if (findTablesInFrom(from.child(0), c))
+            if (findTablesInFrom((GridSqlElement)from.child(0), c))
                 return true;
 
-            if (findTablesInFrom(from.child(1), c))
+            if (findTablesInFrom((GridSqlElement)from.child(1), c))
                 return true;
 
             // We don't process ON condition because it is not a joining part of from here.
             return false;
         }
         else if (from instanceof GridSqlAlias)
-            return findTablesInFrom(from.child(), c);
+            return findTablesInFrom((GridSqlElement)from.child(), c);
         else if (from instanceof GridSqlFunction)
             return false;
 

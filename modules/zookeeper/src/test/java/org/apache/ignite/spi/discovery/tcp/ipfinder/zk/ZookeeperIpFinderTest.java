@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -107,12 +108,12 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * Enhances the default configuration with the {#TcpDiscoveryZookeeperIpFinder}.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Ignite configuration.
      * @throws Exception If failed.
      */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration configuration = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)configuration.getDiscoverySpi();
         TcpDiscoveryZookeeperIpFinder zkIpFinder = new TcpDiscoveryZookeeperIpFinder();
@@ -120,10 +121,10 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // first node => configure with zkUrl; second node => configure with CuratorFramework; third and subsequent
         // shall be configured through system property
-        if (gridName.equals(getTestGridName(0)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
             zkIpFinder.setZkConnectionString(zkCluster.getConnectString());
 
-        else if (gridName.equals(getTestGridName(1))) {
+        else if (igniteInstanceName.equals(getTestIgniteInstanceName(1))) {
             zkIpFinder.setCurator(CuratorFrameworkFactory.newClient(zkCluster.getConnectString(),
                 new ExponentialBackoffRetry(100, 5)));
         }
@@ -367,6 +368,8 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
                     return 0 == zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size();
                 }
                 catch (Exception e) {
+                    U.error(log, "Failed to wait for zk condition", e);
+
                     return false;
                 }
             }

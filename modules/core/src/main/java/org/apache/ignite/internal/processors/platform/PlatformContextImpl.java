@@ -31,10 +31,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageF
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,6 +82,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -127,7 +127,6 @@ public class PlatformContextImpl implements PlatformContext {
         addEventTypes(evtTyps0, EventType.EVTS_CHECKPOINT);
         addEventTypes(evtTyps0, EventType.EVTS_DISCOVERY_ALL);
         addEventTypes(evtTyps0, EventType.EVTS_JOB_EXECUTION);
-        addEventTypes(evtTyps0, EventType.EVTS_SWAPSPACE);
         addEventTypes(evtTyps0, EventType.EVTS_TASK_EXECUTION);
 
         evtTyps = Collections.unmodifiableSet(evtTyps0);
@@ -354,21 +353,37 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
-        Collection<Metadata> metas = PlatformUtils.readCollection(reader,
-            new PlatformReaderClosure<Metadata>() {
-                @Override public Metadata read(BinaryRawReaderEx reader) {
+        Collection<BinaryMetadata> metas = PlatformUtils.readCollection(reader,
+            new PlatformReaderClosure<BinaryMetadata>() {
+                @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
                     int typeId = reader.readInt();
                     String typeName = reader.readString();
                     String affKey = reader.readString();
 
-                    Map<String, Integer> fields = PlatformUtils.readMap(reader,
-                        new PlatformReaderBiClosure<String, Integer>() {
-                            @Override public IgniteBiTuple<String, Integer> read(BinaryRawReaderEx reader) {
-                                return F.t(reader.readString(), reader.readInt());
+                    Map<String, BinaryFieldMetadata> fields = PlatformUtils.readLinkedMap(reader,
+                        new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
+                            @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                                String name = reader.readString();
+                                int typeId = reader.readInt();
+                                int fieldId = reader.readInt();
+
+                                return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                                        new BinaryFieldMetadata(typeId, fieldId));
                             }
                         });
 
+                    Map<String, Integer> enumMap = null;
+
                     boolean isEnum = reader.readBoolean();
+
+                    if (isEnum) {
+                        int size = reader.readInt();
+
+                        enumMap = new LinkedHashMap<>(size);
+
+                        for (int idx = 0; idx < size; idx++)
+                            enumMap.put(reader.readString(), reader.readInt());
+                    }
 
                     // Read schemas
                     int schemaCnt = reader.readInt();
@@ -390,16 +405,15 @@ public class PlatformContextImpl implements PlatformContext {
                         }
                     }
 
-                    return new Metadata(typeId, typeName, affKey, fields, isEnum, schemas);
+                    return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
                 }
             }
         );
 
         BinaryContext binCtx = cacheObjProc.binaryContext();
 
-        for (Metadata meta : metas)
-            binCtx.updateMetadata(meta.typeId, new BinaryMetadata(meta.typeId,
-                meta.typeName, meta.fields, meta.affKey, meta.schemas, meta.isEnum));
+        for (BinaryMetadata meta : metas)
+            binCtx.updateMetadata(meta.typeId(), meta);
     }
 
     /** {@inheritDoc} */
@@ -425,10 +439,12 @@ public class PlatformContextImpl implements PlatformContext {
         if (schema == null) {
             BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
 
-            for (BinarySchema typeSchema : meta.metadata().schemas()) {
-                if (schemaId == typeSchema.schemaId()) {
-                    schema = typeSchema;
-                    break;
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
                 }
             }
 
@@ -455,13 +471,35 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeBoolean(true);
 
             BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
-            Map<String, Integer> fields = meta0.fieldsMap();
+            Map<String, BinaryFieldMetadata> fields = meta0.fieldsMap();
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());
             writer.writeString(meta.affinityKeyFieldName());
-            writer.writeMap(fields);
-            writer.writeBoolean(meta.isEnum());
+
+            writer.writeInt(fields.size());
+
+            for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
+                writer.writeString(e.getKey());
+
+                writer.writeInt(e.getValue().typeId());
+                writer.writeInt(e.getValue().fieldId());
+            }
+
+            if (meta.isEnum()) {
+                writer.writeBoolean(true);
+
+                Map<String, Integer> enumMap = meta0.enumMap();
+
+                writer.writeInt(enumMap.size());
+
+                for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
+                    writer.writeString(e.getKey());
+                    writer.writeInt(e.getValue());
+                }
+            }
+            else
+                writer.writeBoolean(false);
         }
     }
 
@@ -510,7 +548,7 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeBoolean(event0.isNear());
             writeNode(writer, event0.eventNode());
             writer.writeObject(event0.key());
-            PlatformUtils.writeIgniteUuid(writer, event0.xid());
+            writer.writeObject(event0.xid());
             writer.writeObject(event0.newValue());
             writer.writeObject(event0.oldValue());
             writer.writeBoolean(event0.hasOldValue());
@@ -589,18 +627,10 @@ public class PlatformContextImpl implements PlatformContext {
 
             writer.writeString(event0.taskName());
             writer.writeString(event0.taskClassName());
-            PlatformUtils.writeIgniteUuid(writer, event0.taskSessionId());
-            PlatformUtils.writeIgniteUuid(writer, event0.jobId());
+            writer.writeObject(event0.taskSessionId());
+            writer.writeObject(event0.jobId());
             writeNode(writer, event0.taskNode());
             writer.writeUuid(event0.taskSubjectId());
-        }
-        else if (evt0 instanceof SwapSpaceEvent) {
-            writer.writeInt(9);
-            writeCommonEventData(writer, evt0);
-
-            SwapSpaceEvent event0 = (SwapSpaceEvent)evt0;
-
-            writer.writeString(event0.space());
         }
         else if (evt0 instanceof TaskEvent) {
             writer.writeInt(10);
@@ -610,7 +640,7 @@ public class PlatformContextImpl implements PlatformContext {
 
             writer.writeString(event0.taskName());
             writer.writeString(event0.taskClassName());
-            PlatformUtils.writeIgniteUuid(writer, event0.taskSessionId());
+            writer.writeObject(event0.taskSessionId());
             writer.writeBoolean(event0.internal());
             writer.writeUuid(event0.subjectId());
         }
@@ -625,7 +655,7 @@ public class PlatformContextImpl implements PlatformContext {
      * @param evt Event.
      */
     private void writeCommonEventData(BinaryRawWriterEx writer, EventAdapter evt) {
-        PlatformUtils.writeIgniteUuid(writer, evt.id());
+        writer.writeObject(evt.id());
         writer.writeLong(evt.localOrder());
         writeNode(writer, evt.node());
         writer.writeString(evt.message());
@@ -682,47 +712,5 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @Override public String platform() {
         return platform;
-    }
-
-    /**
-     * Metadata holder.
-     */
-    private static class Metadata {
-        /** Type ID. */
-        private final int typeId;
-
-        /** Type name. */
-        private final String typeName;
-
-        /** Affinity key. */
-        private final String affKey;
-
-        /** Fields map. */
-        private final Map<String, Integer> fields;
-
-        /** Enum flag. */
-        private final boolean isEnum;
-
-        /** Schemas. */
-        private final List<BinarySchema> schemas;
-
-        /**
-         * Constructor.
-         *  @param typeId Type ID.
-         * @param typeName Type name.
-         * @param affKey Affinity key.
-         * @param fields Fields.
-         * @param isEnum Enum flag.
-         * @param schemas Schemas.
-         */
-        private Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum,
-            List<BinarySchema> schemas) {
-            this.typeId = typeId;
-            this.typeName = typeName;
-            this.affKey = affKey;
-            this.fields = fields;
-            this.isEnum = isEnum;
-            this.schemas = schemas;
-        }
     }
 }

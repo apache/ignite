@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Globalization;
-
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Compute;
@@ -37,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     internal class DelegateTypeDescriptor
     {
-        /** Cached decriptors. */
+        /** Cached descriptors. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, DelegateTypeDescriptor> Descriptors 
             = new CopyOnWriteConcurrentDictionary<Type, DelegateTypeDescriptor>();
 

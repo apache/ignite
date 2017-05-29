@@ -71,8 +71,8 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     private PreparedStatement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -100,7 +100,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 

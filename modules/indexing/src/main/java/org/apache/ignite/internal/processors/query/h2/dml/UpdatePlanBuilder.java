@@ -26,12 +26,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
@@ -48,13 +47,13 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -76,7 +75,7 @@ public final class UpdatePlanBuilder {
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
         assert !prepared.isQuery();
 
-        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt);
@@ -132,7 +131,7 @@ public final class UpdatePlanBuilder {
             // not for updates, and hence will allow putting new pairs only.
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || !IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
+            if (keys.length != 1 || !desc.isKeyColumn(tbl.dataTable().getColumn(keys[0].columnName()).getColumnId()))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -172,12 +171,13 @@ public final class UpdatePlanBuilder {
 
             colTypes[i] = col.resultType().type();
 
-            if (KEY_FIELD_NAME.equals(colName)) {
+            int colId = col.column().getColumnId();
+            if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (VAL_FIELD_NAME.equals(colName)) {
+            if (desc.isValueColumn(colId)) {
                 valColIdx = i;
                 continue;
             }
@@ -192,8 +192,8 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
         if (stmt instanceof GridSqlMerge)
             return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
@@ -253,8 +253,6 @@ public final class UpdatePlanBuilder {
             GridSqlSelect sel;
 
             if (stmt instanceof GridSqlUpdate) {
-                boolean bin = desc.context().binaryMarshaller();
-
                 List<GridSqlColumn> updatedCols = ((GridSqlUpdate) stmt).cols();
 
                 int valColIdx = -1;
@@ -268,7 +266,8 @@ public final class UpdatePlanBuilder {
 
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
-                    if (VAL_FIELD_NAME.equals(colNames[i]))
+                    Column column = updatedCols.get(i).column();
+                    if (desc.isValueColumn(column.getColumnId()))
                         valColIdx = i;
                 }
 
@@ -282,20 +281,10 @@ public final class UpdatePlanBuilder {
                 if (hasNewVal)
                     valColIdx += 2;
 
-                int newValColIdx;
+                int newValColIdx = (hasNewVal ? valColIdx : 1);
 
-                if (!hasProps) // No distinct properties, only whole new value - let's take it
-                    newValColIdx = valColIdx;
-                else if (bin) // We update distinct columns in binary mode - let's choose correct index for the builder
-                    newValColIdx = (hasNewVal ? valColIdx : 1);
-                else // Distinct properties, non binary mode - let's instantiate.
-                    newValColIdx = -1;
-
-                // We want supplier to take present value only in case of binary mode as it will create
-                // whole new object as a result anyway, so we don't need to copy previous property values explicitly.
-                // Otherwise we always want it to instantiate new object whose properties we will later
-                // set to current values.
-                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps, false);
+                KeyValueSupplier newValSupplier = createSupplier(desc.context(), desc.type(), newValColIdx, hasProps,
+                    false, true);
 
                 sel = DmlAstUtils.selectForUpdate((GridSqlUpdate) stmt, errKeysPos);
 
@@ -319,28 +308,23 @@ public final class UpdatePlanBuilder {
      * @param hasProps Whether column list affects individual properties of key or value.
      * @param key Whether supplier should be created for key or for value.
      * @return Closure returning key or value.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private static KeyValueSupplier createSupplier(final GridCacheContext<?, ?> cctx, GridQueryTypeDescriptor desc,
-                                                   final int colIdx, boolean hasProps, final boolean key) throws IgniteCheckedException {
+        final int colIdx, boolean hasProps, final boolean key, boolean forUpdate) throws IgniteCheckedException {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
         final Class<?> cls = key ? U.firstNotNull(U.classForName(desc.keyTypeName(), null), desc.keyClass())
             : desc.valueClass();
 
-        boolean isSqlType = GridQueryProcessor.isSqlType(cls);
+        boolean isSqlType = QueryUtils.isSqlType(cls);
 
-        // If we don't need to construct anything from scratch, just return value from array.
-        if (isSqlType || !hasProps || !cctx.binaryMarshaller()) {
+        // If we don't need to construct anything from scratch, just return value from given list.
+        if (isSqlType || !hasProps) {
             if (colIdx != -1)
-                return new KeyValueSupplier() {
-                    /** {@inheritDoc} */
-                    @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                        return arg.get(colIdx);
-                    }
-                };
+                return new PlainValueSupplier(colIdx);
             else if (isSqlType)
                 // Non constructable keys and values (SQL types) must be present in the query explicitly.
                 throw new IgniteCheckedException((key ? "Key" : "Value") + " is missing from query");
@@ -352,7 +336,12 @@ public final class UpdatePlanBuilder {
                 return new KeyValueSupplier() {
                     /** {@inheritDoc} */
                     @Override public Object apply(List<?> arg) throws IgniteCheckedException {
-                        BinaryObject bin = cctx.grid().binary().toBinary(arg.get(colIdx));
+                        Object obj = arg.get(colIdx);
+
+                        if (obj == null)
+                            return null;
+
+                        BinaryObject bin = cctx.grid().binary().toBinary(obj);
 
                         return cctx.grid().binary().builder(bin);
                     }
@@ -369,6 +358,26 @@ public final class UpdatePlanBuilder {
             }
         }
         else {
+            if (colIdx != -1) {
+                if (forUpdate && colIdx == 1) {
+                    // It's the case when the old value has to be taken as the basis for the new one on UPDATE,
+                    // so we have to clone it. And on UPDATE we don't expect any key supplier.
+                    assert !key;
+
+                    return new KeyValueSupplier() {
+                        /** {@inheritDoc} */
+                        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+                            byte[] oldPropBytes = cctx.marshaller().marshal(arg.get(1));
+
+                            // colVal is another object now, we can mutate it
+                            return cctx.marshaller().unmarshal(oldPropBytes, U.resolveClassLoader(cctx.gridConfig()));
+                        }
+                    };
+                }
+                else // We either are not updating, or the new value is given explicitly, no cloning needed.
+                    return new PlainValueSupplier(colIdx);
+            }
+
             Constructor<?> ctor;
 
             try {
@@ -390,8 +399,12 @@ public final class UpdatePlanBuilder {
                             return ctor0.newInstance();
                         }
                         catch (Exception e) {
-                            throw new IgniteCheckedException("Failed to invoke default ctor for " +
-                                (key ? "key" : "value"), e);
+                            if (S.INCLUDE_SENSITIVE)
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            else
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + '.', e);
                         }
                     }
                 };
@@ -405,16 +418,18 @@ public final class UpdatePlanBuilder {
                             return GridUnsafe.allocateInstance(cls);
                         }
                         catch (InstantiationException e) {
-                            throw new IgniteCheckedException("Failed to invoke default ctor for " +
-                                (key ? "key" : "value"), e);
+                            if (S.INCLUDE_SENSITIVE)
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + " [type=" + typeName + ']', e);
+                            else
+                                throw new IgniteCheckedException("Failed to instantiate " +
+                                    (key ? "key" : "value") + '.', e);
                         }
                     }
                 };
             }
         }
     }
-
-
 
     /**
      * @param target Expression to extract the table from.
@@ -470,17 +485,41 @@ public final class UpdatePlanBuilder {
     private static boolean updateAffectsKeyColumns(GridH2Table gridTbl, Set<String> affectedColNames) {
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
-        Column[] cols = gridTbl.getColumns();
+        for (String colName : affectedColNames) {
+            int colId = gridTbl.getColumn(colName).getColumnId();
 
-        // Check "_key" column itself - always has index of 0.
-        if (affectedColNames.contains(cols[0].getName()))
-            return true;
-
-        // Start off from i = 2 to skip indices of 0 an 1 corresponding to key and value respectively.
-        for (int i = 2; i < cols.length; i++)
-            if (affectedColNames.contains(cols[i].getName()) && desc.isColumnKeyProperty(i - 2))
+            // Check "_key" column and alias key column
+            if (desc.isKeyColumn(colId))
                 return true;
 
+            // column ids 0..2 are _key, _val, _ver
+            if (colId >= DEFAULT_COLUMNS_COUNT) {
+                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                    return true;
+            }
+        }
         return false;
+    }
+
+    /**
+     * Simple supplier that just takes specified element of a given row.
+     */
+    private final static class PlainValueSupplier implements KeyValueSupplier {
+        /** Index of column to use. */
+        private final int colIdx;
+
+        /**
+         * Constructor.
+         *
+         * @param colIdx Column index.
+         */
+        private PlainValueSupplier(int colIdx) {
+            this.colIdx = colIdx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(List<?> arg) throws IgniteCheckedException {
+            return arg.get(colIdx);
+        }
     }
 }

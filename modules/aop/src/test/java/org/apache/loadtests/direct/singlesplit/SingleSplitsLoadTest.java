@@ -18,7 +18,6 @@
 package org.apache.loadtests.direct.singlesplit;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -83,7 +82,7 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
@@ -104,11 +103,8 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
                     try {
                         int levels = 20;
 
-                        IgniteCompute comp = ignite.compute().withAsync();
-
-                        comp.execute(new SingleSplitTestTask(), levels);
-
-                        ComputeTaskFuture<Integer> fut = comp.future();
+                        ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(
+                            new SingleSplitTestTask(), levels);
 
                         int res = fut.get();
 

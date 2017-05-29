@@ -17,23 +17,27 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.Externalizable;
+import java.util.Random;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Externalizable;
-import java.util.Random;
-import java.util.concurrent.Callable;
 
 /**
  * {@link IgfsEntryInfo} test case.
  */
 public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final Marshaller marshaller = new OptimizedMarshaller();
+    private final Marshaller marshaller;
+
+    /** Ctor. */
+    public IgfsFileInfoSelfTest() throws IgniteCheckedException {
+        marshaller = createStandaloneBinaryMarshaller();
+    }
+
 
     /**
      * Test node info serialization.
@@ -42,8 +46,6 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      */
     public void testSerialization() throws Exception {
         marshaller.setContext(new MarshallerContextTestImpl());
-
-        final int max = Integer.MAX_VALUE;
 
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();

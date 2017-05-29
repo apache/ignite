@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Hadoop classpath utilities.
@@ -69,7 +70,7 @@ public class HadoopClasspathUtils {
                 try {
                     res.add(file.toURI().toURL());
                 }
-                catch (MalformedURLException e) {
+                catch (MalformedURLException ignored) {
                     throw new IOException("Failed to convert file path to URL: " + file.getPath());
                 }
             }
@@ -258,7 +259,7 @@ public class HadoopClasspathUtils {
      * @return {@code True} if the given path denotes an existing directory.
      */
     public static boolean exists(String path) {
-        if (path == null)
+        if (F.isEmpty(path))
             return false;
 
         Path p = Paths.get(path);

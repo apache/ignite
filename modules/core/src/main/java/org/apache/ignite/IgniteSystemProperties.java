@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,8 +34,16 @@ import org.jetbrains.annotations.Nullable;
 public final class IgniteSystemProperties {
     /**
      * If this system property is present the Ignite will include grid name into verbose log.
+     *
+     * @deprecated Use {@link #IGNITE_LOG_INSTANCE_NAME}.
      */
+    @Deprecated
     public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
+
+    /**
+     * If this system property is present the Ignite will include instance name into verbose log.
+     */
+    public static final String IGNITE_LOG_INSTANCE_NAME = "IGNITE_LOG_INSTANCE_NAME";
 
     /**
      * This property is used internally to pass an exit code to loader when
@@ -64,6 +73,9 @@ public final class IgniteSystemProperties {
      * be allowed.
      */
     public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
+
+    /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
+    public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
 
     /**
      * If this system property is set to {@code false} - no checks for new versions will
@@ -131,6 +143,11 @@ public final class IgniteSystemProperties {
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
+
+    /**
+     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     */
+    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -274,6 +291,16 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
+     * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
+     * synchronization mode. If value is {@code 0} then limit is unbounded.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
+        "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
+
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
+
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
      * Makes sense only for {@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
@@ -296,6 +323,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
+     * Atomic cache deferred update timeout.
+     */
+    public static final String IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT = "IGNITE_ATOMIC_CACHE_QUEUE_RETRY_TIMEOUT";
+
+    /**
      * One phase commit deferred ack request timeout.
      */
     public static final String IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -311,6 +343,14 @@ public final class IgniteSystemProperties {
      * If this property set then debug console will be opened for H2 indexing SPI.
      */
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
+
+    /**
+     * This property allows to specify user defined port which H2 indexing SPI will use
+     * to start H2 debug console on. If this property is not set or set to 0, H2 debug
+     * console will use system-provided dynamic port.
+     * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
+     */
+    public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
      * If this property is set to {@code true} then shared memory space native debug will be enabled.
@@ -383,6 +423,12 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SQL_MERGE_TABLE_MAX_SIZE = "IGNITE_SQL_MERGE_TABLE_MAX_SIZE";
 
+    /**
+     * Property controlling number of SQL result rows that will be fetched into a merge table at once before
+     * applying binary search for the bounds.
+     */
+    public static final String IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE = "IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 
@@ -407,6 +453,9 @@ public final class IgniteSystemProperties {
 
     /** JDBC driver cursor remove delay. */
     public static final String IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY = "IGNITE_JDBC_DRIVER_CURSOR_RMV_DELAY";
+
+    /** Long-long offheap map load factor. */
+    public static final String IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR = "IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR";
 
     /** Maximum number of nested listener calls before listener notification becomes asynchronous. */
     public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
@@ -484,6 +533,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES = "IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES";
 
     /**
+     * When set to {@code true}, for consistent id will calculate by host name, without port, and you can use
+     * only one node for host in cluster.
+     */
+    public static final String IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT = "IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT";
+
+    /** */
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
+
+    /**
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
      * <p>
@@ -506,6 +564,44 @@ public final class IgniteSystemProperties {
      * Defaults to 0, meaning that threshold is disabled.
      */
     public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
+
+    /**
+     * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
+     * old behavior query processor with IndexingSpi.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
+    /**
+     * System property to specify maximum payload size in bytes for {@code H2TreeIndex}.
+     * <p>
+     * Defaults to {@code 0}, meaning that inline index store is disabled.
+     */
+    public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
+
+    /**
+     * Indexing discovery history size. Protects from duplicate messages maintaining the list of IDs of recently
+     * arrived discovery messages.
+     * <p>
+     * Defaults to {@code 1000}.
+     */
+    public static final String IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE = "IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE";
+
+    /** Cache start size for on-heap maps. Defaults to 4096. */
+    public static final String IGNITE_CACHE_START_SIZE = "IGNITE_CACHE_START_SIZE";
+
+    /** */
+    public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
+
+    /** Returns true for system properties only avoiding sending sensitive information. */
+    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
+        @Override public boolean apply(final Map.Entry<String, String> entry) {
+            final String key = entry.getKey();
+
+            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
+        }
+    };
 
     /**
      * Enforces singleton.
@@ -605,6 +701,34 @@ public final class IgniteSystemProperties {
 
     /**
      * Gets either system property or environment variable with given name.
+     * The result is transformed to {@code float} using {@code Float.parseFloat()} method.
+     *
+     * @param name Name of the system property or environment variable.
+     * @param dflt Default value
+     * @return Float value of the system property or environment variable.
+     *         Returns default value in case neither system property
+     *         nor environment variable with given name is found.
+     */
+    public static float getFloat(String name, float dflt) {
+        String s = getString(name);
+
+        if (s == null)
+            return dflt;
+
+        float res;
+
+        try {
+            res = Float.parseFloat(s);
+        }
+        catch (NumberFormatException ignore) {
+            res = dflt;
+        }
+
+        return res;
+    }
+
+    /**
+     * Gets either system property or environment variable with given name.
      * The result is transformed to {@code long} using {@code Long.parseLong()} method.
      *
      * @param name Name of the system property or environment variable.
@@ -679,5 +803,27 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
+    }
+
+    /**
+     * Does the same as {@link #snapshot()} but filters out
+     * possible sensitive user data.
+     *
+     * @return Snapshot of system properties.
+     */
+    @SuppressWarnings("unchecked")
+    public static Properties safeSnapshot() {
+        final Properties props = snapshot();
+
+        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            final Map.Entry entry = iter.next();
+
+            if (!PROPS_FILTER.apply(entry))
+                iter.remove();
+        }
+
+        return props;
     }
 }

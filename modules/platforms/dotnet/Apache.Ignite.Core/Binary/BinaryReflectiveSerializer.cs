@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Binary
         /** In use flag. */
         private bool _isInUse;
 
+        /** Force timestamp flag. */
+        private bool _forceTimestamp;
+
         /// <summary>
         /// Write binary object.
         /// </summary>
@@ -76,11 +79,31 @@ namespace Apache.Ignite.Core.Binary
             get { return _rawMode; }
             set
             {
-                if (_isInUse)
-                    throw new InvalidOperationException(typeof(BinaryReflectiveSerializer).Name +
-                        ".RawMode cannot be changed after first serialization.");
+                ThrowIfInUse();
 
                 _rawMode = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether all DateTime values should be written as Timestamp.
+        /// <para />
+        /// Timestamp format is required for values used in SQL and for interoperation with other platforms.
+        /// Only UTC values are supported in Timestamp format. Other values will cause an exception on write.
+        /// <para />
+        /// Normally serializer uses <see cref="IBinaryWriter.WriteObject{T}"/> for DateTime fields.
+        /// This attribute changes the behavior to <see cref="IBinaryWriter.WriteTimestamp"/>.
+        /// <para />
+        /// See also <see cref="TimestampAttribute"/>.
+        /// </summary>
+        public bool ForceTimestamp
+        {
+            get { return _forceTimestamp; }
+            set
+            {
+                ThrowIfInUse();
+
+                _forceTimestamp = value;
             }
         }
 
@@ -92,7 +115,20 @@ namespace Apache.Ignite.Core.Binary
         {
             _isInUse = true;
 
-            return new BinaryReflectiveSerializerInternal(_rawMode).Register(type, typeId, converter, idMapper);
+            return new BinaryReflectiveSerializerInternal(_rawMode)
+                .Register(type, typeId, converter, idMapper, _forceTimestamp);
+        }
+
+        /// <summary>
+        /// Throws an exception if this instance is already in use.
+        /// </summary>
+        private void ThrowIfInUse()
+        {
+            if (_isInUse)
+            {
+                throw new InvalidOperationException(typeof(BinaryReflectiveSerializer).Name +
+                                                    ".RawMode cannot be changed after first serialization.");
+            }
         }
     }
 }

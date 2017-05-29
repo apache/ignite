@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -42,7 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -59,14 +58,14 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     private static final int NODES = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
-        if (gridName.equals(getTestGridName(NODES - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODES - 1)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -245,11 +244,11 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         assertEquals(1L, ignite0.localNode().order());
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setNodeFilter(new TestFilterExcludeOldest());
 
-        assertNotNull(ignite0.getOrCreateCache(ccfg));
+        assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
         stopGrid(0);
 
@@ -257,11 +256,11 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         assertTrue(client.configuration().isClientMode());
 
-        assertNotNull(client.getOrCreateCache((String)null));
+        assertNotNull(client.getOrCreateCache(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
 
-        checkCache(null);
+        checkCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -272,21 +271,21 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         assertEquals(1L, ignite0.localNode().order());
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setNodeFilter(new TestFilterIncludeNode(3));
 
-        assertNotNull(ignite0.getOrCreateCache(ccfg));
+        assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
         stopGrid(0);
 
         IgniteEx ingite1 = grid(1);
 
-        assertNotNull(ingite1.getOrCreateCache((String)null));
+        assertNotNull(ingite1.getOrCreateCache(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
 
-        checkCache(null);
+        checkCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -295,11 +294,13 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     public void testOldestChanged3() throws Exception {
         IgniteEx ignite0 = grid(0);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        assertEquals(1L, ignite0.localNode().order());
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setNodeFilter(new TestFilterIncludeNode(3));
 
-        assertNotNull(ignite0.getOrCreateCache(ccfg));
+        assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
         stopGrid(0);
 
@@ -307,17 +308,17 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         assertTrue(client.configuration().isClientMode());
 
-        assertNotNull(client.getOrCreateCache((String)null));
+        assertNotNull(client.getOrCreateCache(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
 
-        checkCache(null);
+        checkCache(DEFAULT_CACHE_NAME);
     }
 
     /**
      * @param name Cache name.
      */
-    private void checkCache(@Nullable String name) {
+    private void checkCache(@NotNull String name) {
         int key = 0;
 
         for (Ignite ignite : G.allGrids()) {
@@ -342,7 +343,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         List<CacheConfiguration> res = new ArrayList<>();
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-1");
             ccfg.setAtomicityMode(ATOMIC);
@@ -353,7 +354,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         }
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-2");
             ccfg.setAtomicityMode(ATOMIC);
@@ -364,19 +365,18 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         }
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-3");
             ccfg.setAtomicityMode(ATOMIC);
             ccfg.setBackups(1);
-            ccfg.setAffinity(new FairAffinityFunction());
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-4");
             ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -387,7 +387,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         }
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-5");
             ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -398,12 +398,11 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         }
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-4");
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setBackups(1);
-            ccfg.setAffinity(new FairAffinityFunction());
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);

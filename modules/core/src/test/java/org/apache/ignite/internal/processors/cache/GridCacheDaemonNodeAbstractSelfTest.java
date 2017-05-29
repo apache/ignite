@@ -56,8 +56,8 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDaemon(daemon);
 
@@ -98,7 +98,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, i);
@@ -129,7 +129,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 30; i++) {
                 try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -174,14 +174,14 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             for (long i = 0; i < Integer.MAX_VALUE; i = (i << 1) + 1) {
                 // Call mapKeyToNode for normal node.
-                assertNotNull(g1.<Long>affinity(null).mapKeyToNode(i));
+                assertNotNull(g1.<Long>affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i));
 
                 // Call mapKeyToNode for daemon node.
                 final long i0 = i;
 
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        return g2.<Long>affinity(null).mapKeyToNode(i0);
+                        return g2.<Long>affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i0);
                     }
                 }, IgniteException.class, "Failed to find cache");
             }

@@ -44,7 +44,7 @@ public class VisorIgfsProfiler {
         if (entries.size() == 1)
             return entries.get(0); // No need to aggregate.
         else {
-            String path = entries.get(0).path();
+            String path = entries.get(0).getPath();
 
             Collections.sort(entries, VisorIgfsProfilerEntry.ENTRY_TIMESTAMP_COMPARATOR);
 
@@ -61,23 +61,23 @@ public class VisorIgfsProfiler {
 
             for (VisorIgfsProfilerEntry entry : entries) {
                 // Take last timestamp.
-                ts = entry.timestamp();
+                ts = entry.getTimestamp();
 
                 // Take last size.
-                size = entry.size();
+                size = entry.getSize();
 
                 // Take last mode.
-                mode = entry.mode();
+                mode = entry.getMode();
 
                 // Aggregate metrics.
-                bytesRead += entry.bytesRead();
-                readTime += entry.readTime();
-                userReadTime += entry.userReadTime();
-                bytesWritten += entry.bytesWritten();
-                writeTime += entry.writeTime();
-                userWriteTime += entry.userWriteTime();
+                bytesRead += entry.getBytesRead();
+                readTime += entry.getReadTime();
+                userReadTime += entry.getUserReadTime();
+                bytesWritten += entry.getBytesWritten();
+                writeTime += entry.getWriteTime();
+                userWriteTime += entry.getUserWriteTime();
 
-                counters.aggregate(entry.counters());
+                counters.aggregate(entry.getCounters());
             }
 
             return new VisorIgfsProfilerEntry(path, ts, mode, size, bytesRead, readTime, userReadTime,

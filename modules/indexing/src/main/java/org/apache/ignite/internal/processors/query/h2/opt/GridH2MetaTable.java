@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -39,6 +40,7 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 import org.h2.value.Value;
 import org.h2.value.ValueInt;
 import org.jsr166.ConcurrentHashMap8;
@@ -145,8 +147,8 @@ public class GridH2MetaTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return SYSTEM_TABLE;
+    @Override public TableType getTableType() {
+        return TableType.SYSTEM_TABLE;
     }
 
     /** {@inheritDoc} */
@@ -282,6 +284,11 @@ public class GridH2MetaTable extends TableBase {
                     throw new IllegalStateException("Index: " + idx);
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public long expireTime() {
+            return 0;
+        }
     }
 
     /**
@@ -333,7 +340,7 @@ public class GridH2MetaTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public double getCost(Session session, int[] masks, TableFilter[] filters,
-            int filter, SortOrder sortOrder) {
+            int filter, SortOrder sortOrder, HashSet<Column> cols) {
             if ((masks[ID] & IndexCondition.EQUALITY) == IndexCondition.EQUALITY)
                 return 1;
 

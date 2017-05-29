@@ -25,11 +25,4 @@ import org.apache.ignite.configuration.CacheConfiguration;
  * and extend existing functionality of cache.
  */
 public interface CachePluginConfiguration<K, V> extends Serializable {
-    /**
-     * Creates cache plugin provider.
-     *
-     * @return Cache plugin provider class.
-     * @param ctx Plugin context.
-     */
-    public CachePluginProvider createProvider(CachePluginContext ctx);
 }

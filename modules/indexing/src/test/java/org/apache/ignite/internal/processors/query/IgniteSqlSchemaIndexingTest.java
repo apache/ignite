@@ -67,12 +67,12 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
-        return new CacheConfiguration()
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
-            .setIndexedTypes(Integer.class, Fact.class);
+            .setIndexedTypes(idxTypes);
     }
 
     /** {@inheritDoc} */
@@ -93,8 +93,10 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true, Integer.class, Integer.class)
                     .setSqlSchema("InsensitiveCache");
+
                 final CacheConfiguration collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Integer.class)
                     .setSqlSchema("Insensitivecache");
+
                 IgniteConfiguration icfg = new IgniteConfiguration()
                     .setLocalHost("127.0.0.1")
                     .setCacheConfiguration(cfg, collisionCfg);
@@ -158,7 +160,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             .setSqlEscapeAll(true);
 
         final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true, Integer.class, Fact.class)
-            .setSqlSchema("\"SchemaName2\"")
+            .setSqlSchema("SchemaName2")
             .setSqlEscapeAll(true);
 
         escapeCheckSchemaName(ignite(0).createCache(cfg), log, cfg.getSqlSchema());

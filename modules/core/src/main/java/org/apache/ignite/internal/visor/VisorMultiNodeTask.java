@@ -69,9 +69,9 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
 
         start = U.currentTimeMillis();
 
-        debug = arg.debug();
+        debug = arg.isDebug();
 
-        taskArg = arg.argument();
+        taskArg = arg.getArgument();
 
         if (debug)
             logStart(ignite.log(), getClass(), start);
@@ -88,7 +88,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @throws IgniteException If mapping could not complete successfully.
      */
     protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
-        Collection<UUID> nodeIds = arg.nodes();
+        Collection<UUID> nodeIds = arg.getNodes();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
 

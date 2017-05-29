@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -78,11 +77,11 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
 
         IgniteConfiguration cfg = getConfig(type);
 
-        // Generate unique for this VM grid name.
-        String gridName = cfg.getGridName() + " (" + UUID.randomUUID() + ")";
+        // Generate unique for this VM Ignite instance name.
+        String igniteInstanceName = cfg.getIgniteInstanceName() + " (" + UUID.randomUUID() + ")";
 
-        // Update grid name (required to be unique).
-        cfg.setGridName(gridName);
+        // Update Ignite instance name (required to be unique).
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         // Start new node in current VM.
         Ignite g =  G.start(cfg);
@@ -159,14 +158,9 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     private static void changeTopology(Ignite parent, int add, int rmv, String type) {
         Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
-        IgniteCompute comp = parent.compute().withAsync();
-
         // Start nodes in parallel.
-        while (add-- > 0) {
-            comp.execute(ClientStartNodeTask.class, type);
-
-            tasks.add(comp.future());
-        }
+        while (add-- > 0)
+            tasks.add(parent.compute().executeAsync(ClientStartNodeTask.class, type));
 
         for (ComputeTaskFuture<?> task : tasks)
             task.get();
@@ -178,11 +172,11 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         // Wait for node stops.
         //U.sleep(1000);
 
-        Collection<String> gridNames = new ArrayList<>();
+        Collection<String> igniteInstanceNames = new ArrayList<>();
 
         for (Ignite g : G.allGrids())
-            gridNames.add(g.name());
+            igniteInstanceNames.add(g.name());
 
-        parent.log().info(">>> Available grids: " + gridNames);
+        parent.log().info(">>> Available Ignite instances: " + igniteInstanceNames);
     }
 }

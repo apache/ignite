@@ -60,7 +60,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
         super.setUp();
 
         stream = new DirectByteBufferStreamImplV2(new MessageFactory() {
-            @Nullable @Override public Message create(byte type) {
+            @Nullable @Override public Message create(short type) {
                 return null;
             }
         });

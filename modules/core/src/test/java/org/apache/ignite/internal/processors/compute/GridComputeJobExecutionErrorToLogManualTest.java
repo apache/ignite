@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.compute;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -39,8 +38,8 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -67,20 +66,17 @@ public class GridComputeJobExecutionErrorToLogManualTest extends GridCommonAbstr
     public void testRuntimeException() throws Exception {
         Ignite ignite = grid(0);
 
-        IgniteCompute async = ignite.compute().withAsync();
-        async.run(new IgniteRunnable() {
+        ignite.compute().runAsync(new IgniteRunnable() {
             @Override public void run() {
                 try {
                     Thread.sleep(500);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     // No-op.
                 }
             }
-        });
-
-        async.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
-            @Override public void apply(IgniteFuture<Object> future) {
+        }).listen(new IgniteInClosure<IgniteFuture<Void>>() {
+            @Override public void apply(IgniteFuture<Void> future) {
                 throw new RuntimeException();
             }
         });

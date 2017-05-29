@@ -50,8 +50,8 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     public static final int GRID_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -92,10 +92,10 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         Integer key = 0;
 
-        while (grid(idx).affinity(null).mapKeyToNode(key).id().equals(grid(0).localNode().id()))
+        while (grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(grid(0).localNode().id()))
             key++;
 
-        ClusterNode node = grid(idx).affinity(null).mapKeyToNode(key);
+        ClusterNode node = grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key);
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 

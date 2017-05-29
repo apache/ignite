@@ -101,8 +101,8 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -316,7 +316,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         while (keys.size() < 30) {
             String key = String.valueOf(numKey);
 
-            Affinity<Object> affinity = ignite(0).affinity(null);
+            Affinity<Object> affinity = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
             if (nodeType == NEAR_NODE) {
                 if (!affinity.isPrimaryOrBackup(grid(0).localNode(), key))

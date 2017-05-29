@@ -35,8 +35,7 @@ public class GridLog4j2InitializedTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @Override
-    protected void setUp() throws Exception {
+    @Override protected void setUp() throws Exception {
 
     }
 
@@ -45,7 +44,7 @@ public class GridLog4j2InitializedTest extends TestCase {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid" + 1);
+        cfg.setIgniteInstanceName("grid" + 1);
         cfg.setNodeId(new UUID(1, 1));
         // cfg.setIgniteHome("/home/glutters/Documenti/apache-ignite/ignite-master/ignite/");
 

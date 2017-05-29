@@ -18,13 +18,16 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-
 import org.apache.ignite.IgniteSystemProperties;
+import sun.misc.JavaNioAccess;
+import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -45,6 +48,12 @@ import sun.misc.Unsafe;
  * </p>
  */
 public abstract class GridUnsafe {
+    /** */
+    public static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
+
+    /** Direct byte buffer factory. */
+    private static final JavaNioAccess nioAccess = SharedSecrets.getJavaNioAccess();
+
     /** Unsafe. */
     private static final Unsafe UNSAFE = unsafe();
 
@@ -63,6 +72,9 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
+    public static final int BYTE_ARR_INT_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
     public static final long SHORT_ARR_OFF = UNSAFE.arrayBaseOffset(short[].class);
@@ -90,6 +102,40 @@ public abstract class GridUnsafe {
      */
     private GridUnsafe() {
         // No-op.
+    }
+
+    /**
+     * @param ptr Pointer to wrap.
+     * @param len Memory location length.
+     * @return Byte buffer wrapping the given memory.
+     */
+    public static ByteBuffer wrapPointer(long ptr, int len) {
+        ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
+
+        assert buf instanceof DirectBuffer;
+
+        buf.order(NATIVE_BYTE_ORDER);
+
+        return buf;
+    }
+
+    /**
+     * @param len Length.
+     * @return Allocated direct buffer.
+     */
+    public static ByteBuffer allocateBuffer(int len) {
+        long ptr = allocateMemory(len);
+
+        return wrapPointer(ptr, len);
+    }
+
+    /**
+     * @param buf Direct buffer allocated by {@link #allocateBuffer(int)}.
+     */
+    public static void freeBuffer(ByteBuffer buf) {
+        long ptr = bufferAddress(buf);
+
+        freeMemory(ptr);
     }
 
     /**
@@ -1081,6 +1127,17 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Copies memory.
+     *
+     * @param src Source.
+     * @param dst Dst.
+     * @param len Length.
+     */
+    public static void copyMemory(long src, long dst, long len) {
+        UNSAFE.copyMemory(src, dst, len);
+    }
+
+    /**
      * Sets all bytes in a given block of memory to a copy of another block.
      *
      * @param srcBase Source base.
@@ -1590,5 +1647,13 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * @param buf Direct buffer.
+     * @return Buffer memory address.
+     */
+    public static long bufferAddress(ByteBuffer buf) {
+        return ((DirectBuffer)buf).address();
     }
 }

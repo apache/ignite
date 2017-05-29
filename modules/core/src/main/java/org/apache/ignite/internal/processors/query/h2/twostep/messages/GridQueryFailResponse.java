@@ -113,13 +113,13 @@ public class GridQueryFailResponse implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeByte("failCode", failCode))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("failCode", failCode))
+                if (!writer.writeLong("qryReqId", qryReqId))
                     return false;
 
                 writer.incrementState();
@@ -146,7 +146,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                qryReqId = reader.readLong("qryReqId");
+                failCode = reader.readByte("failCode");
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +154,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                failCode = reader.readByte("failCode");
+                qryReqId = reader.readLong("qryReqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -167,7 +167,7 @@ public class GridQueryFailResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 107;
     }
 

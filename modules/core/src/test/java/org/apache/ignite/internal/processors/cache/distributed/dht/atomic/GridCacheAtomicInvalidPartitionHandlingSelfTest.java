@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -59,14 +58,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 
 /**
  * Test GridDhtInvalidPartitionException handling in ATOMIC cache during restarts.
@@ -79,18 +75,12 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /** Delay flag. */
     private static volatile boolean delay;
 
-    /** Write order. */
-    private CacheAtomicWriteOrderMode writeOrder;
-
     /** Write sync. */
     private CacheWriteSynchronizationMode writeSync;
 
-    /** Memory mode. */
-    private TestMemoryMode memMode;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
@@ -104,22 +94,19 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
         cfg.setCommunicationSpi(spi);
 
-        if (testClientNode() && getTestGridName(0).equals(gridName))
+        if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
-
-        GridTestUtils.setMemoryMode(cfg, ccfg, memMode, 100, 1024);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
 
         ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setWriteSynchronizationMode(writeSync);
 
         ccfg.setRebalanceMode(SYNC);
@@ -149,100 +136,31 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testClockFullSync() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncSwap() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncOffheapTiered() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncOffheapSwap() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockPrimarySync() throws Exception {
-        checkRestarts(CLOCK, PRIMARY_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullAsync() throws Exception {
-        checkRestarts(CLOCK, FULL_ASYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPrimaryFullSync() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPrimaryFullSyncSwap() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPrimaryFullSyncOffheapTiered() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPrimaryFullSyncOffheapSwap() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
+        checkRestarts(FULL_SYNC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryPrimarySync() throws Exception {
-        checkRestarts(PRIMARY, PRIMARY_SYNC, TestMemoryMode.HEAP);
+        checkRestarts(PRIMARY_SYNC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullAsync() throws Exception {
-        checkRestarts(PRIMARY, FULL_ASYNC, TestMemoryMode.HEAP);
+        checkRestarts(FULL_ASYNC);
     }
 
     /**
-     * @param writeOrder Write order to check.
      * @param writeSync Write synchronization mode to check.
-     * @param memMode Memory mode.
      * @throws Exception If failed.
      */
-    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder,
-        CacheWriteSynchronizationMode writeSync,
-        TestMemoryMode memMode)
+    private void checkRestarts(CacheWriteSynchronizationMode writeSync)
         throws Exception {
-        this.writeOrder = writeOrder;
         this.writeSync = writeSync;
-        this.memMode = memMode;
 
         final int gridCnt = 6;
 
@@ -253,13 +171,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         try {
             assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
 
-            final IgniteCache<Object, Object> cache = grid(0).cache(null);
+            final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             final int range = 100_000;
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
-            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 for (int i = 0; i < range; i++) {
@@ -272,7 +190,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 }
             }
 
-            final Affinity<Integer> aff = grid(0).affinity(null);
+            final Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
             boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -286,7 +204,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         for (int i = 0; i < gridCnt; i++) {
                             ClusterNode locNode = grid(i).localNode();
 
-                            IgniteCache<Object, Object> cache = grid(i).cache(null);
+                            IgniteCache<Object, Object> cache = grid(i).cache(DEFAULT_CACHE_NAME);
 
                             Object val = cache.localPeek(key);
 
@@ -380,21 +298,17 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 for (int i = 0; i < gridCnt; i++) {
                     ClusterNode locNode = grid(i).localNode();
 
-                    GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
+                    GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
                     GridCacheEntryEx entry = null;
 
-                    if (memMode == TestMemoryMode.HEAP)
-                        entry = c.peekEx(k);
-                    else {
-                        try {
-                            entry = c.entryEx(k);
+                    try {
+                        entry = c.entryEx(k);
 
-                            entry.unswap();
-                        }
-                        catch (GridDhtInvalidPartitionException e) {
-                            // Skip key.
-                        }
+                        entry.unswap();
+                    }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        // Skip key.
                     }
 
                     for (int r = 0; r < 10; r++) {
@@ -410,7 +324,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 if (val == null) {
                                     assertNull(ver);
 
-                                    val = CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false);
+                                    val = CU.value(entry.rawGet(), entry.context(), false);
                                     ver = entry.version();
                                     nodeId = locNode.id();
                                 }
@@ -419,7 +333,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
+                                        val, CU.value(entry.rawGet(), entry.context(), false));
 
                                     assertEquals("Failed to check version for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',

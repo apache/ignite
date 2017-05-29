@@ -23,7 +23,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +34,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -125,7 +125,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
 
     /** {@inheritDoc} */
     @Override protected <R> R buildObject(@Nullable String cacheName, String typeName, TypeKind typeKind,
-        JdbcTypeField[] flds, Collection<String> hashFlds, Map<String, Integer> loadColIdxs, ResultSet rs)
+        JdbcTypeField[] flds, Map<String, Integer> loadColIdxs, ResultSet rs)
         throws CacheLoaderException {
         switch (typeKind) {
             case BUILT_IN:
@@ -133,7 +133,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             case POJO:
                 return (R)buildPojoObject(cacheName, typeName, flds, loadColIdxs, rs);
             default:
-                return (R)buildBinaryObject(typeName, flds, hashFlds, loadColIdxs, rs);
+                return (R)buildBinaryObject(typeName, flds, loadColIdxs, rs);
         }
     }
 
@@ -149,15 +149,15 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      */
     private Object buildBuiltinObject(String typeName, JdbcTypeField[] fields, Map<String, Integer> loadColIdxs,
         ResultSet rs) throws CacheLoaderException {
-        try {
-            JdbcTypeField field = fields[0];
+        JdbcTypeField field = fields[0];
 
+        try {
             Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
 
             return transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
         }
         catch (SQLException e) {
-            throw new CacheLoaderException("Failed to read object of class: " + typeName, e);
+            throw new CacheLoaderException("Failed to read object: [cls=" + typeName + ", prop=" + field + "]", e);
         }
     }
 
@@ -210,12 +210,13 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     }
                     catch (Exception e) {
                         throw new CacheLoaderException("Failed to set property in POJO class [type=" + typeName +
-                            ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + dbName + "]", e);
+                            ", colIdx=" + colIdx + ", prop=" + fld +
+                            ", dbValCls=" + colVal.getClass().getName() + ", dbVal=" + colVal + "]", e);
                     }
                 }
                 catch (SQLException e) {
-                    throw new CacheLoaderException("Failed to read object property [type= " + typeName +
-                        ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + dbName + "]", e);
+                    throw new CacheLoaderException("Failed to read object property [type=" + typeName +
+                        ", colIdx=" + colIdx + ", prop=" + fld + "]", e);
                 }
             }
 
@@ -231,20 +232,14 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      *
      * @param typeName Type name.
      * @param fields Fields descriptors.
-     * @param hashFields Collection of fields to build hash for.
      * @param loadColIdxs Select query columns index.
      * @param rs ResultSet.
      * @return Constructed binary object.
      * @throws CacheLoaderException If failed to construct binary object.
      */
-    protected Object buildBinaryObject(String typeName, JdbcTypeField[] fields,
-        Collection<String> hashFields, Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException {
+    protected Object buildBinaryObject(String typeName, JdbcTypeField[] fields, Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException {
         try {
             BinaryObjectBuilder builder = ignite.binary().builder(typeName);
-
-            boolean calcHash = hashFields != null;
-
-            Collection<Object> hashValues = calcHash ? new ArrayList<>(hashFields.size()) : null;
 
             for (JdbcTypeField field : fields) {
                 Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
@@ -252,13 +247,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                 Object colVal = transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
 
                 builder.setField(field.getJavaFieldName(), colVal, (Class<Object>)field.getJavaFieldType());
-
-                if (calcHash)
-                    hashValues.add(colVal);
             }
-
-            if (calcHash)
-                builder.hashCode(hasher.hashCode(hashValues));
 
             return builder.build();
         }
@@ -333,6 +322,11 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
 
             pojosProps = newPojosProps;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheJdbcPojoStore.class, this);
     }
 
     /**

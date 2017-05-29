@@ -60,8 +60,8 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
@@ -81,7 +81,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         cfg.setBinaryConfiguration(bCfg);
 
-        if (gridName.equals(getTestGridName(gridCount() - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(gridCount() - 1)))
             cfg.setClientMode(true);
 
         cfg.setMarshaller(marsh);
@@ -103,8 +103,8 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         assertFalse(ignite1.configuration().isClientMode());
 
-        Affinity<Object> aff0 = ignite0.affinity(null);
-        Affinity<Object> aff1 = ignite1.affinity(null);
+        Affinity<Object> aff0 = ignite0.affinity(DEFAULT_CACHE_NAME);
+        Affinity<Object> aff1 = ignite1.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0 ; i < 100; i++) {
             TestObject1 obj1 = new TestObject1(i, i + 1);

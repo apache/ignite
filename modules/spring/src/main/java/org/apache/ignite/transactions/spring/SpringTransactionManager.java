@@ -109,7 +109,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * and results in {@link IllegalArgumentException}.
  *
  * If you already have Ignite node running within your application,
- * simply provide correct Grid name, like below (if there is no Grid
+ * simply provide correct Ignite instance name, like below (if there is no Grid
  * instance with such name, exception will be thrown):
  * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
@@ -118,9 +118,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *        xsi:schemaLocation="
  *            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
- *     &lt;-- Provide Grid name. --&gt;
+ *     &lt;-- Provide Ignite instance name. --&gt;
  *     &lt;bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="igniteInstanceName" value="myGrid"/&gt;
  *     &lt;/bean>
  *
  *     &lt;-- Use annotation-driven transaction configuration. --&gt;
@@ -133,7 +133,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *
  * If neither {@link #setConfigurationPath(String) configurationPath},
  * {@link #setConfiguration(IgniteConfiguration) configuration}, nor
- * {@link #setGridName(String) gridName} are provided, transaction manager
+ * {@link #setIgniteInstanceName(String) igniteInstanceName} are provided, transaction manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
  *
@@ -147,9 +147,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *        xsi:schemaLocation="
  *            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
- *     &lt;-- Provide Grid name. --&gt;
+ *     &lt;-- Provide Ignite instance name. --&gt;
  *     &lt;bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="igniteInstanceName" value="myGrid"/&gt;
  *         &lt;property name="transactionConcurrency" value="OPTIMISTIC"/&gt;
  *     &lt;/bean>
  *
@@ -168,12 +168,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
  *     &lt;bean id="optimisticTransactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="igniteInstanceName" value="myGrid"/&gt;
  *         &lt;property name="transactionConcurrency" value="OPTIMISTIC"/&gt;
  *     &lt;/bean>
  *
  *     &lt;bean id="pessimisticTransactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="igniteInstanceName" value="myGrid"/&gt;
  *         &lt;property name="transactionConcurrency" value="PESSIMISTIC"/&gt;
  *     &lt;/bean>
  *
@@ -219,9 +219,9 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
     private IgniteConfiguration cfg;
 
     /**
-     * Grid name.
+     * Ignite instance name.
      */
-    private String gridName;
+    private String igniteInstanceName;
 
     /**
      * Ignite instance.
@@ -302,23 +302,43 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * Gets grid name.
      *
      * @return Grid name.
+     * @deprecated Use {@link #getIgniteInstanceName()}.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return getIgniteInstanceName();
     }
 
     /**
      * Sets grid name.
      *
      * @param gridName Grid name.
+     * @deprecated Use {@link #setIgniteInstanceName(String)}.
      */
+    @Deprecated
     public void setGridName(String gridName) {
-        this.gridName = gridName;
+        setIgniteInstanceName(gridName);
     }
 
     /**
-     * {@inheritDoc}
+     * Gets Ignite instance name.
+     *
+     * @return Ignite instance name.
      */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
+    }
+
+    /**
+     * Sets Ignite instance name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     */
+    public void setIgniteInstanceName(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
+    }
+
+    /** {@inheritDoc} */
     @Override public void afterPropertiesSet() throws Exception {
         assert ignite == null;
 
@@ -326,7 +346,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                     "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                     "SpringCacheManager. If you already have a node running, omit both of them and set" +
-                    "'gridName' property.");
+                    "'igniteInstanceName' property.");
         }
 
         if (cfgPath != null)
@@ -334,7 +354,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         else if (cfg != null)
             ignite = IgniteSpring.start(cfg, springCtx);
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(igniteInstanceName);
 
         if (transactionConcurrency == null)
             transactionConcurrency = ignite.configuration().getTransactionConfiguration().getDefaultTxConcurrency();
@@ -342,9 +362,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         log = ignite.log();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected Object doGetTransaction() throws TransactionException {
         IgniteTransactionObject txObj = new IgniteTransactionObject();
 
@@ -354,9 +372,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         return txObj;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
         if (definition.getIsolationLevel() == TransactionDefinition.ISOLATION_READ_UNCOMMITTED)
             throw new InvalidIsolationLevelException("Ignite does not support READ_UNCOMMITTED isolation level.");
@@ -397,9 +413,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
         IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
         Transaction tx = txObj.getTransactionHolder().getTransaction();
@@ -415,9 +429,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
         IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
         Transaction tx = txObj.getTransactionHolder().getTransaction();
@@ -433,9 +445,20 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
+    @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
+
+        assert tx != null;
+
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Setting Ignite transaction rollback-only: " + tx);
+
+        tx.setRollbackOnly();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void doCleanupAfterCompletion(Object transaction) {
         IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
@@ -451,18 +474,14 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         txObj.getTransactionHolder().clear();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected boolean isExistingTransaction(Object transaction) throws TransactionException {
         IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
         return (txObj.getTransactionHolder() != null && txObj.getTransactionHolder().isTransactionActive());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public Object getResourceFactory() {
         return this.ignite;
     }

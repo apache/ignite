@@ -68,8 +68,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -83,7 +83,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
             client.remove();
         }
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }
@@ -219,7 +219,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
                         IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
 
-                        while (!syncFut.isDone())
+                        while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
                             checkGet(cache);
 
                         checkGet(cache);
@@ -269,7 +269,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(CacheMode cacheMode, int backups, boolean near) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
 

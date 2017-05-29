@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * ReadWriteLock with striping mechanics.
@@ -69,10 +68,15 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         int idx;
 
         if (Thread.currentThread() instanceof IgniteThread) {
-            idx = ((IgniteThread)Thread.currentThread()).groupIndex();
+            IgniteThread igniteThread = (IgniteThread)Thread.currentThread();
 
-            if (idx == IgniteThread.GRP_IDX_UNASSIGNED)
-                idx = IDX.get();
+            idx = igniteThread.compositeRwLockIndex();
+
+            if (idx == IgniteThread.GRP_IDX_UNASSIGNED) {
+                idx = IDX_GEN.incrementAndGet();
+
+                igniteThread.compositeRwLockIndex(idx);
+            }
         }
         else
             idx = IDX.get();
@@ -135,7 +139,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
          * Internal lock routine.
          *
          * @param canInterrupt Whether to acquire the lock interruptibly.
-         * @throws InterruptedException
+         * @throws InterruptedException If interrupted.
          */
         private void lock0(boolean canInterrupt) throws InterruptedException {
             int i = 0;
@@ -167,13 +171,41 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
 
         /** {@inheritDoc} */
         @Override public boolean tryLock() {
-            throw new UnsupportedOperationException();
+            int i = 0;
+
+            try {
+                for (; i < locks.length; i++) {
+                    if (!locks[i].writeLock().tryLock())
+                        break;
+                }
+            }
+            finally {
+                if (0 < i && i < locks.length)
+                    unlock0(i - 1);
+            }
+
+            return i == locks.length;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("NullableProblems")
         @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-            throw new UnsupportedOperationException();
+            int i = 0;
+
+            long end = unit.toNanos(time) + System.nanoTime();
+
+            try {
+                for (; i < locks.length && System.nanoTime() < end; i++) {
+                    if (!locks[i].writeLock().tryLock(time, unit))
+                        break;
+                }
+            }
+            finally {
+                if (0 < i && i < locks.length)
+                    unlock0(i - 1);
+            }
+
+            return i == locks.length;
         }
 
         /** {@inheritDoc} */

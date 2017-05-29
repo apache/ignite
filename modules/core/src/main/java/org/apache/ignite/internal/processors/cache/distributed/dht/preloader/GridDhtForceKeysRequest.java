@@ -245,7 +245,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 42;
     }
 

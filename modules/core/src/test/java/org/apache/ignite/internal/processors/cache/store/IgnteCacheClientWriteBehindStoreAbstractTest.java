@@ -49,13 +49,13 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteBehindEnabled(true);
         ccfg.setWriteBehindBatchSize(10);
 
-        if (getTestGridName(2).equals(gridName)) {
+        if (getTestIgniteInstanceName(2).equals(igniteInstanceName)) {
             ccfg.setCacheStoreFactory(null);
             ccfg.setWriteThrough(false);
             ccfg.setReadThrough(false);
@@ -66,10 +66,10 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(2).equals(gridName))
+        if (getTestIgniteInstanceName(2).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;
@@ -88,7 +88,7 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
 
         assertTrue(client.configuration().isClientMode());
 
-        IgniteCache<Integer, Integer> cache = client.cache(null);
+        IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
         assertNull(cache.getConfiguration(CacheConfiguration.class).getCacheStoreFactory());
 

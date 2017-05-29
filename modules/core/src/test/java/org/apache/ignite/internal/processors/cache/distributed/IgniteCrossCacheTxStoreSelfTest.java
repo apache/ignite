@@ -26,6 +26,7 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -50,8 +52,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     private static Map<String, CacheStore> secondStores = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cfg1 = cacheConfiguration("cacheA", new FirstStoreFactory());
         CacheConfiguration cfg2 = cacheConfiguration("cacheB", new FirstStoreFactory());
@@ -357,14 +359,17 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class FirstStoreFactory implements Factory<CacheStore> {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public CacheStore create() {
-            String gridName = startingGrid.get();
+            String igniteInstanceName = ignite.name();
 
-            CacheStore store = firstStores.get(gridName);
+            CacheStore store = firstStores.get(igniteInstanceName);
 
             if (store == null)
-                store = F.addIfAbsent(firstStores, gridName, new TestStore());
+                store = F.addIfAbsent(firstStores, igniteInstanceName, new TestStore());
 
             return store;
         }
@@ -374,14 +379,17 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      *
      */
     private static class SecondStoreFactory implements Factory<CacheStore> {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public CacheStore create() {
-            String gridName = startingGrid.get();
+            String igniteInstanceName = ignite.name();
 
-            CacheStore store = secondStores.get(gridName);
+            CacheStore store = secondStores.get(igniteInstanceName);
 
             if (store == null)
-                store = F.addIfAbsent(secondStores, gridName, new TestStore());
+                store = F.addIfAbsent(secondStores, igniteInstanceName, new TestStore());
 
             return store;
         }

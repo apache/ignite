@@ -19,7 +19,9 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
+import org.apache.ignite.internal.util.GridArraysSelfTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -37,6 +39,7 @@ import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridQueueSelfTest;
@@ -74,6 +77,8 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridByteArrayListSelfTest.class);
         suite.addTestSuite(GridMBeanSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
+        suite.addTestSuite(GridIntListSelfTest.class);
+        suite.addTestSuite(GridArraysSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
@@ -93,6 +98,9 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridNioFilterChainSelfTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridNioSslSelfTest.class, ignoredTests);
         suite.addTestSuite(GridNioDelimitedBufferSelfTest.class);
+
+        //dbx
+        suite.addTestSuite(PageIdUtilsSelfTest.class);
 
         return suite;
     }

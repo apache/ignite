@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -55,9 +57,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     private static final AtomicIntegerFieldUpdater<GridCompoundFuture> LSNR_CALLS_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
-    /** Sync object */
-    protected final Object sync = new Object();
-
     /** Possible values: null (no future), IgniteInternalFuture instance (single future) or List of futures  */
     private volatile Object futs;
 
@@ -88,7 +87,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(IgniteInternalFuture<T> fut) {
+    @Override public final void apply(IgniteInternalFuture<T> fut) {
         try {
             T t = fut.get();
 
@@ -118,7 +117,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
         catch (IgniteCheckedException e) {
             if (!ignoreFailure(e)) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                if (e instanceof NodeStoppingException) {
+                    IgniteLogger log = logger();
+
+                    if (log != null && log.isDebugEnabled())
+                        log.debug("Failed to execute compound future reducer, node stopped.");
+                }
+                else
+                    U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
@@ -137,7 +143,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             throw e;
         }
 
-        LSNR_CALLS_UPD.incrementAndGet(GridCompoundFuture.this);
+        LSNR_CALLS_UPD.incrementAndGet(this);
 
         checkComplete();
     }
@@ -160,16 +166,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Collection of futures.
      */
     @SuppressWarnings("unchecked")
-    public Collection<IgniteInternalFuture<T>> futures() {
-        synchronized (sync) {
-            if(futs == null)
-                return Collections.emptyList();
+    public synchronized final Collection<IgniteInternalFuture<T>> futures() {
+        if (futs == null)
+            return Collections.emptyList();
 
-            if (futs instanceof IgniteInternalFuture)
-                return Collections.singletonList((IgniteInternalFuture<T>)futs);
+        if (futs instanceof IgniteInternalFuture)
+            return Collections.singletonList((IgniteInternalFuture<T>)futs);
 
-            return new ArrayList<>((Collection<IgniteInternalFuture<T>>)futs);
-        }
+        return new ArrayList<>((Collection<IgniteInternalFuture<T>>)futs);
     }
 
     /**
@@ -190,10 +194,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return {@code True} if there are pending futures.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public boolean hasPending() {
-        synchronized (sync) {
+    protected final boolean hasPending() {
+        synchronized (this) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation and collection copy.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 IgniteInternalFuture<T> fut = future(i);
 
                 if (!fut.isDone())
@@ -210,10 +216,10 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @param fut Future to add.
      */
     @SuppressWarnings("unchecked")
-    public void add(IgniteInternalFuture<T> fut) {
+    public final void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
-        synchronized (sync) {
+        synchronized (this) {
             if (futs == null)
                 futs = fut;
             else if (futs instanceof IgniteInternalFuture) {
@@ -243,24 +249,22 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Clear futures.
      */
-    protected void clear() {
-        synchronized (sync) {
-            futs = null;
-        }
+    protected synchronized final void clear() {
+        futs = null;
     }
 
     /**
      * @return {@code True} if this future was initialized. Initialization happens when {@link #markInitialized()}
      * method is called on future.
      */
-    public boolean initialized() {
+    public final boolean initialized() {
         return initFlag == INIT_FLAG;
     }
 
     /**
      * Mark this future as initialized.
      */
-    public void markInitialized() {
+    public final void markInitialized() {
         if (FLAGS_UPD.compareAndSet(this, 0, INIT_FLAG))
             checkComplete();
     }
@@ -295,9 +299,9 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected IgniteInternalFuture<T> future(int idx) {
-        assert Thread.holdsLock(sync);
-        assert futs != null && idx >= 0 && idx < futuresCount();
+    protected final IgniteInternalFuture<T> future(int idx) {
+        assert Thread.holdsLock(this);
+        assert futs != null && idx >= 0 && idx < futuresCountNoLock();
 
         if (futs instanceof IgniteInternalFuture) {
             assert idx == 0;
@@ -312,16 +316,30 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Futures size.
      */
     @SuppressWarnings("unchecked")
-    protected int futuresCount() {
-        synchronized (sync) {
-            if (futs == null)
-                return 0;
+    protected final int futuresCountNoLock() {
+        assert Thread.holdsLock(this);
 
-            if (futs instanceof IgniteInternalFuture)
-                return 1;
+        if (futs == null)
+            return 0;
 
-            return ((Collection<IgniteInternalFuture>)futs).size();
-        }
+        if (futs instanceof IgniteInternalFuture)
+            return 1;
+
+        return ((Collection<IgniteInternalFuture>)futs).size();
+    }
+
+    /**
+     * @return Futures size.
+     */
+    private synchronized int futuresCount() {
+        return futuresCountNoLock();
+    }
+
+    /**
+     * @return {@code True} if has at least one future.
+     */
+    protected synchronized final boolean hasFutures() {
+        return futs != null;
     }
 
     /** {@inheritDoc} */

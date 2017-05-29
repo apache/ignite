@@ -27,22 +27,89 @@ import org.h2.util.StringUtils;
  */
 public class GridSqlSelect extends GridSqlQuery {
     /** */
-    private List<GridSqlElement> cols = new ArrayList<>();
+    public static final int FROM_CHILD = 2;
+
+    /** */
+    public static final int WHERE_CHILD = 3;
+
+    /** */
+    private static final int COLS_CHILD = 4;
+
+    /** */
+    private List<GridSqlAst> cols = new ArrayList<>();
 
     /** */
     private int visibleCols;
 
     /** */
+    private boolean distinct;
+
+    /** */
     private int[] grpCols;
 
     /** */
-    private GridSqlElement from;
+    private GridSqlAst from;
 
     /** */
-    private GridSqlElement where;
+    private GridSqlAst where;
 
     /** */
     private int havingCol = -1;
+
+    /**
+     * @param colIdx Column index as for {@link #column(int)}.
+     * @return Child index for {@link #child(int)}.
+     */
+    public static int childIndexForColumn(int colIdx) {
+        return colIdx + COLS_CHILD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return 4 + cols.size(); // + FROM + WHERE + OFFSET + LIMIT
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <E extends GridSqlAst> E child(int childIdx) {
+        if (childIdx < FROM_CHILD)
+            return super.child(childIdx);
+
+        switch (childIdx) {
+            case FROM_CHILD:
+                return maskNull(from, GridSqlPlaceholder.EMPTY);
+
+            case WHERE_CHILD:
+                return maskNull(where, GridSqlConst.TRUE);
+
+            default:
+                return (E)cols.get(childIdx - COLS_CHILD);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <E extends GridSqlAst> void child(int childIdx, E child) {
+        if (childIdx < FROM_CHILD) {
+            super.child(childIdx, child);
+
+            return;
+        }
+
+        switch (childIdx) {
+            case FROM_CHILD:
+                from = child;
+
+                break;
+
+            case WHERE_CHILD:
+                where = child;
+
+                break;
+
+            default:
+                cols.set(childIdx - COLS_CHILD, child);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public int visibleColumns() {
@@ -57,7 +124,7 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSqlElement column(int col) {
+    @Override protected GridSqlAst column(int col) {
         return cols.get(col);
     }
 
@@ -68,7 +135,7 @@ public class GridSqlSelect extends GridSqlQuery {
         if (distinct)
             buff.append(" DISTINCT");
 
-        for (GridSqlElement expression : columns(true)) {
+        for (GridSqlAst expression : columns(true)) {
             buff.appendExceptFirst(",");
             buff.append('\n');
             buff.append(expression.getSQL());
@@ -107,18 +174,18 @@ public class GridSqlSelect extends GridSqlQuery {
      * @return {@code True} if this simple SQL query like 'SELECT A, B, C from SOME_TABLE' without any conditions
      *      and expressions.
      */
-    public boolean simpleQuery() {
+    @Override public boolean simpleQuery() {
         boolean simple = !distinct &&
             from instanceof GridSqlTable &&
             where == null &&
             grpCols == null &&
             havingCol < 0 &&
             sort.isEmpty() &&
-            limit == null &&
-            offset == null;
+            limit() == null &&
+            offset() == null;
 
         if (simple) {
-            for (GridSqlElement expression : columns(true)) {
+            for (GridSqlAst expression : columns(true)) {
                 if (expression instanceof GridSqlAlias)
                     expression = expression.child();
 
@@ -134,7 +201,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param buff Statement builder.
      * @param exp Alias expression.
      */
-    private static void addAlias(StatementBuilder buff, GridSqlElement exp) {
+    private static void addAlias(StatementBuilder buff, GridSqlAst exp) {
         exp = GridSqlAlias.unwrap(exp);
 
         buff.append(StringUtils.unEnclose(exp.getSQL()));
@@ -144,7 +211,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param visibleOnly If only visible expressions needed.
      * @return Select clause expressions.
      */
-    public List<GridSqlElement> columns(boolean visibleOnly) {
+    public List<GridSqlAst> columns(boolean visibleOnly) {
         assert visibleCols <= cols.size();
 
         return visibleOnly && visibleCols != cols.size() ?
@@ -167,7 +234,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param visible Expression is visible in select phrase.
      * @return {@code this}.
      */
-    public GridSqlSelect addColumn(GridSqlElement expression, boolean visible) {
+    public GridSqlSelect addColumn(GridSqlAst expression, boolean visible) {
         if (expression == null)
             throw new NullPointerException();
 
@@ -188,7 +255,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param expression Expression.
      * @return {@code this}.
      */
-    public GridSqlSelect setColumn(int colIdx, GridSqlElement expression) {
+    public GridSqlSelect setColumn(int colIdx, GridSqlAst expression) {
         if (expression == null)
             throw new NullPointerException();
 
@@ -217,7 +284,7 @@ public class GridSqlSelect extends GridSqlQuery {
     /**
      * @return Tables.
      */
-    public GridSqlElement from() {
+    public GridSqlAst from() {
         return from;
     }
 
@@ -225,16 +292,30 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param from From element.
      * @return {@code this}.
      */
-    public GridSqlSelect from(GridSqlElement from) {
+    public GridSqlSelect from(GridSqlAst from) {
         this.from = from;
 
         return this;
     }
 
     /**
+     * @return Distinct.
+     */
+    public boolean distinct() {
+        return distinct;
+    }
+
+    /**
+     * @param distinct New distinct.
+     */
+    public void distinct(boolean distinct) {
+        this.distinct = distinct;
+    }
+
+    /**
      * @return Where.
      */
-    public GridSqlElement where() {
+    public GridSqlAst where() {
         return where;
     }
 
@@ -242,7 +323,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param where New where.
      * @return {@code this}.
      */
-    public GridSqlSelect where(GridSqlElement where) {
+    public GridSqlSelect where(GridSqlAst where) {
         this.where = where;
 
         return this;
@@ -252,11 +333,11 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param cond Adds new WHERE condition using AND operator.
      * @return {@code this}.
      */
-    public GridSqlSelect whereAnd(GridSqlElement cond) {
+    public GridSqlSelect whereAnd(GridSqlAst cond) {
         if (cond == null)
             throw new NullPointerException();
 
-        GridSqlElement old = where();
+        GridSqlAst old = where();
 
         where(old == null ? cond : new GridSqlOperation(GridSqlOperationType.AND, old, cond));
 
@@ -266,7 +347,7 @@ public class GridSqlSelect extends GridSqlQuery {
     /**
      * @return Having.
      */
-    public GridSqlElement having() {
+    public GridSqlAst having() {
         return havingCol >= 0 ? column(havingCol) : null;
     }
 

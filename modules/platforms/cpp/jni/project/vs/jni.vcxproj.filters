@@ -16,9 +16,6 @@
     <ClInclude Include="..\..\include\ignite\jni\java.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\jni\utils.h">
       <Filter>Code</Filter>
     </ClInclude>

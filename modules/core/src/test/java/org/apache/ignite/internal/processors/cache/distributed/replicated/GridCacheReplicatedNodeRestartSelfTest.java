@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractNodeRestartSelfTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -42,8 +41,6 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
         cc.setCacheMode(REPLICATED);
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
-
-        cc.setStartSize(20);
 
         cc.setRebalanceMode(SYNC);
 

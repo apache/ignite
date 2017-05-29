@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -115,15 +115,6 @@ public interface GridCacheEntryEx {
      * @return Value.
      */
     public CacheObject rawGet();
-
-    /**
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
-     *        temporary object can used for filter evaluation or transform closure execution and
-     *        should not be returned to user.
-     * @return Value (unmarshalled if needed).
-     * @throws IgniteCheckedException If failed.
-     */
-    public CacheObject rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if has value or value bytes.
@@ -220,24 +211,14 @@ public interface GridCacheEntryEx {
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
-     * @param swap Swap flag.
      * @param obsoleteVer Version for eviction.
      * @param filter Optional filter.
+     * @param evictOffheap Evict offheap value flag.
      * @return {@code True} if entry could be evicted.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
-
-    /**
-     * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
-     * returns batch swap entry if entry was marked obsolete.
-     *
-     * @param obsoleteVer Version to mark obsolete with.
-     * @return Swap entry if this entry was marked obsolete, {@code null} if entry was not evicted.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer) throws IgniteCheckedException;
+    public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap) throws IgniteCheckedException;
 
     /**
      * This method should be called each time entry is marked obsolete
@@ -277,13 +258,9 @@ public interface GridCacheEntryEx {
     /**
      * @param ver Cache version to set. The version will be used on updating entry instead of generated one.
      * @param tx Ongoing transaction (possibly null).
-     * @param readSwap Flag indicating whether to check swap memory.
      * @param readThrough Flag indicating whether to read through.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
-     *        temporary object can used for filter evaluation or transform closure execution and
-     *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
@@ -295,11 +272,9 @@ public interface GridCacheEntryEx {
      */
     @Nullable public CacheObject innerGet(@Nullable GridCacheVersion ver,
         @Nullable IgniteInternalTx tx,
-        boolean readSwap,
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
-        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
@@ -310,8 +285,6 @@ public interface GridCacheEntryEx {
     /**
      * @param ver Cache version to set. The version will be used on updating entry instead of generated one.
      * @param tx Cache transaction.
-     * @param readSwap Flag indicating whether to check swap memory.
-     * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
      * @param subjId Subject ID initiated this read.
@@ -319,23 +292,49 @@ public interface GridCacheEntryEx {
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
+     * @param readerArgs Reader will be added if not null.
      * @return Cached value and entry version.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+    public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
-        boolean readSwap,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         UUID subjId,
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary)
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param updateMetrics If {@code true} then metrics should be updated.
+     * @param evt Flag to signal event notification.
+     * @param subjId Subject ID initiated this read.
+     * @param taskName Task name.
+     * @param expiryPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
+     * @param readerArgs Reader will be added if not null.
+     * @throws IgniteCheckedException If loading value failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     * @return Cached value, entry version and flag indicating if entry was reserved.
+     */
+    public EntryGetResult innerGetAndReserveForLoad(boolean updateMetrics,
+        boolean evt,
+        UUID subjId,
+        String taskName,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param ver Expected entry version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void clearReserveForLoad(GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * Reloads entry from underlying storage.
@@ -344,8 +343,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public CacheObject innerReload() throws IgniteCheckedException,
-        GridCacheEntryRemovedException;
+    @Nullable public CacheObject innerReload() throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.
@@ -639,7 +637,6 @@ public interface GridCacheEntryEx {
      *
      * @param heap Read from heap flag.
      * @param offheap Read from offheap flag.
-     * @param swap Read from swap flag.
      * @param topVer Topology version.
      * @param plc Expiry policy if TTL should be updated.
      * @return Value.
@@ -648,7 +645,6 @@ public interface GridCacheEntryEx {
      */
     @Nullable public CacheObject peek(boolean heap,
         boolean offheap,
-        boolean swap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
@@ -656,18 +652,12 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param heap Read from heap flag.
-     * @param offheap Read from offheap flag.
-     * @param swap Read from swap flag.
      * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(boolean heap,
-        boolean offheap,
-        boolean swap,
-        @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
@@ -695,19 +685,6 @@ public interface GridCacheEntryEx {
         boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
-     * Sets new value if current version is <tt>0</tt> using swap entry data.
-     * Note that this method does not update cache index.
-     *
-     * @param key Key.
-     * @param unswapped Swap entry to set entry state from.
-     * @return {@code True} if  initial value was set.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
-
-    /**
      * Create versioned entry for this cache entry.
      *
      * @param keepBinary Keep binary flag.
@@ -725,13 +702,17 @@ public interface GridCacheEntryEx {
      * @param val New value.
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
-     * @return Non null version if value was set.
+     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
+     * @param readerArgs Reader will be added if not null.
+     * @return Current version and value.
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public GridCacheVersion versionedValue(CacheObject val,
+    public EntryGetResult versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
-        @Nullable GridCacheVersion newVer)
+        @Nullable GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -898,6 +879,17 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
+     * Update index from within entry lock, passing key, value, and expiration time to provided closure.
+     *
+     * @param clo Closure to apply to key, value, and expiration time.
+     * @param link Link.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+        GridCacheEntryRemovedException;
+
+    /**
      * @return Expire time, without accounting for transactions or removals.
      */
     public long rawExpireTime();
@@ -938,22 +930,6 @@ public interface GridCacheEntryEx {
      * @param ttl Time to live.
      */
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
-
-    /**
-     * Called when entry should be evicted from offheap.
-     * <p>
-     * If swap is enabled tries to do offheap -> swap eviction, otherwise evicted value should
-     * be passed to query manager.
-     *
-     * @param entry Serialized swap entry.
-     * @param evictVer Version when entry was selected for eviction.
-     * @param obsoleteVer Obsolete version.
-     * @throws IgniteCheckedException If failed.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     * @return {@code True} if entry was obsoleted and written to swap.
-     */
-    public boolean onOffheapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @return Value.

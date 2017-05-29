@@ -170,7 +170,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param evt Discovery event.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onDiscoveryEvent(DiscoveryEvent evt) {
+    void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
         int type = evt.type();
@@ -183,8 +183,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED) {
                     if (mini.node().id().equals(evt.eventNode().id())) {
-                        mini.onResult(new ClusterTopologyCheckedException("Node left grid (will retry): " +
-                            evt.eventNode().id()));
+                        mini.onResult();
 
                         break;
                     }
@@ -194,11 +193,10 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /**
-     * @param nodeId Node left callback.
      * @param res Response.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onResult(UUID nodeId, GridDhtForceKeysResponse res) {
+    public void onResult(GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
@@ -288,7 +286,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyCheckedException)
-                            fut.onResult((ClusterTopologyCheckedException)e);
+                            fut.onResult();
                         else if (!cctx.kernalContext().isStopping())
                             fut.onResult(e);
                     }
@@ -355,8 +353,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         if (locPart == null)
             invalidParts.add(part);
-        // If rebalance is disabled, then local partition is always MOVING.
-        else if (locPart.state() == MOVING) {
+        else if (!cctx.rebalanceEnabled() || locPart.state() == MOVING) {
             Collections.sort(owners, CU.nodeComparator(false));
 
             // Load from youngest owner.
@@ -385,7 +382,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             mappedKeys.add(key);
 
             if (log.isDebugEnabled())
-                log.debug("Will rebalance key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
+                log.debug("Will rebalance key from node [cacheName=" + cctx.name() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
         else if (locPart.state() != OWNING)
@@ -417,9 +414,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Mini-future ID. */
         private IgniteUuid miniId = IgniteUuid.randomUuid();
 
@@ -488,9 +482,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         }
 
         /**
-         * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult() {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
@@ -541,7 +534,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
-                if (locPart != null && locPart.state() == MOVING && locPart.reserve()) {
+                if (locPart != null && (!cctx.rebalanceEnabled() || locPart.state() == MOVING) && locPart.reserve()) {
                     GridCacheEntryEx entry = cctx.dht().entryEx(info.key());
 
                     try {
@@ -569,7 +562,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     catch (GridCacheEntryRemovedException ignore) {
                         if (log.isDebugEnabled())
                             log.debug("Trying to rebalance removed entry (will ignore) [cacheName=" +
-                                cctx.namex() + ", entry=" + entry + ']');
+                                cctx.name() + ", entry=" + entry + ']');
                     }
                     finally {
                         locPart.release();

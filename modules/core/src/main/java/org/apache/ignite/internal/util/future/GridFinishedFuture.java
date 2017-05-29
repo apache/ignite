@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.future;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -41,9 +42,6 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
 
     /** Complete value. */
     private final Object res;
-
-    /** Start time. */
-    private final long startTime = U.currentTimeMillis();
 
     /**
      * Creates finished future with complete value.
@@ -80,16 +78,6 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
     @SuppressWarnings("unchecked")
     @Override public T result() {
         return resFlag == RES ? (T)res : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long startTime() {
-        return startTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long duration() {
-        return 0;
     }
 
     /** {@inheritDoc} */
@@ -149,6 +137,29 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
         catch (RuntimeException | Error e) {
             return new GridFinishedFuture<>(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T1> IgniteInternalFuture<T1> chain(final IgniteClosure<? super IgniteInternalFuture<T>, T1> doneCb, Executor exec) {
+        final GridFutureAdapter<T1> fut = new GridFutureAdapter<>();
+
+        exec.execute(new Runnable() {
+            @Override public void run() {
+                try {
+                    fut.onDone(doneCb.apply(GridFinishedFuture.this));
+                }
+                catch (GridClosureException e) {
+                    fut.onDone(e.unwrap());
+                }
+                catch (RuntimeException | Error e) {
+                    fut.onDone(e);
+
+                    throw e;
+                }
+            }
+        });
+
+        return fut;
     }
 
     /** {@inheritDoc} */

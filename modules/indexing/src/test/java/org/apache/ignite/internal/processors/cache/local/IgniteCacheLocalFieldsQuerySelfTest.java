@@ -46,9 +46,7 @@ public class IgniteCacheLocalFieldsQuerySelfTest extends IgniteCacheAbstractFiel
      * @throws Exception If failed.
      */
     public void testInformationSchema() throws Exception {
-        IgniteEx ignite = grid(0);
-
-        ignite.cache(CACHE).query(
+        jcache(String.class, String.class).query(
             new SqlFieldsQuery("SELECT VALUE FROM INFORMATION_SCHEMA.SETTINGS").setLocal(true)).getAll();
     }
 }

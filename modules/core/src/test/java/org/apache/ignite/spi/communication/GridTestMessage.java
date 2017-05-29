@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridTestMessage implements Message {
     /** */
-    public static final byte DIRECT_TYPE = (byte)200;
+    public static final short DIRECT_TYPE = 200;
 
     /** */
     private UUID srcNodeId;
@@ -181,7 +181,7 @@ public class GridTestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return DIRECT_TYPE;
     }
 

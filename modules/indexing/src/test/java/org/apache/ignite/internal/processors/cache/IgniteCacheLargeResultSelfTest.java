@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -39,8 +40,8 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -53,7 +54,6 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setBackups(1);
         cacheCfg.setIndexedTypes(
             Integer.class, Integer.class
@@ -78,12 +78,18 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
      */
     public void testLargeResult() {
         // Fill cache.
-        IgniteCache<Integer,Integer> c = ignite(0).cache(null);
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            streamer.perNodeBufferSize(20000);
 
-        for (int i = 0; i < 50_000; i++)  // default max merge table size is 10000
-            c.put(i, i);
+            for (int i = 0; i < 50_000; i++)  // default max merge table size is 10000
+                streamer.addData(i, i);
 
-        try(QueryCursor<List<?>> res = c.query(
+            streamer.flush();
+        }
+
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+        try(QueryCursor<List<?>> res = cache.query(
             new SqlFieldsQuery("select _val from Integer where _key between ? and ?")
                 .setArgs(10_000, 40_000))){
 

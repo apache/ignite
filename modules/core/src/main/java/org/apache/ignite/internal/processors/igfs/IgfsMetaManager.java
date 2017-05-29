@@ -17,6 +17,25 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -38,6 +57,7 @@ import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteEx;
@@ -46,7 +66,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
@@ -74,26 +94,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_RENAMED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_RENAMED;
@@ -154,6 +154,9 @@ public class IgfsMetaManager extends IgfsManager {
     /** Compute facade for client tasks. */
     private IgniteCompute cliCompute;
 
+    /** Compute facade for client tasks. */
+    private String metaCacheName;
+
     /**
      * Constructor.
      *
@@ -188,16 +191,18 @@ public class IgfsMetaManager extends IgfsManager {
         sampling = new IgfsSamplingKey(cfg.getName());
 
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
+
+        metaCacheName = cfg.getMetaCacheConfiguration().getName();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantCast")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
+        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(metaCacheName);
 
         assert metaCache != null;
 
-        igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader().startFuture()
+        igfsCtx.kernalContext().cache().internalCache(metaCacheName).preloader().startFuture()
             .listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> f) {
                     metaCacheStartLatch.countDown();
@@ -266,7 +271,7 @@ public class IgfsMetaManager extends IgfsManager {
     <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
+                clientCompute().affinityCall(metaCacheName, affinityFileId, task) :
                 clientCompute().call(task);
         }
         catch (ClusterTopologyException e) {
@@ -287,7 +292,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (cliCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
 
-            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
+            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), metaCacheName);
 
             cliCompute0 = ignite.compute(cluster);
 
@@ -423,7 +428,8 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Get IDs.
         if (client) {
-            List<IgniteUuid> ids = runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path));
+            List<IgniteUuid> ids = runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(),
+                IgfsUserContext.currentUser(), path));
 
             return new IgfsPathIds(path, parts, ids.toArray(new IgniteUuid[ids.size()]));
         }
@@ -597,7 +603,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 assert fileId != null;
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     // Lock file ID for this transaction.
                     IgfsEntryInfo oldInfo = info(fileId);
 
@@ -667,8 +673,8 @@ public class IgfsMetaManager extends IgfsManager {
         throws IgniteCheckedException {
 
         if(client) {
-            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
-                updateSpace, space, affRange));
+            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), IgfsUserContext.currentUser(), fileId,
+                lockId, modificationTime, updateSpace, space, affRange));
 
             return;
         }
@@ -998,7 +1004,7 @@ public class IgfsMetaManager extends IgfsManager {
                 srcPathIds.addExistingIds(lockIds, relaxed);
                 dstPathIds.addExistingIds(lockIds, relaxed);
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     // Obtain the locks.
                     final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
@@ -1138,7 +1144,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 IgniteUuid trashId = IgfsUtils.randomTrashId();
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     // NB: We may lock root because its id is less than any other id:
                     final IgfsEntryInfo rootInfo = lockIds(IgfsUtils.ROOT_ID, trashId).get(IgfsUtils.ROOT_ID);
 
@@ -1261,7 +1267,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     allIds.add(trashId);
 
-                    try (IgniteInternalTx tx = startTx()) {
+                    try (GridNearTxLocal tx = startTx()) {
                         // Lock participants.
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(allIds);
 
@@ -1338,7 +1344,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert listing != null;
                 validTxState(false);
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     Collection<IgniteUuid> res = new HashSet<>();
 
                     // Obtain all necessary locks in one hop.
@@ -1424,7 +1430,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     Map<IgniteUuid, IgfsEntryInfo> infos = lockIds(parentId, id);
 
                     IgfsEntryInfo victim = infos.get(id);
@@ -1510,7 +1516,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     IgfsEntryInfo info = updatePropertiesNonTx(fileId, props);
 
                     tx.commit();
@@ -1544,7 +1550,7 @@ public class IgfsMetaManager extends IgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Reserve file space: " + fileId);
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     // Lock file ID for this transaction.
                     IgfsEntryInfo oldInfo = info(fileId);
 
@@ -1589,7 +1595,7 @@ public class IgfsMetaManager extends IgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Update file info [fileId=" + fileId + ", proc=" + proc + ']');
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     // Lock file ID for this transaction.
                     IgfsEntryInfo oldInfo = info(fileId);
 
@@ -1651,7 +1657,7 @@ public class IgfsMetaManager extends IgfsManager {
                     pathIds.addSurrogateIds(lockIds);
 
                     // Start TX.
-                    try (IgniteInternalTx tx = startTx()) {
+                    try (GridNearTxLocal tx = startTx()) {
                         final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
                         if (!pathIds.verifyIntegrity(lockInfos, relaxed))
@@ -1702,7 +1708,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                try (IgniteInternalTx tx = startTx()) {
+                try (GridNearTxLocal tx = startTx()) {
                     Object prev = val != null ? metaCache.getAndPut(sampling, val) : metaCache.getAndRemove(sampling);
 
                     tx.commit();
@@ -2073,7 +2079,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
+        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(),
+            IgfsUserContext.currentUser(), path)) : info(fileId(path));
     }
 
     /**
@@ -2084,7 +2091,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public List<IgniteUuid> idsForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
+        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(),
+            IgfsUserContext.currentUser(), path)) : fileIds(path);
     }
 
     /**
@@ -2593,7 +2601,7 @@ public class IgfsMetaManager extends IgfsManager {
                 pathIds.add(idsForPath(path));
 
             // Start pessimistic.
-            try (IgniteInternalTx tx = startTx()) {
+            try (GridNearTxLocal tx = startTx()) {
                 // Lock the very first existing parents and possibly the leaf as well.
                 Map<IgfsPath, IgfsPath> pathToParent = new HashMap<>();
 
@@ -2779,7 +2787,7 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @return Transaction.
      */
-    private IgniteInternalTx startTx() {
+    private GridNearTxLocal startTx() {
         return metaCache.txStartEx(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
 
@@ -2792,8 +2800,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @param secondaryFs Secondary file system.
      * @throws IgniteCheckedException If failed.
      */
-    public void updateTimes(IgfsPath path, long accessTime, long modificationTime,
-        IgfsSecondaryFileSystemV2 secondaryFs) throws IgniteCheckedException {
+    public void updateTimes(IgfsPath path, long modificationTime, long accessTime,
+        IgfsSecondaryFileSystem secondaryFs) throws IgniteCheckedException {
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
@@ -2808,7 +2816,7 @@ public class IgfsMetaManager extends IgfsManager {
                     pathIds.addExistingIds(lockIds, relaxed);
 
                     // Start TX.
-                    try (IgniteInternalTx tx = startTx()) {
+                    try (GridNearTxLocal tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
                         if (secondaryFs != null && isRetryForSecondary(pathIds, lockInfos))
@@ -2821,7 +2829,7 @@ public class IgfsMetaManager extends IgfsManager {
                         if (pathIds.allExists()) {
                             // All files are in place. Update both primary and secondary file systems.
                             if (secondaryFs != null)
-                                secondaryFs.setTimes(path, accessTime, modificationTime);
+                                secondaryFs.setTimes(path, modificationTime, accessTime);
 
                             IgniteUuid targetId = pathIds.lastExistingId();
                             IgfsEntryInfo targetInfo = lockInfos.get(targetId);
@@ -2838,7 +2846,7 @@ public class IgfsMetaManager extends IgfsManager {
                         else {
                             // Propagate call to the secondary FS, as we might haven't cache this part yet.
                             if (secondaryFs != null) {
-                                secondaryFs.setTimes(path, accessTime, modificationTime);
+                                secondaryFs.setTimes(path, modificationTime, accessTime);
 
                                 return;
                             }
@@ -2918,7 +2926,7 @@ public class IgfsMetaManager extends IgfsManager {
                     pathIds.addSurrogateIds(lockIds);
 
                     // Start TX.
-                    try (IgniteInternalTx tx = startTx()) {
+                    try (GridNearTxLocal tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
                         if (!pathIds.verifyIntegrity(lockInfos, relaxed))
@@ -3025,7 +3033,7 @@ public class IgfsMetaManager extends IgfsManager {
                     }
 
                     // Start TX.
-                    try (IgniteInternalTx tx = startTx()) {
+                    try (GridNearTxLocal tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
                         if (secondaryCtx != null && isRetryForSecondary(pathIds, lockInfos))

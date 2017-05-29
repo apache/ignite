@@ -40,19 +40,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestQueryEntityConfiguration()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration(CacheName, new QueryEntity(typeof (int), typeof (QueryPerson))
                     {
+                        TableName = "CustomTableName",
                         Fields = new[]
                         {
                             new QueryField("Name", typeof (string)),
-                            new QueryField("Age", typeof (int))
+                            new QueryField("Age", typeof (int)),
+                            new QueryField("Birthday", typeof(DateTime)),
                         },
                         Indexes = new[]
                         {
@@ -71,9 +71,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache[1] = new QueryPerson("Arnold", 10);
                 cache[2] = new QueryPerson("John", 20);
 
-                using (var cursor = cache.Query(new SqlQuery(typeof (QueryPerson), "age > 10")))
+                using (var cursor = cache.Query(new SqlQuery(typeof (QueryPerson), "age > ? and birthday < ?",
+                    10, DateTime.UtcNow)))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
+                }
+
+                using (var cursor = cache.QueryFields(new SqlFieldsQuery(
+                    "select _key from CustomTableName where age > ? and birthday < ?", 10, DateTime.UtcNow)))
+                {
+                    Assert.AreEqual(2, cursor.GetAll().Single()[0]);
                 }
 
                 using (var cursor = cache.Query(new TextQuery(typeof (QueryPerson), "Ar*")))
@@ -123,12 +130,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestAttributeConfigurationQuery()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
-                    typeof (AttributeQueryPerson), typeof (AttributeQueryAddress)),
+                    typeof (AttributeQueryPerson), typeof (AttributeQueryAddress))
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -145,7 +150,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache[2] = new AttributeQueryPerson("John", 20);
 
-                using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson), "age > ?", 10)))
+                using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson),
+                    "age > ? and age < ? and birthday > ? and birthday < ?", 10, 30,
+                    DateTime.UtcNow.AddYears(-21), DateTime.UtcNow.AddYears(-19))))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
                 }
@@ -192,6 +199,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Name = name;
                 Age = age;
                 Salary = age;
+                Birthday = DateTime.UtcNow.AddYears(-age);
             }
 
             /// <summary>
@@ -226,6 +234,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             /// </summary>
             [QuerySqlField]
             public decimal? Salary { get; set; }
+
+            /// <summary>
+            /// Gets or sets the birthday.
+            /// </summary>
+            [QuerySqlField]
+            public DateTime Birthday { get; set; }
         }
 
         /// <summary>

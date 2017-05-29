@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,7 +64,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param ctx Plugin context.
      * @param registry Extension registry.
      */
-    public void initExtensions(PluginContext ctx, ExtensionRegistry registry);
+    public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException;
 
     /**
      * Creates Ignite component.
@@ -73,6 +74,14 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
+
+    /**
+     * Creates cache plugin provider.
+     *
+     * @return Cache plugin provider class.
+     * @param ctx Plugin context.
+     */
+    public CachePluginProvider createCacheProvider(CachePluginContext ctx);
 
     /**
      * Starts grid component.

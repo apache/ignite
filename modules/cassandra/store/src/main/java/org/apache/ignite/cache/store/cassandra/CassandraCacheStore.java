@@ -20,18 +20,20 @@ package org.apache.ignite.cache.store.cassandra;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
@@ -46,11 +48,14 @@ import org.apache.ignite.cache.store.cassandra.session.LoadCacheCustomQueryWorke
 import org.apache.ignite.cache.store.cassandra.session.transaction.DeleteMutation;
 import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
 import org.apache.ignite.cache.store.cassandra.session.transaction.WriteMutation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.thread.IgniteThreadFactory;
 
 /**
  * Implementation of {@link CacheStore} backed by Cassandra database.
@@ -61,6 +66,14 @@ import org.apache.ignite.resources.LoggerResource;
 public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     /** Buffer to store mutations performed withing transaction. */
     private static final String TRANSACTION_BUFFER = "CASSANDRA_TRANSACTION_BUFFER";
+
+    /** Thread name. */
+    private static final String CACHE_LOADER_THREAD_NAME = "cassandra-cache-loader";
+
+    /** Auto-injected ignite instance. */
+    @SuppressWarnings("unused")
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Auto-injected store session. */
     @SuppressWarnings("unused")
@@ -107,15 +120,24 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
         Collection<Future<?>> futs = new ArrayList<>(args.length);
 
         try {
-            pool = Executors.newFixedThreadPool(maxPoolSize);
+            pool = Executors.newFixedThreadPool(maxPoolSize, new IgniteThreadFactory(ignite.name(), CACHE_LOADER_THREAD_NAME));
 
             CassandraSession ses = getCassandraSession();
 
             for (Object obj : args) {
-                if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
-                    continue;
+                LoadCacheCustomQueryWorker<K, V> task = null;
 
-                futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo)));
+                if (obj instanceof Statement)
+                    task = new LoadCacheCustomQueryWorker<>(ses, (Statement)obj, controller, log, clo);
+                else if (obj instanceof String) {
+                    String qry = ((String)obj).trim();
+
+                    if (qry.toLowerCase().startsWith("select"))
+                        task = new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo);
+                }
+
+                if (task != null)
+                    futs.add(pool.submit(task));
             }
 
             for (Future<?> fut : futs)
@@ -515,5 +537,10 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
     private List<Mutation> mutations() {
         //noinspection unchecked
         return (List<Mutation>)storeSes.properties().get(TRANSACTION_BUFFER);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CassandraCacheStore.class, this);
     }
 }

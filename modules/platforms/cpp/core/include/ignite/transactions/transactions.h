@@ -108,8 +108,8 @@ namespace ignite
              * @param isolation Isolation.
              * @return New transaction instance.
              */
-            Transaction TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation);
+            Transaction TxStart(TransactionConcurrency::Type concurrency,
+                TransactionIsolation::Type isolation);
 
             /**
              * Starts new transaction with the specified concurrency and
@@ -120,8 +120,8 @@ namespace ignite
              * @param err Error.
              * @return New transaction instance.
              */
-            Transaction TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation, IgniteError& err);
+            Transaction TxStart(TransactionConcurrency::Type concurrency,
+                TransactionIsolation::Type isolation, IgniteError& err);
 
             /**
              * Starts transaction with specified isolation, concurrency,
@@ -134,8 +134,8 @@ namespace ignite
              *     (may be approximate).
              * @return New transaction instance.
              */
-            Transaction TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation, int64_t timeout,
+            Transaction TxStart(TransactionConcurrency::Type concurrency,
+                TransactionIsolation::Type isolation, int64_t timeout,
                 int32_t txSize);
 
             /**
@@ -149,8 +149,8 @@ namespace ignite
              * @param err Error.
              * @return New transaction instance.
              */
-            Transaction TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation, int64_t timeout,
+            Transaction TxStart(TransactionConcurrency::Type concurrency,
+                TransactionIsolation::Type isolation, int64_t timeout,
                 int32_t txSize, IgniteError& err);
 
             /**

@@ -40,12 +40,12 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
 
@@ -70,7 +70,7 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
 
         final int KEYS = 10_000;
 
-        IgniteCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
@@ -84,7 +84,7 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
             GridTestUtils.runMultiThreaded(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     try(Ignite ignite = startGrid(idx.getAndIncrement())) {
-                        IgniteCache<Object, Object> cache = ignite.cache(null);
+                        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         for (int i = 0; i < KEYS; i++)
                             assertNotNull(cache.localPeek(i));

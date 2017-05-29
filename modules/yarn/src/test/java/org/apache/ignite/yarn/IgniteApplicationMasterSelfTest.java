@@ -272,6 +272,19 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testContainerEnvironment() throws Exception {
+        props.memoryPerNode(1001);
+        props.memoryOverHeadPerNode(2002);
+
+        // Properties are used to initialize AM container environment
+        Map<String, String> result = props.toEnvs();
+        assertEquals(1001, (int) Double.parseDouble(result.get(ClusterProperties.IGNITE_MEMORY_PER_NODE)));
+        assertEquals(2002, (int) Double.parseDouble(result.get(ClusterProperties.IGNITE_MEMORY_OVERHEAD_PER_NODE)));
+    }
+
+    /**
      * @param host Host.
      * @param cpu Cpu count.
      * @param mem Memory.

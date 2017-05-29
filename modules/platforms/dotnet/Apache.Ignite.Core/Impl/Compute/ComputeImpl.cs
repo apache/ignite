@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             var future = holder.Future;
 
-            future.SetTarget(futTarget);
+            future.SetTarget(new Listenable(futTarget, Marshaller));
 
             return future;
         }
@@ -445,6 +445,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="action">Job to execute.</param>
         public Future<object> AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(action, "action");
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, object, object>(),
@@ -463,6 +464,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         public Future<TJobRes> AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(clo, "clo");
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
@@ -550,7 +552,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                             writeAction(writer);
                     });
 
-                    holder.Future.SetTarget(futTarget);
+                    holder.Future.SetTarget(new Listenable(futTarget, Marshaller));
                 }
                 catch (Exception e)
                 {

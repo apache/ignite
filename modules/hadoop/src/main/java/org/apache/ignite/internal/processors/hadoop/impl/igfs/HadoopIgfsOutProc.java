@@ -28,11 +28,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.igfs.common.IgfsControlResponse;
 import org.apache.ignite.internal.igfs.common.IgfsHandshakeRequest;
 import org.apache.ignite.internal.igfs.common.IgfsMessage;
+import org.apache.ignite.internal.igfs.common.IgfsModeResolverRequest;
 import org.apache.ignite.internal.igfs.common.IgfsPathControlRequest;
 import org.apache.ignite.internal.igfs.common.IgfsStatusRequest;
 import org.apache.ignite.internal.igfs.common.IgfsStreamControlRequest;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsInputStreamDescriptor;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -52,6 +54,7 @@ import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.INFO;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_FILES;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.LIST_PATHS;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MAKE_DIRECTORIES;
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MODE_RESOLVER;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_APPEND;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_CREATE;
 import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.OPEN_READ;
@@ -103,8 +106,9 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
-    /** Grid name. */
-    private final String grid;
+    /** Expected result is {@code IgfsFile}. */
+    private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
+        IgfsModeResolver> MODE_RESOLVER_RES = createClosure();
 
     /** IGFS name. */
     private final String igfs;
@@ -126,26 +130,26 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      *
      * @param host Host.
      * @param port Port.
-     * @param grid Grid name.
      * @param igfs IGFS name.
      * @param log Client logger.
+     * @param user User name.
      * @throws IOException If failed.
      */
-    public HadoopIgfsOutProc(String host, int port, String grid, String igfs, Log log, String user) throws IOException {
-        this(host, port, grid, igfs, false, log, user);
+    public HadoopIgfsOutProc(String host, int port, String igfs, Log log, String user) throws IOException {
+        this(host, port, igfs, false, log, user);
     }
 
     /**
      * Constructor for shmem endpoint.
      *
      * @param port Port.
-     * @param grid Grid name.
      * @param igfs IGFS name.
      * @param log Client logger.
+     * @param user User name.
      * @throws IOException If failed.
      */
-    public HadoopIgfsOutProc(int port, String grid, String igfs, Log log, String user) throws IOException {
-        this(null, port, grid, igfs, true, log, user);
+    public HadoopIgfsOutProc(int port, String igfs, Log log, String user) throws IOException {
+        this(null, port, igfs, true, log, user);
     }
 
     /**
@@ -153,20 +157,19 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      *
      * @param host Host.
      * @param port Port.
-     * @param grid Grid name.
      * @param igfs IGFS name.
      * @param shmem Shared memory flag.
      * @param log Client logger.
+     * @param user User name.
      * @throws IOException If failed.
      */
-    private HadoopIgfsOutProc(String host, int port, String grid, String igfs, boolean shmem, Log log, String user)
+    private HadoopIgfsOutProc(String host, int port, String igfs, boolean shmem, Log log, String user)
         throws IOException {
         assert host != null && !shmem || host == null && shmem :
             "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
 
         String endpoint = host != null ? host + ":" + port : "shmem:" + port;
 
-        this.grid = grid;
         this.igfs = igfs;
         this.log = log;
         this.userName = IgfsUtils.fixUserName(user);
@@ -180,7 +183,6 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException {
         final IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
-        req.gridName(grid);
         req.igfsName(igfs);
         req.logDirectory(logDir);
 
@@ -223,7 +225,8 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
+    @Override public Boolean setTimes(IgfsPath path, long accessTime, long modificationTime)
+        throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(SET_TIMES);
@@ -521,5 +524,10 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     /** {@inheritDoc} */
     @Override public String user() {
         return userName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgfsModeResolver modeResolver() throws IgniteCheckedException {
+        return io.send(new IgfsModeResolverRequest()).chain(MODE_RESOLVER_RES).get();
     }
 }

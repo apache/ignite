@@ -16,7 +16,7 @@
  */
 
 #ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
+#   define BOOST_TEST_DYN_LINK
 #endif
 
 #include <boost/test/unit_test.hpp>
@@ -155,6 +155,24 @@ BOOST_AUTO_TEST_CASE(TestDate)
     BOOST_REQUIRE(readVal == writeVal);
 }
 
+BOOST_AUTO_TEST_CASE(TestTime)
+{
+    Time writeVal = Time(42);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writeSes(&out, NULL);
+    writeSes.WriteTopObject<Time>(writeVal);
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    Time readVal = reader.ReadTopObject<Time>();
+
+    BOOST_REQUIRE(readVal == writeVal);
+}
+
 BOOST_AUTO_TEST_CASE(TestTimestamp)
 {
     Timestamp writeVal = Timestamp(77);
@@ -170,7 +188,9 @@ BOOST_AUTO_TEST_CASE(TestTimestamp)
     BinaryReaderImpl reader(&in);
     Timestamp readVal = reader.ReadTopObject<Timestamp>();
 
-    BOOST_REQUIRE(readVal == writeVal);
+    BOOST_CHECK(readVal == writeVal);
+    BOOST_CHECK_EQUAL(readVal.GetMilliseconds(), writeVal.GetMilliseconds());
+    BOOST_CHECK_EQUAL(readVal.GetSecondFraction(), writeVal.GetSecondFraction());
 }
 
 BOOST_AUTO_TEST_CASE(TestString)

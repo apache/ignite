@@ -36,8 +36,8 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -62,7 +62,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            final  CacheConfiguration ccfg = new CacheConfiguration();
+            final  CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ignite.createCache(ccfg);
 
@@ -72,7 +72,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     barrier.await();
 
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }

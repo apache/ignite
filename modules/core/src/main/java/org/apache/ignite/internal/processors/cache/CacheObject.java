@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -42,14 +43,46 @@ public interface CacheObject extends Message {
      * @param cpy If {@code true} need to copy value.
      * @return Value.
      */
-    @Nullable public <T> T value(CacheObjectContext ctx, boolean cpy);
+    @Nullable public <T> T value(CacheObjectValueContext ctx, boolean cpy);
 
     /**
      * @param ctx Context.
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
+    public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache object context.
+     * @return Size required to store this value object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param buf Buffer to write value to.
+     * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
+     *      buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean putValue(ByteBuffer buf) throws IgniteCheckedException;
+
+    /**
+     * @param addr Address tp write value to.
+     * @return Number of bytes written.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int putValue(long addr) throws IgniteCheckedException;
+
+    /**
+     * @param buf Buffer to write value to.
+     * @param off Offset in source binary data.
+     * @param len Length of the data to write.
+     * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
+     *      buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean putValue(ByteBuffer buf, int off, int len) throws IgniteCheckedException;
 
     /**
      * @return Object type.
@@ -78,11 +111,11 @@ public interface CacheObject extends Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+    public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException;
+    public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException;
 }

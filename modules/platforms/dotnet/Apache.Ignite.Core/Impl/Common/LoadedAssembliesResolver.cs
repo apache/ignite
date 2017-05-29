@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Resolves loaded assemblies by name.
     /// </summary>
     // ReSharper disable once ClassNeverInstantiated.Global
-    public class LoadedAssembliesResolver
+    internal class LoadedAssembliesResolver
     {
         // The lazy singleton instance.
         private static readonly Lazy<LoadedAssembliesResolver> LazyInstance = new Lazy<LoadedAssembliesResolver>();

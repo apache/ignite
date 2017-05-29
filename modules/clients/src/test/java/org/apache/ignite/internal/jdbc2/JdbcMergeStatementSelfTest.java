@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.apache.ignite.cache.CachePeekMode;
 
 /**
  * MERGE statement test.
@@ -56,6 +58,55 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        try (Statement selStmt = conn.createStatement()) {
+            assertTrue(selStmt.execute(SQL_SELECT));
+
+            ResultSet rs = selStmt.getResultSet();
+
+            assert rs != null;
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+
+                switch (id) {
+                    case 1:
+                        assertEquals("p1", rs.getString("_key"));
+                        assertEquals("John", rs.getString("firstName"));
+                        assertEquals("White", rs.getString("lastName"));
+                        assertEquals(25, rs.getInt("age"));
+                        break;
+
+                    case 2:
+                        assertEquals("p2", rs.getString("_key"));
+                        assertEquals("Joe", rs.getString("firstName"));
+                        assertEquals("Black", rs.getString("lastName"));
+                        assertEquals(35, rs.getInt("age"));
+                        break;
+
+                    case 3:
+                        assertEquals("p3", rs.getString("_key"));
+                        assertEquals("Mike", rs.getString("firstName"));
+                        assertEquals("Green", rs.getString("lastName"));
+                        assertEquals(40, rs.getInt("age"));
+                        break;
+
+                    case 4:
+                        assertEquals("p4", rs.getString("_key"));
+                        assertEquals("Leah", rs.getString("firstName"));
+                        assertEquals("Grey", rs.getString("lastName"));
+                        assertEquals(22, rs.getInt("age"));
+                        break;
+
+                    default:
+                        assert false : "Invalid ID: " + id;
+                }
+            }
+        }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clear();
+
+        assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).size(CachePeekMode.ALL));
+
         super.afterTest();
 
         if (stmt != null && !stmt.isClosed())

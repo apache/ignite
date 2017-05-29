@@ -60,8 +60,8 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     private int iterCnt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
@@ -70,13 +70,12 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
         cc.setCacheMode(mode);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 
@@ -151,7 +150,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             // Warm up.
             for (int i = 0; i < warmUpPutsCnt; i++) {

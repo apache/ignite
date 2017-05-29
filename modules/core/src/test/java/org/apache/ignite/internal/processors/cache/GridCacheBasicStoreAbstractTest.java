@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -78,8 +77,8 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -91,7 +90,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
         cc.setRebalanceMode(SYNC);
 
@@ -528,7 +526,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         load(cache, 1, true);
 
-        String val = cache.localPeek(1, CachePeekMode.ONHEAP);
+        String val = cache.localPeek(1);
 
         assert val != null;
         assert "1".equals(val);
@@ -559,7 +557,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         for (int i = 1; i <= 10; i++) {
             load(cache, i, true);
 
-            val = cache.localPeek(i, CachePeekMode.ONHEAP);
+            val = cache.localPeek(i);
 
             checkLastMethod("load");
 
@@ -571,7 +569,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
             assert cached != null;
 
-            assert cached == val : "Cached value mismatch [expected=" + val + ", cached=" + cached + ']';
+            assert cached.equals(val) : "Cached value mismatch [expected=" + val + ", cached=" + cached + ']';
 
             // Make sure that value is coming from cache, not from store.
             checkLastMethod(null);

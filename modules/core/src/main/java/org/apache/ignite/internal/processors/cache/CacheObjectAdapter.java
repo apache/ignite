@@ -22,8 +22,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -36,7 +39,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     private static final long serialVersionUID = 2006765505127197251L;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     protected Object val;
 
@@ -47,8 +50,8 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @param ctx Context.
      * @return {@code True} need to copy value returned to user.
      */
-    protected boolean needCopy(CacheObjectContext ctx) {
-        return ctx.copyOnGet() && val != null && !ctx.processor().immutable(val);
+    protected boolean needCopy(CacheObjectValueContext ctx) {
+        return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
     }
 
     /** {@inheritDoc} */
@@ -66,6 +69,57 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         valBytes = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(buf, 0, objectPutSize(valBytes.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(addr, cacheObjectType(), valBytes, 0);
+    }
+
+    /**
+     * @param addr Write address.
+     * @param type Object type.
+     * @param valBytes Value bytes array.
+     * @param valOff Value bytes array offset.
+     * @return Offset shift compared to initial address.
+     */
+    public static int putValue(long addr, byte type, byte[] valBytes, int valOff) {
+        int off = 0;
+
+        PageUtils.putInt(addr, off, valBytes.length);
+        off += 4;
+
+        PageUtils.putByte(addr, off, type);
+        off++;
+
+        PageUtils.putBytes(addr, off, valBytes, valOff);
+        off += valBytes.length - valOff;
+
+        return off;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        assert valBytes != null : "Value bytes must be initialized before object is stored";
+
+        return putValue(cacheObjectType(), buf, off, len, valBytes, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        if (valBytes == null)
+            valueBytes(ctx);
+
+        return objectPutSize(valBytes.length);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +173,78 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     public String toString() {
-        return getClass().getSimpleName() + " [val=" + val + ", hasValBytes=" + (valBytes != null) + ']';
+        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "CacheObject",
+            "val", val, true,
+            "hasValBytes", valBytes != null, false);
+    }
+
+    /**
+     * @param dataLen Serialized value length.
+     * @return Full size required to store cache object.
+     * @see #putValue(byte, ByteBuffer, int, int, byte[], int)
+     */
+    public static int objectPutSize(int dataLen) {
+        return dataLen + 5;
+    }
+
+    /**
+     * @param cacheObjType Cache object type.
+     * @param buf Buffer to write value to.
+     * @param off Offset in source binary data.
+     * @param len Length of the data to write.
+     * @param valBytes Binary data.
+     * @param start Start offset in binary data.
+     * @return {@code True} if data were successfully written.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean putValue(byte cacheObjType,
+        final ByteBuffer buf,
+        int off,
+        int len,
+        byte[] valBytes,
+        final int start)
+        throws IgniteCheckedException
+    {
+        int dataLen = valBytes.length;
+
+        if (buf.remaining() < len)
+            return false;
+
+        final int headSize = 5; // 4 bytes len + 1 byte type
+
+        if (off == 0 && len >= headSize) {
+            buf.putInt(dataLen);
+            buf.put(cacheObjType);
+
+            len -= headSize;
+        }
+        else if (off >= headSize)
+            off -= headSize;
+        else {
+            // Partial header write.
+            final ByteBuffer head = ByteBuffer.allocate(headSize);
+
+            head.order(buf.order());
+
+            head.putInt(dataLen);
+            head.put(cacheObjType);
+
+            head.position(off);
+
+            if (len < head.capacity())
+                head.limit(off + Math.min(len, head.capacity() - off));
+
+            buf.put(head);
+
+            if (head.limit() < headSize)
+                return true;
+
+            len -= headSize - off;
+            off = 0;
+        }
+
+        buf.put(valBytes, start + off, len);
+
+        return true;
     }
 }

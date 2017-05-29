@@ -20,49 +20,48 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridCircularBuffer;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
+import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -70,10 +69,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
+public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements Comparable<GridDhtLocalPartition>, GridReservable {
     /** Maximum size for delete queue. */
-    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
-        200_000);
+    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
+
+    /** Maximum size for {@link #rmvQueue}. */
+    private final int rmvQueueMaxSize;
+
+    /** Removed items TTL. */
+    private final long rmvdEntryTtl;
 
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -84,16 +88,17 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Partition ID. */
     private final int id;
 
-    /** State. */
+    /** State. 32 bits - size, 16 bits - reservations, 13 bits - reserved, 3 bits - GridDhtPartitionState. */
     @GridToStringExclude
     private final AtomicLong state = new AtomicLong((long)MOVING.ordinal() << 32);
+
+    /** Evict guard. Must be CASed to -1 only when partition state is EVICTED. */
+    @GridToStringExclude
+    private final AtomicInteger evictGuard = new AtomicInteger();
 
     /** Rent future. */
     @GridToStringExclude
     private final GridFutureAdapter<?> rent;
-
-    /** Entries map. */
-    private final GridCacheConcurrentMap map;
 
     /** Context. */
     private final GridCacheContext cctx;
@@ -109,13 +114,19 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Remove queue. */
-    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final ConcurrentLinkedDeque8<RemovedEntryHolder> rmvQueue = new ConcurrentLinkedDeque8<>();
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
-    /** Update counter. */
-    private final AtomicLong cntr = new AtomicLong();
+    /** */
+    private final CacheDataStore store;
+
+    /** Partition updates. */
+    private final ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
+
+    /** Last applied update. */
+    private final AtomicLong lastApplied = new AtomicLong(0);
 
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
@@ -128,7 +139,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
-        assert cctx != null;
+        super(cctx, entryFactory, Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / cctx.affinity().partitions()));
 
         this.id = id;
         this.cctx = cctx;
@@ -137,16 +148,31 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         rent = new GridFutureAdapter<Object>() {
             @Override public String toString() {
-                return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ", map=" + map + ']';
+                return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ']';
             }
         };
-
-        map = new GridCacheConcurrentMapImpl(cctx, entryFactory, cctx.config().getStartSize() / cctx.affinity().partitions());
 
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+        rmvQueueMaxSize = U.ceilPow2(delQueueSize);
+
+        rmvdEntryTtl = Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000);
+
+        try {
+            store = cctx.offheap().createCacheDataStore(id);
+        }
+        catch (IgniteCheckedException e) {
+            // TODO ignite-db
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @return Data store.
+     */
+    public CacheDataStore dataStore() {
+        return store;
     }
 
     /**
@@ -156,9 +182,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code false} If such reservation already added.
      */
     public boolean addReservation(GridDhtPartitionsReservation r) {
-        assert GridDhtPartitionState.fromOrdinal((int)(state.get() >> 32)) != EVICTED :
-            "we can reserve only active partitions";
-        assert (state.get() & 0xFFFF) != 0 : "partition must be already reserved before adding group reservation";
+        assert (getPartState(state.get())) != EVICTED : "we can reserve only active partitions";
+        assert (getReservations(state.get())) != 0 : "partition must be already reserved before adding group reservation";
 
         return reservations.addIfAbsent(r);
     }
@@ -189,48 +214,69 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Partition state.
      */
     public GridDhtPartitionState state() {
-        return GridDhtPartitionState.fromOrdinal((int)(state.get() >> 32));
+        return getPartState(state.get());
+    }
+
+    /**
+     * @return {@code True} if partition is marked for transfer to renting state.
+     */
+    public boolean shouldBeRenting() {
+        return shouldBeRenting;
     }
 
     /**
      * @return Reservations.
      */
     public int reservations() {
-        return (int)(state.get() & 0xFFFF);
-    }
-
-    /**
-     * @return Keys belonging to partition.
-     */
-    public Set<KeyCacheObject> keySet() {
-        return map.keySet();
+        return getReservations(state.get());
     }
 
     /**
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return map.size() == 0;
+        if (cctx.allowFastEviction())
+            return internalSize() == 0;
+
+        return store.size() == 0 && internalSize() == 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public int size() {
-        return map.size();
+    /**
+     * @return Last applied update.
+     */
+    public long lastAppliedUpdate() {
+        return lastApplied.get();
     }
 
-    /** {@inheritDoc} */
-    @Override public int publicSize() {
-        return map.publicSize();
-    }
+    /**
+     * @param cntr Received counter.
+     */
+    public void onUpdateReceived(long cntr) {
+        boolean changed = updates.putIfAbsent(cntr, true) == null;
 
-    /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        map.incrementPublicSize(e);
-    }
+        if (!changed)
+            return;
 
-    /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        map.decrementPublicSize(e);
+        while (true) {
+            Map.Entry<Long, Boolean> entry = updates.firstEntry();
+
+            if (entry == null)
+                return;
+
+            long first = entry.getKey();
+
+            long cntr0 = lastApplied.get();
+
+            if (first <= cntr0)
+                updates.remove(first);
+            else if (first == cntr0 + 1)
+                if (lastApplied.compareAndSet(cntr0, first))
+                    updates.remove(first);
+                else
+                    break;
+            else
+                break;
+        }
     }
 
     /**
@@ -242,49 +288,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return state == MOVING || state == OWNING || state == RENTING;
     }
 
-    /** {@inheritDoc} */
-    @Override @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key) {
-        return map.getEntry(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        return map.removeEntry(entry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> entries(
-        CacheEntryPredicate... filter) {
-        return map.entries(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
-        return map.allEntries(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
-        return map.entrySet(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public GridCacheMapEntry randomEntry() {
-        return map.randomEntry();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
-        AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create, boolean touch) {
-        return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
-        return map.keySet(filter);
-    }
-
     /**
      * @param entry Entry to remove.
      */
@@ -292,29 +295,52 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
-        map.removeEntry(entry);
+        removeEntry(entry);
 
         // Attempt to evict.
-        tryEvict();
+        try {
+            tryEvict();
+        }
+        catch (NodeStoppingException ignore) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    public void cleanupRemoveQueue() {
+        while (rmvQueue.sizex() >= rmvQueueMaxSize) {
+            RemovedEntryHolder item = rmvQueue.pollFirst();
+
+            if (item != null)
+                cctx.dht().removeVersionedEntry(item.key(), item.version());
+        }
+
+        if (!cctx.isDrEnabled()) {
+            RemovedEntryHolder item = rmvQueue.peekFirst();
+
+            while (item != null && item.expireTime() < U.currentTimeMillis()) {
+                item = rmvQueue.pollFirst();
+
+                if (item == null)
+                    break;
+
+                cctx.dht().removeVersionedEntry(item.key(), item.version());
+
+                item = rmvQueue.peekFirst();
+            }
+        }
     }
 
     /**
      * @param key Removed key.
      * @param ver Removed version.
-     * @throws IgniteCheckedException If failed.
      */
-    public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
-        try {
-            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
+    public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) {
+        cleanupRemoveQueue();
 
-            if (evicted != null)
-                cctx.dht().removeVersionedEntry(evicted.get1(), evicted.get2());
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
+        rmvQueue.add(new RemovedEntryHolder(key, ver, rmvdEntryTtl));
     }
 
     /**
@@ -392,12 +418,14 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     @Override public boolean reserve() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            if ((int)(reservations >> 32) == EVICTED.ordinal())
+            if (getPartState(state) == EVICTED)
                 return false;
 
-            if (state.compareAndSet(reservations, reservations + 1))
+            long newState = setReservations(state, getReservations(state) + 1);
+
+            if (this.state.compareAndSet(state, newState))
                 return true;
         }
     }
@@ -406,20 +434,39 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Releases previously reserved partition.
      */
     @Override public void release() {
-        while (true) {
-            long reservations = state.get();
+        release0(0);
+    }
 
-            if ((int)(reservations & 0xFFFF) == 0)
+    /** {@inheritDoc} */
+    @Override protected void release(int sizeChange, GridCacheEntryEx e) {
+        release0(sizeChange);
+    }
+
+    /**
+     * @param sizeChange Size change delta.
+     */
+    private void release0(int sizeChange) {
+        while (true) {
+            long state = this.state.get();
+
+            int reservations = getReservations(state);
+
+            if (reservations == 0)
                 return;
 
-            assert (int)(reservations >> 32) != EVICTED.ordinal();
+            assert getPartState(state) != EVICTED;
+
+            long newState = setReservations(state, --reservations);
+            newState = setSize(newState, getSize(newState) + sizeChange);
+
+            assert getSize(newState) == getSize(state) + sizeChange;
 
             // Decrement reservations.
-            if (state.compareAndSet(reservations, --reservations)) {
-                if ((reservations & 0xFFFF) == 0 && shouldBeRenting)
+            if (this.state.compareAndSet(state, newState)) {
+                if (reservations == 0 && shouldBeRenting)
                     rent(true);
 
-                tryEvict();
+                tryEvictAsync(false);
 
                 break;
             }
@@ -427,12 +474,35 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     * @param reservations Current aggregated value.
+     * @param stateToRestore State to restore.
+     */
+    public void restoreState(GridDhtPartitionState stateToRestore) {
+        state.set(setPartState(state.get(), stateToRestore));
+    }
+
+    /**
+     * @param state Current aggregated value.
      * @param toState State to switch to.
      * @return {@code true} if cas succeeds.
      */
-    private boolean casState(long reservations, GridDhtPartitionState toState) {
-        return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+    private boolean casState(long state, GridDhtPartitionState toState) {
+        if (cctx.shared().database().persistenceEnabled()) {
+            synchronized (this) {
+                boolean update = this.state.compareAndSet(state, setPartState(state, toState));
+
+                if (update)
+                    try {
+                        cctx.shared().wal().log(new PartitionMetaStateRecord(cctx.cacheId(), id, toState, updateCounter()));
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Error while writing to log", e);
+                    }
+
+                return update;
+            }
+        }
+        else
+            return this.state.compareAndSet(state, setPartState(state, toState));
     }
 
     /**
@@ -440,21 +510,65 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     boolean own() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            int ord = (int)(reservations >> 32);
+            GridDhtPartitionState partState = getPartState(state);
 
-            if (ord == RENTING.ordinal() || ord == EVICTED.ordinal())
+            if (partState == RENTING || partState == EVICTED)
                 return false;
 
-            if (ord == OWNING.ordinal())
+            if (partState == OWNING)
                 return true;
 
-            assert ord == MOVING.ordinal();
+            assert partState == MOVING || partState == LOST;
 
-            if (casState(reservations, OWNING)) {
+            if (casState(state, OWNING)) {
                 if (log.isDebugEnabled())
                     log.debug("Owned partition: " + this);
+
+                // No need to keep history any more.
+                evictHist = null;
+
+                return true;
+            }
+        }
+    }
+
+    /**
+     * Forcibly moves partition to a MOVING state.
+     */
+    void moving() {
+        while (true) {
+            long state = this.state.get();
+
+            GridDhtPartitionState partState = getPartState(state);
+
+            assert partState == OWNING : "Only OWNed partitions should be moved to MOVING state";
+
+            if (casState(state, MOVING)) {
+                if (log.isDebugEnabled())
+                    log.debug("Forcibly moved partition to a MOVING state: " + this);
+
+                break;
+            }
+        }
+    }
+
+    /**
+     * @return {@code True} if partition state changed.
+     */
+    boolean markLost() {
+        while (true) {
+            long state = this.state.get();
+
+            GridDhtPartitionState partState = getPartState(state);
+
+            if (partState == LOST)
+                return false;
+
+            if (casState(state, LOST)) {
+                if (log.isDebugEnabled())
+                    log.debug("Marked partition as LOST: " + this);
 
                 // No need to keep history any more.
                 evictHist = null;
@@ -469,16 +583,16 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Future to signal that this node is no longer an owner or backup.
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
-        long reservations = state.get();
+        long state = this.state.get();
 
-        int ord = (int)(reservations >> 32);
+        GridDhtPartitionState partState = getPartState(state);
 
-        if (ord == RENTING.ordinal() || ord == EVICTED.ordinal())
+        if (partState == RENTING || partState == EVICTED)
             return rent;
 
         shouldBeRenting = true;
 
-        if ((reservations & 0xFFFF) == 0 && casState(reservations, RENTING)) {
+        if (getReservations(state) == 0 && casState(state, RENTING)) {
             shouldBeRenting = false;
 
             if (log.isDebugEnabled())
@@ -496,30 +610,22 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
-        long reservations = state.get();
+        assert cctx.kernalContext().state().active();
 
-        int ord = (int)(reservations >> 32);
+        long state = this.state.get();
 
-        if (isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
-            ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 &&
-            casState(reservations, EVICTED)) {
+        GridDhtPartitionState partState = getPartState(state);
+
+        if (isEmpty() && !QueryUtils.isEnabled(cctx.config()) && getSize(state) == 0 &&
+            partState == RENTING && getReservations(state) == 0 && !groupReserved() &&
+            casState(state, EVICTED)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            clearSwap();
-
-            if (cctx.isDrEnabled())
-                cctx.dr().partitionEvicted(id);
-
-            cctx.dataStructures().onPartitionEvicted(id);
-
-            rent.onDone();
-
-            ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
-
-            clearDeferredDeletes();
+            if (markForDestroy())
+                finishDestroy(updateSeq);
         }
-        else
+        else if (partState == RENTING || shouldBeRenting())
             cctx.preloader().evictPartitionAsync(this);
     }
 
@@ -536,71 +642,121 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     *
+     * @return {@code True} if evicting thread was added.
      */
-    public void tryEvict() {
-        long reservations = state.get();
+    private boolean addEvicting() {
+        while (true) {
+            int cnt = evictGuard.get();
 
-        int ord = (int)(reservations >> 32);
+            if (cnt != 0)
+                return false;
 
-        if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
-            return;
-
-        // Attempt to evict partition entries from cache.
-        clearAll();
-
-        if (isEmpty() && casState(reservations, EVICTED)) {
-            if (log.isDebugEnabled())
-                log.debug("Evicted partition: " + this);
-
-            if (!GridQueryProcessor.isEnabled(cctx.config()))
-                clearSwap();
-
-            if (cctx.isDrEnabled())
-                cctx.dr().partitionEvicted(id);
-
-            cctx.continuousQueries().onPartitionEvicted(id);
-
-            cctx.dataStructures().onPartitionEvicted(id);
-
-            rent.onDone();
-
-            ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
-
-            clearDeferredDeletes();
+            if (evictGuard.compareAndSet(cnt, cnt + 1))
+                return true;
         }
     }
 
     /**
-     * Clears swap entries for evicted partition.
+     *
      */
-    private void clearSwap() {
-        assert state() == EVICTED;
-        assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
+    private void clearEvicting() {
+        boolean free;
 
-        try {
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
+        while (true) {
+            int cnt = evictGuard.get();
 
-            boolean isLocStore = cctx.store().isLocal();
+            assert cnt > 0;
 
-            if (it != null) {
-                // We can safely remove these values because no entries will be created for evicted partition.
-                while (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
+            if (evictGuard.compareAndSet(cnt, cnt - 1)) {
+                free = cnt == 1;
 
-                    byte[] keyBytes = entry.getKey();
-
-                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                    cctx.swap().remove(key, id);
-
-                    if (isLocStore)
-                        cctx.store().remove(null, key.value(cctx.cacheObjectContext(), false));
-                }
+                break;
             }
         }
+
+        if (free && state() == EVICTED) {
+            if (markForDestroy())
+                finishDestroy(true);
+        }
+    }
+
+    /**
+     * @return {@code True} if partition is safe to destroy
+     */
+    private boolean markForDestroy() {
+        while (true) {
+            int cnt = evictGuard.get();
+
+            if (cnt != 0)
+                return false;
+
+            if (evictGuard.compareAndSet(0, -1))
+                return true;
+        }
+    }
+
+    /**
+     * @param updateSeq Update sequence request.
+     */
+    private void finishDestroy(boolean updateSeq) {
+        assert state() == EVICTED : this;
+        assert evictGuard.get() == -1;
+
+        if (cctx.isDrEnabled())
+            cctx.dr().partitionEvicted(id);
+
+        cctx.continuousQueries().onPartitionEvicted(id);
+
+        cctx.dataStructures().onPartitionEvicted(id);
+
+        destroyCacheDataStore();
+
+        rent.onDone();
+
+        ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, updateSeq);
+
+        clearDeferredDeletes();
+    }
+
+    /**
+     * @throws NodeStoppingException If node is stopping.
+     */
+    public void tryEvict() throws NodeStoppingException {
+        long state = this.state.get();
+
+        GridDhtPartitionState partState = getPartState(state);
+
+        if (partState != RENTING || getReservations(state) != 0 || groupReserved())
+            return;
+
+        if (addEvicting()) {
+            try {
+                // Attempt to evict partition entries from cache.
+                clearAll();
+
+                if (isEmpty() && getSize(state) == 0 && casState(state, EVICTED)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Evicted partition: " + this);
+                    // finishDestroy() will be initiated by clearEvicting().
+                }
+            }
+            finally {
+                clearEvicting();
+            }
+        }
+    }
+
+    /**
+     * Release created data store for this partition.
+     */
+    private void destroyCacheDataStore() {
+        try {
+            CacheDataStore store = dataStore();
+
+            cctx.offheap().destroyCacheDataStore(id, store);
+        }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to clear swap for evicted partition: " + this, e);
+            log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);
         }
     }
 
@@ -608,7 +764,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     void onUnlock() {
-        tryEvict();
+        try {
+            tryEvict();
+        }
+        catch (NodeStoppingException ignore) {
+            // No-op.
+        }
     }
 
     /**
@@ -616,7 +777,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if local node is primary for this partition.
      */
     public boolean primary(AffinityTopologyVersion topVer) {
-        return cctx.affinity().primary(cctx.localNode(), id, topVer);
+        return cctx.affinity().primaryByPartition(cctx.localNode(), id, topVer);
     }
 
     /**
@@ -624,80 +785,126 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if local node is backup for this partition.
      */
     public boolean backup(AffinityTopologyVersion topVer) {
-        return cctx.affinity().backup(cctx.localNode(), id, topVer);
+        return cctx.affinity().backupByPartition(cctx.localNode(), id, topVer);
     }
 
     /**
      * @return Next update index.
      */
     public long nextUpdateCounter() {
-        return cntr.incrementAndGet();
+        return store.nextUpdateCounter();
     }
 
     /**
      * @return Current update index.
      */
     public long updateCounter() {
-        return cntr.get();
+        return store.updateCounter();
+    }
+
+    /**
+     * @return Initial update counter.
+     */
+    public Long initialUpdateCounter() {
+        return store.initialUpdateCounter();
     }
 
     /**
      * @param val Update index value.
      */
     public void updateCounter(long val) {
-        while (true) {
-            long val0 = cntr.get();
+        store.updateCounter(val);
+    }
 
-            if (val0 >= val)
-                break;
-
-            if (cntr.compareAndSet(val0, val))
-                break;
-        }
+    /**
+     * @param val Initial update index value.
+     */
+    public void initialUpdateCounter(long val) {
+        store.updateInitialCounter(val);
     }
 
     /**
      * Clears values for this partition.
+     *
+     * @throws NodeStoppingException If node stopping.
      */
-    private void clearAll() {
+    public void clearAll() throws NodeStoppingException {
         GridCacheVersion clearVer = cctx.versions().next();
-
-        boolean swap = cctx.isSwapOrOffheapEnabled();
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridDhtCacheEntry> it = (Iterator)map.allEntries().iterator();
-
-        GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
-
-        if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
-            Iterator<GridDhtCacheEntry> unswapIt = null;
-
-            try {
-                swapIt = cctx.swap().iterator(id);
-                unswapIt = unswapIterator(swapIt);
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to clear swap for evicted partition: " + this, e);
-            }
-
-            if (unswapIt != null)
-                it = F.concat(it, unswapIt);
-        }
+        Iterator<GridCacheMapEntry> it = allEntries().iterator();
 
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
 
-        try {
-            while (it.hasNext()) {
-                GridDhtCacheEntry cached = null;
+        while (it.hasNext()) {
+            GridCacheMapEntry cached = null;
 
-                try {
-                    cached = it.next();
+            cctx.shared().database().checkpointReadLock();
 
-                    if (cached.clearInternal(clearVer, swap, extras)) {
-                        map.removeEntry(cached);
+            try {
+                cached = it.next();
 
-                        if (!cached.isInternal()) {
+                if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                    removeEntry(cached);
+
+                    if (!cached.isInternal()) {
+                        if (rec) {
+                            cctx.events().addEvent(cached.partition(),
+                                cached.key(),
+                                cctx.localNodeId(),
+                                (IgniteUuid)null,
+                                null,
+                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                null,
+                                false,
+                                cached.rawGet(),
+                                cached.hasValue(),
+                                null,
+                                null,
+                                null,
+                                false);
+                        }
+                    }
+                }
+            }
+            catch (GridDhtInvalidPartitionException e) {
+                assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
+
+                break; // Partition is already concurrently cleared and evicted.
+            }
+            catch (NodeStoppingException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to clear cache entry for evicted partition: " + cached.partition());
+
+                rent.onDone(e);
+
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
+            }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
+            }
+        }
+
+        if (!cctx.allowFastEviction()) {
+            try {
+                GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
+
+                while (it0.hasNext()) {
+                    cctx.shared().database().checkpointReadLock();
+
+                    try {
+                        CacheDataRow row = it0.next();
+
+                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx.affinity().affinityTopologyVersion(),
+                            row.key(),
+                            true,
+                            false);
+
+                        if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                             if (rec) {
                                 cctx.events().addEvent(cached.partition(),
                                     cached.key(),
@@ -716,102 +923,36 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                             }
                         }
                     }
-                }
-                catch (GridDhtInvalidPartitionException e) {
-                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
-                    assert swapEmpty() : "Invalid error when swap is not cleared [e=" + e + ", part=" + this + ']';
+                    catch (GridDhtInvalidPartitionException e) {
+                        assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                    break; // Partition is already concurrently cleared and evicted.
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
-                }
-            }
-        }
-        finally {
-            U.close(swapIt, log);
-        }
-    }
-
-    /**
-     * @return {@code True} if there are no swap entries for this partition.
-     */
-    private boolean swapEmpty() {
-        GridCloseableIterator<?> it0 = null;
-
-        try {
-            it0 = cctx.swap().iterator(id);
-
-            return it0 == null || !it0.hasNext();
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get partition swap iterator: " + this, e);
-
-            return true;
-        }
-        finally {
-            if (it0 != null)
-                U.closeQuiet(it0);
-        }
-    }
-
-    /**
-     * @param it Swap iterator.
-     * @return Unswapping iterator over swapped entries.
-     */
-    private Iterator<GridDhtCacheEntry> unswapIterator(
-        final GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it) {
-        if (it == null)
-            return null;
-
-        return new Iterator<GridDhtCacheEntry>() {
-            /** */
-            GridDhtCacheEntry lastEntry;
-
-            @Override public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override public GridDhtCacheEntry next() {
-                Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
-
-                byte[] keyBytes = entry.getKey();
-
-                while (true) {
-                    try {
-                        KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                        lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
-
-                        lastEntry.unswap(true);
-
-                        return lastEntry;
+                        break; // Partition is already concurrently cleared and evicted.
                     }
-                    catch (GridCacheEntryRemovedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry: " + lastEntry);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new CacheException(e);
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }
+            catch (NodeStoppingException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to get iterator for evicted partition: " + id);
 
-            @Override public void remove() {
-                map.removeEntry(lastEntry);
+                rent.onDone(e);
+
+                throw e;
             }
-        };
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to get iterator for evicted partition: " + id, e);
+            }
+        }
     }
 
     /**
      *
      */
     private void clearDeferredDeletes() {
-        rmvQueue.forEach(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
-            @Override public void apply(T2<KeyCacheObject, GridCacheVersion> t) {
-                cctx.dht().removeVersionedEntry(t.get1(), t.get2());
-            }
-        });
+        for (RemovedEntryHolder e : rmvQueue)
+            cctx.dht().removeVersionedEntry(e.key(), e.version());
     }
 
     /** {@inheritDoc} */
@@ -840,5 +981,135 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             "reservations", reservations(),
             "empty", isEmpty(),
             "createTime", U.format(createTime));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int publicSize() {
+        return getSize(state.get());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementPublicSize(GridCacheEntryEx e) {
+        while (true) {
+            long state = this.state.get();
+
+            if (this.state.compareAndSet(state, setSize(state, getSize(state) + 1)))
+                return;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void decrementPublicSize(GridCacheEntryEx e) {
+        while (true) {
+            long state = this.state.get();
+
+            assert getPartState(state) != EVICTED;
+
+            if (this.state.compareAndSet(state, setSize(state, getSize(state) - 1)))
+                return;
+        }
+    }
+
+    /**
+     * @param state Composite state.
+     * @return Partition state.
+     */
+    private static GridDhtPartitionState getPartState(long state) {
+        return GridDhtPartitionState.fromOrdinal((int)(state & (0x0000000000000007L)));
+    }
+
+    /**
+     * @param state Composite state to update.
+     * @param partState Partition state.
+     * @return Updated composite state.
+     */
+    private static long setPartState(long state, GridDhtPartitionState partState) {
+        return (state & (~0x0000000000000007L)) | partState.ordinal();
+    }
+
+    /**
+     * @param state Composite state.
+     * @return Reservations.
+     */
+    private static int getReservations(long state) {
+        return (int)((state & 0x00000000FFFF0000L) >> 16);
+    }
+
+    /**
+     * @param state Composite state to update.
+     * @param reservations Reservations to set.
+     * @return Updated composite state.
+     */
+    private static long setReservations(long state, int reservations) {
+        return (state & (~0x00000000FFFF0000L)) | (reservations << 16);
+    }
+
+    /**
+     * @param state Composite state.
+     * @return Size.
+     */
+    private static int getSize(long state) {
+        return (int)((state & 0xFFFFFFFF00000000L) >> 32);
+    }
+
+    /**
+     * @param state Composite state to update.
+     * @param size Size to set.
+     * @return Updated composite state.
+     */
+    private static long setSize(long state, int size) {
+        return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
+    }
+
+    /**
+     * Removed entry holder.
+     */
+    private static class RemovedEntryHolder {
+        /** Cache key */
+        private final KeyCacheObject key;
+
+        /** Entry version */
+        private final GridCacheVersion ver;
+
+        /** Entry expire time. */
+        private final long expireTime;
+
+        /**
+         * @param key Key.
+         * @param ver Entry version.
+         * @param ttl TTL.
+         */
+        private RemovedEntryHolder(KeyCacheObject key, GridCacheVersion ver, long ttl) {
+            this.key = key;
+            this.ver = ver;
+
+            expireTime = U.currentTimeMillis() + ttl;
+        }
+
+        /**
+         * @return Key.
+         */
+        KeyCacheObject key() {
+            return key;
+        }
+
+        /**
+         * @return Version.
+         */
+        GridCacheVersion version() {
+            return ver;
+        }
+
+        /**
+         * @return item expired time
+         */
+        long expireTime() {
+            return expireTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RemovedEntryHolder.class, this);
+        }
     }
 }

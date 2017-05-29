@@ -353,18 +353,31 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         Configuration cfg = ctx.getConfiguration();
 
-        PatternLayout layout = PatternLayout.createLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n", null, null,
-            Charset.defaultCharset(), false, false, null, null);
+        PatternLayout.Builder builder = PatternLayout.newBuilder();
 
-        final Appender consoleApp = ConsoleAppender.createAppender(layout, null, null, CONSOLE_APPENDER, null, null);
+        builder
+            .withPattern("%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n")
+            .withCharset(Charset.defaultCharset())
+            .withAlwaysWriteExceptions(false)
+            .withNoConsoleNoAnsi(false);
+
+        PatternLayout layout = builder.build();
+
+        ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder();
+
+        consoleAppenderBuilder
+            .withName(CONSOLE_APPENDER)
+            .withLayout(layout);
+
+        ConsoleAppender consoleApp = consoleAppenderBuilder.build();
+
         consoleApp.start();
 
         AppenderRef ref = AppenderRef.createAppenderRef(CONSOLE_APPENDER, Level.TRACE, null);
 
         AppenderRef[] refs = {ref};
 
-        LoggerConfig logCfg = LoggerConfig.createLogger("false", Level.INFO, LogManager.ROOT_LOGGER_NAME, "",
-            refs, null, null, null);
+        LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, null, null);
 
         logCfg.addAppender(consoleApp, null, null);
         cfg.addAppender(consoleApp);

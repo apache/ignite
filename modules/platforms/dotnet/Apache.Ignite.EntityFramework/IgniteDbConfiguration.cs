@@ -74,7 +74,7 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
         /// <para />
-        /// This constructor uses default Ignite instance (with null <see cref="IgniteConfiguration.GridName"/>) 
+        /// This constructor uses default Ignite instance (with null <see cref="IgniteConfiguration.IgniteInstanceName"/>) 
         /// and a cache with <see cref="DefaultCacheNamePrefix"/> name.
         /// <para />
         /// Ignite instance will be started automatically, if it is not started yet.
@@ -277,7 +277,7 @@ namespace Apache.Ignite.EntityFramework
         {
             cfg = cfg ?? new IgniteConfiguration();
 
-            return Ignition.TryGetIgnite(cfg.GridName) ?? Ignition.Start(cfg);
+            return Ignition.TryGetIgnite(cfg.IgniteInstanceName) ?? Ignition.Start(cfg);
         }
 
         /// <summary>

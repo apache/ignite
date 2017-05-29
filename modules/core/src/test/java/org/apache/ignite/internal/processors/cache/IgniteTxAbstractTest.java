@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -68,8 +67,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -188,7 +187,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         int part = aff.partition(key);
 
                         debug("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                            U.toShortString(ignite(gridIdx).affinity(null).mapPartitionToPrimaryAndBackups(part)) + ']');
+                            U.toShortString(ignite(gridIdx).affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(part)) + ']');
                     }
 
                     String val = Integer.toString(key);
@@ -254,7 +253,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         if (printMemoryStats()) {
             if (cntr.getAndIncrement() % 100 == 0)
                 // Print transaction memory stats.
-                ((IgniteKernal)grid(gridIdx)).internalCache().context().tm().printMemoryStats();
+                ((IgniteKernal)grid(gridIdx)).internalCache(DEFAULT_CACHE_NAME).context().tm().printMemoryStats();
         }
     }
 
@@ -296,7 +295,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         int part = aff.partition(key);
 
                         debug("Key affinity [key=" + key + ", partition=" + part + ", affinity=" +
-                            U.toShortString(ignite(gridIdx).affinity(null).mapPartitionToPrimaryAndBackups(part)) + ']');
+                            U.toShortString(ignite(gridIdx).affinity(DEFAULT_CACHE_NAME).mapPartitionToPrimaryAndBackups(part)) + ']');
                     }
 
                     String val = Integer.toString(key);

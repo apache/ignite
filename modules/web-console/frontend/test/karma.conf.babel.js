@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-import webpackConfig from '../gulpfile.babel.js/webpack';
 import path from 'path';
 
-const basePath = path.resolve('./');
+import testCfg from '../webpack/webpack.test';
 
 export default (config) => {
     config.set({
         // Base path that will be used to resolve all patterns (eg. files, exclude).
-        basePath: basePath,
+        basePath: path.resolve('./'),
 
         // Frameworks to use available frameworks: https://npmjs.org/browse/keyword/karma-adapter
         frameworks: ['mocha'],
@@ -46,7 +45,8 @@ export default (config) => {
         preprocessors: {
             'test/**/*.js': ['webpack']
         },
-        webpack: webpackConfig,
+
+        webpack: testCfg,
 
         webpackMiddleware: {
             noInfo: true

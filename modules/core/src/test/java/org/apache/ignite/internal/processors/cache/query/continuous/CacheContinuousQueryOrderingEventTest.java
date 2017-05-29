@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +39,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -60,12 +60,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -97,8 +93,8 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     private static volatile boolean fail;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -142,38 +138,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAtomicOnheapTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            ONHEAP_TIERED, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_VALUES, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicatedOffheap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -182,8 +147,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testTxOnheapTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL,
-            ONHEAP_TIERED, FULL_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, FULL_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -192,8 +156,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testTxOnheapWithoutBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
-            ONHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -202,8 +165,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testTxOnheapWithoutBackupFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
-            ONHEAP_TIERED, FULL_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, FULL_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -214,8 +176,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAtomicOnheapTwoBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            ONHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -224,48 +185,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAtomicOnheapTwoBackupAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            ONHEAP_TIERED, FULL_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTwoBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTwoBackupAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_TIERED, FULL_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesTwoBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_VALUES, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesTwoBackupAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_VALUES, FULL_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC, FULL_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -274,8 +194,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAtomicReplicatedAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
-            ONHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -284,18 +203,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAtomicReplicatedAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
-            ONHEAP_TIERED, FULL_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicatedOffheapAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC, FULL_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -304,8 +212,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testAtomicOnheapWithoutBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, ATOMIC,
-            ONHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, ATOMIC, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -314,8 +221,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testTxOnheapTwoBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL,
-            ONHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -324,8 +230,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testTxOnheapAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
-            ONHEAP_TIERED, PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -334,8 +239,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testTxOnheapAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL,
-            ONHEAP_TIERED, FULL_SYNC);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, FULL_SYNC);
 
         doOrderingTest(ccfg, true);
     }
@@ -603,7 +507,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param writeMode Cache write mode.
      * @return Cache configuration.
      */
@@ -611,17 +514,14 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         CacheWriteSynchronizationMode writeMode) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + memoryMode + "-" + memoryMode + "-"
-            + backups);
+        ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + backups + "-" + UUID.randomUUID());
+        // TODO GG-11220 (remove setName when fixed).
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(writeMode);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);

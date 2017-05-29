@@ -78,6 +78,7 @@ public class GridRedisGetRangeCommandHandler extends GridRedisRestCommandHandler
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
+        getReq.cacheName(CACHE_NAME);
 
         return getReq;
     }

@@ -83,9 +83,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTestsStarted0() throws Exception {
         startGrids(gridCount());
     }
 
@@ -98,12 +96,12 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).fileSystem(igfsName).format();
+        grid(0).fileSystem(igfsName).clear();
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         cfg.setMaxParallelTasks(5);
 
@@ -139,8 +137,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -183,8 +181,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -222,8 +220,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -284,8 +282,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(InFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -411,6 +409,9 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         assertFalse(killRes);
     }
 
+    /**
+     *
+     */
     private static class CancellingTestMapper extends Mapper<Object, Text, Text, IntWritable> {
         private int mapperId;
 

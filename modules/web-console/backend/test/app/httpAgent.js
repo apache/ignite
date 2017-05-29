@@ -21,11 +21,11 @@
 
 module.exports = {
     implements: 'agentFactory',
-    inject: ['app', 'require(http)', 'require(supertest)']
+    inject: ['api-server', 'require(http)', 'require(supertest)']
 };
 
-module.exports.factory = (app, http, request) => {
-    const express = app.listen(http.createServer());
+module.exports.factory = (apiSrv, http, request) => {
+    const express = apiSrv.attach(http.createServer());
     let authAgentInstance = null;
 
     return {

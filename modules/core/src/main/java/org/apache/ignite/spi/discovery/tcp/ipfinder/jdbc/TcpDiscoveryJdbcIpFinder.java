@@ -263,10 +263,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Data source should be fully configured and ready-to-use.
      *
      * @param dataSrc Data source.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setDataSource(DataSource dataSrc) {
+    public TcpDiscoveryJdbcIpFinder setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
+
+        return this;
     }
 
     /**
@@ -275,10 +278,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @param initSchema {@code True} if DB schema should be initialized by Ignite (default behaviour),
      *      {code @false} if schema was explicitly created by user.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setInitSchema(boolean initSchema) {
+    public TcpDiscoveryJdbcIpFinder setInitSchema(boolean initSchema) {
         this.initSchema = initSchema;
+
+        return this;
     }
 
     /**
@@ -401,6 +407,13 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
             U.closeQuiet(stmt);
             U.closeQuiet(conn);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryJdbcIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

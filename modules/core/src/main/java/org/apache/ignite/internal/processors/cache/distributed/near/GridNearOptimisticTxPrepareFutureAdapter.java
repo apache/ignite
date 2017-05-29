@@ -40,7 +40,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticTxPrepareFutureAdapter(GridCacheSharedContext cctx, GridNearTxLocal tx) {
+    protected GridNearOptimisticTxPrepareFutureAdapter(GridCacheSharedContext cctx, GridNearTxLocal tx) {
         super(cctx, tx);
 
         assert tx.optimistic() : tx;
@@ -123,7 +123,10 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
 
         if (topVer != null) {
-            IgniteCheckedException err = tx.txState().validateTopology(cctx, topFut);
+            IgniteCheckedException err = tx.txState().validateTopology(
+                cctx,
+                tx.writeMap().isEmpty(),
+                topFut);
 
             if (err != null) {
                 onDone(err);

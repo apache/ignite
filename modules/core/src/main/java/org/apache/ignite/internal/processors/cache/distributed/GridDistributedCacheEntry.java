@@ -38,9 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
-
 /**
  * Entry for distributed (replicated/partitioned) cache.
  */
@@ -52,16 +49,12 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     /**
      * @param ctx Cache context.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     public GridDistributedCacheEntry(
         GridCacheContext ctx,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key);
     }
 
     /**

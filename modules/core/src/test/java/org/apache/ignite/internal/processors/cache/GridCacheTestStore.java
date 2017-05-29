@@ -338,8 +338,6 @@ public final class GridCacheTestStore implements CacheStore<Integer, String> {
 
         txs.add(tx);
 
-        assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof TransactionProxy);
-
         IgniteInternalTx tx0 = GridTestUtils.getFieldValue(tx, "tx");
 
         if (!tx0.local())

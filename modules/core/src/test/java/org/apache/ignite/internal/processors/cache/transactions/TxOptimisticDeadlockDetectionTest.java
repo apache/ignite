@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,6 +60,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -77,6 +79,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
+    /** Ip finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -94,12 +99,14 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+        discoSpi.setIpFinder(IP_FINDER);
 
         if (isDebug()) {
-            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
             discoSpi.failureDetectionTimeoutEnabled(false);
 
             cfg.setDiscoverySpi(discoSpi);
@@ -110,6 +117,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(commSpi);
 
         cfg.setClientMode(client);
+
+        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -274,8 +283,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     Object k;
 
-                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
-                        ", tx=" + tx + ", key=" + transformer.apply(key) + ']');
+                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
+                        ", tx=" + tx.xid() + ", key=" + transformer.apply(key) + ']');
 
                     cache.put(transformer.apply(key), 0);
 
@@ -286,7 +295,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     key = keys.get(1);
 
                     ClusterNode primaryNode =
-                        ((IgniteCacheProxy)cache).context().affinity().primary(key, NONE);
+                        ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
                     List<Integer> primaryKeys =
                         primaryKeys(grid(primaryNode).cache(CACHE_NAME), 5, key + (100 * threadNum));
@@ -309,23 +318,27 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                         entries.put(k, 2);
                     }
 
-                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
-                        ", tx=" + tx + ", entries=" + entries + ']');
+                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
+                        ", tx=" + tx.xid() + ", entries=" + entries + ']');
 
                     cache.putAll(entries);
 
                     tx.commit();
                 }
                 catch (Throwable e) {
-                    U.error(log, "Expected exception: ", e);
+                    log.info("Expected exception: " + e);
+
+                    e.printStackTrace(System.out);
 
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
-                        hasCause(e, TransactionDeadlockException.class)
-                        ) {
-                        if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class)))
-                            U.error(log, "At least one stack trace should contain " +
-                                TransactionDeadlockException.class.getSimpleName(), e);
+                        hasCause(e, TransactionDeadlockException.class)) {
+                        if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class))) {
+                            log.info("At least one stack trace should contain " +
+                                TransactionDeadlockException.class.getSimpleName());
+
+                            e.printStackTrace(System.out);
+                        }
                     }
                 }
             }
@@ -344,7 +357,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         TransactionDeadlockException deadlockE = deadlockErr.get();
 
-        assertNotNull(deadlockE);
+        assertNotNull("Failed to detect deadlock", deadlockE);
 
         boolean fail = false;
 
@@ -548,15 +561,25 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = req.version();
 
-                    if (TX_IDS.contains(txId)) {
-                        while (TX_IDS.size() < TX_CNT) {
-                            try {
-                                U.sleep(50);
+                    if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
+                        GridTestUtils.runAsync(new Callable<Void>() {
+                            @Override public Void call() throws Exception {
+                                while (TX_IDS.size() < TX_CNT) {
+                                    try {
+                                        U.sleep(50);
+                                    }
+                                    catch (IgniteInterruptedCheckedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                TestCommunicationSpi.super.sendMessage(node, msg, ackC);
+
+                                return null;
                             }
-                            catch (IgniteInterruptedCheckedException e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        });
+
+                        return;
                     }
                 }
                 else if (msg0 instanceof GridNearTxPrepareResponse) {

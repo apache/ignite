@@ -18,10 +18,8 @@
 namespace Apache.Ignite.Core.Cache.Store
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -32,19 +30,17 @@ namespace Apache.Ignite.Core.Cache.Store
     /// GetInputData().GetEnumerator() result will be disposed if it implements IDisposable.
     /// Any additional post-LoadCache steps can be performed by overriding LoadCache method.
     /// </remarks>
-    public abstract class CacheParallelLoadStoreAdapter : ICacheStore
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
+    /// <typeparam name="TData">Custom data entry type.</typeparam>
+    public abstract class CacheParallelLoadStoreAdapter<TK, TV, TData> : ICacheStore<TK, TV>
     {
-        /// <summary>
-        /// Default number of working threads (equal to the number of available processors).
-        /// </summary>
-        public static readonly int DefaultThreadsCount = Environment.ProcessorCount;
-
         /// <summary>
         /// Constructor.
         /// </summary>
         protected CacheParallelLoadStoreAdapter()
         {
-            MaxDegreeOfParallelism = DefaultThreadsCount;
+            MaxDegreeOfParallelism = Environment.ProcessorCount;
         }
 
         /// <summary>
@@ -62,7 +58,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="act">Action for loaded values.</param>
         /// <param name="args">Optional arguemnts passed to <see cref="ICache{K,V}.LocalLoadCache" /> method.</param>
         /// <exception cref="CacheStoreException" />
-        public virtual void LoadCache(Action<object, object> act, params object[] args)
+        public virtual void LoadCache(Action<TK, TV> act, params object[] args)
         {
             if (MaxDegreeOfParallelism == 0 || MaxDegreeOfParallelism < -1)
                 throw new ArgumentOutOfRangeException("MaxDegreeOfParallelism must be either positive or -1: " +
@@ -70,7 +66,7 @@ namespace Apache.Ignite.Core.Cache.Store
 
             var options = new ParallelOptions {MaxDegreeOfParallelism = MaxDegreeOfParallelism};
 
-            Parallel.ForEach(GetInputData().OfType<object>(), options, item =>
+            Parallel.ForEach(GetInputData(), options, item =>
             {
                 var cacheEntry = Parse(item, args);
 
@@ -83,19 +79,19 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Gets the input data sequence to be used in LoadCache.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        protected abstract IEnumerable GetInputData();
+        protected abstract IEnumerable<TData> GetInputData();
 
         /// <summary>
         /// This method should transform raw data records from GetInputData
         /// into valid key-value pairs to be stored into cache.        
         /// </summary>
-        protected abstract KeyValuePair<object, object>? Parse(object inputRecord, params object[] args);
+        protected abstract KeyValuePair<TK, TV>? Parse(TData inputRecord, params object[] args);
 
         /// <summary>
         /// Gets or sets the maximum degree of parallelism to use in LoadCache. 
         /// Must be either positive or -1 for unlimited amount of threads.
         /// <para />
-        /// Defaults to <see cref="DefaultThreadsCount"/>.
+        /// Defaults to <see cref="Environment.ProcessorCount"/>.
         /// </summary>
         public int MaxDegreeOfParallelism { get; set; }
 
@@ -111,9 +107,9 @@ namespace Apache.Ignite.Core.Cache.Store
         /// or <c>null</c> if the object can't be loaded
         /// </returns>
         [ExcludeFromCodeCoverage]
-        public virtual object Load(object key)
+        public virtual TV Load(TK key)
         {
-            return null;
+            return default(TV);
         }
 
         /// <summary>
@@ -126,7 +122,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// A map of key, values to be stored in the cache.
         /// </returns>
         [ExcludeFromCodeCoverage]
-        public virtual IDictionary LoadAll(ICollection keys)
+        public virtual IEnumerable<KeyValuePair<TK, TV>> LoadAll(IEnumerable<TK> keys)
         {
             return null;
         }
@@ -139,7 +135,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="key">Key to write.</param>
         /// <param name="val">Value to write.</param>
         [ExcludeFromCodeCoverage]
-        public virtual void Write(object key, object val)
+        public virtual void Write(TK key, TV val)
         {
             // No-op.
         }
@@ -158,7 +154,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// to write for write-through. Upon return the collection must only contain entries
         /// that were not successfully written. (see partial success above).</param>
         [ExcludeFromCodeCoverage]
-        public virtual void WriteAll(IDictionary entries)
+        public virtual void WriteAll(IEnumerable<KeyValuePair<TK, TV>> entries)
         {
             // No-op.
         }
@@ -172,7 +168,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// </summary>
         /// <param name="key">The key that is used for the delete operation.</param>
         [ExcludeFromCodeCoverage]
-        public virtual void Delete(object key)
+        public virtual void Delete(TK key)
         {
             // No-op.
         }
@@ -195,7 +191,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// it contains the keys to delete for write-through. Upon return the collection must only contain
         /// the keys that were not successfully deleted.</param>
         [ExcludeFromCodeCoverage]
-        public virtual void DeleteAll(ICollection keys)
+        public virtual void DeleteAll(IEnumerable<TK> keys)
         {
             // No-op.
         }

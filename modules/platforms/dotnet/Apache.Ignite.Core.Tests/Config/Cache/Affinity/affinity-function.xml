@@ -70,7 +70,7 @@
 
                     <property name="affinity">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction">
-                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestFairFunc, Apache.Ignite.Core.Tests"/>
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestRendezvousFunc, Apache.Ignite.Core.Tests"/>
                             <property name="properties">
                                 <map>
                                     <entry key="Property1">
@@ -90,7 +90,7 @@
 
                     <property name="affinity">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction">
-                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestFairFunc, Apache.Ignite.Core.Tests"/>
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestRendezvousFunc, Apache.Ignite.Core.Tests"/>
                             <property name="properties">
                                 <map>
                                     <entry key="Property1">

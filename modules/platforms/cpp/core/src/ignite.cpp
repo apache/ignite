@@ -24,7 +24,7 @@ using namespace ignite::common::concurrent;
 using namespace ignite::impl;
 
 namespace ignite
-{    
+{
     Ignite::Ignite() : impl(SharedPointer<IgniteImpl>())
     {
         // No-op.
@@ -40,6 +40,11 @@ namespace ignite
         return impl.Get()->GetName();
     }
 
+    const IgniteConfiguration& Ignite::GetConfiguration() const
+    {
+        return impl.Get()->GetConfiguration();
+    }
+
     transactions::Transactions Ignite::GetTransactions()
     {
         using ignite::common::concurrent::SharedPointer;
@@ -48,6 +53,11 @@ namespace ignite
         SharedPointer<TransactionsImpl> txImpl = impl.Get()->GetTransactions();
 
         return transactions::Transactions(txImpl);
+    }
+
+    IgniteBinding Ignite::GetBinding()
+    {
+        return impl.Get()->GetBinding();
     }
 }
 

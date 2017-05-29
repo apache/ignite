@@ -20,58 +20,59 @@ import StringBuilder from './StringBuilder';
 /**
  * Properties generation entry point.
  */
-export default class PropertiesGenerator {
+export default class IgnitePropertiesGenerator {
     _collectProperties(bean) {
         const props = [];
 
-        _.forEach(bean.arguments, (arg) => {
-            switch (arg.clsName) {
-                case 'BEAN':
-                    props.push(...this._collectProperties(arg.value));
+        // Append properties for complex object.
+        const processBean = (bean) => {
+            const newProps = _.difference(this._collectProperties(bean), props);
 
-                    break;
-                case 'PROPERTY':
-                case 'PROPERTY_CHAR':
-                case 'PROPERTY_INT':
-                    props.push(`${arg.value}=${arg.hint}`);
+            if (!_.isEmpty(newProps)) {
+                props.push(...newProps);
 
-                    break;
-                default:
-                    // No-op.
-            }
-        });
-
-        _.forEach(bean.properties, (prop) => {
-            switch (prop.clsName) {
-                case 'DATA_SOURCE':
-                    props.push(...this._collectProperties(prop.value));
+                if (!_.isEmpty(_.last(props)))
                     props.push('');
+            }
+        };
 
-                    break;
-                case 'BEAN':
-                    props.push(...this._collectProperties(prop.value));
-
-                    break;
+        // Append properties from item.
+        const processItem = (item) => {
+            switch (item.clsName) {
                 case 'PROPERTY':
                 case 'PROPERTY_CHAR':
                 case 'PROPERTY_INT':
-                    props.push(`${prop.value}=${prop.hint}`);
+                    props.push(..._.difference([`${item.value}=${item.hint}`], props));
+
+                    break;
+                case 'BEAN':
+                case 'DATA_SOURCE':
+                    processBean(item.value);
 
                     break;
                 case 'ARRAY':
                 case 'COLLECTION':
-                    _.forEach(prop.items, (item) => {
-                        const itemLines = this._collectProperties(item);
+                    _.forEach(item.items, processBean);
 
-                        if (_.intersection(props, itemLines).length !== itemLines.length)
-                            props.push(...this._collectProperties(item));
+                    break;
+                case 'MAP':
+                    // Generate properties for all objects in keys and values of map.
+                    _.forEach(item.entries, (entry) => {
+                        processBean(entry.name);
+                        processBean(entry.value);
                     });
 
                     break;
                 default:
                     // No-op.
             }
-        });
+        };
+
+        // Generate properties for object arguments.
+        _.forEach(_.get(bean, 'arguments'), processItem);
+
+        // Generate properties for object properties.
+        _.forEach(_.get(bean, 'properties'), processItem);
 
         return props;
     }
@@ -84,7 +85,7 @@ export default class PropertiesGenerator {
 
         const sb = new StringBuilder();
 
-        sb.append(`# ${sb.generatedBy()}`);
+        sb.append(`# ${sb.generatedBy()}`).emptyLine();
 
         _.forEach(lines, (line) => sb.append(line));
 

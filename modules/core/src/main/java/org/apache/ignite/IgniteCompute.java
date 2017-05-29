@@ -24,10 +24,13 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSpis;
+import org.apache.ignite.configuration.ExecutorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -113,6 +116,7 @@ import org.jetbrains.annotations.Nullable;
  * checkpoints, etc.). If you need to override configured defaults, you should use compute task together with
  * {@link ComputeTaskSpis} annotation. Refer to {@link ComputeTask} documentation for more information.
  */
+@SuppressWarnings("deprecation")
 public interface IgniteCompute extends IgniteAsyncSupport {
     /**
      * Gets cluster group to which this {@code IgniteCompute} instance belongs.
@@ -123,8 +127,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of the whole partition, the affinity key belongs to,
+     * will present on the destination node throughout the job execution.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -132,15 +138,31 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
+    public void affinityRun(String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Executes given job asynchronously on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed.
+     *
+     * @param cacheName Name of the cache to use for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return a Future representing pending completion of the affinity run.
+     * @throws IgniteException If job failed.
+     */
+    public IgniteFuture<Void> affinityRunAsync(String cacheName, Object affKey, IgniteRunnable job)
+        throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed. The data
-     * of the extra caches' partitions with the same partition number also will not be migrated.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
-     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache is used for
+     *                   affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
@@ -150,12 +172,28 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Executes given job on the node where partition is located (the partition is primary on the node)
-     * The data of the partition will not be migrated from the target node
-     * while the job is executed. The data of the extra caches' partitions with the same partition number
-     * also will not be migrated.
+     * Executes given job asynchronously on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed. The data
+     * of the extra caches' partitions with the same partition number also will not be migrated.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return a Future representing pending completion of the affinity run.
+     * @throws IgniteException If job failed.
+     */
+    public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
+        IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Executes given job on the node where partition is located (the partition is primary on the node)
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
+     *
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache is used for
+     *                   affinity co-location.
      * @param partId Partition number.
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
@@ -165,9 +203,26 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
+     * Executes given job asynchronously on the node where partition is located (the partition is primary on the node)
+     * The data of the partition will not be migrated from the target node
+     * while the job is executed. The data of the extra caches' partitions with the same partition number
+     * also will not be migrated.
+     *
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param partId Partition number.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return a Future representing pending completion of the affinity run.
+     * @throws IgniteException If job failed.
+     */
+    public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
+        IgniteRunnable job) throws IgniteException;
+
+    /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of the whole partition, the affinity key belongs to,
+     * will present on the destination node throughout the job execution.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -176,13 +231,28 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
+    public <R> R affinityCall(String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Executes given job asynchronously on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed.
+     *
+     * @param cacheName Name of the cache to use for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return a Future representing pending completion of the affinity call.
+     * @throws IgniteException If job failed.
+     */
+    public <R> IgniteFuture<R> affinityCallAsync(String cacheName, Object affKey, IgniteCallable<R> job)
+        throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed. The data
-     * of the extra caches' partitions with the same partition number also will not be migrated.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
@@ -195,10 +265,25 @@ public interface IgniteCompute extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
+     * Executes given job asynchronously on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
+     * will not be migrated from the target node while the job is executed. The data
+     * of the extra caches' partitions with the same partition number also will not be migrated.
+     *
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return a Future representing pending completion of the affinity call.
+     * @throws IgniteException If job failed.
+     */
+    public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
+        IgniteCallable<R> job) throws IgniteException;
+
+    /**
      * Executes given job on the node where partition is located (the partition is primary on the node)
-     * The data of the partition will not be migrated from the target node
-     * while the job is executed. The data of the extra caches' partitions with the same partition number
-     * also will not be migrated.
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition to reserve.
@@ -209,6 +294,21 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     @IgniteAsyncSupported
     public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job)
         throws IgniteException;
+
+    /**
+     * Executes given job asynchronously on the node where partition is located (the partition is primary on the node)
+     * The data of the partition will not be migrated from the target node
+     * while the job is executed. The data of the extra caches' partitions with the same partition number
+     * also will not be migrated.
+     *
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param partId Partition to reserve.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @return a Future representing pending completion of the affinity call.
+     * @throws IgniteException If job failed.
+     */
+    public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
+        IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes given task on within the cluster group. For step-by-step explanation of task execution process
@@ -225,6 +325,20 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws IgniteException;
 
     /**
+     * Executes given task asynchronously on within the cluster group. For step-by-step explanation of task execution
+     * process refer to {@link ComputeTask} documentation.
+     *
+     * @param taskCls Class of the task to execute. If class has {@link ComputeTaskName} annotation,
+     *      then task is deployed under a name specified within annotation. Otherwise, full
+     *      class name is used as task name.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If task failed.
+     */
+    public <T, R> ComputeTaskFuture<R> executeAsync(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg)
+        throws IgniteException;
+
+    /**
      * Executes given task within the cluster group. For step-by-step explanation of task execution process
      * refer to {@link ComputeTask} documentation.
      *
@@ -237,6 +351,19 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteException;
+
+    /**
+     * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
+     * process refer to {@link ComputeTask} documentation.
+     *
+     * @param task Instance of task to execute. If task class has {@link ComputeTaskName} annotation,
+     *      then task is deployed under a name specified within annotation. Otherwise, full
+     *      class name is used as task name.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If task failed.
+     */
+    public <T, R> ComputeTaskFuture<R> executeAsync(ComputeTask<T, R> task, @Nullable T arg) throws IgniteException;
 
     /**
      * Executes given task within the cluster group. For step-by-step explanation of task execution process
@@ -255,6 +382,21 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteException;
 
     /**
+     * Executes given task asynchronously within the cluster group. For step-by-step explanation of task execution
+     * process refer to {@link ComputeTask} documentation.
+     * <p>
+     * If task for given name has not been deployed yet, then {@code taskName} will be
+     * used as task class name to auto-deploy the task (see {@link #localDeployTask(Class, ClassLoader)} method).
+     *
+     * @param taskName Name of the task to execute.
+     * @param arg Optional argument of task execution, can be {@code null}.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If task failed.
+     * @see ComputeTask for information about task execution.
+     */
+    public <T, R> ComputeTaskFuture<R> executeAsync(String taskName, @Nullable T arg) throws IgniteException;
+
+    /**
      * Broadcasts given job to all nodes in the cluster group.
      *
      * @param job Job to broadcast to all cluster group nodes.
@@ -262,6 +404,15 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void broadcast(IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Broadcasts given job asynchronously to all nodes in the cluster group.
+     *
+     * @param job Job to broadcast to all cluster group nodes.
+     * @return a Future representing pending completion of the broadcast execution of the job.
+     * @throws IgniteException If job failed.
+     */
+    public IgniteFuture<Void> broadcastAsync(IgniteRunnable job) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in cluster group. Every participating node will return a
@@ -273,6 +424,16 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public <R> Collection<R> broadcast(IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Broadcasts given job asynchronously to all nodes in cluster group. Every participating node will return a
+     * job result. Collection of all returned job results is returned from the result future.
+     *
+     * @param job Job to broadcast to all cluster group nodes.
+     * @return a Future representing pending completion of the broadcast execution of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public <R> IgniteFuture<Collection<R>> broadcastAsync(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Broadcasts given closure job with passed in argument to all nodes in the cluster group.
@@ -288,6 +449,19 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
+     * Broadcasts given closure job asynchronously with passed in argument to all nodes in the cluster group.
+     * Every participating node will return a job result. Collection of all returned job results
+     * is returned from the result future.
+     *
+     * @param job Job to broadcast to all cluster group nodes.
+     * @param arg Job closure argument.
+     * @return a Future representing pending completion of the broadcast execution of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public <R, T> IgniteFuture<Collection<R>> broadcastAsync(IgniteClosure<T, R> job, @Nullable T arg)
+        throws IgniteException;
+
+    /**
      * Executes provided job on a node within the underlying cluster group.
      *
      * @param job Job closure to execute.
@@ -297,6 +471,15 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public void run(IgniteRunnable job) throws IgniteException;
 
     /**
+     * Executes provided job asynchronously on a node within the underlying cluster group.
+     *
+     * @param job Job closure to execute.
+     * @return a Future representing pending completion of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public IgniteFuture<Void> runAsync(IgniteRunnable job) throws IgniteException;
+
+    /**
      * Executes collection of jobs on grid nodes within the underlying cluster group.
      *
      * @param jobs Collection of jobs to execute.
@@ -304,6 +487,16 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void run(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
+
+    /**
+     * Executes collection of jobs asynchronously on grid nodes within the underlying cluster group.
+     * Executes asynchronously. Returns control immediately.
+     *
+     * @param jobs Collection of jobs to execute.
+     * @return a Future representing pending completion of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public IgniteFuture<Void> runAsync(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
 
     /**
      * Executes provided job on a node within the underlying cluster group. The result of the
@@ -317,6 +510,16 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <R> R call(IgniteCallable<R> job) throws IgniteException;
 
     /**
+     * Executes provided job asynchronously on a node within the underlying cluster group. The result of the
+     * job execution is returned from the result closure.
+     *
+     * @param job Job to execute.
+     * @return a Future representing pending completion of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public <R> IgniteFuture<R> callAsync(IgniteCallable<R> job) throws IgniteException;
+
+    /**
      * Executes collection of jobs on nodes within the underlying cluster group.
      * Collection of all returned job results is returned from the result future.
      *
@@ -328,17 +531,40 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) throws IgniteException;
 
     /**
+     * Executes collection of jobs asynchronously on nodes within the underlying cluster group.
+     * Collection of all returned job results is returned from the result future.
+     *
+     * @param jobs Collection of jobs to execute.
+     * @return a Future representing pending completion of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public <R> IgniteFuture<Collection<R>> callAsync(Collection<? extends IgniteCallable<R>> jobs)
+        throws IgniteException;
+
+    /**
      * Executes collection of jobs on nodes within the underlying cluster group. The returned
      * job results will be reduced into an individual result by provided reducer.
      *
      * @param jobs Collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
-     * @return Future with reduced job result for this execution.
+     * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
     public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc)
         throws IgniteException;
+
+    /**
+     * Executes collection of jobs asynchronously on nodes within the underlying cluster group. The returned
+     * job results will be reduced into an individual result by provided reducer.
+     *
+     * @param jobs Collection of jobs to execute.
+     * @param rdc Reducer to reduce all job results into one individual return value.
+     * @return a Future with reduced job result for this execution.
+     * @throws IgniteException If execution failed.
+     */
+    public <R1, R2> IgniteFuture<R2> callAsync(Collection<? extends IgniteCallable<R1>> jobs,
+        IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
      * Executes provided closure job on a node within the underlying cluster group. This method is different
@@ -354,6 +580,18 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
+     * Executes provided closure job asynchronously on a node within the underlying cluster group.
+     * This method is different from {@code run(...)} and {@code call(...)} methods in a way that
+     * it receives job argument which is then passed into the closure at execution time.
+     *
+     * @param job Job to run.
+     * @param arg Job argument.
+     * @return a Future representing pending completion of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public <R, T> IgniteFuture<R> applyAsync(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
+
+    /**
      * Executes provided closure job on nodes within the underlying cluster group. A new job is executed for
      * every argument in the passed in collection. The number of actual job executions will be
      * equal to size of the job arguments collection.
@@ -367,6 +605,19 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public <T, R> Collection<R> apply(IgniteClosure<T, R> job, Collection<? extends T> args) throws IgniteException;
 
     /**
+     * Executes provided closure job asynchronously on nodes within the underlying cluster group. A new job is executed
+     * for every argument in the passed in collection. The number of actual job executions will be
+     * equal to size of the job arguments collection.
+     *
+     * @param job Job to run.
+     * @param args Job arguments.
+     * @return a Future representing pending completion of the job.
+     * @throws IgniteException If execution failed.
+     */
+    public <T, R> IgniteFuture<Collection<R>> applyAsync(IgniteClosure<T, R> job, Collection<? extends T> args)
+        throws IgniteException;
+
+    /**
      * Executes provided closure job on nodes within the underlying cluster group. A new job is executed for
      * every argument in the passed in collection. The number of actual job executions will be
      * equal to size of the job arguments collection. The returned job results will be reduced
@@ -375,11 +626,26 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to run.
      * @param args Job arguments.
      * @param rdc Reducer to reduce all job results into one individual return value.
-     * @return Future with reduced job result for this execution.
+     * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
     public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
+        IgniteReducer<R1, R2> rdc) throws IgniteException;
+
+    /**
+     * Executes provided closure job asynchronously on nodes within the underlying cluster group. A new job is executed
+     * for every argument in the passed in collection. The number of actual job executions will be
+     * equal to size of the job arguments collection. The returned job results will be reduced
+     * into an individual result by provided reducer.
+     *
+     * @param job Job to run.
+     * @param args Job arguments.
+     * @param rdc Reducer to reduce all job results into one individual return value.
+     * @return a Future with reduced job result for this execution.
+     * @throws IgniteException If execution failed.
+     */
+    public <R1, R2, T> IgniteFuture<R2> applyAsync(IgniteClosure<T, R1> job, Collection<? extends T> args,
         IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
@@ -481,8 +747,22 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     public void undeployTask(String taskName) throws IgniteException;
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public <R> ComputeTaskFuture<R> future();
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteCompute withAsync();
+
+    /**
+     * Gets instance of the compute API associated with custom executor. All tasks and closures submitted to returned
+     * instance will be processed by this executor on both remote and local nodes. If executor with the given name
+     * doesn't exist, task will be processed in default ("public") pool.
+     * <p>
+     * Executor should be defined in {@link IgniteConfiguration#setExecutorConfiguration(ExecutorConfiguration...)}.
+     *
+     * @param name Custom executor name.
+     * @return Instance of compute API associated with custom executor.
+     */
+    public IgniteCompute withExecutor(@NotNull String name);
 }
