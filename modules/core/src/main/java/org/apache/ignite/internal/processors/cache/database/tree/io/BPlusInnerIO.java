@@ -100,7 +100,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         cnt *= getItemSize() + 8; // From items to bytes.
 
         if (dstIdx > srcIdx) {
-            PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcIdx), offset(dstIdx), cnt);
+            PageHandler.copyMemory(srcPageAddr, offset(srcIdx), dstPageAddr, offset(dstIdx), cnt);
 
             if (cpLeft)
                 PageUtils.putLong(dstPageAddr, offset0(dstIdx, SHIFT_LEFT), PageUtils.getLong(srcPageAddr, (offset0(srcIdx, SHIFT_LEFT))));
@@ -109,7 +109,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
             if (cpLeft)
                 PageUtils.putLong(dstPageAddr, offset0(dstIdx, SHIFT_LEFT), PageUtils.getLong(srcPageAddr, (offset0(srcIdx, SHIFT_LEFT))));
 
-            PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcIdx), offset(dstIdx), cnt);
+            PageHandler.copyMemory(srcPageAddr, offset(srcIdx), dstPageAddr, offset(dstIdx), cnt);
         }
     }
 

@@ -139,7 +139,7 @@ public class TrackingPageIO extends PageIO {
             if (last - lastSuccessfulSnapshotId == 1) { //we should keep only data in last half
                 //new data will be written in the same half, we should move old data to another half
                 if ((nextSnapshotTag - last) % 2 == 0)
-                    PageHandler.copyMemory(buf, buf, sizeOff, sizeOff2, len + SIZE_FIELD_SIZE);
+                    PageHandler.copyMemory(buf, sizeOff, buf, sizeOff2, len + SIZE_FIELD_SIZE);
             } else { //last - lastSuccessfulSnapshotId > 1, e.g. we should merge two half in one
                 int newSize = 0;
                 int i = 0;
