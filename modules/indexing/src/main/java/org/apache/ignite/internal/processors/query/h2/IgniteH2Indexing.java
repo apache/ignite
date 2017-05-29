@@ -793,7 +793,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param qry Query.
      * @param params Query parameters.
      * @param filter Cache name and key filter.
@@ -804,11 +804,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public GridQueryFieldsResult queryLocalSqlFields(final String cacheName, final String qry,
+    public GridQueryFieldsResult queryLocalSqlFields(final String schemaName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
-        final String schemaName = schema(cacheName);
-
         final Connection conn = connectionForSchema(schemaName);
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder);
@@ -1068,7 +1066,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final Object[] args = qry.getArgs();
 
             // TODO: 5317
-            final GridQueryFieldsResult res = queryLocalSqlFields(cacheName, sql, F.asList(args), filter,
+            final GridQueryFieldsResult res = queryLocalSqlFields(schema(cacheName), sql, F.asList(args), filter,
                 qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
             QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
