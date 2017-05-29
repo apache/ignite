@@ -198,6 +198,7 @@
     <Compile Include="Impl\Binary\ReflectionUtils.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Impl\Binary\TypeNameParser.cs" />
+    <Compile Include="Impl\Cache\IQueryEntityInternal.cs" />
     <Compile Include="Impl\Cache\MemoryMetrics.cs" />
     <Compile Include="Impl\Cache\Store\CacheStore.cs" />
     <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
