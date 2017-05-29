@@ -250,7 +250,8 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the SQL like expression.
         /// </summary>
-        private static void VisitSqlLike(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string likeFormat)
+        private static void VisitSqlLike(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
+            string likeFormat)
         {
             visitor.ResultBuilder.Append("(");
 
@@ -260,7 +261,9 @@ namespace Apache.Ignite.Linq.Impl
 
             var arg = expression.Arguments[0] as ConstantExpression;
 
-            var paramValue = arg != null ? arg.Value : visitor.RegisterEvaluatedParameter(expression.Arguments[0]);
+            var paramValue = arg != null
+                ? arg.Value
+                : ExpressionWalker.EvaluateExpression<object>(expression.Arguments[0]);
 
             visitor.Parameters.Add(paramValue);
         }

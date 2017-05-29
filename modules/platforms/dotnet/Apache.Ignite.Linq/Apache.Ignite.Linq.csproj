@@ -63,6 +63,8 @@
     <Compile Include="Impl\CacheQueryExpressionVisitor.cs" />
     <Compile Include="Impl\CacheQueryModelVisitor.cs" />
     <Compile Include="Impl\CacheQueryParser.cs" />
+    <Compile Include="Impl\Dml\RemoveAllExpressionNode.cs" />
+    <Compile Include="Impl\Dml\RemoveAllResultOperator.cs" />
     <Compile Include="Impl\ICacheQueryableInternal.cs" />
     <Compile Include="Impl\MethodVisitor.cs" />
     <Compile Include="Impl\QueryData.cs" />
@@ -83,6 +85,7 @@
       <Name>Apache.Ignite.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
