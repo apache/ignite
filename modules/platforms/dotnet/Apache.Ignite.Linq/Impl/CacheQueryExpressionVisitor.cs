@@ -310,7 +310,11 @@ namespace Apache.Ignite.Linq.Impl
             {
                 var fieldName = GetFieldName(expression, queryable);
 
-                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
+                ResultBuilder.AppendFormat(
+                    queryable.CacheConfiguration.SqlEscapeAll
+                        ? "{0}.{1}"
+                        : "{0}.\"{1}\"",
+                    Aliases.GetTableAlias(expression), fieldName);
             }
             else
                 AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
