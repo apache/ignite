@@ -50,8 +50,14 @@
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="valueType" value="QueryPerson"/>
+
+                                <property name="keyFieldName" value="k"/>
+                                <property name="valueFieldName" value="v"/>
+
                                 <property name="fields">
                                     <map>
+                                        <entry key="k" value="java.lang.Integer"/>
+                                        <entry key="v" value="QueryPerson"/>
                                         <entry key="name" value="java.lang.String"/>
                                         <entry key="age" value="java.lang.Integer"/>
                                         <entry key="birthday" value="java.util.Date"/>

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
@@ -105,6 +106,28 @@ namespace Apache.Ignite.Core.Cache.Query
         public bool EnforceJoinOrder { get; set; }
 
         /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        public bool ReplicatedOnly { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query operates on colocated data.
+        /// <para />
+        /// Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+        /// If you know in advance that the elements of your query selection are colocated together on the same
+        /// node and you group by colocated key (primary or affinity key), then Ignite can make significant
+        /// performance and network optimizations by grouping data on remote nodes.
+        /// </summary>
+        public bool Colocated { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
         /// </summary>
         /// <returns>
@@ -115,8 +138,10 @@ namespace Apache.Ignite.Core.Cache.Query
             var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
-                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}]", Sql, args, Local,
-                                 PageSize, EnableDistributedJoins, EnforceJoinOrder);
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
+                                 ", Colocated={8}]", Sql, args, Local,
+                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
+                                 Colocated);
         }
     }
 }

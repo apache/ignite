@@ -58,6 +58,14 @@ public interface SecurityPermissionSet extends Serializable {
     public Map<String, Collection<SecurityPermission>> cachePermissions();
 
     /**
+     * Map of service names to service permissions. Wildcards are allowed at the
+     * end of service names.
+     *
+     * @return Map of service names to service permissions.
+     */
+    public Map<String, Collection<SecurityPermission>> servicePermissions();
+
+    /**
      * Collection of system-wide permissions (events enable/disable, Visor task execution).
      *
      * @return Collection of system-wide permissions.

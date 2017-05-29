@@ -47,9 +47,6 @@ include /app/helpers/jade/mixins
                             </li>\
                         </ul>')
                 .settings-row
-                    +number('On-heap cache for off-heap indexes:', `${model}.sqlOnheapRowCacheSize`, '"sqlOnheapRowCacheSize"', 'true', '10240', '1',
-                        'Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access')
-                .settings-row
                     +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"longQueryWarningTimeout"', 'true', '3000', '0',
                         'Timeout in milliseconds after which long query warning will be printed')
                 .settings-row
@@ -105,9 +102,6 @@ include /app/helpers/jade/mixins
 
                         .group-content-empty(ng-if=`!(${sqlFunctionClasses}.length) && !group.add.length`)
                             | Not defined
-                .settings-row
-                    +checkbox('Snapshotable index', `${model}.snapshotableIndex`, '"snapshotableIndex"',
-                        'Flag indicating whether SQL indexes should support snapshots')
                 .settings-row
                     +checkbox('Escape table and filed names', `${model}.sqlEscapeAll`, '"sqlEscapeAll"',
                         'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\

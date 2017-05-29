@@ -17,10 +17,10 @@
 
 package org.apache.ignite.examples.ml.math.decompositions;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.Tracer;
-import org.apache.ignite.math.decompositions.LUDecomposition;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.decompositions.LUDecomposition;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /**
  * Example of using {@link LUDecomposition}.

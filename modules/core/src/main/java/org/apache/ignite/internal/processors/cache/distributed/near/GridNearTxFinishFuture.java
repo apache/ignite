@@ -642,7 +642,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param mapping Mapping to finish.
      */
     private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
-        if (mapping.near()) {
+        if (mapping.hasNearCacheEntries()) {
             GridCacheVersion xidVer = tx.xidVersion();
 
             mapping.dhtVersion(xidVer, xidVer);
@@ -676,7 +676,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
-        assert !m.empty();
+        assert !m.empty() : m;
 
         CacheWriteSynchronizationMode syncMode = tx.syncMode();
 
@@ -698,7 +698,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             m.explicitLock(),
             tx.storeEnabled(),
             tx.topologyVersion(),
-            completedVer, // Reuse 'baseVersion'  to do not add new fields in message.
+            completedVer, // Reuse 'baseVersion' to do not add new fields in message.
             null,
             null,
             tx.size(),

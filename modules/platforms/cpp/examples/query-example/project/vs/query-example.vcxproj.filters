@@ -18,10 +18,18 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{b355095f-b4e2-4324-9516-854828c876ff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{89a5a9cc-a2c9-4d11-9044-869c3af6a2fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\query_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\query-example.xml">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
 </Project>

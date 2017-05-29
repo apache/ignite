@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -29,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -50,35 +50,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const int MaxItemCnt = 100;
 
         /// <summary>
-        /// 
+        /// Fixture setup.
         /// </summary>
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.KillProcesses();
-
-            IgniteConfiguration cfg = new IgniteConfiguration
-            {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new[]
-                    {
-                        new BinaryTypeConfiguration(typeof (QueryPerson)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
-                    },
-                    NameMapper = GetNameMapper()
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = CfgPath
-            };
-
             for (int i = 0; i < GridCnt; i++)
             {
-                cfg.IgniteInstanceName = "grid-" + i;
-
-                Ignition.Start(cfg);
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    BinaryConfiguration = new BinaryConfiguration
+                    {
+                        NameMapper = GetNameMapper()
+                    },
+                    SpringConfigUrl = CfgPath,
+                    IgniteInstanceName = "grid-" + i
+                });
             }
         }
         
@@ -91,13 +78,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
         public void StopGrids()
         {
-            for (int i = 0; i < GridCnt; i++)
-                Ignition.Stop("grid-" + i, true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -119,8 +105,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (int i = 0; i < GridCnt; i++)
             {
-                for (int j = 0; j < MaxItemCnt; j++)
-                    cache.Remove(j);
+                cache.Clear();
 
                 Assert.IsTrue(cache.IsEmpty());
             }
@@ -366,8 +351,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 2. Validate results.
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
             {
-                EnableDistributedJoins = distrJoin
+                EnableDistributedJoins = distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(3)
             };
+
+            Assert.AreEqual(string.Format("SqlQuery [Sql=age < 50, Arguments=[], Local={0}, " +
+                                          "PageSize=1024, EnableDistributedJoins={1}, Timeout={2}, " +
+                                          "ReplicatedOnly=False]", loc, distrJoin, qry.Timeout), qry.ToString());
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
@@ -390,7 +381,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", loc)
             {
                 EnableDistributedJoins = distrJoin,
-                EnforceJoinOrder = enforceJoinOrder
+                EnforceJoinOrder = enforceJoinOrder,
+                Colocated = !distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(2)
             };
 
             using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
@@ -455,7 +449,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQuery<BinaryObject>(loc, true);
+            CheckScanQuery<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -473,7 +467,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<BinaryObject>(loc, true);
+            CheckScanQueryPartitions<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -635,6 +629,96 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests custom key and value field names.
+        /// </summary>
+        [Test]
+        public void TestCustomKeyValueFieldNames()
+        {
+            // Check select * with default config - does not include _key, _val.
+            var cache = Cache();
+
+            cache[1] = new QueryPerson("Joe", 48);
+
+            var row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(2, row.Count);
+            Assert.AreEqual(48, row[0]);
+            Assert.AreEqual("Joe", row[1]);
+
+            // Check select * with custom names - fields are included.
+            cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("customKeyVal")
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
+                        {
+                            Fields = new[]
+                            {
+                                new QueryField("age", "int"),
+                                new QueryField("FullKey", "int"),
+                                new QueryField("FullVal", "QueryPerson")
+                            },
+                            KeyFieldName = "FullKey",
+                            ValueFieldName = "FullVal"
+                        }
+                    }
+                });
+
+            cache[1] = new QueryPerson("John", 33);
+
+            row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            
+            Assert.AreEqual(3, row.Count);
+            Assert.AreEqual(33, row[0]);
+            Assert.AreEqual(1, row[1]);
+
+            var person = (QueryPerson) row[2];
+            Assert.AreEqual("John", person.Name);
+
+            // Check explicit select.
+            row = cache.QueryFields(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(1, row[0]);
+        }
+
+        /// <summary>
+        /// Tests query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
+            {
+                Timeout = TimeSpan.FromMilliseconds(2)
+            };
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).ToArray());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests fields query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlFieldsQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
+            var fieldsQry = new SqlFieldsQuery("SELECT * FROM QueryPerson WHERE age < 5000 AND name like '%0%'")
+            {
+                Timeout = TimeSpan.FromMilliseconds(3)
+            };
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).ToArray());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
         /// Validates the query results.
         /// </summary>
         /// <param name="cache">Cache.</param>
@@ -782,7 +866,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (var i = 0; i < cnt; i++)
             {
-                var val = rand.Next(100);
+                var val = rand.Next(cnt);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
@@ -807,8 +891,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public QueryPerson(string name, int age)
         {
             Name = name;
-            Age = age;
-            Birthday = DateTime.UtcNow.AddYears(-age);
+            Age = age % 2000;
+            Birthday = DateTime.UtcNow.AddYears(-Age);
         }
 
         /// <summary>

@@ -56,7 +56,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(backups);
         ccfg.setCacheMode(PARTITIONED);
@@ -117,7 +117,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
             failDeserialization = false;
 
             // Get client grid.
-            IgniteCache<Integer, TestObject> cache = grid(2).cache(null);
+            IgniteCache<Integer, TestObject> cache = grid(2).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());

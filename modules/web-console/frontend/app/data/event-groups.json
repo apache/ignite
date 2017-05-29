@@ -97,8 +97,6 @@
       "EVT_CACHE_OBJECT_REMOVED",
       "EVT_CACHE_OBJECT_LOCKED",
       "EVT_CACHE_OBJECT_UNLOCKED",
-      "EVT_CACHE_OBJECT_SWAPPED",
-      "EVT_CACHE_OBJECT_UNSWAPPED",
       "EVT_CACHE_OBJECT_EXPIRED"
     ]
   },
@@ -133,18 +131,6 @@
     "events": [
       "EVT_CACHE_QUERY_EXECUTED",
       "EVT_CACHE_QUERY_OBJECT_READ"
-    ]
-  },
-  {
-    "label": "EVTS_SWAPSPACE",
-    "value": "EVTS_SWAPSPACE",
-    "class": "org.apache.ignite.events.EventType",
-    "events": [
-      "EVT_SWAP_SPACE_CLEARED",
-      "EVT_SWAP_SPACE_DATA_REMOVED",
-      "EVT_SWAP_SPACE_DATA_READ",
-      "EVT_SWAP_SPACE_DATA_STORED",
-      "EVT_SWAP_SPACE_DATA_EVICTED"
     ]
   },
   {

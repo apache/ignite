@@ -22,12 +22,13 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 
-const igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
+const igniteModules = process.env.IGNITE_MODULES ?
+    path.join(path.normalize(process.env.IGNITE_MODULES), 'backend') : './ignite_modules';
 
 let injector;
 
 try {
-    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'backend', 'injector.js'));
+    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'injector.js'));
 
     fs.accessSync(igniteModulesInjector, fs.F_OK);
 

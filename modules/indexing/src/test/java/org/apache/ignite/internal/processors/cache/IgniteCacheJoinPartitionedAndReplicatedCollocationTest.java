@@ -133,7 +133,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name, int backups) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

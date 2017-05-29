@@ -190,11 +190,6 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.igfsFragmentizer(igfs));
     }
 
-    // Generate IGFS Dual mode group.
-    static igfsDualMode(igfs) {
-        return this.toSection(this.generator.igfsDualMode(igfs));
-    }
-
     // Generate IGFS miscellaneous group.
     static igfsMisc(igfs) {
         return this.toSection(this.generator.igfsMisc(igfs));

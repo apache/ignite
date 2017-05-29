@@ -138,7 +138,7 @@ class VisorCacheScanCommand {
         val firstPage =
             try
                 executeRandom(groupForDataNode(node, cacheName),
-                    classOf[VisorScanQueryTask], new VisorScanQueryArg(cacheName, null, false, false, false, false, pageSize)) match {
+                    classOf[VisorScanQueryTask], new VisorScanQueryTaskArg(cacheName, null, false, false, false, false, pageSize)) match {
                     case x if x.getError != null =>
                         error(x.getError)
 

@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
@@ -144,10 +143,5 @@ public class PredicateSetView<K, V> extends GridSerializableMap<K, V> {
     /** {@inheritDoc} */
     @Override public boolean containsKey(Object key) {
         return GridFunc.isAll((K)key, preds) && set.contains(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(PredicateSetView.class, this);
     }
 }

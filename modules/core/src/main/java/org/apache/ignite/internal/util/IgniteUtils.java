@@ -177,8 +177,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -418,6 +416,9 @@ public abstract class IgniteUtils {
     /** Name of the JVM implementation. */
     private static String jvmImplName;
 
+    /** Will be set to {@code true} if detected a 32-bit JVM. */
+    private static boolean jvm32Bit;
+
     /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
@@ -609,6 +610,9 @@ public abstract class IgniteUtils {
         String jvmImplVendor = System.getProperty("java.vm.vendor");
         String jvmImplName = System.getProperty("java.vm.name");
 
+        // Best effort to detect a 32-bit JVM.
+        String jvmArchDataModel = System.getProperty("sun.arch.data.model");
+
         String jdkStr = javaRtName + ' ' + javaRtVer + ' ' + jvmImplVendor + ' ' + jvmImplName + ' ' +
             jvmImplVer;
 
@@ -629,6 +633,8 @@ public abstract class IgniteUtils {
         IgniteUtils.jvmImplName = jvmImplName;
         IgniteUtils.javaRtName = javaRtName;
         IgniteUtils.javaRtVer = javaRtVer;
+
+        jvm32Bit = "32".equals(jvmArchDataModel);
 
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -1860,10 +1866,10 @@ public abstract class IgniteUtils {
      * @return List of reachable addresses.
      */
     public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
-        final int reachTimeout = 2000;
-
         if (addrs.isEmpty())
             return Collections.emptyList();
+
+        final int reachTimeout = 2000;
 
         if (addrs.size() == 1) {
             InetAddress addr = F.first(addrs);
@@ -1880,33 +1886,36 @@ public abstract class IgniteUtils {
 
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
 
-        for (final InetAddress addr : addrs) {
-            futs.add(executor.submit(new Runnable() {
-                @Override public void run() {
-                    if (reachable(addr, reachTimeout)) {
-                        synchronized (res) {
-                            res.add(addr);
+        try {
+            for (final InetAddress addr : addrs) {
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        if (reachable(addr, reachTimeout)) {
+                            synchronized (res) {
+                                res.add(addr);
+                            }
                         }
                     }
+                }));
+            }
+
+            for (Future<?> fut : futs) {
+                try {
+                    fut.get();
                 }
-            }));
-        }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
 
-        for (Future<?> fut : futs) {
-            try {
-                fut.get();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException("Thread has been interrupted.", e);
-            }
-            catch (ExecutionException e) {
-                throw new IgniteException(e);
+                    throw new IgniteException("Thread has been interrupted.", e);
+                }
+                catch (ExecutionException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
-
-        executor.shutdown();
+        finally {
+            executor.shutdown();
+        }
 
         return res;
     }
@@ -5629,6 +5638,28 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets amount of RAM memory available on this machine.
+     *
+     * @return Total amount of memory in bytes or -1 if any exception happened.
+     */
+    public static long getTotalMemoryAvailable() {
+        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        Object attr;
+
+        try {
+            attr = mBeanSrv.getAttribute(
+                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                    "TotalPhysicalMemorySize");
+        }
+        catch (Exception e) {
+            return -1;
+        }
+
+        return (attr instanceof Long) ? (Long) attr : -1;
+    }
+
+    /**
      * Gets compilation MBean.
      *
      * @return Compilation MBean.
@@ -6483,6 +6514,15 @@ public abstract class IgniteUtils {
      */
     public static String jvmName() {
         return jvmImplName;
+    }
+
+    /**
+     * Does a best effort to detect if we a running on a 32-bit JVM.
+     *
+     * @return {@code true} if detected that we are running on a 32-bit JVM.
+     */
+    public static boolean jvm32Bit() {
+        return jvm32Bit;
     }
 
     /**
@@ -9554,7 +9594,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return IgniteUtils.arrayList(c, c.size(), p);
+        return arrayList(c, c.size(), p);
     }
 
     /**
@@ -10093,5 +10133,24 @@ public abstract class IgniteUtils {
         catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Returns {@link GridIntIterator} for range of primitive integers.
+     * @param start Start.
+     * @param cnt Count.
+     */
+    public static GridIntIterator forRange(final int start, final int cnt) {
+        return new GridIntIterator() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < cnt;
+            }
+
+            @Override public int next() {
+                return start + c++;
+            }
+        };
     }
 }

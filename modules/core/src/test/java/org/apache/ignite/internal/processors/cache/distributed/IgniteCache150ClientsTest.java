@@ -67,14 +67,14 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(200);
 
+        cfg.setClientFailureDetectionTimeout(200000);
         cfg.setClientMode(!igniteInstanceName.equals(getTestIgniteInstanceName(0)));
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
         for (int i = 0 ; i < ccfgs.length; i++) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
             ccfg.setAtomicityMode(i % 2 == 0 ? ATOMIC : TRANSACTIONAL);

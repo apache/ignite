@@ -115,7 +115,6 @@
                 <!-- Configuring persistence for "cache1" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
-                    <property name="startSize" value="1000000"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="backups" value="0"/>
                     <property name="readThrough" value="true"/>
@@ -132,7 +131,6 @@
                 <!-- Configuring persistence for "cache2" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache2"/>
-                    <property name="startSize" value="1000000"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="backups" value="0"/>
                     <property name="readThrough" value="true"/>
@@ -149,7 +147,6 @@
                 <!-- Configuring persistence for "cache3" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache3"/>
-                    <property name="startSize" value="1000000"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="backups" value="0"/>
                     <property name="readThrough" value="true"/>

@@ -103,11 +103,11 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 
 // Controllers
-import caches from 'controllers/caches-controller';
-import clusters from 'controllers/clusters-controller';
-import domains from 'controllers/domains-controller';
-import igfs from 'controllers/igfs-controller';
-import profile from 'controllers/profile-controller';
+import caches from '../controllers/caches-controller';
+import clusters from '../controllers/clusters-controller';
+import domains from '../controllers/domains-controller';
+import igfs from '../controllers/igfs-controller';
+import profile from '../controllers/profile-controller';
 import auth from './controllers/auth.controller';
 import resetPassword from './controllers/reset-password.controller';
 
@@ -116,9 +116,12 @@ import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
+import webConsoleHeader from './components/web-console-header';
+import webConsoleFooter from './components/web-console-footer';
+import igniteIcon from './components/ignite-icon';
 
 // Inject external modules.
-import 'ignite_modules_temp/index';
+import IgniteModules from 'IgniteModules/index';
 
 import baseTemplate from 'views/base.pug';
 
@@ -172,8 +175,12 @@ angular
     'ignite-console.loading',
     // Ignite configuration module.
     'ignite-console.config',
+    // Components
+    webConsoleHeader.name,
+    webConsoleFooter.name,
+    igniteIcon.name,
     // Ignite modules.
-    'ignite-console.modules'
+    IgniteModules.name
 ])
 // Directives.
 .directive(...igniteAutoFocus)
@@ -226,11 +233,11 @@ angular
 .controller(...igfs)
 .controller(...profile)
 // Filters.
-.filter(...byName)
+.filter('byName', byName)
 .filter('defaultName', defaultName)
-.filter(...domainsValidation)
-.filter(...duration)
-.filter(...hasPojo)
+.filter('domainsValidation', domainsValidation)
+.filter('duration', duration)
+.filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);

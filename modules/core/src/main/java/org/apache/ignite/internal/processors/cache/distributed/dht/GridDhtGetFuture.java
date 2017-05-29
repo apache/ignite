@@ -291,27 +291,36 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
-        GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
-            cache().topology().localPartition(key, false);
+        try {
+            GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
+                cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
+                cache().topology().localPartition(key, false);
 
-        if (part == null)
-            return false;
+            if (part == null)
+                return false;
 
-        if (parts == null || !F.contains(parts, part.id())) {
-            // By reserving, we make sure that partition won't be unloaded while processed.
-            if (part.reserve()) {
-                parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
+            if (parts == null || !F.contains(parts, part.id())) {
+                // By reserving, we make sure that partition won't be unloaded while processed.
+                if (part.reserve()) {
+                    parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
 
-                parts[parts.length - 1] = part.id();
+                    parts[parts.length - 1] = part.id();
 
-                return true;
+                    return true;
+                }
+                else
+                    return false;
             }
             else
-                return false;
+                return true;
         }
-        else
-            return true;
+        catch (GridDhtInvalidPartitionException e) {
+            if (log.isDebugEnabled())
+                log.debug("Attempted to create a partition which does not belong to local node, will remap " +
+                    "[key=" + key + ", part=" + e.partition() + ']');
+
+            return false;
+        }
     }
 
     /**

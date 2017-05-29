@@ -22,10 +22,11 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
-import org.apache.ignite.math.MatrixStorage;
+import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.impls.storage.matrix.ArrayMatrixStorage;
 
 /**
- * Example matrix storage, modeled after {@link org.apache.ignite.math.impls.storage.matrix.ArrayMatrixStorage}.
+ * Example matrix storage implementation, modeled after {@link ArrayMatrixStorage}.
  */
 class ExampleMatrixStorage implements MatrixStorage {
     /** Backing data array. */

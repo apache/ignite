@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -110,7 +111,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
-        return new CacheConfiguration()
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
@@ -290,6 +291,64 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     */
+    public void testSubQueryWithAggregate() {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            AffinityKey.class, Person2.class);
+
+        IgniteCache<AffinityKey<Integer>, Person2> c1 = ignite(0).getOrCreateCache(ccfg1);
+
+        try {
+            int orgId = 100500;
+
+            c1.put(new AffinityKey<>(1, orgId), new Person2(orgId, "Vasya"));
+            c1.put(new AffinityKey<>(2, orgId), new Person2(orgId, "Another Vasya"));
+
+            List<List<?>> rs = c1.query(new SqlFieldsQuery("select name, " +
+                "select count(1) from Person2 q where q.orgId = p.orgId " +
+                "from Person2 p order by name desc")).getAll();
+
+            assertEquals(2, rs.size());
+            assertEquals("Vasya", rs.get(0).get(0));
+            assertEquals(2L, rs.get(0).get(1));
+            assertEquals("Another Vasya", rs.get(1).get(0));
+            assertEquals(2L, rs.get(1).get(1));
+        }
+        finally {
+            c1.destroy();
+        }
+    }
+
+    /**
+     * @throws InterruptedException If failed.
+     */
+    public void testDistributedJoinFromReplicatedCache() throws InterruptedException {
+        CacheConfiguration ccfg1 = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        CacheConfiguration ccfg2 = cacheConfig("org", true,
+            Integer.class, Organization.class);
+
+        CacheConfiguration ccfg3 = cacheConfig("orgRepl", false,
+            Integer.class, Organization.class);
+
+        IgniteCache<Integer, Person2> c1 = ignite(0).getOrCreateCache(ccfg1);
+        IgniteCache<Integer, Organization> c2 = ignite(0).getOrCreateCache(ccfg2);
+        IgniteCache<Integer, Organization> c3 = ignite(0).getOrCreateCache(ccfg3);
+
+        try {
+            awaitPartitionMapExchange();
+
+            doTestDistributedJoins(c3, c1, c2, 300, 2000, 5, false);
+            doTestDistributedJoins(c3, c1, c2, 300, 2000, 5, true);
+        }
+        finally {
+            c1.destroy();
+            c2.destroy();
+        }
+    }
+
     @SuppressWarnings("SuspiciousMethodCalls")
     public void testExists() {
         IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
@@ -413,7 +472,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             info("Plan: " + plan);
 
-            assertTrue(plan.contains("grpIdx"));
+            assertTrue("_explain: " + plan, plan.toLowerCase().contains("grpidx"));
 
             // Sorted list
             List<GroupIndexTestValue> list = F.asList(
@@ -476,6 +535,38 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    public void testUseIndexHints() {
+        CacheConfiguration ccfg = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        IgniteCache<Integer, Person2> c = ignite(0).getOrCreateCache(ccfg);
+
+        try {
+            String select = "select 1 from Person2 use index (\"PERSON2_ORGID_IDX\") where name = '' and orgId = 1";
+
+            String plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
+
+            select = "select 1 from Person2 use index (\"PERSON2_NAME_IDX\") where name = '' and orgId = 1";
+
+            plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testDistributedJoins() throws Exception {
@@ -491,14 +582,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         try {
             awaitPartitionMapExchange();
 
-            doTestDistributedJoins(c1, c2, 30, 100, 1000, false);
-            doTestDistributedJoins(c1, c2, 30, 100, 1000, true);
+            doTestDistributedJoins(c2, c1, c2, 30, 100, 1000, false);
+            doTestDistributedJoins(c2, c1, c2, 30, 100, 1000, true);
 
-            doTestDistributedJoins(c1, c2, 3, 10, 3, false);
-            doTestDistributedJoins(c1, c2, 3, 10, 3, true);
+            doTestDistributedJoins(c2, c1, c2, 3, 10, 3, false);
+            doTestDistributedJoins(c2, c1, c2, 3, 10, 3, true);
 
-            doTestDistributedJoins(c1, c2, 300, 2000, 5, false);
-            doTestDistributedJoins(c1, c2, 300, 2000, 5, true);
+            doTestDistributedJoins(c2, c1, c2, 300, 2000, 5, false);
+            doTestDistributedJoins(c2, c1, c2, 300, 2000, 5, true);
         }
         finally {
             c1.destroy();
@@ -524,9 +615,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(5, new Person2(3, "p3"));
 
             String select = "select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
-                            " where p.orgId = o._key and o._key=1" +
-                            " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
-                            " where p.orgId = o._key and o._key=2";
+                " where p.orgId = o._key and o._key=1" +
+                " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
+                " where p.orgId = o._key and o._key=2";
 
             String plan = c1.query(new SqlFieldsQuery("explain " + select)
                 .setDistributedJoins(true).setEnforceJoinOrder(true))
@@ -738,14 +829,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from \"persPart\".Person2 p, (select * from \"orgRepl\".Organization) o " +
+                    "from \"persPart\".Person2 p, (select _key, _val, * from \"orgRepl\".Organization) o " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
@@ -958,7 +1049,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     sql);
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2.name and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -968,7 +1059,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     "batched:unicast");
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2._key and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -1028,6 +1119,57 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         finally {
             for (IgniteCache<Object, Object> cache : caches)
                 ignite(0).destroyCache(cache.getName());
+        }
+    }
+
+    /**
+     */
+    public void testSchemaQuoted() {
+        assert false; // TODO test hangs
+        doTestSchemaName("\"ppAf\"");
+    }
+
+    /**
+     */
+    public void testSchemaQuotedUpper() {
+        assert false; // TODO test hangs
+        doTestSchemaName("\"PPAF\"");
+    }
+
+    /**
+     */
+    public void testSchemaUnquoted() {
+        doTestSchemaName("ppAf");
+    }
+
+    /**
+     */
+    public void testSchemaUnquotedUpper() {
+        doTestSchemaName("PPAF");
+    }
+
+    /**
+     * @param schema Schema name.
+     */
+    public void doTestSchemaName(String schema) {
+        CacheConfiguration ccfg = cacheConfig("persPartAff", true, Integer.class, Person2.class);
+
+        ccfg.setSqlSchema(schema);
+
+        IgniteCache<Integer, Person2> ppAf = ignite(0).createCache(ccfg);
+
+        try {
+            ppAf.put(1, new Person2(10, "Petya"));
+            ppAf.put(2, new Person2(10, "Kolya"));
+
+            List<List<?>> res = ppAf.query(new SqlFieldsQuery("select name from " +
+                schema + ".Person2 order by _key")).getAll();
+
+            assertEquals("Petya", res.get(0).get(0));
+            assertEquals("Kolya", res.get(1).get(0));
+        }
+        finally {
+            ppAf.destroy();
         }
     }
 
@@ -1377,6 +1519,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @param enforceJoinOrder Enforce join order.
      */
     private void doTestDistributedJoins(
+        IgniteCache<?,?> qryCache,
         IgniteCache<Integer, Person2> c1,
         IgniteCache<Integer, Organization> c2,
         int orgs,
@@ -1410,7 +1553,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
         String select = "select count(*) from \"org\".Organization o, \"pers\".Person2 p where p.orgId = o._key";
 
-        String plan = (String)c2.query(new SqlFieldsQuery("explain " + select)
+        String plan = (String)qryCache.query(new SqlFieldsQuery("explain " + select)
             .setDistributedJoins(true).setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize))
             .getAll().get(0).get(0);
 
@@ -1421,7 +1564,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         else
             assertTrue(plan, plan.contains("batched:unicast"));
 
-        assertEquals(Long.valueOf(persons), c2.query(new SqlFieldsQuery(select).setDistributedJoins(true)
+        assertEquals((long)persons, qryCache.query(new SqlFieldsQuery(select).setDistributedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder).setPageSize(pageSize)).getAll().get(0).get(0));
 
         c1.clear();
@@ -1515,6 +1658,37 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             d.destroy();
             o.destroy();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinWithSubquery() throws Exception {
+        IgniteCache<Integer, Contract> c1 = ignite(0).createCache(
+            cacheConfig("Contract", true,
+                Integer.class, Contract.class));
+
+        IgniteCache<Integer, PromoContract> c2 = ignite(0).createCache(
+            cacheConfig("PromoContract", true,
+                Integer.class, PromoContract.class));
+
+        for (int i = 0; i < 100; i++) {
+            int coId = i % 10;
+            int cust = i / 10;
+            c1.put( i, new Contract(coId, cust));
+        }
+
+        for (int i = 0; i < 10; i++)
+            c2.put(i, new PromoContract((i % 5) + 1, i));
+
+        final List<List<?>> res = c2.query(new SqlFieldsQuery("SELECT CO.CO_ID \n" +
+            "FROM PromoContract PMC  \n" +
+            "INNER JOIN \"Contract\".Contract CO  ON PMC.CO_ID = 5  \n" +
+            "AND PMC.CO_ID = CO.CO_ID  \n" +
+            "INNER JOIN  (SELECT CO_ID FROM PromoContract EBP WHERE EBP.CO_ID = 5 LIMIT 1) VPMC  \n" +
+            "ON PMC.CO_ID = VPMC.CO_ID ")).getAll();
+
+        assertFalse(res.isEmpty());
     }
 
     /** @throws Exception if failed. */
@@ -1917,7 +2091,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         int orgId;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         String name;
 
         /**
@@ -2035,5 +2209,42 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField
         private int goodId;
+    }
+
+    /** */
+    private static class Contract implements Serializable {
+        /** */
+        @QuerySqlField(index = true)
+        private final int CO_ID;
+
+        /** */
+        @QuerySqlField(index = true)
+        private final int CUSTOMER_ID;
+
+        /** */
+        public Contract(final int CO_ID, final int CUSTOMER_ID) {
+            this.CO_ID = CO_ID;
+            this.CUSTOMER_ID = CUSTOMER_ID;
+        }
+
+    }
+
+    /** */
+    public class PromoContract implements Serializable {
+        /** */
+        @QuerySqlField(index = true, orderedGroups = {
+            @QuerySqlField.Group(name = "myIdx", order = 1)})
+        private final int CO_ID;
+
+        /** */
+        @QuerySqlField(index = true, orderedGroups = {
+            @QuerySqlField.Group(name = "myIdx", order = 0)})
+        private final int OFFER_ID;
+
+        /** */
+        public PromoContract(final int co_Id, final int offer_Id) {
+            this.CO_ID = co_Id;
+            this.OFFER_ID = offer_Id;
+        }
     }
 }

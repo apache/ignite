@@ -33,7 +33,7 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
     private static final long serialVersionUID = 0L;
 
     /** Stack depth. */
-    private Integer stackDepth;
+    private int stackDepth;
 
     /** Stack frame. */
     private StackTraceElement stackFrame;
@@ -60,7 +60,7 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
     /**
      * @return Stack depth.
      */
-    public Integer getStackDepth() {
+    public int getStackDepth() {
         return stackDepth;
     }
 
@@ -83,7 +83,7 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
             super.writeExternalData(dtout);
         }
 
-        out.writeObject(stackDepth);
+        out.writeInt(stackDepth);
         out.writeObject(stackFrame);
     }
 
@@ -93,7 +93,7 @@ public class VisorThreadMonitorInfo extends VisorThreadLockInfo {
             super.readExternalData(dtin.readByte(), dtin);
         }
 
-        stackDepth = (Integer)in.readObject();
+        stackDepth = in.readInt();
         stackFrame = (StackTraceElement)in.readObject();
     }
 

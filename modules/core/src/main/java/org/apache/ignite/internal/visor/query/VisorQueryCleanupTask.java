@@ -40,19 +40,19 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logMapped;
  * Task for cleanup not needed SCAN or SQL queries result futures from node local.
  */
 @GridInternal
-public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collection<String>>, Void, Void> {
+public class VisorQueryCleanupTask extends VisorMultiNodeTask<VisorQueryCleanupTaskArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Map<UUID, Collection<String>>, Void> job(Map<UUID, Collection<String>> arg) {
+    @Override protected VisorJob<VisorQueryCleanupTaskArg, Void> job(VisorQueryCleanupTaskArg arg) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
-        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) {
-        Set<UUID> nodeIds = taskArg.keySet();
+        @Nullable VisorTaskArgument<VisorQueryCleanupTaskArg> arg) {
+        Set<UUID> nodeIds = taskArg.getQueryIds().keySet();
 
         if (nodeIds.isEmpty())
             throw new VisorClusterGroupEmptyException("Nothing to clear. List with node IDs is empty!");
@@ -62,7 +62,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         try {
             for (ClusterNode node : subgrid)
                 if (nodeIds.contains(node.id()))
-                    map.put(new VisorQueryCleanupJob(taskArg.get(node.id()), debug), node);
+                    map.put(new VisorQueryCleanupJob(taskArg.getQueryIds().get(node.id()), debug), node);
 
             if (map.isEmpty()) {
                 StringBuilder notFoundNodes = new StringBuilder();

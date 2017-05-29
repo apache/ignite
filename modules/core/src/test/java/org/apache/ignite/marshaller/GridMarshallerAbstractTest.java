@@ -132,13 +132,13 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration namedCache = new CacheConfiguration();
+        CacheConfiguration namedCache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setMarshaller(marshaller());
-        cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), namedCache);
 
         return cfg;
     }
@@ -158,7 +158,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        IgniteCache<String, String> cache = grid().cache(null);
+        IgniteCache<String, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.put("key", "val");
 
@@ -178,7 +178,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         IgniteCache<String, String> cache0 = (IgniteCache<String, String>)outBean.getObjectField();
 
-        assertNull(cache0.getName());
+        assertEquals(DEFAULT_CACHE_NAME, cache0.getName());
         assertEquals("val", cache0.get("key"));
 
         outBean.checkNullResources();
@@ -481,8 +481,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         final Ignite ignite = grid();
 
         GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override
-            public boolean apply(ClusterNode n) {
+            @Override public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));
@@ -661,8 +660,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             IgniteCompute compute = compute(grid().cluster().forNode(g1.cluster().localNode()));
 
             compute.run(new IgniteRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     // No-op.
                 }
             });
@@ -707,7 +705,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().cache(null).put(1, 1);
+            grid().cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 

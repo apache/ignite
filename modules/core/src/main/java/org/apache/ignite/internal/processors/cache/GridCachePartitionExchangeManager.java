@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -234,34 +235,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (customMsg instanceof DynamicCacheChangeBatch) {
                         DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)customMsg;
 
-                        Collection<DynamicCacheChangeRequest> valid = new ArrayList<>(batch.requests().size());
+                        ExchangeActions exchActions = batch.exchangeActions();
 
-                        // Validate requests to check if event should trigger partition exchange.
-                        for (final DynamicCacheChangeRequest req : batch.requests()) {
-                            if (req.exchangeNeeded())
-                                valid.add(req);
-                            else {
-                                IgniteInternalFuture<?> fut = null;
-
-                                if (req.cacheFutureTopologyVersion() != null)
-                                    fut = affinityReadyFuture(req.cacheFutureTopologyVersion());
-
-                                if (fut == null || fut.isDone())
-                                    cctx.cache().completeStartFuture(req);
-                                else {
-                                    fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                                            cctx.cache().completeStartFuture(req);
-                                        }
-                                    });
-                                }
-                            }
-                        }
-
-                        if (!F.isEmpty(valid) && !(valid.size() == 1 && valid.iterator().next().globalStateChange())) {
+                        if (exchActions != null) {
                             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
-                            exchFut = exchangeFuture(exchId, evt, cache, valid, null);
+                            exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
                         }
                     }
                     else if (customMsg instanceof CacheAffinityChangeMessage) {
@@ -309,6 +288,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (log.isDebugEnabled())
                         log.debug("Do not start exchange for discovery event: " + evt);
                 }
+
+                // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
+                if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+                    exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
             }
             finally {
                 leaveBusy();
@@ -380,10 +363,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        T2<DiscoveryEvent, DiscoCache> localJoin = cctx.discovery().localJoin();
+        T2<DiscoveryEvent, DiscoCache> locJoin = cctx.discovery().localJoin();
 
-        DiscoveryEvent discoEvt = localJoin.get1();
-        DiscoCache discoCache = localJoin.get2();
+        DiscoveryEvent discoEvt = locJoin.get1();
+        DiscoCache discoCache = locJoin.get2();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
@@ -483,8 +466,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
+            AffinityTopologyVersion nodeStartVer = new AffinityTopologyVersion(discoEvt.topologyVersion(), 0);
+
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.startTopologyVersion() == null)
+                if (nodeStartVer.equals(cacheCtx.startTopologyVersion()))
                     cacheCtx.preloader().onInitialExchangeComplete(null);
             }
 
@@ -752,17 +737,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Add custom task.
-     *
-     * @param task Task.
-     */
-    public void addCustomTask(CachePartitionExchangeWorkerTask task) {
-        assert !task.isExchange();
-
-        exchWorker.addCustomTask(task);
-    }
-
-    /**
      * @param evt Discovery event.
      * @return Affinity topology version.
      */
@@ -923,7 +897,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (exchId != null) {
                         AffinityTopologyVersion startTopVer = cacheCtx.startTopologyVersion();
 
-                        ready = startTopVer == null || startTopVer.compareTo(exchId.topologyVersion()) <= 0;
+                        ready = startTopVer.compareTo(exchId.topologyVersion()) <= 0;
                     }
                     else
                         ready = cacheCtx.started();
@@ -1129,25 +1103,25 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
      * @param cache Discovery data cache.
-     * @param reqs Cache change requests.
+     * @param exchActions Cache change actions.
      * @param affChangeMsg Affinity change message.
      * @return Exchange future.
      */
     private GridDhtPartitionsExchangeFuture exchangeFuture(GridDhtPartitionExchangeId exchId,
         @Nullable DiscoveryEvent discoEvt,
         @Nullable DiscoCache cache,
-        @Nullable Collection<DynamicCacheChangeRequest> reqs,
+        @Nullable ExchangeActions exchActions,
         @Nullable CacheAffinityChangeMessage affChangeMsg) {
         GridDhtPartitionsExchangeFuture fut;
 
         GridDhtPartitionsExchangeFuture old = exchFuts.addx(
-            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, reqs, affChangeMsg));
+            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
 
         if (old != null) {
             fut = old;
 
-            if (reqs != null)
-                fut.cacheChangeRequests(reqs);
+            if (exchActions != null)
+                fut.exchangeActions(exchActions);
 
             if (affChangeMsg != null)
                 fut.affinityChangeMessage(affChangeMsg);
@@ -1326,9 +1300,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    if (cacheCtx != null && cacheCtx.startTopologyVersion() != null &&
-                        entry.getValue() != null &&
-                        entry.getValue().topologyVersion() != null && // Backward compatibility.
+                    if (cacheCtx != null &&
                         cacheCtx.startTopologyVersion().compareTo(entry.getValue().topologyVersion()) > 0)
                         continue;
 
@@ -1536,6 +1508,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Check if provided task from exchange queue is exchange task.
+     *
+     * @param task Task.
+     * @return {@code True} if this is exchange task.
+     */
+    private static boolean isExchangeTask(CachePartitionExchangeWorkerTask task) {
+        return task instanceof GridDhtPartitionsExchangeFuture;
+    }
+
+    /**
      * @param exchTopVer Exchange topology version.
      */
     private void dumpPendingObjects(@Nullable AffinityTopologyVersion exchTopVer) {
@@ -1682,7 +1664,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         void addCustomTask(CachePartitionExchangeWorkerTask task) {
             assert task != null;
 
-            assert !task.isExchange();
+            assert !isExchangeTask(task);
 
             futQ.offer(task);
         }
@@ -1693,6 +1675,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param task Task.
          */
         void processCustomTask(CachePartitionExchangeWorkerTask task) {
+            assert !isExchangeTask(task);
+
             try {
                 cctx.cache().processCustomExchangeTask(task);
             }
@@ -1707,7 +1691,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean hasPendingExchange() {
             if (!futQ.isEmpty()) {
                 for (CachePartitionExchangeWorkerTask task : futQ) {
-                    if (task.isExchange())
+                    if (isExchangeTask(task))
                         return true;
                 }
             }
@@ -1722,7 +1706,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             U.warn(log, "Pending exchange futures:");
 
             for (CachePartitionExchangeWorkerTask task: futQ) {
-                if (task.isExchange())
+                if (isExchangeTask(task))
                     U.warn(log, ">>> " + task);
             }
         }
@@ -1773,7 +1757,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    if (!task.isExchange()) {
+                    if (!isExchangeTask(task)) {
                         processCustomTask(task);
 
                         continue;
@@ -2151,9 +2135,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * Affinity ready future.
      */
     private class AffinityReadyFuture extends GridFutureAdapter<AffinityTopologyVersion> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         @GridToStringInclude
         private AffinityTopologyVersion topVer;

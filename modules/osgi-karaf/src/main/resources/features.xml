@@ -110,7 +110,7 @@
             NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
         </details>
         <feature>hibernate</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate/${project.version}</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate_4.2/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-indexing" version="${project.version}" description="Apache Ignite :: Indexing">

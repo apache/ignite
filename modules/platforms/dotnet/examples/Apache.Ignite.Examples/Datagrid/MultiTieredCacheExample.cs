@@ -93,7 +93,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 Console.WriteLine(">>> Waiting for metrics final update...");
 
-                Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
+                Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
 
                 PrintCacheMetrics(cache);
 

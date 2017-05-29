@@ -401,6 +401,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return default(T);
 
                 case BinaryUtils.TypeEnum:
+                case BinaryUtils.TypeBinaryEnum:
                     // Never read enums in binary mode when reading a field (we do not support half-binary objects)
                     return ReadEnum0<T>(this, false);  
 
@@ -411,9 +412,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return ReadObject<T>(); 
 
                 default:
-                    throw new BinaryObjectException(
-                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
-                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+                    throw new BinaryObjectException(string.Format(
+                        "Invalid header on enum deserialization. Expected: {0} or {1} or {2} but was: {3}",
+                            BinaryUtils.TypeEnum, BinaryUtils.TypeBinaryEnum, BinaryUtils.HdrFull, hdr));
             }
         }
 
@@ -571,6 +572,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryUtils.TypeEnum:
+                case BinaryUtils.TypeBinaryEnum:
                     res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                     return true;
@@ -704,13 +706,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             throw new BinaryObjectException(string.Format(
                                 "Unknown type ID: {0}. " +
-                                "This usually indicates missing BinaryConfiguration." +
+                                "This usually indicates missing BinaryConfiguration. " +
                                 "Make sure that all nodes have the same BinaryConfiguration.", hdr.TypeId));
                         }
 
                         throw new BinaryObjectException(string.Format(
-                            "No matching type found for object [typeId={0}, typeName={1}]." +
-                            "This usually indicates that assembly with specified type is not loaded on a node." +
+                            "No matching type found for object [typeId={0}, typeName={1}]. " +
+                            "This usually indicates that assembly with specified type is not loaded on a node. " +
                             "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter.",
                             desc.TypeId, desc.TypeName));
                     }
@@ -994,7 +996,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var enumValue = reader.ReadInt();
 
             if (!keepBinary)
+            {
                 return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
+            }
 
             return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }

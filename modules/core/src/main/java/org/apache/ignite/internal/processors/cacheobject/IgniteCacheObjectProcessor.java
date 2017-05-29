@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -116,7 +117,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException;
+    public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
@@ -125,7 +126,8 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If failed.
      */
-    public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
+    public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
+        throws IgniteCheckedException;
 
     /**
      * @param ccfg Cache configuration.

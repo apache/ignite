@@ -29,7 +29,7 @@ import org.h2.value.Value;
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class GridH2Row extends Row implements GridSearchRowPointer, CacheDataRow {
+public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, Row {
     /** */
     public long link; // TODO remove
 

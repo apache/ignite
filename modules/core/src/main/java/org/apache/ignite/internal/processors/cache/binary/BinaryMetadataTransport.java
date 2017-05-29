@@ -149,6 +149,9 @@ final class BinaryMetadataTransport {
     GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) throws IgniteCheckedException {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
+        if (log.isDebugEnabled())
+            log.debug("Requesting metadata update for " + metadata.typeId());
+
         synchronized (this) {
             unlabeledFutures.add(resFut);
 
@@ -244,6 +247,7 @@ final class BinaryMetadataTransport {
             int acceptedVer;
 
             if (msg.pendingVersion() == 0) {
+                //coordinator receives update request
                 if (holder != null) {
                     pendingVer = holder.pendingVersion() + 1;
                     acceptedVer = holder.acceptedVersion();
@@ -252,6 +256,13 @@ final class BinaryMetadataTransport {
                     pendingVer = 1;
                     acceptedVer = 0;
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Versions are stamped on coordinator" +
+                        " [typeId=" + typeId +
+                        ", pendingVer=" + pendingVer +
+                        ", acceptedVer=" + acceptedVer + "]"
+                    );
 
                 msg.pendingVersion(pendingVer);
                 msg.acceptedVersion(acceptedVer);
@@ -314,7 +325,12 @@ final class BinaryMetadataTransport {
                     else {
                         initSyncFor(typeId, pendingVer, fut);
 
-                        metaLocCache.put(typeId, new BinaryMetadataHolder(msg.metadata(), pendingVer, acceptedVer));
+                        BinaryMetadataHolder newHolder = new BinaryMetadataHolder(msg.metadata(), pendingVer, acceptedVer);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Updated metadata on originating node: " + newHolder);
+
+                        metaLocCache.put(typeId, newHolder);
                     }
                 }
             }
@@ -344,8 +360,12 @@ final class BinaryMetadataTransport {
                                 } while (!metaLocCache.replace(typeId, holder, newHolder));
                             }
                         }
-                        else
+                        else {
+                            if (log.isDebugEnabled())
+                                log.debug("Updated metadata on server node: " + newHolder);
+
                             metaLocCache.put(typeId, newHolder);
+                        }
                     }
                     catch (BinaryObjectException ignored) {
                         assert false : msg;
@@ -410,6 +430,10 @@ final class BinaryMetadataTransport {
                 int oldAcceptedVer = holder.acceptedVersion();
 
                 if (oldAcceptedVer >= newAcceptedVer) {
+                    if (log.isDebugEnabled())
+                        log.debug("Marking ack as duplicate [holder=" + holder +
+                            ", newAcceptedVer: " + newAcceptedVer + ']');
+
                     //this is duplicate ack
                     msg.duplicated(true);
 
@@ -424,6 +448,9 @@ final class BinaryMetadataTransport {
 
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
+            if (log.isDebugEnabled())
+                log.debug("Completing future for " + metaLocCache.get(typeId));
+
             if (fut != null)
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());
         }
@@ -434,9 +461,6 @@ final class BinaryMetadataTransport {
      * e.g. arriving {@link MetadataUpdateAcceptedMessage} acknowledgment or {@link MetadataResponseMessage} response.
      */
     private final class MetadataUpdateResultFuture extends GridFutureAdapter<MetadataUpdateResult> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         MetadataUpdateResultFuture() {
             // No-op.

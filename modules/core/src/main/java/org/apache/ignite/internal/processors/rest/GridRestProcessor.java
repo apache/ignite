@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -286,7 +287,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
-                    res = new GridRestResponse(STATUS_FAILED, e.getMessage());
+                    // Prepare error message:
+                    SB sb = new SB(256);
+
+                    sb.a("Failed to handle request: [req=").a(req.command());
+
+                    if (req instanceof GridRestTaskRequest) {
+                        GridRestTaskRequest tskReq = (GridRestTaskRequest)req;
+
+                        sb.a(", taskName=").a(tskReq.taskName())
+                            .a(", params=").a(tskReq.params());
+                    }
+
+                    sb.a(", err=").a(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).a(']');
+
+                    res = new GridRestResponse(STATUS_FAILED, sb.toString());
                 }
 
                 assert res != null;
@@ -970,7 +985,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * Checks whether session at expired state (EPIRATION_FLAG) or not, if not then tries to update last touch time.
+         * Checks whether session at expired state (EXPIRATION_FLAG) or not, if not then tries to update last touch time.
          *
          * @return {@code False} if session timed out (not successfully touched).
          * @see #isTimedOut(long)

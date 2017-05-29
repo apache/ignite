@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
+@import '../../../public/stylesheets/variables';
+
 .ui-grid-settings {
+    color: #393939;
+
     ul.select.dropdown-menu {
         padding: 0;
 
@@ -63,7 +67,7 @@
                         content: '';
 
                         position: absolute;
-                        top: 0px;
+                        top: 0;
                         left: 3px;
 
                         width: 4px;
@@ -83,17 +87,12 @@
         }
     }
 
-    .btn {
-        float: right;
-
-        line-height: 20px;
-        margin-right: 0;
+    &--heading > span {
+        position: relative;
+        top: -1px;
     }
 
     &-filter {
-        float: right;
-        margin-right: 35px;
-
         .ignite-form-field {
             $height: 36px;
 
@@ -123,8 +122,6 @@
     }
 
     &-number-filter {
-        float: right;
-
         .ignite-form-field {
             width: 180px;
             margin-right: 0;
@@ -158,9 +155,30 @@
     }
 
     &-dateperiod {
-        float: right;
         display: block;
         margin-right: 35px;
+    }
+
+    .btn-ignite,
+    &-filter,
+    &-number-filter,
+    &-dateperiod {
+        float: right;
+
+        margin-left: 20px;
+        margin-right: 0;
+    }
+
+    &-dateperiod {
+        margin-left: 15px;
+        margin-right: -5px;
+    }
+
+    .grid-settings {
+        svg {
+            cursor: pointer;
+            color: #424242;
+        }
     }
 }
 

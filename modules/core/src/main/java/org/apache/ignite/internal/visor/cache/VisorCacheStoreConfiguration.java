@@ -72,6 +72,9 @@ public class VisorCacheStoreConfiguration extends VisorDataTransferObject {
     /** Keep binary in store flag. */
     private boolean storeKeepBinary;
 
+    /** Write coalescing flag for write-behind cache store */
+    private boolean writeBehindCoalescing;
+
     /**
      * Default constructor.
      */
@@ -105,6 +108,8 @@ public class VisorCacheStoreConfiguration extends VisorDataTransferObject {
         flushThreadCnt = ccfg.getWriteBehindFlushThreadCount();
 
         storeKeepBinary = ccfg.isStoreKeepBinary();
+
+        writeBehindCoalescing = ccfg.getWriteBehindCoalescing();
     }
 
     /**
@@ -191,6 +196,13 @@ public class VisorCacheStoreConfiguration extends VisorDataTransferObject {
         return storeKeepBinary;
     }
 
+    /**
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(jdbcStore);
@@ -204,6 +216,7 @@ public class VisorCacheStoreConfiguration extends VisorDataTransferObject {
         out.writeInt(flushSz);
         out.writeInt(flushThreadCnt);
         out.writeBoolean(storeKeepBinary);
+        out.writeBoolean(writeBehindCoalescing);
     }
 
     /** {@inheritDoc} */
@@ -219,6 +232,7 @@ public class VisorCacheStoreConfiguration extends VisorDataTransferObject {
         flushSz = in.readInt();
         flushThreadCnt = in.readInt();
         storeKeepBinary = in.readBoolean();
+        writeBehindCoalescing = in.readBoolean();
     }
 
     /** {@inheritDoc} */

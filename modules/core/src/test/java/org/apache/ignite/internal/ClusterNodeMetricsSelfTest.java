@@ -23,11 +23,13 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -85,7 +87,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setCacheConfiguration();
-        cfg.setMetricsUpdateFrequency(0);
+        cfg.setMetricsUpdateFrequency(500);
 
         CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration();
         ccfg.setName(CACHE_NAME);
@@ -105,31 +107,36 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAllocatedMemory() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
-
-        Ignite ignite = grid();
+        IgniteEx ignite = grid();
 
         final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        long prevTieredOffHeapSize = cache.metrics().getOffHeapAllocatedSize();
+        MemoryMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
 
-        assertEquals(0, prevTieredOffHeapSize);
+        memMetrics.enableMetrics();
 
-        long prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
+        int pageSize = getPageSize(ignite);
+
+        assertEquals(0, memMetrics.getTotalAllocatedPages());
 
         fillCache(cache);
 
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5)
-            * VAL_SIZE + prevTieredOffHeapSize);
+        assertTrue(memMetrics.getTotalAllocatedPages() * pageSize > MAX_VALS_AMOUNT
+            * VAL_SIZE);
+    }
 
-        assertTrue(prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
+    /**
+     * @param ignite Ignite instance.
+     */
+    private MemoryMetricsImpl getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().memoryPolicy(null).memoryMetrics();
+    }
 
-        prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
-        prevTieredOffHeapSize = cache.metrics().getOffHeapAllocatedSize();
-
-        assertEquals(prevTieredOffHeapSize, cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed <
-            ignite.cluster().metrics().getNonHeapMemoryUsed());
+    /**
+     * @param ignite Ignite instance.
+     */
+    private int getPageSize(IgniteEx ignite) {
+        return ignite.context().cache().context().database().pageSize();
     }
 
     /**
@@ -166,16 +173,18 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     public void testSingleTaskMetrics() throws Exception {
         Ignite ignite = grid();
 
-        ignite.compute().execute(new GridTestTask(), "testArg");
+        final CountDownLatch taskLatch = new CountDownLatch(2);
+        ignite.compute().executeAsync(new GridTestTask(taskLatch), "testArg");
 
         // Let metrics update twice.
-        final CountDownLatch latch = new CountDownLatch(2);
 
+        final CountDownLatch latch = new CountDownLatch(3);
         ignite.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
                 latch.countDown();
+                taskLatch.countDown();
 
                 return true;
             }
@@ -196,7 +205,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assert metrics.getAverageWaitingJobs() == 0;
         assert metrics.getCurrentActiveJobs() == 0;
         assert metrics.getCurrentCancelledJobs() == 0;
-        assert metrics.getCurrentJobExecuteTime() == 0;
+        assert metrics.getCurrentJobExecuteTime() > 0;
         assert metrics.getCurrentJobWaitTime() == 0;
         assert metrics.getCurrentWaitingJobs() == 0;
         assert metrics.getMaximumActiveJobs() == 1;
@@ -332,8 +341,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         final Ignite ignite1 = startGrid(1);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return ignite0.cluster().nodes().size() == 2 && ignite1.cluster().nodes().size() == 2;
             }
         }, 3000L);

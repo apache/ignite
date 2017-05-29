@@ -82,7 +82,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
     public void testPredicateAccessCache() throws Exception {
         final Ignite ignite0 = startGrid(0);
 
-        ignite0.getOrCreateCache(new CacheConfiguration<String, Object>()
+        ignite0.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setName("testCache")
             .setAtomicityMode(ATOMIC)
             .setCacheMode(REPLICATED)

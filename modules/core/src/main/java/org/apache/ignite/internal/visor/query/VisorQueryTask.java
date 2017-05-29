@@ -41,19 +41,19 @@ import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleRes
  * Task for execute SQL fields query and get first page of results.
  */
 @GridInternal
-public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, VisorEither<VisorQueryResult>> {
+public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEither<VisorQueryResult>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryJob job(VisorQueryArg arg) {
+    @Override protected VisorQueryJob job(VisorQueryTaskArg arg) {
         return new VisorQueryJob(arg, debug);
     }
 
     /**
      * Job for execute SCAN or SQL query and get first page of results.
      */
-    private static class VisorQueryJob extends VisorJob<VisorQueryArg, VisorEither<VisorQueryResult>> {
+    private static class VisorQueryJob extends VisorJob<VisorQueryTaskArg, VisorEither<VisorQueryResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -63,12 +63,12 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, VisorEither<
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorQueryJob(VisorQueryArg arg, boolean debug) {
+        private VisorQueryJob(VisorQueryTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorEither<VisorQueryResult> run(final VisorQueryArg arg) {
+        @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
                 IgniteCache<Object, Object> c = ignite.context().cache().jcache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();

@@ -65,7 +65,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -102,17 +102,17 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         // Add initial values.
         for (int i = 0; i < GRID_COUNT; ++i) {
-            keys[i] = primaryKey(grid(i).cache(null));
+            keys[i] = primaryKey(grid(i).cache(DEFAULT_CACHE_NAME));
 
-            grid(0).cache(null).put(keys[i], -1);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(keys[i], -1);
         }
 
-        try (QueryCursor<?> cur = grid(0).cache(null).query(qry)) {
+        try (QueryCursor<?> cur = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
             // Replace values on the keys.
             for (int i = 0; i < KEYS_COUNT; i++) {
                 log.info("Put key: " + i);
 
-                grid(i % GRID_COUNT).cache(null).put(keys[i % GRID_COUNT], i);
+                grid(i % GRID_COUNT).cache(DEFAULT_CACHE_NAME).put(keys[i % GRID_COUNT], i);
             }
         }
 

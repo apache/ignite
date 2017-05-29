@@ -89,21 +89,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Number of off-heap misses. */
     private AtomicLong offHeapMisses = new AtomicLong();
 
-    /** Number of reads from swap. */
-    private AtomicLong swapGets = new AtomicLong();
-
-    /** Number of writes to swap. */
-    private AtomicLong swapPuts = new AtomicLong();
-
-    /** Number of removed entries from swap. */
-    private AtomicLong swapRemoves = new AtomicLong();
-
-    /** Number of swap hits. */
-    private AtomicLong swapHits = new AtomicLong();
-
-    /** Number of swap misses. */
-    private AtomicLong swapMisses = new AtomicLong();
-
     /** Cache metrics. */
     @GridToStringExclude
     private transient CacheMetricsImpl delegate;
@@ -232,11 +217,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         GridCacheAdapter<?, ?> cache = cctx.cache();
 
         return cache != null ? cache.offHeapAllocatedSize() : -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return 0;
     }
 
     /** {@inheritDoc} */
@@ -434,12 +414,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapHits.set(0);
         offHeapMisses.set(0);
         offHeapEvicts.set(0);
-
-        swapGets.set(0);
-        swapPuts.set(0);
-        swapRemoves.set(0);
-        swapHits.set(0);
-        swapMisses.set(0);
 
         if (delegate != null)
             delegate.clear();

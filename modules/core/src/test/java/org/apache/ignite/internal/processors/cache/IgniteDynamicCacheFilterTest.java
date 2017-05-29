@@ -53,7 +53,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setCacheMode(REPLICATED);
@@ -89,7 +89,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite0 = startGrid(0);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache0);
 
@@ -99,7 +99,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache1);
 
@@ -107,7 +107,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startGrid(2);
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache2);
 
@@ -115,7 +115,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite3 = startGrid(3);
 
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache3);
 

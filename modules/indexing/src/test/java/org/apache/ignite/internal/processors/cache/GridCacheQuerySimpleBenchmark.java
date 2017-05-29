@@ -61,7 +61,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("offheap-cache");
         ccfg.setCacheMode(CacheMode.PARTITIONED);

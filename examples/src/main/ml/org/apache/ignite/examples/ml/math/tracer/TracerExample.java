@@ -19,8 +19,8 @@ package org.apache.ignite.examples.ml.math.tracer;
 
 import java.awt.Color;
 import java.io.IOException;
-import org.apache.ignite.math.Tracer;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /**
  * Example of using {@link Tracer} utility API.
@@ -46,7 +46,7 @@ public class TracerExample {
     public static void main(String[] args) throws IOException {
         System.out.println(">>> Tracer utility example started.");
 
-        // Tracer is a simple utility class that allows pretty-printing of matrices/vectors
+        // Tracer is a simple utility class that allows pretty-printing of matrices/vectors.
         DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
             {1.12345, 2.12345},
             {3.12345, 4.12345}

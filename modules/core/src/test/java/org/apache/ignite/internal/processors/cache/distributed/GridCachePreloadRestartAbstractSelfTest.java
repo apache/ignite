@@ -113,7 +113,6 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setStartSize(20);
         cc.setRebalanceMode(preloadMode);
         cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));

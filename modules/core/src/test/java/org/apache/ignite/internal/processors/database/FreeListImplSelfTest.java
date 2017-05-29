@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
@@ -145,7 +147,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param pageSize Page size.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkInsertDeleteMultiThreaded(final int pageSize) throws Exception {
         final FreeList list = createFreeList(pageSize);
@@ -175,7 +177,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 Random rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 1_000_000; i++) {
+                for (int i = 0; i < 200_000; i++) {
                     boolean grow0 = grow.get();
 
                     if (grow0) {
@@ -313,13 +315,14 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @return Page memory.
      */
-    protected PageMemory createPageMemory(int pageSize) throws Exception {
-        long[] sizes = new long[CPUS];
-
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
-
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, pageSize, new MemoryMetricsImpl(null), true);
+    protected PageMemory createPageMemory(int pageSize, MemoryPolicyConfiguration plcCfg) throws Exception {
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
+            null,
+            pageSize,
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
+            true);
 
         pageMem.start();
 
@@ -332,13 +335,15 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected FreeList createFreeList(int pageSize) throws Exception {
-        pageMem = createPageMemory(pageSize);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+
+        pageMem = createPageMemory(pageSize, plcCfg);
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        MemoryMetricsImpl metrics = new MemoryMetricsImpl(null);
+        MemoryMetricsImpl metrics = new MemoryMetricsImpl(plcCfg);
 
-        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, metrics, new NoOpPageEvictionTracker());
+        MemoryPolicy memPlc = new MemoryPolicy(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
 
         return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }
@@ -459,12 +464,12 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
             return (T)data;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
             return data;
         }
 
@@ -512,12 +517,13 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
+            throws IgniteCheckedException {
             assert false;
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             assert false;
         }
 
