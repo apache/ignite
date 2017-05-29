@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System.Diagnostics;
+    using System.IO;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
@@ -25,6 +28,24 @@ namespace Apache.Ignite.Core.Tests.NuGet
     /// </summary>
     public class StartupTest
     {
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+
+            foreach (var proc in Process.GetProcesses())
+            {
+                if (proc.ProcessName.Equals("Apache.Ignite"))
+                {
+                    proc.Kill();
+                    proc.WaitForExit();
+                }
+            }
+        }
+
         /// <summary>
         /// Tests code configuration.
         /// </summary>
@@ -60,6 +81,43 @@ namespace Apache.Ignite.Core.Tests.NuGet
                 cache[1] = 5;
 
                 Assert.AreEqual(5, cache[1]);
+            }
+        }
+
+        /// <summary>
+        /// Tests the executable that is included in NuGet.
+        /// </summary>
+        [Test]
+        public void TestApacheIgniteExe()
+        {
+            var asm = typeof(Ignition).Assembly;
+            var version = asm.GetName().Version.ToString(3);
+            var packageDirName = "Apache.Ignite." + version;
+            
+            var asmDir = Path.GetDirectoryName(asm.Location);
+            Assert.IsNotNull(asmDir);
+            
+            var packageDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages\" + packageDirName));
+            Assert.IsTrue(Directory.Exists(packageDir));
+
+            var exePath = Path.Combine(packageDir, @"lib\net40\Apache.Ignite.exe");
+            Assert.IsTrue(File.Exists(exePath));
+
+            var springPath = Path.GetFullPath(@"config\\ignite-config.xml");
+
+            var procInfo = new ProcessStartInfo(exePath, "-springConfigUrl=" + springPath)
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+            
+            var proc = Process.Start(procInfo);
+            Assert.IsNotNull(proc);
+
+            using (var ignite = Ignition.Start("config\\ignite-config.xml"))
+            {
+                Thread.Sleep(1000);
+                Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
             }
         }
     }
