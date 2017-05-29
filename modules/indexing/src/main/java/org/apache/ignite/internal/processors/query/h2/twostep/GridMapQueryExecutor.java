@@ -580,7 +580,9 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            Connection conn = h2.connectionForCache(mainCctx.name());
+            String schemaName = h2.schema(mainCctx.name());
+
+            Connection conn = h2.connectionForSchema(schemaName);
 
             H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
@@ -1145,17 +1147,13 @@ public class GridMapQueryExecutor {
                         if (val instanceof GridH2ValueCacheObject) {
                             GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
-                            GridCacheContext cctx = valCacheObj.getCacheContext();
+                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                                @Override public Object getObject() {
+                                    return getObject(true);
+                                }
+                            };
 
-                            if (cctx != null && cctx.needValueCopy()) {
-                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
-                                    @Override public Object getObject() {
-                                        return getObject(true);
-                                    }
-                                };
-
-                                copied = true;
-                            }
+                            copied = true;
                         }
                     }
 

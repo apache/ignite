@@ -154,8 +154,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         }
 
         final List<String> fieldsList = Arrays.asList(fields);
-        keyAliasColumnId = (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldName()) : -1;
-        valueAliasColumnId = (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldName()) : -1;
+
+        keyAliasColumnId =
+            (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : -1;
+
+        valueAliasColumnId =
+            (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
 
         // Index is not snapshotable in db-x.
         snapshotableIdx = false;
@@ -214,14 +218,14 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
             CacheObject co = (CacheObject)obj;
 
             if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(idx.cacheContext(schema.cacheName()), co);
+                return new GridH2ValueCacheObject(co, idx.objectContext());
 
-            Value val = idx.h2CustomDataTypesHandler().wrap(idx.objectContext(schema.cacheName()), obj, type, true);
+            Value val = idx.h2CustomDataTypesHandler().wrap(idx.objectContext(), obj, type, true);
 
             if (val != null)
                 return val;
 
-            obj = co.value(idx.objectContext(schema.cacheName()), false);
+            obj = co.value(idx.objectContext(), false);
         }
 
         switch (type) {
@@ -276,14 +280,13 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
                 return ValueGeometry.getFromGeometry(obj);
 
             default:
-                return idx.h2CustomDataTypesHandler().wrap(idx.objectContext(schema.cacheName()), obj, type, false);
+                return idx.h2CustomDataTypesHandler().wrap(idx.objectContext(), obj, type, false);
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime) throws IgniteCheckedException {
+        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
@@ -300,15 +303,11 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
 
-        GridCacheContext cctx = idx.cacheContext(schema.cacheName());
+        row.ver = ver;
 
-        if (cctx.offheapIndex()) {
-            row.ver = ver;
-
-            row.key = key;
-            row.val = val;
-            row.partId = partId;
-        }
+        row.key = key;
+        row.val = val;
+        row.partId = partId;
 
         return row;
     }

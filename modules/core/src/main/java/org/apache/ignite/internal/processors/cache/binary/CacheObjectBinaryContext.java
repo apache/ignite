@@ -53,10 +53,8 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
         this.binaryEnabled = binaryEnabled;
     }
 
-    /**
-     * @return Binary enabled flag.
-     */
-    public boolean binaryEnabled() {
+    /** {@inheritDoc} */
+    @Override public boolean binaryEnabled() {
         return binaryEnabled;
     }
 }

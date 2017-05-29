@@ -27,6 +27,7 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -66,7 +67,7 @@ public class GridH2CustomDataTypesHandler implements CustomDataTypesHandler {
      * @param typeName Type name.
      */
     public void registerEnum(int typeId, String typeName) {
-        String name = H2Utils.escapeName(typeName, false).toUpperCase();
+        String name = typeName.replace('.', '_').toUpperCase();
 
         if (dataTypesById.containsKey(typeId))
             return;
@@ -290,7 +291,7 @@ public class GridH2CustomDataTypesHandler implements CustomDataTypesHandler {
      * @return H2 Value.
      * @throws IgniteCheckedException
      */
-    public Value wrap(CacheObjectContext cctx, Object obj, int type, boolean check) throws IgniteCheckedException {
+    public Value wrap(CacheObjectValueContext cctx, Object obj, int type, boolean check) throws IgniteCheckedException {
         if (dataTypesById.get(type) == null) {
             if (check)
                 return null;

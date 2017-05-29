@@ -41,6 +41,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -697,6 +698,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         @Override public String valueFieldName() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String keyFieldAlias() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String valueFieldAlias() {
+            return null;
+        }
     }
 
     /**
@@ -721,7 +732,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
             return (T)val;
         }
 
@@ -736,7 +747,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
             return JdbcUtils.serialize(val, null);
         }
 
@@ -782,12 +793,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 

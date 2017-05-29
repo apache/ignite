@@ -3840,13 +3840,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public K getKey() {
-            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary);
+            return (K)cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, true);
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public V getValue() {
-            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary);
+            return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(peekVisibleValue(), keepBinary, true);
         }
 
         /** {@inheritDoc} */
