@@ -1738,6 +1738,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            final String schemaName = idx.schema(cctx.name());
+
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
 
             if (loc) {
@@ -1745,21 +1747,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                         GridQueryCancel cancel = new GridQueryCancel();
 
-                        final FieldsQueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry, keepBinary,
-                            idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
+                        FieldsQueryCursor<List<?>> cursor;
+
+                        if (cctx.config().getQueryParallelism() > 1) {
+                            qry.setDistributedJoins(true);
+
+                            cursor = idx.queryDistributedSqlFields(cctx, qry, keepBinary, cancel);
+                        }
+                        else {
+                            IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
+
+                            cursor = idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
+                        }
+
+                        final FieldsQueryCursor<List<?>> cursor0 = cursor;
 
                         Iterable<List<?>> iterExec = new Iterable<List<?>>() {
                             @Override public Iterator<List<?>> iterator() {
                                 sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
 
-                                return cursor.iterator();
+                                return cursor0.iterator();
                             }
                         };
 
                         return new QueryCursorImpl<List<?>>(iterExec, cancel) {
                             @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                                if (cursor instanceof QueryCursorImpl)
-                                    return ((QueryCursorEx)cursor).fieldsMeta();
+                                if (cursor0 instanceof QueryCursorImpl)
+                                    return ((QueryCursorEx)cursor0).fieldsMeta();
 
                                 return super.fieldsMeta();
                             }

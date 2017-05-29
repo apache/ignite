@@ -1044,43 +1044,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(final GridCacheContext<?, ?> cctx,
-        final SqlFieldsQuery qry, final boolean keepBinary, final IndexingQueryFilter filter,
-        final GridQueryCancel cancel) throws IgniteCheckedException {
+    @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
+        final boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
+        String sql = qry.getSql();
+        Object[] args = qry.getArgs();
 
-        // TODO: 5317
-        if (cctx.config().getQueryParallelism() > 1) {
-            qry.setDistributedJoins(true);
+        final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, F.asList(args), filter,
+            qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
-            assert qry.isLocal();
-
-            // TODO: 5317
-            return queryDistributedSqlFields(cctx, qry, keepBinary, cancel);
-        }
-        else {
-            final String cacheName = cctx.name();
-            final String sql = qry.getSql();
-            final Object[] args = qry.getArgs();
-
-            // TODO: 5317
-            final GridQueryFieldsResult res = queryLocalSqlFields(schema(cacheName), sql, F.asList(args), filter,
-                qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
-
-            QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            @Override public Iterator<List<?>> iterator() {
+                try {
+                    return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
                 }
-            }, cancel);
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }, cancel);
 
-            cursor.fieldsMeta(res.metaData());
+        cursor.fieldsMeta(res.metaData());
 
-            return cursor;
-        }
+        return cursor;
     }
 
     /** {@inheritDoc} */
