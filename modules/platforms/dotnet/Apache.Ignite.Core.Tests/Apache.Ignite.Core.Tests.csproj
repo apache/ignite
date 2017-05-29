@@ -102,6 +102,7 @@
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\CacheLinqTestSqlEscapeAll.cs" />
     <Compile Include="Cache\Query\CacheLinqTestSimpleName.cs" />
     <Compile Include="Cache\Query\CacheQueriesTestSimpleName.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryTest.cs" />

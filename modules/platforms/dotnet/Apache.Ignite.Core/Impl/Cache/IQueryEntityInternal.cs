@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import sequence from 'gulp-sequence';
-
-import { destDir, resourcePaths, resourceModulePaths } from '../paths';
-
-gulp.task('copy:resource', (cb) => sequence('copy:resource:app', 'copy:resource:ignite_modules', cb));
-
-gulp.task('copy:resource:app', () =>
-    gulp.src(resourcePaths)
-        .pipe(gulp.dest(destDir))
-);
-
-gulp.task('copy:resource:ignite_modules', () =>
-    gulp.src(resourceModulePaths)
-        .pipe(gulp.dest(`${destDir}/ignite_modules`))
-);
+namespace Apache.Ignite.Core.Impl.Cache
+{
+    /// <summary>
+    /// Extended QueryEntity interface for internal needs.
+    /// </summary>
+    public interface IQueryEntityInternal
+    {
+        /// <summary>
+        /// Gets the alias by field name, or null when no match found.
+        /// This method constructs a dictionary lazily to perform lookups.
+        /// </summary>
+        string GetAlias(string fieldName);
+    }
+}

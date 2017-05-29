@@ -59,6 +59,9 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /** */
     private final H2Schema schema;
 
+    /** Cache name. */
+    private final String cacheName;
+
     /** */
     private GridH2Table tbl;
 
@@ -74,15 +77,15 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param idx Indexing.
      * @param schema Schema.
      * @param type Type descriptor.
+     * @param cacheName Cache name.
      */
-    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type) {
+    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type, String cacheName) {
         this.idx = idx;
         this.type = type;
         this.schema = schema;
+        this.cacheName = cacheName;
 
-        String tblName = H2Utils.escapeName(type.tableName(), schema.escapeAll());
-
-        fullTblName = schema.schemaName() + "." + tblName;
+        fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
     }
 
     /**
@@ -121,6 +124,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
+     * @return Table name.
+     */
+    String tableName() {
+        return type.tableName();
+    }
+
+    /**
      * @return Database full table name.
      */
     String fullTableName() {
@@ -132,6 +142,13 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      */
     String typeName() {
         return type.name();
+    }
+
+    /**
+     * @return Cache name.
+     */
+    String cacheName() {
+        return cacheName;
     }
 
     /**
@@ -162,7 +179,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
         GridCacheContext cctx = schema.cacheContext();
 
-        if (cctx.affinityNode() && cctx.offheapIndex())
+        if (cctx.affinityNode())
             return new H2RowFactory(rowDesc, cctx);
 
         return null;
@@ -204,7 +221,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (type().valueClass() == String.class) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), schema.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -217,7 +234,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (textIdx != null) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), schema.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -232,10 +249,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
                 String firstField = idxDesc.fields().iterator().next();
 
-                String firstFieldName =
-                    schema.escapeAll() ? firstField : H2Utils.escapeName(firstField, false).toUpperCase();
-
-                Column col = tbl.getColumn(firstFieldName);
+                Column col = tbl.getColumn(firstField);
 
                 IndexColumn idxCol = tbl.indexColumn(col.getColumnId(),
                     idxDesc.descending(firstField) ? SortOrder.DESCENDING : SortOrder.ASCENDING);
@@ -279,31 +293,27 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Index.
      */
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
-        String name = schema.escapeAll() ? idxDesc.name() : H2Utils.escapeName(idxDesc.name(), false).toUpperCase();
-
         IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
         List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);
 
-        boolean escapeAll = schema.escapeAll();
-
         for (String field : idxDesc.fields()) {
-            String fieldName = escapeAll ? field : H2Utils.escapeName(field, false).toUpperCase();
-
-            Column col = tbl.getColumn(fieldName);
+            Column col = tbl.getColumn(field);
 
             cols.add(tbl.indexColumn(col.getColumnId(),
                 idxDesc.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
         }
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
+
         if (idxDesc.type() == QueryIndexType.SORTED) {
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
-            return idx.createSortedIndex(schema, name, tbl, false, cols, idxDesc.inlineSize());
+
+            return idx.createSortedIndex(schema, idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL) {
-            return H2Utils.createSpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()]));
+            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));
         }
 
         throw new IllegalStateException("Index type: " + idxDesc.type());
@@ -321,7 +331,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     private Index createHashIndex(H2Schema schema, GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         GridCacheContext cctx = schema.cacheContext();
 
-        if (cctx.affinityNode() && cctx.offheapIndex()) {
+        if (cctx.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
             pkHashIdx = new H2PkHashIndex(cctx, tbl, idxName, cols);
