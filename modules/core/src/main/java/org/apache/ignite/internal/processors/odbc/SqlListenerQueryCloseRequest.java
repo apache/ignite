@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -24,7 +27,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class SqlListenerQueryCloseRequest extends SqlListenerRequest {
     /** Query ID. */
-    private final long queryId;
+    private long queryId;
+
+    /**
+     */
+    public SqlListenerQueryCloseRequest() {
+        super(QRY_CLOSE);
+    }
 
     /**
      * @param queryId Query ID.
@@ -40,6 +49,22 @@ public class SqlListenerQueryCloseRequest extends SqlListenerRequest {
      */
     public long queryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        super.writeBinary(writer, objWriter);
+
+        writer.writeLong(queryId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        super.readBinary(reader, objReader);
+
+        queryId = reader.readLong();
     }
 
     /** {@inheritDoc} */

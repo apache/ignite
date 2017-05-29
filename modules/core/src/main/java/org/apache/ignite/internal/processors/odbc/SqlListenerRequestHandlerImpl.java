@@ -182,7 +182,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
             qryCursors.put(qryId, cur);
 
             SqlListenerQueryExecuteResult res = new SqlListenerQueryExecuteResult(
-                qryId, cur.meta(), cur.fetchRows(), !cur.hasNext(), cur.isQuery());
+                qryId, req.metadataInResponse() ? cur.meta() : null, cur.fetchRows(), !cur.hasNext(), cur.isQuery());
 
             return new SqlListenerResponse(res);
         }
@@ -209,7 +209,7 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
                 return new SqlListenerResponse(SqlListenerResponse.STATUS_FAILED,
                     "Failed to find query with ID: " + req.queryId());
 
-            cur.fetchSize(req.fetchSize());
+            cur.pageSize(req.pageSize());
 
             SqlListenerQueryFetchResult res = new SqlListenerQueryFetchResult(
                 req.queryId(), cur.fetchRows(), !cur.hasNext());

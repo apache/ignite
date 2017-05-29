@@ -17,26 +17,37 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * SQL listener query execute result.
  */
-public class SqlListenerQueryExecuteResult {
+public class SqlListenerQueryExecuteResult implements RawBinarylizable {
     /** Query ID. */
-    private final long queryId;
+    private long queryId;
 
     /** Fields metadata. */
-    private final List<SqlListenerColumnMeta> meta;
+    private List<SqlListenerColumnMeta> meta;
 
     /** Query result rows. */
-    private final List<List<Object>> items;
+    private List<List<Object>> items;
 
     /** Flag indicating the query has no unfetched results. */
-    private final boolean last;
+    private boolean last;
 
     /** Flag indicating the query is SELECT query. {@code false} for DML/DDL queries. */
-    private final boolean isQuery;
+    private boolean isQuery;
+
+    /**
+     *
+     */
+    public SqlListenerQueryExecuteResult() {
+    }
 
     /**
      * @param queryId Query ID.
@@ -86,5 +97,32 @@ public class SqlListenerQueryExecuteResult {
      */
     public boolean isQuery() {
         return isQuery;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        writer.writeLong(queryId);
+        writer.writeBoolean(last);
+        writer.writeBoolean(isQuery);
+
+        SqlListenerAbstractMessageParser.writeColumnsMeta(writer, objWriter, meta);
+
+        assert items != null;
+
+        SqlListenerAbstractMessageParser.writeItems(writer, objWriter, items);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        queryId = reader.readLong();
+        last = reader.readBoolean();
+        isQuery = reader.readBoolean();
+
+        meta = SqlListenerAbstractMessageParser.readColumnsMeta(reader, objReader);
+
+        items = SqlListenerAbstractMessageParser.readItems(reader, objReader);
     }
 }

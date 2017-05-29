@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * SQL listener column metadata.
  */
-public class SqlListenerColumnMeta {
+public class SqlListenerColumnMeta implements RawBinarylizable {
     /** Cache name. */
     private String schemaName;
 
@@ -129,24 +132,17 @@ public class SqlListenerColumnMeta {
         return false;
     }
 
-    /**
-     * Write in a binary format.
-     *
-     * @param writer Binary writer.
-     */
-    public void write(BinaryRawWriter writer) {
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer, SqlListenerAbstractObjectWriter objWriter) {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
         writer.writeByte(BinaryUtils.typeByClass(dataType));
     }
 
-    /**
-     * Read from binary format.
-     *
-     * @param reader Binary input.
-     */
-    public void read(BinaryRawReader reader) {
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) {
         schemaName = reader.readString();
         tableName = reader.readString();
         columnName = reader.readString();

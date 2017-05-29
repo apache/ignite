@@ -87,6 +87,9 @@ public class JdbcResultSet implements ResultSet {
     /** Fetch size. */
     private int fetchSize;
 
+    /** Is query flag. */
+    private boolean isQuery;
+
     /**
      * Creates new result set.
      *
@@ -97,7 +100,8 @@ public class JdbcResultSet implements ResultSet {
      * @param fields Query result page.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields) {
+    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields,
+        boolean isQuery) {
         assert stmt != null;
         assert fetchSize > 0;
 
@@ -108,6 +112,8 @@ public class JdbcResultSet implements ResultSet {
         this.finished = finished;
 
         fieldsIt = fields.iterator();
+
+        this.isQuery = isQuery;
     }
 
     /** {@inheritDoc} */
@@ -158,6 +164,9 @@ public class JdbcResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
         closed = true;
+
+        if (stmt.connection().isClosed())
+            return;
 
         try {
             stmt.connection().cliIo().queryClose(qryId);
@@ -1519,5 +1528,12 @@ public class JdbcResultSet implements ResultSet {
         }
 
         return metaRef;
+    }
+
+    /**
+     * @return Is query flag.
+     */
+    public boolean isQuery() {
+        return isQuery;
     }
 }

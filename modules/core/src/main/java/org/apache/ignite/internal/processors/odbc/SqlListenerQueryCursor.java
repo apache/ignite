@@ -32,7 +32,7 @@ class SqlListenerQueryCursor {
     private final long queryId;
 
     /** Fetch size. */
-    private int fetchSize;
+    private int pageSize;
 
     /** Max rows. */
     private final long maxRows;
@@ -48,13 +48,13 @@ class SqlListenerQueryCursor {
 
     /**
      * @param queryId Query ID.
-     * @param fetchSize Fetch size.
+     * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
      */
-    SqlListenerQueryCursor(long queryId, int fetchSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
+    SqlListenerQueryCursor(long queryId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
         this.queryId = queryId;
-        this.fetchSize = fetchSize;
+        this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
 
@@ -67,7 +67,7 @@ class SqlListenerQueryCursor {
     List<List<Object>> fetchRows() {
         List<List<Object>> items = new ArrayList<>();
 
-        int fetchSize0 = (maxRows > 0) ? (int)Math.min(fetchSize, maxRows - fetched) : fetchSize;
+        int fetchSize0 = (maxRows > 0) ? (int)Math.min(pageSize, maxRows - fetched) : pageSize;
 
         for (; fetched < fetchSize0 && iter.hasNext(); ++fetched)
             items.add(iter.next());
@@ -116,10 +116,10 @@ class SqlListenerQueryCursor {
     }
 
     /**
-     * @param fetchSize New fetch size.
+     * @param pageSize New fetch size.
      */
-    public void fetchSize(int fetchSize) {
-        this.fetchSize = fetchSize;
+    public void pageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
     /**

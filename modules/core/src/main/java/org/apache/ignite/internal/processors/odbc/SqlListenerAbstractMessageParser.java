@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -65,210 +67,77 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
 
         BinaryReaderExImpl reader = createReader(msg);
 
-        byte cmd = reader.readByte();
-
-        SqlListenerRequest res;
-
-        switch (cmd) {
-            case SqlListenerRequest.QRY_EXEC: {
-                String cache = reader.readString();
-                int fetchSize = reader.readInt();
-                int maxRows = reader.readInt();
-                boolean metaInResp = reader.readBoolean();
-
-                String sql = reader.readString();
-
-                int argsNum = reader.readInt();
-
-                Object[] params = new Object[argsNum];
-
-                for (int i = 0; i < argsNum; ++i)
-                    params[i] = objReader.readObject(reader);
-
-                res = new SqlListenerQueryExecuteRequest(cache, fetchSize, maxRows, metaInResp, sql, params);
-
-                break;
-            }
-
-            case SqlListenerRequest.QRY_FETCH: {
-                long queryId = reader.readLong();
-                int fetchSize = reader.readInt();
-
-                res = new SqlListenerQueryFetchRequest(queryId, fetchSize);
-
-                break;
-            }
-
-            case SqlListenerRequest.QRY_METADATA: {
-                long queryId = reader.readLong();
-
-                res = new SqlListenerQueryMetadataRequest(queryId);
-
-                break;
-            }
-
-            case SqlListenerRequest.QRY_CLOSE: {
-                long queryId = reader.readLong();
-
-                res = new SqlListenerQueryCloseRequest(queryId);
-
-                break;
-            }
-
-            case SqlListenerRequest.META_COLS: {
-                String cache = reader.readString();
-                String table = reader.readString();
-                String column = reader.readString();
-
-                res = new OdbcQueryGetColumnsMetaRequest(cache, table, column);
-
-                break;
-            }
-
-            case SqlListenerRequest.META_TBLS: {
-                String catalog = reader.readString();
-                String schema = reader.readString();
-                String table = reader.readString();
-                String tableType = reader.readString();
-
-                res = new OdbcQueryGetTablesMetaRequest(catalog, schema, table, tableType);
-
-                break;
-            }
-
-            case SqlListenerRequest.META_PARAMS: {
-                String cacheName = reader.readString();
-                String sqlQuery = reader.readString();
-
-                res = new OdbcQueryGetParamsMetaRequest(cacheName, sqlQuery);
-
-                break;
-            }
-
-            default:
-                throw new IgniteException("Unknown ODBC command: [cmd=" + cmd + ']');
-        }
-
-        return res;
+        return SqlListenerRequest.readRequest(reader, objReader);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] encode(SqlListenerResponse msg) {
         assert msg != null;
 
-        // Creating new binary writer
         BinaryWriterExImpl writer = createWriter(INIT_CAP);
 
-        // Writing status.
-        writer.writeByte((byte) msg.status());
-
-        if (msg.status() != SqlListenerResponse.STATUS_SUCCESS) {
-            writer.writeString(msg.error());
-
-            return writer.array();
-        }
-
-        Object res0 = msg.response();
-
-        if (res0 == null)
-            return writer.array();
-        else if (res0 instanceof SqlListenerQueryExecuteResult) {
-            SqlListenerQueryExecuteResult res = (SqlListenerQueryExecuteResult) res0;
-
-            if (log.isDebugEnabled())
-                log.debug("Resulting query ID: " + res.getQueryId());
-
-            writer.writeLong(res.getQueryId());
-            writer.writeBoolean(res.last());
-            writer.writeBoolean(res.isQuery());
-
-            writeColumnsMeta(writer, res.meta());
-
-            writeRows(writer, res.items());
-        }
-        else if (res0 instanceof SqlListenerQueryFetchResult) {
-            SqlListenerQueryFetchResult res = (SqlListenerQueryFetchResult) res0;
-
-            if (log.isDebugEnabled())
-                log.debug("Resulting query ID: " + res.queryId());
-
-            writer.writeLong(res.queryId());
-
-            writer.writeBoolean(res.last());
-
-            writeRows(writer, res.items());
-        }
-        else if (res0 instanceof SqlListenerQueryMetadataResult) {
-            SqlListenerQueryMetadataResult res = (SqlListenerQueryMetadataResult) res0;
-
-            if (log.isDebugEnabled())
-                log.debug("Resulting query ID: " + res.queryId());
-
-            writer.writeLong(res.queryId());
-
-            writeColumnsMeta(writer, res.meta());
-        }
-        else if (res0 instanceof SqlListenerQueryCloseResult) {
-            SqlListenerQueryCloseResult res = (SqlListenerQueryCloseResult) res0;
-
-            if (log.isDebugEnabled())
-                log.debug("Resulting query ID: " + res.getQueryId());
-
-            writer.writeLong(res.getQueryId());
-        }
-        else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
-            OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult) res0;
-
-            writeColumnsMeta(writer, res.meta());
-        }
-        else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
-            OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;
-
-            Collection<OdbcTableMeta> tablesMeta = res.meta();
-
-            assert tablesMeta != null;
-
-            writer.writeInt(tablesMeta.size());
-
-            for (OdbcTableMeta tableMeta : tablesMeta)
-                tableMeta.writeBinary(writer);
-        }
-        else if (res0 instanceof OdbcQueryGetParamsMetaResult) {
-            OdbcQueryGetParamsMetaResult res = (OdbcQueryGetParamsMetaResult) res0;
-
-            byte[] typeIds = res.typeIds();
-
-            objWriter.writeObject(writer, typeIds);
-        }
-        else
-            assert false : "Should not reach here.";
+        msg.writeBinary(writer, objWriter);
 
         return writer.array();
     }
 
     /**
      * @param writer Binary writer.
+     * @param objWriter Object writer.
      * @param meta Column metadata.
      */
-    private void writeColumnsMeta(BinaryWriterExImpl writer, Collection<SqlListenerColumnMeta> meta) {
-        assert meta != null;
+    public static void writeColumnsMeta(BinaryWriterExImpl writer, SqlListenerAbstractObjectWriter objWriter,
+        Collection<SqlListenerColumnMeta> meta) {
+        if (meta == null) {
+            writer.writeInt(0);
+
+            return;
+        }
 
         writer.writeInt(meta.size());
 
         for (SqlListenerColumnMeta columnMeta : meta)
-            columnMeta.write(writer);
+            columnMeta.writeBinary(writer, objWriter);
     }
 
     /**
-     * @param writer Binary writer.
-     * @param rows Result rows.
+     * @param reader Binary reader.
+     * @param objReader Object reader.
+     * @return List of columns metadata.
      */
-    private void writeRows(BinaryWriterExImpl writer, List<List<Object>> rows) {
-        assert rows != null;
+    public static List<SqlListenerColumnMeta> readColumnsMeta(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) {
+        int metaSize = reader.readInt();
 
-        writer.writeInt(rows.size());
+        List<SqlListenerColumnMeta> meta;
 
-        for (List<Object> row : rows) {
+        if (metaSize > 0) {
+            meta = new ArrayList<>(metaSize);
+
+            for (int i = 0; i < metaSize; ++i) {
+                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
+
+                m.readBinary(reader, objReader);
+
+                meta.add(m);
+            }
+        }
+        else
+            meta = Collections.emptyList();
+
+        return meta;
+    }
+
+    /**
+     * @param writer Binari writer.
+     * @param objWriter Object writer.
+     * @param items Query results items.
+     */
+    public static void writeItems(BinaryWriterExImpl writer, SqlListenerAbstractObjectWriter objWriter,
+        List<List<Object>> items) {
+        writer.writeInt(items.size());
+
+        for (List<Object> row : items) {
             if (row != null) {
                 writer.writeInt(row.size());
 
@@ -276,6 +145,33 @@ public abstract class SqlListenerAbstractMessageParser implements SqlListenerMes
                     objWriter.writeObject(writer, obj);
             }
         }
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @param objReader Object reader.
+     * @return Query results items.
+     */
+    public static List<List<Object>> readItems(BinaryReaderExImpl reader, SqlListenerAbstractObjectReader objReader) {
+        int rowsSize = reader.readInt();
+
+        if (rowsSize > 0) {
+            List<List<Object>> items = new ArrayList<>(rowsSize);
+
+            for (int i = 0; i < rowsSize; ++i) {
+                int colsSize = reader.readInt();
+
+                List<Object> col = new ArrayList<>(colsSize);
+
+                for (int colCnt = 0; colCnt < colsSize; ++colCnt)
+                    col.add(objReader.readObject(reader));
+
+                items.add(col);
+            }
+
+            return items;
+        } else
+            return Collections.emptyList();
     }
 
     /**

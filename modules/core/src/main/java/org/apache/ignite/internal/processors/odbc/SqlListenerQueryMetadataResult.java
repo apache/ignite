@@ -18,16 +18,25 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.util.List;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * SQL listener query metadata result.
  */
-public class SqlListenerQueryMetadataResult {
+public class SqlListenerQueryMetadataResult implements RawBinarylizable {
     /** Query ID. */
-    private final long queryId;
+    private long queryId;
 
     /** Fields metadata. */
-    private final List<SqlListenerColumnMeta> meta;
+    private List<SqlListenerColumnMeta> meta;
+
+    /**
+     * Default constructor is used for deserialization.
+     */
+    public SqlListenerQueryMetadataResult() {
+    }
 
     /**
      * @param queryId Query ID.
@@ -50,5 +59,23 @@ public class SqlListenerQueryMetadataResult {
      */
     public List<SqlListenerColumnMeta> meta() {
         return meta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+
+        writer.writeLong(queryId);
+
+        SqlListenerAbstractMessageParser.writeColumnsMeta(writer, objWriter, meta);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+
+        queryId = reader.readLong();
+
+        meta = SqlListenerAbstractMessageParser.readColumnsMeta(reader, objReader);
     }
 }

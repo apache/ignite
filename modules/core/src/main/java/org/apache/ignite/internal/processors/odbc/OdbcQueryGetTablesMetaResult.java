@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Collection;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * Query get columns meta result.
  */
-public class OdbcQueryGetTablesMetaResult {
+public class OdbcQueryGetTablesMetaResult implements RawBinarylizable {
     /** Query result rows. */
     private final Collection<OdbcTableMeta> meta;
 
@@ -38,5 +41,17 @@ public class OdbcQueryGetTablesMetaResult {
      */
     public Collection<OdbcTableMeta> meta() {
         return meta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+
     }
 }

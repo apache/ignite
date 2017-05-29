@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -24,12 +27,20 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class OdbcQueryGetParamsMetaRequest extends SqlListenerRequest {
     /** Cache. */
-    private final String cacheName;
+    private String cacheName;
 
     /** Query. */
-    private final String query;
+    private String query;
 
     /**
+     *
+     */
+    public OdbcQueryGetParamsMetaRequest() {
+        super(META_PARAMS);
+    }
+
+    /**
+     * @param cacheName Cache name.
      * @param query SQL Query.
      */
     public OdbcQueryGetParamsMetaRequest(String cacheName, String query) {
@@ -51,6 +62,24 @@ public class OdbcQueryGetParamsMetaRequest extends SqlListenerRequest {
      */
     public String cacheName() {
         return cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        super.writeBinary(writer, objWriter);
+
+        writer.writeString(cacheName);
+        writer.writeString(query);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        super.readBinary(reader, objReader);
+
+        cacheName = reader.readString();
+        query = reader.readString();
     }
 
     /** {@inheritDoc} */

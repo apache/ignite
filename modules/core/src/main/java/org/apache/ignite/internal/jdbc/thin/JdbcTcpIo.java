@@ -29,11 +29,17 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.odbc.RawBinarylizable;
 import org.apache.ignite.internal.processors.odbc.SqlListenerColumnMeta;
 import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryCloseResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.SqlListenerQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
@@ -87,7 +93,7 @@ public class JdbcTcpIo {
     private boolean enforceJoinOrder;
 
     /** Object reader. */
-    private final JdbcObjectReader objReader = new JdbcObjectReader();
+    private final JdbcSqlObjectReader objReader = new JdbcSqlObjectReader();
 
     /** Object writer. */
     private final JdbcObjectWriter objWriter = new JdbcObjectWriter();
@@ -175,116 +181,59 @@ public class JdbcTcpIo {
     public SqlListenerQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
+        return sendRequest(new SqlListenerQueryExecuteRequest(cache, fetchSize, maxRows, false, sql,
+            args == null ? null : args.toArray(new Object[args.size()])), SqlListenerQueryExecuteResult.class);
+    }
+
+    /**
+     * @param req Request.
+     * @param resClass The type of expected response.
+     * @return Server response.
+     * @throws IOException On IO error.
+     * @throws IgniteCheckedException On error.
+     */
+    public <R extends RawBinarylizable> R sendRequest(SqlListenerRequest req, Class<R> resClass)
+        throws IOException, IgniteCheckedException {
+
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_EXEC_MSG_INIT_CAP),
             null, null);
 
-        writer.writeByte((byte)SqlListenerRequest.QRY_EXEC);
-
-        writer.writeString(cache);
-        writer.writeInt(fetchSize);
-        writer.writeInt(maxRows);
-        writer.writeBoolean(false); // metaInResponse == false for JDBC. Query metadata is gathered on demand.
-        writer.writeString(sql);
-        writer.writeInt(args == null ? 0 : args.size());
-
-        if (args != null) {
-            for (Object arg : args)
-                objWriter.writeObject(writer, arg);
-        }
+        req.writeBinary(writer, objWriter);
 
         send(writer.array());
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
             null, null, false);
 
-        byte status = reader.readByte();
+        try {
+            SqlListenerResponse res = new SqlListenerResponse(resClass);
 
-        if (status != SqlListenerResponse.STATUS_SUCCESS) {
-            String err = reader.readString();
+            res.readBinary(reader, objReader);
 
-            throw new IgniteCheckedException("Query execute error: " + err);
+            if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
+                throw new IgniteCheckedException("Error server response: [req=]" + req + ", resp=" + res + ']');
+
+            return res.response();
         }
-
-        long qryId = reader.readLong();
-        boolean last = reader.readBoolean();
-        boolean isQuery = reader.readBoolean();
-
-        List<SqlListenerColumnMeta> meta = readColumnsMeta(reader);
-
-        List<List<Object>> items = readRows(reader);
-
-        // TODO: Return SqlListenerResponse and analyze result up the stack
-        return new SqlListenerQueryExecuteResult(qryId, meta, items, last, isQuery);
+        catch (IllegalAccessException | InstantiationException e) {
+            throw new IgniteCheckedException("Internal error: invalid response type", e);
+        }
     }
+
+
 
     /**
      * @param qryId Query ID.
-     * @param fetchSize fetchSize.
+     * @param pageSize pageSize.
      * @return Fetch results.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
      */
-    public SqlListenerQueryFetchResult queryFetch(Long qryId, int fetchSize)
+    public SqlListenerQueryFetchResult queryFetch(Long qryId, int pageSize)
         throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_FETCH_MSG_SIZE),
-            null, null);
-
-        writer.writeByte((byte)SqlListenerRequest.QRY_FETCH);
-
-        writer.writeLong(qryId);
-        writer.writeInt(fetchSize);
-
-        send(writer.array());
-
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
-            null, null, false);
-
-        byte status = reader.readByte();
-
-        if (status != SqlListenerResponse.STATUS_SUCCESS) {
-            String err = reader.readString();
-
-            throw new IgniteCheckedException("Query execute error: " + err);
-        }
-
-        long respQryId = reader.readLong();
-
-        assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
-            + respQryId + ']';
-
-        boolean last = reader.readBoolean();
-
-        List<List<Object>> rows = readRows(reader);
-
-        return new SqlListenerQueryFetchResult(qryId, rows, last);
+        return sendRequest(new SqlListenerQueryFetchRequest(qryId, pageSize), SqlListenerQueryFetchResult.class);
     }
 
-    /**
-     * @param reader Binary reader.
-     * @return Rows.
-     */
-    private List<List<Object>> readRows(BinaryReaderExImpl reader) {
-        int rowsSize = reader.readInt();
-
-        if (rowsSize > 0) {
-            List<List<Object>> rows = new ArrayList<>(rowsSize);
-
-            for (int i = 0; i < rowsSize; ++i) {
-
-                int colsSize = reader.readInt();
-
-                List<Object> col = new ArrayList<>(colsSize);
-
-                for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(objReader.readSqlObject(reader));
-
-                rows.add(col);
-            }
-
-            return rows;
-        } else
-            return Collections.emptyList();
-    }
 
     /**
      * @param qryId Query ID.
@@ -294,58 +243,7 @@ public class JdbcTcpIo {
      */
     public SqlListenerQueryMetadataResult queryMeta(Long qryId)
         throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_META_MSG_SIZE),
-            null, null);
-
-        writer.writeByte((byte)SqlListenerRequest.QRY_METADATA);
-
-        writer.writeLong(qryId);
-
-        send(writer.array());
-
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
-            null, null, false);
-
-        byte status = reader.readByte();
-
-        if (status != SqlListenerResponse.STATUS_SUCCESS) {
-            String err = reader.readString();
-
-            throw new IgniteCheckedException("Query execute error: " + err);
-        }
-
-        long respQryId = reader.readLong();
-
-        assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
-            + respQryId + ']';
-
-        return new SqlListenerQueryMetadataResult(qryId, readColumnsMeta(reader));
-    }
-
-    /**
-     * @param reader Binary reader.
-     * @return Query metadata.
-     */
-    private List<SqlListenerColumnMeta> readColumnsMeta(BinaryReaderExImpl reader) {
-        int metaSize = reader.readInt();
-
-        List<SqlListenerColumnMeta> meta;
-
-        if (metaSize > 0) {
-            meta = new ArrayList<>(metaSize);
-
-            for (int i = 0; i < metaSize; ++i) {
-                SqlListenerColumnMeta m = new SqlListenerColumnMeta();
-
-                m.read(reader);
-
-                meta.add(m);
-            }
-        }
-        else
-            meta = Collections.emptyList();
-
-        return meta;
+        return sendRequest(new SqlListenerQueryMetadataRequest(qryId), SqlListenerQueryMetadataResult.class);
     }
 
     /**
@@ -354,29 +252,10 @@ public class JdbcTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(QUERY_CLOSE_MSG_SIZE),
-            null, null);
+        SqlListenerQueryCloseResult res = sendRequest(new SqlListenerQueryCloseRequest(qryId),
+            SqlListenerQueryCloseResult.class);
 
-        writer.writeByte((byte)SqlListenerRequest.QRY_CLOSE);
-        writer.writeLong(qryId);
-
-        send(writer.array());
-
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
-            null, null, false);
-
-        byte status = reader.readByte();
-
-        if (status != SqlListenerResponse.STATUS_SUCCESS) {
-            String err = reader.readString();
-
-            throw new IgniteCheckedException("Query execute error: " + err);
-        }
-
-        long respQryId = reader.readLong();
-
-        assert respQryId == qryId : "Invalid query ID in the response: [reqQueryId=" + qryId + ", respQueryId="
-            + respQryId + ']';
+        assert res.getQueryId() == qryId;
     }
 
     /**

@@ -17,23 +17,32 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
  * SQL listener query fetch result.
  */
-public class SqlListenerQueryFetchResult {
+public class SqlListenerQueryFetchResult implements RawBinarylizable {
     /** Query ID. */
-    private final long queryId;
+    private long queryId;
 
     /** Query result rows. */
-    private final List<List<Object>> items;
+    private List<List<Object>> items;
 
     /** Flag indicating the query has no unfetched results. */
-    private final boolean last;
+    private boolean last;
 
     /**
+     * Default constructor is used for deserialization.
+     */
+    public SqlListenerQueryFetchResult() {
+    }
+
+    /**
+
      * @param queryId Query ID.
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
@@ -63,5 +72,20 @@ public class SqlListenerQueryFetchResult {
      */
     public boolean last() {
         return last;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        writer.writeLong(queryId);
+
+        SqlListenerAbstractMessageParser.writeItems(writer, objWriter, items);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+
+        items = SqlListenerAbstractMessageParser.readItems(reader, objReader);
     }
 }

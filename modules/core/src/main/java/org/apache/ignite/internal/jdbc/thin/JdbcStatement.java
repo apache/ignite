@@ -37,9 +37,8 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  * JDBC statement implementation.
  */
 public class JdbcStatement implements Statement {
-    /** Default queryFetch size. */
-    // TODO: Rename to page size.
-    private static final int DFLT_FETCH_SIZE = 1024;
+    /** Default queryPage size. */
+    private static final int DFLT_PAGE_SIZE = 1024;
 
     /** Ignite endpoint and I/O protocol implementation. */
     private JdbcConnection conn;
@@ -54,16 +53,13 @@ public class JdbcStatement implements Statement {
     private int timeout;
 
     /** Current result set. */
-    private ResultSet rs;
+    private JdbcResultSet rs;
 
     /** Query arguments. */
     protected ArrayList<Object> args;
 
     /** Fetch size. */
-    private int fetchSize = DFLT_FETCH_SIZE;
-
-    /** Query id. */
-    private long qryId = -1;
+    private int pageSize = DFLT_PAGE_SIZE;
 
     /**
      * Creates new statement.
@@ -75,10 +71,26 @@ public class JdbcStatement implements Statement {
 
         this.conn = conn;
     }
-
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
+        JdbcResultSet rs = execute0(sql);
+
+        if (!rs.isQuery())
+            throw new SQLException("The query isn't SELECT query: [sql=" + sql +']');
+
+        return rs;
+    }
+
+    /**
+     * @param sql Sql query.
+     * @return Result set.
+     * @throws SQLException Onj error.
+     */
+    public JdbcResultSet execute0(String sql) throws SQLException {
         ensureNotClosed();
+
+        if (rs != null)
+            rs.close();
 
         rs = null;
 
@@ -86,14 +98,12 @@ public class JdbcStatement implements Statement {
             throw new SQLException("SQL query is empty");
 
         try {
-            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), fetchSize, maxRows,
+            SqlListenerQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), pageSize, maxRows,
                 sql, args);
 
             assert res != null;
 
-            qryId = res.getQueryId();
-
-            rs = new JdbcResultSet(this, qryId, fetchSize, res.last(), res.items());
+            rs = new JdbcResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(), res.isQuery());
 
             return rs;
         }
@@ -118,15 +128,10 @@ public class JdbcStatement implements Statement {
     @Override public void close() throws SQLException {
         closed = true;
 
-        if (qryId < 0 || conn.isClosed())
+        if (rs == null)
             return;
 
-        try {
-            conn.cliIo().queryClose(qryId);
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new SQLException("Failed to close statement. [queryId=" + qryId + ']', e);
-        }
+        rs.close();
     }
 
     /** {@inheritDoc} */
@@ -206,9 +211,9 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        rs = executeQuery(sql);
+        rs = execute0(sql);
 
-        return true;
+        return rs.isQuery();
     }
 
     /** {@inheritDoc} */
@@ -258,14 +263,14 @@ public class JdbcStatement implements Statement {
         if (fetchSize <= 0)
             throw new SQLException("Fetch size must be greater than zero.");
 
-        this.fetchSize = fetchSize;
+        this.pageSize = fetchSize;
     }
 
     /** {@inheritDoc} */
     @Override public int getFetchSize() throws SQLException {
         ensureNotClosed();
 
-        return fetchSize;
+        return pageSize;
     }
 
     /** {@inheritDoc} */

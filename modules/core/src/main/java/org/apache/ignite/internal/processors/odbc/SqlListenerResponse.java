@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL listener response.
  */
-public class SqlListenerResponse {
+public class SqlListenerResponse implements RawBinarylizable {
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
 
@@ -32,25 +35,37 @@ public class SqlListenerResponse {
     public static final int STATUS_FAILED = 1;
 
     /** Success status. */
-    private final int status;
+    private int status;
 
     /** Error. */
-    private final String err;
+    private String err;
 
     /** Response object. */
     @GridToStringInclude
-    private final Object obj;
+    private RawBinarylizable res;
+
+    /**
+     * Constructs is used for deserialization.
+     *
+     * @param resClass Response result.
+     * @throws IllegalAccessException On error.
+     * @throws InstantiationException On error.
+     */
+    public SqlListenerResponse(Class<? extends RawBinarylizable> resClass)
+        throws IllegalAccessException, InstantiationException {
+        res = resClass.newInstance();
+    }
 
     /**
      * Constructs successful rest response.
      *
-     * @param obj Response object.
+     * @param res Response result.
      */
-    public SqlListenerResponse(Object obj) {
-        this.status = STATUS_SUCCESS;
+    public SqlListenerResponse(RawBinarylizable res) {
+        status = STATUS_SUCCESS;
 
-        this.obj = obj;
-        this.err = null;
+        this.res = res;
+        err = null;
     }
 
     /**
@@ -64,7 +79,7 @@ public class SqlListenerResponse {
 
         this.status = status;
 
-        this.obj = null;
+        res = null;
         this.err = err;
     }
 
@@ -78,8 +93,8 @@ public class SqlListenerResponse {
     /**
      * @return Response object.
      */
-    public Object response() {
-        return obj;
+    public <R extends RawBinarylizable> R response() {
+        return (R)res;
     }
 
     /**
@@ -92,5 +107,29 @@ public class SqlListenerResponse {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlListenerResponse.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        writer.writeByte((byte) status);
+
+        if (status != STATUS_SUCCESS)
+            writer.writeString(err);
+        else if (res != null)
+            res.writeBinary(writer, objWriter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        status = reader.readByte();
+
+        if (status != STATUS_SUCCESS) {
+            err = reader.readString();
+            res = null;
+        }
+        else
+            res.readBinary(reader, objReader);
     }
 }

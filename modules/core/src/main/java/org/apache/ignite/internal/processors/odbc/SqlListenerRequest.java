@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+
 /**
  * SQL listener command request.
  */
-public class SqlListenerRequest {
+public class SqlListenerRequest implements RawBinarylizable {
     /** Handshake request. */
     public static final int HANDSHAKE = 1;
 
@@ -46,7 +52,7 @@ public class SqlListenerRequest {
     public static final int META_PARAMS = 8;
 
     /** Command. */
-    private final int cmd;
+    private int cmd;
 
     /** Request ID. */
     private long reqId;
@@ -77,5 +83,66 @@ public class SqlListenerRequest {
      */
     public void requestId(long reqId) {
         this.reqId = reqId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        writer.writeByte((byte)cmd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        // No-op.
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return Request object.
+     * @throws BinaryObjectException On error.
+     */
+    public static SqlListenerRequest readRequest(BinaryReaderExImpl reader, SqlListenerAbstractObjectReader objReader)
+        throws BinaryObjectException {
+        int reqId = reader.readByte();
+
+        SqlListenerRequest req;
+
+        switch(reqId) {
+            case QRY_EXEC:
+                req = new SqlListenerQueryExecuteRequest();
+                break;
+
+            case QRY_FETCH:
+                req = new SqlListenerQueryFetchRequest();
+                break;
+
+            case QRY_METADATA:
+                req = new SqlListenerQueryMetadataRequest();
+                break;
+
+            case QRY_CLOSE:
+                req = new SqlListenerQueryCloseRequest();
+                break;
+
+            case META_COLS:
+                req = new OdbcQueryGetColumnsMetaRequest();
+                break;
+
+            case META_TBLS:
+                req = new OdbcQueryGetTablesMetaRequest();
+                break;
+
+            case META_PARAMS:
+                req = new OdbcQueryGetParamsMetaRequest();
+                break;
+
+            default:
+                throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqId + ']');
+        }
+
+        req.readBinary(reader, objReader);
+
+        return req;
     }
 }

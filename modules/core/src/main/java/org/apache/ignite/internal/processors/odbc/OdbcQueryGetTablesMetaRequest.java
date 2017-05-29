@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -24,16 +27,23 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class OdbcQueryGetTablesMetaRequest extends SqlListenerRequest {
     /** Catalog search pattern. */
-    private final String catalog;
+    private String catalog;
 
     /** Schema search pattern. */
-    private final String schema;
+    private String schema;
 
     /** Table search pattern. */
-    private final String table;
+    private String table;
 
     /** Table type search pattern. */
-    private final String tableType;
+    private String tableType;
+
+    /**
+     *
+     */
+    public OdbcQueryGetTablesMetaRequest() {
+        super(META_TBLS);
+    }
 
     /**
      * @param catalog Catalog search pattern.
@@ -76,6 +86,28 @@ public class OdbcQueryGetTablesMetaRequest extends SqlListenerRequest {
      */
     public String tableType() {
         return tableType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        super.writeBinary(writer, objWriter);
+
+        writer.writeString(catalog);
+        writer.writeString(schema);
+        writer.writeString(table);
+        writer.writeString(tableType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        super.readBinary(reader, objReader);
+
+        catalog = reader.readString();
+        schema = reader.readString();
+        table = reader.readString();
+        tableType = reader.readString();
     }
 
     /** {@inheritDoc} */

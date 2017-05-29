@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -24,20 +27,26 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
     /** Query ID. */
-    private final long queryId;
+    private long queryId;
 
     /** Fetch size. */
-    private final int fetchSize;
+    private int pageSize;
+
+    /**
+     */
+    public SqlListenerQueryFetchRequest() {
+        super(QRY_FETCH);
+    }
 
     /**
      * @param queryId Query ID.
-     * @param fetchSize Fetch size.
+     * @param pageSize Fetch size.
      */
-    public SqlListenerQueryFetchRequest(long queryId, int fetchSize) {
+    public SqlListenerQueryFetchRequest(long queryId, int pageSize) {
         super(QRY_FETCH);
 
         this.queryId = queryId;
-        this.fetchSize = fetchSize;
+        this.pageSize = pageSize;
     }
 
     /**
@@ -50,8 +59,26 @@ public class SqlListenerQueryFetchRequest extends SqlListenerRequest {
     /**
      * @return Fetch page size.
      */
-    public int fetchSize() {
-        return fetchSize;
+    public int pageSize() {
+        return pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        super.writeBinary(writer, objWriter);
+
+        writer.writeLong(queryId);
+        writer.writeInt(pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        super.readBinary(reader, objReader);
+
+        queryId = reader.readLong();
+        pageSize = reader.readInt();
     }
 
     /** {@inheritDoc} */

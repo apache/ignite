@@ -141,9 +141,12 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        // TODO: Pass timeout
+        JdbcStatement stmt  = new JdbcStatement(this);
 
-        return new JdbcStatement(this);
+        if (timeout > 0)
+            stmt.timeout(timeout);
+
+        return stmt;
     }
 
     /** {@inheritDoc} */

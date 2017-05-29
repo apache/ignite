@@ -17,12 +17,22 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+
 /**
  * SQL listener query close result.
  */
-public class SqlListenerQueryCloseResult {
+public class SqlListenerQueryCloseResult implements RawBinarylizable {
     /** Query ID. */
-    private final long queryId;
+    private long queryId;
+
+    /**
+     * The default constructor is used for deserialization.
+     */
+    public SqlListenerQueryCloseResult() {
+    }
 
     /**
      * @param queryId Query ID.
@@ -36,5 +46,17 @@ public class SqlListenerQueryCloseResult {
      */
     public long getQueryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+        writer.writeLong(queryId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+        queryId = reader.readLong();
     }
 }

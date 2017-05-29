@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+
 /**
  * ODBC query get params meta result.
  */
-public class OdbcQueryGetParamsMetaResult {
+public class OdbcQueryGetParamsMetaResult implements RawBinarylizable {
     /** List of parameter type IDs. */
     private final byte[] typeIds;
 
@@ -36,5 +40,17 @@ public class OdbcQueryGetParamsMetaResult {
      */
     public byte[] typeIds() {
         return typeIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        SqlListenerAbstractObjectWriter objWriter) throws BinaryObjectException {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        SqlListenerAbstractObjectReader objReader) throws BinaryObjectException {
+
     }
 }
