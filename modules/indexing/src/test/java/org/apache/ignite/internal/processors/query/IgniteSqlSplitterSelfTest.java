@@ -1123,6 +1123,57 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    public void testSchemaQuoted() {
+        assert false; // TODO test hangs
+        doTestSchemaName("\"ppAf\"");
+    }
+
+    /**
+     */
+    public void testSchemaQuotedUpper() {
+        assert false; // TODO test hangs
+        doTestSchemaName("\"PPAF\"");
+    }
+
+    /**
+     */
+    public void testSchemaUnquoted() {
+        doTestSchemaName("ppAf");
+    }
+
+    /**
+     */
+    public void testSchemaUnquotedUpper() {
+        doTestSchemaName("PPAF");
+    }
+
+    /**
+     * @param schema Schema name.
+     */
+    public void doTestSchemaName(String schema) {
+        CacheConfiguration ccfg = cacheConfig("persPartAff", true, Integer.class, Person2.class);
+
+        ccfg.setSqlSchema(schema);
+
+        IgniteCache<Integer, Person2> ppAf = ignite(0).createCache(ccfg);
+
+        try {
+            ppAf.put(1, new Person2(10, "Petya"));
+            ppAf.put(2, new Person2(10, "Kolya"));
+
+            List<List<?>> res = ppAf.query(new SqlFieldsQuery("select name from " +
+                schema + ".Person2 order by _key")).getAll();
+
+            assertEquals("Petya", res.get(0).get(0));
+            assertEquals("Kolya", res.get(1).get(0));
+        }
+        finally {
+            ppAf.destroy();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testIndexSegmentation() throws Exception {
