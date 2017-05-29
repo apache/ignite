@@ -27,7 +27,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
  */
 public interface RecordSerializer {
     /**
-     * @return writer
+     * @return serializer version
      */
     public int version();
 

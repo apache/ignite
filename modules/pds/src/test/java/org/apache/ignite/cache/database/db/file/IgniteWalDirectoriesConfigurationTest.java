@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.database.db.file;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -29,11 +29,11 @@ public class IgniteWalDirectoriesConfigurationTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         pCfg.setWalStorePath("test/db/wal");
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         return cfg;
     }

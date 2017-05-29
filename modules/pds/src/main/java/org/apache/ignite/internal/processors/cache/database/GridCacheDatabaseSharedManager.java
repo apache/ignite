@@ -66,7 +66,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -233,7 +233,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile boolean printCheckpointStats = true;
 
     /** Database configuration. */
-    private final PersistenceConfiguration dbCfg;
+    private final PersistentStoreConfiguration dbCfg;
 
     /** */
     private final Collection<DbCheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
@@ -274,7 +274,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public GridCacheDatabaseSharedManager(GridKernalContext ctx) {
         IgniteConfiguration cfg = ctx.config();
 
-        dbCfg = cfg.getPersistenceConfiguration();
+        dbCfg = cfg.getPersistentStoreConfiguration();
 
         assert dbCfg != null : "PageStore should not be created if persistence is disabled.";
 
@@ -357,7 +357,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         // Intentionally use identity comparison to check if configuration default has changed.
         //noinspection NumberEquality
-        if (cpBufSize == PersistenceConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE) {
+        if (cpBufSize == PersistentStoreConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE) {
             MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
             // Limit the checkpoint page buffer size by 2GB.

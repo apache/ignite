@@ -1501,7 +1501,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName, @Nullable final QueryTypeDescriptorImpl desc) {
+private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName,
+        @Nullable final QueryTypeDescriptorImpl desc
+    ) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
@@ -1510,12 +1512,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         final GridWorkerFuture<Object> fut = new GridWorkerFuture<>();
 
-        idx.markForRebuildFromHash(cacheName, desc);
+        idx.markForRebuildFromHash(cacheName);
 
         GridWorker w = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker", log) {
             @Override protected void body() {
                 try {
-                    idx.rebuildIndexesFromHash(cacheName, desc);
+                    idx.rebuildIndexesFromHash(cacheName);
 
                     fut.onDone();
                 }
@@ -1523,7 +1525,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     fut.onDone(e);
                 }
                 catch (Throwable e) {
-                    U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
+                    U.error(log, "Failed to rebuild indexes for type [cacheName=" + cacheName +
                         ", name=" + desc.name() + ']', e);
 
                     fut.onDone(e);

@@ -1818,6 +1818,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Gets collection of table for given schema name.
+     *
+     * @param cacheName Schema name.
+     * @return Collection of table descriptors.
+     */
+    private Collection<H2TableDescriptor> tables(String cacheName) {
+        H2Schema s = schemas.get(schema(cacheName));
+
+        if (s == null)
+            return Collections.emptySet();
+
+        return s.tables().values();
+    }
+
+    /**
      * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}.
      */
     private void cleanupStatementCache() {
@@ -1856,23 +1871,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cacheName Cache name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override public void rebuildIndexesFromHash(String cacheName,
-        GridQueryTypeDescriptor type) throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
-
-        if (tbl == null)
-            return;
-
-        assert tbl.table() != null;
-
-        assert tbl.table().rebuildFromHashInProgress();
-
-        H2PkHashIndex hashIdx = tbl.primaryKeyHashIndex();
-
-        Cursor cursor = hashIdx.find((Session)null, null, null);
-
-        int cacheId = CU.cacheId(tbl.schema().cacheName());
+    @Override public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException {
+        int cacheId = CU.cacheId(cacheName);
 
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
@@ -1881,19 +1881,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean done = false;
 
-            while (!done) {
-                GridCacheEntryEx entry = cctx.cache().entryEx(dataRow.key());
+                    try {
+                        KeyCacheObject key = keyIter.next();
 
-                try {
-                    synchronized (entry) {
-                        // TODO : How to correctly get current value and link here?
-
-                        GridH2Row row = tbl.table().rowDescriptor().createRow(entry.key(), entry.partition(),
-                                dataRow.value(), entry.version(), entry.expireTime());
-
-                        row.link(dataRow.link());
-
-                        List<Index> indexes = tbl.table().getAllIndexes();
+                        while (true) {
+                            try {
+                                GridCacheEntryEx entry = cctx.isNear() ?
+                                    cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
 
                         for (int i = 2; i < indexes.size(); i++) {
                             Index idx = indexes.get(i);
@@ -1910,21 +1904,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-        }
-
-        tbl.table().markRebuildFromHashInProgress(false);
+        for (H2TableDescriptor tblDesc : tables(cacheName))
+            tblDesc.table().markRebuildFromHashInProgress(false);
     }
 
     /** {@inheritDoc} */
-    @Override public void markForRebuildFromHash(String cacheName, GridQueryTypeDescriptor type) {
-        H2TableDescriptor tbl = tableDescriptor(type.name(), cacheName);
+    @Override public void markForRebuildFromHash(String cacheName) {
+        for (H2TableDescriptor tblDesc : tables(cacheName)) {
+            assert tblDesc.table() != null;
 
-        if (tbl == null)
-            return;
-
-        assert tbl.table() != null;
-
-        tbl.table().markRebuildFromHashInProgress(true);
+            tblDesc.table().markRebuildFromHashInProgress(true);
+        }
     }
 
     /**

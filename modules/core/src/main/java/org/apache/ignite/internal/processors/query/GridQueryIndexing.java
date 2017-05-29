@@ -234,14 +234,14 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      * @throws IgniteCheckedException If failed.
      */
-    public void rebuildIndexesFromHash(String cacheName, GridQueryTypeDescriptor type) throws IgniteCheckedException;
+    public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException;
 
     /**
      * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
      *
      * @param cacheName Cache name.
      */
-    public void markForRebuildFromHash(String cacheName, GridQueryTypeDescriptor type);
+    public void markForRebuildFromHash(String cacheName);
 
     /**
      * Returns backup filter.

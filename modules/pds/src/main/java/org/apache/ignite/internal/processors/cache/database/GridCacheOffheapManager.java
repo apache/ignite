@@ -489,6 +489,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      *
      */
     private static class RebalanceIteratorAdapter implements IgniteRebalanceIterator {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Cache group caches. */
         private final Set<Integer> cacheGrpCaches;
 
@@ -991,7 +994,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
                 if (delegate0 != null)
                     delegate0.updateCounter(val);

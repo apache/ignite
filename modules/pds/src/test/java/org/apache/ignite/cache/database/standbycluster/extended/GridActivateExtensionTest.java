@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyMultiNodeFullApiSelfTest;
@@ -61,13 +61,13 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
         cfg.setConsistentId("ConsId" + (condId++));
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(primaryIpFinder);
 
-        PersistenceConfiguration pCfg = new PersistenceConfiguration();
+        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
-        pCfg.setPersistenceStorePath(testName + "/db");
+        pCfg.setPersistentStorePath(testName + "/db");
         pCfg.setWalArchivePath(testName + "/db/wal/archive");
         pCfg.setWalStorePath(testName + "/db/wal");
 
-        cfg.setPersistenceConfiguration(pCfg);
+        cfg.setPersistentStoreConfiguration(pCfg);
 
         final MemoryConfiguration memCfg = new MemoryConfiguration();
 

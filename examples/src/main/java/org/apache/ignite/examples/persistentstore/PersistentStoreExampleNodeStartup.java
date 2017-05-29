@@ -15,36 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.wal.record;
+package org.apache.ignite.examples.persistentstore;
 
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.Ignition;
 
 /**
- * Header record.
+ * @see PersistentStoreExampleNodeStartup
  */
-public class HeaderRecord extends WALRecord {
-    /** */
-    public static final long MAGIC = 0xB0D045A_CE7ED045AL;
-
-    /** Serializer version */
-    private final int ver;
-
-    /**
-     * @param ver Version.
-     */
-    public HeaderRecord(int ver) {
-        this.ver = ver;
-    }
-
-    /**
-     * @return Version.
-     */
-    public int version() {
-        return ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public RecordType type() {
-        return RecordType.HEADER_RECORD;
+public class PersistentStoreExampleNodeStartup {
+    public static void main(String[] args) throws Exception {
+        Ignition.start("examples/config/persistentstore/example-persistent-store.xml");
     }
 }

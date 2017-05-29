@@ -68,6 +68,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-pds</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>

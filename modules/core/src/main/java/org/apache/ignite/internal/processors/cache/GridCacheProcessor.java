@@ -424,7 +424,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (storesLocallyOnClient(c, cc))
             throw new IgniteCheckedException("MemoryPolicy for client caches must be explicitly configured " +
-                    "on client node startup. Use MemoryConfiguration to configure MemoryPolicy.");
+                "on client node startup. Use MemoryConfiguration to configure MemoryPolicy.");
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
@@ -2222,12 +2222,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
 
-        if (ctx.config().isPersistentEnable()) {
-            dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
+        if (ctx.config().isPersistentStoreEnabled()) {
+            if (ctx.clientNode()) {
+                U.warn(log, "Persistent Store is not supported on client nodes (Persistent Store's" +
+                    " configuration will be ignored).");
 
-            pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
+                dbMgr = new IgniteCacheDatabaseSharedManager();
+            }
+            else {
+                dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
 
-            walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
+                pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
+
+                walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
+            }
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();

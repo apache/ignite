@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistenceConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -87,7 +87,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final IgniteConfiguration igniteCfg;
 
     /** */
-    private PersistenceConfiguration pstCfg;
+    private PersistentStoreConfiguration pstCfg;
 
     /** Absolute directory for file page store */
     private File storeWorkDir;
@@ -104,7 +104,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
 
-        PersistenceConfiguration pstCfg = igniteCfg.getPersistenceConfiguration();
+        PersistentStoreConfiguration pstCfg = igniteCfg.getPersistentStoreConfiguration();
 
         assert pstCfg != null : "WAL should not be created if persistence is disabled.";
 
@@ -118,13 +118,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         String consId = U.maskForFileName(cctx.kernalContext().discovery().consistentId().toString());
 
-        if (pstCfg.getPersistenceStorePath() != null) {
-            File workDir0 = new File(pstCfg.getPersistenceStorePath());
+        if (pstCfg.getPersistentStorePath() != null) {
+            File workDir0 = new File(pstCfg.getPersistentStorePath());
 
             if (!workDir0.isAbsolute())
                 workDir0 = U.resolveWorkDirectory(
                     igniteCfg.getWorkDirectory(),
-                    pstCfg.getPersistenceStorePath(),
+                    pstCfg.getPersistentStorePath(),
                     false
                 );
 
