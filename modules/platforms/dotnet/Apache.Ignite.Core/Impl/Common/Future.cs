@@ -60,10 +60,9 @@ namespace Apache.Ignite.Core.Impl.Common
             }
             catch (AggregateException ex)
             {
-                if (ex.InnerException != null)
-                    throw ex.InnerException;
+                var innerEx = ex.InnerExceptions.Count > 1 ? ex : ex.InnerException;
 
-                throw;
+                throw new IgniteException("Async operation has failed, examine InnerException for details.", innerEx);
             }
         }
 
