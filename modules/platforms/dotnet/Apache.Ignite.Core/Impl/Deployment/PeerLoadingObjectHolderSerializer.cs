@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,42 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Impl.Deployment
 {
     using System;
-    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Binary serializer for system types.
+    /// Serializer for <see cref="PeerLoadingObjectHolder"/>. Unwraps underlying object automatically.
     /// </summary>
-    /// <typeparam name="T">Object type.</typeparam>
-    internal class BinarySystemTypeSerializer<T> : IBinarySerializerInternal where T : IBinaryWriteAware
+    internal class PeerLoadingObjectHolderSerializer : IBinarySerializerInternal
     {
-        /** Ctor delegate. */
-        private readonly Func<BinaryReader, T> _ctor;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinarySystemTypeSerializer{T}"/> class.
-        /// </summary>
-        /// <param name="ctor">Constructor delegate.</param>
-        public BinarySystemTypeSerializer(Func<BinaryReader, T> ctor)
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            Debug.Assert(ctor != null);
-
-            _ctor = ctor;
+            TypeCaster<PeerLoadingObjectHolder>.Cast(obj).WriteBinary(writer);
         }
 
-        /** <inheritDoc /> */
-        public void WriteBinary<T1>(T1 obj, BinaryWriter writer)
+        /** <inheritdoc /> */
+        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
-            TypeCaster<T>.Cast(obj).WriteBinary(writer);
-        }
+            var holder = new PeerLoadingObjectHolder(reader);
 
-        /** <inheritDoc /> */
-        public T1 ReadBinary<T1>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
-        {
-            return TypeCaster<T1>.Cast(_ctor(reader));
+            return (T) holder.Object;
         }
 
         /** <inheritdoc /> */
