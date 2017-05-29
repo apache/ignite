@@ -17,20 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.h2.jdbc.JdbcConnection;
-import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
@@ -48,7 +46,7 @@ class ReduceQueryRun {
     private CountDownLatch latch;
 
     /** */
-    private final JdbcConnection conn;
+    private H2Connection conn;
 
     /** */
     private final int pageSize;
@@ -62,17 +60,14 @@ class ReduceQueryRun {
      * @param id Query ID.
      * @param qry Query text.
      * @param schemaName Schema name.
-     * @param conn Connection.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param startTime Start time.
      * @param cancel Query cancel handler.
      */
-    ReduceQueryRun(Long id, String qry, String schemaName, Connection conn, int idxsCnt, int pageSize, long startTime,
+    ReduceQueryRun(Long id, String qry, String schemaName, int idxsCnt, int pageSize, long startTime,
         GridQueryCancel cancel) {
         this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, schemaName, startTime, cancel, false);
-
-        this.conn = (JdbcConnection)conn;
 
         this.idxs = new ArrayList<>(idxsCnt);
 
@@ -123,8 +118,17 @@ class ReduceQueryRun {
     /**
      * @return Connection.
      */
-    JdbcConnection connection() {
+    H2Connection connection() {
         return conn;
+    }
+
+    /**
+     * @param conn Connection.
+     */
+    void connection(H2Connection conn) {
+        this.conn = conn;
+
+        qry.connection(conn);
     }
 
     /**

@@ -56,10 +56,9 @@ public class GridRunningQueryInfo {
      * @param startTime Query start time.
      * @param cancel Query cancel.
      * @param loc Local query flag.
-     * @param conn Connection.
      */
     public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String schemaName, long startTime,
-        GridQueryCancel cancel, boolean loc, GridCancelable conn) {
+        GridQueryCancel cancel, boolean loc) {
         this.id = id;
         this.qry = qry;
         this.qryType = qryType;
@@ -67,7 +66,6 @@ public class GridRunningQueryInfo {
         this.startTime = startTime;
         this.cancel = cancel;
         this.loc = loc;
-        this.conn = conn;
     }
 
     /**
@@ -143,8 +141,11 @@ public class GridRunningQueryInfo {
 
     /**
      * @param conn Connection.
+     * @return {@code this}.
      */
-    public void connection(GridCancelable conn) {
+    public GridRunningQueryInfo connection(GridCancelable conn) {
         this.conn = conn;
+
+        return this;
     }
 }

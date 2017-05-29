@@ -190,7 +190,7 @@ public final class H2Connection implements GridCancelable {
         // TODO conn.setSchema(schema);
         // TODO need to check correct case + quotes
 
-        stmt.executeUpdate("SET SCHEMA " + schema);
+        stmt.executeUpdate("SET SCHEMA " + H2Utils.withQuotes(schema));
 
         this.schema = schema;
     }

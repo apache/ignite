@@ -537,9 +537,7 @@ public class GridReduceQueryExecutor {
 
             final long qryReqId = qryIdGen.incrementAndGet();
 
-            final String cacheName = cctx.name();
-
-            final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), cacheName,
+            final ReduceQueryRun r = new ReduceQueryRun(qryReqId, qry.originalSql(), schemaName,
                 qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
@@ -629,7 +627,7 @@ public class GridReduceQueryExecutor {
 
                 if (!skipMergeTbl) {
                     if (conn == null)
-                        r.qryInfo.connection(conn = h2.takeConnectionForCache(cacheName));
+                        r.connection(conn = h2.takeConnectionForSchema(schemaName));
 
                     GridMergeTable tbl;
 
@@ -660,7 +658,7 @@ public class GridReduceQueryExecutor {
                 else
                     idx.setSources(nodes, segmentsPerIndex);
 
-                r.idxs.add(idx);
+                r.indexes().add(idx);
             }
 
             r.latch(new CountDownLatch(isReplicatedOnly ? 1 :
@@ -760,7 +758,7 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl)
-                        resIter = new LazyMergeIndexIterator(conn, r.idxs.iterator());
+                        resIter = new LazyMergeIndexIterator(conn, r.indexes().iterator());
                     else {
                         cancel.checkCancelled();
 
@@ -777,7 +775,7 @@ public class GridReduceQueryExecutor {
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                            H2ResultSet res = h2.executeSqlQueryWithTimer(schema,
+                            H2ResultSet res = h2.executeSqlQueryWithTimer(schemaName,
                                 conn,
                                 rdc.query(),
                                 rdc.parameters(params),
@@ -1429,6 +1427,13 @@ public class GridReduceQueryExecutor {
             if (run != null)
                 run.queryInfo().cancel();
         }
+    }
+
+    /**
+     */
+    public void cancelAllQueries() {
+        for (ReduceQueryRun run : runs.values())
+            run.queryInfo().cancel();
     }
 
     /** */
