@@ -369,14 +369,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException {
-        // TODO IGNITE-5075: per cache?
+    @Override public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
+        if (grp.sharedGroup())
+            idxName = Integer.toString(cacheId) + "_" + idxName;
+
         return metaStore.getOrAllocateForTree(idxName);
     }
 
     /** {@inheritDoc} */
-    @Override public void dropRootPageForIndex(String idxName) throws IgniteCheckedException {
-        // TODO IGNITE-5075: per cache?
+    @Override public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException {
+        if (grp.sharedGroup())
+            idxName = Integer.toString(cacheId) + "_" + idxName;
+
         metaStore.dropRootPage(idxName);
     }
 
@@ -994,7 +998,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
-                CacheDataStore delegate0 = init0(false);
+                CacheDataStore delegate0 = init0(true);
 
                 if (delegate0 != null)
                     delegate0.updateCounter(val);

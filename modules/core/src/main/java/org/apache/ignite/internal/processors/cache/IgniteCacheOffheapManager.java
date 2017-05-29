@@ -316,17 +316,19 @@ public interface IgniteCacheOffheapManager {
     public GridAtomicLong globalRemoveId();
 
     /**
+     * @param cacheId Cache ID.
      * @param idxName Index name.
      * @return Root page for index tree.
      * @throws IgniteCheckedException If failed.
      */
-    public RootPage rootPageForIndex(String idxName) throws IgniteCheckedException;
+    public RootPage rootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
 
     /**
+     * @param cacheId Cache ID.
      * @param idxName Index name.
      * @throws IgniteCheckedException If failed.
      */
-    public void dropRootPageForIndex(String idxName) throws IgniteCheckedException;
+    public void dropRootPageForIndex(int cacheId, String idxName) throws IgniteCheckedException;
 
     /**
      * @param idxName Index name.
