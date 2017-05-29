@@ -787,7 +787,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IndexingQueryFilter filters) throws IgniteCheckedException {
         String schemaName = schema(cacheName);
 
-        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), typeName);
+        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
             GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, schemaName,
@@ -1080,11 +1080,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final SqlFieldsQuery qry, final boolean keepBinary, final IndexingQueryFilter filter,
         final GridQueryCancel cancel) throws IgniteCheckedException {
 
+        // TODO: 5317
         if (cctx.config().getQueryParallelism() > 1) {
             qry.setDistributedJoins(true);
 
             assert qry.isLocal();
 
+            // TODO: 5317
             return queryDistributedSqlFields(cctx, qry, keepBinary, cancel);
         }
         else {
@@ -1092,6 +1094,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final String sql = qry.getSql();
             final Object[] args = qry.getArgs();
 
+            // TODO: 5317
             final GridQueryFieldsResult res = queryLocalSqlFields(cacheName, sql, F.asList(args), filter,
                 qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
