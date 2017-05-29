@@ -677,7 +677,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 String cacheName = cctx.name();
 
-                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema(), escape);
+                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema());
 
                 // Prepare candidates.
                 List<Class<?>> mustDeserializeClss = new ArrayList<>();
