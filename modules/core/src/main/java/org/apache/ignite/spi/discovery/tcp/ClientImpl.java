@@ -639,8 +639,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (!recon) {
                     TcpDiscoveryNode node = locNode;
 
-                    if (locNode.order() > 0)
+                    if (locNode.order() > 0) {
                         node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
+
+                        marshalCredentials(node);
+                    }
 
                     msg = new TcpDiscoveryJoinRequestMessage(
                             node,
