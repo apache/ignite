@@ -346,14 +346,7 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             // Find query entity by key-val types
-            var keyValTypes = queryable.ElementType.GetGenericArguments();
-
-            Debug.Assert(keyValTypes.Length == 2);
-
-            var entity = cacheCfg.QueryEntities.FirstOrDefault(e =>
-                e.Aliases != null &&
-                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
-                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
+            var entity = GetQueryEntity(queryable, cacheCfg);
 
             if (entity == null)
             {
@@ -371,12 +364,33 @@ namespace Apache.Ignite.Linq.Impl
                 fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
             }
 
+            // TODO: Inefficient, and on a hot path (aliases are always there now).
             var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
                 .Select(x => x.Alias).FirstOrDefault();
 
             fieldName = alias ?? fieldName;
 
             return fieldName;
+        }
+
+        /// <summary>
+        /// Finds matching query entity in the cache configuration.
+        /// </summary>
+        private static QueryEntity GetQueryEntity(ICacheQueryableInternal queryable, CacheConfiguration cacheCfg)
+        {
+            if (cacheCfg.QueryEntities.Count == 1)
+            {
+                return cacheCfg.QueryEntities.Single();
+            }
+
+            var keyValTypes = queryable.ElementType.GetGenericArguments();
+
+            Debug.Assert(keyValTypes.Length == 2);
+
+            return cacheCfg.QueryEntities.FirstOrDefault(e =>
+                e.Aliases != null &&
+                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
+                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
         }
 
         /// <summary>
