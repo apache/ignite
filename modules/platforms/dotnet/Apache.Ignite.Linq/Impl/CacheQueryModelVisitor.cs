@@ -445,10 +445,41 @@ namespace Apache.Ignite.Linq.Impl
             }
             else
             {
-                var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
-                var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                var alias = _aliases.GetTableAlias(joinClause);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
+                if (queryable != null)
+                {
+                    var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
+                    var alias = _aliases.GetTableAlias(joinClause);
+                    _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                }
+                else
+                {
+                    var type = joinClause.InnerSequence.Type;
+
+                    if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(IEnumerable<>))
+                    {
+                        throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                    }
+
+                    var itemType = type.GetGenericArguments()[0];
+
+                    var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
+
+                    if (string.IsNullOrWhiteSpace(sqlTypeName))
+                    {
+                        throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
+                    }
+
+                    //  no table name required
+                    var tableAlias = _aliases.GetTableAlias(joinClause);
+                    var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
+                    _builder.AppendFormat("join table({0} {1} = ?) {2} on(", fieldAlias, sqlTypeName, tableAlias);
+
+
+                    //TODO - rewrite?
+                    var inValues = CacheQueryExpressionVisitor.GetInValues(joinClause.InnerSequence);
+                    Parameters.Add(inValues);
+                }
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
@@ -514,7 +545,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void BuildSqlExpression(Expression expression, bool useStar = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar).Visit(expression);
+            var cacheQueryExpressionVisitor = new CacheQueryExpressionVisitor(this, useStar);
+            cacheQueryExpressionVisitor.Visit(expression);
+            //var memberExpression = expression as MemberExpression;
+            //if (memberExpression != null)
+            //    cacheQueryExpressionVisitor.MyVisitMember(memberExpression);
         }
     }
 }

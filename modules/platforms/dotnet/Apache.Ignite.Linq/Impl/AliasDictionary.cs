@@ -31,10 +31,16 @@ namespace Apache.Ignite.Linq.Impl
     internal class AliasDictionary
     {
         /** */
-        private int _aliasIndex;
+        private int _tableAliasIndex;
 
         /** */
-        private Dictionary<IQuerySource, string> _aliases = new Dictionary<IQuerySource, string>();
+        private Dictionary<IQuerySource, string> _tableAliases = new Dictionary<IQuerySource, string>();
+
+        /** */
+        private int _fieldAliasIndex;
+
+        /** */
+        private Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
 
         /** */
         private readonly Stack<Dictionary<IQuerySource, string>> _stack = new Stack<Dictionary<IQuerySource, string>>();
@@ -44,9 +50,9 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public void Push()
         {
-            _stack.Push(_aliases);
+            _stack.Push(_tableAliases);
 
-            _aliases = new Dictionary<IQuerySource, string>();
+            _tableAliases = new Dictionary<IQuerySource, string>();
         }
 
         /// <summary>
@@ -54,7 +60,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public void Pop()
         {
-            _aliases = _stack.Pop();
+            _tableAliases = _stack.Pop();
         }
 
         /// <summary>
@@ -83,11 +89,32 @@ namespace Apache.Ignite.Linq.Impl
 
             string alias;
 
-            if (!_aliases.TryGetValue(querySource, out alias))
+            if (!_tableAliases.TryGetValue(querySource, out alias))
             {
-                alias = "_T" + _aliasIndex++;
+                alias = "_T" + _tableAliasIndex++;
 
-                _aliases[querySource] = alias;
+                _tableAliases[querySource] = alias;
+            }
+
+            return alias;
+        }
+
+        public string GetFieldAlias(Expression e)
+        {
+            var referenceExpression = ExpressionWalker.GetQuerySourceReference(e);
+
+            return GetFieldAlias(referenceExpression);
+        }
+
+        private string GetFieldAlias(QuerySourceReferenceExpression e)
+        {
+            string alias;
+
+            if (!_fieldAliases.TryGetValue(e, out alias))
+            {
+                alias = "F" + _fieldAliasIndex++;
+
+                _fieldAliases[e] = alias;
             }
 
             return alias;

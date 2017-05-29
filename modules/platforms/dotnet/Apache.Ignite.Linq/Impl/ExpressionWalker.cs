@@ -46,9 +46,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause)
+        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause, bool throwWhenNotFound = true)
         {
-            return GetCacheQueryable(joinClause.InnerSequence);
+            return GetCacheQueryable(joinClause.InnerSequence, throwWhenNotFound);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Linq.Impl
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetCacheQueryable(joinSource);
+                    return GetCacheQueryable(joinSource, throwWhenNotFound);
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
@@ -111,6 +111,37 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("Unexpected query source: " + expression);
 
             return null;
+        }
+
+        /// <summary>
+        /// Tries to find QuerySourceReferenceExpression
+        /// </summary>
+        public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression, bool throwWhenNotFound = true)
+        {
+            QuerySourceReferenceExpression result;
+
+            if (expression is QuerySourceReferenceExpression)
+            {
+                result = (QuerySourceReferenceExpression) expression;
+            }
+            else if (expression is UnaryExpression)
+            {
+                var unary = (UnaryExpression) expression;
+                result = GetQuerySourceReference(unary.Operand, false);
+            }
+            else if(expression is BinaryExpression)
+            {
+                var binaryExpression = (BinaryExpression) expression;
+                result = GetQuerySourceReference(binaryExpression.Left, false) ?? GetQuerySourceReference(binaryExpression.Right, false);
+            }
+            else
+            {
+                if(throwWhenNotFound)
+                    throw new NotSupportedException("Unexpected query source: " + expression);
+                result = null;
+            }
+
+            return result;
         }
 
         /// <summary>

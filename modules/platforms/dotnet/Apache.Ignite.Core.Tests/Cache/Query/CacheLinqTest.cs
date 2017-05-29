@@ -528,17 +528,70 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the join with local collection.
+        /// </summary>
+        [Test]
+        public void TestLocalJoin()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var orgs = GetOrgCache().AsCacheQueryable();
+
+            var localOrgs = orgs
+                .Select(e => e.Value)
+                .ToArray();
+
+            var allOrganizationIds = localOrgs
+                .Select(e => e.Id)
+                .ToArray();
+
+            ICacheEntry<int, Person>[] res;
+            //res = persons.Join(allOrganizationIds,
+            //        pe => pe.Value.OrganizationId,
+            //        i => i,
+            //        (pe, o) => pe
+            //    )
+            //    .ToArray();
+
+            //Assert.AreEqual(PersonCount, res.Length);
+
+            //res = persons.Join(allOrganizationIds,
+            //        pe => pe.Value.OrganizationId,
+            //        i => i + 1 - 1,
+            //        (pe, o) => pe
+            //    )
+            //    .ToArray();
+
+            //Assert.AreEqual(PersonCount, res.Length);
+
+            res = persons.Join(localOrgs.Select(e => e.Id).DefaultIfEmpty(),
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, res.Length);
+
+        }
+
+        /// <summary>
         /// Tests the invalid join.
         /// </summary>
         [Test]
         public void TestInvalidJoin()
         {
-            // Join on non-IQueryable
+            var localComplexTypeCollection = GetOrgCache().AsCacheQueryable()
+                .Select(e => e.Value)
+                .ToArray();
+
+            // Join on non-IQueryable with complex(not supported) type
             var ex = Assert.Throws<NotSupportedException>(() =>
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-                GetPersonCache().AsCacheQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
+            {
+                GetPersonCache().AsCacheQueryable().Join(localComplexTypeCollection, p => p.Value.OrganizationId, o => o.Id, (p, o) => p).ToList();
+            });
 
-            Assert.IsTrue(ex.Message.StartsWith("Unexpected query source"));
+            Assert.IsTrue(ex.Message.StartsWith("Not supported item type for Join with local collection"));
         }
 
         /// <summary>
@@ -790,6 +843,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys + 10 - PersonCount, bigNumberOfKeys + PersonCount)
                 .ToArray();
             var hashSetKeys = new HashSet<int>(keys);
+            var defferedCollection = Enumerable.Range(1, 10)
+                .Select(i => new {Id = i})
+                .Select(arg => arg.Id);
 
             CheckWhereFunc(cache, e => new[] { 1, 2, 3 }.Contains(e.Key));
             CheckWhereFunc(cache, e => emptyKeys.Contains(e.Key));
@@ -800,6 +856,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
             CheckWhereFunc(cache, e => !keys.Contains(e.Key));
+            CheckWhereFunc(cache, e => defferedCollection.Contains(e.Key));
             CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
             CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
             CheckWhereFunc(orgCache, e => new[] { "Org_1", null, null }.Contains(e.Value.Name));

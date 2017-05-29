@@ -269,13 +269,25 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            // Count, sum, max, min expect a single field or *
-            // In other cases we need both parts of cache entry
-            var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
+            var isCache = ExpressionWalker.GetCacheQueryable(expression, false) != null;
 
-            var tableName = Aliases.GetTableAlias(expression);
+            if (isCache)
+            {
+                // Count, sum, max, min expect a single field or *
+                // In other cases we need both parts of cache entry
+                var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            ResultBuilder.AppendFormat(format, tableName);
+                var tableName = Aliases.GetTableAlias(expression);
+
+                ResultBuilder.AppendFormat(format, tableName);
+            }
+            else
+            {
+                var tableName = Aliases.GetTableAlias(expression);
+                var fieldname = Aliases.GetFieldAlias(expression);
+
+                ResultBuilder.AppendFormat("{0}.{1}", tableName, fieldname);
+            }
 
             return expression;
         }
@@ -552,7 +564,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets values for IN expression.
         /// </summary>
-        private static IEnumerable<object> GetInValues(Expression fromExpression)
+        public static IEnumerable<object> GetInValues(Expression fromExpression)
         {
             IEnumerable result;
             switch (fromExpression.NodeType)
