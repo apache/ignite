@@ -15,18 +15,45 @@
  * limitations under the License.
  */
 
-/**
- * @file
- * Includes all query API headers.
- */
+#include <ignite/impl/compute/cancelable_impl.h>
 
-#ifndef _IGNITE_CACHE_QUERY_QUERY
-#define _IGNITE_CACHE_QUERY_QUERY
+using namespace ignite::common::concurrent;
 
-#include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/cache/query/query_text.h"
+namespace
+{
+    /**
+     * Operation type.
+     */
+    struct Operation
+    {
+        enum Type
+        {
+            Cancel = 1
+        };
+    };
+}
 
-#endif //_IGNITE_CACHE_QUERY_QUERY
+namespace ignite
+{
+    namespace impl
+    {
+        namespace compute
+        {
+            CancelableImpl::CancelableImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+                InteropTarget(env, javaRef),
+                Cancelable()
+            {
+                // No-op.
+            }
+
+            void CancelableImpl::Cancel()
+            {
+                IgniteError err;
+
+                OutInOpLong(Operation::Cancel, 0, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+        }
+    }
+}
