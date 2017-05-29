@@ -364,13 +364,7 @@ namespace Apache.Ignite.Linq.Impl
                 fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
             }
 
-            // TODO: Inefficient, and on a hot path (aliases are always there now).
-            var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
-                .Select(x => x.Alias).FirstOrDefault();
-
-            fieldName = alias ?? fieldName;
-
-            return fieldName;
+            return entity.GetAlias(fullFieldName) ?? fieldName;
         }
 
         /// <summary>

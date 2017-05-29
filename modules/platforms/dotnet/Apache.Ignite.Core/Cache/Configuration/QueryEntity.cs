@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         private string _keyTypeName;
 
         /** */
-        private Dictionary<string, QueryAlias> _aliases;
+        private Dictionary<string, string> _aliases;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
@@ -195,16 +195,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets the alias by field name, or null when no match found.
         /// This method constructs a dictionary lazily to perform lookups.
         /// </summary>
-        public QueryAlias GetAlias(string fieldName)
+        public string GetAlias(string fieldName)
         {
             if (Aliases == null || Aliases.Count == 0)
             {
                 return null;
             }
 
-            _aliases = Aliases.ToDictionary(x => x.FullName, x => x);
+            _aliases = Aliases.ToDictionary(x => x.FullName, x => x.Alias);
 
-            QueryAlias res;
+            string res;
             return _aliases.TryGetValue(fieldName, out res) ? res : null;
         }
 
