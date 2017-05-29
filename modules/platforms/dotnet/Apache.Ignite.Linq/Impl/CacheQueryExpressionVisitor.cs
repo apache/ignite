@@ -312,8 +312,8 @@ namespace Apache.Ignite.Linq.Impl
 
                 ResultBuilder.AppendFormat(
                     queryable.CacheConfiguration.SqlEscapeAll
-                        ? "{0}.{1}"
-                        : "{0}.\"{1}\"",
+                        ? "{0}.\"{1}\""
+                        : "{0}.{1}",
                     Aliases.GetTableAlias(expression), fieldName);
             }
             else
