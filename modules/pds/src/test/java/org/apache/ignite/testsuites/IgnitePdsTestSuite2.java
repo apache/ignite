@@ -44,32 +44,32 @@ public class IgnitePdsTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite");
 
-        // Integrity test
-        suite.addTestSuite(IgniteDataIntegrityTests.class);
-        suite.addTestSuite(IgnitePersistentStoreRecoveryAfterFileCorruptionTest.class);
-        suite.addTestSuite(IgnitePersistentStorePageSizesTest.class);
-
-        // WAL recovery test.
-        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
-        suite.addTestSuite(IgniteWalRecoverySelfTest.class);
-
-        suite.addTestSuite(TransactionsHangTest.class);
-
-        suite.addTestSuite(IgniteNoActualWalHistorySelfTest.class);
-
-        suite.addTestSuite(RebalancingOnNotStableTopologyTest.class);
-
-        suite.addTestSuite(IgniteDbWholeClusterRestartSelfTest.class);
-
-        suite.addTestSuite(DbPageEvictionDuringPartitionClearSelfTest.class);
-
-        // Rebalancing test
-        suite.addTestSuite(IgnitePersistentStoreAtomicCacheRebalancingTest.class);
-        suite.addTestSuite(IgnitePersistentStoreTxCacheRebalancingTest.class);
-        suite.addTestSuite(IgniteWalHistoryReservationsSelfTest.class);
-
         // TODO IGNITE-5075
-        //suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
+//        // Integrity test
+//        suite.addTestSuite(IgniteDataIntegrityTests.class);
+//        suite.addTestSuite(IgnitePersistentStoreRecoveryAfterFileCorruptionTest.class);
+//        suite.addTestSuite(IgnitePersistentStorePageSizesTest.class);
+//
+//        // WAL recovery test.
+//        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
+//        suite.addTestSuite(IgniteWalRecoverySelfTest.class);
+//
+//        suite.addTestSuite(TransactionsHangTest.class);
+//
+//        suite.addTestSuite(IgniteNoActualWalHistorySelfTest.class);
+//
+//        suite.addTestSuite(RebalancingOnNotStableTopologyTest.class);
+//
+//        suite.addTestSuite(IgniteDbWholeClusterRestartSelfTest.class);
+//
+//        suite.addTestSuite(DbPageEvictionDuringPartitionClearSelfTest.class);
+//
+//        // Rebalancing test
+//        suite.addTestSuite(IgnitePersistentStoreAtomicCacheRebalancingTest.class);
+//        suite.addTestSuite(IgnitePersistentStoreTxCacheRebalancingTest.class);
+//        suite.addTestSuite(IgniteWalHistoryReservationsSelfTest.class);
+
+        suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
 
         return suite;
     }
