@@ -1187,11 +1187,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?, ?> cctx,
-        SqlQuery qry, boolean keepBinary) {
-        String schemaName = schema(cctx.name());
-        int mainCacheId = CU.cacheId(cctx.name());
-
+    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
+        boolean keepBinary, int mainCacheId) {
         String type = qry.getType();
 
         H2TableDescriptor tblDesc = tableDescriptor(schemaName, type);

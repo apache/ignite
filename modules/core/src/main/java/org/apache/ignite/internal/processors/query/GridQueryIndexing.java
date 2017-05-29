@@ -66,14 +66,15 @@ public interface GridQueryIndexing {
     /**
      * Parses SQL query into two step query and executes it.
      *
-     * @param cctx Cache context.
+     * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
+     * @param mainCacheId Main cache ID.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(GridCacheContext<?,?> cctx, SqlQuery qry,
-        boolean keepBinary) throws IgniteCheckedException;
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
+        boolean keepBinary, int mainCacheId) throws IgniteCheckedException;
 
     /**
      * Parses SQL query into two step query and executes it.
