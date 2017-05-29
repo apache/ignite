@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1729,7 +1730,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Check results of aggregate functions if now rows are selected */
+    /** Check results of aggregate functions if no rows are selected */
     public void testEmptyCacheAggregates() throws Exception {
         final String cacheName = "ints";
 
@@ -1753,6 +1754,59 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         finally {
             cache.destroy();
         }
+    }
+
+    /** Check avg() with various data types */
+    public void testAvgVariousDataTypes() throws Exception {
+        final String cacheName = "avgtypes";
+
+        IgniteCache<Integer, AvgDataTypes> cache =
+            ignite(0).getOrCreateCache(cacheConfig(cacheName, true, Integer.class, AvgDataTypes.class));
+
+        // avg 13.125; int avg 13
+        double value[] = new double[] {1, 5, 7, 8, 10.5, 13.5, 20, 40};
+
+        for (int i = 0; i < value.length; i++) {
+            Number v = value[i];
+
+            cache.put(i, new AvgDataTypes(
+                v.byteValue(),
+                v.shortValue(),
+                v.intValue(),
+                v.longValue(),
+                new BigDecimal(v.toString()),
+                v.floatValue(),
+                v.doubleValue()));
+        }
+
+        try {
+            checkAvgWithVariousTypes(cache, false);
+            checkAvgWithVariousTypes(cache, true);
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /** Check avg() with various data types */
+    private void checkAvgWithVariousTypes(IgniteCache<Integer, AvgDataTypes> cache, boolean distinct) {
+        String qryText = String.format("select avg(%1$s byteField), avg(%1$s shortField), " +
+                "avg(%1$s intField), avg(%1$s longField), avg(%1$s decimalField), " +
+                "avg(%1$s floatField), avg(%1$s doubleField) from AvgDataTypes", distinct ? "distinct" : "");
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(qryText);
+
+        List<List<?>> result = cache.query(qry).getAll();
+
+        List<?> row = result.get(0);
+
+        assertEquals((byte)13, row.get(0));
+        assertEquals((short)13, row.get(1));
+        assertEquals(13, row.get(2));
+        assertEquals(13L, row.get(3));
+        assertEquals(new BigDecimal("13.125"), row.get(4));
+        assertEquals(13.125f, row.get(5));
+        assertEquals(13.125d, row.get(6));
     }
 
     /** Simple query with aggregates */
@@ -2236,6 +2290,49 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         public PromoContract(final int co_Id, final int offer_Id) {
             this.CO_ID = co_Id;
             this.OFFER_ID = offer_Id;
+        }
+    }
+
+    /** */
+    public class AvgDataTypes {
+        /** */
+        @QuerySqlField
+        private Byte byteField;
+
+        /** */
+        @QuerySqlField
+        private Short shortField;
+
+        /** */
+        @QuerySqlField
+        private Integer intField;
+
+        /** */
+        @QuerySqlField
+        private Long longField;
+
+        /** */
+        @QuerySqlField
+        private BigDecimal decimalField;
+
+        /** */
+        @QuerySqlField
+        private Float floatField;
+
+        /** */
+        @QuerySqlField
+        private Double doubleField;
+
+        /** */
+        public AvgDataTypes(Byte byteField, Short shortField, Integer intField, Long longField,
+            BigDecimal decimalField, Float floatField, Double doubleField) {
+            this.byteField = byteField;
+            this.shortField = shortField;
+            this.intField = intField;
+            this.longField = longField;
+            this.decimalField = decimalField;
+            this.floatField = floatField;
+            this.doubleField = doubleField;
         }
     }
 }
