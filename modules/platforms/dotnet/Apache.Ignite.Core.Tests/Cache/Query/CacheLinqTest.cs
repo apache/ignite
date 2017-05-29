@@ -142,6 +142,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Gets the SqlEscapeAll setting.
+        /// </summary>
+        protected virtual bool GetSqlEscapeAll()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
@@ -941,7 +949,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestNumerics()
         {
             var cache = Ignition.GetIgnite()
-                    .GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", typeof (Numerics)));
+                    .GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", typeof (Numerics))
+                {
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
 
             for (var i = 0; i < 100; i++)
                 cache[i] = new Numerics(((double) i - 50)/3);
@@ -1221,10 +1232,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestPrimitiveCache()
         {
             // Create partitioned cache
-            var cache =
-                Ignition.GetIgnite()
-                    .GetOrCreateCache<int, string>(new CacheConfiguration("primitiveCache",
-                        new QueryEntity(typeof (int), typeof (string))) {CacheMode = CacheMode.Replicated});
+            var cache = Ignition.GetIgnite()
+                .GetOrCreateCache<int, string>(
+                    new CacheConfiguration("primitiveCache",
+                        new QueryEntity(typeof(int), typeof(string)))
+                    {
+                        CacheMode = CacheMode.Replicated,
+                        SqlEscapeAll = GetSqlEscapeAll()
+                    });
 
             var qry = cache.AsCacheQueryable();
 
@@ -1246,7 +1261,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Create partitioned cache
             var cache =
-                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof (int)));
+                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof (int))
+                {
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
 
             // Populate
             const int count = 100;
@@ -1377,12 +1395,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Create and populate partitioned caches
             var personCache = ignite.CreateCache<int, Person>(new CacheConfiguration("partitioned_persons",
-                new QueryEntity(typeof(int), typeof(Person))));
+                new QueryEntity(typeof(int), typeof(Person)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
 
             personCache.PutAll(GetSecondPersonCache().ToDictionary(x => x.Key, x => x.Value));
 
             var roleCache = ignite.CreateCache<int, Role>(new CacheConfiguration("partitioned_roles",
-                    new QueryEntity(typeof(int), typeof(Role))));
+                    new QueryEntity(typeof(int), typeof(Role)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
 
             roleCache.PutAll(GetRoleCache().ToDictionary(x => x.Key.Foo, x => x.Value));
 
@@ -1432,7 +1456,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Use new cache to avoid touching static data.
             var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
-                    new QueryEntity(typeof(int), typeof(Person))));
+                    new QueryEntity(typeof(int), typeof(Person)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
 
             Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
             
@@ -1491,7 +1518,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Gets the person cache.
         /// </summary>
         /// <returns></returns>
-        private static ICache<int, Person> GetPersonCache()
+        private ICache<int, Person> GetPersonCache()
         {
             return GetCacheOf<Person>();
         }
@@ -1500,7 +1527,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Gets the org cache.
         /// </summary>
         /// <returns></returns>
-        private static ICache<int, Organization> GetOrgCache()
+        private ICache<int, Organization> GetOrgCache()
         {
             return GetCacheOf<Organization>();
         }
@@ -1508,7 +1535,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Gets the cache.
         /// </summary>
-        private static ICache<int, T> GetCacheOf<T>()
+        private ICache<int, T> GetCacheOf<T>()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, T>(new CacheConfiguration(PersonOrgCacheName,
@@ -1527,23 +1554,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             new QueryField("MyValue", typeof(T)),
                         }
                     },
-                    new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Replicated});
+                    new QueryEntity(typeof (int), typeof (Organization)))
+                {
+                    CacheMode = CacheMode.Replicated,
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
         }
 
         /// <summary>
         /// Gets the role cache.
         /// </summary>
-        private static ICache<RoleKey, Role> GetRoleCache()
+        private ICache<RoleKey, Role> GetRoleCache()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<RoleKey, Role>(new CacheConfiguration(RoleCacheName,
-                    new QueryEntity(typeof (RoleKey), typeof (Role))) {CacheMode = CacheMode.Replicated});
+                    new QueryEntity(typeof (RoleKey), typeof (Role)))
+                {
+                    CacheMode = CacheMode.Replicated,
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
         }
 
         /// <summary>
         /// Gets the second person cache.
         /// </summary>
-        private static ICache<int, Person> GetSecondPersonCache()
+        private ICache<int, Person> GetSecondPersonCache()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, Person>(
@@ -1553,7 +1588,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             TableName = "CustomPersons"
                         })
                     {
-                        CacheMode = CacheMode.Replicated
+                        CacheMode = CacheMode.Replicated,
+                        SqlEscapeAll = GetSqlEscapeAll()
                     });
         }
 
