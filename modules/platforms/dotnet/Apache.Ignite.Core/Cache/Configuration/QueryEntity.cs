@@ -47,6 +47,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /** */
         private string _keyTypeName;
 
+        /** */
+        private Dictionary<string, QueryAlias> _aliases;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
@@ -187,6 +190,23 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryIndex> Indexes { get; set; }
+
+        /// <summary>
+        /// Gets the alias by field name, or null when no match found.
+        /// This method constructs a dictionary lazily to perform lookups.
+        /// </summary>
+        public QueryAlias GetAlias(string fieldName)
+        {
+            if (Aliases == null || Aliases.Count == 0)
+            {
+                return null;
+            }
+
+            _aliases = Aliases.ToDictionary(x => x.FullName, x => x);
+
+            QueryAlias res;
+            return _aliases.TryGetValue(fieldName, out res) ? res : null;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
