@@ -332,7 +332,8 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
-        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
+        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable,
+            bool ignoreAlias = false)
         {
             var fieldName = GetMemberFieldName(expression.Member);
 
@@ -361,10 +362,12 @@ namespace Apache.Ignite.Linq.Impl
             while ((member = member.Expression as MemberExpression) != null &&
                    member.Member.DeclaringType != queryable.ElementType)
             {
-                fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
+                fullFieldName = GetFieldName(member, queryable, true) + "." + fullFieldName;
             }
 
-            return entity.GetAlias(fullFieldName) ?? fieldName;
+            var alias = ignoreAlias ? null : entity.GetAlias(fullFieldName);
+
+            return alias ?? fieldName;
         }
 
         /// <summary>
