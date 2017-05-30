@@ -109,20 +109,35 @@ namespace Apache.Ignite.Core.Tests.NuGet
             Assert.IsTrue(File.Exists(exePath), exePath);
 
             var springPath = Path.GetFullPath(@"config\ignite-config.xml");
+            Assert.IsTrue(File.Exists(springPath), springPath);
 
             var procInfo = new ProcessStartInfo(exePath, "-springConfigUrl=" + springPath)
             {
                 CreateNoWindow = true,
-                UseShellExecute = false
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
             
             var proc = Process.Start(procInfo);
             Assert.IsNotNull(proc);
+            Assert.IsFalse(proc.HasExited);
+
+            TestUtil.AttachProcessConsoleReader(proc);
 
             using (var ignite = Ignition.Start(@"config\ignite-config.xml"))
             {
-                Thread.Sleep(1000);
-                Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
+                for (var i = 0; i < 100; i++)
+                {
+                    if (ignite.GetCluster().GetNodes().Count == 2)
+                    {
+                        return;
+                    }
+
+                    Thread.Sleep(100);
+                }
+                
+                Assert.Fail("Failed to join to remote node.");
             }
         }
     }
