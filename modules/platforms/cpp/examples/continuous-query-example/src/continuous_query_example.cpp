@@ -18,10 +18,9 @@
 #include <stdint.h>
 #include <iostream>
 
-#include "ignite/ignition.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
+#include <ignite/ignition.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
 
-#include "ignite/examples/organization.h"
 #include "ignite/examples/person.h"
 
 using namespace ignite;
