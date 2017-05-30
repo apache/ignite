@@ -80,8 +80,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertMetricsAreEmpty(sysMetrics);
 
             // Invalid name.
-            var ex = Assert.Throws<IgniteException>(() => ignite.GetMemoryMetrics("boo"));
-            Assert.AreEqual("", ex.Message);
+            Assert.IsNull(ignite.GetMemoryMetrics("boo"));
         }
 
         /// <summary>
