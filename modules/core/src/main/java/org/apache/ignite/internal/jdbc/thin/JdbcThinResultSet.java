@@ -50,9 +50,9 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 /**
  * JDBC result set implementation.
  */
-public class JdbcResultSet implements ResultSet {
+public class JdbcThinResultSet implements ResultSet {
     /** Statement. */
-    private final JdbcStatement stmt;
+    private final JdbcThinStatement stmt;
 
     /** Future ID. */
     private final Long qryId;
@@ -100,8 +100,7 @@ public class JdbcResultSet implements ResultSet {
      * @param fields Query result page.
      * @param isQuery Is Result ser for Select query
      */
-    @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcResultSet(JdbcStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields,
+    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields,
         boolean isQuery) {
         assert stmt != null;
         assert fetchSize > 0;
@@ -410,7 +409,7 @@ public class JdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new JdbcResultSetMetadata(meta());
+        return new JdbcThinResultSetMetadata(meta());
     }
 
     /** {@inheritDoc} */

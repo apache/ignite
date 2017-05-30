@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 /**
  * JDBC result set metadata implementation.
  */
-public class JdbcResultSetMetadata implements ResultSetMetaData {
+public class JdbcThinResultSetMetadata implements ResultSetMetaData {
     /** Column width. */
     private static final int COL_WIDTH = 30;
 
@@ -35,7 +35,7 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
     /**
      * @param meta Metadata.
      */
-    JdbcResultSetMetadata(List<JdbcColumnMeta> meta) {
+    JdbcThinResultSetMetadata(List<JdbcColumnMeta> meta) {
         assert meta != null;
 
         this.meta = meta;

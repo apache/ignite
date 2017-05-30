@@ -43,7 +43,7 @@ import java.util.Calendar;
 /**
  * JDBC prepared statement implementation.
  */
-public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
+public class JdbcThinPreparedStatement extends JdbcThinStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
 
@@ -53,7 +53,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
      * @param conn Connection.
      * @param sql SQL query.
      */
-    JdbcPreparedStatement(JdbcConnection conn, String sql) {
+    JdbcThinPreparedStatement(JdbcThinConnection conn, String sql) {
         super(conn);
 
         this.sql = sql;

@@ -51,9 +51,9 @@ import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
  *
  * See documentation of {@link org.apache.ignite.IgniteJdbcThinDriver} for details.
  */
-public class JdbcConnection implements Connection {
+public class JdbcThinConnection implements Connection {
     /** Logger. */
-    private static final Logger LOG = Logger.getLogger(JdbcConnection.class.getName());
+    private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Cache name. */
     private String schemaName;
@@ -83,7 +83,7 @@ public class JdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcConnection(String url, Properties props) throws SQLException {
+    public JdbcThinConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
 
@@ -141,7 +141,7 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcStatement stmt  = new JdbcStatement(this);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -167,7 +167,7 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql);
 
         if (timeout > 0)
             stmt.timeout(timeout);

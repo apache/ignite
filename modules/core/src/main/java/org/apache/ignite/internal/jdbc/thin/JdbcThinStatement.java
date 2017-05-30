@@ -36,12 +36,12 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 /**
  * JDBC statement implementation.
  */
-public class JdbcStatement implements Statement {
+public class JdbcThinStatement implements Statement {
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = 1024;
 
     /** Ignite endpoint and I/O protocol implementation. */
-    private JdbcConnection conn;
+    private JdbcThinConnection conn;
 
     /** Closed flag. */
     private boolean closed;
@@ -53,7 +53,7 @@ public class JdbcStatement implements Statement {
     private int timeout;
 
     /** Current result set. */
-    private JdbcResultSet rs;
+    private JdbcThinResultSet rs;
 
     /** Query arguments. */
     protected ArrayList<Object> args;
@@ -66,14 +66,14 @@ public class JdbcStatement implements Statement {
      *
      * @param conn JDBC connection.
      */
-    JdbcStatement(JdbcConnection conn) {
+    JdbcThinStatement(JdbcThinConnection conn) {
         assert conn != null;
 
         this.conn = conn;
     }
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
-        JdbcResultSet rs = execute0(sql);
+        JdbcThinResultSet rs = execute0(sql);
 
         if (!rs.isQuery())
             throw new SQLException("The query isn't SELECT query: [sql=" + sql +']');
@@ -86,7 +86,7 @@ public class JdbcStatement implements Statement {
      * @return Result set.
      * @throws SQLException Onj error.
      */
-    public JdbcResultSet execute0(String sql) throws SQLException {
+    public JdbcThinResultSet execute0(String sql) throws SQLException {
         ensureNotClosed();
 
         if (rs != null)
@@ -103,7 +103,7 @@ public class JdbcStatement implements Statement {
 
             assert res != null;
 
-            rs = new JdbcResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(), res.isQuery());
+            rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(), res.isQuery());
 
             return rs;
         }
@@ -447,7 +447,7 @@ public class JdbcStatement implements Statement {
     /**
      * @return Connection.
      */
-    JdbcConnection connection() {
+    JdbcThinConnection connection() {
         return conn;
     }
 
