@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
             var packageDirName = "Apache.Ignite." + version;
             
             var asmDir = Path.GetDirectoryName(asm.Location);
-            Assert.IsNotNull(asmDir);
+            Assert.IsNotNull(asmDir, asmDir);
 
             // TODO: REMOVE
             var delme = Path.GetFullPath(Path.Combine(asmDir, @"..\..\"));
@@ -107,10 +107,10 @@ namespace Apache.Ignite.Core.Tests.NuGet
             //
             
             var packageDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages", packageDirName));
-            Assert.IsTrue(Directory.Exists(packageDir));
+            Assert.IsTrue(Directory.Exists(packageDir), packageDir);
 
             var exePath = Path.Combine(packageDir, @"lib\net40\Apache.Ignite.exe");
-            Assert.IsTrue(File.Exists(exePath));
+            Assert.IsTrue(File.Exists(exePath), exePath);
 
             var springPath = Path.GetFullPath(@"config\ignite-config.xml");
 
