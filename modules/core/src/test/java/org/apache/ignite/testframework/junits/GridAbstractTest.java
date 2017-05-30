@@ -153,7 +153,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
 
     /** */
-    protected static final String DEFAULT_CACHE_NAME = "default";
+    protected static final String DEFAULT_CACHE_NAME = CacheConfiguration.DFLT_CACHE_NAME;
 
     /** */
     private transient boolean startGrid;
