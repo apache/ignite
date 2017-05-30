@@ -181,6 +181,7 @@ public class SnapshotOperation implements Serializable {
         return "SnapshotOperation{" +
             "type=" + type +
             ", snapshotId=" + snapshotId +
+            ", cacheNames=" + cacheNames +
             ", cacheGroupIds=" + cacheGrpIds +
             ", msg='" + msg + '\'' +
             ", extraParam=" + extraParam +

@@ -550,6 +550,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param ccfg Cache configuration.
+     * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration ccfg) {
         String dirName = ccfg.getGroupName() == null ?
