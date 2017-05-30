@@ -124,7 +124,6 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
         IgniteCache<Object, Object> cache = loc.cache("dynamicCache");
 
         assertEquals(entries, cache.size());
-
         assertEquals(entries, totalCalledCnt);
 
         for (int i = 0; i < entries; i++)
