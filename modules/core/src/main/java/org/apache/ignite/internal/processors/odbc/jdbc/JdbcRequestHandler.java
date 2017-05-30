@@ -190,7 +190,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             else {
                 List<List<Object>> items = cur.fetchRows();
 
-                assert items.size() == 1 && items.get(0).size() == 1 && items.get(0).get(0) instanceof Long :
+                assert items != null && items.size() == 1 && items.get(0).size() == 1
+                    && items.get(0).get(0) instanceof Long :
                     "Invalid result set for not-SELECT query. [qry=" + sql +
                         ", res=" + S.toString(List.class, items) + ']';
 
