@@ -258,7 +258,7 @@ public class JdbcConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return null;
+        return new JdbcDatabaseMetadata(this);
     }
 
     /** {@inheritDoc} */
