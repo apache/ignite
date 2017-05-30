@@ -1065,7 +1065,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             locMarshStrSerVer2;
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
-        boolean locActiveOnStart = locNode.attribute(ATTR_ACTIVE_ON_START);
+
 
         Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
@@ -1158,6 +1158,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
 
+           /* boolean locActiveOnStart = locNode.attribute(ATTR_ACTIVE_ON_START);
             boolean rmtActiveOnStart = n.attribute(ATTR_ACTIVE_ON_START);
 
             if (locActiveOnStart != rmtActiveOnStart) {
@@ -1167,7 +1168,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtActiveOnStart=" + rmtActiveOnStart +
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
-            }
+            }*/
 
             if (n.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
                 Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);

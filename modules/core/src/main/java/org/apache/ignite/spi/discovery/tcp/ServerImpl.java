@@ -3688,7 +3688,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                boolean locActiveOnStart = booleanAttribute(locNode, ATTR_ACTIVE_ON_START, true);
+               /* boolean locActiveOnStart = booleanAttribute(locNode, ATTR_ACTIVE_ON_START, true);
                 boolean rmtActiveOnStart = booleanAttribute(node, ATTR_ACTIVE_ON_START, true);
 
                 if (locActiveOnStart != rmtActiveOnStart) {
@@ -3712,7 +3712,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     // Ignore join request.
                     return;
-                }
+                }*/
 
                 final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 

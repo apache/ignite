@@ -1084,6 +1084,13 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cfg Config.
+     */
+    protected Ignite startGrid(IgniteConfiguration cfg) throws Exception {
+        return startGrid(cfg.getGridName(), cfg);
+    }
+
+    /**
      * Loads configuration from the given Spring XML file.
      *
      * @param springCfgPath Path to file.
