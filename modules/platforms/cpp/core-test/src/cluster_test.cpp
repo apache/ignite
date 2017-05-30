@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(IgniteImplForServers)
 
     IgniteError err;
 
-    BOOST_REQUIRE(clusterGroup.Get()->ForServers(err).IsValid());
+    BOOST_REQUIRE(clusterGroup.Get()->ForServers().IsValid());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

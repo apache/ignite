@@ -198,6 +198,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public IBinaryObject BuildEnum(Type type, string valueName)
         {
+            IgniteArgumentCheck.NotNull(type, "type");
             IgniteArgumentCheck.NotNullOrEmpty(valueName, "valueName");
 
             var desc = Marshaller.GetDescriptor(type);

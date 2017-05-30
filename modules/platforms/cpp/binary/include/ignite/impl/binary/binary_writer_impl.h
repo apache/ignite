@@ -59,7 +59,7 @@ namespace ignite
                  * @param metaMgr Type manager.
                  * @param metaHnd Type handler.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
                     BinaryTypeManager* metaMgr, BinaryTypeHandler* metaHnd, int32_t start);
                 
                 /**
@@ -69,7 +69,7 @@ namespace ignite
                  * @param stream Interop stream.
                  * @param metaMgr Type manager.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
 
                 /**
                  * Write 8-byte signed integer. Maps to "byte" type in Java.
