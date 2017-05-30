@@ -19,11 +19,15 @@ package org.apache.ignite.internal.processors.platform.binary;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Platform binary processor.
@@ -46,6 +50,9 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_GET_TYPE = 6;
+
+    /** */
+    private static final int OP_REGISTER_ENUM = 7;
 
     /**
      * Constructor.
@@ -118,6 +125,24 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 catch (ClassNotFoundException e) {
                     throw new BinaryObjectException(e);
                 }
+
+                break;
+            }
+
+            case OP_REGISTER_ENUM: {
+                String name = reader.readString();
+
+                int cnt = reader.readInt();
+
+                Map<String, Integer> vals = new HashMap<>(cnt);
+
+                for (int i = 0; i< cnt; i++) {
+                    vals.put(reader.readString(), reader.readInt());
+                }
+
+                BinaryType binaryType = platformCtx.kernalContext().grid().binary().registerEnum(name, vals);
+
+                platformCtx.writeMetadata(writer, binaryType.typeId());
 
                 break;
             }

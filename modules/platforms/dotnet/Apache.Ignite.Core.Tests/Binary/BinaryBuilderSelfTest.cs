@@ -1140,6 +1140,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] { TestEnum.Two }, obj.FEnumArr);
         }
 
+        /// <summary>
+        /// Tests the enum metadata.
+        /// </summary>
         [Test]
         public void TestEnumMeta()
         {
@@ -1148,14 +1151,21 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Put to cache to populate metas
             var binEnum = bin.ToBinary<IBinaryObject>(TestEnumRegistered.One);
 
-            Assert.AreEqual(_marsh.GetDescriptor(typeof (TestEnumRegistered)).TypeId, binEnum.GetBinaryType().TypeId);
+            Assert.AreEqual(_marsh.GetDescriptor(typeof(TestEnumRegistered)).TypeId, binEnum.GetBinaryType().TypeId);
             Assert.AreEqual(0, binEnum.EnumValue);
+            Assert.AreEqual("One", binEnum.EnumName);
 
             var meta = binEnum.GetBinaryType();
 
             Assert.IsTrue(meta.IsEnum);
-            Assert.AreEqual(GetTypeName(typeof (TestEnumRegistered)), meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(TestEnumRegistered)), meta.TypeName);
             Assert.AreEqual(0, meta.Fields.Count);
+
+            var enumValues = meta.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(0, enumValues[0].EnumValue);
+            Assert.AreEqual("One", enumValues[0].EnumName);
+            Assert.AreEqual(1, enumValues[1].EnumValue);
+            Assert.AreEqual("Two", enumValues[1].EnumName);
         }
 
         /// <summary>
@@ -1653,26 +1663,30 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var binary = _grid.GetBinary();
 
-            int val = (int)TestEnumRegistered.Two;
+            var enumVal = TestEnumRegistered.Two;
+            var intVal = (int) enumVal;
             var typeName = GetTypeName(typeof(TestEnumRegistered));
             var typeId = BinaryUtils.GetStringHashCode(typeName);
 
             var binEnums = new[]
             {
-                binary.BuildEnum(typeof (TestEnumRegistered), val),
-                binary.BuildEnum(typeName, val)
+                binary.BuildEnum(typeof (TestEnumRegistered), intVal),
+                binary.BuildEnum(typeName, intVal),
+                binary.BuildEnum(typeof (TestEnumRegistered), enumVal.ToString()),
+                binary.BuildEnum(typeName, enumVal.ToString())
             };
 
             foreach (var binEnum in binEnums)
             {
                 Assert.IsTrue(binEnum.GetBinaryType().IsEnum);
 
-                Assert.AreEqual(val, binEnum.EnumValue);
+                Assert.AreEqual(intVal, binEnum.EnumValue);
+                Assert.AreEqual(enumVal.ToString(), binEnum.EnumName);
 
                 Assert.AreEqual(string.Format("{0} [typeId={1}, enumValue={2}, enumValueName={3}]",
-                    typeName, typeId, val, (TestEnumRegistered) val), binEnum.ToString());
+                    typeName, typeId, intVal, enumVal), binEnum.ToString());
 
-                Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
+                Assert.AreEqual(enumVal, binEnum.Deserialize<TestEnumRegistered>());
             }
 
             Assert.AreEqual(binEnums[0], binEnums[1]);
@@ -1684,6 +1698,60 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var ex = Assert.Throws<NotSupportedException>(() => binEnums[1].ToBuilder());
             Assert.AreEqual("Builder cannot be created for enum.", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests enum registration.
+        /// </summary>
+        [Test]
+        public void TestRegisterEnum()
+        {
+            var binary = _grid.GetBinary();
+
+            // Register enum and verify resulting type.
+            const string typeName = "DotNetDynEnum";
+            var binType = binary.RegisterEnum(typeName, new Dictionary<string, int> {{"Baz", 3}, {"Bar", 4}});
+
+            Assert.AreEqual(typeName, binType.TypeName);
+            Assert.IsTrue(binType.IsEnum);
+
+            var enumFields = binType.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(new[] {3, 4}, enumFields.Select(x => x.EnumValue));
+            Assert.AreEqual(new[] {"Baz", "Bar"}, enumFields.Select(x => x.EnumName));
+
+            // Build enum values.
+            var binEnum1 = binary.BuildEnum(typeName, 3);
+            var binEnum2 = binary.BuildEnum(typeName, "Baz");
+
+            Assert.AreEqual(binEnum1, binEnum2);
+            Assert.AreEqual("Baz", binEnum1.EnumName);
+            Assert.AreEqual(3, binEnum2.EnumValue);
+
+            // Register additional value explicitly.
+            binary.RegisterEnum(typeName, new Dictionary<string, int> {{"Foo", 6}});
+            binary.RegisterEnum(typeName, new Dictionary<string, int> {{"Foo", 6}, {"Baz", 3}});
+            binType = binary.GetBinaryType(typeName);
+
+            Assert.AreEqual(typeName, binType.TypeName);
+            Assert.IsTrue(binType.IsEnum);
+
+            enumFields = binType.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(new[] { 3, 4, 6 }, enumFields.Select(x => x.EnumValue));
+            Assert.AreEqual(new[] { "Baz", "Bar", "Foo" }, enumFields.Select(x => x.EnumName));
+
+            // Register existing value with different name.
+            var ex = Assert.Throws<BinaryObjectException>(
+                () => binary.RegisterEnum(typeName, new Dictionary<string, int> {{"Baz1", 3}}));
+
+            Assert.AreEqual(string.Format("Conflicting enum values. Name 'Baz1' uses ordinal value (3) that " +
+                                          "is also used for name 'Baz' [typeName='{0}']", typeName), ex.Message);
+
+            // Register different value with existing name.
+            ex = Assert.Throws<BinaryObjectException>(
+                () => binary.RegisterEnum(typeName, new Dictionary<string, int> {{"Baz", 33}}));
+
+            Assert.AreEqual(string.Format("Conflicting enum values. Value (33) has name 'Baz' that is " +
+                                          "also used for value '3' [typeName='{0}']", typeName), ex.Message);
         }
 
         /// <summary>
@@ -2102,13 +2170,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** <inheritdoc /> */
         public int GetTypeId(string typeName)
         {
-            return typeName == TestTypeName ? TestTypeId : 0;
+            return typeName == TestTypeName ? TestTypeId : BinaryUtils.GetStringHashCode(typeName);
         }
 
         /** <inheritdoc /> */
         public int GetFieldId(int typeId, string fieldName)
         {
-            return 0;
+            return BinaryUtils.GetStringHashCode(fieldName);
         }
     }
 

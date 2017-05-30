@@ -365,6 +365,7 @@ namespace ignite
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject ProcessorCompute(jobject obj, jobject prj);
+                jobject ProcessorCompute(jobject obj, jobject prj, JniErrorInfo* errInfo);
                 jobject ProcessorMessage(jobject obj, jobject prj);
                 jobject ProcessorEvents(jobject obj, jobject prj);
                 jobject ProcessorServices(jobject obj, jobject prj);
