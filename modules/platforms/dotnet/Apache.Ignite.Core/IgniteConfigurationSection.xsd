@@ -1205,6 +1205,16 @@
                                                         <xs:documentation>Enable memory metrics.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
+                                                <xs:attribute name="subIntervals" type="xs:int">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="rateTimeInterval" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Rate time interval for AllocationRate and EvictionRate monitoring.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
