@@ -1719,8 +1719,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> querySqlFields(final @Nullable GridCacheContext<?,?> cctx,
-        final SqlFieldsQuery qry, final boolean keepBinary) {
+    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
+        final boolean keepBinary) {
         checkxEnabled();
 
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
@@ -1730,19 +1730,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException(
                 "Using both partitions and distributed JOINs is not supported for the same query");
 
-        boolean loc = qry.isLocal();
-
-        if (!loc && cctx != null)
-            loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal();
+        boolean loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            // TODO: Schema name should be resolved earlier.
             final String schemaName = idx.schema(cctx.name());
-
-            // TODO: Main cache ID should be optional and nullable.
             final int mainCacheId = CU.cacheId(cctx.name());
 
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
@@ -1754,7 +1748,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         FieldsQueryCursor<List<?>> cur;
 
-                        // TODO: How to avoid this?
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
 
@@ -1766,8 +1759,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             cur = idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
                         }
 
-                        if (cctx != null)
-                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
+                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
 
                         return cur;
                     }
