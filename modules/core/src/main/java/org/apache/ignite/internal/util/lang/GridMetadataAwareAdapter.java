@@ -67,7 +67,7 @@ public class GridMetadataAwareAdapter {
     }
 
     /** Attributes. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object[] data = null;
 
     /**

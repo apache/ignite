@@ -56,19 +56,19 @@ namespace ignite
         void ReadString(ignite::impl::binary::BinaryReaderImpl& reader, std::string& str)
         {
             int32_t strLen = reader.ReadString(0, 0);
-            if (!strLen)
+            if (strLen > 0)
+            {
+                str.resize(strLen);
+
+                reader.ReadString(&str[0], static_cast<int32_t>(str.size()));
+            }
+            else
             {
                 str.clear();
 
                 char dummy;
 
                 reader.ReadString(&dummy, sizeof(dummy));
-            }
-            else
-            {
-                str.resize(strLen);
-
-                reader.ReadString(&str[0], static_cast<int32_t>(str.size()));
             }
         }
 
