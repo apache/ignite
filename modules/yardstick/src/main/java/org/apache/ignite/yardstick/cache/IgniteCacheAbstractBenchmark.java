@@ -61,12 +61,41 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     /** */
     private int cachesInGrp;
 
+    /** */
+    private final AtomicInteger opCacheIdx = new AtomicInteger();
+
+    /** */
+    private final ThreadLocal<IgniteCache<K, V>> opCache = new ThreadLocal<>();
+
     /**
      * @return Cache for benchmark operation.
      */
     protected final IgniteCache<K, V> cacheForOperation() {
-        if (cachesInGrp > 1)
-          return grpCaches.get(ThreadLocalRandom.current().nextInt(cachesInGrp));
+        return cacheForOperation(false);
+    }
+
+    /**
+     * @param perThread If {@code true} then cache is selected once and set in thread local.
+     * @return Cache for benchmark operation.
+     */
+    protected final IgniteCache<K, V> cacheForOperation(boolean perThread) {
+        if (cachesInGrp > 1) {
+            if (perThread) {
+                IgniteCache<K, V> cache = opCache.get();
+
+                if (cache == null) {
+                    cache = grpCaches.get(opCacheIdx.getAndIncrement() % cachesInGrp);
+
+                    opCache.set(cache);
+
+                    BenchmarkUtils.println(cfg, "Initialized cache for thread [cache=" + cache.getName() + ']');
+                }
+
+                return cache;
+            }
+            else
+                return grpCaches.get(ThreadLocalRandom.current().nextInt(cachesInGrp));
+        }
 
         return cache;
     }

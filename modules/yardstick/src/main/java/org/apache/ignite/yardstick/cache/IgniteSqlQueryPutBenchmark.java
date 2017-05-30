@@ -42,7 +42,7 @@ public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark<Int
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        IgniteCache<Integer, Object> cache = cacheForOperation();
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
         if (rnd.nextBoolean()) {
             double salary = rnd.nextDouble() * args.range() * 1000;
