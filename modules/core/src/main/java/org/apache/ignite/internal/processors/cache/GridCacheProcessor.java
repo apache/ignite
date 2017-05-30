@@ -1207,8 +1207,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
             mgr.start(cacheCtx);
 
-        ctx.continuous().onCacheStart(cacheCtx);
-
         cacheCtx.initConflictResolver();
 
         if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
@@ -1226,6 +1224,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Started DHT cache: " + dhtCtx.cache().name());
         }
+
+        ctx.continuous().onCacheStart(cacheCtx);
 
         cacheCtx.cache().start();
 
