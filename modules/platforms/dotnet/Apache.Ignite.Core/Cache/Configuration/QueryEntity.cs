@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public class QueryEntity : IQueryEntityInternal
+    public sealed class QueryEntity : IQueryEntityInternal
     {
         /** */
         private Type _keyType;
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             // PERF: No ToDictionary.
             if (_aliasMap == null)
             {
-                _aliasMap = new Dictionary<string, string>(Aliases.Count, StringComparer.InvariantCulture);
+                _aliasMap = new Dictionary<string, string>(Aliases.Count, StringComparer.Ordinal);
 
                 foreach (var alias in Aliases)
                 {

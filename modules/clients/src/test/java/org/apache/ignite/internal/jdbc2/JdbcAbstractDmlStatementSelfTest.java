@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -35,6 +38,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstractTest {
+    /** UTF 16 character set name. */
+    private static final String UTF_16 = "UTF-16"; // RAWTOHEX function use UTF-16 for conversion strings to byte arrays.
+
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-config.xml";
 
@@ -42,7 +48,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     static final String BASE_URL_BIN = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /** SQL SELECT query for verification. */
-    static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data from Person";
 
     /** Alias for _key */
     private static final String KEY_ALIAS = "key";
@@ -107,6 +113,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
+        e.addQueryField("data", byte[].class.getName(), null);
 
         cache.setQueryEntities(Collections.singletonList(e));
 
@@ -136,6 +143,42 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param str String.
+     */
+    static byte[] getBytes(String str) {
+        try {
+            return str.getBytes(UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param blob Blob.
+     */
+    static byte[] getBytes(Blob blob) {
+        try {
+            return blob.getBytes(1, (int)blob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param arr Array.
+     */
+    static String str(byte[] arr) {
+        try {
+            return new String(arr, UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -156,6 +199,10 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         @QuerySqlField
         private final int age;
 
+        /** Binary data. */
+        @QuerySqlField
+        private final byte[] data;
+
         /**
          * @param id ID.
          * @param firstName First name.
@@ -171,6 +218,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             this.firstName = firstName;
             this.lastName = lastName;
             this.age = age;
+            this.data = getBytes(lastName);
         }
 
         /** {@inheritDoc} */

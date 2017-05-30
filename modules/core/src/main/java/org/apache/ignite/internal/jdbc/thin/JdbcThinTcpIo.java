@@ -49,7 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
  */
-public class JdbcTcpIo {
+public class JdbcThinTcpIo {
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
@@ -69,7 +69,7 @@ public class JdbcTcpIo {
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Logger. */
-    private static final Logger log = Logger.getLogger(JdbcTcpIo.class.getName());
+    private static final Logger log = Logger.getLogger(JdbcThinTcpIo.class.getName());
 
     /** Server endpoint address. */
     private final String endpointAddr;
@@ -97,7 +97,7 @@ public class JdbcTcpIo {
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      */
-    JdbcTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder) {
+    JdbcThinTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder) {
         assert endpointAddr != null;
 
         this.endpointAddr = endpointAddr;

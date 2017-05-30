@@ -74,7 +74,7 @@ public class JdbcThinConnection implements Connection {
     private int timeout;
 
     /** Ignite endpoint. */
-    private JdbcTcpIo cliIo;
+    private JdbcThinTcpIo cliIo;
 
     /**
      * Creates new connection.
@@ -113,7 +113,7 @@ public class JdbcThinConnection implements Connection {
         String endpoint = host.trim() + ":" + portStr.trim();
 
         try {
-            cliIo = new JdbcTcpIo(endpoint, distributedJoins, enforceJoinOrder);
+            cliIo = new JdbcThinTcpIo(endpoint, distributedJoins, enforceJoinOrder);
 
             cliIo.start();
         }
@@ -540,7 +540,7 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return Ignite endpoint and I/O protocol.
      */
-    JdbcTcpIo cliIo() {
+    JdbcThinTcpIo cliIo() {
         return cliIo;
     }
 }

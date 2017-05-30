@@ -62,7 +62,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~InteropTarget();
+                virtual ~InteropTarget();
 
                 /**
                  * Internal out operation.
@@ -133,6 +133,15 @@ namespace ignite
                  * @return Operation result.
                  */
                 OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+
+                /**
+                 * In stream out object operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param outInMem Input and output memory.
+                 * @return Java object references.
+                 */
+                jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem);
 
                 /**
                 * Internal out-in operation.
