@@ -148,6 +148,7 @@ public class JdbcThinResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
+        // TODO: Fix wrap and isWrappedFor.
         if (!isWrapperFor(iface))
             throw new SQLException("Result set meta data is not a wrapper for " + iface.getName());
 
