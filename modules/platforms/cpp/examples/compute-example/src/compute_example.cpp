@@ -150,13 +150,13 @@ int main()
 
         std::string testText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
-        // Declaring couter.
+        // Declaring counter.
         CountWords counter(testText);
 
         // Making call.
         int32_t wordsCount = compute.Call<int32_t>(counter);
 
-        // Let user wait while callback is notified about remaining puts.
+        // Printing result.
         std::cout << ">>> Text contains " << wordsCount << " words" << std::endl;
 
         // Stop node.
