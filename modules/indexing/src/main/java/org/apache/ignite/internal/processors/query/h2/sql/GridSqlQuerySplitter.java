@@ -1982,7 +1982,7 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param type data type id
-     * @return true if given type is freactional
+     * @return true if given type is fractional
      */
     private static boolean isFractionalType(int type) {
        return type == Value.DECIMAL || type == Value.FLOAT || type == Value.DOUBLE;
