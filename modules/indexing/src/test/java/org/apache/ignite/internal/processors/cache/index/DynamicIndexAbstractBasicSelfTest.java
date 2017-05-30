@@ -22,7 +22,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -30,13 +29,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import javax.cache.CacheException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -189,10 +185,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkCreate(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -201,7 +197,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
@@ -273,10 +269,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkCreateComposite(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED), field(alias(FIELD_NAME_2_ESCAPED)));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED), field(alias(FIELD_NAME_2_ESCAPED)));
 
         assertCompositeIndexOperations(SQL_COMPOSITE);
 
@@ -348,7 +344,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkCreateNotCache(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         try {
             String cacheName = randomString();
@@ -434,7 +430,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkCreateNoTable(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -589,7 +585,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2));
+                QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2_ESCAPED));
 
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
@@ -597,10 +593,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
-        QueryIndex idx = index(IDX_NAME_1, field(alias(FIELD_NAME_2)));
+        QueryIndex idx = index(IDX_NAME_1, field(alias(FIELD_NAME_2_ESCAPED)));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(alias(FIELD_NAME_2_ESCAPED)));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_2);
 
@@ -673,20 +669,20 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         initialize(mode, atomicityMode, near);
 
         // Create target index.
-        QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
+        QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx1, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
         // Create another index which must stay intact afterwards.
-        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2_ESCAPED)));
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx2, false);
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2_ESCAPED)));
 
         // Load some data.
         loadInitialData();
@@ -700,7 +696,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         // Make sure the second index is still there.
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2_ESCAPED)));
     }
 
     /**
@@ -875,7 +871,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
                 node.getOrCreateCache(cacheConfiguration().setCacheMode(LOCAL));
         }
 
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -1028,30 +1024,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     private void dynamicIndexCreate(String cacheName, String tblName, QueryIndex idx, boolean ifNotExists)
         throws Exception {
-        GridStringBuilder sql = new SB("CREATE INDEX ")
-            .a(ifNotExists ? "IF NOT EXISTS " : "")
-            .a("\"" + idx.getName() + "\"")
-            .a(" ON ")
-            .a(tblName)
-            .a(" (");
-
-        boolean first = true;
-
-        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
-            if (first)
-                first = false;
-            else
-                sql.a(", ");
-
-            String name = fieldEntry.getKey();
-            boolean asc = fieldEntry.getValue();
-
-            sql.a("\"" + name + "\"").a(" ").a(asc ? "ASC" : "DESC");
-        }
-
-        sql.a(')');
-
-        executeSql(cacheName, sql.toString());
+        dynamicIndexCreate(node(), cacheName, tblName, idx, ifNotExists);
     }
 
     /**
@@ -1063,20 +1036,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception if failed.
      */
     private void dynamicIndexDrop(String cacheName, String idxName, boolean ifExists) throws Exception {
-        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
-
-        executeSql(cacheName, sql);
-    }
-
-    /**
-     * Execute SQL.
-     *
-     * @param cacheName Cache name.
-     * @param sql SQL.
-     */
-    private void executeSql(String cacheName, String sql) {
-        log.info("Executing DDL: " + sql);
-
-        node().cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
+        dynamicIndexDrop(node(), cacheName, idxName, ifExists);
     }
 }

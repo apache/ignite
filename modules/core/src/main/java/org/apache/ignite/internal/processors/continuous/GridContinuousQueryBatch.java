@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
@@ -31,11 +32,20 @@ public class GridContinuousQueryBatch extends GridContinuousBatchAdapter {
     /** {@inheritDoc} */
     @Override public void add(Object obj) {
         assert obj != null;
-        assert obj instanceof CacheContinuousQueryEntry;
+        assert obj instanceof CacheContinuousQueryEntry || obj instanceof List;
 
-        super.add(obj);
+        if (obj instanceof CacheContinuousQueryEntry) {
+            buf.add(obj);
 
-        size.addAndGet(((CacheContinuousQueryEntry)obj).size());
+            size.incrementAndGet();
+        }
+        else {
+            List<Object> objs = (List<Object>)obj;
+
+            buf.addAll(objs);
+
+            size.addAndGet(objs.size());
+        }
     }
 
     /**

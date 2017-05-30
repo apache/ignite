@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -67,11 +68,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(err != null);
 
-            var aggregate = err as AggregateException;
-
-            if (aggregate != null)
-                err = aggregate.InnerException;
-
+            err = err.InnerException;
             Assert.IsNotNull(err);
 
             var err0 = err.InnerException as BinarizableException;

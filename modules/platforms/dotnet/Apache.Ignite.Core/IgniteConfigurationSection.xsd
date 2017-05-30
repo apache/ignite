@@ -96,6 +96,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="peerAssemblyLoadingMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="CurrentAppDomain" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -1409,6 +1416,11 @@
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems for client nodes.
                     </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="peerAssemblyLoadingMode" type="peerAssemblyLoadingMode">
+                <xs:annotation>
+                    <xs:documentation>Indicates whether user assemblies should be loaded on remote nodes automatically.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>
