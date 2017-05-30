@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.apache.ignite.Ignite;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -34,7 +34,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -45,8 +44,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -84,7 +81,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        client().destroyCache("Person");
+        if (client().cache("Person") != null)
+            cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"Person\".\"Person\""));
 
         super.afterTest();
     }
@@ -159,6 +157,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to {@code CREATE TABLE} that already exists yields an error.
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateExistingTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -210,6 +209,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to {@code DROP TABLE} that does not exist yields an error.
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -224,6 +224,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Check that {@code DROP TABLE} for caches not created with {@code CREATE TABLE} yields an error.
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -236,51 +237,44 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Make sure that client receives schema changes made while it was disconnected.
-     *
-     * @throws Exception If failed.
+     * Test that attempting to destroy via cache API a cache created via SQL yields an error.
+     * @throws Exception if failed.
      */
-    public void testClientReconnect() throws Exception {
-    }
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDestroyDynamicSqlCache() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"cacheTemplate=cache\""));
 
-    /**
-     * Create caches on client and on server nodes during client disconnect with various combinations of SQL flags.
-     *
-     * @throws Exception If failed.
-     */
-    private void checkClientReconnect(final boolean cliSql, final  boolean srvSql) throws Exception {
-        reconnectClientNode(grid(0), client(), new RunnableX() {
-            @Override public void run() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                client().destroyCache("Person");
 
-
+                return null;
             }
-        });
+        }, CacheException.class,
+        "Only cache created with cache API may be removed with direct call to destroyCache [cacheName=Person]");
     }
 
     /**
-     * Reconnect the client and run specified actions while it's out.
-     *
-     * @param srvNode Server node.
-     * @param cliNode Client node.
-     * @param clo Closure to run
-     * @throws Exception If failed.
+     * Test that attempting to start a node that has a cache with the name already present in the grid and whose
+     * SQL flag does not match that of cache with the same name that is already started, yields an error.
+     * @throws Exception if failed.
      */
-    private void reconnectClientNode(final Ignite srvNode, final Ignite cliNode, final RunnableX clo) throws Exception {
-        try {
-            IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
-                @Override public void run() {
-                    try {
-                        clo.run();
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException("Test reconnect runnable failed.", e);
-                    }
-                }
-            });
-        }
-        finally {
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testSqlFlagCompatibilityCheck() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"cacheTemplate=cache\""));
 
-        }
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration("Person")));
+
+                return null;
+            }
+        }, IgniteException.class, "SQL flag mismatch (fix sql flag in cache configuration");
     }
 
     /**

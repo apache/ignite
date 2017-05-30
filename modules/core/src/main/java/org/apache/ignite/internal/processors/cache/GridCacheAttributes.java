@@ -47,7 +47,7 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
-    /** SQL flag. */
+    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
     private boolean sql;
 
     /**
@@ -278,7 +278,7 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return
+     * @return SQL flag.
      */
     public boolean sql() {
         return sql;
