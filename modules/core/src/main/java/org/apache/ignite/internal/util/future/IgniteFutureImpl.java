@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -69,7 +68,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     @Override public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
         A.notNull(lsnr, "lsnr");
 
-        listen(lsnr, null);
+        fut.listen(new InternalFutureListener(lsnr));
     }
 
     /** {@inheritDoc} */
@@ -77,18 +76,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         A.notNull(lsnr, "lsnr");
         A.notNull(exec, "exec");
 
-        listen(lsnr, exec);
-    }
-
-    /**
-     * @param lsnr Listener closure.
-     * @param exec Executor.
-     */
-    protected void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr, @Nullable Executor exec) {
-        if (exec != null)
-            fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
-        else
-            fut.listen(new InternalFutureListener(lsnr));
+        fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
     }
 
     /** {@inheritDoc} */

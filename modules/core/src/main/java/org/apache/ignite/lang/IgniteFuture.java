@@ -109,7 +109,7 @@ public interface IgniteFuture<V> {
      * Closure will be processed in specified executor.
      *
      * @param lsnr Listener closure to register. Cannot be {@code null}.
-     * @param exec Executor to run listener.
+     * @param exec Executor to run listener. Cannot be {@code null}.
      */
     public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr, Executor exec);
 
