@@ -163,38 +163,12 @@ public class GridLuceneInputStream extends IndexInput {
     /** {@inheritDoc} */
     @Override
     public IndexInput slice(final String sliceDescription, final long offset, final long length) throws IOException {
-        if (offset < 0 || length < 0 || offset + length > this.length) {
-            throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
-        }
+        if (offset < 0 || length < 0 || offset + length > this.length)
+            throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: " + this);
+
         final String newResourceDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
-        return new GridLuceneInputStream(newResourceDescription, file, offset + length) {
-            {
-                seek(0L);
-            }
 
-            @Override
-            public void seek(long pos) throws IOException {
-                if (pos < 0L) {
-                    throw new IllegalArgumentException("Seeking to negative position: " + this);
-                }
-                super.seek(pos + offset);
-            }
-
-            @Override
-            public long getFilePointer() {
-                return super.getFilePointer() - offset;
-            }
-
-            @Override
-            public long length() {
-                return super.length() - offset;
-            }
-
-            @Override
-            public IndexInput slice(String sliceDescription, long ofs, long len) throws IOException {
-                return super.slice(sliceDescription, offset + ofs, len);
-            }
-        };
+        return new SlicedInputStream(newResourceDescription, offset, length);
     }
 
     /**
@@ -238,5 +212,47 @@ public class GridLuceneInputStream extends IndexInput {
         }
 
         bufPosition = (int)(pos % BUFFER_SIZE);
+    }
+
+    /** */
+    private class SlicedInputStream extends GridLuceneInputStream {
+        /** */
+        private final long offset;
+
+        /** */
+        public SlicedInputStream(String newResourceDescription, long offset, long length) throws IOException {
+            super(newResourceDescription, GridLuceneInputStream.this.file, offset + length);
+
+            this.offset = offset;
+
+            seek(0L);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public void seek(long pos) throws IOException {
+            if (pos < 0L) {
+                throw new IllegalArgumentException("Seeking to negative position: " + this);
+            }
+            super.seek(pos + offset);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public long getFilePointer() {
+            return super.getFilePointer() - offset;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public long length() {
+            return super.length() - offset;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public IndexInput slice(String sliceDescription, long ofs, long len) throws IOException {
+            return super.slice(sliceDescription, offset + ofs, len);
+        }
     }
 }
