@@ -73,7 +73,7 @@ public class JdbcResponse extends SqlListenerResponse implements RawBinarylizabl
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcResponse.class, this);
+        return S.toString(JdbcResponse.class, this, "status", status(),"err", error());
     }
 
     /** {@inheritDoc} */

@@ -169,7 +169,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setBoolean(1, true);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -184,7 +186,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, BOOLEAN);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -206,7 +210,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setByte(1, (byte)1);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -221,7 +227,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, TINYINT);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -243,7 +251,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setShort(1, (short)1);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -258,7 +268,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, SMALLINT);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -280,7 +292,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setInt(1, 1);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -295,7 +309,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, INTEGER);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -317,7 +333,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setLong(1, 1L);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -332,7 +350,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, BIGINT);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -354,7 +374,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setFloat(1, 1.0f);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -369,7 +391,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, FLOAT);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -391,7 +415,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setDouble(1, 1.0d);
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -406,7 +432,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, DOUBLE);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -428,7 +456,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setBigDecimal(1, new BigDecimal(1));
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -443,7 +473,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, OTHER);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -465,7 +497,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setString(1, "str");
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -480,7 +514,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, VARCHAR);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -502,7 +538,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setBytes(1, new byte[] {1});
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -517,7 +555,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, BINARY);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -539,7 +579,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setObject(1, new Date(1));
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -554,7 +596,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, DATE);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -576,7 +620,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setTime(1, new Time(1));
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -591,7 +637,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, TIME);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 
@@ -613,7 +661,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setTimestamp(1, new Timestamp(1));
 
-        ResultSet rs = stmt.executeQuery();
+        stmt.execute();
+
+        ResultSet rs = stmt.getResultSet();
 
         int cnt = 0;
 
@@ -628,7 +678,9 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
         stmt.setNull(1, TIMESTAMP);
 
-        rs = stmt.executeQuery();
+        stmt.execute();
+
+        rs = stmt.getResultSet();
 
         cnt = 0;
 

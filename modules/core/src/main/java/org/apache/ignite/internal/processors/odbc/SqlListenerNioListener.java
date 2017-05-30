@@ -166,7 +166,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         catch (Exception e) {
             log.error("Failed to process SQL client request [reqId=" + req.requestId() + ", err=" + e + ']');
 
-            ses.send(handler.handleException(e));
+            ses.send(parser.encode(handler.handleException(e)));
         }
     }
 

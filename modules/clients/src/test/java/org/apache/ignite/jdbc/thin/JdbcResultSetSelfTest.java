@@ -435,7 +435,7 @@ public class JdbcResultSetSelfTest extends JdbcAbstractSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, "JDBC doesn't support custom objects");
+        }, IgniteCheckedException.class, " Non-plain objects are not supported");
     }
 
     /**

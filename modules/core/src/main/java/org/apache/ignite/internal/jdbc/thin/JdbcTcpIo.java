@@ -201,7 +201,7 @@ public class JdbcTcpIo {
         res.readBinary(reader);
 
         if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
-            throw new IgniteCheckedException("Error server response: [req=]" + req + ", resp=" + res + ']');
+            throw new IgniteCheckedException("Error server response: [req=" + req + ", resp=" + res + ']');
 
         return (R)res.response();
     }
@@ -313,4 +313,6 @@ public class JdbcTcpIo {
 
         closed = true;
     }
+
+
 }
