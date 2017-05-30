@@ -1130,153 +1130,161 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Object.</param>
         public void Write<T>(T obj)
         {
-            // Handle special case for null.
-            // ReSharper disable once CompareNonConstrainedGenericWithNull
-            if (obj == null)
-            {
-                _stream.WriteByte(BinaryUtils.HdrNull);
-
-                return;
-            }
-
-            // We use GetType() of a real object instead of typeof(T) to take advantage of 
-            // automatic Nullable'1 unwrapping.
-            Type type = obj.GetType();
-
-            // Handle common case when primitive is written.
-            if (type.IsPrimitive)
-            {
-                WritePrimitive(obj, type);
-
-                return;
-            }
-
-            // Handle special case for builder.
-            if (WriteBuilderSpecials(obj))
-                return;
-
-            // Are we dealing with a well-known type?
-            var handler = BinarySystemHandlers.GetWriteHandler(type);
-
-            if (handler != null)
-            {
-                if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
-                    return;
-
-                handler.Write(this, obj);
-
-                return;
-            }
-
-            // Wrap objects as required.
-            if (WrapperFunc != null && type != WrapperFunc.Method.ReturnType)
-            {
-                if (_isInWrapper)
+                // Handle special case for null.
+                // ReSharper disable once CompareNonConstrainedGenericWithNull
+                if (obj == null)
                 {
-                    _isInWrapper = false;
-                }
-                else
-                {
-                    _isInWrapper = true;
-                    Write(WrapperFunc(obj));
+                    _stream.WriteByte(BinaryUtils.HdrNull);
 
                     return;
                 }
-            }
-
-            // Suppose that we faced normal object and perform descriptor lookup.
-            var desc = _marsh.GetDescriptor(type);
-
-            // Writing normal object.
-            var pos = _stream.Position;
-
-            // Dealing with handles.
-            if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
-                return;
-
-            // Skip header length as not everything is known now
-            _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
-
-            // Write type name for unregistered types
-            if (!desc.IsRegistered)
-                WriteString(type.AssemblyQualifiedName);
-
-            var headerSize = _stream.Position - pos;
-
-            // Preserve old frame.
-            var oldFrame = _frame;
-
-            // Push new frame.
-            _frame.RawPos = 0;
-            _frame.Pos = pos;
-            _frame.Struct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
-            _frame.HasCustomTypeData = false;
-
-            var schemaIdx = _schema.PushSchema();
 
             try
             {
-                // Write object fields.
-                desc.Serializer.WriteBinary(obj, this);
-                var dataEnd = _stream.Position;
+                // We use GetType() of a real object instead of typeof(T) to take advantage of 
+                // automatic Nullable'1 unwrapping.
+                Type type = obj.GetType();
 
-                // Write schema
-                var schemaOffset = dataEnd - pos;
-
-                int schemaId;
-                    
-                var flags = desc.UserType
-                    ? BinaryObjectHeader.Flag.UserType
-                    : BinaryObjectHeader.Flag.None;
-
-                if (_frame.HasCustomTypeData)
-                    flags |= BinaryObjectHeader.Flag.CustomDotNetType;
-
-                if (Marshaller.CompactFooter && desc.UserType)
-                    flags |= BinaryObjectHeader.Flag.CompactFooter;
-
-                var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
-
-                if (hasSchema)
+                // Handle common case when primitive is written.
+                if (type.IsPrimitive)
                 {
-                    flags |= BinaryObjectHeader.Flag.HasSchema;
+                    WritePrimitive(obj, type);
 
-                    // Calculate and write header.
-                    if (_frame.RawPos > 0)
-                        _stream.WriteInt(_frame.RawPos - pos); // raw offset is in the last 4 bytes
-
-                    // Update schema in type descriptor
-                    if (desc.Schema.Get(schemaId) == null)
-                        desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
+                    return;
                 }
-                else
-                    schemaOffset = headerSize;
 
-                if (_frame.RawPos > 0)
-                    flags |= BinaryObjectHeader.Flag.HasRaw;
+                // Handle special case for builder.
+                if (WriteBuilderSpecials(obj))
+                    return;
 
-                var len = _stream.Position - pos;
+                // Are we dealing with a well-known type?
+                var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+                if (handler != null)
+                {
+                    if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
+                        return;
+
+                    handler.Write(this, obj);
+
+                    return;
+                }
+
+                // Wrap objects as required.
+                if (WrapperFunc != null && type != WrapperFunc.Method.ReturnType)
+                {
+                    if (_isInWrapper)
+                    {
+                        _isInWrapper = false;
+                    }
+                    else
+                    {
+                        _isInWrapper = true;
+                        Write(WrapperFunc(obj));
+
+                        return;
+                    }
+                }
+
+                // Suppose that we faced normal object and perform descriptor lookup.
+                var desc = _marsh.GetDescriptor(type);
+
+                // Writing normal object.
+                var pos = _stream.Position;
+
+                // Dealing with handles.
+                if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
+                    return;
+
+                // Skip header length as not everything is known now
+                _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
+
+                // Write type name for unregistered types
+                if (!desc.IsRegistered)
+                    WriteString(type.AssemblyQualifiedName);
+
+                var headerSize = _stream.Position - pos;
+
+                // Preserve old frame.
+                var oldFrame = _frame;
+
+                // Push new frame.
+                _frame.RawPos = 0;
+                _frame.Pos = pos;
+                _frame.Struct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
+                _frame.HasCustomTypeData = false;
+
+                var schemaIdx = _schema.PushSchema();
+
+                try
+                {
+                    // Write object fields.
+                    desc.Serializer.WriteBinary(obj, this);
+                    var dataEnd = _stream.Position;
+
+                    // Write schema
+                    var schemaOffset = dataEnd - pos;
+
+                    int schemaId;
+
+                    var flags = desc.UserType
+                        ? BinaryObjectHeader.Flag.UserType
+                        : BinaryObjectHeader.Flag.None;
+
+                    if (_frame.HasCustomTypeData)
+                        flags |= BinaryObjectHeader.Flag.CustomDotNetType;
+
+                    if (Marshaller.CompactFooter && desc.UserType)
+                        flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
+
+                    if (hasSchema)
+                    {
+                        flags |= BinaryObjectHeader.Flag.HasSchema;
+
+                        // Calculate and write header.
+                        if (_frame.RawPos > 0)
+                            _stream.WriteInt(_frame.RawPos - pos); // raw offset is in the last 4 bytes
+
+                        // Update schema in type descriptor
+                        if (desc.Schema.Get(schemaId) == null)
+                            desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
+                    }
+                    else
+                        schemaOffset = headerSize;
+
+                    if (_frame.RawPos > 0)
+                        flags |= BinaryObjectHeader.Flag.HasRaw;
+
+                    var len = _stream.Position - pos;
 
                     var hashCode = BinaryArrayEqualityComparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
-                            dataEnd - pos - BinaryObjectHeader.Size);
+                        dataEnd - pos - BinaryObjectHeader.Size);
 
                     var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryUtils.TypeUnregistered,
                         hashCode, len, schemaId, schemaOffset, flags);
 
-                BinaryObjectHeader.Write(header, _stream, pos);
+                    BinaryObjectHeader.Write(header, _stream, pos);
 
-                Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
+                    Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
+                }
+                finally
+                {
+                    _schema.PopSchema(schemaIdx);
+                }
+
+                // Apply structure updates if any.
+                _frame.Struct.UpdateWriterStructure(this);
+
+                // Restore old frame.
+                _frame = oldFrame;
             }
-            finally
+            catch (Exception ex)
             {
-                _schema.PopSchema(schemaIdx);
+                throw new BinaryObjectException(string.Format("Failed to serialize object '{0}' of type '{1}'", obj,
+                    obj.GetType()), ex);
             }
-
-            // Apply structure updates if any.
-            _frame.Struct.UpdateWriterStructure(this);
-
-            // Restore old frame.
-            _frame = oldFrame;
         }
 
         /// <summary>
