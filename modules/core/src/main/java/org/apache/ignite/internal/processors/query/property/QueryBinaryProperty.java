@@ -137,7 +137,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
         else if (obj instanceof BinaryObjectBuilder) {
             BinaryObjectBuilder obj0 = (BinaryObjectBuilder)obj;
 
-            return obj0.getField(name());
+            return obj0.getField(propName);
         }
         else
             throw new IgniteCheckedException("Unexpected binary object class [type=" + obj.getClass() + ']');

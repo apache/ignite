@@ -100,6 +100,9 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_field_meta.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">
@@ -157,6 +160,9 @@
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\impl\binary\binary_field_meta.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_impl.cpp">
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
   </ItemGroup>

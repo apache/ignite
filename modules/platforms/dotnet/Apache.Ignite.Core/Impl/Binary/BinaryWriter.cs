@@ -54,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Whether we are currently detaching an object. */
         private bool _detaching;
 
+        /** Whether we are directly within peer loading object holder. */
+        private bool _isInWrapper;
+
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
 
@@ -1165,6 +1168,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
+            // Wrap objects as required.
+            if (WrapperFunc != null && type != WrapperFunc.Method.ReturnType)
+            {
+                if (_isInWrapper)
+                {
+                    _isInWrapper = false;
+                }
+                else
+                {
+                    _isInWrapper = true;
+                    Write(WrapperFunc(obj));
+
+                    return;
+                }
+            }
+
             // Suppose that we faced normal object and perform descriptor lookup.
             var desc = _marsh.GetDescriptor(type);
 
@@ -1424,6 +1443,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets or sets a function to wrap all serializer objects.
+        /// </summary>
+        internal Func<object, object> WrapperFunc { get; set; }
+
+        /// <summary>
         /// Stream.
         /// </summary>
         internal IBinaryStream Stream
@@ -1468,7 +1492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 _metas = new Dictionary<int, BinaryType>(1)
                 {
-                    {desc.TypeId, new BinaryType(desc, fields)}
+                    {desc.TypeId, new BinaryType(desc, _marsh, fields)}
                 };
             }
             else
@@ -1478,7 +1502,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_metas.TryGetValue(desc.TypeId, out meta))
                     meta.UpdateFields(fields);
                 else
-                    _metas[desc.TypeId] = new BinaryType(desc, fields);
+                    _metas[desc.TypeId] = new BinaryType(desc, _marsh, fields);
             }
         }
 
