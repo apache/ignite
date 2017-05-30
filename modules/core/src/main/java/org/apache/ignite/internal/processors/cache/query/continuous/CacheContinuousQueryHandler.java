@@ -493,51 +493,47 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 long cntr,
                 AffinityTopologyVersion topVer,
                 boolean primary) {
-                CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, part);
-
                 if (skipCtx == null)
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
+
+                if (loc) {
+                    assert !locCache;
+
+                    final Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, skipCtx.entry());
+
+                    if (!evts.isEmpty()) {
+                        if (asyncCb) {
+                            ctx.asyncCallbackPool().execute(new Runnable() {
+                                @Override public void run() {
+                                    locLsnr.onUpdated(evts);
+                                }
+                            }, part);
+                        }
+                        else
+                            skipCtx.addSendClosure(new Runnable() {
+                                @Override public void run() {
+                                    locLsnr.onUpdated(evts);
+                                }
+                            });
+                    }
+
+                    return skipCtx;
+                }
+
+                CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, part);
 
                 final Object entryOrList = buf.processEntry(skipCtx.entry(), !primary);
 
                 if (entryOrList != null) {
-                    if (loc && asyncCb) {
-                        // TODO
-                        return skipCtx;
-                    }
-
                     skipCtx.addSendClosure(new Runnable() {
                         @Override public void run() {
                             try {
-                                if (loc) {
-                                    if (entryOrList instanceof CacheContinuousQueryEntry) {
-                                        CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(null,
-                                            cctx,
-                                            (CacheContinuousQueryEntry)entryOrList);
-
-                                        handleLocalListener(evt);
-                                    }
-                                    else {
-                                        List<CacheContinuousQueryEntry> list =
-                                            (List<CacheContinuousQueryEntry>)entryOrList;
-
-                                        for (CacheContinuousQueryEntry entry : list) {
-                                            CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(null,
-                                                cctx,
-                                                entry);
-
-                                            handleLocalListener(evt);
-                                        }
-                                    }
-                                }
-                                else {
-                                    ctx.continuous().addNotification(nodeId,
-                                        routineId,
-                                        entryOrList,
-                                        topic,
-                                        false,
-                                        true);
-                                }
+                                ctx.continuous().addNotification(nodeId,
+                                    routineId,
+                                    entryOrList,
+                                    topic,
+                                    false,
+                                    true);
                             }
                             catch (ClusterTopologyCheckedException ex) {
                                 if (log.isDebugEnabled())

@@ -595,13 +595,14 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
-        assertTrue("Expected: [cntr1=" + keys + ", cntr2=" + keys + "] " +
-            "but was: [cntr1=" + cntr1.get() + ", cntr2=" + cntr2.get() + "]",
-            GridTestUtils.waitForCondition(new PA() {
+        GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return cntr1.get() == keys && cntr2.get() == keys;
             }
-        }, 2000));
+        }, 2000);
+
+        assertEquals(cntr1.get(), keys);
+        assertEquals(cntr2.get(), keys);
 
         qry1.close();
 
@@ -610,12 +611,13 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         srv0.cache(CACHE1).putAll(map);
         srv0.cache(CACHE2).putAll(map);
 
-        assertTrue("Expected: <" + keys + 10 + "> but was: <" + cntr2.get() + ">",
-            GridTestUtils.waitForCondition(new PA() {
+        GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return cntr2.get() == keys + 10;
             }
-        }, 2000));
+        }, 2000);
+
+        assertEquals(keys + 10, cntr2.get());
 
         assertEquals(keys, cntr1.get());
 

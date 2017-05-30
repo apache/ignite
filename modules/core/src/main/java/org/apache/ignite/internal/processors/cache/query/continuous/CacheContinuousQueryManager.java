@@ -834,7 +834,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 if (added) {
                     int cnt = lsnrCnt.incrementAndGet();
 
-                    if (cctx.group().sharedGroup() && cnt == 1)
+                    if (cctx.group().sharedGroup() && cnt == 1 && !cctx.isLocal())
                         cctx.group().addCacheWithContinuousQuery(cctx);
                 }
             }
@@ -866,7 +866,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 if ((lsnr = lsnrs.remove(id)) != null) {
                     int cnt = lsnrCnt.decrementAndGet();
 
-                    if (cctx.group().sharedGroup() && cnt == 0)
+                    if (cctx.group().sharedGroup() && cnt == 0 && !cctx.isLocal())
                         cctx.group().removeCacheWithContinuousQuery(cctx);
                 }
             }

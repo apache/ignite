@@ -91,15 +91,15 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
-        concurrentUpdatePartition(TRANSACTIONAL, true);
+    public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
+        concurrentUpdatePartition(ATOMIC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatePartitionAtomicCacheGroup() throws Exception {
-        concurrentUpdatePartition(ATOMIC, true);
+    public void testConcurrentUpdatePartitionTxCacheGroup() throws Exception {
+        concurrentUpdatePartition(TRANSACTIONAL, true);
     }
 
     /**

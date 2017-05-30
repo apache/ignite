@@ -233,8 +233,9 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
 
         loadCacheData(cacheName);
 
-        println(cfg, "Finished populating data [cache=" + cacheName +
-            ", time=" + ((System.nanoTime() - start) / 1_000_000) + "ms]");
+        long time = ((System.nanoTime() - start) / 1_000_000);
+
+        println(cfg, "Finished populating data [cache=" + cacheName + ", time=" + time + "ms]");
     }
 
     /**
