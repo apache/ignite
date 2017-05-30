@@ -103,8 +103,8 @@ public class JdbcThinResultSet implements ResultSet {
      * @param fields Query result page.
      * @param isQuery Is Result ser for Select query
      */
-    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields,
-        boolean isQuery) {
+    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
+        List<List<Object>> fields, boolean isQuery) {
         assert stmt != null;
         assert fetchSize > 0;
 
@@ -127,8 +127,6 @@ public class JdbcThinResultSet implements ResultSet {
         if (fieldsIt == null && !finished) {
             try {
                 JdbcQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
-
-                assert qryId == res.queryId();
 
                 fields = res.items();
                 finished = res.last();
@@ -166,7 +164,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (isClosed())
+        if (closed || stmt.connection().isClosed())
             return;
 
         try {

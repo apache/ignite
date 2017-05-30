@@ -75,7 +75,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /**
      * @return Fetch size.
      */
-    public int fetchSize() {
+    public int pageSize() {
         return pageSize;
     }
 

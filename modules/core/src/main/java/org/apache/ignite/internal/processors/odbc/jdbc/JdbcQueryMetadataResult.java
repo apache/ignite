@@ -29,10 +29,6 @@ import org.apache.ignite.internal.util.typedef.F;
  * SQL listener query metadata result.
  */
 public class JdbcQueryMetadataResult extends JdbcResult {
-    /** Query ID. */
-    // TODO: Remove.
-    private long queryId;
-
     /** Fields metadata. */
     private List<JdbcColumnMeta> meta;
 
@@ -50,15 +46,7 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     public JdbcQueryMetadataResult(long queryId, List<JdbcColumnMeta> meta){
         super(QRY_META);
 
-        this.queryId = queryId;
         this.meta = meta;
-    }
-
-    /**
-     * @return Query ID.
-     */
-    public long queryId() {
-        return queryId;
     }
 
     /**
@@ -71,8 +59,6 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
-
-        writer.writeLong(queryId);
 
         if (F.isEmpty(meta))
             writer.writeInt(0);
@@ -87,8 +73,6 @@ public class JdbcQueryMetadataResult extends JdbcResult {
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
-
-        queryId = reader.readLong();
 
         int size = reader.readInt();
 

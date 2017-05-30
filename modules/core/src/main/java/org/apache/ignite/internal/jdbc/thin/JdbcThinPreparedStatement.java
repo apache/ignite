@@ -61,8 +61,16 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        // TODO: Fix
-        throw new SQLException("executeQuery is called on PreparedStatement instance.");
+        ResultSet rs = executeQuery(sql);
+
+        args = null;
+
+        return rs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ResultSet executeQuery(String sql) throws SQLException {
+        throw new SQLException("The method 'executeQuery(String)' is called on PreparedStatement instance.");
     }
 
     /** {@inheritDoc} */
@@ -70,6 +78,11 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int executeUpdate(String sql) throws SQLException {
+        throw new SQLException("The method 'executeUpdate(String)' is called on PreparedStatement instance.");
     }
 
     /** {@inheritDoc} */
@@ -184,6 +197,11 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** {@inheritDoc} */
     @Override public boolean execute() throws SQLException {
         return execute(sql);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean execute(String sql) throws SQLException {
+        throw new SQLException("The method 'execute(String)' is called on PreparedStatement instance.");
     }
 
     /** {@inheritDoc} */

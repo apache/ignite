@@ -128,7 +128,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse SQL client request [err=" + e + ']');
+            log.error("Failed to parse SQL client request.", e);
 
             ses.close();
 
@@ -163,7 +163,7 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
             ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process SQL client request [reqId=" + req.requestId() + ", err=" + e + ']');
+            log.error("Failed to process SQL client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e)));
         }

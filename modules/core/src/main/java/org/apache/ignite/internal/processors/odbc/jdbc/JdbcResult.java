@@ -32,11 +32,8 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Fetch query results. */
     public static final byte QRY_FETCH = 3;
 
-    /** Close query result. */
-    public static final byte QRY_CLOSE = 4;
-
     /** Get columns meta query result. */
-    public static final byte QRY_META = 5;
+    public static final byte QRY_META = 4;
 
     /** Success status. */
     private byte type;
@@ -81,10 +78,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case QRY_META:
                 res = new JdbcQueryMetadataResult();
-                break;
-
-            case QRY_CLOSE:
-                res = new JdbcQueryCloseResult();
                 break;
 
             default:

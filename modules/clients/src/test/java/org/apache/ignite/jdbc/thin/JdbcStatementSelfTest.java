@@ -262,7 +262,7 @@ public class JdbcStatementSelfTest extends JdbcAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCloseResultSet() throws Exception {
+    public void testCloseResultSet0() throws Exception {
         ResultSet rs0 = stmt.executeQuery(SQL);
         ResultSet rs1 = stmt.executeQuery(SQL);
         ResultSet rs2 = stmt.executeQuery(SQL);
@@ -275,6 +275,19 @@ public class JdbcStatementSelfTest extends JdbcAbstractSelfTest {
         stmt.close();
 
         assert rs2.isClosed() : "ResultSet must be explicitly closed after close statement";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseResultSet1() throws Exception {
+        stmt.execute(SQL);
+
+        ResultSet rs = stmt.getResultSet();
+
+        stmt.close();
+
+        assert rs.isClosed() : "ResultSet must be explicitly closed after close statement";
     }
 
     /**

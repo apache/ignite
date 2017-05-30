@@ -79,8 +79,12 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         writer.writeInt(status());
 
-        if (status() == STATUS_SUCCESS)
-            res.writeBinary(writer);
+        if (status() == STATUS_SUCCESS) {
+            writer.writeBoolean(res != null);
+
+            if (res != null)
+                res.writeBinary(writer);
+        }
         else
             writer.writeString(error());
 
@@ -90,8 +94,10 @@ public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinaryli
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         status(reader.readInt());
 
-        if (status() == STATUS_SUCCESS)
-            res = JdbcResult.readResult(reader);
+        if (status() == STATUS_SUCCESS) {
+            if (reader.readBoolean())
+                res = JdbcResult.readResult(reader);
+        }
         else
             error(reader.readString());
     }

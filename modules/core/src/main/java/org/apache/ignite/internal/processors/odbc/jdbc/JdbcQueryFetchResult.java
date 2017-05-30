@@ -17,22 +17,15 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 
 /**
  * SQL listener query fetch result.
  */
 public class JdbcQueryFetchResult extends JdbcResult {
-    /** Query ID. */
-    // TODO: Remove.
-    private long queryId;
-
     /** Query result rows. */
     private List<List<Object>> items;
 
@@ -47,24 +40,14 @@ public class JdbcQueryFetchResult extends JdbcResult {
     }
 
     /**
-
-     * @param queryId Query ID.
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
      */
-    public JdbcQueryFetchResult(long queryId, List<List<Object>> items, boolean last){
+    public JdbcQueryFetchResult(List<List<Object>> items, boolean last){
         super(QRY_FETCH);
 
-        this.queryId = queryId;
         this.items = items;
         this.last = last;
-    }
-
-    /**
-     * @return Query ID.
-     */
-    public long queryId() {
-        return queryId;
     }
 
     /**
@@ -85,7 +68,7 @@ public class JdbcQueryFetchResult extends JdbcResult {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
+        writer.writeBoolean(last);
 
         JdbcUtils.writeItems(writer, items);
     }
@@ -93,6 +76,8 @@ public class JdbcQueryFetchResult extends JdbcResult {
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
+
+        last = reader.readBoolean();
 
         items = JdbcUtils.readItems(reader);
     }

@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -153,8 +152,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            // TODO: Validate page size, add test for it.
-            qry.setPageSize(req.fetchSize());
+            if (req.pageSize() <= 0)
+                return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
+                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
+
+            qry.setPageSize(req.pageSize());
 
             IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
 
@@ -169,7 +171,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     "Can not get cache with keep binary: " + req.cacheName());
 
             JdbcQueryCursor cur = new JdbcQueryCursor(
-                qryId, req.fetchSize(), req.maxRows(), (QueryCursorImpl)cache.query(qry));
+                qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)cache.query(qry));
 
             qryCursors.put(qryId, cur);
 
@@ -215,9 +217,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             cur.close();
 
-            JdbcQueryCloseResult res = new JdbcQueryCloseResult(req.queryId());
-
-            return new JdbcResponse(res);
+            return new JdbcResponse(null);
         }
         catch (Exception e) {
             qryCursors.remove(req.queryId());
@@ -242,7 +242,13 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
                     "Failed to find query cursor with ID: " + req.queryId());
 
-            JdbcQueryFetchResult res = new JdbcQueryFetchResult(req.queryId(), cur.fetchRows(), !cur.hasNext());
+            if (req.pageSize() <= 0)
+                return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
+                    "Invalid fetch size : [fetchSize=" + req.pageSize() + ']');
+
+            cur.pageSize(req.pageSize());
+
+            JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
 
             return new JdbcResponse(res);
         }

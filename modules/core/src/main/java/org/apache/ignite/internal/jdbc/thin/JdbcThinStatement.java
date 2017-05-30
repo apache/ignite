@@ -62,6 +62,8 @@ public class JdbcThinStatement implements Statement {
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
+    private boolean alreadyRead;
+
     /**
      * Creates new statement.
      *
@@ -73,7 +75,6 @@ public class JdbcThinStatement implements Statement {
         this.conn = conn;
     }
 
-    // TODO: Throw exception in PreparedStatement
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         JdbcThinResultSet rs = execute0(sql);
@@ -97,6 +98,8 @@ public class JdbcThinStatement implements Statement {
 
             rs = null;
         }
+
+        alreadyRead = false;
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
@@ -122,7 +125,6 @@ public class JdbcThinStatement implements Statement {
     }
 
     /** {@inheritDoc} */
-    // TODO: Throw exception in PreparedStatement
     @Override public int executeUpdate(String sql) throws SQLException {
         ensureNotClosed();
 
@@ -212,7 +214,6 @@ public class JdbcThinStatement implements Statement {
     }
 
     /** {@inheritDoc} */
-    // TODO: Throw exception on PrepStmt.
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
@@ -225,30 +226,24 @@ public class JdbcThinStatement implements Statement {
     @Override public ResultSet getResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (rs == null || !rs.isQuery())
+        if (rs == null || !rs.isQuery() || alreadyRead)
             return null;
 
-        // TODO: With this code current RS will not be closed on statement close.
-        ResultSet rs0 = rs;
+        alreadyRead = true;
 
-        rs = null;
-
-        return rs0;
+        return rs;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
         ensureNotClosed();
 
-        if (rs == null || rs.isQuery())
+        if (rs == null || rs.isQuery() || alreadyRead)
             return -1;
 
-        int ret = (int)rs.updatedCount();
+        alreadyRead = true;
 
-        // TODO: Same as getResultSet
-        rs = null;
-
-        return ret;
+        return (int)rs.updatedCount();
     }
 
     /** {@inheritDoc} */
@@ -437,13 +432,11 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        // TODO: Must retyurn true for JdbcThisStatement.class as well
-        return iface != null && iface == Statement.class;
+        return iface != null && iface.isAssignableFrom(JdbcThinStatement.class);
     }
 
     /** {@inheritDoc} */
     @Override public void closeOnCompletion() throws SQLException {
-        // TODO: Support or create ticket.
         throw new SQLFeatureNotSupportedException("closeOnCompletion is not supported.");
     }
 
