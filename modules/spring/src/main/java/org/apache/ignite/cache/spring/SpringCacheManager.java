@@ -370,8 +370,9 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
      * @param key  key
      * @return {@link org.apache.ignite.IgniteLock}
      */
-    IgniteLock getLock(String name, Object key) {
+    IgniteLock getSyncLock(String name, Object key) {
         int hash = Objects.hash(name, key);
+
         final int idx = hash % getLocksCount();
 
         return locks.computeIfAbsent(idx, new ConcurrentHashMap8.Fun<Integer, IgniteLock>() {

@@ -61,26 +61,28 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testSyncCache() throws Exception {
-
-        IgniteEx local = startGrid(0);
+        IgniteEx loc = startGrid(0);
 
         final int threads = 4;
-        final int entries = 10_000;
+        final int entries = 100_000;
         final int remoteNum = 2;
 
         final CountDownLatch latch = new CountDownLatch(1);
 
         List<IgniteInternalFuture<Integer>> futures = new ArrayList<>(remoteNum);
-        for (int i = 0; i < remoteNum; i++) {
-            final int gridIndex = i + 1;
-            final IgniteEx remote = startGrid(gridIndex);
 
-            IgniteInternalFuture<Integer> calledCountFut = GridTestUtils.runAsync(new Callable<Integer>() {
+        for (int i = 0; i < remoteNum; i++) {
+            final int gridIdx = i + 1;
+
+            final IgniteEx remote = startGrid(gridIdx);
+
+            IgniteInternalFuture<Integer> calledCntFut = GridTestUtils.runAsync(new Callable<Integer>() {
                 @Override public Integer call() throws Exception {
                     latch.await();
+
                     return executeRemotely((IgniteProcessProxy)remote, new TestIgniteCallable<Integer>() {
                         @Override public Integer call(Ignite ignite) throws Exception {
-                            BeanFactory factory = new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching" + gridIndex + ".xml");
+                            BeanFactory factory = new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching" + gridIdx + ".xml");
 
                             final GridSpringDynamicCacheTestService dynamicSvc = (GridSpringDynamicCacheTestService)factory.getBean("dynamicTestService");
 
@@ -109,19 +111,21 @@ public class GridSpringCacheManagerMultiJvmSelfTest extends GridCommonAbstractTe
                 }
             });
 
-            futures.add(calledCountFut);
+            futures.add(calledCntFut);
         }
 
         latch.countDown();
 
-        int totalCalledCount = 0;
-        for (IgniteInternalFuture<Integer> future : futures)
-            totalCalledCount += future.get();
+        int totalCalledCnt = 0;
 
-        IgniteCache<Object, Object> cache = local.cache("dynamicCache");
+        for (IgniteInternalFuture<Integer> future : futures)
+            totalCalledCnt += future.get();
+
+        IgniteCache<Object, Object> cache = loc.cache("dynamicCache");
+
         assertEquals(entries, cache.size());
 
-        assertEquals(entries, totalCalledCount);
+        assertEquals(entries, totalCalledCnt);
 
         for (int i = 0; i < entries; i++)
             assertEquals("value" + i, cache.get(i));

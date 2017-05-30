@@ -40,7 +40,6 @@
         <property name="igniteInstanceName" value="testGrid2"/>
         <property name="dynamicCacheConfiguration">
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                <!--<property name="backups" value="2"/>-->
             </bean>
         </property>
     </bean>

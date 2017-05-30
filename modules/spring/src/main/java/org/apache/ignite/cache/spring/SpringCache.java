@@ -33,8 +33,9 @@ class SpringCache implements Cache {
 
     /** */
     private final IgniteCache<Object, Object> cache;
+
     /** */
-    private final SpringCacheManager manager;
+    private final SpringCacheManager mgr;
 
     /**
      * @param cache Cache.
@@ -44,7 +45,7 @@ class SpringCache implements Cache {
         assert cache != null;
 
         this.cache = cache;
-        this.manager = manager;
+        this.mgr = manager;
     }
 
     /** {@inheritDoc} */
@@ -82,11 +83,10 @@ class SpringCache implements Cache {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(final Object key, final Callable<T> valueLoader) {
-
         Object val = cache.get(key);
 
         if (val == null) {
-            IgniteLock lock = manager.getLock(cache.getName(), key);
+            IgniteLock lock = mgr.getSyncLock(cache.getName(), key);
 
             lock.lock();
 
@@ -96,6 +96,7 @@ class SpringCache implements Cache {
                 if (val == null) {
                     try {
                         T retVal = valueLoader.call();
+
                         val = wrapNull(retVal);
 
                         cache.put(key, val);
