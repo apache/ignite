@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System;
     using System.Diagnostics;
     using System.IO;
     using System.Threading;
@@ -96,6 +97,14 @@ namespace Apache.Ignite.Core.Tests.NuGet
             
             var asmDir = Path.GetDirectoryName(asm.Location);
             Assert.IsNotNull(asmDir);
+
+            // TODO: REMOVE
+            var delme = Path.GetFullPath(Path.Combine(asmDir, @"..\..\"));
+            foreach (var file in Directory.GetFiles(delme, "*.*", SearchOption.AllDirectories))
+            {
+                Console.WriteLine(file);
+            }
+            //
             
             var packageDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages", packageDirName));
             Assert.IsTrue(Directory.Exists(packageDir));
