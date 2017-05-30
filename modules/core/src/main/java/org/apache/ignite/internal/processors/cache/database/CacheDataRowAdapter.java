@@ -283,7 +283,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             byte[] bytes = PageUtils.getBytes(addr, off, len);
             off += len;
 
-            key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
+            key = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, type, bytes);
 
             if (rowData == RowData.KEY_ONLY)
                 return;
@@ -300,7 +300,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte[] bytes = PageUtils.getBytes(addr, off, len);
         off += len;
 
-        val = coctx.processor().toCacheObject(coctx, type, bytes);
+        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
 
         ver = CacheVersionIO.read(addr + off, false);
 
@@ -359,7 +359,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         ByteBuffer buf,
         IncompleteCacheObject incomplete
     ) throws IgniteCheckedException {
-        incomplete = coctx.processor().toKeyCacheObject(coctx, buf, incomplete);
+        incomplete = coctx.kernalContext().cacheObjects().toKeyCacheObject(coctx, buf, incomplete);
 
         if (incomplete.isReady()) {
             key = (KeyCacheObject)incomplete.object();
@@ -384,7 +384,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         ByteBuffer buf,
         IncompleteCacheObject incomplete
     ) throws IgniteCheckedException {
-        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete);
+        incomplete = coctx.kernalContext().cacheObjects().toCacheObject(coctx, buf, incomplete);
 
         if (incomplete.isReady()) {
             val = incomplete.object();

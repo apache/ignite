@@ -615,9 +615,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(5, new Person2(3, "p3"));
 
             String select = "select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
-                            " where p.orgId = o._key and o._key=1" +
-                            " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
-                            " where p.orgId = o._key and o._key=2";
+                " where p.orgId = o._key and o._key=1" +
+                " union select o.name n1, p.name n2 from Person2 p, \"org\".Organization o" +
+                " where p.orgId = o._key and o._key=2";
 
             String plan = c1.query(new SqlFieldsQuery("explain " + select)
                 .setDistributedJoins(true).setEnforceJoinOrder(true))
@@ -1123,6 +1123,57 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    public void testSchemaQuoted() {
+        assert false; // TODO test hangs
+        doTestSchemaName("\"ppAf\"");
+    }
+
+    /**
+     */
+    public void testSchemaQuotedUpper() {
+        assert false; // TODO test hangs
+        doTestSchemaName("\"PPAF\"");
+    }
+
+    /**
+     */
+    public void testSchemaUnquoted() {
+        doTestSchemaName("ppAf");
+    }
+
+    /**
+     */
+    public void testSchemaUnquotedUpper() {
+        doTestSchemaName("PPAF");
+    }
+
+    /**
+     * @param schema Schema name.
+     */
+    public void doTestSchemaName(String schema) {
+        CacheConfiguration ccfg = cacheConfig("persPartAff", true, Integer.class, Person2.class);
+
+        ccfg.setSqlSchema(schema);
+
+        IgniteCache<Integer, Person2> ppAf = ignite(0).createCache(ccfg);
+
+        try {
+            ppAf.put(1, new Person2(10, "Petya"));
+            ppAf.put(2, new Person2(10, "Kolya"));
+
+            List<List<?>> res = ppAf.query(new SqlFieldsQuery("select name from " +
+                schema + ".Person2 order by _key")).getAll();
+
+            assertEquals("Petya", res.get(0).get(0));
+            assertEquals("Kolya", res.get(1).get(0));
+        }
+        finally {
+            ppAf.destroy();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testIndexSegmentation() throws Exception {
@@ -1615,11 +1666,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     public void testJoinWithSubquery() throws Exception {
         IgniteCache<Integer, Contract> c1 = ignite(0).createCache(
             cacheConfig("Contract", true,
-            Integer.class, Contract.class));
+                Integer.class, Contract.class));
 
         IgniteCache<Integer, PromoContract> c2 = ignite(0).createCache(
             cacheConfig("PromoContract", true,
-            Integer.class, PromoContract.class));
+                Integer.class, PromoContract.class));
 
         for (int i = 0; i < 100; i++) {
             int coId = i % 10;

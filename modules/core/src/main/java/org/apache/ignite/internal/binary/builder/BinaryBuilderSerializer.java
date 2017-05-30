@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary.builder;
 
 import java.util.Collection;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -115,7 +116,14 @@ class BinaryBuilderSerializer {
             int typeId = writer.context().typeId(clsName);
             String typeName = writer.context().userTypeName(clsName);
 
-            BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
+            Object[] enumVals = val.getClass().getEnumConstants();
+
+            Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+            for (Object enumVal : enumVals)
+                enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
+
+            BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true, enumMap);
 
             writer.context().updateMetadata(typeId, meta);
 

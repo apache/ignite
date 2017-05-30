@@ -143,6 +143,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: enum array. */
         public const byte TypeArrayEnum = 29;
 
+        /** Type: binary enum. */
+        public const byte TypeBinaryEnum = 38;
+
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
 
@@ -1775,6 +1778,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static unsafe double LongToDoubleBits(long val)
         {
             return *(double*)&val;
+        }
+
+        /// <summary>
+        /// Determines whether specified type is Ignite-compatible enum (value fits into 4 bytes).
+        /// </summary>
+        public static bool IsIgniteEnum(Type type)
+        {
+            Debug.Assert(type != null);
+
+            if (!type.IsEnum)
+                return false;
+
+            var enumType = Enum.GetUnderlyingType(type);
+
+            return enumType == typeof(int) || enumType == typeof(byte) || enumType == typeof(sbyte) 
+                || enumType == typeof(short) || enumType == typeof(ushort) || enumType == typeof(uint);
         }
 
         /// <summary>

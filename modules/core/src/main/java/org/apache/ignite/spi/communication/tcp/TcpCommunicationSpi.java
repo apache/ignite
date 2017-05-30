@@ -267,8 +267,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
     public static final int DFLT_SHMEM_PORT = -1;
 
-    /** Default idle connection timeout (value is <tt>30000</tt>ms). */
-    public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
+    /** Default idle connection timeout (value is <tt>10</tt>min). */
+    public static final long DFLT_IDLE_CONN_TIMEOUT = 10 * 60_000;
 
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;

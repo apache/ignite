@@ -874,7 +874,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         finally {
             // Reset thread local context.
             cctx.tm().resetContext();
-            cctx.mvcc().contextReset();
+
+            GridCacheMvccManager mvcc = cctx.mvcc();
+
+            if (mvcc != null)
+                mvcc.contextReset();
 
             // Unwind eviction notifications.
             if (msg instanceof IgniteTxStateAware) {
