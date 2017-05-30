@@ -318,6 +318,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         onKernalStart0(true);
 
+        restoreStructuresState(ctx);
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    public void restoreStructuresState(GridKernalContext ctx) throws IgniteCheckedException {
+        onKernalStart0(true);
+
         for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
             GridCacheRemovable v = e.getValue();
 
