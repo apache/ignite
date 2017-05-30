@@ -96,13 +96,5 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             return _dict.ContainsKey(key);
         }
-
-        /// <summary>
-        /// Gets the values.
-        /// </summary>
-        public ICollection<TValue> Values
-        {
-            get { return _dict.Values; }
-        }
     }
 }

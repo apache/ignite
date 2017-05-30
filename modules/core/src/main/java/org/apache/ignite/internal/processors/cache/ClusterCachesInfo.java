@@ -717,8 +717,13 @@ class ClusterCachesInfo {
                     desc = desc0;
                 }
 
-                if (locCfg != null || joinDiscoData.startCaches() || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter()))
-                    locJoinStartCaches.add(new T2<>(desc, nearCfg));
+                if (locCfg != null || joinDiscoData.startCaches() || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter())) {
+                    // Move system and internal caches first.
+                    if (desc.cacheType().userCache())
+                        locJoinStartCaches.add(new T2<>(desc, nearCfg));
+                    else
+                        locJoinStartCaches.add(0, new T2<>(desc, nearCfg));
+                }
             }
         }
     }

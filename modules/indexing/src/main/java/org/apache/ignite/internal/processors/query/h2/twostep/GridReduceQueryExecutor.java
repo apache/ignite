@@ -402,7 +402,7 @@ public class GridReduceQueryExecutor {
 
             List<ClusterNode> partNodes = assignment.get(partId);
 
-            if (partNodes.size() > 0) {
+            if (!partNodes.isEmpty()) {
                 ClusterNode prim = partNodes.get(0);
 
                 if (!needPartsFilter) {
@@ -499,7 +499,7 @@ public class GridReduceQueryExecutor {
     /**
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param keepPortable Keep portable.
+     * @param keepBinary Keep binary.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param timeoutMillis Timeout in milliseconds.
      * @param cancel Query cancel.
@@ -510,7 +510,7 @@ public class GridReduceQueryExecutor {
     public Iterator<List<?>> query(
         String schemaName,
         GridCacheTwoStepQuery qry,
-        boolean keepPortable,
+        boolean keepBinary,
         boolean enforceJoinOrder,
         int timeoutMillis,
         GridQueryCancel cancel,
@@ -800,7 +800,7 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
-                return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepPortable);
+                return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 if (conn != null)
