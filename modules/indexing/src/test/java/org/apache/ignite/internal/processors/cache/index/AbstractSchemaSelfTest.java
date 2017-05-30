@@ -22,6 +22,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,7 +34,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -58,32 +61,38 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
 
-    /** Table name 2. */
-    protected static final String TBL_NAME_2 = tableName(ValueClass2.class);
+    /** Escaped table name. */
+    protected static final String TBL_NAME_ESCAPED = typeName(ValueClass.class);
 
     /** Index name 1. */
-    protected static final String IDX_NAME_1 = "idx_1";
+    protected static final String IDX_NAME_1 = "IDX_1";
+
+    /** Index name 1 escaped. */
+    protected static final String IDX_NAME_1_ESCAPED = "idx_1";
 
     /** Index name 2. */
-    protected static final String IDX_NAME_2 = "idx_2";
+    protected static final String IDX_NAME_2 = "IDX_2";
 
-    /** Index name 3. */
-    protected static final String IDX_NAME_3 = "idx_3";
+    /** Index name 2 escaped. */
+    protected static final String IDX_NAME_2_ESCAPED = "idx_2";
 
     /** Key ID field. */
     protected static final String FIELD_KEY = "id";
 
-    /** Field 1. */
-    protected static final String FIELD_NAME_1 = "field1";
-
-    /** Field 1. */
-    protected static final String FIELD_NAME_2 = "field2";
-
-    /** Field 3. */
-    protected static final String FIELD_NAME_3 = "field3";
-
     /** Key alias */
     protected static final String FIELD_KEY_ALIAS = "key";
+
+    /** Field 1. */
+    protected static final String FIELD_NAME_1 = "FIELD1";
+
+    /** Field 1 escaped. */
+    protected static final String FIELD_NAME_1_ESCAPED = "field1";
+
+    /** Field 2. */
+    protected static final String FIELD_NAME_2 = "FIELD2";
+
+    /** Field 2 escaped. */
+    protected static final String FIELD_NAME_2_ESCAPED = "field2";
 
     /**
      * Get type on the given node for the given cache and table name. Type must exist.
@@ -205,7 +214,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         assert desc != null;
 
         for (QueryEntity entity : desc.schema().entities()) {
-            if (F.eq(tblName, QueryUtils.tableName(entity))) {
+            if (F.eq(tblName, entity.getTableName())) {
                 for (QueryIndex idx : entity.getIndexes()) {
                     if (F.eq(QueryUtils.indexName(entity, idx), idxName)) {
                         LinkedHashMap<String, Boolean> idxFields = idx.getFields();
@@ -215,7 +224,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
                         int i = 0;
 
                         for (String idxField : idxFields.keySet()) {
-                            assertEquals(idxField, fields[i].get1());
+                            assertEquals(idxField.toLowerCase(), fields[i].get1().toLowerCase());
                             assertEquals(idxFields.get(idxField), fields[i].get2());
 
                             i++;
@@ -256,8 +265,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
             String expFieldName = fields[i].get1();
             boolean expFieldAsc = fields[i].get2();
 
-            assertEquals("Index field mismatch [pos=" + i + ", expField=" + expFieldName +
-                ", actualField=" + fieldNames.get(i) + ']', expFieldName, fieldNames.get(i));
+            assertEquals("Index field mismatch [pos=" + i + ", expField=" + expFieldName + ", actualField=" +
+                fieldNames.get(i) + ']', expFieldName.toLowerCase(), fieldNames.get(i).toLowerCase());
 
             boolean fieldAsc = !idxDesc.descending(expFieldName);
 
@@ -275,7 +284,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static void assertNoIndex(String cacheName, String tblName, String idxName) {
         for (Ignite node : Ignition.allGrids())
-            assertNoIndex((IgniteEx)node, cacheName, tblName, idxName);
+            assertNoIndex(node, cacheName, tblName, idxName);
     }
 
     /**
@@ -367,8 +376,18 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param cls Class.
      * @return Table name.
      */
-    protected static String tableName(Class cls) {
+    protected static String typeName(Class cls) {
         return cls.getSimpleName();
+    }
+
+    /**
+     * Get table name for class.
+     *
+     * @param cls Class.
+     * @return Table name.
+     */
+    protected static String tableName(Class cls) {
+        return QueryUtils.normalizeObjectName(typeName(cls), true);
     }
 
     /**
@@ -430,6 +449,72 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static String alias(String fieldName) {
         return fieldName + "_alias";
+    }
+
+    /**
+     * Synchronously create index.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to true operation will fail if index already exists.
+     * @throws Exception If failed.
+     */
+    protected void dynamicIndexCreate(Ignite node, String cacheName, String tblName, QueryIndex idx, boolean ifNotExists)
+        throws Exception {
+        GridStringBuilder sql = new SB("CREATE INDEX ")
+            .a(ifNotExists ? "IF NOT EXISTS " : "")
+            .a(idx.getName())
+            .a(" ON ")
+            .a(tblName)
+            .a(" (");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
+            if (first)
+                first = false;
+            else
+                sql.a(", ");
+
+            String name = fieldEntry.getKey();
+            boolean asc = fieldEntry.getValue();
+
+            sql.a(name).a(" ").a(asc ? "ASC" : "DESC");
+        }
+
+        sql.a(')');
+
+        executeSql(node, cacheName, sql.toString());
+    }
+
+    /**
+     * Synchronously drop index.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param idxName Index name.
+     * @param ifExists When set to true operation fill fail if index doesn't exists.
+     * @throws Exception if failed.
+     */
+    protected void dynamicIndexDrop(Ignite node, String cacheName, String idxName, boolean ifExists) throws Exception {
+        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + idxName;
+
+        executeSql(node, cacheName, sql);
+    }
+
+    /**
+     * Execute SQL.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param sql SQL.
+     */
+    private void executeSql(Ignite node, String cacheName, String sql) {
+        log.info("Executing DDL: " + sql);
+
+        node.cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
     }
 
     /**

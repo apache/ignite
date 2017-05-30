@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (elemType == typeof(Guid?))
                     return new BinarySystemWriteHandler<Guid?[]>(WriteGuidArray, true);
                 // Enums.
-                if (IsIntEnum(elemType) || elemType == typeof(BinaryEnum))
+                if (BinaryUtils.IsIgniteEnum(elemType) || elemType == typeof(BinaryEnum))
                     return new BinarySystemWriteHandler<object>(WriteEnumArray, true);
 
                 // Object array.
@@ -263,23 +263,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Determines whether specified type is an enum which fits into Int32.
-        /// </summary>
-        private static bool IsIntEnum(Type type)
-        {
-            if (!type.IsEnum)
-                return false;
-
-            var underlyingType = Enum.GetUnderlyingType(type);
-
-            return underlyingType == typeof(int) 
-                || underlyingType == typeof(short)
-                || underlyingType == typeof(ushort)
-                || underlyingType == typeof(byte)
-                || underlyingType == typeof(sbyte);
         }
 
         /// <summary>
@@ -294,10 +277,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (TypeIds.TryGetValue(type, out res))
                 return res;
 
-            if (type.IsEnum)
+            if (BinaryUtils.IsIgniteEnum(type))
                 return BinaryUtils.TypeEnum;
 
-            if (type.IsArray && type.GetElementType().IsEnum)
+            if (type.IsArray && BinaryUtils.IsIgniteEnum(type.GetElementType()))
                 return BinaryUtils.TypeArrayEnum;
 
             return BinaryUtils.TypeObject;
@@ -545,7 +528,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var binEnum = obj;
 
-            ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
+            ctx.Stream.WriteByte(BinaryUtils.TypeBinaryEnum);
 
             ctx.WriteInt(binEnum.TypeId);
             ctx.WriteInt(binEnum.EnumValue);

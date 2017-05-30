@@ -435,7 +435,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             st.setObject(++i, o.orderId);
             st.setObject(++i, o.parentAlgo);
 
-           st.executeUpdate();
+            st.executeUpdate();
         }
     }
 
