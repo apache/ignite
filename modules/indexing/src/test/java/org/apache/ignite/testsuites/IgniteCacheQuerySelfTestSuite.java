@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2TableSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
@@ -151,8 +152,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // H2 tests.
 
-        // TODO: IGNITE-4994: Restore mock.
-        // suite.addTest(new TestSuite(GridH2TableSelfTest.class));
+        suite.addTest(new TestSuite(GridH2TableSelfTest.class));
 
         suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
         suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));

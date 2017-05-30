@@ -33,9 +33,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.H2TableEngine;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -90,12 +89,11 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        // TODO: IGNITE-4994: Restore mock.
         Driver.load();
 
         conn = DriverManager.getConnection(DB_URL);
 
-        tbl = IgniteH2Indexing.H2TableEngine.createTable(conn, CREATE_TABLE_SQL, null, null,
+        tbl = H2TableEngine.createTable(conn, CREATE_TABLE_SQL, null, null,
             new GridH2SystemIndexFactory() {
             /** {@inheritDoc} */
             @Override public ArrayList<Index> createSystemIndexes(GridH2Table tbl) {

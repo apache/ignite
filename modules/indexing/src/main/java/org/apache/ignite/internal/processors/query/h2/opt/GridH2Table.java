@@ -268,7 +268,7 @@ public class GridH2Table extends TableBase {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         // On MAP queries with distributed joins we lock tables before the queries.
-        return qctx == null || qctx.type() != MAP || !qctx.hasIndexSnapshots();
+        return qctx != null && (qctx.type() != MAP || !qctx.hasIndexSnapshots());
     }
 
     /**
