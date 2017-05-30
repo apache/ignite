@@ -771,6 +771,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (String name : savedCacheNames) {
                     CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
 
+                    // TODO IGNITE-5306 - set correct SQL flag below.
                     if (cfg != null)
                         addCacheOnJoin(cfg, false, caches, templates);
                 }
