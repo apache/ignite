@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
@@ -93,20 +94,15 @@ namespace Apache.Ignite.Core.Tests.NuGet
         {
             var asm = GetType().Assembly;
             var version = asm.GetName().Version.ToString(3);
-            var packageDirName = "Apache.Ignite." + version;
+            var packageDirName = "Apache.Ignite." + version + "*";
             
             var asmDir = Path.GetDirectoryName(asm.Location);
             Assert.IsNotNull(asmDir, asmDir);
 
-            // TODO: REMOVE
-            var delme = Path.GetFullPath(Path.Combine(asmDir, @"..\..\"));
-            foreach (var file in Directory.GetFiles(delme, "*.*", SearchOption.AllDirectories))
-            {
-                Console.WriteLine(file);
-            }
-            //
-            
-            var packageDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages", packageDirName));
+            var packagesDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages"));
+            Assert.IsTrue(Directory.Exists(packagesDir), packagesDir);
+
+            var packageDir = Directory.GetDirectories(packagesDir, packageDirName).Single();
             Assert.IsTrue(Directory.Exists(packageDir), packageDir);
 
             var exePath = Path.Combine(packageDir, @"lib\net40\Apache.Ignite.exe");
