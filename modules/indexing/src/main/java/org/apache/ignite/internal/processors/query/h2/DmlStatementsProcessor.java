@@ -139,7 +139,7 @@ public class DmlStatementsProcessor {
     /**
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
-     * @param schema Schema.
+     * @param schemaName Schema.
      * @param stmt JDBC statement.
      * @param fieldsQry Original query.
      * @param loc Query locality flag.
@@ -148,13 +148,13 @@ public class DmlStatementsProcessor {
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
-    private UpdateResult updateSqlFields(String schema, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
+    private UpdateResult updateSqlFields(String schemaName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
         boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
 
-        UpdatePlan plan = getPlanForStatement(schema, stmt, null);
+        UpdatePlan plan = getPlanForStatement(schemaName, stmt, null);
 
         GridCacheContext<?, ?> cctx = plan.tbl.rowDescriptor().context();
 
@@ -178,7 +178,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(cctx, stmt, fieldsQry, loc, filters, cancel, errKeys);
+                r = executeUpdateStatement(schemaName, cctx, stmt, fieldsQry, loc, filters, cancel, errKeys);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -202,7 +202,7 @@ public class DmlStatementsProcessor {
     }
 
     /**
-     * @param schema Schema.
+     * @param schemaName Schema.
      * @param stmt Prepared statement.
      * @param fieldsQry Initial query
      * @param cancel Query cancel.
@@ -210,9 +210,9 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schema, PreparedStatement stmt,
+    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schema, stmt, fieldsQry, false, null, cancel);
+        UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, false, null, cancel);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), cancel, false);
@@ -225,7 +225,7 @@ public class DmlStatementsProcessor {
     /**
      * Execute DML statement on local cache.
      *
-     * @param schema Schema.
+     * @param schemaName Schema.
      * @param stmt Prepared statement.
      * @param fieldsQry Fields query.
      * @param filters Cache name and key filter.
@@ -234,10 +234,10 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    GridQueryFieldsResult updateSqlFieldsLocal(String schema, PreparedStatement stmt,
+    GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schema, stmt, fieldsQry, true, filters, cancel);
+        UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
@@ -328,6 +328,7 @@ public class DmlStatementsProcessor {
     /**
      * Actually perform SQL DML operation locally.
      *
+     * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param prepStmt Prepared statement for DML query.
      * @param fieldsQry Fields query.
@@ -337,10 +338,9 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private UpdateResult executeUpdateStatement(final GridCacheContext cctx, PreparedStatement prepStmt,
-        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel,
-        Object[] failedKeys) throws IgniteCheckedException {
-        String schemaName = idx.schema(cctx.name());
+    private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx,
+        PreparedStatement prepStmt, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
+        GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         int mainCacheId = CU.cacheId(cctx.name());
 
         Integer errKeysPos = null;

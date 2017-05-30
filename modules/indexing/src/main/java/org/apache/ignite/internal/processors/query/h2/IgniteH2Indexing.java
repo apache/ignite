@@ -1251,7 +1251,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName,
-        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, int mainCacheId) {
+        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) {
         final String sqlQry = qry.getSql();
 
         Connection c = connectionForSchema(schemaName);
@@ -1364,7 +1364,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 int tblCnt = twoStepQry.tablesCount();
 
-                caches0.add(mainCacheId);
+                if (mainCacheId != null)
+                    caches0.add(mainCacheId);
 
                 if (tblCnt > 0) {
                     for (QueryTable tblKey : twoStepQry.tables()) {
@@ -1375,6 +1376,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         caches0.add(cacheId);
                     }
                 }
+
+                if (caches0.isEmpty())
+                    throw new IgniteSQLException("Failed to find at least one cache for SQL statement: " + sqlQry);
 
                 //Prohibit usage indices with different numbers of segments in same query.
                 List<Integer> cacheIds = new ArrayList<>(caches0);
@@ -1414,6 +1418,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (cachedQry == null && !twoStepQry.explain()) {
             cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
+
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 

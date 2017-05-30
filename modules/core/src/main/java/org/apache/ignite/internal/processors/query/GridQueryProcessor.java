@@ -1525,6 +1525,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             @Override protected void body() {
                 try {
                     int cacheId = CU.cacheId(cacheName);
+
                     GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
                     idx.rebuildIndexesFromHash(cctx, schemaName, typeName);
@@ -1723,12 +1724,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final boolean keepBinary) {
         checkxEnabled();
 
-        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
-            throw new CacheException("Partitions are not supported in replicated only mode.");
-
-        if (qry.isDistributedJoins() && qry.getPartitions() != null)
-            throw new CacheException(
-                "Using both partitions and distributed JOINs is not supported for the same query");
+        validateSqlFieldsQuery(qry);
 
         boolean loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal();
 
@@ -1781,6 +1777,58 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Query SQL fields without strict dependency on concrete cache.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursot.
+     */
+    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final String schemaName, final SqlFieldsQuery qry,
+        final boolean keepBinary) {
+        checkxEnabled();
+
+        validateSqlFieldsQuery(qry);
+
+        if (qry.isLocal())
+            throw new IgniteException("Local query is not supported without specific cache.");
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                    GridQueryCancel cancel = new GridQueryCancel();
+
+                    return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, null);
+                }
+            };
+
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), null, clo, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Validate SQL fields query.
+     *
+     * @param qry Query.
+     */
+    private static void validateSqlFieldsQuery(SqlFieldsQuery qry) {
+        if (qry.isReplicatedOnly() && qry.getPartitions() != null)
+            throw new CacheException("Partitions are not supported in replicated only mode.");
+
+        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+            throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
     }
 
     /**
