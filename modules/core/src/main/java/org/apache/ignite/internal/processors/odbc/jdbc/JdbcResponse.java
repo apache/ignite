@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL listener response.
  */
-public class JdbcResponse extends SqlListenerResponse implements RawBinarylizable {
+public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinarylizable {
     /** Response object. */
     @GridToStringInclude
     private JdbcResult res;

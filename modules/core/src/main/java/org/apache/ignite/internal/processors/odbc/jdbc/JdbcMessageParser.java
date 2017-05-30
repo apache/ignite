@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
  */
 public class JdbcMessageParser implements SqlListenerMessageParser {
     /** Kernal context. */
-    GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /** Initial output stream capacity. */
     protected static final int INIT_CAP = 1024;

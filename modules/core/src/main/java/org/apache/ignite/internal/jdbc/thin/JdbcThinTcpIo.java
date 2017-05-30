@@ -183,18 +183,15 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error.
      * @throws IgniteCheckedException On error.
      */
-    public <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap)
-        throws IOException, IgniteCheckedException {
-
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
-            null, null);
+    @SuppressWarnings("unchecked")
+    public <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap) throws IOException, IgniteCheckedException {
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
 
         req.writeBinary(writer);
 
         send(writer.array());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
-            null, null, false);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
 
         JdbcResponse res = new JdbcResponse();
 
@@ -205,8 +202,6 @@ public class JdbcThinTcpIo {
 
         return (R)res.response();
     }
-
-
 
     /**
      * @param qryId Query ID.
@@ -238,9 +233,7 @@ public class JdbcThinTcpIo {
      * @throws IgniteCheckedException On error.
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
-        JdbcQueryCloseResult res = sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
-
-        assert res.getQueryId() == qryId;
+        sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
     }
 
     /**
@@ -313,6 +306,4 @@ public class JdbcThinTcpIo {
 
         closed = true;
     }
-
-
 }

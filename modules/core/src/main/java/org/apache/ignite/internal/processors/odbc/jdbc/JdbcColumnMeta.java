@@ -42,7 +42,7 @@ import static java.sql.Types.VARCHAR;
 /**
  * SQL listener column metadata.
  */
-public class JdbcColumnMeta implements RawBinarylizable {
+public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /** Cache name. */
     private String schemaName;
 
@@ -224,5 +224,4 @@ public class JdbcColumnMeta implements RawBinarylizable {
         else
             return "OTHER";
     }
-
 }

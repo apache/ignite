@@ -25,7 +25,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 /**
  * SQL listener response.
  */
-public class JdbcResult implements RawBinarylizable {
+public class JdbcResult implements JdbcRawBinarylizable {
     /** Execute sql result. */
     public static final byte QRY_EXEC = 2;
 

@@ -8,7 +8,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  * Interface that allows to implement custom serialization
  * logic to raw binary streams.
  */
-public interface RawBinarylizable {
+public interface JdbcRawBinarylizable {
     /**
      * Writes fields to provided writer.
      *

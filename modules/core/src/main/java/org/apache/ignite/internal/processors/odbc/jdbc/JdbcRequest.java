@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 /**
  * SQL listener command request.
  */
-public class JdbcRequest extends SqlListenerRequest implements RawBinarylizable {
+public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinarylizable {
     /** Execute sql query. */
     public static final byte QRY_EXEC = 2;
 

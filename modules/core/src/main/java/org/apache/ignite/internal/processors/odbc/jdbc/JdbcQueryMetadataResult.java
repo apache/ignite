@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcQueryMetadataResult extends JdbcResult {
     /** Query ID. */
+    // TODO: Remove.
     private long queryId;
 
     /** Fields metadata. */
@@ -73,11 +74,8 @@ public class JdbcQueryMetadataResult extends JdbcResult {
 
         writer.writeLong(queryId);
 
-        if (F.isEmpty(meta)) {
+        if (F.isEmpty(meta))
             writer.writeInt(0);
-
-            return;
-        }
         else {
             writer.writeInt(meta.size());
 
@@ -94,8 +92,6 @@ public class JdbcQueryMetadataResult extends JdbcResult {
 
         int size = reader.readInt();
 
-        if (size < 0)
-            throw new BinaryObjectException("Serialization is broken: meta size is negative. [size=" + size +']');
         if (size == 0)
             meta = Collections.emptyList();
         else {

@@ -73,6 +73,7 @@ public class JdbcThinStatement implements Statement {
         this.conn = conn;
     }
 
+    // TODO: Throw exception in PreparedStatement
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         JdbcThinResultSet rs = execute0(sql);
@@ -88,16 +89,17 @@ public class JdbcThinStatement implements Statement {
      * @return Result set.
      * @throws SQLException Onj error.
      */
-    public JdbcThinResultSet execute0(String sql) throws SQLException {
+    protected JdbcThinResultSet execute0(String sql) throws SQLException {
         ensureNotClosed();
 
-        if (rs != null)
+        if (rs != null) {
             rs.close();
 
-        rs = null;
+            rs = null;
+        }
 
         if (sql == null || sql.isEmpty())
-            throw new SQLException("SQL query is empty");
+            throw new SQLException("SQL query is empty.");
 
         try {
             JdbcQueryExecuteResult res = conn.cliIo().queryExecute(conn.getSchema(), pageSize, maxRows,
@@ -120,6 +122,7 @@ public class JdbcThinStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    // TODO: Throw exception in PreparedStatement
     @Override public int executeUpdate(String sql) throws SQLException {
         ensureNotClosed();
 
@@ -174,7 +177,7 @@ public class JdbcThinStatement implements Statement {
     @Override public int getQueryTimeout() throws SQLException {
         ensureNotClosed();
 
-        return timeout;
+        return timeout / 1000;
     }
 
     /** {@inheritDoc} */
@@ -187,8 +190,6 @@ public class JdbcThinStatement implements Statement {
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
         ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Cancellation is not supported.");
     }
 
     /** {@inheritDoc} */
@@ -211,6 +212,7 @@ public class JdbcThinStatement implements Statement {
     }
 
     /** {@inheritDoc} */
+    // TODO: Throw exception on PrepStmt.
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
@@ -226,6 +228,7 @@ public class JdbcThinStatement implements Statement {
         if (rs == null || !rs.isQuery())
             return null;
 
+        // TODO: With this code current RS will not be closed on statement close.
         ResultSet rs0 = rs;
 
         rs = null;
@@ -242,6 +245,7 @@ public class JdbcThinStatement implements Statement {
 
         int ret = (int)rs.updatedCount();
 
+        // TODO: Same as getResultSet
         rs = null;
 
         return ret;
@@ -433,11 +437,13 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        // TODO: Must retyurn true for JdbcThisStatement.class as well
         return iface != null && iface == Statement.class;
     }
 
     /** {@inheritDoc} */
     @Override public void closeOnCompletion() throws SQLException {
+        // TODO: Support or create ticket.
         throw new SQLFeatureNotSupportedException("closeOnCompletion is not supported.");
     }
 
@@ -470,7 +476,7 @@ public class JdbcThinStatement implements Statement {
      * @throws SQLException If statement is closed.
      */
     protected void ensureNotClosed() throws SQLException {
-        if (closed)
+        if (isClosed())
             throw new SQLException("Statement is closed.");
     }
 }

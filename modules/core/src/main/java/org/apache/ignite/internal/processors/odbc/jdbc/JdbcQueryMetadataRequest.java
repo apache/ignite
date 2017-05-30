@@ -30,6 +30,7 @@ public class JdbcQueryMetadataRequest extends JdbcRequest {
     private long queryId;
 
     /**
+     * Constructor.
      */
     public JdbcQueryMetadataRequest() {
         super(QRY_META);

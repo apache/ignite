@@ -61,6 +61,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
+        // TODO: Fix
         throw new SQLException("executeQuery is called on PreparedStatement instance.");
     }
 
@@ -171,6 +172,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType) throws SQLException {
+        // TODO: Throw exception is not "plain".
         setArgument(paramIdx, x);
     }
 
@@ -250,6 +252,8 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setNull(int paramIdx, int sqlType, String typeName) throws SQLException {
+        // TODO: Throw exception for non-plain.
+
         setNull(paramIdx, sqlType);
     }
 
@@ -322,8 +326,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     }
 
     /** {@inheritDoc} */
-    @Override public void setObject(int paramIdx, Object x, int targetSqlType,
-        int scaleOrLength) throws SQLException {
+    @Override public void setObject(int paramIdx, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
+        // TODO: accpet only plain types
+
         setArgument(paramIdx, x);
     }
 
