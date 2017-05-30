@@ -148,17 +148,7 @@ int main()
         // Get compute instance.
         compute::Compute compute = ignite.GetCompute();
 
-        std::string testText = 
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vel montes vivamus ullamcorper quam molestie dis "
-            "dui... Ut adipiscing duis cubilia interdum velit habitasse? Arcu duis condimentum purus aptent. Porttitor "
-            "suscipit pharetra nullam litora imperdiet; Magna nunc ad sapien magnis amet nullam! Porta nulla cum "
-            "dictum, consequat diam praesent pede lectus vel ultrices molestie. Nascetur curabitur facilisis molestie "
-            "potenti torquent elementum quis! Dui metus dui ut laoreet. Sociosqu phasellus felis! Euismod magnis "
-            "sagittis parturient: A aptent quam urna facilisi ultricies vivamus; Adipiscing proin mauris morbi "
-            "dignissim nostra... Nonummy nostra in quisque? Nisl sagittis interdum lorem sit fringilla euismod: "
-            "Feugiat nonummy ac at! Metus suspendisse et? Ornare molestie per curae; arcu mauris sagittis egestas... "
-            "Lacinia suscipit mi nascetur porttitor porttitor? Imperdiet platea purus enim dignissim tempus. Magnis "
-            "faucibus ipsum tincidunt dictumst;";
+        std::string testText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
         // Declaring couter.
         CountWords counter(testText);

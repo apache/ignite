@@ -50,7 +50,7 @@ ignite_compute_example_SOURCES = \
     src/compute_example.cpp
 
 run-check: check
-	./ignite-compute_example -p
+	./ignite-compute-example -p
 
 clean-local: clean-check
 	$(RM) *.gcno *.gcda
