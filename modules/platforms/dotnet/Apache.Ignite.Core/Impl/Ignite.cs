@@ -742,7 +742,7 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(memoryPolicyName, "memoryPolicyName");
 
-            throw new NotImplementedException();
+            return _prj.GetMemoryMetrics(memoryPolicyName);
         }
 
         /// <summary>

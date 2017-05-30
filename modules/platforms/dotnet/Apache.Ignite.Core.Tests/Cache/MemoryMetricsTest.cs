@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -77,6 +78,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             sysMetrics = ignite.GetMemoryMetrics("sysMemPlc");
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
+
+            // Invalid name.
+            var ex = Assert.Throws<IgniteException>(() => ignite.GetMemoryMetrics("boo"));
+            Assert.AreEqual("", ex.Message);
         }
 
         /// <summary>
