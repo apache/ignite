@@ -53,7 +53,7 @@ fi
 AC_CONFIG_FILES([ \
     Makefile \
     include/Makefile \
-    putget-example/Makefile \
+    put-get-example/Makefile \
     odbc-example/Makefile \
     query-example/Makefile \
     continuous-query-example/Makefile \
