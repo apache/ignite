@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets a value indicating whether memory metrics should be enabled.
         /// <para />
-        /// Metrics can be retrieved with <see cref="IIgnite.GetMemoryMetrics"/> method.
+        /// Metrics can be retrieved with <see cref="IIgnite.GetMemoryMetrics()"/> method.
         /// </summary>
         public bool MetricsEnabled { get; set; }
     }
