@@ -90,6 +90,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** Is query flag. */
     private boolean isQuery;
 
+    /** Update count. */
+    private long updCnt;
+
     /**
      * Creates new result set.
      *
@@ -163,13 +166,13 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        closed = true;
-
-        if (stmt.connection().isClosed())
+        if (isClosed())
             return;
 
         try {
             stmt.connection().cliIo().queryClose(qryId);
+
+            closed = true;
         }
         catch (IOException e) {
             stmt.connection().close();
@@ -1112,7 +1115,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() throws SQLException {
-        return closed;
+        return stmt.isClosed() || closed;
     }
 
     /** {@inheritDoc} */
@@ -1535,5 +1538,12 @@ public class JdbcThinResultSet implements ResultSet {
      */
     public boolean isQuery() {
         return isQuery;
+    }
+
+    /**
+     * @return Update count for no-SELECT queries.
+     */
+    public long updatedCount() {
+        return updCnt;
     }
 }

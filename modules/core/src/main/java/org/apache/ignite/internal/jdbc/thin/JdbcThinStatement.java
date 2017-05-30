@@ -71,6 +71,7 @@ public class JdbcThinStatement implements Statement {
 
         this.conn = conn;
     }
+
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
         JdbcThinResultSet rs = execute0(sql);
@@ -126,12 +127,13 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        closed = true;
-
-        if (rs == null)
+        if (isClosed())
             return;
 
-        rs.close();
+        if (rs != null)
+            rs.close();
+
+        closed = true;
     }
 
     /** {@inheritDoc} */
@@ -220,6 +222,9 @@ public class JdbcThinStatement implements Statement {
     @Override public ResultSet getResultSet() throws SQLException {
         ensureNotClosed();
 
+        if (rs == null || !rs.isQuery())
+            return null;
+
         ResultSet rs0 = rs;
 
         rs = null;
@@ -231,7 +236,14 @@ public class JdbcThinStatement implements Statement {
     @Override public int getUpdateCount() throws SQLException {
         ensureNotClosed();
 
-        return -1;
+        if (rs == null || rs.isQuery())
+            return -1;
+
+        int ret = (int)rs.updatedCount();
+
+        rs = null;
+
+        return ret;
     }
 
     /** {@inheritDoc} */

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
@@ -183,8 +184,18 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qryCursors.put(qryId, cur);
 
-            JdbcQueryExecuteResult res = new JdbcQueryExecuteResult(
-                qryId,  cur.fetchRows(), !cur.hasNext(), cur.isQuery());
+            JdbcQueryExecuteResult res;
+            if (cur.isQuery())
+                res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
+            else {
+                List<List<Object>> items = cur.fetchRows();
+
+                assert items.size() == 1 && items.get(0).size() == 1 && items.get(0).get(0) instanceof Long :
+                    "Invalid result set for not-SELECT query. [qry=" + sql +
+                        ", res=" + S.toString(List.class, items) + ']';
+
+                res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+            }
 
             return new JdbcResponse(res);
         }

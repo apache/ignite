@@ -164,6 +164,8 @@ public class JdbcStatementSelfTest extends JdbcAbstractSelfTest {
     public void testExecute() throws Exception {
         assert stmt.execute(SQL);
 
+        assert stmt.getUpdateCount() == -1 : "Update count must be -1 for SELECT query";
+
         ResultSet rs = stmt.getResultSet();
 
         assert rs != null;
@@ -255,6 +257,36 @@ public class JdbcStatementSelfTest extends JdbcAbstractSelfTest {
         }
 
         assert cnt == 2;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseResultSet() throws Exception {
+        ResultSet rs0 = stmt.executeQuery(SQL);
+        ResultSet rs1 = stmt.executeQuery(SQL);
+        ResultSet rs2 = stmt.executeQuery(SQL);
+
+        assert rs0.isClosed() : "ResultSet must be implicitly closed after re-execute statement";
+        assert rs1.isClosed() : "ResultSet must be implicitly closed after re-execute statement";
+
+        assert !rs2.isClosed() : "Last result set must be available";
+
+        stmt.close();
+
+        assert rs2.isClosed() : "ResultSet must be explicitly closed after close statement";
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseResultSetByConnectionClose() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        conn.close();
+
+        assert stmt.isClosed() : "Statement must be implicitly closed after close connection";
+        assert rs.isClosed() : "ResultSet must be implicitly closed after close connection";
     }
 
     /**

@@ -38,7 +38,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Flag indicating the query is SELECT query. {@code false} for DML/DDL queries. */
     private boolean isQuery;
 
-    private int updateCount;
+    private long updateCnt;
 
     /**
      *
@@ -51,15 +51,26 @@ public class JdbcQueryExecuteResult extends JdbcResult {
      * @param queryId Query ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
-     * @param isQuery Flag indicates the query is SELECT query. {@code false} for DML/DDL queries
      */
-    public JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last, boolean isQuery) {
+    public JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
         super(QRY_EXEC);
 
         this.queryId = queryId;
         this.items = items;
         this.last = last;
-        this.isQuery = isQuery;
+        this.isQuery = true;
+    }
+
+    /**
+     * @param queryId Query ID.
+     * @param updateCnt Update count for DML queries.
+     */
+    public JdbcQueryExecuteResult(long queryId, long updateCnt) {
+        super(QRY_EXEC);
+
+        this.queryId = queryId;
+        this.last = true;
+        this.isQuery = false;
     }
 
     /**
@@ -90,17 +101,28 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         return isQuery;
     }
 
+    /**
+     * @return Update count for DML queries.
+     */
+    public long updateCount() {
+        return updateCnt;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
         writer.writeLong(queryId);
-        writer.writeBoolean(last);
         writer.writeBoolean(isQuery);
+        if (isQuery) {
+            assert items != null;
 
-        assert items != null;
+            writer.writeBoolean(last);
 
-        JdbcUtils.writeItems(writer, items);
+            JdbcUtils.writeItems(writer, items);
+        }
+        else
+            writer.writeLong(updateCnt);
     }
 
 
@@ -109,9 +131,16 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         super.readBinary(reader);
 
         queryId = reader.readLong();
-        last = reader.readBoolean();
         isQuery = reader.readBoolean();
 
-        items = JdbcUtils.readItems(reader);
+        if (isQuery) {
+            last = reader.readBoolean();
+
+            items = JdbcUtils.readItems(reader);
+        } else {
+            last = true;
+
+            updateCnt = reader.readLong();
+        }
     }
 }

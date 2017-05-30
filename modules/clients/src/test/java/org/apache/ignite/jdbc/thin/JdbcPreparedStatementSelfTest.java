@@ -24,9 +24,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,6 +37,7 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -159,6 +162,23 @@ public class JdbcPreparedStatementSelfTest extends JdbcAbstractSelfTest {
 
             assert conn.isClosed();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryExecute() throws Exception {
+        stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
+
+        stmt.setBoolean(1, true);
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                stmt.executeQuery();
+
+                return null;
+            }
+        }, SQLException.class, "executeQuery is called on PreparedStatement instance.");
     }
 
     /**

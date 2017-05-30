@@ -251,7 +251,7 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closed)
+        if (isClosed())
             return;
 
         closed = true;

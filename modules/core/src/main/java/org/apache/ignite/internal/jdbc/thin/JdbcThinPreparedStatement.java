@@ -61,7 +61,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        throw new SQLException("executeQuery is called on PreparedStatement instance");
+        throw new SQLException("executeQuery is called on PreparedStatement instance.");
     }
 
     /** {@inheritDoc} */
