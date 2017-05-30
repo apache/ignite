@@ -57,6 +57,7 @@ import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDisc
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
@@ -572,11 +573,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             Set<String> cacheNames = new HashSet<>();
 
+                            Collection<CacheGroupDescriptor> grpDescs = new ArrayList<>();
+
                             for (Integer grpId : op.cacheGroupIds()) {
                                 CacheGroupInfrastructure cacheGrp = cctx.cache().cacheGroup(grpId);
 
                                 if (cacheGrp == null)
                                     continue;
+
+                                grpDescs.add(cctx.cache().cacheGroupDescriptors().get(grpId));
 
                                 for (Integer cacheId : cacheGrp.cacheIds())
                                     cacheNames.add(cctx.cacheContext(cacheId).name());
@@ -590,6 +595,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                     exchActions.addCacheToStop(req, cctx.cache()
                                         .cacheDescriptor(CU.cacheId(req.cacheName())));
                                 }
+
+                                for (CacheGroupDescriptor grpDesc : grpDescs)
+                                    exchActions.addCacheGroupToStop(grpDesc);
 
                                 if (op.type() == SnapshotOperationType.RESTORE)
                                     cctx.cache().onCustomEvent(new DynamicCacheChangeBatch(destroyRequests), topVer);

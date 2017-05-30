@@ -769,6 +769,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (IgniteBiTuple<CacheGroupInfrastructure, Boolean> tup : stoppedGrps) {
                 CacheGroupInfrastructure grp = tup.get1();
 
+                if (!CU.affinityNode(cctx.localNode(), grp.nodeFilter()))
+                    continue;
+
                 try {
                     cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
                 }
