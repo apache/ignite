@@ -241,6 +241,8 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 MemoryMetrics metrics = platformCtx.kernalContext().grid().memoryMetrics(plcName);
 
                 writeMemoryMetrics(writer, metrics);
+
+                break;
             }
 
             default:
