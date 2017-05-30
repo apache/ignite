@@ -15,25 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL listener response.
  */
-public abstract class SqlListenerResponse {
-    /** Command succeeded. */
-    public static final int STATUS_SUCCESS = 0;
+public class OdbcResponse extends SqlListenerResponse {
+    /** Response object. */
+    @GridToStringInclude
+    private final Object obj;
 
-    /** Command failed. */
-    public static final int STATUS_FAILED = 1;
+    /**
+     * Constructs successful rest response.
+     *
+     * @param obj Response object.
+     */
+    public OdbcResponse(Object obj) {
+        super(STATUS_SUCCESS, null);
 
-    /** Success status. */
-    private int status;
-
-    /** Error. */
-    private String err;
+        this.obj = obj;
+    }
 
     /**
      * Constructs failed rest response.
@@ -41,36 +47,23 @@ public abstract class SqlListenerResponse {
      * @param status Response status.
      * @param err Error, {@code null} if success is {@code true}.
      */
-    public SqlListenerResponse(int status, @Nullable String err) {
-        this.status = status;
-        this.err = err;
+    public OdbcResponse(int status, @Nullable String err) {
+        super(status, err);
+
+        assert status != STATUS_SUCCESS;
+
+        obj = null;
     }
 
     /**
-     * @return Success flag.
+     * @return Response object.
      */
-    public int status() {
-        return status;
+    public Object response() {
+        return obj;
     }
 
-    /**
-     * @param status Status.
-     */
-    public void status(int status) {
-        this.status = status;
-    }
-
-    /**
-     * @return Error.
-     */
-    public String error() {
-        return err;
-    }
-
-    /**
-     * @param err Error message.
-     */
-    public void error(String err) {
-        this.err = err;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcResponse.class, this);
     }
 }

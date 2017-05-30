@@ -141,7 +141,12 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        return null;
+        JdbcStatement stmt  = new JdbcStatement(this);
+
+        if (timeout > 0)
+            stmt.timeout(timeout);
+
+        return stmt;
     }
 
     /** {@inheritDoc} */
@@ -162,7 +167,12 @@ public class JdbcConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        return null;
+        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
+
+        if (timeout > 0)
+            stmt.timeout(timeout);
+
+        return stmt;
     }
 
     /**
@@ -525,5 +535,12 @@ public class JdbcConnection implements Connection {
     private void ensureNotClosed() throws SQLException {
         if (closed)
             throw new SQLException("Connection is closed.");
+    }
+
+    /**
+     * @return Ignite endpoint and I/O protocol.
+     */
+    JdbcTcpIo cliIo() {
+        return cliIo;
     }
 }

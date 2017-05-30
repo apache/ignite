@@ -15,29 +15,52 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
+
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 
 /**
  * SQL listener command request.
  */
-public abstract class SqlListenerRequest {
+public class OdbcRequest extends SqlListenerRequest {
     /** Handshake request. */
     public static final int HANDSHAKE = 1;
 
-    /** Request ID. */
-    private long reqId;
+    /** Execute sql query. */
+    public static final int QRY_EXEC = 2;
+
+    /** Fetch query results. */
+    public static final int QRY_FETCH = 3;
+
+    /** Close query. */
+    public static final int QRY_CLOSE = 4;
+
+    /** Get columns meta query. */
+    public static final int META_COLS = 5;
+
+    /** Get columns meta query. */
+    public static final int META_TBLS = 6;
+
+    /** Get parameters meta. */
+    public static final int META_PARAMS = 7;
+
+    /** Get parameters meta. */
+    public static final int JDBC_REQ = 8;
+
+    /** Command. */
+    private final int cmd;
 
     /**
-     * @return Request ID.
+     * @param cmd Command type.
      */
-    public long requestId() {
-        return reqId;
+    public OdbcRequest(int cmd) {
+        this.cmd = cmd;
     }
 
     /**
-     * @param reqId Request ID.
+     * @return Command.
      */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    public int command() {
+        return cmd;
     }
 }

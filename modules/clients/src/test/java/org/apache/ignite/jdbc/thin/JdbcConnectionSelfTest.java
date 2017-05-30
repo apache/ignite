@@ -17,26 +17,28 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Connection test.
  */
-public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
+public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -60,8 +62,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
-
         return cfg;
     }
 
@@ -80,18 +80,9 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
+        super.beforeTestsStarted();
 
         startGridsMultiThreaded(2);
-
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
     /** {@inheritDoc} */
@@ -112,15 +103,43 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvalidUrls() throws Exception {
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:80");
+    public void testFailedHandshake() throws Exception {
+        final ServerSocket srvSock = new ServerSocket(60000, 0, InetAddress.getByName("127.0.0.1"));
 
-                return null;
+        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    Socket s = srvSock.accept();
+
+                    s.close();
+                }
+                catch (IOException e) {
+                    log.error("Unexpected exception", e);
+                    fail();
+                }
             }
-        }, SQLException.class, "Failed to connect to Ignite cluster [host=127.0.0.1, port=80]");
+        });
 
+        try {
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    DriverManager.getConnection(URL_PREFIX + "127.0.0.1:60000");
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to connect to Ignite cluster [host=127.0.0.1, port=60000]");
+        }
+        finally {
+            f.get(3000);
+
+            srvSock.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidUrls() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 DriverManager.getConnection("q");

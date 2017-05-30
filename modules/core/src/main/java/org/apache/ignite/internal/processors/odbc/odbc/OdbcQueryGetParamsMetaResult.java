@@ -15,29 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
 
 /**
- * SQL listener command request.
+ * ODBC query get params meta result.
  */
-public abstract class SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /** Request ID. */
-    private long reqId;
+public class OdbcQueryGetParamsMetaResult {
+    /** List of parameter type IDs. */
+    private final byte[] typeIds;
 
     /**
-     * @return Request ID.
+     * @param typeIds List of parameter type IDs.
      */
-    public long requestId() {
-        return reqId;
+    public OdbcQueryGetParamsMetaResult(byte[] typeIds) {
+        this.typeIds = typeIds;
     }
 
     /**
-     * @param reqId Request ID.
+     * @return List of parameter type IDs.
      */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    public byte[] typeIds() {
+        return typeIds;
     }
 }

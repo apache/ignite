@@ -20,15 +20,28 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,8 +53,20 @@ public class JdbcTcpIo {
     /** Current version. */
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
-    /** Initial output stream capacity. */
+    /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 10;
+
+    /** Initial output for query message. */
+    private static final int QUERY_EXEC_MSG_INIT_CAP = 1024;
+
+    /** Initial output for query fetch message. */
+    private static final int QUERY_FETCH_MSG_SIZE = 13;
+
+    /** Initial output for query fetch message. */
+    private static final int QUERY_META_MSG_SIZE = 9;
+
+    /** Initial output for query close message. */
+    private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
     /** Logger. */
     private static final Logger log = Logger.getLogger(JdbcTcpIo.class.getName());
@@ -132,6 +157,90 @@ public class JdbcTcpIo {
 
         throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
             ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+    }
+
+    /**
+     * @param cache Cache name.
+     * @param fetchSize Fetch size.
+     * @param maxRows Max rows.
+     * @param sql SQL statement.
+     * @param args Query parameters.
+     * @return Execute query results.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
+        String sql, List<Object> args)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
+            args == null ? null : args.toArray(new Object[args.size()])), QUERY_EXEC_MSG_INIT_CAP);
+    }
+
+    /**
+     * @param req Request.
+     * @param cap Initial ouput stream capacity.
+     * @return Server response.
+     * @throws IOException On IO error.
+     * @throws IgniteCheckedException On error.
+     */
+    public <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap)
+        throws IOException, IgniteCheckedException {
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+            null, null);
+
+        req.writeBinary(writer);
+
+        send(writer.array());
+
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+            null, null, false);
+
+        JdbcResponse res = new JdbcResponse();
+
+        res.readBinary(reader);
+
+        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
+            throw new IgniteCheckedException("Error server response: [req=]" + req + ", resp=" + res + ']');
+
+        return (R)res.response();
+    }
+
+
+
+    /**
+     * @param qryId Query ID.
+     * @param pageSize pageSize.
+     * @return Fetch results.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcQueryFetchResult queryFetch(Long qryId, int pageSize)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcQueryFetchRequest(qryId, pageSize), QUERY_FETCH_MSG_SIZE);
+    }
+
+
+    /**
+     * @param qryId Query ID.
+     * @return Fetch results.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcQueryMetadataResult queryMeta(Long qryId)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcQueryMetadataRequest(qryId), QUERY_META_MSG_SIZE);
+    }
+
+    /**
+     * @param qryId Query ID.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public void queryClose(long qryId) throws IOException, IgniteCheckedException {
+        JdbcQueryCloseResult res = sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
+
+        assert res.getQueryId() == qryId;
     }
 
     /**
