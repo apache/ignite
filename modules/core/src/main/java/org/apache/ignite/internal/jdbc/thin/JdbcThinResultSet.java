@@ -103,8 +103,8 @@ public class JdbcThinResultSet implements ResultSet {
      * @param fields Query result page.
      * @param isQuery Is Result ser for Select query
      */
-    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished, List<List<Object>> fields,
-        boolean isQuery) {
+    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
+        List<List<Object>> fields, boolean isQuery) {
         assert stmt != null;
         assert fetchSize > 0;
 
