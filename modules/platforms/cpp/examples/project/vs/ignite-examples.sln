@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "query-example", "..\..\quer
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "continuous-query-example", "..\..\continuous-query-example\project\vs\continuous-query-example.vcxproj", "{73BB124A-0CD4-4961-A6CD-61F9C71028A6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "compute-call-example", "..\..\compute-example\project\vs\compute-call-example.vcxproj", "{18BB0A18-8213-472A-81A0-9D9753697135}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "compute-example", "..\..\compute-example\project\vs\compute-example.vcxproj", "{18BB0A18-8213-472A-81A0-9D9753697135}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

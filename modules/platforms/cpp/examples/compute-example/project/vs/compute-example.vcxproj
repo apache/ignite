@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <RootNamespace>igniteexamples</RootNamespace>
     <ProjectGuid>{18BB0A18-8213-472A-81A0-9D9753697135}</ProjectGuid>
+    <ProjectName>compute-example</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
