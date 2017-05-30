@@ -478,9 +478,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 
-        if (ctx.task().getThreadContext(TC_SKIP_AUTH) == null)
-            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
-
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
 
@@ -489,6 +486,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         else
             // Reset thread-local context.
             thCtx.set(null);
+
+        if (map.get(TC_SKIP_AUTH) == null)
+            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
 
         Long timeout = (Long)map.get(TC_TIMEOUT);
 
