@@ -776,7 +776,8 @@ public class CacheGroupInfrastructure {
     public void onPartitionCounterUpdate(int cacheId,
         int part,
         long cntr,
-        AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion topVer,
+        boolean primary) {
         assert sharedGroup();
 
         if (isLocal())
@@ -793,15 +794,15 @@ public class CacheGroupInfrastructure {
             GridCacheContext cctx = contQryCaches.get(i);
 
             if (cacheId != cctx.cacheId())
-                skipCtx = cctx.continuousQueries().skipUpdateCounter(skipCtx, part, cntr, topVer);
+                skipCtx = cctx.continuousQueries().skipUpdateCounter(skipCtx, part, cntr, topVer, primary);
         }
 
-        final List<Runnable> entriesC = skipCtx != null ? skipCtx.readyEntries() : null;
+        final List<Runnable> sndC = skipCtx != null ? skipCtx.sendClosures() : null;
 
-        if (entriesC != null) {
+        if (sndC != null) {
             ctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
-                    for (Runnable c : entriesC)
+                    for (Runnable c : sndC)
                         c.run();
                 }
             });

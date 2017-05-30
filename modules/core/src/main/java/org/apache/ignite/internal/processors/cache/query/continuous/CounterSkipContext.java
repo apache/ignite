@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +30,7 @@ public class CounterSkipContext {
     private final CacheContinuousQueryEntry entry;
 
     /** */
-    private List<Runnable> readySendC;
+    private List<Runnable> sndC;
 
     /**
      * @param part Partition.
@@ -61,7 +62,17 @@ public class CounterSkipContext {
     /**
      * @return Entries
      */
-    @Nullable public List<Runnable> readyEntries() {
-        return readySendC;
+    @Nullable public List<Runnable> sendClosures() {
+        return sndC;
+    }
+
+    /**
+     * @param c Closure send
+     */
+    void addSendClosure(Runnable c) {
+        if (sndC == null)
+            sndC = new ArrayList<>();
+
+        sndC.add(c);
     }
 }

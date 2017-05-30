@@ -86,7 +86,6 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             ", cacheGroup="+ grpName +
             ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
 
-
         cachesInGrp = args.cachesInGroup();
 
         if (cachesInGrp > 1) {

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -55,9 +54,9 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
-        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
+        CacheMapHolder hld = entriesMap(ctx.cacheIdBoxed(), false);
 
-        return map != null ? map.get(key) : null;
+        return hld != null ? hld.map.get(key) : null;
     }
 
     /** {@inheritDoc} */
@@ -67,7 +66,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         KeyCacheObject key,
         final boolean create,
         final boolean touch) {
-        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
+        CacheMapHolder hld = entriesMap(ctx.cacheIdBoxed(), false);
 
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
@@ -80,7 +79,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         try {
             while (!done) {
-                GridCacheMapEntry entry = map != null ? map.get(key) : null;
+                GridCacheMapEntry entry = hld != null ? hld.map.get(key) : null;
                 created = null;
                 doomed = null;
 
@@ -94,15 +93,18 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                 reserved = true;
                             }
 
-                            if (map == null)
-                                map = entriesMap(ctx.cacheId(), true);
+                            if (hld == null) {
+                                hld = entriesMap(ctx.cacheIdBoxed(), true);
+
+                                assert hld != null;
+                            }
 
                             created0 = factory.create(ctx, topVer, key);
                         }
 
                         cur = created = created0;
 
-                        done = map.putIfAbsent(created.key(), created) == null;
+                        done = hld.map.putIfAbsent(created.key(), created) == null;
                     }
                     else
                         done = true;
@@ -125,10 +127,10 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
                             cur = created = created0;
 
-                            done = map.replace(entry.key(), doomed, created);
+                            done = hld.map.replace(entry.key(), doomed, created);
                         }
                         else
-                            done = map.remove(entry.key(), doomed);
+                            done = hld.map.remove(entry.key(), doomed);
                     }
                     else {
                         cur = entry;
@@ -194,13 +196,13 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         }
         finally {
             if (reserved)
-                release(sizeChange, cur);
+                release(sizeChange, hld, cur);
             else {
                 if (sizeChange != 0) {
                     assert sizeChange == -1;
                     assert doomed != null;
 
-                    decrementPublicSize(doomed);
+                    decrementPublicSize(hld, doomed);
                 }
             }
         }
@@ -211,8 +213,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @param create Create flag.
      * @return Map for given cache ID.
      */
-    @Nullable protected abstract ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(
-        int cacheId,
+    @Nullable protected abstract CacheMapHolder entriesMap(
+        Integer cacheId,
         boolean create);
 
     /**
@@ -233,20 +235,20 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @param sizeChange Size delta.
      * @param e Map entry.
      */
-    protected void release(int sizeChange, GridCacheEntryEx e) {
+    protected void release(int sizeChange, CacheMapHolder hld, GridCacheEntryEx e) {
         if (sizeChange == 1)
-            incrementPublicSize(e);
+            incrementPublicSize(hld, e);
         else if (sizeChange == -1)
-            decrementPublicSize(e);
+            decrementPublicSize(hld, e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
         GridCacheContext ctx = entry.context();
 
-        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(ctx.cacheId(), false);
+        CacheMapHolder hld = entriesMap(ctx.cacheIdBoxed(), false);
 
-        boolean rmv = map != null ? map.remove(entry.key(), entry) : null;
+        boolean rmv = hld != null ? hld.map.remove(entry.key(), entry) : null;
 
         if (rmv) {
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED)) {
@@ -269,7 +271,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
             synchronized (entry) {
                 if (!entry.deleted())
-                    decrementPublicSize(entry);
+                    decrementPublicSize(hld, entry);
             }
         }
 
@@ -278,9 +280,9 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /** {@inheritDoc} */
     @Override public Collection<GridCacheMapEntry> entries(int cacheId, final CacheEntryPredicate... filter) {
-        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(cacheId, false);
+        CacheMapHolder hld = entriesMap(cacheId, false);
 
-        if (map == null)
+        if (hld == null)
             return Collections.emptyList();
 
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
@@ -289,14 +291,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             }
         };
 
-        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), p);
+        return F.viewReadOnly(hld.map.values(), F.<GridCacheMapEntry>identity(), p);
     }
 
     /** {@inheritDoc} */
     @Override public Set<GridCacheMapEntry> entrySet(int cacheId, final CacheEntryPredicate... filter) {
-        final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map = entriesMap(cacheId, false);
+        final CacheMapHolder hld = entriesMap(cacheId, false);
 
-        if (map == null)
+        if (hld == null)
             return Collections.emptySet();
 
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
@@ -307,7 +309,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         return new AbstractSet<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                return F.iterator0(map.values(), true, p);
+                return F.iterator0(hld.map.values(), true, p);
             }
 
             @Override public int size() {
@@ -320,7 +322,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
                 GridCacheMapEntry entry = (GridCacheMapEntry)o;
 
-                return entry.equals(map.get(entry.key())) && p.apply(entry);
+                return entry.equals(hld.map.get(entry.key())) && p.apply(entry);
             }
         };
     }

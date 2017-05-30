@@ -213,9 +213,10 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     @Nullable public CounterSkipContext skipUpdateCounter(@Nullable CounterSkipContext skipCtx,
         int part,
         long cntr,
-        AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion topVer,
+        boolean primary) {
         for (CacheContinuousQueryListener lsnr : lsnrs.values())
-            skipCtx = lsnr.skipUpdateCounter(cctx, skipCtx, part, cntr, topVer);
+            skipCtx = lsnr.skipUpdateCounter(cctx, skipCtx, part, cntr, topVer, primary);
 
         return skipCtx;
     }

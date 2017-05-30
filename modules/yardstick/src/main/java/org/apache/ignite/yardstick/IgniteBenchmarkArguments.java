@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -83,10 +84,12 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
+    @GridToStringInclude
     public int range = 1_000_000;
 
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
+    @GridToStringInclude
     public int preloadAmount = 500_000;
 
     /** */

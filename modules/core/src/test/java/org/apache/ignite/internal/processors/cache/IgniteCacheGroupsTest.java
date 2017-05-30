@@ -40,6 +40,7 @@ import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -62,6 +63,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -78,6 +80,7 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -400,19 +403,61 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryTxReplicated() throws Exception {
+        continuousQuery(REPLICATED, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryTxPartitioned() throws Exception {
+        continuousQuery(PARTITIONED, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryTxLocal() throws Exception {
+        continuousQuery(LOCAL, TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryAtomicReplicated() throws Exception {
+        continuousQuery(REPLICATED, ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryAtomicPartitioned() throws Exception {
+        continuousQuery(PARTITIONED, ATOMIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQueryAtomicLocal() throws Exception {
+        continuousQuery(LOCAL, ATOMIC);
+    }
+
+    /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
     private void scanQuery(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
-        int keys = 10000;
+        int keys = 10_000;
 
         Integer[] data1 = generateData(keys);
         Integer[] data2 = generateData(keys);
 
-        boolean local = cacheMode == LOCAL;
+        boolean loc = cacheMode == LOCAL;
 
-        if (local)
+        if (loc)
             startGrid(0);
         else
             startGridsMultiThreaded(4);
@@ -422,14 +467,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
         srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
 
-        if(!local)
-            awaitPartitionMapExchange();
-
         IgniteCache<Integer, Integer> cache1;
         IgniteCache<Integer, Integer> cache2;
 
         if (atomicityMode == TRANSACTIONAL) {
-            Ignite ignite = ignite(local ? 0 : 1);
+            Ignite ignite = ignite(loc ? 0 : 1);
 
             try (Transaction tx = ignite.transactions().txStart()) {
                 cache1 = ignite.cache(CACHE1);
@@ -450,8 +492,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
             for (int i = 0; i < ldrs ; i++) {
-                cls.add(putOperation(local ? 0 : 1, ldrs, i, CACHE1, data1));
-                cls.add(putOperation(local ? 0 : 2, ldrs, i, CACHE2, data2));
+                cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
             }
 
             GridTestUtils.runMultiThreaded(cls, "loaders");
@@ -461,7 +503,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Set<Integer> keysSet = sequence(keys);
 
-        for (Cache.Entry<Integer, Integer> entry : ignite(local ? 0 : 3).cache(CACHE1).query(qry)) {
+        for (Cache.Entry<Integer, Integer> entry : ignite(loc ? 0 : 3).cache(CACHE1).query(qry)) {
             assertTrue(keysSet.remove(entry.getKey()));
             assertEquals(data1[entry.getKey()], entry.getValue());
         }
@@ -472,12 +514,112 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         keysSet = sequence(keys);
 
-        for (Cache.Entry<Integer, Integer> entry : ignite(local ? 0 : 3).cache(CACHE2).query(qry)) {
+        for (Cache.Entry<Integer, Integer> entry : ignite(loc ? 0 : 3).cache(CACHE2).query(qry)) {
             assertTrue(keysSet.remove(entry.getKey()));
             assertEquals(data2[entry.getKey()], entry.getValue());
         }
 
         assertTrue(keysSet.isEmpty());
+    }
+
+    /**
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Cache atomicity mode.
+     * @throws Exception If failed.
+     */
+    private void continuousQuery(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
+        final int keys = 10_000;
+
+        Integer[] data1 = generateData(keys);
+        Integer[] data2 = generateData(keys);
+
+        boolean loc = cacheMode == LOCAL;
+
+        if (loc)
+            startGrid(0);
+        else
+            startGridsMultiThreaded(4);
+
+        Ignite srv0 = ignite(0);
+
+        srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
+        srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
+
+        final AtomicInteger cntr1 = new AtomicInteger();
+        final AtomicInteger cntr2 = new AtomicInteger();
+
+        CacheEntryUpdatedListener lsnr1 = new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(
+                Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> ignored : evts)
+                    cntr1.incrementAndGet();
+            }
+        };
+
+        CacheEntryUpdatedListener lsnr2 = new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(
+                Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> ignored : evts)
+                    cntr2.incrementAndGet();
+            }
+        };
+
+        QueryCursor qry1 = ignite(loc ? 0 : 2).cache(CACHE1).query(new ContinuousQuery<>().setLocalListener(lsnr1));
+        QueryCursor qry2 = ignite(loc ? 0 : 3).cache(CACHE2).query(new ContinuousQuery<>().setLocalListener(lsnr2));
+
+        if (atomicityMode == TRANSACTIONAL) {
+            Ignite ignite = ignite(loc ? 0 : 1);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                IgniteCache<Integer, Integer> cache1 = ignite.cache(CACHE1);
+                IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE2);
+
+                for (int i = 0; i < keys ; i++) {
+                    cache1.put(i, data1[i]);
+                    cache2.put(i, data2[i]);
+                }
+
+                tx.commit();
+            }
+        }
+        else {
+            int ldrs = 4;
+
+            List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
+
+            for (int i = 0; i < ldrs ; i++) {
+                cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
+            }
+
+            GridTestUtils.runMultiThreaded(cls, "loaders");
+        }
+
+        assertTrue("Expected: [cntr1=" + keys + ", cntr2=" + keys + "] " +
+            "but was: [cntr1=" + cntr1.get() + ", cntr2=" + cntr2.get() + "]",
+            GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return cntr1.get() == keys && cntr2.get() == keys;
+            }
+        }, 2000));
+
+        qry1.close();
+
+        Map<Integer, Integer> map = generateDataMap(10);
+
+        srv0.cache(CACHE1).putAll(map);
+        srv0.cache(CACHE2).putAll(map);
+
+        assertTrue("Expected: <" + keys + 10 + "> but was: <" + cntr2.get() + ">",
+            GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return cntr2.get() == keys + 10;
+            }
+        }, 2000));
+
+        assertEquals(keys, cntr1.get());
+
+        qry2.close();
     }
 
     /**
@@ -822,10 +964,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 IgniteCache cache = ignite(idx).cache(cacheName);
 
                 for (int j = 0, size = data.length; j < size ; j++) {
-                    if (j % ldrs == ldrIdx) {
+                    if (j % ldrs == ldrIdx)
                         cache.put(j, data[j]);
-                    }
                 }
+
                 return null;
             }
         };
@@ -855,12 +997,23 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @return Map with random integers.
      */
     private Map<Integer, Integer> generateDataMap(int cnt) {
+        return generateDataMap(0, cnt);
+    }
+
+    /**
+     * Creates a map with random integers.
+     *
+     * @param startKey Start key.
+     * @param cnt Map size length.
+     * @return Map with random integers.
+     */
+    private Map<Integer, Integer> generateDataMap(int startKey, int cnt) {
         Random rnd = ThreadLocalRandom.current();
 
         Map<Integer, Integer> data = U.newHashMap(cnt);
 
         for (int i = 0; i < cnt; i++)
-            data.put(i, rnd.nextInt());
+            data.put(startKey++, rnd.nextInt());
 
         return data;
     }

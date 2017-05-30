@@ -89,7 +89,8 @@ public interface CacheContinuousQueryListener<K, V> {
         @Nullable CounterSkipContext skipCtx,
         int part,
         long cntr,
-        AffinityTopologyVersion topVer);
+        AffinityTopologyVersion topVer,
+        boolean primary);
 
     /**
      * @param part Partition.
