@@ -59,9 +59,16 @@ namespace ignite
             return env.Get()->Context();
         }
 
-        SharedPointer<IgniteBindingImpl> IgniteImpl::GetBinding()
+        IgniteImpl::SP_IgniteBindingImpl IgniteImpl::GetBinding()
         {
             return env.Get()->GetBinding();
+        }
+
+        IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()
+        {
+            cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get()->ForServers();
+
+            return serversCluster.Get()->GetCompute();
         }
 
         IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
@@ -80,16 +87,16 @@ namespace ignite
             return res;
         }
 
-        IgniteImpl::SP_ClusterGroupImpl IgniteImpl::InternalGetProjection(IgniteError& err)
+        cluster::SP_ClusterGroupImpl IgniteImpl::InternalGetProjection(IgniteError& err)
         {
-            SP_ClusterGroupImpl res;
+            cluster::SP_ClusterGroupImpl res;
 
             JniErrorInfo jniErr;
 
             jobject txJavaRef = env.Get()->Context()->ProcessorProjection(javaRef, &jniErr);
 
             if (txJavaRef)
-                res = SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
+                res = cluster::SP_ClusterGroupImpl(new cluster::ClusterGroupImpl(env, txJavaRef));
             else
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
