@@ -33,6 +33,7 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     private int pageSize;
 
     /**
+     * Constructor.
      */
     public JdbcQueryFetchRequest() {
         super(QRY_FETCH);

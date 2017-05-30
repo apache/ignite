@@ -27,7 +27,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Connection test.
  */
+// TODO: JdbcThin prefix
 public class JdbcAbstractSelfTest extends GridCommonAbstractTest {
+    //  TODO: Remove and understand rael problem
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         try {

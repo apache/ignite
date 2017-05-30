@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class JdbcQueryCloseResult extends JdbcResult {
     /** Query ID. */
+    // TODO: Remove
     private long queryId;
 
     /**

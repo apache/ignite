@@ -17,35 +17,26 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcColumnMeta;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 
 /**
@@ -105,8 +96,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         JdbcRequest req = (JdbcRequest)req0;
 
         if (!busyLock.enterBusy())
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to handle ODBC request because node is stopping: " + req);
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, 
+                "Failed to handle JDBC request because node is stopping.");
 
         try {
             switch (req.type()) {
@@ -123,8 +114,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     return getQueryMeta((JdbcQueryMetadataRequest)req);
             }
 
-            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request: [req="
-                + req + ']');
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request [req=" + req + ']');
         }
         finally {
             busyLock.leaveBusy();
@@ -137,11 +127,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryExecuteRequest} command handler.
+     * {@link JdbcQueryExecuteRequest} command handler.
      *
      * @param req Execute query request.
      * @return Response.
      */
+    @SuppressWarnings("unchecked")
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
         int cursorCnt = qryCursors.size();
 
@@ -153,11 +144,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
         long qryId = QRY_ID_GEN.getAndIncrement();
 
         try {
-            String sql = OdbcEscapeUtils.parse(req.sqlQuery());
-
-            if (log.isDebugEnabled())
-                log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
-                    ", parsed=" + sql + ']');
+            String sql = req.sqlQuery();
 
             SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
@@ -165,6 +152,8 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
+
+            // TODO: Validate page size, add test for it.
             qry.setPageSize(req.fetchSize());
 
             IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
@@ -185,6 +174,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             qryCursors.put(qryId, cur);
 
             JdbcQueryExecuteResult res;
+
             if (cur.isQuery())
                 res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
             else {
@@ -210,22 +200,20 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryCloseRequest} command handler.
+     * {@link JdbcQueryCloseRequest} command handler.
      *
      * @param req Execute query request.
      * @return Response.
      */
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
         try {
-            JdbcQueryCursor cur = qryCursors.get(req.queryId());
+            JdbcQueryCursor cur = qryCursors.remove(req.queryId());
 
             if (cur == null)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + req.queryId());
+                    "Failed to find query cursor with ID: " + req.queryId());
 
             cur.close();
-
-            qryCursors.remove(req.queryId());
 
             JdbcQueryCloseResult res = new JdbcQueryCloseResult(req.queryId());
 
@@ -241,7 +229,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryFetchRequest} command handler.
+     * {@link JdbcQueryFetchRequest} command handler.
      *
      * @param req Execute query request.
      * @return Response.
@@ -252,7 +240,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             if (cur == null)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Failed to find query with ID: " + req.queryId());
+                    "Failed to find query cursor with ID: " + req.queryId());
 
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(req.queryId(), cur.fetchRows(), !cur.hasNext());
 
@@ -287,99 +275,5 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
-    }
-
-
-
-    /**
-     * Convert {@link Types} to binary type constant (See {@link GridBinaryMarshaller} constants).
-     *
-     * @param sqlType SQL type.
-     * @return Binary type.
-     */
-    private static byte sqlTypeToBinary(int sqlType) {
-        switch (sqlType) {
-            case Types.BIGINT:
-                return GridBinaryMarshaller.LONG;
-
-            case Types.BOOLEAN:
-                return GridBinaryMarshaller.BOOLEAN;
-
-            case Types.DATE:
-                return GridBinaryMarshaller.DATE;
-
-            case Types.DOUBLE:
-                return GridBinaryMarshaller.DOUBLE;
-
-            case Types.FLOAT:
-            case Types.REAL:
-                return GridBinaryMarshaller.FLOAT;
-
-            case Types.NUMERIC:
-            case Types.DECIMAL:
-                return GridBinaryMarshaller.DECIMAL;
-
-            case Types.INTEGER:
-                return GridBinaryMarshaller.INT;
-
-            case Types.SMALLINT:
-                return GridBinaryMarshaller.SHORT;
-
-            case Types.TIME:
-                return GridBinaryMarshaller.TIME;
-
-            case Types.TIMESTAMP:
-                return GridBinaryMarshaller.TIMESTAMP;
-
-            case Types.TINYINT:
-                return GridBinaryMarshaller.BYTE;
-
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.LONGNVARCHAR:
-                return GridBinaryMarshaller.STRING;
-
-            case Types.NULL:
-                return GridBinaryMarshaller.NULL;
-
-            case Types.BINARY:
-            case Types.VARBINARY:
-            case Types.LONGVARBINARY:
-            default:
-                return GridBinaryMarshaller.BYTE_ARR;
-        }
-    }
-
-    /**
-     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
-     * {@link OdbcColumnMeta}.
-     *
-     * @param meta Internal query field metadata.
-     * @return Odbc query field metadata.
-     */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<?> meta) {
-        List<OdbcColumnMeta> res = new ArrayList<>();
-
-        if (meta != null) {
-            for (Object info : meta) {
-                assert info instanceof GridQueryFieldMetadata;
-
-                res.add(new OdbcColumnMeta((GridQueryFieldMetadata)info));
-            }
-        }
-
-        return res;
-    }
-
-    /**
-     * Checks whether string matches SQL pattern.
-     *
-     * @param str String.
-     * @param ptrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 }

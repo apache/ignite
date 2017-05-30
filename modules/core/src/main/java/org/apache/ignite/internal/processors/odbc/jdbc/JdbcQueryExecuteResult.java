@@ -38,10 +38,11 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Flag indicating the query is SELECT query. {@code false} for DML/DDL queries. */
     private boolean isQuery;
 
+    /** Update count. */
     private long updateCnt;
 
     /**
-     *
+     * Condtructor.
      */
     public JdbcQueryExecuteResult() {
         super(QRY_EXEC);
@@ -71,6 +72,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         this.queryId = queryId;
         this.last = true;
         this.isQuery = false;
+        this.updateCnt = updateCnt;
     }
 
     /**
@@ -114,6 +116,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
         writer.writeLong(queryId);
         writer.writeBoolean(isQuery);
+
         if (isQuery) {
             assert items != null;
 
@@ -137,7 +140,8 @@ public class JdbcQueryExecuteResult extends JdbcResult {
             last = reader.readBoolean();
 
             items = JdbcUtils.readItems(reader);
-        } else {
+        }
+        else {
             last = true;
 
             updateCnt = reader.readLong();

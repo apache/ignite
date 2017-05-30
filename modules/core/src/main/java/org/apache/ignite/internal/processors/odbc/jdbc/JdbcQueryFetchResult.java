@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
  */
 public class JdbcQueryFetchResult extends JdbcResult {
     /** Query ID. */
+    // TODO: Remove.
     private long queryId;
 
     /** Query result rows. */

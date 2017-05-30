@@ -33,7 +33,6 @@ public class JdbcResponse extends SqlListenerResponse implements RawBinarylizabl
     @GridToStringInclude
     private JdbcResult res;
 
-
     /**
      * Default constructs is used for deserialization
      */

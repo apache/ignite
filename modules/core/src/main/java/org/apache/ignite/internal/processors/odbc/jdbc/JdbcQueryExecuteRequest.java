@@ -45,7 +45,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     private String sqlQry;
 
     /** Sql query arguments. */
-    @GridToStringExclude
+    @GridToStringInclude(sensitive = true)
     private Object[] args;
 
     /**
@@ -115,6 +115,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         writer.writeInt(pageSize);
         writer.writeInt(maxRows);
         writer.writeString(sqlQry);
+
         writer.writeInt(args == null ? 0 : args.length);
 
         if (args != null) {
@@ -142,6 +143,6 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteRequest.class, this, "args", args, true);
+        return S.toString(JdbcQueryExecuteRequest.class, this);
     }
 }

@@ -37,7 +37,7 @@ class JdbcQueryCursor {
     /** Max rows. */
     private final long maxRows;
 
-    /** Max rows. */
+    /** Number of fetched rows. */
     private long fetched;
 
     /** Query result rows. */

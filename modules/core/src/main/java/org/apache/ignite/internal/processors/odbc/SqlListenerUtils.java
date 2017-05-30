@@ -211,6 +211,6 @@ public abstract class SqlListenerUtils {
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else
-            throw new BinaryObjectException("Non-plain objects are not supported");
+            throw new BinaryObjectException("Custom objects are not supported");
     }
 }

@@ -79,18 +79,22 @@ public class JdbcRequest extends SqlListenerRequest implements RawBinarylizable 
         switch(reqType) {
             case QRY_EXEC:
                 req = new JdbcQueryExecuteRequest();
+
                 break;
 
             case QRY_FETCH:
                 req = new JdbcQueryFetchRequest();
+
                 break;
 
             case QRY_META:
                 req = new JdbcQueryMetadataRequest();
+
                 break;
 
             case QRY_CLOSE:
                 req = new JdbcQueryCloseRequest();
+
                 break;
 
             default:

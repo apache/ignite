@@ -149,7 +149,6 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
                     ", req=" + req + ']');
             }
 
-
             SqlListenerResponse resp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
@@ -240,27 +239,27 @@ public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]>
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
 
-        SqlListenerRequestHandler handler = null;
-        SqlListenerMessageParser parser = null;
+        SqlListenerRequestHandler handler;
+        SqlListenerMessageParser parser;
 
         switch (clientType) {
             case ODBC_CLIENT:
                 parser = new OdbcMessageParser(ctx);
-                handler = new OdbcRequestHandler(ctx, busyLock, maxCursors,
-                    distributedJoins, enforceJoinOrder);
+
+                handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
 
                 break;
 
             case JDBC_CLIENT:
                 parser = new JdbcMessageParser(ctx);
-                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors,
-                    distributedJoins, enforceJoinOrder);
+
+                handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder);
 
                 break;
-        }
 
-        if (parser == null || handler == null)
-            throw new IgniteException("Unknown client type: " + clientType);
+            default:
+                throw new IgniteException("Unknown client type: " + clientType);
+        }
 
         return new SqlListenerConnectionContext(handler, parser);
     }
