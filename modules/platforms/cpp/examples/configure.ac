@@ -57,6 +57,7 @@ AC_CONFIG_FILES([ \
     odbc-example/Makefile \
     query-example/Makefile \
     continuous-query-example/Makefile \
+    compute-example/Makefile \
 ])
 
 AC_OUTPUT

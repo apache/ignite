@@ -22,5 +22,6 @@ SUBDIRS = \
     odbc-example \
     query-example \
 	continuous-query-example \
+	compute-example \
     include
 
