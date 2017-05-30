@@ -84,12 +84,12 @@ public class H2TableEngine implements TableEngine {
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        String spaceName = null;
+        String cacheName = null;
 
         if (idxFactory0 instanceof H2TableDescriptor)
-            spaceName = ((H2TableDescriptor)idxFactory0).cacheName();
+            cacheName = ((H2TableDescriptor)idxFactory0).schema().cacheName();
 
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, idxFactory0, spaceName);
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, idxFactory0, cacheName);
 
         return resTbl0;
     }
