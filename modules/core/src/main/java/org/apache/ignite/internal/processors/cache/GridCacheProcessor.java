@@ -1192,8 +1192,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
-        ctx.continuous().onCacheStart(cacheCtx);
-
         if (sharedCtx.pageStore() != null)
             sharedCtx.pageStore().initializeForCache(cacheCtx.config());
 
@@ -1208,6 +1206,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Start managers.
         for (GridCacheManager mgr : F.view(cacheCtx.managers(), F.notContains(dhtExcludes(cacheCtx))))
             mgr.start(cacheCtx);
+
+        ctx.continuous().onCacheStart(cacheCtx);
 
         cacheCtx.initConflictResolver();
 
