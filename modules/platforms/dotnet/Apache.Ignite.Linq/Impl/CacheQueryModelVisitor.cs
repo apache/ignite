@@ -105,10 +105,10 @@ namespace Apache.Ignite.Linq.Impl
 
             if (!hasDelete)
             {
-            // SELECT
-            _builder.Append("select ");
+                // SELECT
+                _builder.Append("select ");
 
-            // TOP 1 FLD1, FLD2
+                // TOP 1 FLD1, FLD2
                 VisitSelectors(queryModel, includeAllFields);
             }
 
@@ -117,8 +117,8 @@ namespace Apache.Ignite.Linq.Impl
 
             if (!hasDelete)
             {
-            // UNION ...
-            ProcessResultOperatorsEnd(queryModel);
+                // UNION ...
+                ProcessResultOperatorsEnd(queryModel);
             }
 
             _aliases.Pop();
