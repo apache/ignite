@@ -84,8 +84,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -3665,14 +3665,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 new LoadKeysCallableV2<>(ctx.name(), keys, update, plc, keepBinary),
                 nodes,
                 true,
-                0);
+                0, false);
         }
         else {
             return ctx.closures().callAsyncNoFailover(BROADCAST,
                 new LoadKeysCallable<>(ctx.name(), keys, update, plc),
                 nodes,
                 true,
-                0);
+                0, false);
         }
     }
 
