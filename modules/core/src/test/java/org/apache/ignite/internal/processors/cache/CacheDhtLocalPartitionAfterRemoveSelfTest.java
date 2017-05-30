@@ -36,7 +36,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setNearConfiguration(null);
@@ -62,7 +62,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
     public void testMemoryUsage() throws Exception {
         assertEquals(10_000, GridDhtLocalPartition.MAX_DELETE_QUEUE_SIZE);
 
-        IgniteCache<TestKey, Integer> cache = grid(0).cache(null);
+        IgniteCache<TestKey, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20_000; ++i)
             cache.put(new TestKey(String.valueOf(i)), i);
@@ -73,7 +73,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
         assertEquals(0, cache.size());
 
         for (int g = 0; g < GRID_CNT; g++) {
-            cache = grid(g).cache(null);
+            cache = grid(g).cache(DEFAULT_CACHE_NAME);
 
             for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
                 int size = p.dataStore().size();

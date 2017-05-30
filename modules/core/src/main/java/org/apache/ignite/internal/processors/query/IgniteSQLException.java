@@ -81,6 +81,13 @@ public class IgniteSQLException extends IgniteException {
     }
 
     /**
+     * @return Ignite SQL error code.
+     */
+    public int statusCode() {
+        return statusCode;
+    }
+
+    /**
      * @return JDBC exception containing details from this instance.
      */
     public SQLException toJdbcException() {

@@ -22,6 +22,7 @@
 #include <ignite/jni/java.h>
 
 #include <ignite/impl/interop/interop_target.h>
+#include <ignite/impl/compute/compute_impl.h>
 
 namespace ignite
 {
@@ -29,13 +30,19 @@ namespace ignite
     {
         namespace cluster
         {
+            /* Forward declaration. */
+            class ClusterGroupImpl;
+
+            /* Shared pointer. */
+            typedef common::concurrent::SharedPointer<ClusterGroupImpl> SP_ClusterGroupImpl;
+
             /**
              * Cluster group implementation.
              */
             class IGNITE_FRIEND_EXPORT ClusterGroupImpl : private interop::InteropTarget
             {
                 typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
-                typedef common::concurrent::SharedPointer<ClusterGroupImpl> SP_ClusterGroupImpl;
+                typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
             public:
                 /**
                  * Constructor used to create new instance.
@@ -53,12 +60,20 @@ namespace ignite
                 /**
                  * Get server nodes cluster group implementation.
                  *
-                 * @param err Error.
                  * @return Server nodes cluster group implementation.
                  */
-                SP_ClusterGroupImpl ForServers(IgniteError& err);
+                SP_ClusterGroupImpl ForServers();
+
+                /**
+                 * Get compute instance over this cluster group.
+                 *
+                 * @return Compute instance.
+                 */
+                SP_ComputeImpl GetCompute();
 
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl);
+
                 /**
                  * Make cluster group implementation using java reference and
                  * internal state of this cluster group.
@@ -68,7 +83,15 @@ namespace ignite
                  */
                 SP_ClusterGroupImpl FromTarget(jobject javaRef);
 
-                IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl)
+                /**
+                 * Gets instance of compute internally.
+                 *
+                 * @return Instance of compute.
+                 */
+                SP_ComputeImpl InternalGetCompute();
+
+                /** Compute for the cluster group. */
+                SP_ComputeImpl computeImpl;
             };
         }
     }

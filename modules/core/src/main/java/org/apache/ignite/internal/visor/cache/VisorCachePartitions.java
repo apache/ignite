@@ -20,8 +20,8 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -34,17 +34,17 @@ public class VisorCachePartitions extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private List<VisorCachePartition> primary;
+    private Map<Integer, Long> primary;
 
     /** */
-    private List<VisorCachePartition> backup;
+    private Map<Integer, Long> backup;
 
     /**
      * Default constructor.
      */
     public VisorCachePartitions() {
-        primary = new ArrayList<>();
-        backup = new ArrayList<>();
+        primary = new HashMap<>();
+        backup = new HashMap<>();
     }
 
     /**
@@ -54,7 +54,7 @@ public class VisorCachePartitions extends VisorDataTransferObject {
      * @param cnt Number of primary keys in partition.
      */
     public void addPrimary(int partId, long cnt) {
-       primary.add(new VisorCachePartition(partId, cnt));
+       primary.put(partId, cnt);
     }
 
     /**
@@ -64,33 +64,33 @@ public class VisorCachePartitions extends VisorDataTransferObject {
      * @param cnt Number of backup keys in partition.
      */
     public void addBackup(int partId, long cnt) {
-       backup.add(new VisorCachePartition(partId, cnt));
+       backup.put(partId, cnt);
     }
 
     /**
      * @return Get list of primary partitions.
      */
-    public List<VisorCachePartition> getPrimary() {
+    public Map<Integer, Long> getPrimary() {
         return primary;
     }
 
     /**
      * @return Get list of backup partitions.
      */
-    public List<VisorCachePartition> getBackup() {
+    public Map<Integer, Long> getBackup() {
         return backup;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, primary);
-        U.writeCollection(out, backup);
+        U.writeMap(out, primary);
+        U.writeMap(out, backup);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        primary = U.readList(in);
-        backup = U.readList(in);
+        primary = U.readMap(in);
+        backup = U.readMap(in);
     }
 
     /** {@inheritDoc} */

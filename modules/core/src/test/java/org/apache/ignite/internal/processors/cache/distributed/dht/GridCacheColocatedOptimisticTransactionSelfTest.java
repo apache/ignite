@@ -69,7 +69,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
 
         disco.setIpFinder(IP_FINDER);
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE);
         cc.setCacheMode(PARTITIONED);

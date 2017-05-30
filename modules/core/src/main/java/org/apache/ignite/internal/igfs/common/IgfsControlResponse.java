@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsInputStreamDescriptor;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -114,6 +115,9 @@ public class IgfsControlResponse extends IgfsMessage {
 
     /** Response is a path summary. */
     public static final int RES_TYPE_IGFS_PATH_SUMMARY = 12;
+
+    /** Response is a path summary. */
+    public static final int RES_TYPE_MODE_RESOLVER = 13;
 
     /** Message header size. */
     public static final int RES_HEADER_SIZE = 9;
@@ -252,6 +256,15 @@ public class IgfsControlResponse extends IgfsMessage {
      */
     public void status(IgfsStatus res) {
         resType = RES_TYPE_STATUS;
+
+        this.res = res;
+    }
+
+    /**
+     * @param res Status response.
+     */
+    public void modeResolver(IgfsModeResolver res) {
+        resType = RES_TYPE_MODE_RESOLVER;
 
         this.res = res;
     }
@@ -425,6 +438,7 @@ public class IgfsControlResponse extends IgfsMessage {
             case RES_TYPE_IGFS_FILE:
             case RES_TYPE_IGFS_STREAM_DESCRIPTOR:
             case RES_TYPE_HANDSHAKE:
+            case RES_TYPE_MODE_RESOLVER:
             case RES_TYPE_STATUS: {
                 out.writeBoolean(res != null);
 
@@ -626,6 +640,20 @@ public class IgfsControlResponse extends IgfsMessage {
                 }
 
                 res = locations;
+
+                break;
+            }
+
+            case RES_TYPE_MODE_RESOLVER: {
+                boolean hasVal = in.readBoolean();
+
+                if (hasVal) {
+                    IgfsModeResolver msg = new IgfsModeResolver();
+
+                    msg.readExternal(in);
+
+                    res = msg;
+                }
 
                 break;
             }

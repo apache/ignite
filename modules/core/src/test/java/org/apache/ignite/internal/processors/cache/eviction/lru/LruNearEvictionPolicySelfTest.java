@@ -56,13 +56,12 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(atomicityMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setStartSize(100);
         cc.setBackups(0);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
@@ -115,7 +114,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }
@@ -127,7 +126,7 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(DEFAULT_CACHE_NAME);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

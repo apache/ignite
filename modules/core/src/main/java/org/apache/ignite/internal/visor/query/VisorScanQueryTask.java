@@ -45,19 +45,19 @@ import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleRes
  * Task for execute SCAN query and get first page of results.
  */
 @GridInternal
-public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryArg, VisorEither<VisorQueryResult>> {
+public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryTaskArg, VisorEither<VisorQueryResult>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorScanQueryJob job(VisorScanQueryArg arg) {
+    @Override protected VisorScanQueryJob job(VisorScanQueryTaskArg arg) {
         return new VisorScanQueryJob(arg, debug);
     }
 
     /**
      * Job for execute SCAN query and get first page of results.
      */
-    private static class VisorScanQueryJob extends VisorJob<VisorScanQueryArg, VisorEither<VisorQueryResult>> {
+    private static class VisorScanQueryJob extends VisorJob<VisorScanQueryTaskArg, VisorEither<VisorQueryResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -67,7 +67,7 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryArg, Viso
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorScanQueryJob(VisorScanQueryArg arg, boolean debug) {
+        private VisorScanQueryJob(VisorScanQueryTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -78,7 +78,7 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryArg, Viso
          * @param arg Job argument with query parameters.
          * @return Query cursor.
          */
-        private QueryCursor<Cache.Entry<Object, Object>> scan(IgniteCache<Object, Object> c, VisorScanQueryArg arg,
+        private QueryCursor<Cache.Entry<Object, Object>> scan(IgniteCache<Object, Object> c, VisorScanQueryTaskArg arg,
             IgniteBiPredicate<Object, Object> filter) {
             ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
             qry.setPageSize(arg.getPageSize());
@@ -98,7 +98,7 @@ public class VisorScanQueryTask extends VisorOneNodeTask<VisorScanQueryArg, Viso
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorEither<VisorQueryResult> run(final VisorScanQueryArg arg) {
+        @Override protected VisorEither<VisorQueryResult> run(final VisorScanQueryTaskArg arg) {
             try {
                 IgniteCache<Object, Object> c = ignite.context().cache().jcache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();

@@ -44,4 +44,4 @@
                         li Close dialog and try Web Console
             .modal-footer
                 button.btn.btn-default(ng-class='hasAgents ? "btn-primary" : "btn-default"' ng-click='close()') Close
-                button.btn.btn-primary(ng-hide='hasAgents' ng-click='downloadAgent()') Download agent
+                a.btn.btn-primary(ng-hide='hasAgents' href='/api/v1/downloads/agent' target='_self') Download agent

@@ -213,9 +213,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            var e = Assert.Throws<Exception>(() => Grid1.GetCompute().Apply(Func(false), args, new Reducer(true)));
+            var e = Assert.Throws<AggregateException>(() =>
+                Grid1.GetCompute().Apply(Func(false), args, new Reducer(true)));
 
-            Assert.AreEqual(ErrMsg, e.Message);
+            Assert.IsNotNull(e.InnerException);
+            Assert.AreEqual(ErrMsg, e.InnerException.Message);
         }
 
         /// <summary>

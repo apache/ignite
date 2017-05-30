@@ -91,7 +91,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryBasicNameMapper.cs" />
+    <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
+    <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
+    <Compile Include="Cache\IMemoryMetrics.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingMode.cs" />
     <Compile Include="Events\IEventStorageSpi.cs" />
     <Compile Include="Events\MemoryEventStorageSpi.cs" />
     <Compile Include="Events\NoopEventStorageSpi.cs" />
@@ -105,6 +112,14 @@
     <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
+    <Compile Include="Impl\Deployment\AssemblyLoader.cs" />
+    <Compile Include="Impl\Deployment\AssemblyRequest.cs" />
+    <Compile Include="Impl\Deployment\AssemblyRequestResult.cs" />
+    <Compile Include="Impl\Deployment\GetAssemblyFunc.cs" />
+    <Compile Include="Impl\Deployment\PeerAssemblyResolver.cs" />
+    <Compile Include="Impl\Deployment\PeerLoadingExtensions.cs" />
+    <Compile Include="Impl\Deployment\PeerLoadingObjectHolder.cs" />
+    <Compile Include="Impl\Deployment\PeerLoadingObjectHolderSerializer.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
@@ -191,6 +206,9 @@
     <Compile Include="Impl\Binary\DeserializationCallbackProcessor.cs" />
     <Compile Include="Impl\Binary\ReflectionUtils.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Binary\TypeNameParser.cs" />
+    <Compile Include="Impl\Cache\IQueryEntityInternal.cs" />
+    <Compile Include="Impl\Cache\MemoryMetrics.cs" />
     <Compile Include="Impl\Cache\Store\CacheStore.cs" />
     <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
     <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
@@ -456,6 +474,7 @@
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\LoggerExtensions.cs" />
     <Compile Include="Log\LogLevel.cs" />
+    <Compile Include="Cache\Configuration\MemoryConfiguration.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Lifecycle\ILifecycleHandler.cs" />

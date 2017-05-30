@@ -63,7 +63,7 @@ public class VisorCacheLoadTask extends
         @Override protected Map<String, Integer> run(VisorCacheLoadTaskArg arg) {
             Set<String> cacheNames = arg.getCacheNames();
             long ttl = arg.getTtl();
-            Object[] ldrArgs = arg.getLdrArgs();
+            Object[] ldrArgs = arg.getLoaderArguments();
 
             assert cacheNames != null && !cacheNames.isEmpty();
 
@@ -73,6 +73,9 @@ public class VisorCacheLoadTask extends
 
             for (String cacheName : cacheNames) {
                 IgniteCache cache = ignite.cache(cacheName);
+
+                if (cache == null)
+                    throw new IllegalStateException("Failed to find cache for name: " + cacheName);
 
                 if (ttl > 0) {
                     if (plc == null)

@@ -33,7 +33,7 @@ public class VisorNodeSuppressedErrors extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Order number of last suppressed error. */
-    private Long order;
+    private long order;
 
     /** List of suppressed errors. */
     private List<VisorSuppressedError> errors;
@@ -51,7 +51,7 @@ public class VisorNodeSuppressedErrors extends VisorDataTransferObject {
      * @param order Order number of last suppressed error.
      * @param errors List of suppressed errors.
      */
-    public VisorNodeSuppressedErrors(Long order, List<VisorSuppressedError> errors) {
+    public VisorNodeSuppressedErrors(long order, List<VisorSuppressedError> errors) {
         this.order = order;
         this.errors = errors;
     }
@@ -59,7 +59,7 @@ public class VisorNodeSuppressedErrors extends VisorDataTransferObject {
     /**
      * @return Order number of last suppressed error.
      */
-    public Long getOrder() {
+    public long getOrder() {
         return order;
     }
 

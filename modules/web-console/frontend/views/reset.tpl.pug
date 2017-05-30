@@ -14,13 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-header#header.header
-    table.container
-        tr
-            td.col-xs-3.col-sm-3.col-md-2
-                ignite-header-logo
-            td
-                ignite-header-title
+web-console-header
+    web-console-header-left
+        ignite-header-title
 
 .container.body-container
     .main-content(ng-controller='resetPassword')
@@ -45,4 +41,4 @@ header#header.header
                     .settings-row
                         button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
 
-include includes/footer
+web-console-footer

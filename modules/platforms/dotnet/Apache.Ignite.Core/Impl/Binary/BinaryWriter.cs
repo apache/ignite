@@ -54,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Whether we are currently detaching an object. */
         private bool _detaching;
 
+        /** Whether we are directly within peer loading object holder. */
+        private bool _isInWrapper;
+
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
 
@@ -858,16 +861,44 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                var desc = _marsh.GetDescriptor(val.GetType());
+                var type = val.GetType();
 
-                var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+                if (!type.IsEnum)
+                {
+                    throw new BinaryObjectException("Type is not an enum: " + type);
+                }
 
-                _stream.WriteByte(BinaryUtils.TypeEnum);
+                var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-                BinaryUtils.WriteEnum(this, val);
-
-                SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
+                if (handler != null)
+                {
+                    // All enums except long/ulong.
+                    handler.Write(this, val);
+                }
+                else
+                {
+                    throw new BinaryObjectException(string.Format("Enum '{0}' has unsupported underlying type '{1}'. " +
+                                                                  "Use WriteObject instead of WriteEnum.",
+                        type, Enum.GetUnderlyingType(type)));
+                }
             }
+        }
+
+        /// <summary>
+        /// Write enum value.
+        /// </summary>
+        /// <param name="val">Enum value.</param>
+        /// <param name="type">Enum type.</param>
+        internal void WriteEnum(int val, Type type)
+        {
+            var desc = _marsh.GetDescriptor(type);
+
+            _stream.WriteByte(BinaryUtils.TypeEnum);
+            _stream.WriteInt(desc.TypeId);
+            _stream.WriteInt(val);
+
+            var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+            SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
         }
 
         /// <summary>
@@ -1120,14 +1151,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // Handle enums.
-            if (type.IsEnum)
-            {
-                WriteEnum(obj);
-
-                return;
-            }
-
             // Handle special case for builder.
             if (WriteBuilderSpecials(obj))
                 return;
@@ -1143,6 +1166,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 handler.Write(this, obj);
 
                 return;
+            }
+
+            // Wrap objects as required.
+            if (WrapperFunc != null && type != WrapperFunc.Method.ReturnType)
+            {
+                if (_isInWrapper)
+                {
+                    _isInWrapper = false;
+                }
+                else
+                {
+                    _isInWrapper = true;
+                    Write(WrapperFunc(obj));
+
+                    return;
+                }
             }
 
             // Suppose that we faced normal object and perform descriptor lookup.
@@ -1404,6 +1443,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets or sets a function to wrap all serializer objects.
+        /// </summary>
+        internal Func<object, object> WrapperFunc { get; set; }
+
+        /// <summary>
         /// Stream.
         /// </summary>
         internal IBinaryStream Stream
@@ -1448,7 +1492,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 _metas = new Dictionary<int, BinaryType>(1)
                 {
-                    {desc.TypeId, new BinaryType(desc, fields)}
+                    {desc.TypeId, new BinaryType(desc, _marsh, fields)}
                 };
             }
             else
@@ -1458,7 +1502,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_metas.TryGetValue(desc.TypeId, out meta))
                     meta.UpdateFields(fields);
                 else
-                    _metas[desc.TypeId] = new BinaryType(desc, fields);
+                    _metas[desc.TypeId] = new BinaryType(desc, _marsh, fields);
             }
         }
 

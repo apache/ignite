@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -60,19 +60,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             _cfg = cfg;
             _id = id;
             _name = typeName;
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        /// <param name="name">Type name.</param>
-        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, string name)
-        {
-            _cfg = cfg;
-            _name = name;
-
-            _id = BinaryUtils.TypeId(name, cfg.NameMapper, cfg.IdMapper);
         }
 
         /** <inheritDoc /> */

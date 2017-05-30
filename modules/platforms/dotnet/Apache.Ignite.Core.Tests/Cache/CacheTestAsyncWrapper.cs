@@ -439,12 +439,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
-        {
-            _cache.LocalPromote(keys);
-        }
-        
-        /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
             return _cache.Query(qry);
@@ -548,6 +542,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public ICache<TK, TV> WithPartitionRecover()
+        {
+            return _cache.WithPartitionRecover();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<int> GetLostPartitions()
+        {
+            return _cache.GetLostPartitions();
+        }
+
+        /** <inheritDoc /> */
         public IEnumerator<ICacheEntry<TK, TV>> GetEnumerator()
         {
             return _cache.GetEnumerator();
@@ -571,7 +577,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -586,7 +592,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             catch (Exception ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
     }

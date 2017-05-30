@@ -21,8 +21,10 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +37,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
@@ -75,6 +78,29 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
  *
  */
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
+    /** Known classes which are safe to use on server nodes. */
+    private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
+
+    /**
+     *
+     */
+    static {
+        KNOWN_CLS.add(String.class);
+        KNOWN_CLS.add(Boolean.class);
+        KNOWN_CLS.add(Byte.class);
+        KNOWN_CLS.add(Short.class);
+        KNOWN_CLS.add(Character.class);
+        KNOWN_CLS.add(Integer.class);
+        KNOWN_CLS.add(Long.class);
+        KNOWN_CLS.add(Float.class);
+        KNOWN_CLS.add(Double.class);
+        KNOWN_CLS.add(String.class);
+        KNOWN_CLS.add(UUID.class);
+        KNOWN_CLS.add(IgniteUuid.class);
+        KNOWN_CLS.add(BigDecimal.class);
+        KNOWN_CLS.add(BinaryObject.class);
+    }
+
     /** Sets map. */
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
@@ -416,6 +442,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         finally {
             cctx.gate().leave();
         }
+    }
+
+    /**
+     * @param obj Object.
+     * @return {@code True}
+     */
+    public boolean knownType(Object obj) {
+        return obj == null || KNOWN_CLS.contains(obj.getClass());
     }
 
     /**

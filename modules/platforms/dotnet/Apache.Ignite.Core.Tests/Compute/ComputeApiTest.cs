@@ -122,6 +122,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: IgniteUuid. */
         private const int EchoTypeIgniteUuid = 22;
 
+        /** Echo type: binary enum (created with builder). */
+        private const int EchoTypeBinaryEnum = 23;
+
+        /** */
+        private const string DefaultCacheName = "default";
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -169,14 +175,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (_grid1 != null)
-                Ignition.Stop(_grid1.Name, true);
-
-            if (_grid2 != null)
-                Ignition.Stop(_grid2.Name, true);
-
-            if (_grid3 != null)
-                Ignition.Stop(_grid3.Name, true);
+            Ignition.StopAll(true);
         }
 
         [TearDown]
@@ -199,21 +198,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             // Check that default Compute projection excludes client nodes.
             CollectionAssert.AreEquivalent(prj.ForServers().GetNodes(), prj.GetCompute().ClusterGroup.GetNodes());
-        }
-
-        /// <summary>
-        /// Test getting cache with default (null) name.
-        /// </summary>
-        [Test]
-        public void TestCacheDefaultName()
-        {
-            var cache = _grid1.GetCache<int, int>(null);
-
-            Assert.IsNotNull(cache);
-
-            cache.GetAndPut(1, 1);
-
-            Assert.AreEqual(1, cache.Get(1));
         }
 
         /// <summary>
@@ -959,9 +943,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Tests the echo task returning enum.
         /// </summary>
         [Test]
+        public void TestEchoTaskBinaryEnum()
+        {
+            var res = _grid1.GetCompute().WithKeepBinary()
+                .ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinaryEnum);
+
+            Assert.AreEqual("JavaFoo", res.EnumName);
+            Assert.AreEqual(1, res.EnumValue);
+
+            var binType = res.GetBinaryType();
+
+            Assert.IsTrue(binType.IsEnum);
+            Assert.AreEqual("JavaDynEnum", binType.TypeName);
+
+            var vals = binType.GetEnumValues().OrderBy(x => x.EnumValue).ToArray();
+            Assert.AreEqual(new[] {1, 2}, vals.Select(x => x.EnumValue));
+            Assert.AreEqual(new[] {"JavaFoo", "JavaBar"}, vals.Select(x => x.EnumName));
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
         public void TestEchoTaskEnumFromCache()
         {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum>(null);
+            var cache = _grid1.GetCache<int, PlatformComputeEnum>(DefaultCacheName);
 
             foreach (PlatformComputeEnum val in Enum.GetValues(typeof(PlatformComputeEnum)))
             {
@@ -995,7 +1001,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArrayFromCache()
         {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(null);
+            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(DefaultCacheName);
 
             foreach (var val in new[]
             {
@@ -1022,7 +1028,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var enumVal = PlatformComputeEnum.Baz;
 
-            _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
+            _grid1.GetCache<int, InteropComputeEnumFieldTest>(DefaultCacheName)
                 .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
 
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
@@ -1044,7 +1050,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var guid = Guid.NewGuid();
 
-            _grid1.GetCache<int, object>(null)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
+            _grid1.GetCache<int, object>(DefaultCacheName)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
 
             var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
 
@@ -1168,7 +1174,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAffinityRun()
         {
-            const string cacheName = null;
+            const string cacheName = DefaultCacheName;
 
             // Test keys for non-client nodes
             var nodes = new[] {_grid1, _grid2}.Select(x => x.GetCluster().GetLocalNode());
@@ -1195,7 +1201,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAffinityCall()
         {
-            const string cacheName = null;
+            const string cacheName = DefaultCacheName;
 
             // Test keys for non-client nodes
             var nodes = new[] { _grid1, _grid2 }.Select(x => x.GetCluster().GetLocalNode());
@@ -1279,11 +1285,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExceptions()
         {
-            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+            Assert.Throws<AggregateException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
 
-            Assert.Throws<BinaryObjectException>(
+            Assert.Throws<AggregateException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+
+            // Local.
+            var ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.", 
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
+
+            // Remote.
+            ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
         }
 
         /// <summary>
@@ -1315,7 +1341,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(JavaBinaryCls),
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
-                    }
+                    },
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 SpringConfigUrl = path
             };
@@ -1483,6 +1510,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
+    class ExceptionalComputeAction : IComputeAction
+    {
+        public const string ErrorText = "Expected user exception";
+
+        public void Invoke()
+        {
+            throw new OverflowException(ErrorText);
+        }
+    }
+
     interface IUserInterface<out T>
     {
         T Invoke();
@@ -1524,7 +1561,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum PlatformComputeEnum
+    public enum PlatformComputeEnum : ushort
     {
         Foo,
         Bar,

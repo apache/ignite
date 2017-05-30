@@ -49,6 +49,7 @@ import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
@@ -561,7 +562,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             if (needToConvert) {
                                 Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
 
-                                return (R) new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                             }
 
                             return (R)next;
@@ -680,7 +681,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Local node cluster group.
      */
     private ClusterGroup projection(boolean loc) {
-        if (loc || ctx.isLocal() || isReplicatedDataNode())
+        if (loc || ctx.isLocal() || ctx.isReplicatedAffinityNode())
             return ctx.kernalContext().grid().cluster().forLocal();
 
         if (ctx.isReplicated())
@@ -753,6 +754,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+        return (FieldsQueryCursor<List<?>>)query((Query)qry);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
         A.notNull(qry, "qry");
 
@@ -767,38 +774,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             convertToBinary(qry);
 
-            final CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+
+            boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
             if (qry instanceof ContinuousQuery)
-                return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(),
-                    opCtxCall != null && opCtxCall.isKeepBinary());
+                return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(), keepBinary);
 
-            if (qry instanceof SqlQuery) {
-                if (isReplicatedDataNode() && ((SqlQuery)qry).isDistributedJoins())
-                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
-                        "not on replicated.");
+            if (qry instanceof SqlQuery)
+                return (QueryCursor<R>)ctx.kernalContext().query().querySql(ctx, (SqlQuery)qry, keepBinary);
 
-                final SqlQuery p = (SqlQuery)qry;
-
-                if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
-                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocal(ctx, p,
-                                opCtxCall != null && opCtxCall.isKeepBinary());
-
-                return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
-            }
-
-            if (qry instanceof SqlFieldsQuery) {
-                if (isReplicatedDataNode() && ((SqlFieldsQuery)qry).isDistributedJoins())
-                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
-                        "not on replicated.");
-
-                SqlFieldsQuery p = (SqlFieldsQuery)qry;
-
-                if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
-                    return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
-
-                return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
-            }
+            if (qry instanceof SqlFieldsQuery)
+                return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
+                    keepBinary);
 
             if (qry instanceof ScanQuery)
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
@@ -882,13 +870,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         for (int i = 0; i < args.length; i++)
             args[i] = ctx.cacheObjects().binary().toBinary(args[i]);
-    }
-
-    /**
-     * @return {@code true} If this is a replicated cache and we are on a data node.
-     */
-    private boolean isReplicatedDataNode() {
-        return ctx.isReplicated() && ctx.affinityNode();
     }
 
     /**
@@ -1011,12 +992,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             onLeave(gate, prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void localPromote(Set<? extends K> keys) throws CacheException {
-        // TODO GG-11148.
-        throw new UnsupportedOperationException("localPromote will be removed");
     }
 
     /** {@inheritDoc} */

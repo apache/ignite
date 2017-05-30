@@ -35,12 +35,12 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.readBlock;
  * Task to read file block.
  */
 @GridInternal
-public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockArg, VisorEither<VisorFileBlock>> {
+public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTaskArg, VisorEither<VisorFileBlock>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorFileBlockJob job(VisorFileBlockArg arg) {
+    @Override protected VisorFileBlockJob job(VisorFileBlockTaskArg arg) {
         return new VisorFileBlockJob(arg, debug);
     }
 
@@ -48,7 +48,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockArg, Viso
      * Job that read file block on node.
      */
     private static class VisorFileBlockJob
-        extends VisorJob<VisorFileBlockArg, VisorEither<VisorFileBlock>> {
+        extends VisorJob<VisorFileBlockTaskArg, VisorEither<VisorFileBlock>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -56,12 +56,12 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockArg, Viso
          * @param arg Descriptor of file block to read.
          * @param debug Debug flag.
          */
-        private VisorFileBlockJob(VisorFileBlockArg arg, boolean debug) {
+        private VisorFileBlockJob(VisorFileBlockTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorEither<VisorFileBlock> run(VisorFileBlockArg arg) {
+        @Override protected VisorEither<VisorFileBlock> run(VisorFileBlockTaskArg arg) {
             try {
                 URL url = U.resolveIgniteUrl(arg.getPath());
 

@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -41,9 +42,6 @@ namespace Apache.Ignite.Linq.Impl
 
         /** */
         private readonly List<object> _parameters = new List<object>();
-
-        /** */
-        private readonly List<Expression> _parameterExpressions = new List<Expression>();
 
         /** */
         private readonly AliasDictionary _aliases = new AliasDictionary();
@@ -63,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var qryText = _builder.ToString();
 
-            return new QueryData(qryText, _parameters, _parameterExpressions);
+            return new QueryData(qryText, _parameters);
         }
 
         /// <summary>
@@ -83,14 +81,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the parameters.
-        /// </summary>
-        public IList<Expression> ParameterExpressions
-        {
-            get { return _parameterExpressions; }
-        }
-
-        /// <summary>
         /// Gets the aliases.
         /// </summary>
         public AliasDictionary Aliases
@@ -107,36 +97,83 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool forceStar)
+        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
         {
             _aliases.Push();
 
+            var hasDelete = VisitRemoveOperator(queryModel);
+
+            if (!hasDelete)
+            {
             // SELECT
             _builder.Append("select ");
 
             // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, forceStar);
+                VisitSelectors(queryModel, includeAllFields);
+            }
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
+            if (!hasDelete)
+            {
             // UNION ...
             ProcessResultOperatorsEnd(queryModel);
+            }
 
             _aliases.Pop();
         }
 
         /// <summary>
+        /// Visits the remove operator. Returns true if it is present.
+        /// </summary>
+        private bool VisitRemoveOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            if (resultOps.LastOrDefault() is RemoveAllResultOperator)
+            {
+                _builder.Append("delete ");
+
+                if (resultOps.Count == 2)
+                {
+                    var resOp = resultOps[0] as TakeResultOperator;
+
+                    if (resOp == null)
+                    {
+                        throw new NotSupportedException(
+                            "RemoveAll can not be combined with result operators (other than Take): " +
+                            resultOps[0].GetType().Name);
+                    }
+
+                    _builder.Append("top ");
+                    BuildSqlExpression(resOp.Count);
+                    _builder.Append(" ");
+                }
+                else if (resultOps.Count > 2)
+                {
+                    throw new NotSupportedException(
+                        "RemoveAll can not be combined with result operators (other than Take): " +
+                        string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+                }
+
+                return true;
+            }
+                
+            return false;
+        }
+
+        /// <summary>
         /// Visits the selectors.
         /// </summary>
-        public void VisitSelectors(QueryModel queryModel, bool forceStar)
+        public void VisitSelectors(QueryModel queryModel, bool includeAllFields)
         {
             var parenCount = ProcessResultOperatorsBegin(queryModel);
 
             if (parenCount >= 0)
             {
                 // FIELD1, FIELD2
-                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
+                BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0, includeAllFields);
                 _builder.Append(')', parenCount).Append(" ");
             }
         }
@@ -543,13 +580,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
         {
-            var cacheQueryExpressionVisitor = new CacheQueryExpressionVisitor(this, useStar);
-            cacheQueryExpressionVisitor.Visit(expression);
-            //var memberExpression = expression as MemberExpression;
-            //if (memberExpression != null)
-            //    cacheQueryExpressionVisitor.MyVisitMember(memberExpression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
         }
     }
 }

@@ -17,28 +17,52 @@
 
 package org.apache.ignite.configuration;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
- * Enumeration defines data page eviction modes.
+ * Defines memory page eviction algorithm. A mode is set for a specific
+ * {@link MemoryPolicyConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
+ * other types of pages, like index or meta pages, are not evictable.
  */
 public enum DataPageEvictionMode {
-    /** Disabled. */
+    /** Eviction is disabled. */
     DISABLED,
 
     /**
-     * Random-LRU algorithm. In a nutshell:
-     * 1) During memory policy initialization, off-heap array is allocated to track timestamp of last usage for each
-     * data page.
-     * 2) When data page on address X is accessed, current timestamp is stored in X / PAGE_SIZE array position.
-     * 3) When there's a need for eviction, we randomly choose 5 indices of array (if some of indices point to
-     * non-data pages, re-choose them) and evict data page with minimum timestamp.
+     * Random-LRU algorithm.
+     * <ul>
+     * <li>Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
+     * last usage timestamp for every individual data page. The size of the array is calculated this way - size =
+     * ({@link MemoryPolicyConfiguration#getMaxSize()} / {@link MemoryConfiguration#pageSize})</li>
+     * <li>When a data page is accessed, its timestamp gets updated in the tracking array. The page index in the
+     * tracking array is calculated this way - index = (pageAddress / {@link MemoryPolicyConfiguration#getMaxSize()}</li>
+     * <li>When it's required to evict some pages, the algorithm randomly chooses 5 indexes from the tracking array and
+     * evicts a page with the latest timestamp. If some of the indexes point to non-data pages (index or system pages)
+     * then the algorithm picks other pages.</li>
+     * </ul>
      */
     RANDOM_LRU,
 
     /**
-     * Random-2-LRU algorithm. Scan-resistant version of Random-LRU. The only difference is that we store two
-     * previous timestamps for each data page, and choose minimum between "older" timestamps. LRU-2 outperforms LRU by
-     * resolving "one-hit wonder" problem: if page is accessed very rarely, but accidentally accessed once, it's
-     * protected from eviction for long time.
+     * Random-2-LRU algorithm: scan-resistant version of Random-LRU.
+     * <p>
+     * This algorithm differs from Random-LRU only in a way that two latest access timestamps are stored for every
+     * data page. At the eviction time, a minimum between two latest timestamps is taken for further comparison with
+     * minimums of other pages that might be evicted. LRU-2 outperforms LRU by resolving "one-hit wonder" problem -
+     * if a data page is accessed rarely, but accidentally accessed once, it's protected from eviction for a long time.
      */
-    RANDOM_2_LRU
+    RANDOM_2_LRU;
+
+    /** Enumerated values. */
+    private static final DataPageEvictionMode[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static DataPageEvictionMode fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

@@ -24,8 +24,8 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -33,14 +33,14 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
-        "('p1', 1, 'John', 'White', 25), " +
-        "('p2', 2, 'Joe', 'Black', 35), " +
-        "('p3', 3, 'Mike', 'Green', 40)";
+    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age, data) values " +
+        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White')), " +
+        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black')), " +
+        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'))";
 
     /** SQL query. */
-    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age) values " +
-        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
+    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age, data) values " +
+        "(?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)";
 
     /** Statement. */
     private Statement stmt;
@@ -79,6 +79,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("John", rs.getString("firstName"));
                         assertEquals("White", rs.getString("lastName"));
                         assertEquals(25, rs.getInt("age"));
+                        assertEquals("White", str(getBytes(rs.getBlob("data"))));
                         break;
 
                     case 2:
@@ -86,6 +87,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("Joe", rs.getString("firstName"));
                         assertEquals("Black", rs.getString("lastName"));
                         assertEquals(35, rs.getInt("age"));
+                        assertEquals("Black", str(getBytes(rs.getBlob("data"))));
                         break;
 
                     case 3:
@@ -93,6 +95,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("Mike", rs.getString("firstName"));
                         assertEquals("Green", rs.getString("lastName"));
                         assertEquals(40, rs.getInt("age"));
+                        assertEquals("Green", str(getBytes(rs.getBlob("data"))));
                         break;
 
                     case 4:
@@ -100,6 +103,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
                         assertEquals("Leah", rs.getString("firstName"));
                         assertEquals("Grey", rs.getString("lastName"));
                         assertEquals(22, rs.getInt("age"));
+                        assertEquals("Grey", str(getBytes(rs.getBlob("data"))));
                         break;
 
                     default:
@@ -108,9 +112,9 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
             }
         }
 
-        grid(0).cache(null).clear();
+        grid(0).cache(DEFAULT_CACHE_NAME).clear();
 
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+        assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).size(CachePeekMode.ALL));
 
         super.afterTest();
 
@@ -164,7 +168,7 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
 
         assertNotNull(reason);
 
-        assertEquals(IgniteException.class, reason.getClass());
+        assertEquals(IgniteSQLException.class, reason.getClass());
 
         assertEquals("Failed to INSERT some keys because they are already in cache [keys=[p2]]", reason.getMessage());
 

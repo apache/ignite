@@ -151,7 +151,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @see #getConfiguration().
      */
     protected CacheConfiguration<IntegerKey, Integer> getCacheConfiguration() {
-        CacheConfiguration<IntegerKey, Integer> cfg = new CacheConfiguration<>();
+        CacheConfiguration<IntegerKey, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setAtomicityMode(TRANSACTIONAL ? CacheAtomicityMode.TRANSACTIONAL : CacheAtomicityMode.ATOMIC);
         cfg.setCacheMode(CacheMode.PARTITIONED);

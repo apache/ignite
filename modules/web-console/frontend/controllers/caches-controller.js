@@ -513,7 +513,7 @@ export default ['cachesController', [
                         ];
 
                         // Show a basic modal from a controller
-                        $modal({scope, templateUrl: infoMessageTemplateUrl, placement: 'center', show: true});
+                        $modal({scope, templateUrl: infoMessageTemplateUrl, show: true});
                     }
 
                     save(item);

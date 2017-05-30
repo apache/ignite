@@ -75,7 +75,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -872,10 +871,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 sendNotification(nodeId, routineId, null, toSnd, orderedTopic, true, null);
         }
         else {
-            LocalRoutineInfo localRoutineInfo = locInfos.get(routineId);
+            LocalRoutineInfo locRoutineInfo = locInfos.get(routineId);
 
-            if (localRoutineInfo != null)
-                localRoutineInfo.handler().notifyCallback(nodeId, routineId, objs, ctx);
+            if (locRoutineInfo != null)
+                locRoutineInfo.handler().notifyCallback(nodeId, routineId, objs, ctx);
         }
     }
 
@@ -897,7 +896,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
-        assert !msg || obj instanceof Message : obj;
+        assert !msg || (obj instanceof Message || obj instanceof Collection) : obj;
 
         assert !nodeId.equals(ctx.localNodeId());
 
@@ -917,7 +916,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 syncMsgFuts.put(futId, fut);
 
                 try {
-                    sendNotification(nodeId, routineId, futId, F.asList(obj), null, msg, null);
+                    sendNotification(nodeId,
+                        routineId,
+                        futId,
+                        obj instanceof Collection ? (Collection)obj : F.asList(obj),
+                        null,
+                        msg,
+                        null);
 
                     info.hnd.onBatchAcknowledged(routineId, info.add(obj), ctx);
                 }
@@ -1563,7 +1568,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         GridContinuousBatch addAll(Collection<?> objs) {
             assert objs != null;
 
-            GridContinuousBatch toSnd = null;
+            GridContinuousBatch toSnd;
 
             lock.writeLock().lock();
 
@@ -1820,9 +1825,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Future for start routine.
      */
     private static class StartFuture extends GridFutureAdapter<UUID> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private GridKernalContext ctx;
 

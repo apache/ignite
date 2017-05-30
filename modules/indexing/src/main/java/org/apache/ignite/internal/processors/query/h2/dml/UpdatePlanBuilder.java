@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.DmlAstUtils;
@@ -54,8 +53,7 @@ import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -133,7 +131,7 @@ public final class UpdatePlanBuilder {
             // not for updates, and hence will allow putting new pairs only.
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || !IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
+            if (keys.length != 1 || !desc.isKeyColumn(tbl.dataTable().getColumn(keys[0].columnName()).getColumnId()))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -173,12 +171,13 @@ public final class UpdatePlanBuilder {
 
             colTypes[i] = col.resultType().type();
 
-            if (KEY_FIELD_NAME.equals(colName)) {
+            int colId = col.column().getColumnId();
+            if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (VAL_FIELD_NAME.equals(colName)) {
+            if (desc.isValueColumn(colId)) {
                 valColIdx = i;
                 continue;
             }
@@ -267,7 +266,8 @@ public final class UpdatePlanBuilder {
 
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
-                    if (VAL_FIELD_NAME.equals(colNames[i]))
+                    Column column = updatedCols.get(i).column();
+                    if (desc.isValueColumn(column.getColumnId()))
                         valColIdx = i;
                 }
 
@@ -485,17 +485,19 @@ public final class UpdatePlanBuilder {
     private static boolean updateAffectsKeyColumns(GridH2Table gridTbl, Set<String> affectedColNames) {
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
-        Column[] cols = gridTbl.getColumns();
+        for (String colName : affectedColNames) {
+            int colId = gridTbl.getColumn(colName).getColumnId();
 
-        // Check "_key" column itself - always has index of 0.
-        if (affectedColNames.contains(cols[0].getName()))
-            return true;
-
-        // Start off from i = 2 to skip indices of 0 an 1 corresponding to key and value respectively.
-        for (int i = 2; i < cols.length; i++)
-            if (affectedColNames.contains(cols[i].getName()) && desc.isColumnKeyProperty(i - 2))
+            // Check "_key" column and alias key column
+            if (desc.isKeyColumn(colId))
                 return true;
 
+            // column ids 0..2 are _key, _val, _ver
+            if (colId >= DEFAULT_COLUMNS_COUNT) {
+                if (desc.isColumnKeyProperty(colId - DEFAULT_COLUMNS_COUNT))
+                    return true;
+            }
+        }
         return false;
     }
 
