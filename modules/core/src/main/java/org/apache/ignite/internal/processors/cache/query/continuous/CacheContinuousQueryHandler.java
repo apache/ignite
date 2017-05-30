@@ -716,7 +716,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
+        //returns stub if system cache not created yet
+        final IgniteCache cache = cctx.kernalContext().cache().safeJcache(cctx.name(), cctx.cacheId());
 
         if (internal) {
             if (e.isFiltered())
@@ -1125,15 +1126,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             break;
                     }
                 }
-            }
 
-            if (log.isDebugEnabled()) {
-                log.debug("Will send to listener the following events [entries=" + entries +
-                    ", lastFiredEvt=" + lastFiredEvt +
-                    ", curTop=" + curTop +
-                    ", entUpdCnt=" + entry.updateCounter() +
-                    ", partId=" + entry.partition() +
-                    ", pendingEvts=" + pendingEvts + ']');
+                if (log.isDebugEnabled()) {
+                    log.debug("Will send to listener the following events [entries=" + entries +
+                        ", lastFiredEvt=" + lastFiredEvt +
+                        ", curTop=" + curTop +
+                        ", entUpdCnt=" + entry.updateCounter() +
+                        ", partId=" + entry.partition() +
+                        ", pendingEvts=" + pendingEvts + ']');
+                }
             }
 
             return entries;

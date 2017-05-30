@@ -512,7 +512,7 @@ public final class IgniteSystemProperties {
     /**
      * Whether Ignite can access unaligned memory addresses.
      * <p>
-     * Defaults to {@code} false, meaning that unaligned access will be performed only on x86 architecture.
+     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
      */
     public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
 
@@ -540,6 +540,24 @@ public final class IgniteSystemProperties {
             return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
         }
     };
+
+    /**
+     * Use local metadata cache instead of distributed one. May be used only when binary objects schema
+     * are not modified and all classes available on each node. Classes that implements Binarylizable are
+     * not supported.
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE = "IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE";
+
+     /**
+     * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
+     * support service security permissions. In this case security permissions will be ignored
+     * (if they set).
+     * <p>
+     *     Default is {@code false}, which means that service security permissions will be respected.
+     * </p>
+     */
+    public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
 
     /**
      * Enforces singleton.

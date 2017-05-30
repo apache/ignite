@@ -159,6 +159,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
 
+        suite.addTestSuite(BinaryMarshallerLocalMetadataCacheTest.class);
+
         return suite;
     }
 }
