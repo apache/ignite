@@ -267,7 +267,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"cacheTemplate=cache\""));
 
-
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration("Person")));
