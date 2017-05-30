@@ -586,7 +586,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public IMemoryMetrics GetMemoryMetrics(string memoryPolicyName)
         {
             return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
-                stream => new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)));
+                stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
         }
 
         /// <summary>

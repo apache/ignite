@@ -240,7 +240,13 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
                 MemoryMetrics metrics = platformCtx.kernalContext().grid().memoryMetrics(plcName);
 
-                writeMemoryMetrics(writer, metrics);
+                if (metrics != null) {
+                    writer.writeBoolean(true);
+                    writeMemoryMetrics(writer, metrics);
+                }
+                else {
+                    writer.writeBoolean(false);
+                }
 
                 break;
             }
@@ -416,6 +422,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @param metrics Metrics.
      */
     private static void writeMemoryMetrics(BinaryRawWriter writer, MemoryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
         writer.writeString(metrics.getName());
         writer.writeLong(metrics.getTotalAllocatedPages());
         writer.writeFloat(metrics.getAllocationRate());
