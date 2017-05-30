@@ -597,7 +597,7 @@ public class JdbcConnection implements Connection {
     @Override public Blob createBlob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(new byte[0]);
     }
 
     /** {@inheritDoc} */
