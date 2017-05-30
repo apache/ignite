@@ -112,7 +112,7 @@ class ClusterCachesInfo {
                 CacheData cacheData = gridData.caches().get(locCfg.getName());
 
                 if (cacheData != null)
-                    checkCache(locCfg, cacheData.cacheConfiguration(), cacheData.receivedFrom());
+                    checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
             }
         }
 
@@ -122,18 +122,22 @@ class ClusterCachesInfo {
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
-     * @param locCfg Local configuration.
-     * @param rmtCfg Remote configuration.
+     * @param locInfo Local configuration.
+     * @param rmtData Remote configuration.
      * @param rmt Remote node.
      * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(CacheConfiguration<?, ?> locCfg, CacheConfiguration<?, ?> rmtCfg, UUID rmt)
+    @SuppressWarnings("unchecked")
+    private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
-        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtCfg);
-        GridCacheAttributes locAttr = new GridCacheAttributes(locCfg);
+        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.sql());
+        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config(), locInfo.sql());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "sql", "SQL flag",
+            locAttr.sql(), rmtAttr.sql(), true);
 
         if (rmtAttr.cacheMode() != LOCAL) {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
@@ -147,8 +151,8 @@ class ClusterCachesInfo {
 
             ClusterNode rmtNode = ctx.discovery().node(rmt);
 
-            if (CU.affinityNode(ctx.discovery().localNode(), locCfg.getNodeFilter())
-                && rmtNode != null && CU.affinityNode(rmtNode, rmtCfg.getNodeFilter())) {
+            if (CU.affinityNode(ctx.discovery().localNode(), locInfo.config().getNodeFilter())
+                && rmtNode != null && CU.affinityNode(rmtNode, rmtData.cacheConfiguration().getNodeFilter())) {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
                     locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
             }
@@ -382,7 +386,7 @@ class ClusterCachesInfo {
                     if (req.sql() && !desc.sql()) {
                         ctx.cache().completeCacheStartFuture(req, false,
                             new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
-                            "DROP TABLE [cacheName=" + req.cacheName() + ']'));
+                                "DROP TABLE [cacheName=" + req.cacheName() + ']'));
 
                         continue;
                     }

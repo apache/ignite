@@ -23,7 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -32,6 +34,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -42,6 +45,8 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -60,8 +65,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
 
-        client().getOrCreateCache(cacheConfigurationForIndexing());
-
         client().addCacheConfiguration(cacheConfiguration());
     }
 
@@ -70,6 +73,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         stopAllGrids();
 
         super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        client().getOrCreateCache(cacheConfigurationForIndexing());
     }
 
     /** {@inheritDoc} */
@@ -216,13 +226,61 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    cache().query(new SqlFieldsQuery("DROP TABLE \"Integer\""));
+            @Override public Object call() throws Exception {
+                cache().query(new SqlFieldsQuery("DROP TABLE \"Integer\""));
 
-                    return null;
+                return null;
+            }
+        }, IgniteSQLException.class,
+        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx]");
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+    }
+
+    /**
+     * Create caches on client and on server nodes during client disconnect with various combinations of SQL flags.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkClientReconnect(final boolean cliSql, final  boolean srvSql) throws Exception {
+        reconnectClientNode(grid(0), client(), new RunnableX() {
+            @Override public void run() throws Exception {
+
+
+            }
+        });
+    }
+
+    /**
+     * Reconnect the client and run specified actions while it's out.
+     *
+     * @param srvNode Server node.
+     * @param cliNode Client node.
+     * @param clo Closure to run
+     * @throws Exception If failed.
+     */
+    private void reconnectClientNode(final Ignite srvNode, final Ignite cliNode, final RunnableX clo) throws Exception {
+        try {
+            IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
+                @Override public void run() {
+                    try {
+                        clo.run();
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException("Test reconnect runnable failed.", e);
+                    }
                 }
-            }, IgniteSQLException.class,
-            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx]");
+            });
+        }
+        finally {
+
+        }
     }
 
     /**
