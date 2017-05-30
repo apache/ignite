@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.wal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 
 /**
@@ -47,5 +48,5 @@ public interface RecordSerializer {
      * @param in Data input to read data from.
      * @return Read entry.
      */
-    public WALRecord readRecord(FileInput in) throws IOException, IgniteCheckedException;
+    public WALRecord readRecord(FileInput in, WALPointer expPtr) throws IOException, IgniteCheckedException;
 }

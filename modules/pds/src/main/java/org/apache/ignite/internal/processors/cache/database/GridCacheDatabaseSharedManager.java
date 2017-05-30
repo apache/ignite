@@ -1232,7 +1232,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        ByteBuffer buf = ByteBuffer.allocate(20);
         buf.order(ByteOrder.nativeOrder());
 
         if (startFile != null)
@@ -1260,7 +1260,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             buf.flip();
 
-            return new FileWALPointer(buf.getInt(), buf.getInt(), buf.getInt());
+            return new FileWALPointer(buf.getLong(), buf.getInt(), buf.getInt());
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to read checkpoint pointer from marker file: " +
@@ -1728,7 +1728,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             tmpWriteBuf.rewind();
 
-            tmpWriteBuf.putInt(filePtr.index());
+            tmpWriteBuf.putLong(filePtr.index());
 
             tmpWriteBuf.putInt(filePtr.fileOffset());
 

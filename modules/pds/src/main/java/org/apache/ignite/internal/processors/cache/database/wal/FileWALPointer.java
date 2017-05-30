@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     /** */
-    private final int idx;
+    private final long idx;
 
     /** */
     private final int fileOffset;
@@ -37,7 +37,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
      * @param idx File timestamp index.
      * @param fileOffset Offset in file, from the beginning.
      */
-    public FileWALPointer(int idx, int fileOffset, int len) {
+    public FileWALPointer(long idx, int fileOffset, int len) {
         this.idx = idx;
         this.fileOffset = fileOffset;
         this.len = len;
@@ -46,7 +46,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     /**
      * @return Timestamp index.
      */
-    public int index() {
+    public long index() {
         return idx;
     }
 
@@ -62,6 +62,13 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
      */
     public int length() {
         return len;
+    }
+
+    /**
+     * @param len Record length.
+     */
+    public void length(int len) {
+        this.len = len;
     }
 
     /** {@inheritDoc} */
@@ -89,7 +96,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = idx;
+        int result = (int)(idx ^ (idx >>> 32));
 
         result = 31 * result + fileOffset;
 
@@ -98,7 +105,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
 
     /** {@inheritDoc} */
     @Override public int compareTo(FileWALPointer o) {
-        int res = Integer.compare(idx, o.idx);
+        int res = Long.compare(idx, o.idx);
 
         return res == 0 ? Integer.compare(fileOffset, o.fileOffset) : res;
     }
