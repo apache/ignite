@@ -36,24 +36,17 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeFilter;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,6 +87,20 @@ public class GridLuceneIndex implements AutoCloseable {
     /** */
     private final GridKernalContext ctx;
 
+    /** */
+    private static final FieldType EXPIRATION_TIME_FIELD_TYPE = new FieldType();
+
+    /** */
+    static {
+        EXPIRATION_TIME_FIELD_TYPE.setTokenized(true);
+        EXPIRATION_TIME_FIELD_TYPE.setOmitNorms(true);
+        EXPIRATION_TIME_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS);
+        EXPIRATION_TIME_FIELD_TYPE.setNumericType(FieldType.NumericType.LONG);
+        EXPIRATION_TIME_FIELD_TYPE.setStored(true);
+        EXPIRATION_TIME_FIELD_TYPE.setNumericPrecisionStep(1);
+        EXPIRATION_TIME_FIELD_TYPE.freeze();
+    }
+
     /**
      * Constructor.
      *
@@ -113,7 +120,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
         try {
             writer = new IndexWriter(dir,
-                new IndexWriterConfig(Version.LUCENE_4_10_4, new StandardAnalyzer()));
+                new IndexWriterConfig(new StandardAnalyzer()));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -200,7 +207,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
             doc.add(new StoredField(VER_FIELD_NAME, ver.toString().getBytes()));
 
-            doc.add(new LongField(EXPIRATION_TIME_FIELD_NAME, expires, Field.Store.YES));
+            doc.add(new LongField(EXPIRATION_TIME_FIELD_NAME, expires, EXPIRATION_TIME_FIELD_TYPE));
 
             // Next implies remove than add atomically operation.
             writer.updateDocument(term, doc);
@@ -250,7 +257,7 @@ public class GridLuceneIndex implements AutoCloseable {
             if (updates != 0) {
                 writer.commit();
 
-                if(writer.hasPendingMerges())
+                if (writer.hasPendingMerges())
                     writer.maybeMerge();
 
                 updateCntr.addAndGet(-updates);
@@ -268,13 +275,19 @@ public class GridLuceneIndex implements AutoCloseable {
         MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields,
             writer.getAnalyzer());
 
-        // Filter expired items.
-        Filter f = NumericRangeFilter.newLongRange(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), null, false, false);
-
         TopDocs docs;
 
         try {
-            docs = searcher.search(parser.parse(qry), f, Integer.MAX_VALUE);
+            // Filter expired items.
+            Query filter = NumericRangeQuery.newLongRange(EXPIRATION_TIME_FIELD_NAME, 1, U.currentTimeMillis(),
+                null, false, false);
+
+            BooleanQuery query = new BooleanQuery.Builder()
+                .add(parser.parse(qry), BooleanClause.Occur.MUST)
+                .add(filter, BooleanClause.Occur.FILTER)
+                .build();
+
+            docs = searcher.search(query, Integer.MAX_VALUE);
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
