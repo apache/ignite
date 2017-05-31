@@ -589,7 +589,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     /**
      * Rechecks if lock should be reassigned.
      */
-    public void recheck() {
+    public CacheLockCandidates recheck(GridCacheMvccCandidate checkingCandidate) {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
@@ -617,7 +617,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         }
 
         // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, checkingCandidate);
+
+        return owner;
     }
 
     /** {@inheritDoc} */
@@ -689,6 +691,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         assert owner.owner() || owner.used() : "Neither owner or used flags are set on ready local candidate: " +
             owner;
 
+        GridCacheMvccCandidate prev = owner;
+
         if (owner.local() && owner.next() != null) {
             for (GridCacheMvccCandidate cand = owner.next(); cand != null; cand = cand.next()) {
                 assert cand.local() : "Remote candidate cannot be part of thread chain: " + cand;
@@ -700,11 +704,20 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                     GridDistributedCacheEntry e =
                         (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
-                    if (e != null)
-                        e.recheck();
+                    if (e != null) {
+                        CacheLockCandidates newOnwer = e.recheck(owner);
 
-                    break;
+                        if(newOnwer == null || !newOnwer.hasCandidate(cand.version()))
+                            // the lock from the chain hasn't been acquired, no sense to check the rest of the chain
+                            break;
+                        else
+                            prev.next(null);
+                    }
+                    else
+                        break;
                 }
+
+                prev = cand;
             }
         }
     }
