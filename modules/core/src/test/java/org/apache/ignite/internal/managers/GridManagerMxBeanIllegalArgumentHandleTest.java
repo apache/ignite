@@ -36,6 +36,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Inconsistent metrics from JVM reported: grid manager handle test
+ *
+ * Test modifies static final field, used only for development
  */
 public class GridManagerMxBeanIllegalArgumentHandleTest extends TestCase {
     /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
