@@ -17,9 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -27,20 +24,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Connection test.
  */
-// TODO: JdbcThin prefix
-public class JdbcAbstractSelfTest extends GridCommonAbstractTest {
-    //  TODO: Remove and understand rael problem
+public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        try {
-            Driver drv = DriverManager.getDriver("jdbc:ignite://");
-
-            if (drv != null)
-                DriverManager.deregisterDriver(drv);
-        } catch (SQLException ignored) {
-            // No-op.
-        }
-
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 

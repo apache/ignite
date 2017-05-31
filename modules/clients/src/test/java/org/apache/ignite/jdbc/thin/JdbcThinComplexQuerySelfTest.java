@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for complex queries (joins, etc.).
  */
-public class JdbcComplexQuerySelfTest extends JdbcAbstractSelfTest {
+public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

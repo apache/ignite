@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class JdbcNoDefaultSchemaTest extends JdbcAbstractSelfTest {
+public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

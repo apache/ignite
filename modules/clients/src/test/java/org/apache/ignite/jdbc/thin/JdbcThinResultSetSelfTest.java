@@ -50,7 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Result set test.
  */
 @SuppressWarnings("FloatingPointEquality")
-public class JdbcResultSetSelfTest extends JdbcAbstractSelfTest {
+public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

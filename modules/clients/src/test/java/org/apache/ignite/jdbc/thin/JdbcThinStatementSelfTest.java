@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-public class JdbcStatementSelfTest extends JdbcAbstractSelfTest {
+public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

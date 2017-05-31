@@ -38,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Connection test.
  */
-public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
+public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -146,7 +146,7 @@ public class JdbcConnectionSelfTest extends JdbcAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "URL is invalid");
+        }, SQLException.class, "No suitable driver found for q");
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
