@@ -171,16 +171,16 @@ public class JdbcConnection implements Connection {
         this.url = url;
 
         cacheName = props.getProperty(PROP_CACHE);
-
-        if (cacheName == null)
-            throw new SQLException(PROP_CACHE + " cannot be null.");
-
         locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
+
+        if (stream && cacheName == null)
+            throw new SQLException("Cache name cannot be null when streaming is enabled.");
+
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
@@ -203,9 +203,13 @@ public class JdbcConnection implements Connection {
             if (!isValid(2))
                 throw new SQLException("Client is invalid. Probably cache name is wrong.");
 
-            CacheConfiguration ccfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
+            if (cacheName != null) {
+                CacheConfiguration ccfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
 
-            schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
+                schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
+            }
+            else
+                schemaName = QueryUtils.DFLT_SCHEMA;
         }
         catch (Exception e) {
             close();
@@ -871,7 +875,7 @@ public class JdbcConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public Boolean call() {
-            return ignite.cache(cacheName) != null;
+            return cacheName == null || ignite.cache(cacheName) != null;
         }
     }
 
