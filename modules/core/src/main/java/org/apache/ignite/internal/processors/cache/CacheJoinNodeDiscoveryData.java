@@ -106,17 +106,23 @@ class CacheJoinNodeDiscoveryData implements Serializable {
         @GridToStringInclude
         private final CacheType cacheType;
 
+        /** */
+        @GridToStringInclude
+        private final boolean sql;
+
         /** Flags added for future usage. */
         private final byte flags;
 
         /**
          * @param ccfg Cache configuration.
          * @param cacheType Cache type.
+         * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          * @param flags Flags (for future usage).
          */
-        CacheInfo(CacheConfiguration ccfg, CacheType cacheType, byte flags) {
+        CacheInfo(CacheConfiguration ccfg, CacheType cacheType, boolean sql, byte flags) {
             this.ccfg = ccfg;
             this.cacheType = cacheType;
+            this.sql = sql;
             this.flags = flags;
         }
 
@@ -132,6 +138,13 @@ class CacheJoinNodeDiscoveryData implements Serializable {
          */
         CacheType cacheType() {
             return cacheType;
+        }
+
+        /**
+         * @return SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
+         */
+        boolean sql() {
+            return sql;
         }
 
         /** {@inheritDoc} */
