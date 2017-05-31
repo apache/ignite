@@ -12,7 +12,8 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <RootNamespace>igniteexamples</RootNamespace>
-    <ProjectGuid>{73BB124A-0CD4-4961-A6CD-61F9C71028A6}</ProjectGuid>
+    <ProjectGuid>{18BB0A18-8213-472A-81A0-9D9753697135}</ProjectGuid>
+    <ProjectName>compute-example</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -90,15 +91,10 @@ copy "$(ProjectDir)..\..\..\..\project\vs\$(Platform)\$(Configuration)\ignite.co
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\continuous_query_example.cpp" />
+    <ClCompile Include="..\..\src\compute_example.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\ignite\examples\address.h" />
-    <ClInclude Include="..\..\..\include\ignite\examples\organization.h" />
-    <ClInclude Include="..\..\..\include\ignite\examples\person.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\config\continuous-query-example.xml" />
+    <None Include="..\..\config\compute-example.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
