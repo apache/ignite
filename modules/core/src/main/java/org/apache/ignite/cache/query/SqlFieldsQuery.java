@@ -74,6 +74,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** Partitions for query */
     private int[] parts;
 
+    /** Schema. */
+    private String schema;
+
     /**
      * Constructs SQL fields query.
      *
@@ -283,6 +286,27 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setPartitions(@Nullable int... parts) {
         this.parts = prepare(parts);
+
+        return this;
+    }
+
+    /**
+     * Get schema.
+     *
+     * @return Schema.
+     */
+    @Nullable public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema.
+     *
+     * @param schema Schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(@Nullable String schema) {
+        this.schema = schema;
 
         return this;
     }
