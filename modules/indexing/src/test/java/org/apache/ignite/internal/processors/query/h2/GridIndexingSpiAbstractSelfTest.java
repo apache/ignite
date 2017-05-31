@@ -379,7 +379,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         ignite0.createCache(cacheACfg());
 
-        long longQryExecTime = CacheConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
+        long longQryExecTime = IgniteConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
 
         GridStringLogger log = new GridStringLogger(false, this.log);
 
