@@ -2763,10 +2763,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public Collection<DynamicCacheChangeRequest> startAllCachesRequests() throws IgniteCheckedException {
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
-        List<CacheConfiguration> cfgs = new ArrayList();
+        Map<String, CacheConfiguration> cfgs = new HashMap<>();
 
         for (CacheConfiguration[] staticCfgs : onJoinBatches.values())
-            Collections.addAll(cfgs, staticCfgs);
+            for (CacheConfiguration ccfg : staticCfgs)
+                if (cfgs.get(ccfg.getName()) == null)
+                    cfgs.put(ccfg.getName(), ccfg);
 
         if (!ctx.config().isDaemon() &&
             sharedCtx.pageStore() != null &&
@@ -2780,13 +2782,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     reqs.add(createRequest(cfg, false));
             }
 
-            for (CacheConfiguration cfg : cfgs) {
+            for (CacheConfiguration cfg : cfgs.values()) {
                 if (!savedCacheNames.contains(cfg.getName()))
                     reqs.add(createRequest(cfg, true));
             }
         }
         else {
-            for (CacheConfiguration cfg : cfgs)
+            for (CacheConfiguration cfg : cfgs.values())
                 reqs.add(createRequest(cfg, true));
         }
 
