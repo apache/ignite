@@ -53,6 +53,9 @@ public class CacheData implements Serializable {
     private final boolean staticCfg;
 
     /** */
+    private final boolean sql;
+
+    /** */
     private final boolean template;
 
     /** Flags added for future usage. */
@@ -66,6 +69,7 @@ public class CacheData implements Serializable {
      * @param schema Query schema.
      * @param rcvdFrom Node ID cache was started from.
      * @param staticCfg {@code True} if cache was statically configured.
+     * @param sql {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}.
      * @param template {@code True} if this is cache template.
      * @param flags Flags (added for future usage).
      */
@@ -76,6 +80,7 @@ public class CacheData implements Serializable {
         QuerySchema schema,
         UUID rcvdFrom,
         boolean staticCfg,
+        boolean sql,
         boolean template,
         byte flags) {
         assert cacheCfg != null;
@@ -90,6 +95,7 @@ public class CacheData implements Serializable {
         this.schema = schema;
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
+        this.sql = sql;
         this.template = template;
         this.flags = flags;
     }
@@ -127,6 +133,13 @@ public class CacheData implements Serializable {
      */
     public boolean staticallyConfigured() {
         return staticCfg;
+    }
+
+    /**
+     * @return {@code True} if cache was created by an SQL command such as {@code CREATE TABLE}.
+     */
+    public boolean sql() {
+        return sql;
     }
 
     /**
