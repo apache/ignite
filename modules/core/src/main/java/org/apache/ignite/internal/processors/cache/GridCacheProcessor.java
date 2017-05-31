@@ -197,7 +197,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
     /** On join batches. */
-    private ConcurrentMap<UUID, CacheConfiguration[]> onJoinBatches = new ConcurrentHashMap<>();
+    private ConcurrentMap<UUID, CacheConfiguration[]> onJoinStaticCacheCfgs = new ConcurrentHashMap<>();
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
@@ -2226,7 +2226,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!ctx.state().active()) {
             if (data instanceof CacheConfiguration[])
-                onJoinBatches.put(rmtNodeId, (CacheConfiguration[])data);
+                onJoinStaticCacheCfgs.put(rmtNodeId, (CacheConfiguration[])data);
 
             return;
         }
@@ -2765,7 +2765,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Map<String, CacheConfiguration> cfgs = new HashMap<>();
 
-        for (CacheConfiguration[] staticCfgs : onJoinBatches.values())
+        for (CacheConfiguration[] staticCfgs : onJoinStaticCacheCfgs.values())
             for (CacheConfiguration ccfg : staticCfgs)
                 if (cfgs.get(ccfg.getName()) == null)
                     cfgs.put(ccfg.getName(), ccfg);
