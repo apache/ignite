@@ -105,10 +105,6 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
         for (int i = 0; i < N; i++) {
             System.out.println("=======================> 0");
             startGrids(N,N*i);
-            //!!! Если тут заменить на startGridsMultiThreaded(N*i, N)
-            //Порядок аргуметов другой т.к. я перенес метод startGrids из класса GridCacheVariableTopologySelfTest,
-            // который какой-то чувак написал без оглядки на startGridsMultiThreaded.
-
             System.out.println("=======================> 1");
             final IgniteConfiguration cfg = GridTestUtils.getFieldValue(((IgniteKernal) (Ignition.allGrids().get(0))), "cfg");
             final ServerImpl impl = GridTestUtils.getFieldValue(cfg.getDiscoverySpi(), TcpDiscoverySpi.class, "impl");
@@ -149,6 +145,7 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
         type = Type.RANDOM;
         stopAllGrids();
         runGrids();
+        //!!! Если тут заменить на startGridsMultiThreaded(4) то сломается
         stopAllGrids();
     }
 
@@ -162,6 +159,7 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
         type = Type.TWOREGION;
         stopAllGrids();
         runGrids();
+        //!!! Если тут заменить на startGridsMultiThreaded(4) то сломается
         stopAllGrids();
     }
 
@@ -175,6 +173,7 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
         type = Type.NONE;
         stopAllGrids();
         runGrids();
+        //!!! Если тут заменить на startGridsMultiThreaded(4) то сломается
         stopAllGrids();
     }
 
