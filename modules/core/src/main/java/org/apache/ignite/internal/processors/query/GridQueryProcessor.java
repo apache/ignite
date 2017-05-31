@@ -677,7 +677,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 String cacheName = cctx.name();
 
-                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema(), escape);
+                String schemaName = QueryUtils.normalizeSchemaName(cacheName, cctx.config().getSqlSchema());
 
                 // Prepare candidates.
                 List<Class<?>> mustDeserializeClss = new ArrayList<>();
@@ -1303,7 +1303,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // Preserve user specified names as they are.
         newCfg.setSqlEscapeAll(true);
 
-        boolean res = ctx.grid().getOrCreateCache0(newCfg).get2();
+        boolean res = ctx.grid().getOrCreateCache0(newCfg, true).get2();
 
         if (!res && !ifNotExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
@@ -1319,7 +1319,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String cacheName, String tblName, boolean ifExists) throws SchemaOperationException {
-        boolean res = ctx.grid().destroyCache0(cacheName);
+        boolean res = ctx.grid().destroyCache0(cacheName, true);
 
         if (!res && !ifExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);

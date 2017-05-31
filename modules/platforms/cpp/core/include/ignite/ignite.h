@@ -23,10 +23,12 @@
 #ifndef _IGNITE_IGNITE
 #define _IGNITE_IGNITE
 
-#include "ignite/cache/cache.h"
-#include "ignite/transactions/transactions.h"
-#include "ignite/impl/ignite_impl.h"
-#include "ignite/ignite_configuration.h"
+#include <ignite/impl/ignite_impl.h>
+
+#include <ignite/ignite_configuration.h>
+#include <ignite/cache/cache.h>
+#include <ignite/transactions/transactions.h>
+#include <ignite/compute/compute.h>
 
 namespace ignite
 {
@@ -187,6 +189,15 @@ namespace ignite
          * @return Transaction class instance.
          */
         transactions::Transactions GetTransactions();
+
+        /**
+         * Get compute.
+         *
+         * This method should only be called on the valid instance.
+         *
+         * @return Compute class instance.
+         */
+        compute::Compute GetCompute();
 
         /**
          * Get ignite binding.
