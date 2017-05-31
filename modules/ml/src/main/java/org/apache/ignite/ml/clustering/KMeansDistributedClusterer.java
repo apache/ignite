@@ -70,20 +70,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         super(measure);
         this.initSteps = initSteps;
 
-        // L'Ecuyer, "Tables of Linear Congruential Generators of
-        // Different Sizes and Good Lattice Structure", 1999
-        AtomicLong seedUniquifier = new AtomicLong(8682522807148012L);
-
-        if (seed == null) {
-            while (true) {
-                long curr = seedUniquifier.get();
-                long next = curr * 181783497276652981L;
-                if (seedUniquifier.compareAndSet(curr, next)) {
-                    this.seed = next;
-                    break;
-                }
-            }
-        }
+        this.seed = seed != null ? seed : new Random().nextLong();
 
         this.maxIterations = maxIterations;
         rnd = new Random(this.seed);
