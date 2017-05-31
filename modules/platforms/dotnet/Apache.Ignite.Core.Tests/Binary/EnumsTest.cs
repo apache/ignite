@@ -67,6 +67,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         private static void CheckValue<T>(T val, bool isBinaryEnum = true)
         {
             var marsh = GetMarshaller();
+            var ignite = Ignition.TryGetIgnite();
+
             var bytes = marsh.Marshal(val);
             var res = marsh.Unmarshal<T>(bytes);
             var binRes = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
@@ -78,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 Assert.AreEqual(TypeCaster<int>.Cast(val), binRes.EnumValue);
 
-                if (IsOnline())
+                if (ignite != null)
                 {
                     // TODO
                 }
@@ -98,6 +100,22 @@ namespace Apache.Ignite.Core.Tests.Binary
             var arrRes = TestUtils.SerializeDeserialize(arr);
 
             Assert.AreEqual(arr, arrRes);
+
+            // Check caching.
+            if (ignite != null)
+            {
+                var cache = ignite.GetOrCreateCache<int, T>(typeof(T).FullName);
+                var binCache = cache.WithKeepBinary<int, IBinaryObject>();
+
+                cache[1] = val;
+                res = cache[1];
+                binRes = binCache[1];
+
+                Assert.AreEqual(val, res);
+                Assert.AreEqual(val, binRes.Deserialize<T>());
+
+                // TODO: Array.
+            }
         }
 
         /// <summary>
@@ -110,14 +128,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             return ignite != null
                 ? ((Ignite) ignite).Marshaller
                 : new Marshaller(null) {CompactFooter = false};
-        }
-
-        /// <summary>
-        /// Determines whether Ignite is started.
-        /// </summary>
-        private static bool IsOnline()
-        {
-            return Ignition.TryGetIgnite() != null;
         }
 
         /// <summary>
