@@ -22,10 +22,11 @@
 #include <ignite/jni/java.h>
 #include <ignite/common/utils.h>
 
+#include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/cache_impl.h>
 #include <ignite/impl/transactions/transactions_impl.h>
 #include <ignite/impl/cluster/cluster_group_impl.h>
-#include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/compute/compute_impl.h>
 
 namespace ignite 
 {
@@ -38,7 +39,8 @@ namespace ignite
         {
             typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
             typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
-            typedef common::concurrent::SharedPointer<cluster::ClusterGroupImpl> SP_ClusterGroupImpl;
+            typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
+            typedef common::concurrent::SharedPointer<IgniteBindingImpl> SP_IgniteBindingImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -154,7 +156,7 @@ namespace ignite
              *
              * @return IgniteBinding class instance.
              */
-            common::concurrent::SharedPointer<IgniteBindingImpl> GetBinding();
+            SP_IgniteBindingImpl GetBinding();
 
             /**
              * Get instance of the implementation from the proxy class.
@@ -185,7 +187,7 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl GetTransactions() const
+            SP_TransactionsImpl GetTransactions()
             {
                 return txImpl;
             }
@@ -195,10 +197,17 @@ namespace ignite
              *
              * @return ClusterGroupImpl instance.
              */
-            SP_ClusterGroupImpl GetProjection() const
+            cluster::SP_ClusterGroupImpl GetProjection()
             {
                 return prjImpl;
             }
+
+            /**
+             * Get compute.
+             *
+             * @return ComputeImpl instance.
+             */
+            SP_ComputeImpl GetCompute();
 
         private:
             /**
@@ -213,7 +222,7 @@ namespace ignite
              *
              * @return ClusterGroupImpl instance.
              */
-            SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
+            cluster::SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
 
             /** Environment. */
             SP_IgniteEnvironment env;
@@ -225,7 +234,7 @@ namespace ignite
             SP_TransactionsImpl txImpl;
 
             /** Projection implementation. */
-            SP_ClusterGroupImpl prjImpl;
+            cluster::SP_ClusterGroupImpl prjImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };

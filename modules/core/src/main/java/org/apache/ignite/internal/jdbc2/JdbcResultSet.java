@@ -146,8 +146,9 @@ public class JdbcResultSet implements ResultSet {
             boolean loc = nodeId == null;
 
             // Connections from new clients send queries with new tasks, so we have to continue in the same manner
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
-                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(), null,
+                true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins());
 
             try {
                 JdbcQueryTask.QueryResult res =
@@ -952,9 +953,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(getBytes(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -985,9 +984,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(getBytes(colLb));
     }
 
     /** {@inheritDoc} */

@@ -1125,14 +1125,12 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      */
     public void testSchemaQuoted() {
-        assert false; // TODO test hangs
         doTestSchemaName("\"ppAf\"");
     }
 
     /**
      */
     public void testSchemaQuotedUpper() {
-        assert false; // TODO test hangs
         doTestSchemaName("\"PPAF\"");
     }
 

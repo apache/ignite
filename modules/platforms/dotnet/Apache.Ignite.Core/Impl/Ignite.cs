@@ -737,6 +737,14 @@ namespace Apache.Ignite.Core.Impl
             return _prj.GetMemoryMetrics();
         }
 
+        /** <inheritdoc /> */
+        public IMemoryMetrics GetMemoryMetrics(string memoryPolicyName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(memoryPolicyName, "memoryPolicyName");
+
+            return _prj.GetMemoryMetrics(memoryPolicyName);
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>

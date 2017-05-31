@@ -88,6 +88,9 @@
     <ClCompile Include="..\..\src\future_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\compute_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
@@ -166,9 +169,6 @@
     <None Include="..\..\config\cache-identity-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-continuous.xml">
-      <Filter>Configs</Filter>
-    </None>
     <None Include="..\..\config\cache-store-default.xml">
       <Filter>Configs</Filter>
     </None>
@@ -178,9 +178,5 @@
     <None Include="..\..\config\cache-store-32.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-query-continuous.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-continuous.xml" />
   </ItemGroup>
 </Project>
