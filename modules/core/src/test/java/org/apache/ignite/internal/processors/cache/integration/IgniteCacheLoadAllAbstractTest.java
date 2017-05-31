@@ -17,24 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.integration;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriter;
-import javax.cache.integration.CompletionListener;
-import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.integration.*;
+import java.util.*;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
@@ -45,6 +40,15 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
 
     /** */
     private static ConcurrentHashMap8<Object, Object> storeMap;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
