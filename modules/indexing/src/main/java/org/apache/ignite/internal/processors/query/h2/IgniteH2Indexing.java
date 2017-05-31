@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
@@ -1875,6 +1876,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             this.ctx = ctx;
 
+            schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA));
+
             valCtx = new CacheQueryObjectValueContext(ctx);
 
             nodeId = ctx.localNodeId();
@@ -2097,25 +2100,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Cache query index stopped.");
     }
 
+    /**
+     * Whether this is default schema.
+     *
+     * @param schemaName Schema name.
+     * @return {@code True} if default.
+     */
+    private boolean isDefaultSchema(String schemaName) {
+        return F.eq(schemaName, QueryUtils.DFLT_SCHEMA);
+    }
+
     /** {@inheritDoc} */
-    @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-        // TODO: Do not do this for public schema.
-        if (schemas.putIfAbsent(schemaName, new H2Schema(schemaName)) != null)
-            throw new IgniteCheckedException("Schema already registered: " + U.maskName(schemaName));
+    @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
+        throws IgniteCheckedException {
+        if (!isDefaultSchema(schemaName)) {
+            if (schemas.putIfAbsent(schemaName, new H2Schema(schemaName)) != null)
+                throw new IgniteCheckedException("Schema already registered: " + U.maskName(schemaName));
+
+            createSchema(schemaName);
+        }
 
         cacheName2schema.put(cacheName, schemaName);
-
-        createSchema(schemaName);
 
         createSqlFunctions(schemaName, cctx.config().getSqlFunctionClasses());
     }
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(String cacheName) {
-        // TODO: Proper unregister of cache in public schema.
+        String schemaName = schema(cacheName);
 
-        String schema = schema(cacheName);
-        H2Schema rmv = schemas.remove(schema);
+        H2Schema rmv = schemas.remove(schemaName);
 
         if (rmv != null) {
             cacheName2schema.remove(cacheName);
@@ -2125,7 +2139,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rmv.onDrop();
 
             try {
-                dropSchema(schema);
+                dropSchema(schemaName);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
