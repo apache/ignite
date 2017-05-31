@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.database;
 
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -29,7 +31,12 @@ public class IgnitePersistentStoreSingleNodeWithIndexingAndGroupPutGetPersistenc
     @Override protected void configure(IgniteConfiguration cfg) {
         super.configure(cfg);
 
-        for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
-            ccfg.setGroupName("testGroup");
+        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+            AffinityFunction aff = ccfg.getAffinity();
+
+            int parts = aff != null ? aff.partitions() : RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
+
+            ccfg.setGroupName("testGroup-parts" + parts);
+        }
     }
 }
