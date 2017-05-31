@@ -184,7 +184,7 @@ public class GridH2Table extends TableBase {
 
         pkIndexPos = hasHashIndex ? 2 : 1;
 
-        final int segments = desc != null ? desc.configuration().getQueryParallelism() :
+        final int segments = desc != null ? desc.context().config().getQueryParallelism() :
             // Get index segments count from PK index. Null desc can be passed from tests.
             index(pkIndexPos).segmentsCount();
 
@@ -197,7 +197,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.configuration().getCacheMode() == PARTITIONED;
+        return desc != null && desc.context().config().getCacheMode() == PARTITIONED;
     }
 
     /**

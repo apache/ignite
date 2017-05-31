@@ -181,11 +181,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration configuration() {
-        return schema.cacheContext().config();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridUnsafeGuard guard() {
         return guard;
     }
