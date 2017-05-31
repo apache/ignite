@@ -58,11 +58,6 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public GridCacheContext<?, ?> context();
 
     /**
-     * @return Cache configuration.
-     */
-    public CacheConfiguration configuration();
-
-    /**
      * Creates new row.
      *
      * @param key Key.
