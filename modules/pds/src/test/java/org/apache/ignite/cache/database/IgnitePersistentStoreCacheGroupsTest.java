@@ -261,7 +261,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
             assertEquals(10, cache.size());
         }
 
-        // wait for expiration
+        // Wait for expiration.
         Thread.sleep(Math.max(deadline - System.currentTimeMillis(), 0));
 
         for (String cacheName : caches) {
