@@ -18,8 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
@@ -27,13 +25,10 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     /** */
-    private final AtomicInteger pubSize = new AtomicInteger();
-
-    /** */
     private final int cacheId;
 
     /** */
-    private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entryMap;
+    private final CacheMapHolder entryMap;
 
     /**
      * @param cacheId Cache ID.
@@ -44,16 +39,16 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
         super(factory);
 
         this.cacheId = cacheId;
-        this.entryMap = new ConcurrentHashMap8<>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2);
+        this.entryMap = new CacheMapHolder(new ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
     }
 
     /** {@inheritDoc} */
     @Override public int internalSize() {
-        return entryMap.size();
+        return entryMap.map.size();
     }
 
     /** {@inheritDoc} */
-    @Override protected ConcurrentMap<KeyCacheObject, GridCacheMapEntry> entriesMap(int cacheId, boolean create) {
+    @Override protected CacheMapHolder entriesMap(Integer cacheId, boolean create) {
         assert this.cacheId == cacheId;
 
         return entryMap;
@@ -63,20 +58,20 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     @Override public int publicSize(int cacheId) {
         assert this.cacheId == cacheId;
 
-        return pubSize.get();
+        return entryMap.size.get();
     }
 
     /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
+    @Override public void incrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
         assert cacheId == e.context().cacheId();
 
-        pubSize.incrementAndGet();
+        entryMap.size.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
+    @Override public void decrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
         assert cacheId == e.context().cacheId();
 
-        pubSize.decrementAndGet();
+        entryMap.size.decrementAndGet();
     }
 }

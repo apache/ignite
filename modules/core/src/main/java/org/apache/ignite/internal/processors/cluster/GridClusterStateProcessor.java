@@ -377,7 +377,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         actx.setFail();
 
-        // revert change if activation request fail
+        // Revert change if activation request fail.
         if (actx.activate) {
             try {
                 cacheProc.onKernalStopCaches(true);

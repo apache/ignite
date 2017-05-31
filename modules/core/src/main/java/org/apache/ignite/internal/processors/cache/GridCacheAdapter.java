@@ -380,7 +380,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param e Map entry.
      */
     public void incrementSize(GridCacheMapEntry e) {
-        map.incrementPublicSize(e);
+        map.incrementPublicSize(null, e);
     }
 
     /**
@@ -388,7 +388,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param e Map entry.
      */
     public void decrementSize(GridCacheMapEntry e) {
-        map.decrementPublicSize(e);
+        map.decrementPublicSize(null, e);
     }
 
     /**

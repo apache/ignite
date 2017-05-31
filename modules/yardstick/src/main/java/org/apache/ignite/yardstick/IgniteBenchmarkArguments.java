@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -83,10 +84,12 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
+    @GridToStringInclude
     public int range = 1_000_000;
 
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
+    @GridToStringInclude
     public int preloadAmount = 500_000;
 
     /** */
@@ -186,6 +189,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-cg", "--cacheGrp"}, description = "Cache group for caches")
     private String cacheGrp;
+
+    /** */
+    @Parameter(names = {"-cig", "--cachesInGrp"}, description = "Number of caches to create in configured group")
+    private int cachesInGrp = 1;
 
     /**
      * @return List of enabled load test operations.
@@ -431,10 +438,24 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Flag for cleaning working directory.
+     */
+    public boolean cleanWorkDirectory() {
+        return cleanWorkDirectory;
+    }
+
+    /**
      * @return Name of cache group to be set for caches.
      */
     @Nullable public String cacheGroup() {
         return cacheGrp;
+    }
+
+    /**
+     * @return Number of caches to create in configured group.
+     */
+    public int cachesInGroup() {
+        return cachesInGrp;
     }
 
     /**

@@ -836,8 +836,9 @@ public class GridDhtPartitionDemander {
             long updateSeq) {
             assert assigns != null;
 
-            this.exchFut = assigns.exchangeFuture();
-            this.topVer = assigns.topologyVersion();
+            exchFut = assigns.exchangeFuture();
+            topVer = assigns.topologyVersion();
+
             this.grp = grp;
             this.log = log;
             this.updateSeq = updateSeq;

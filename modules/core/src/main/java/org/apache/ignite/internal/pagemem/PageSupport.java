@@ -98,7 +98,7 @@ public interface PageSupport {
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param walPlc {@code True} if page should be recorded to WAL, {@code false} if the page must not
-*                                be recorded and {@code null} for the default behavior.
+     *      be recorded and {@code null} for the default behavior.
      * @param dirtyFlag Determines whether the page was modified since the last checkpoint.
      */
     public void writeUnlock(int cacheId, long pageId, long page, Boolean walPlc,

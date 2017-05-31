@@ -92,7 +92,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected IgniteLogger log;
 
     /** */
-    // TODO GG-11208 need restore size after restart.
     private CacheDataStore locCacheDataStore;
 
     /** */
@@ -1182,8 +1181,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (oldRow != null) {
                     qryMgr.store(key,
                         partId,
-                        oldRow.value(), oldRow.version(),
-                        newRow.value(), newRow.version(),
+                        oldRow.value(),
+                        oldRow.version(),
+                        newRow.value(),
+                        newRow.version(),
                         expireTime,
                         newRow.link());
                 }
@@ -1191,7 +1192,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     qryMgr.store(key,
                         partId,
                         null, null,
-                        newRow.value(), newRow.version(),
+                        newRow.value(),
+                        newRow.version(),
                         expireTime,
                         newRow.link());
                 }
@@ -1651,18 +1653,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             int cmp;
 
             if (grp.sharedGroup()) {
-                assert row.cacheId() != UNDEFINED_CACHE_ID : "Cache ID is not provided!";
-                assert io.getCacheId(pageAddr, idx) != UNDEFINED_CACHE_ID : "Cache ID is not stored!";
+                assert row.cacheId() != UNDEFINED_CACHE_ID : "Cache ID is not provided: " + row;
 
-                cmp = Integer.compare(io.getCacheId(pageAddr, idx), row.cacheId());
+                int cacheId = io.getCacheId(pageAddr, idx);
+
+                assert cacheId != UNDEFINED_CACHE_ID : "Cache ID is not stored";
+
+                cmp = Integer.compare(cacheId, row.cacheId());
 
                 if (cmp != 0)
                     return cmp;
 
-                if(cmp == 0 && row.key() == null) {
-                    assert row.getClass() == SearchRow.class;
+                if (row.key() == null) {
+                    assert row.getClass() == SearchRow.class : row;
 
-                    // A search row with a cach ID only is used as a cache bound.
+                    // A search row with a cache ID only is used as a cache bound.
                     // The found position will be shifted until the exact cache bound is found;
                     // See for details:
                     // o.a.i.i.p.c.database.tree.BPlusTree.ForwardCursor.findLowerBound()

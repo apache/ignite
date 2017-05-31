@@ -17,7 +17,7 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-noinst_PROGRAMS = ignite-putgetexample
+noinst_PROGRAMS = ignite-put-get-example
 
 AM_CPPFLAGS = \
     -I@top_srcdir@/include \
@@ -38,21 +38,21 @@ AM_CXXFLAGS = \
     -Wall \
     -std=c++03
 
-ignite_putgetexample_LDADD = \
+ignite_put_get_example_LDADD = \
     @top_srcdir@/../core/libignite.la \
     -lpthread
 
-ignite_putgetexample_LDFLAGS = \
+ignite_put_get_example_LDFLAGS = \
     -static-libtool-libs
 
-ignite_putgetexample_SOURCES = \
-    src/putget_example.cpp
+ignite_put_get_example_SOURCES = \
+    src/put_get_example.cpp
 
 run-check: check
-	./ignite-putgetexample -p
+	./ignite-put-get-example -p
 
 clean-local: clean-check
 	$(RM) *.gcno *.gcda
 
 clean-check:
-	$(RM) $(ignite_putgetexample_OBJECTS)
+	$(RM) $(ignite_put_get_example_OBJECTS)

@@ -487,6 +487,70 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 onEntryUpdated(evt, primary, false, null);
             }
 
+            @Override public CounterSkipContext skipUpdateCounter(final GridCacheContext cctx,
+                @Nullable CounterSkipContext skipCtx,
+                int part,
+                long cntr,
+                AffinityTopologyVersion topVer,
+                boolean primary) {
+                if (skipCtx == null)
+                    skipCtx = new CounterSkipContext(part, cntr, topVer);
+
+                if (loc) {
+                    assert !locCache;
+
+                    final Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, skipCtx.entry());
+
+                    if (!evts.isEmpty()) {
+                        if (asyncCb) {
+                            ctx.asyncCallbackPool().execute(new Runnable() {
+                                @Override public void run() {
+                                    locLsnr.onUpdated(evts);
+                                }
+                            }, part);
+                        }
+                        else
+                            skipCtx.addSendClosure(new Runnable() {
+                                @Override public void run() {
+                                    locLsnr.onUpdated(evts);
+                                }
+                            });
+                    }
+
+                    return skipCtx;
+                }
+
+                CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, part);
+
+                final Object entryOrList = buf.processEntry(skipCtx.entry(), !primary);
+
+                if (entryOrList != null) {
+                    skipCtx.addSendClosure(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                ctx.continuous().addNotification(nodeId,
+                                    routineId,
+                                    entryOrList,
+                                    topic,
+                                    false,
+                                    true);
+                            }
+                            catch (ClusterTopologyCheckedException ex) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send event notification to node, node left cluster " +
+                                        "[node=" + nodeId + ", err=" + ex + ']');
+                            }
+                            catch (IgniteCheckedException ex) {
+                                U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
+                                    "Failed to send event notification to node: " + nodeId, ex);
+                            }
+                        }
+                    });
+                }
+
+                return skipCtx;
+            }
+
             @Override public void onPartitionEvicted(int part) {
                 entryBufs.remove(part);
             }
@@ -744,6 +808,27 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
+     * @param evt Event.
+     */
+    private void handleLocalListener(CacheContinuousQueryEvent evt) {
+        CacheContinuousQueryEntry entry = evt.entry();
+
+        if (!locCache) {
+            Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
+
+            if (!evts.isEmpty())
+                locLsnr.onUpdated(evts);
+
+            if (!internal && !skipPrimaryCheck)
+                sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
+        }
+        else {
+            if (!entry.isFiltered())
+                locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+        }
+    }
+
+    /**
      * @param evt Continuous query event.
      * @param notify Notify flag.
      * @param loc Listener deployed on this node.
@@ -756,24 +841,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (cctx == null)
                 return;
 
-            final CacheContinuousQueryEntry entry = evt.entry();
-
-            if (loc) {
-                if (!locCache) {
-                    Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
-
-                    if (!evts.isEmpty())
-                        locLsnr.onUpdated(evts);
-
-                    if (!internal && !skipPrimaryCheck)
-                        sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
-                }
-                else {
-                    if (!entry.isFiltered())
-                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
-                }
-            }
+            if (loc)
+                handleLocalListener(evt);
             else {
+                CacheContinuousQueryEntry entry = evt.entry();
+
                 if (!entry.isFiltered())
                     prepareEntry(cctx, nodeId, entry);
 

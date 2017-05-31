@@ -58,7 +58,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        affFunction = cctx.group().affinityFunction();
+        affFunction = cctx.config().getAffinity();
         affMapper = cctx.config().getAffinityMapper();
 
         aff = cctx.group().affinity();

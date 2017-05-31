@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -52,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,6 +104,9 @@ public class CacheGroupInfrastructure {
     private volatile List<GridCacheContext> caches;
 
     /** */
+    private volatile List<GridCacheContext> contQryCaches;
+
+    /** */
     private final IgniteLogger log;
 
     /** */
@@ -126,6 +132,12 @@ public class CacheGroupInfrastructure {
 
     /** ReuseList instance this group is associated with */
     private final ReuseList reuseList;
+
+    /** */
+    private boolean drEnabled;
+
+    /** */
+    private boolean qryEnabled;
 
     /**
      * @param grpId Group ID.
@@ -261,8 +273,14 @@ public class CacheGroupInfrastructure {
 
         assert add : cctx.name();
 
+        if (!qryEnabled && QueryUtils.isEnabled(cctx.config()))
+            qryEnabled = true;
+
+        if (!drEnabled && cctx.isDrEnabled())
+            drEnabled = true;
+
         this.caches = caches;
-    }
+   }
 
     /**
      * @param cctx Cache context.
@@ -278,7 +296,37 @@ public class CacheGroupInfrastructure {
                 assert sharedGroup() || caches.size() == 1 : caches.size();
 
                 it.remove();
+
+                break;
             }
+        }
+
+        if (QueryUtils.isEnabled(cctx.config())) {
+            boolean qryEnabled = false;
+
+            for (int i = 0; i < caches.size(); i++) {
+                if (QueryUtils.isEnabled(caches.get(i).config())) {
+                    qryEnabled = true;
+
+                    break;
+                }
+            }
+
+            this.qryEnabled = qryEnabled;
+        }
+
+        if (cctx.isDrEnabled()) {
+            boolean drEnabled = false;
+
+            for (int i = 0; i < caches.size(); i++) {
+                if (caches.get(i).isDrEnabled()) {
+                    drEnabled = true;
+
+                    break;
+                }
+            }
+
+            this.drEnabled = drEnabled;
         }
 
         this.caches = caches;
@@ -421,19 +469,25 @@ public class CacheGroupInfrastructure {
         }
     }
 
-    // TODO IGNITE-5075
+    /**
+     * @return {@code True} if contains cache with query indexing enabled.
+     */
     public boolean queriesEnabled() {
-        return QueryUtils.isEnabled(ccfg);
+        return qryEnabled;
     }
 
-    // TODO IGNITE-5075 see GridCacheContext#allowFastEviction
+    /**
+     * @return {@code True} if fast eviction is allowed.
+     */
     public boolean allowFastEviction() {
-        return false;
+        return ctx.database().persistenceEnabled() && !queriesEnabled();
     }
 
-    // TODO IGNITE-5075.
+    /**
+     * @return {@code True} in case replication is enabled.
+     */
     public boolean isDrEnabled() {
-        return false;
+        return drEnabled;
     }
 
     /**
@@ -531,6 +585,13 @@ public class CacheGroupInfrastructure {
     }
 
     /**
+     * @return Cache node filter.
+     */
+    public IgnitePredicate<ClusterNode> nodeFilter() {
+        return ccfg.getNodeFilter();
+    }
+
+    /**
      * @return Configured user objects which should be initialized/stopped on group start/stop.
      */
     Collection<?> configuredUserObjects() {
@@ -625,6 +686,20 @@ public class CacheGroupInfrastructure {
     }
 
     /**
+     * @return IDs of caches in this group.
+     */
+    public Set<Integer> cacheIds() {
+        List<GridCacheContext> caches = this.caches;
+
+        Set<Integer> ids = U.newHashSet(caches.size());
+
+        for (int i = 0; i < caches.size(); i++)
+            ids.add(caches.get(i).cacheId());
+
+        return ids;
+    }
+
+    /**
      * @return {@code True} if group contains caches.
      */
     boolean hasCaches() {
@@ -648,6 +723,91 @@ public class CacheGroupInfrastructure {
             cctx.continuousQueries().onPartitionEvicted(part);
 
             cctx.dataStructures().onPartitionEvicted(part);
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     */
+    public void addCacheWithContinuousQuery(GridCacheContext cctx) {
+        assert sharedGroup() : cacheOrGroupName();
+        assert cctx.group() == this : cctx.name();
+        assert !cctx.isLocal() : cctx.name();
+
+        synchronized (this) {
+            List<GridCacheContext> contQryCaches = this.contQryCaches;
+
+            if (contQryCaches == null)
+                contQryCaches = new ArrayList<>();
+
+            contQryCaches.add(cctx);
+
+            this.contQryCaches = contQryCaches;
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     */
+    public void removeCacheWithContinuousQuery(GridCacheContext cctx) {
+        assert sharedGroup() : cacheOrGroupName();
+        assert cctx.group() == this : cctx.name();
+        assert !cctx.isLocal() : cctx.name();
+
+        synchronized (this) {
+            List<GridCacheContext> contQryCaches = this.contQryCaches;
+
+            if (contQryCaches == null)
+                return;
+
+            contQryCaches.remove(cctx);
+
+            if (contQryCaches.isEmpty())
+                contQryCaches = null;
+
+            this.contQryCaches = contQryCaches;
+        }
+    }
+
+    /**
+     * @param cacheId ID of cache initiated counter update.
+     * @param part Partition number.
+     * @param cntr Counter.
+     * @param topVer Topology version for current operation.
+     */
+    public void onPartitionCounterUpdate(int cacheId,
+        int part,
+        long cntr,
+        AffinityTopologyVersion topVer,
+        boolean primary) {
+        assert sharedGroup();
+
+        if (isLocal())
+            return;
+
+        List<GridCacheContext> contQryCaches = this.contQryCaches;
+
+        if (contQryCaches == null)
+            return;
+
+        CounterSkipContext skipCtx = null;
+
+        for (int i = 0; i < contQryCaches.size(); i++) {
+            GridCacheContext cctx = contQryCaches.get(i);
+
+            if (cacheId != cctx.cacheId())
+                skipCtx = cctx.continuousQueries().skipUpdateCounter(skipCtx, part, cntr, topVer, primary);
+        }
+
+        final List<Runnable> sndC = skipCtx != null ? skipCtx.sendClosures() : null;
+
+        if (sndC != null) {
+            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    for (Runnable c : sndC)
+                        c.run();
+                }
+            });
         }
     }
 
@@ -692,7 +852,6 @@ public class CacheGroupInfrastructure {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        // TODO IGNITE-5075 get from plugin.
         offheapMgr = new IgniteCacheOffheapManagerImpl();
 
         offheapMgr.start(ctx, this);

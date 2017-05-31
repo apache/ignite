@@ -54,6 +54,8 @@ public class IgnitePutAllSerializableTxBenchmark extends IgniteCacheAbstractBenc
             vals.put(key, key);
         }
 
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         while (true) {
             try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                 cache.putAll(vals);
