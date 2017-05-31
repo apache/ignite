@@ -72,7 +72,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     public static final int DFLT_SUB_INTERVALS = 5;
 
     /** Default length of interval over which {@link MemoryMetrics#getAllocationRate()} metric is calculated. */
-    public static final int DFLT_RATE_TIME_INTERVAL_SEC = 60;
+    public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
     /** Memory policy name. */
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
@@ -103,7 +103,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
-    /** Number of sub-intervals the whole {@link #setRateTimeInterval(int)} will be split into to calculate
+    /** Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
      * {@link MemoryMetrics#getAllocationRate()} and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
@@ -112,13 +112,13 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private int subIntervals = DFLT_SUB_INTERVALS;
 
     /**
-     * Time interval for {@link MemoryMetrics#getAllocationRate()}
+     * Time interval (in milliseconds) for {@link MemoryMetrics#getAllocationRate()}
      * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
      * <p>
-     * For instance, after setting the interval to 60 seconds, subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * For instance, after setting the interval to 60_000 milliseconds, subsequent calls to {@link MemoryMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      */
-    private int rateTimeInterval = DFLT_RATE_TIME_INTERVAL_SEC;
+    private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
      * Gets memory policy name.
@@ -315,13 +315,13 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Gets time interval for {@link MemoryMetrics#getAllocationRate()}
      * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
      * <p>
-     * For instance, after setting the interval to 60 seconds,
+     * For instance, after setting the interval to 60_000 milliseconds,
      * subsequent calls to {@link MemoryMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @return Time interval over which allocation rate is calculated.
      */
-    public int getRateTimeInterval() {
+    public long getRateTimeInterval() {
         return rateTimeInterval;
     }
 
@@ -336,14 +336,14 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * @param rateTimeInterval Time interval used for allocation and eviction rates calculations.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setRateTimeInterval(int rateTimeInterval) {
+    public MemoryPolicyConfiguration setRateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
 
         return this;
     }
 
     /**
-     * Gets a number of sub-intervals the whole {@link #setRateTimeInterval(int)}
+     * Gets a number of sub-intervals the whole {@link #setRateTimeInterval(long)}
      * will be split into to calculate {@link MemoryMetrics#getAllocationRate()}
      * and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
      * <p>
@@ -358,7 +358,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Sets a number of sub-intervals the whole {@link #setRateTimeInterval(int)} will be split into to calculate
+     * Sets a number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
      * {@link MemoryMetrics#getAllocationRate()} and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
