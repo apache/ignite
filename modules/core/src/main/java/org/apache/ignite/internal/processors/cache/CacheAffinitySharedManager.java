@@ -397,8 +397,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             Integer cacheId = CU.cacheId(req.cacheName());
 
             if (req.start()) {
-                systemCacheRestarted |= GridCacheUtils.isSystemCache(req.cacheName());
-
                 exchLog.info("prepareCacheStart start [topVer=" + fut.topologyVersion() + ", cache=" + req.cacheName() + ']');
 
                 cctx.cache().prepareCacheStart(req, fut.topologyVersion());
@@ -509,9 +507,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 });
             }
         }
-
-        if (systemCacheRestarted)
-            ctx.dataStructures().restoreStructuresState(ctx);
 
         exchLog.info("onCacheChangeRequest end [topVer=" + fut.topologyVersion() + ", crd=" + crd + ']');
 

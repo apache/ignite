@@ -324,14 +324,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param ctx Context.
      */
-    public void restoreStructuresState(GridKernalContext ctx) throws IgniteCheckedException {
+    public void restoreStructuresState(GridKernalContext ctx) {
         onKernalStart0(true);
 
-        for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
-            GridCacheRemovable v = e.getValue();
+        try {
+            for (Map.Entry<GridCacheInternal, GridCacheRemovable> e : dsMap.entrySet()) {
+                GridCacheRemovable v = e.getValue();
 
-            if (v instanceof IgniteChangeGlobalStateSupport)
-                ((IgniteChangeGlobalStateSupport)v).onActivate(ctx);
+                if (v instanceof IgniteChangeGlobalStateSupport)
+                    ((IgniteChangeGlobalStateSupport)v).onActivate(ctx);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Fail restore structures state ", e);
         }
     }
 

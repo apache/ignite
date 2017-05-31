@@ -1975,6 +1975,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
+        if (reqs != null) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.start() && GridCacheUtils.isSystemCache(req.cacheName())) {
+                    ctx.dataStructures().restoreStructuresState(ctx);
+
+                    break;
+                }
+            }
+        }
+
         if (!F.isEmpty(reqs) && err == null) {
             Collection<IgniteBiTuple<GridCacheContext, Boolean>> stopped = null;
 
