@@ -66,7 +66,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     private double epsilon = 1e-4;
 
     /** */
-    protected KMeansDistributedClusterer(DistanceMeasure measure, int initSteps, int maxIterations, Long seed) {
+    public KMeansDistributedClusterer(DistanceMeasure measure, int initSteps, int maxIterations, Long seed) {
         super(measure);
         this.initSteps = initSteps;
 
