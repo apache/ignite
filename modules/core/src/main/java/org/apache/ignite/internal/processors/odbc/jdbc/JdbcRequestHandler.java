@@ -158,17 +158,17 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             qry.setPageSize(req.pageSize());
 
-            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
+            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.schemaName());
 
             if (cache0 == null)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
+                    "Cache doesn't exist (did you configure it?): " + req.schemaName());
 
             IgniteCache<Object, Object> cache = cache0.withKeepBinary();
 
             if (cache == null)
                 return new JdbcResponse(SqlListenerResponse.STATUS_FAILED,
-                    "Can not get cache with keep binary: " + req.cacheName());
+                    "Can not get cache with keep binary: " + req.schemaName());
 
             JdbcQueryCursor cur = new JdbcQueryCursor(
                 qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)cache.query(qry));

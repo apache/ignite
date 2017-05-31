@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Cache name. */
-    private String cacheName;
+    private String schemaName;
 
     /** Fetch size. */
     private int pageSize;
@@ -54,17 +54,17 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param schemaName Cache name.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public JdbcQueryExecuteRequest(String cacheName, int pageSize, int maxRows, String sqlQry,
+    public JdbcQueryExecuteRequest(String schemaName, int pageSize, int maxRows, String sqlQry,
         Object[] args) {
         super(QRY_EXEC);
 
-        this.cacheName = F.isEmpty(cacheName) ? null : cacheName;
+        this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.sqlQry = sqlQry;
@@ -102,15 +102,15 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /**
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
-        return cacheName;
+    @Nullable public String schemaName() {
+        return schemaName;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeString(cacheName);
+        writer.writeString(schemaName);
         writer.writeInt(pageSize);
         writer.writeInt(maxRows);
         writer.writeString(sqlQry);
@@ -127,7 +127,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        cacheName = reader.readString();
+        schemaName = reader.readString();
         pageSize = reader.readInt();
         maxRows = reader.readInt();
         sqlQry = reader.readString();
