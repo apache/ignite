@@ -79,7 +79,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        node().context().cache().dynamicDestroyCache(CACHE_NAME, true, false).get();
+        node().context().cache().dynamicDestroyCache(CACHE_NAME, true, true).get();
 
         super.afterTest();
     }
