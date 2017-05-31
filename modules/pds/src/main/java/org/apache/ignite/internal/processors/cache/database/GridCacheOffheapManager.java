@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -116,7 +115,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 final String name = "PendingEntries";
 
-                // TODO IGNITE-5075: per cache?
                 RootPage pendingRootPage = metaStore.getOrAllocateForTree(name);
 
                 pendingEntries = new PendingEntriesTree(
@@ -362,15 +360,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @return Serialized cache sizes
      */
     private byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
-        Set<Map.Entry<Integer, Long>> entries = cacheSizes.entrySet();
-        cacheSizes = new TreeMap<>();
-
-        // Sort and filter zero-sized caches.
-        for (Map.Entry<Integer, Long> entry : entries) {
-            if (entry.getValue() != 0)
-                cacheSizes.put(entry.getKey(), entry.getValue());
-        }
-
         // Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes
         byte[] data = new byte[cacheSizes.size() * 12];
         long off = GridUnsafe.BYTE_ARR_OFF;
@@ -1128,7 +1117,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
-                CacheDataStore delegate0 = init0(true);
+                CacheDataStore delegate0 = init0(false);
 
                 if (delegate0 != null)
                     delegate0.updateCounter(val);

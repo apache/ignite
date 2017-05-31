@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -298,18 +299,19 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-// TODO 5075.
-//            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
-//
-//            if (statsEnabled) {
-//                cctx.cache().metrics0().clearRebalanceCounters();
-//
-//                rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-//                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-//                        cctx.cache().metrics0().clearRebalanceCounters();
-//                    }
-//                });
-//            }
+            for (GridCacheContext cctx : grp.caches()) {
+                if (cctx.config().isStatisticsEnabled()) {
+                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                    metrics.clearRebalanceCounters();
+
+                    rebalanceFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                            metrics.clearRebalanceCounters();
+                        }
+                    });
+                }
+            }
 
             if (assigns.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -609,18 +611,34 @@ public class GridDhtPartitionDemander {
 
         final GridDhtPartitionTopology top = grp.topology();
 
-// TODO 5075.
-//        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
-//
-//        if (statsEnabled) {
-//            if (supply.estimatedKeysCount() != -1)
-//                cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
-//
-//            cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
-//        }
+        if (grp.sharedGroup()) {
+            for (GridCacheContext cctx : grp.caches()) {
+                if (cctx.config().isStatisticsEnabled()) {
+                    long keysCnt = supply.keysForCache(cctx.cacheId());
+
+                    if (keysCnt != -1)
+                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
+
+                    // Can not be calculated per cache.
+                    cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
+                }
+            }
+        }
+        else {
+            GridCacheContext cctx = grp.singleCacheContext();
+
+            if (cctx.config().isStatisticsEnabled()) {
+                if (supply.estimatedKeysCount() != -1)
+                    cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
+
+                cctx.cache().metrics0().onRebalanceBatchReceived(supply.messageSize());
+            }
+        }
 
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
+
+            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
             // Preload.
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
@@ -661,9 +679,11 @@ public class GridDhtPartitionDemander {
                                     break;
                                 }
 
-// TODO 5075.
-//                                if (statsEnabled)
-//                                    cctx.cache().metrics0().onRebalanceKeyReceived();
+                                if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
+                                    cctx = ctx.cacheContext(entry.cacheId());
+
+                                if(cctx != null && cctx.config().isStatisticsEnabled())
+                                    cctx.cache().metrics0().onRebalanceKeyReceived();
                             }
 
                             // If message was last for this partition,

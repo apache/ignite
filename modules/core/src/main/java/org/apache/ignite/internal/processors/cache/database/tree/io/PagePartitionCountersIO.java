@@ -94,7 +94,9 @@ public class PagePartitionCountersIO extends PageIO {
         int items = (cacheSizes.length / ITEM_SIZE) - itemsOff;
         int write = Math.min(cap, items);
 
-        PageUtils.putBytes(pageAddr, ITEMS_OFF, cacheSizes, itemsOff * ITEM_SIZE, write * ITEM_SIZE);
+        if (write > 0)
+            // This can happen in case there are no items in a given partition for all caches in the group.
+            PageUtils.putBytes(pageAddr, ITEMS_OFF, cacheSizes, itemsOff * ITEM_SIZE, write * ITEM_SIZE);
 
         setCount(pageAddr, write);
 
