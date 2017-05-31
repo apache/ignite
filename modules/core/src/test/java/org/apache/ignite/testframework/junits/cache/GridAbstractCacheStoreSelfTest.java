@@ -17,6 +17,16 @@
 
 package org.apache.ignite.testframework.junits.cache;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.LinkedBlockingQueue;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
@@ -35,11 +45,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Abstract cache store test.
