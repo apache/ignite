@@ -82,7 +82,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 if (ignite != null)
                 {
-                    // TODO
+                    Assert.AreEqual(string.Format("{0} [typeId={1}, enumValue={2}, enumValueName={3}]",
+                        typeof(T).FullName, binRes.GetBinaryType().TypeId, binRes.EnumValue, val), binRes.ToString());
                 }
                 else
                 {
@@ -96,8 +97,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             // Check array.
-            var arr = new[] {val, val};
-            CheckSerializeDeserialize(arr);
+            CheckSerializeDeserialize(new[] {val, val});
 
             // Check caching.
             if (ignite != null)
@@ -112,7 +112,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(val, res);
                 Assert.AreEqual(val, binRes.Deserialize<T>());
 
-                // TODO: Array.
+                var arrCache = ignite.GetOrCreateCache<int, T[]>(typeof(T[]).FullName);
+                arrCache[1] = new[] {val, val};
+                Assert.AreEqual(new[] { val, val }, arrCache[1]);
             }
         }
 

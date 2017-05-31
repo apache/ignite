@@ -42,38 +42,4 @@ namespace Apache.Ignite.Core.Tests.Binary
             Ignition.StopAll(true);
         }
     }
-
-    // TODO
-    public class EnumsTest2
-    {
-        enum TestEnum
-        {
-            TestValue1,
-            TestValue2
-        };
-
-        class TestClass
-        {
-            public string Name { get; set; }
-            public TestEnum? EnumValue { get; set; }
-
-            public TestClass(string name, TestEnum? enumValue)
-            {
-                Name = name;
-                EnumValue = enumValue;
-            }
-        }
-
-        [Test]
-        public void TestMe()
-        {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                var cache = ignite.CreateCache<string, TestClass>("c");
-                cache.Put("TestElem1", new TestClass("TestElem1", TestEnum.TestValue1));
-                var res = cache.Get("TestElem1");
-                Assert.AreEqual(TestEnum.TestValue1, res.EnumValue);
-            }
-        }
-    }
 }
