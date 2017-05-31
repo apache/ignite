@@ -564,33 +564,44 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Select(e => e.Id)
                 .ToArray();
 
-            ICacheEntry<int, Person>[] res;
-            //res = persons.Join(allOrganizationIds,
-            //        pe => pe.Value.OrganizationId,
-            //        i => i,
-            //        (pe, o) => pe
-            //    )
-            //    .ToArray();
-
-            //Assert.AreEqual(PersonCount, res.Length);
-
-            //res = persons.Join(allOrganizationIds,
-            //        pe => pe.Value.OrganizationId,
-            //        i => i + 1 - 1,
-            //        (pe, o) => pe
-            //    )
-            //    .ToArray();
-
-            //Assert.AreEqual(PersonCount, res.Length);
-
-            res = persons.Join(localOrgs.Select(e => e.Id).DefaultIfEmpty(),
+            // Join with local collection 
+            var qry1 = persons.Join(allOrganizationIds,
                     pe => pe.Value.OrganizationId,
                     i => i,
                     (pe, o) => pe
                 )
                 .ToArray();
 
-            Assert.AreEqual(PersonCount, res.Length);
+            Assert.AreEqual(PersonCount, qry1.Length);
+
+            // Join using expression in innerKeySelector
+            var qry2 = persons.Join(allOrganizationIds,
+                    pe => pe.Value.OrganizationId,
+                    i => i + 1 - 1,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry2.Length);
+
+            //Outer join
+            var qry3 = persons.Join(localOrgs.Select(e => e.Id).DefaultIfEmpty(),
+                    pe => pe.Value.OrganizationId,
+                    i => i,
+                    (pe, o) => pe
+                )
+                .ToArray();
+
+            Assert.AreEqual(PersonCount, qry3.Length);
+
+            // Compiled query
+            var qry4 = CompiledQuery.Compile(() => persons.Join(allOrganizationIds,
+                pe => pe.Value.OrganizationId,
+                i => i,
+                (pe, o) => pe
+            ));
+
+            Assert.AreEqual(PersonCount, qry4().Count());
 
         }
 

@@ -492,19 +492,36 @@ namespace Apache.Ignite.Linq.Impl
                 else
                 {
                     var type = joinClause.InnerSequence.Type;
-
-                    if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(IEnumerable<>))
+                    Type itemType;
+                    
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     {
-                        throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                        itemType = type.GetGenericArguments()[0];
                     }
+                    else 
+                    {
+                        var implementedIEnumerableType = type.GetInterfaces()
+                            .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
 
-                    var itemType = type.GetGenericArguments()[0];
+                        if (implementedIEnumerableType == null)
+                        {
+                            throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                        }
+
+                        itemType = implementedIEnumerableType.GetGenericArguments()[0];
+                    }
+                   
 
                     var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
 
                     if (string.IsNullOrWhiteSpace(sqlTypeName))
                     {
                         throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
+                    }
+
+                    if (joinClause.InnerSequence.NodeType != ExpressionType.Constant)
+                    {
+                        throw new NotSupportedException("STRON WAS HERE");
                     }
 
                     //  no table name required
@@ -523,6 +540,7 @@ namespace Apache.Ignite.Linq.Impl
 
             _builder.Append(") ");
         }
+        
 
         /// <summary>
         /// Builds the join condition ('x=y AND foo=bar').
