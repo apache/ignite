@@ -192,16 +192,10 @@ namespace ignite_test
             }
 
             template<typename T>
-            inline void WriteArray(BinaryRawWriter& writer, T* val, int32_t len)
-            {
-                throw std::runtime_error("Function is not defined");
-            }
+            void WriteArray(BinaryRawWriter& writer, T* val, int32_t len);
 
             template<typename T>
-            inline int32_t ReadArray(BinaryRawReader& reader, T* val, int32_t len)
-            {
-                throw std::runtime_error("Function is not defined");
-            }
+            int32_t ReadArray(BinaryRawReader& reader, T* val, int32_t len);
 
             template<>
             inline void WriteArray(BinaryRawWriter& writer, int8_t* val, int32_t len)
@@ -504,16 +498,10 @@ namespace ignite_test
             }
 
             template<typename T>
-            inline void WriteArray(BinaryWriter& writer, const char* fieldName, T* val, int32_t len)
-            {
-                throw std::runtime_error("Function is not defined");
-            }
+            void WriteArray(BinaryWriter& writer, const char* fieldName, T* val, int32_t len);
 
             template<typename T>
-            inline int32_t ReadArray(BinaryReader& reader, const char* fieldName, T* val, int32_t len)
-            {
-                throw std::runtime_error("Function is not defined");
-            }
+            int32_t ReadArray(BinaryReader& reader, const char* fieldName, T* val, int32_t len);
 
             template<>
             inline void WriteArray(BinaryWriter& writer, const char* fieldName, int8_t* val, int32_t len)

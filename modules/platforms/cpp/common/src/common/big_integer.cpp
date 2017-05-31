@@ -65,6 +65,12 @@ namespace ignite
                 while (firstNonZero < len && val[firstNonZero] == 0)
                     ++firstNonZero;
 
+                if (firstNonZero == len)
+                {
+                    sign = 1;
+                    return;
+                }
+
                 int32_t intLength = (len - firstNonZero + 3) / 4;
 
                 mag.Resize(intLength);
@@ -108,6 +114,12 @@ namespace ignite
                 int32_t firstNonZero = len - 1;
                 while (firstNonZero >= 0 && val[firstNonZero] == 0)
                     --firstNonZero;
+
+                if (firstNonZero < 0)
+                {
+                    sign = 1;
+                    return;
+                }
 
                 int32_t intLength = (firstNonZero + 4) / 4;
 
@@ -260,14 +272,21 @@ namespace ignite
                 static_cast<uint64_t>(GetBitLength()) + 1) * 646456993ULL) >> 31);
 
             BigInteger prec;
-            BigInteger::GetPowerOfTen(r, prec);
+            GetPowerOfTen(r, prec);
 
             return Compare(prec, true) < 0 ? r : r + 1;
         }
 
-        void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
+        void BigInteger::MagnitudeToBytes(FixedSizeArray<int8_t>& buffer) const
         {
-            int32_t bytesNum = static_cast<int32_t>((GetBitLength() + 7) / 8);
+            if (mag.IsEmpty())
+            {
+                buffer.Reset(1);
+
+                return;
+            }
+
+            int32_t bytesNum = static_cast<int32_t>(GetBitLength() / 8 + 1);
 
             buffer.Reset(bytesNum);
 

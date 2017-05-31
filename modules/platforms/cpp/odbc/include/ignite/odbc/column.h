@@ -64,7 +64,7 @@ namespace ignite
              *
              * @param reader Reader to be used to retrieve column data.
              */
-            Column(ignite::impl::binary::BinaryReaderImpl& reader);
+            Column(impl::binary::BinaryReaderImpl& reader);
 
             /**
              * Get column size in bytes.
@@ -82,7 +82,7 @@ namespace ignite
              * @param dataBuf Application data buffer.
              * @return Operation result.
              */
-            SqlResult::Type ReadToBuffer(ignite::impl::binary::BinaryReaderImpl& reader,
+            SqlResult::Type ReadToBuffer(impl::binary::BinaryReaderImpl& reader,
                 app::ApplicationDataBuffer& dataBuf);
 
             /**

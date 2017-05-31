@@ -38,6 +38,15 @@ namespace ignite
                 one.f2 == two.f2;
         }
 
+        friend std::ostream& operator<<(std::ostream& os, const InnerObject& obj)
+        {
+            os << "InnerObject["
+                << "f1=" << obj.f1 << ", "
+                << "f2=" << obj.f2 << "]";
+
+            return os;
+        }
+
         int32_t f1;
         std::string f2;
     };
@@ -55,6 +64,16 @@ namespace ignite
             return one.i32Field == two.i32Field &&
                 one.objField == two.objField &&
                 one.strField == two.strField;
+        }
+
+        friend std::ostream& operator<<(std::ostream& os, const ComplexType& obj)
+        {
+            os << "ComplexType["
+                << "i32Field=" << obj.i32Field << ", "
+                << "objField=" << obj.objField << ", "
+                << "strField=" << obj.strField << "]";
+
+            return os;
         }
 
         int32_t i32Field;

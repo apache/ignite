@@ -64,7 +64,7 @@ namespace ignite
                 size(len),
                 // Brackets are here for a purpose - this way allocated
                 // array is zeroed if T is POD type.
-                data(new T[size]())
+                data(len ? new T[size]() : 0)
             {
                 // No-op.
             }
@@ -76,7 +76,7 @@ namespace ignite
              */
             FixedSizeArray(const FixedSizeArray<T>& other) :
                 size(other.size),
-                data(new T[size])
+                data(size ? new T[size] : 0)
             {
                 Assign(other);
             }

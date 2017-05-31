@@ -101,7 +101,7 @@ namespace ignite
 
         double Decimal::ToDouble() const
         {
-            return common::LexicalCast<double>(*this);
+            return LexicalCast<double>(*this);
         }
 
         int64_t Decimal::ToInt64() const
@@ -209,7 +209,8 @@ namespace ignite
 
             if (scale == other.scale)
                 return magnitude.Compare(other.magnitude);
-            else if (scale > other.scale)
+            
+            if (scale > other.scale)
             {
                 Decimal scaled;
 
@@ -217,14 +218,12 @@ namespace ignite
 
                 return magnitude.Compare(scaled.magnitude);
             }
-            else
-            {
-                Decimal scaled;
+            
+            Decimal scaled;
 
-                SetScale(other.scale, scaled);
+            SetScale(other.scale, scaled);
 
-                return scaled.magnitude.Compare(other.magnitude);
-            }
+            return scaled.magnitude.Compare(other.magnitude);
         }
 
         bool Decimal::IsNegative() const
@@ -270,6 +269,197 @@ namespace ignite
         bool operator>=(const Decimal& val1, const Decimal& val2)
         {
             return val1.Compare(val2) >= 0;
+        }
+
+        std::ostream& operator<<(std::ostream& os, const Decimal& val)
+        {
+            const BigInteger& unscaled = val.GetUnscaledValue();
+
+            // Zero magnitude case. Scale does not matter.
+            if (unscaled.GetMagnitude().IsEmpty())
+                return os << '0';
+
+            // Scale is zero or negative. No decimal point here.
+            if (val.scale <= 0)
+            {
+                os << unscaled;
+
+                // Adding zeroes if needed.
+                for (int32_t i = 0; i < -val.scale; ++i)
+                    os << '0';
+
+                return os;
+            }
+
+            // Getting magnitude as a string.
+            std::stringstream converter;
+
+            converter << unscaled;
+
+            std::string magStr = converter.str();
+
+            int32_t magLen = static_cast<int32_t>(magStr.size());
+
+            int32_t magBegin = 0;
+
+            // If value is negative passing minus sign.
+            if (magStr[magBegin] == '-')
+            {
+                os << magStr[magBegin];
+
+                ++magBegin;
+                --magLen;
+            }
+
+            // Finding last non-zero char. There is no sense in trailing zeroes
+            // beyond the decimal point.
+            int32_t lastNonZero = static_cast<int32_t>(magStr.size()) - 1;
+
+            while (lastNonZero >= magBegin && magStr[lastNonZero] == '0')
+                --lastNonZero;
+
+            // This is expected as we already covered zero number case.
+            assert(lastNonZero >= magBegin);
+
+            int32_t dotPos = magLen - val.scale;
+
+            if (dotPos <= 0)
+            {
+                // Means we need to add leading zeroes.
+                os << '0' << '.';
+
+                while (dotPos < 0)
+                {
+                    ++dotPos;
+
+                    os << '0';
+                }
+
+                os.write(&magStr[magBegin], lastNonZero - magBegin + 1);
+            }
+            else
+            {
+                // Decimal point is in the middle of the number.
+                // Just output everything before the decimal point.
+                os.write(&magStr[magBegin], dotPos);
+
+                int32_t afterDot = lastNonZero - dotPos - magBegin + 1;
+
+                if (afterDot > 0)
+                {
+                    os << '.';
+
+                    os.write(&magStr[magBegin + dotPos], afterDot);
+                }
+            }
+
+            return os;
+        }
+
+        std::istream& operator>>(std::istream& is, Decimal& val)
+        {
+            std::istream::sentry sentry(is);
+
+            // Return zero if input failed.
+            val.AssignInt64(0);
+
+            if (!is)
+                return is;
+
+            // Current char.
+            int c = is.peek();
+
+            // Current value parts.
+            uint64_t part = 0;
+            int32_t partDigits = 0;
+            int32_t scale = -1;
+            int32_t sign = 1;
+
+            BigInteger& mag = val.magnitude;
+            BigInteger pow;
+            BigInteger bigPart;
+
+            if (!is)
+                return is;
+
+            // Checking sign.
+            if (c == '-' || c == '+')
+            {
+                if (c == '-')
+                    sign = -1;
+
+                is.ignore();
+                c = is.peek();
+            }
+
+            // Reading number itself.
+            while (is)
+            {
+                if (isdigit(c))
+                {
+                    part = part * 10 + (c - '0');
+                    ++partDigits;
+                }
+                else if (c == '.' && scale < 0)
+                {
+                    // We have found decimal point. Starting counting scale.
+                    scale = 0;
+                }
+                else
+                    break;
+
+                is.ignore();
+                c = is.peek();
+
+                if (part >= 1000000000000000000ULL)
+                {
+                    BigInteger::GetPowerOfTen(partDigits, pow);
+                    mag.Multiply(pow, mag);
+
+                    mag.Add(part);
+
+                    part = 0;
+                    partDigits = 0;
+                }
+
+                // Counting scale if the decimal point have been encountered.
+                if (scale >= 0)
+                    ++scale;
+            }
+
+            // Adding last part of the number.
+            if (partDigits)
+            {
+                BigInteger::GetPowerOfTen(partDigits, pow);
+
+                mag.Multiply(pow, mag);
+
+                mag.Add(part);
+            }
+
+            // Adjusting scale.
+            if (scale < 0)
+                scale = 0;
+            else
+                --scale;
+
+            // Reading exponent.
+            if (c == 'e' || c == 'E')
+            {
+                is.ignore();
+
+                int32_t exp = 0;
+                is >> exp;
+
+                scale -= exp;
+            }
+
+            val.scale = scale;
+
+            if (sign < 0)
+                mag.Negate();
+
+            return is;
         }
     }
 }

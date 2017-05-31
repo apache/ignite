@@ -26,6 +26,7 @@
 
 #include "ignite/binary_test_defs.h"
 #include "ignite/binary_test_utils.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace ignite::impl::interop;
@@ -55,8 +56,8 @@ void CheckRawPrimitive(T val)
     BOOST_REQUIRE(readVal == val);
 }
 
-template<typename T>
-void CheckRawPrimitiveArray(T dflt, T val1, T val2)
+template<typename T, typename T2>
+void CheckRawPrimitiveArray(T2 dflt, T2 val1, T2 val2)
 {
     InteropUnpooledMemory mem(1024);
 
@@ -86,8 +87,8 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 1) == -1);
 
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
     // 2. Write empty array.
     T arr2[2];
@@ -109,13 +110,13 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 0) == 0);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 2) == 0);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
     // 3. Partial array write.
     out.Position(0);
@@ -130,18 +131,18 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 2) == 1);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 0) == 1);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 1) == 1);
-    BOOST_REQUIRE(arr1[0] == val1);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), val1);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
     arr1[0] = dflt;
 
     in.Position(0);
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 2) == 1);
-    BOOST_REQUIRE(arr1[0] == val1);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), val1);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
     arr1[0] = dflt;
 
     // 4. Full array write.
@@ -157,16 +158,16 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
     BOOST_REQUIRE(ReadArray<T>(rawReader, NULL, 2) == 2);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 0) == 2);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 1) == 2);
-    BOOST_REQUIRE(arr1[0] == dflt);
-    BOOST_REQUIRE(arr1[1] == dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
     BOOST_REQUIRE(ReadArray<T>(rawReader, arr1, 2) == 2);
-    BOOST_REQUIRE(arr1[0] == val1);
-    BOOST_REQUIRE(arr1[1] == val2);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), val1);
+    BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), val2);
 }
 
 void CheckRawWritesRestricted(BinaryRawWriter& writer)

@@ -184,7 +184,7 @@ namespace ignite
             /**
              * Fills specified buffer with data of this BigInteger converted to
              * bytes in big-endian byte order. Sign is not considered when this
-             * operation is performed.
+             * operation is performed, i.e. resulting number is always positive.
              *
              * @param buffer Buffer to fill.
              */

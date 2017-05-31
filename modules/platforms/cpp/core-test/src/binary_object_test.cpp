@@ -158,8 +158,8 @@ BOOST_AUTO_TEST_SUITE(BinaryObjectTestSuite)
 
 BOOST_AUTO_TEST_CASE(UserTestType)
 {
-    CheckSimpleNP(TestType());
-    CheckSimpleNP(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
+    CheckSimple(TestType());
+    CheckSimple(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
         common::MakeDateGmt(1987, 6, 5),
         common::MakeTimeGmt(13, 32, 9),
         common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(UserTestType)
 
 BOOST_AUTO_TEST_CASE(UserComplexType)
 {
-    CheckSimpleNP(ComplexType());
+    CheckSimple(ComplexType());
 
     ComplexType nonDefault;
 
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(UserComplexType)
     nonDefault.objField.f1 = 403685016;
     nonDefault.objField.f2 = "Whatever";
 
-    CheckSimpleNP(nonDefault);
+    CheckSimple(nonDefault);
 }
 
 BOOST_AUTO_TEST_CASE(UserBinaryFields)

@@ -142,22 +142,6 @@ namespace ignite
         void WriteString(impl::binary::BinaryWriterImpl& writer, const std::string& str);
 
         /**
-         * Read decimal value using reader.
-         *
-         * @param reader Reader.
-         * @param decimal Decimal value.
-         */
-        void ReadDecimal(impl::binary::BinaryReaderImpl& reader, common::Decimal& decimal);
-
-        /**
-         * Write decimal value using writer.
-         *
-         * @param writer Writer.
-         * @param decimal Decimal value.
-         */
-        void WriteDecimal(impl::binary::BinaryWriterImpl& writer, const common::Decimal& decimal);
-
-        /**
          * Convert SQL string buffer to std::string.
          *
          * @param sqlStr SQL string buffer.

@@ -130,11 +130,17 @@ namespace ignite
         uint16_t part4 = static_cast<uint16_t>(guid.GetLeastSignificantBits() >> 48);
         uint64_t part5 = guid.GetLeastSignificantBits() & 0x0000FFFFFFFFFFFFULL;
 
+        std::streamsize w = os.width();
+        typename std::basic_ostream<C>::fmtflags f = os.flags();
+
         os  << std::setfill<C>('0') << std::setw(8)  << std::hex << part1 << '-'
             << std::setfill<C>('0') << std::setw(4)  << std::hex << part2 << '-'
             << std::setfill<C>('0') << std::setw(4)  << std::hex << part3 << '-'
             << std::setfill<C>('0') << std::setw(4)  << std::hex << part4 << '-'
             << std::setfill<C>('0') << std::setw(12) << std::hex << part5;
+
+        os.width(w);
+        os.flags(f);
 
         return os;
     }
@@ -153,6 +159,8 @@ namespace ignite
 
         C delim;
 
+        typename std::basic_ostream<C>::fmtflags f = is.flags();
+
         for (int i = 0; i < 4; ++i)
         {
             is >> std::hex >> parts[i] >> delim;
@@ -164,6 +172,8 @@ namespace ignite
         is >> std::hex >> parts[4];
 
         guid = Guid((parts[0] << 32) | (parts[1] << 16) | parts[2], (parts[3] << 48) | parts[4]);
+
+        is.flags(f);
 
         return is;
     }
