@@ -435,7 +435,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, " Non-plain objects are not supported");
+        }, IgniteCheckedException.class, "Custom objects are not supported");
     }
 
     /**

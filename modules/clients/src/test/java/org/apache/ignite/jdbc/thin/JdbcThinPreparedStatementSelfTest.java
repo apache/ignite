@@ -167,18 +167,26 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
-    public void testQueryExecute() throws Exception {
+    public void testQueryExecuteException() throws Exception {
         stmt = conn.prepareStatement(SQL_PART + " where boolVal is not distinct from ?");
 
         stmt.setBoolean(1, true);
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                stmt.executeQuery();
+                stmt.executeQuery(SQL_PART);
 
                 return null;
             }
-        }, SQLException.class, "executeQuery is called on PreparedStatement instance.");
+        }, SQLException.class, "The method 'executeQuery(String)' is called on PreparedStatement instance.");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                stmt.execute(SQL_PART);
+
+                return null;
+            }
+        }, SQLException.class, "The method 'execute(String)' is called on PreparedStatement instance.");
     }
 
     /**
@@ -189,9 +197,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setBoolean(1, true);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -230,9 +236,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setByte(1, (byte)1);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -271,9 +275,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setShort(1, (short)1);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -312,9 +314,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setInt(1, 1);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -353,9 +353,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setLong(1, 1L);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -394,9 +392,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setFloat(1, 1.0f);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -435,9 +431,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setDouble(1, 1.0d);
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -476,9 +470,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setBigDecimal(1, new BigDecimal(1));
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -517,9 +509,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setString(1, "str");
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -558,9 +548,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setBytes(1, new byte[] {1});
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -599,9 +587,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setObject(1, new Date(1));
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -640,9 +626,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setTime(1, new Time(1));
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 
@@ -681,9 +665,7 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
 
         stmt.setTimestamp(1, new Timestamp(1));
 
-        stmt.execute();
-
-        ResultSet rs = stmt.getResultSet();
+        ResultSet rs = stmt.executeQuery();
 
         int cnt = 0;
 

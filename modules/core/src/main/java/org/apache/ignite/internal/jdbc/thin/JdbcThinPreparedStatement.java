@@ -63,7 +63,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        ResultSet rs = executeQuery(sql);
+        ResultSet rs = super.executeQuery(sql);
 
         args = null;
 
@@ -197,7 +197,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public boolean execute() throws SQLException {
-        return execute(sql);
+        return super.execute(sql);
     }
 
     /** {@inheritDoc} */
@@ -445,7 +445,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (!SqlListenerUtils.isPlainType(val.getClass()))
+        if (val != null && !SqlListenerUtils.isPlainType(val.getClass()))
             throw new SQLException("Parameter type is unsupported. [cls=" + val.getClass() + ']');
 
         if (paramIdx < 1)
