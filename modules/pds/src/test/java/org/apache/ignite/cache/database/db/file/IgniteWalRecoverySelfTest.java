@@ -464,7 +464,7 @@ public class IgniteWalRecoverySelfTest extends GridCommonAbstractTest {
 
         walSegmentSize = 2 * 1024 * 1024;
 
-        final long endTime = System.currentTimeMillis() + 3 * 60 * 1000;
+        final long endTime = System.currentTimeMillis() + 2 * 60 * 1000;
 
         try {
             IgniteEx ignite = startGrid(1);

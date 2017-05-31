@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.database.wal.record.HeaderRec
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
@@ -104,6 +105,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
  * Record V1 serializer.
  */
 public class RecordV1Serializer implements RecordSerializer {
+    /** */
+    public static final int HEADER_RECORD_SIZE = 17;
+
     /** */
     private GridCacheSharedContext cctx;
 
@@ -791,8 +795,11 @@ public class RecordV1Serializer implements RecordSerializer {
                 break;
 
             case HEADER_RECORD:
-                if (in.readLong() != HeaderRecord.MAGIC)
-                    throw new EOFException("Magic is corrupted.");
+                long magic = in.readLong();
+
+                if (magic != HeaderRecord.MAGIC)
+                    throw new EOFException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
+                        ", actual=" + U.hexLong(magic) + ']');
 
                 int ver = in.readInt();
 
@@ -1259,7 +1266,7 @@ public class RecordV1Serializer implements RecordSerializer {
                 return 5 + dataSize(dataRec) + 4;
 
             case HEADER_RECORD:
-                return 13 + 4;
+                return HEADER_RECORD_SIZE;
 
             case DATA_PAGE_INSERT_RECORD:
                 DataPageInsertRecord diRec = (DataPageInsertRecord)record;
