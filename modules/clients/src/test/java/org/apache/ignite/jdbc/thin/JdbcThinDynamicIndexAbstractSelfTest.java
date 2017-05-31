@@ -23,17 +23,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test that checks indexes handling with JDBC.
@@ -153,14 +153,14 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
         // Test that local queries on all server nodes use new index.
         for (int i = 0 ; i < 3; i++) {
-            List<List<?>> locRes = ignite(i).cache(null).query(new SqlFieldsQuery("explain select id from " +
+            List<List<?>> locRes = ignite(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("explain select id from " +
                 "Person where id = 5").setLocal(true)).getAll();
 
             assertEquals(F.asList(
                 Collections.singletonList("SELECT\n" +
                     "    ID\n" +
-                    "FROM \"\".PERSON\n" +
-                    "    /* \"\".IDX: ID = 5 */\n" +
+                    "FROM \"" + DEFAULT_CACHE_NAME + "\".PERSON\n" +
+                    "    /* \"" + DEFAULT_CACHE_NAME + "\".IDX: ID = 5 */\n" +
                     "WHERE ID = 5")
             ), locRes);
         }
@@ -177,12 +177,13 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
     public void testCreateIndexWithDuplicateName() throws SQLException {
         jdbcRun(CREATE_INDEX);
 
-        assertSqlException(new RunnableX() {
-            /** {@inheritDoc} */
-            @Override public void run() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 jdbcRun(CREATE_INDEX);
+
+                return null;
             }
-        }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS, log);
+        }, IgniteCheckedException.class, "Index already exists: IDX");
     }
 
     /**
@@ -211,14 +212,14 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
         // Test that no local queries on server nodes use new index.
         for (int i = 0 ; i < 3; i++) {
-            List<List<?>> locRes = ignite(i).cache(null).query(new SqlFieldsQuery("explain select id from " +
+            List<List<?>> locRes = ignite(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("explain select id from " +
                 "Person where id = 5").setLocal(true)).getAll();
 
             assertEquals(F.asList(
                 Collections.singletonList("SELECT\n" +
                     "    ID\n" +
-                    "FROM \"\".PERSON\n" +
-                    "    /* \"\".PERSON.__SCAN_ */\n" +
+                    "FROM \"" + DEFAULT_CACHE_NAME + "\".PERSON\n" +
+                    "    /* \"" + DEFAULT_CACHE_NAME + "\".PERSON.__SCAN_ */\n" +
                     "WHERE ID = 5")
             ), locRes);
         }
@@ -230,12 +231,13 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that dropping a non-existent index yields an error.
      */
     public void testDropMissingIndex() {
-        assertSqlException(new RunnableX() {
-            /** {@inheritDoc} */
-            @Override public void run() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 jdbcRun(DROP_INDEX);
+
+                return null;
             }
-        }, IgniteQueryErrorCode.INDEX_NOT_FOUND, log);
+        }, IgniteCheckedException.class, "Index doesn't exist: IDX");
     }
 
     /**
@@ -307,6 +309,8 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
         assertEquals(expSize, cache().size());
 
         try (Statement stmt = conn.createStatement()) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
             try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) from Person")) {
                 assertEquals(expSize, getSingleValue(rs));
             }
@@ -317,57 +321,6 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * @return Cache.
      */
     private IgniteCache<String, Person> cache() {
-        return grid(0).cache(null);
-    }
-
-    /**
-     * Ensure that SQL exception is thrown.
-     *
-     * @param r Runnable.
-     * @param expCode Error code.
-     * @param log Logger.
-     */
-    private static void assertSqlException(RunnableX r, int expCode, IgniteLogger log) {
-        // We expect IgniteSQLException with given code inside CacheException inside JDBC SQLException.
-
-        try {
-            r.run();
-        }
-        catch (SQLException e) {
-            for(Throwable t = e.getCause(); t != null; t = t.getCause()) {
-                if (t instanceof IgniteSQLException) {
-                    IgniteSQLException sqlExecption = (IgniteSQLException)t;
-
-                    assertEquals("Unexpected error code [expected=" + expCode +
-                            ", actual=" + sqlExecption.statusCode() + ']',
-                        expCode, sqlExecption.statusCode());
-
-                    return;
-                }
-            }
-
-            log.error("Unexpected exception: ", e);
-
-            fail("Unexpected exception. See stacktrace above");
-        }
-        catch (Exception e) {
-            log.error("Unexpected exception: ", e);
-
-            fail("Unexpected exception. See stacktrace above");
-        }
-
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    private interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 }
