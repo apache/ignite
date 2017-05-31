@@ -2105,16 +2105,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param schema Schema name.
-     * @return Cache name from schema name.
-     */
-    public String cacheName(String schema) throws SQLException {
-        checkxEnabled();
-
-        return idx.cacheName(schema);
-    }
-
-    /**
      * @param cacheName Cache name.
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.

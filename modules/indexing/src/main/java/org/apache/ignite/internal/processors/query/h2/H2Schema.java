@@ -31,9 +31,6 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class H2Schema {
     /** */
-    private final String cacheName;
-
-    /** */
     private final String schemaName;
 
     /** */
@@ -52,12 +49,12 @@ public class H2Schema {
     private final GridCacheContext<?, ?> cctx;
 
     /**
-     * @param cacheName Cache name.
+     * Constructor.
+     *
      * @param schemaName Schema name.
      * @param cctx Cache context.
      */
-    public H2Schema(String cacheName, String schemaName, GridCacheContext<?, ?> cctx) {
-        this.cacheName = cacheName;
+    public H2Schema(String schemaName, GridCacheContext<?, ?> cctx) {
         this.cctx = cctx;
         this.schemaName = schemaName;
 
@@ -69,13 +66,6 @@ public class H2Schema {
      */
     public GridCacheContext cacheContext() {
         return cctx;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
     }
 
     /**
@@ -138,6 +128,7 @@ public class H2Schema {
      */
     public void remove(H2TableDescriptor tbl) {
         tbls.remove(tbl.tableName());
+
         typeToTbl.remove(tbl.typeName());
     }
 

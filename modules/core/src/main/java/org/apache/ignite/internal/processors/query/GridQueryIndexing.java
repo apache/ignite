@@ -275,14 +275,6 @@ public interface GridQueryIndexing {
     public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
 
     /**
-     * Gets cache name from database schema.
-     *
-     * @param schemaName Schema name. Could not be null. Could be empty.
-     * @return Cache name. Could be null.
-     */
-    public String cacheName(String schemaName);
-
-    /**
      * Collect queries that already running more than specified duration.
      *
      * @param duration Duration to check.

@@ -1732,17 +1732,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public String cacheName(String schemaName) {
-        assert schemaName != null;
-
-        H2Schema schema = schemas.get(schemaName);
-
-        assert schema != null;
-
-        return schema.cacheName();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override public void rebuildIndexesFromHash(GridCacheContext cctx, String schemaName, String typeName)
         throws IgniteCheckedException {
@@ -2111,8 +2100,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
         CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        if (schemas.putIfAbsent(schemaName, new H2Schema(cacheName, schemaName, cctx)) != null)
-            throw new IgniteCheckedException("Cache already registered: " + U.maskName(cacheName));
+        // TODO: Do not do this for public schema.
+        if (schemas.putIfAbsent(schemaName, new H2Schema(schemaName, cctx)) != null)
+            throw new IgniteCheckedException("Schema already registered: " + U.maskName(schemaName));
 
         cacheName2schema.put(cacheName, schemaName);
 
@@ -2123,6 +2113,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(String cacheName) {
+        // TODO: Proper unregister of cache in public schema.
+
         String schema = schema(cacheName);
         H2Schema rmv = schemas.remove(schema);
 
