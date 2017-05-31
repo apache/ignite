@@ -386,7 +386,7 @@ namespace ignite
 
             void BinaryUtils::ReadDecimal(InteropInputStream* stream, common::Decimal& decimal)
             {
-                int32_t scale = ReadSignedVarint(stream);
+                int32_t scale = stream->ReadInt32();
 
                 int32_t len = ReadUnsignedVarint(stream);
 
@@ -419,7 +419,7 @@ namespace ignite
             {
                 const common::BigInteger &unscaled = decimal.GetUnscaledValue();
 
-                WriteSignedVarint(stream, decimal.GetScale());
+                stream->WriteInt32(decimal.GetScale());
 
                 common::FixedSizeArray<int8_t> magnitude;
 

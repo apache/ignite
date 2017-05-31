@@ -755,7 +755,7 @@ namespace ignite
                 if (val)
                 {
                     stream->WriteInt8(hdr);
-                    BinaryUtils::WriteUnsignedVarint(stream ,len);
+                    BinaryUtils::WriteUnsignedVarint(stream, len);
                     func(stream, val, len);
                 }
                 else
