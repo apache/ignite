@@ -71,7 +71,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 var cache = ignite.CreateCache<string, TestClass>("c");
                 cache.Put("TestElem1", new TestClass("TestElem1", TestEnum.TestValue1));
-                cache.Get("TestElem1");
+                var res = cache.Get("TestElem1");
+                Assert.AreEqual(TestEnum.TestValue1, res.EnumValue);
             }
         }
     }
