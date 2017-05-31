@@ -1732,7 +1732,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final String schemaName = idx.schema(cctx.name());
+            final String schemaName = qry.getSchema() != null ? qry.getSchema() : idx.schema(cctx.name());
             final int mainCacheId = CU.cacheId(cctx.name());
 
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
