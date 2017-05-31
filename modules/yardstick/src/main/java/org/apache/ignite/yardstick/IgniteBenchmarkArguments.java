@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick;
 import com.beust.jcommander.Parameter;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -193,6 +194,17 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-cig", "--cachesInGrp"}, description = "Number of caches to create in configured group")
     private int cachesInGrp = 1;
+
+    /** */
+    @Parameter(names = {"-pds", "--persistentStore"}, description = "Persistent store flag")
+    private boolean persistentStoreEnabled;
+
+    /**
+     * @return {@code True} if need set {@link PersistentStoreConfiguration}.
+     */
+    public boolean persistentStoreEnabled() {
+        return persistentStoreEnabled;
+    }
 
     /**
      * @return List of enabled load test operations.
