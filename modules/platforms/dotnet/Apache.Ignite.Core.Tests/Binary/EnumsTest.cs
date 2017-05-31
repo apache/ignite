@@ -120,6 +120,36 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(val, res);
         }
 
+
+        /// <summary>
+        /// Tests enums as a nullable field in binarizable object.
+        /// </summary>
+        [Test]
+        public void TestBinarizableNullableField()
+        {
+            // Default values.
+            var val = new EnumsBinarizableNullable();
+            
+            var res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
+
+            // Max values.
+            val = new EnumsBinarizableNullable
+            {
+                Byte = ByteEnum.Bar,
+                Int = IntEnum.Bar,
+                Long = LongEnum.Bar,
+                SByte = SByteEnum.Bar,
+                Short = ShortEnum.Bar,
+                UInt = UIntEnum.Bar,
+                ULong = ULongEnum.Bar,
+                UShort = UShortEnum.Bar
+            };
+
+            res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
+        }
+
         /// <summary>
         /// Tests enums as a field in ISerializable object.
         /// </summary>
@@ -240,6 +270,49 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+        private class EnumsBinarizableNullable
+        {
+            public ByteEnum? Byte { get; set; }
+            public SByteEnum? SByte { get; set; }
+            public ShortEnum? Short { get; set; }
+            public UShortEnum? UShort { get; set; }
+            public IntEnum? Int { get; set; }
+            public UIntEnum? UInt { get; set; }
+            public LongEnum? Long { get; set; }
+            public ULongEnum? ULong { get; set; }
+
+            private bool Equals(EnumsBinarizableNullable other)
+            {
+                return Byte == other.Byte && SByte == other.SByte && Short == other.Short 
+                    && UShort == other.UShort && Int == other.Int && UInt == other.UInt 
+                    && Long == other.Long && ULong == other.ULong;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((EnumsBinarizableNullable) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = Byte.GetHashCode();
+                    hashCode = (hashCode*397) ^ SByte.GetHashCode();
+                    hashCode = (hashCode*397) ^ Short.GetHashCode();
+                    hashCode = (hashCode*397) ^ UShort.GetHashCode();
+                    hashCode = (hashCode*397) ^ Int.GetHashCode();
+                    hashCode = (hashCode*397) ^ UInt.GetHashCode();
+                    hashCode = (hashCode*397) ^ Long.GetHashCode();
+                    hashCode = (hashCode*397) ^ ULong.GetHashCode();
+                    return hashCode;
+                }
+            }
+        }
+
         [Serializable]
         private class EnumsSerializable : EnumsBinarizable, ISerializable
         {
@@ -258,6 +331,39 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UInt = (UIntEnum) info.GetValue("uint", typeof(UIntEnum));
                 Long = (LongEnum) info.GetValue("long", typeof(LongEnum));
                 ULong = (ULongEnum) info.GetValue("ulong", typeof(ULongEnum));
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("byte", Byte);
+                info.AddValue("sbyte", SByte);
+                info.AddValue("short", Short);
+                info.AddValue("ushort", UShort);
+                info.AddValue("int", Int);
+                info.AddValue("uint", UInt);
+                info.AddValue("long", Long);
+                info.AddValue("ulong", ULong);
+            }
+        }
+
+        [Serializable]
+        private class EnumsSerializableNullable : EnumsBinarizableNullable, ISerializable
+        {
+            public EnumsSerializableNullable()
+            {
+                // No-op.
+            }
+
+            protected EnumsSerializableNullable(SerializationInfo info, StreamingContext context)
+            {
+                Byte = (ByteEnum?) info.GetValue("byte", typeof(ByteEnum));
+                SByte = (SByteEnum?) info.GetValue("sbyte", typeof(SByteEnum));
+                Short = (ShortEnum?) info.GetValue("short", typeof(ShortEnum));
+                UShort = (UShortEnum?) info.GetValue("ushort", typeof(UShortEnum));
+                Int = (IntEnum?) info.GetValue("int", typeof(IntEnum));
+                UInt = (UIntEnum?) info.GetValue("uint", typeof(UIntEnum));
+                Long = (LongEnum?) info.GetValue("long", typeof(LongEnum));
+                ULong = (ULongEnum?) info.GetValue("ulong", typeof(ULongEnum));
             }
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
