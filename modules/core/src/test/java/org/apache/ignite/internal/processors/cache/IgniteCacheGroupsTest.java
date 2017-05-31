@@ -2450,6 +2450,46 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testStaticConfigurationsValidation() throws Exception {
+        ccfgs = new CacheConfiguration[2];
+
+        ccfgs[0] = new CacheConfiguration(CACHE1);
+        ccfgs[0].setGroupName(GROUP1);
+        ccfgs[0].setAffinity(new RendezvousAffinityFunction(false, 1024));
+
+        ccfgs[1] = new CacheConfiguration(CACHE2);
+        ccfgs[1].setGroupName(GROUP1);
+        ccfgs[1].setAffinity(new RendezvousAffinityFunction(false, 512));
+
+        try {
+            startGrid(0);
+
+            fail();
+        }
+        catch (IgniteCheckedException ignore) {
+            // Expected exception.
+        }
+
+        ccfgs = new CacheConfiguration[3];
+
+        ccfgs[0] = new CacheConfiguration(CACHE1);
+        ccfgs[0].setGroupName(GROUP1);
+        ccfgs[0].setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        ccfgs[1] = new CacheConfiguration(CACHE2);
+        ccfgs[1].setGroupName(GROUP2);
+        ccfgs[1].setAffinity(new RendezvousAffinityFunction(false, 512));
+
+        ccfgs[2] = new CacheConfiguration("cache3");
+        ccfgs[2].setGroupName(GROUP1);
+        ccfgs[2].setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        startGrid(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testConfigurationConsistencyValidation() throws Exception {
         startGrids(2);
 
