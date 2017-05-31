@@ -28,6 +28,13 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
  * Various JDBC utility methods.
  */
 public class JdbcUtils {
+    /** */
+    private static final ThreadLocal<Boolean> isReadSqlObject = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
+
     /**
      * @param writer Binari writer.
      * @param items Query results items.
@@ -60,8 +67,12 @@ public class JdbcUtils {
 
                 List<Object> col = new ArrayList<>(colsSize);
 
-                for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(SqlListenerUtils.readObject(reader, false));
+                for (int colCnt = 0; colCnt < colsSize; ++colCnt) {
+                    if (isReadSqlObject.get())
+                        col.add(readSqlObject(reader));
+                    else
+                        col.add(SqlListenerUtils.readObject(reader, false));
+                }
 
                 items.add(col);
             }
@@ -70,4 +81,40 @@ public class JdbcUtils {
         } else
             return Collections.emptyList();
     }
+
+    /**
+     * @param reader Binary reader.
+     * @return Query results items.
+     */
+    public static Object readSqlObject(BinaryReaderExImpl reader) {
+        Object obj = SqlListenerUtils.readObject(reader, false);
+
+        if (obj == null)
+            return null;
+
+        if (obj.getClass() == java.util.Date.class)
+            return new java.sql.Date(((java.util.Date)obj).getTime());
+
+        if (obj.getClass() == java.util.Date[].class) {
+            java.util.Date[] arr = (java.util.Date[])obj;
+
+            java.sql.Date[] sqlArr = new java.sql.Date[arr.length];
+
+            for (int i = 0; i < arr.length; ++i)
+                sqlArr[i] = new java.sql.Date(arr[i].getTime());
+
+            return sqlArr;
+        }
+
+        return obj;
+    }
+
+    /**
+     * @param readSqlObj when {@code true} {@code readItems} method returns {@code java.sql.Date} instead of
+     *      {@code java.util.Date}
+     */
+    public static void setReadSqlObject(boolean readSqlObj) {
+        isReadSqlObject.set(readSqlObj);
+    }
+
 }

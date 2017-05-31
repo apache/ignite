@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -171,6 +172,8 @@ public class JdbcThinTcpIo {
     public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
+        JdbcUtils.setReadSqlObject(true);
+
         return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
             args == null ? null : args.toArray(new Object[args.size()])), QUERY_EXEC_MSG_INIT_CAP);
     }
@@ -211,6 +214,8 @@ public class JdbcThinTcpIo {
      */
     public JdbcQueryFetchResult queryFetch(Long qryId, int pageSize)
         throws IOException, IgniteCheckedException {
+        JdbcUtils.setReadSqlObject(true);
+
         return sendRequest(new JdbcQueryFetchRequest(qryId, pageSize), QUERY_FETCH_MSG_SIZE);
     }
 
