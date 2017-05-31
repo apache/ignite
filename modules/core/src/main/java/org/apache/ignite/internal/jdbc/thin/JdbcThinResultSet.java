@@ -54,20 +54,20 @@ public class JdbcThinResultSet implements ResultSet {
     /** Statement. */
     private final JdbcThinStatement stmt;
 
-    /** Future ID. */
+    /** Query ID. */
     private final Long qryId;
 
-    /** Table names. */
-    private List<JdbcColumnMeta> metaRef;
+    /** Metadata. */
+    private List<JdbcColumnMeta> meta;
 
-    /** Table names. */
+    /** Metadata initialization flag. */
     private boolean metaInit;
 
     /** Fields iterator. */
     private List<List<Object>> fields;
 
     /** Fields iterator. */
-    private Iterator<List<Object>> fieldsIt;
+    private Iterator<List<Object>> fieldsIter;
 
     /** Finished flag. */
     private boolean finished;
@@ -114,7 +114,7 @@ public class JdbcThinResultSet implements ResultSet {
         this.fields = fields;
         this.finished = finished;
 
-        fieldsIt = fields.iterator();
+        fieldsIter = fields.iterator();
 
         this.isQuery = isQuery;
     }
@@ -124,14 +124,14 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fieldsIt == null && !finished) {
+        if (fieldsIter == null && !finished) {
             try {
                 JdbcQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
 
                 fields = res.items();
                 finished = res.last();
 
-                fieldsIt = fields.iterator();
+                fieldsIter = fields.iterator();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -143,16 +143,16 @@ public class JdbcThinResultSet implements ResultSet {
             }
         }
 
-        if (fieldsIt != null) {
-            if (fieldsIt.hasNext()) {
-                curr = fieldsIt.next();
+        if (fieldsIter != null) {
+            if (fieldsIter.hasNext()) {
+                curr = fieldsIter.next();
 
                 pos++;
 
                 return true;
             }
             else {
-                fieldsIt = null;
+                fieldsIter = null;
                 curr = null;
 
                 return false;
@@ -472,7 +472,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt == null && curr == null;
+        return finished && fieldsIter == null && curr == null;
     }
 
     /** {@inheritDoc} */
@@ -486,7 +486,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt != null && !fieldsIt.hasNext() && curr != null;
+        return finished && fieldsIter != null && !fieldsIter.hasNext() && curr != null;
     }
 
     /** {@inheritDoc} */
@@ -1514,7 +1514,7 @@ public class JdbcThinResultSet implements ResultSet {
             try {
                 JdbcQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
 
-                metaRef = res.meta();
+                meta = res.meta();
 
                 metaInit = true;
             }
@@ -1528,7 +1528,7 @@ public class JdbcThinResultSet implements ResultSet {
             }
         }
 
-        return metaRef;
+        return meta;
     }
 
     /**
