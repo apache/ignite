@@ -55,7 +55,7 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
-    /** Cache name. */
+    /** Schema name. */
     private String schemaName;
 
     /** Closed flag. */
