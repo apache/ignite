@@ -52,6 +52,7 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @param cfg Cache configuration.
+     * @param sql SQL flag.
      */
     public GridCacheAttributes(CacheConfiguration cfg, boolean sql) {
         ccfg = cfg;
@@ -60,10 +61,10 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * Public no-arg constructor for {@link Externalizable}.
+     * @return Cache group name.
      */
-    public GridCacheAttributes() {
-        // No-op.
+    public String groupName() {
+        return ccfg.getGroupName();
     }
 
     /**

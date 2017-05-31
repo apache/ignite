@@ -143,8 +143,8 @@ class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
 
-        CU.checkAttributeMismatch(log, rmtCfg.getGroupName(), rmt, "groupName", "Cache group name",
-            locCfg.getGroupName(), rmtCfg.getGroupName(), true);
+        CU.checkAttributeMismatch(log, rmtAttr.groupName(), rmt, "groupName", "Cache group name",
+            locAttr.groupName(), rmtAttr.groupName(), true);
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "sql", "SQL flag",
             locAttr.sql(), rmtAttr.sql(), true);
@@ -1089,8 +1089,8 @@ class ClusterCachesInfo {
      */
     private void validateCacheGroupConfiguration(CacheConfiguration cfg, CacheConfiguration startCfg)
         throws IgniteCheckedException {
-        GridCacheAttributes attr1 = new GridCacheAttributes(cfg);
-        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg);
+        GridCacheAttributes attr1 = new GridCacheAttributes(cfg, false);
+        GridCacheAttributes attr2 = new GridCacheAttributes(startCfg, false);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "cacheMode", "Cache mode",
             cfg.getCacheMode(), startCfg.getCacheMode(), true);
