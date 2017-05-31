@@ -36,16 +36,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -94,6 +86,20 @@ public class GridLuceneIndex implements AutoCloseable {
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private static final FieldType EXPIRATION_TIME_FIELD_TYPE = new FieldType();
+
+    /** */
+    static {
+        EXPIRATION_TIME_FIELD_TYPE.setTokenized(true);
+        EXPIRATION_TIME_FIELD_TYPE.setOmitNorms(true);
+        EXPIRATION_TIME_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS);
+        EXPIRATION_TIME_FIELD_TYPE.setNumericType(FieldType.NumericType.LONG);
+        EXPIRATION_TIME_FIELD_TYPE.setStored(true);
+        EXPIRATION_TIME_FIELD_TYPE.setNumericPrecisionStep(1);
+        EXPIRATION_TIME_FIELD_TYPE.freeze();
+    }
 
     /**
      * Constructor.
@@ -201,7 +207,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
             doc.add(new StoredField(VER_FIELD_NAME, ver.toString().getBytes()));
 
-            doc.add(new LongField(EXPIRATION_TIME_FIELD_NAME, expires, Field.Store.YES));
+            doc.add(new LongField(EXPIRATION_TIME_FIELD_NAME, expires, EXPIRATION_TIME_FIELD_TYPE));
 
             // Next implies remove than add atomically operation.
             writer.updateDocument(term, doc);
@@ -273,7 +279,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
         try {
             // Filter expired items.
-            Query filter = NumericRangeQuery.newLongRange(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),
+            Query filter = NumericRangeQuery.newLongRange(EXPIRATION_TIME_FIELD_NAME, 1, U.currentTimeMillis(),
                 null, false, false);
 
             BooleanQuery query = new BooleanQuery.Builder()
