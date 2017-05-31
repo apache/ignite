@@ -39,6 +39,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 
 /**
  * JDBC prepared statement implementation.
@@ -185,7 +187,6 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType) throws SQLException {
-        // TODO: Throw exception is not "plain".
         setArgument(paramIdx, x);
     }
 
@@ -270,7 +271,10 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setNull(int paramIdx, int sqlType, String typeName) throws SQLException {
-        // TODO: Throw exception for non-plain.
+        if (!JdbcThinUtils.isPlainJdbcType(sqlType)) {
+            throw new SQLFeatureNotSupportedException("The SQL type is unsupported. [type=" + sqlType + "typeName="
+                + typeName + ']');
+        }
 
         setNull(paramIdx, sqlType);
     }
@@ -345,8 +349,6 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType, int scaleOrLength) throws SQLException {
-        // TODO: accpet only plain types
-
         setArgument(paramIdx, x);
     }
 
@@ -420,6 +422,19 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> iface) throws SQLException {
+        if (!isWrapperFor(iface))
+            throw new SQLException("Prepared statement is not a wrapper for " + iface.getName());
+
+        return (T)this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        return iface != null && iface.isAssignableFrom(JdbcThinPreparedStatement.class);
+    }
+
     /**
      * Sets query argument value.
      *
@@ -429,6 +444,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
      */
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
+
+        if (!SqlListenerUtils.isPlainType(val.getClass()))
+            throw new SQLException("Parameter type is unsupported. [cls=" + val.getClass() + ']');
 
         if (paramIdx < 1)
             throw new SQLException("Parameter index is invalid: " + paramIdx);

@@ -148,7 +148,6 @@ public class JdbcThinResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
-        // TODO: Fix wrap and isWrappedFor.
         if (!isWrapperFor(iface))
             throw new SQLException("Result set meta data is not a wrapper for " + iface.getName());
 
@@ -157,6 +156,6 @@ public class JdbcThinResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return iface == ResultSetMetaData.class;
+        return iface != null && iface.isAssignableFrom(JdbcThinResultSetMetadata.class);
     }
 }

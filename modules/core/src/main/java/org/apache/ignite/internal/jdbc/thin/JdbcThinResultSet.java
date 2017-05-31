@@ -1420,7 +1420,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return iface != null && iface == ResultSet.class;
+        return iface != null && iface.isAssignableFrom(JdbcThinResultSet.class);
     }
 
     /** {@inheritDoc} */

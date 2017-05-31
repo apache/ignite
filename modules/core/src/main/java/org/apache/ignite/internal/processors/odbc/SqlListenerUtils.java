@@ -213,4 +213,38 @@ public abstract class SqlListenerUtils {
         else
             throw new BinaryObjectException("Custom objects are not supported");
     }
+
+    /**
+     * @param cls Class.
+     * @return {@code true} is the type is plain (not user's custom class).
+     */
+    public static boolean isPlainType(Class<?> cls) {
+        return cls == Boolean.class
+            || cls == Byte.class
+            || cls == Character.class
+            || cls == Short.class
+            || cls == Integer.class
+            || cls == Long.class
+            || cls == Float.class
+            || cls == Double.class
+            || cls == String.class
+            || cls == BigDecimal.class
+            || cls == UUID.class
+            || cls == Time.class
+            || cls == Timestamp.class
+            || cls == java.sql.Date.class || cls == java.util.Date.class
+            || cls == boolean[].class
+            || cls == byte[].class
+            || cls == char[].class
+            || cls == short[].class
+            || cls == int[].class
+            || cls == float[].class
+            || cls == double[].class
+            || cls == String[].class
+            || cls == BigDecimal[].class
+            || cls == UUID[].class
+            || cls == Time[].class
+            || cls == Timestamp[].class
+            || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+    }
 }

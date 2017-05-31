@@ -486,7 +486,6 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -496,7 +495,7 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return iface != null && iface == Connection.class;
+        return iface != null && iface.isAssignableFrom(JdbcThinConnection.class);
     }
 
     /** {@inheritDoc} */
