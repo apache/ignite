@@ -358,6 +358,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName));
             }
+            else if (!cacheDesc.sql()) {
+                if (log.isDebugEnabled())
+                    log.debug("Dynamic DDL operations are allowed only on caches created with CREATE TABLE " +
+                        "(will report error) [cacheName=" + cacheName + ']');
+
+                msg.onError(new SchemaOperationException("Dynamic DDL operations are allowed only on caches created " +
+                    "with CREATE TABLE"));
+            }
             else {
                 CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
@@ -593,7 +601,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean nop = false;
 
         if (cacheExists) {
-            if (cacheRegistered) {
+            if (!cacheDesc.sql())
+                err = new SchemaOperationException("Dynamic DDL operations are allowed only on caches created with " +
+                    "CREATE TABLE [cacheName=" + op.cacheName() + ']');
+            else if (cacheRegistered) {
                 // If cache is started, we perform validation against real schema.
                 T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
 
