@@ -447,19 +447,4 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
     }
-
-    public class EnumsTestOnline : EnumsTest
-    {
-        [TestFixtureSetUp]
-        public void FixtureSetUp()
-        {
-            Ignition.Start(TestUtils.GetTestConfiguration());
-        }
-
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            Ignition.StopAll(true);
-        }
-    }
 }
