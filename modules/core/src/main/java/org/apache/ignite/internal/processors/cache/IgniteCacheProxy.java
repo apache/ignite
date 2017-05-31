@@ -2366,7 +2366,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         IgniteInternalFuture<?> fut;
 
         try {
-            fut = ctx.kernalContext().cache().dynamicDestroyCache(ctx.name(), true, false);
+            fut = ctx.kernalContext().cache().dynamicDestroyCache(ctx.name(), false, true, false);
         }
         finally {
             onLeave(gate);

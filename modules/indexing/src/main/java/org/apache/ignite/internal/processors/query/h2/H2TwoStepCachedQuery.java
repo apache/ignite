@@ -28,10 +28,10 @@ import java.util.List;
  */
 public class H2TwoStepCachedQuery {
     /** */
-    final List<GridQueryFieldMetadata> meta;
+    private final List<GridQueryFieldMetadata> meta;
 
     /** */
-    final GridCacheTwoStepQuery twoStepQry;
+    private final GridCacheTwoStepQuery twoStepQry;
 
     /**
      * @param meta Fields metadata.
@@ -40,6 +40,20 @@ public class H2TwoStepCachedQuery {
     public H2TwoStepCachedQuery(List<GridQueryFieldMetadata> meta, GridCacheTwoStepQuery twoStepQry) {
         this.meta = meta;
         this.twoStepQry = twoStepQry;
+    }
+
+    /**
+     * @return Fields metadata.
+     */
+    public List<GridQueryFieldMetadata> meta() {
+        return meta;
+    }
+
+    /**
+     * @return Query.
+     */
+    public GridCacheTwoStepQuery query() {
+        return twoStepQry;
     }
 
     /** {@inheritDoc} */

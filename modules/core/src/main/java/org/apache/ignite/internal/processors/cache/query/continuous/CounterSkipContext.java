@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
@@ -26,31 +27,52 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CounterSkipContext {
     /** */
-    private CacheContinuousQueryEntry entry;
+    private final CacheContinuousQueryEntry entry;
 
     /** */
-    private List<Runnable> readySendC;
+    private List<Runnable> sndC;
 
-    CacheContinuousQueryEntry entry(int part, long cntr, AffinityTopologyVersion topVer) {
-        if (entry == null) {
-            entry = new CacheContinuousQueryEntry(0,
-                null,
-                null,
-                null,
-                null,
-                false,
-                part,
-                cntr,
-                topVer);
-        }
+    /**
+     * @param part Partition.
+     * @param cntr Filtered counter.
+     * @param topVer Topology version.
+     */
+    CounterSkipContext(int part, long cntr, AffinityTopologyVersion topVer) {
+        entry = new CacheContinuousQueryEntry(0,
+            null,
+            null,
+            null,
+            null,
+            false,
+            part,
+            cntr,
+            topVer,
+            (byte)0);
 
+        entry.markFiltered();
+    }
+
+    /**
+     * @return Entry for filtered counter.
+     */
+    CacheContinuousQueryEntry entry() {
         return entry;
     }
 
     /**
      * @return Entries
      */
-    @Nullable public List<Runnable> readyEntries() {
-        return readySendC;
+    @Nullable public List<Runnable> sendClosures() {
+        return sndC;
+    }
+
+    /**
+     * @param c Closure send
+     */
+    void addSendClosure(Runnable c) {
+        if (sndC == null)
+            sndC = new ArrayList<>();
+
+        sndC.add(c);
     }
 }

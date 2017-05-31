@@ -115,7 +115,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private boolean all;
 
     /** */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /** */
     private UUID subjId;
@@ -196,7 +196,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
-        this.keepPortable = keepBinary;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -266,7 +266,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
-        this.keepPortable = keepBinary;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -461,7 +461,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @return Whether to keep binary.
      */
     public boolean keepBinary() {
-        return keepPortable;
+        return keepBinary;
     }
 
     /**
@@ -481,7 +481,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /**
      * @return partition.
      */
-    public int partition() {
+    @Override public int partition() {
         return part;
     }
 
@@ -561,7 +561,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeBoolean("keepPortable", keepPortable))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
@@ -717,7 +717,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 13:
-                keepPortable = reader.readBoolean("keepPortable");
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;

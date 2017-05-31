@@ -447,4 +447,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     @Override public String valueFieldName() {
         return valFieldName;
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String keyFieldAlias() {
+        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+    }
+
+    @Nullable @Override public String valueFieldAlias() {
+        return valFieldName != null ? aliases.get(valFieldName) : null;
+    }
 }

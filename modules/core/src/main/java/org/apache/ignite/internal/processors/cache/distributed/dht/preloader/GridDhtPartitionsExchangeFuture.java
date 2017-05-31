@@ -914,8 +914,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 continue;
 
             if (topChanged) {
-                cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
-
                 // Partition release future is done so we can flush the write-behind store.
                 cacheCtx.store().forceFlush();
             }
@@ -1245,12 +1243,33 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * @return {@code True} if exchange triggered by server node join or fail.
+     */
+    private boolean serverNodeDiscoveryEvent() {
+        assert discoEvt != null;
+
+        return discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && !CU.clientNode(discoEvt.eventNode());
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
         boolean realExchange = !dummy && !forcePreload;
 
         if (!done.compareAndSet(false, true))
             return dummy;
+
+        if (err == null &&
+            realExchange &&
+            !cctx.kernalContext().clientNode() &&
+            (serverNodeDiscoveryEvent() || affChangeMsg != null)) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.affinityNode() || cacheCtx.isLocal())
+                    continue;
+
+                cacheCtx.continuousQueries().flushBackupQueue(exchId.topologyVersion());
+            }
+       }
 
         if (err == null && realExchange) {
             for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
@@ -1703,7 +1722,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 continue;
 
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
-            
+
             if (maxCntr == null && cntr == 0) {
                 CounterWithNodes cntrObj = new CounterWithNodes(cntr, cctx.localNodeId());
 
@@ -1833,6 +1852,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
                         grp.topology().beforeExchange(this, !centralizedAff);
+                }
+            }
+
+            for (GridDhtPartitionsAbstractMessage msg : msgs.values()) {
+                if (msg instanceof GridDhtPartitionsSingleMessage) {
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
+
+                    for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg0.partitions().entrySet()) {
+                        Integer grpId = entry.getKey();
+                        CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+
+                        GridDhtPartitionTopology top = grp != null ? grp.topology() :
+                            cctx.exchange().clientTopology(grpId, this);
+
+                        Map<Integer, T2<Long, Long>> cntrs = msg0.partitionUpdateCounters(grpId);
+
+                        if (cntrs != null)
+                            top.applyUpdateCounters(cntrs);
+                    }
                 }
             }
 
@@ -2072,7 +2110,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridDhtPartitionTopology top = grp != null ? grp.topology() :
                 cctx.exchange().clientTopology(grpId, this);
 
-            top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(grpId));
+            top.update(exchId, entry.getValue());
         }
     }
 

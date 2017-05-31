@@ -143,7 +143,7 @@ public class IgniteSqlQueryDistributedJoinBenchmark extends IgniteCacheAbstractB
         qry.setDistributedJoins(true);
         qry.setArgs(orgId);
 
-        IgniteCache<Integer, Object> cache = cacheForOperation();
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
         if (planOnly) {
             String plan = (String)cache.query(qry).getAll().get(0).get(0);

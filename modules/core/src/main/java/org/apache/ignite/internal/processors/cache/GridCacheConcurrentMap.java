@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -82,15 +85,17 @@ public interface GridCacheConcurrentMap {
      * Increments public size.
      *
      * @param e Entry that caused public size change.
+     * @param hld Cache map (passed as optimization to avoid cache map lookup for shared groups).
      */
-    public void incrementPublicSize(GridCacheEntryEx e);
+    public void incrementPublicSize(@Nullable CacheMapHolder hld, GridCacheEntryEx e);
 
     /**
      * Decrements public size.
      *
      * @param e Entry that caused public size change.
+     * @param hld Cache map (passed as optimization to avoid cache map lookup for shared groups).
      */
-    public void decrementPublicSize(GridCacheEntryEx e);
+    public void decrementPublicSize(@Nullable CacheMapHolder hld, GridCacheEntryEx e);
 
     /**
      * @param cacheId Cache ID.
@@ -105,4 +110,27 @@ public interface GridCacheConcurrentMap {
      * @return Set of the mappings contained in this map.
      */
     public Set<GridCacheMapEntry> entrySet(int cacheId, CacheEntryPredicate... filter);
+
+    /**
+     *
+     */
+    static class CacheMapHolder {
+        /** */
+        public final AtomicInteger size = new AtomicInteger();
+
+        /** */
+        public final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map;
+
+        /**
+         * @param map Map.
+         */
+        public CacheMapHolder(ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map) {
+            this.map = map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CacheMapHolder.class, this);
+        }
+    }
 }
