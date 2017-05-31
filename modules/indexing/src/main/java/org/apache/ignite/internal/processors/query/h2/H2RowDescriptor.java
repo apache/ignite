@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.message.DbException;
+import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.h2.result.SearchRow;
 import org.h2.result.SimpleRow;
 import org.h2.value.DataType;
@@ -55,6 +56,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -198,12 +200,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
         assert ptr > 0 : ptr;
 
-        schema.rowCache().put(ptr, row);
+        rowCache().put(ptr, row);
     }
 
     /** {@inheritDoc} */
     @Override public void uncache(long ptr) {
-        schema.rowCache().remove(ptr);
+        rowCache().remove(ptr);
     }
 
     /** {@inheritDoc} */
@@ -350,7 +352,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridH2KeyValueRowOffheap createPointer(long ptr) {
-        GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)schema.rowCache().get(ptr);
+        GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)rowCache().get(ptr);
 
         if (row != null) {
             assert row.pointer() == ptr : ptr + " " + row.pointer();
@@ -363,7 +365,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridH2Row cachedRow(long link) {
-        return schema.rowCache().get(link);
+        return rowCache().get(link);
     }
 
     /** {@inheritDoc} */
@@ -476,5 +478,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         }
 
         return colId;
+    }
+
+    /**
+     * @return Row cache.
+     */
+    @NotNull private CacheLongKeyLIRS<GridH2Row> rowCache() {
+        throw new UnsupportedOperationException(); // TODO: Unused for not.
     }
 }

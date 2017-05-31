@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.jsr166.ConcurrentHashMap8;
 
 import java.util.Collection;
@@ -41,9 +39,6 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<String, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
 
-    /** Cache for deserialized offheap rows. */
-    private final CacheLongKeyLIRS<GridH2Row> rowCache;
-
     /**
      * Constructor.
      *
@@ -51,8 +46,6 @@ public class H2Schema {
      */
     public H2Schema(String schemaName) {
         this.schemaName = schemaName;
-
-        rowCache = null;
     }
 
     /**
@@ -67,13 +60,6 @@ public class H2Schema {
      */
     public GridUnsafeMemory offheap() {
         return offheap;
-    }
-
-    /**
-     * @return Row cache.
-     */
-    public CacheLongKeyLIRS<GridH2Row> rowCache() {
-        return rowCache;
     }
 
     /**
