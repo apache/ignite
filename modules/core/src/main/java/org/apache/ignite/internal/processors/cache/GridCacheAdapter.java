@@ -3541,7 +3541,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
                 nodes,
                 true,
-                0);
+                0,
+                false);
     }
 
     /**

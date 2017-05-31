@@ -84,13 +84,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos)
+        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos,
+            Type typeOverride)
         {
             Debug.Assert(_rActions != null);
             Debug.Assert(reader != null);
             Debug.Assert(desc != null);
 
-            var obj = FormatterServices.GetUninitializedObject(desc.Type);
+            var obj = FormatterServices.GetUninitializedObject(typeOverride ?? desc.Type);
 
             var ctx = GetStreamingContext(reader);
 

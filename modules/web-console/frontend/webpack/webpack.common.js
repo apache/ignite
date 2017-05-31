@@ -27,6 +27,8 @@ import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ProgressBarPlugin from 'progress-bar-webpack-plugin';
 
+import eslintFormatter from 'eslint-friendly-formatter';
+
 const basedir = path.resolve('./');
 const contentBase = path.resolve('public');
 const node_modules = path.resolve('node_modules');
@@ -103,7 +105,7 @@ export default {
                     options: {
                         failOnWarning: false,
                         failOnError: false,
-                        formatter: 'eslint-friendly-formatter'
+                        formatter: eslintFormatter
                     }
                 }]
             },
@@ -158,6 +160,9 @@ export default {
             options: {
                 pug: {
                     basedir
+                },
+                eslint: {
+                    configFile: path.join(basedir, '.eslintrc')
                 },
                 target: 'web'
             }

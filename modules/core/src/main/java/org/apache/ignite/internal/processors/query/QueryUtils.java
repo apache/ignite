@@ -63,6 +63,8 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Utility methods for queries.
  */
 public class QueryUtils {
+    /** Default schema. */
+    public static final String DFLT_SCHEMA = "PUBLIC";
 
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";
@@ -268,10 +270,11 @@ public class QueryUtils {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param escape Whether to perform escape.
      * @return Proper schema name according to ANSI-99 standard.
      */
-    public static String normalizeSchemaName(String cacheName, @Nullable String schemaName, boolean escape) {
+    public static String normalizeSchemaName(String cacheName, @Nullable String schemaName) {
+        boolean escape = false;
+
         String res = schemaName;
 
         if (res == null) {
@@ -281,6 +284,13 @@ public class QueryUtils {
             // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
             // SQL synthax perspective. We do not want node to fail on startup due to this.
             escape = true;
+        }
+        else {
+            if (res.startsWith("\"") && res.endsWith("\"")) {
+                res = res.substring(1, res.length() - 1);
+
+                escape = true;
+            }
         }
 
         if (!escape)
@@ -308,7 +318,7 @@ public class QueryUtils {
      * Normalize object name.
      *
      * @param str String.
-     * @param replace Whether to perform replace.
+     * @param replace Whether to perform replace of special characters.
      * @return Escaped string.
      */
     public static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {

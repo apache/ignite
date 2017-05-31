@@ -401,10 +401,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                 return;
             }
 
-            Assert.AreEqual(x.Count, y.Count);
+            // Resulting configuration may include additional aliases.
+            Assert.LessOrEqual(x.Count, y.Count);
 
             for (var i = 0; i < x.Count; i++)
-                AssertConfigsAreEqual(x.ElementAt(i), y.ElementAt(i));
+                AssertConfigsAreEqual(x.ElementAt(i), y.FirstOrDefault(a => a.FullName == x.ElementAt(i).FullName));
         }
 
         /// <summary>
@@ -517,6 +518,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         KeyTypeName = "Integer",
                         ValueTypeName = "java.lang.String",
+                        TableName = "Table1",
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 

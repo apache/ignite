@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="typeName">Name of the type.</param>
         /// <param name="assemblies">Assemblies to look in.</param>
         /// <param name="nameMapper">The name mapper.</param>
-        /// <returns> 
+        /// <returns>
         /// Resolved type. 
         /// </returns>
         private static Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies,
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="assemblies">The assemblies.</param>
         /// <param name="nameMapper">The name mapper.</param>
         /// <returns>Resolved type, or null.</returns>
-        private static Type ResolveNonGenericType(string assemblyName, string typeName, 
+        private static Type ResolveNonGenericType(string assemblyName, string typeName,
             ICollection<Assembly> assemblies, IBinaryNameMapper nameMapper)
         {
             // Fully-qualified name can be resolved with system mechanism.
@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             try
             {
-                var result = ResolveType(assemblyName, typeName, GetNotLoadedReferencedAssemblies().ToArray(), 
+                var result = ResolveType(assemblyName, typeName, GetNotLoadedReferencedAssemblies().ToArray(),
                     nameMapper);
 
                 if (result == null)
