@@ -53,6 +53,7 @@ public class SnapshotOperation implements Serializable {
      * @param type Type.
      * @param snapshotId Snapshot id.
      * @param cacheGrpIds Cache group ids.
+     * @param cacheNames Cache names.
      * @param msg
      * @param extraParam Additional parameter.
      */

@@ -104,7 +104,7 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark<In
      * @throws Exception If failed.
      */
     private Collection<List<?>> executeQueryJoin(double minSalary, double maxSalary) throws Exception {
-        IgniteCache<Integer, Object> cache = cacheForOperation();
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
             "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +

@@ -120,13 +120,13 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(e);
+    @Override public void incrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
+        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(hld, e);
     }
 
     /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(e);
+    @Override public void decrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
+        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(hld, e);
     }
 
     /** {@inheritDoc} */

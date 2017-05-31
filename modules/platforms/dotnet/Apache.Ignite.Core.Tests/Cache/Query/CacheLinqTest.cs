@@ -142,6 +142,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Gets the SqlEscapeAll setting.
+        /// </summary>
+        protected virtual bool GetSqlEscapeAll()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Fixture tear down.
         /// </summary>
         [TestFixtureTearDown]
@@ -941,7 +949,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestNumerics()
         {
             var cache = Ignition.GetIgnite()
-                    .GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", typeof (Numerics)));
+                    .GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", typeof (Numerics))
+                {
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
 
             for (var i = 0; i < 100; i++)
                 cache[i] = new Numerics(((double) i - 50)/3);
@@ -1221,10 +1232,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestPrimitiveCache()
         {
             // Create partitioned cache
-            var cache =
-                Ignition.GetIgnite()
-                    .GetOrCreateCache<int, string>(new CacheConfiguration("primitiveCache",
-                        new QueryEntity(typeof (int), typeof (string))) {CacheMode = CacheMode.Replicated});
+            var cache = Ignition.GetIgnite()
+                .GetOrCreateCache<int, string>(
+                    new CacheConfiguration("primitiveCache",
+                        new QueryEntity(typeof(int), typeof(string)))
+                    {
+                        CacheMode = CacheMode.Replicated,
+                        SqlEscapeAll = GetSqlEscapeAll()
+                    });
 
             var qry = cache.AsCacheQueryable();
 
@@ -1246,7 +1261,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Create partitioned cache
             var cache =
-                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof (int)));
+                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof (int))
+                {
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
 
             // Populate
             const int count = 100;
@@ -1284,8 +1302,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, query.Ignite);
 
             var fq = query.GetFieldsQuery();
-            Assert.AreEqual("select _T0._key, _T0._val from \"person_org\".Person as _T0 where (_T0._key > ?)", 
+
+            Assert.AreEqual(
+                GetSqlEscapeAll()
+                    ? "select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where (_T0.\"_KEY\" > ?)"
+                    : "select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where (_T0._KEY > ?)",
                 fq.Sql);
+
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
             Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
@@ -1297,11 +1320,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(TimeSpan.FromSeconds(2.5), fq.Timeout);
 
             var str = query.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
-                            "(_T0._key > ?), Arguments=[10], " +
-                            "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
-                            "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
+            Assert.AreEqual(GetSqlEscapeAll()
+                ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where " +
+                  "(_T0.\"_KEY\" > ?), Arguments=[10], " +
+                  "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                  "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]"
+                : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
+                  "(_T0._KEY > ?), Arguments=[10], " +
+                  "Local=True, PageSize=999, EnableDistributedJoins=False, EnforceJoinOrder=True, " +
+                  "Timeout=00:00:02.5000000, ReplicatedOnly=True, Colocated=True]]", str);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
@@ -1310,17 +1339,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
 
             fq = fieldsQuery.GetFieldsQuery();
-            Assert.AreEqual("select _T0.Name from \"person_org\".Person as _T0", fq.Sql);
+            Assert.AreEqual(GetSqlEscapeAll()
+                    ? "select _T0.\"Name\" from \"person_org\".\"Person\" as _T0"
+                    : "select _T0.NAME from \"person_org\".Person as _T0",
+                fq.Sql);
+
             Assert.IsFalse(fq.Local);
             Assert.AreEqual(SqlFieldsQuery.DefaultPageSize, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
 
             str = fieldsQuery.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0.Name from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
-                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
+            Assert.AreEqual(GetSqlEscapeAll()
+                ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0.\"Name\" from \"person_org\".\"Person\" as _T0, Arguments=[], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]"
+                : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0.NAME from \"person_org\".Person as _T0, Arguments=[], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=False, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
             
             // Check distributed joins flag propagation
             var distrQuery = cache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true})
@@ -1331,12 +1369,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(query.GetFieldsQuery().EnableDistributedJoins);
 
             str = distrQuery.ToString();
-            Assert.AreEqual("CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
-                            "[Sql=select _T0._key, _T0._val from \"person_org\".Person as _T0 where " +
-                            "(((_T0._key > ?) and (_T0.age1 > ?)) " +
-                            "and (_T0.Name like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
-                            "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
-                            "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
+            Assert.AreEqual(GetSqlEscapeAll()
+                ? "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".\"Person\" as _T0 where " +
+                  "(((_T0.\"_KEY\" > ?) and (_T0.\"age1\" > ?)) " +
+                  "and (_T0.\"Name\" like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]"
+                : "CacheQueryable [CacheName=person_org, TableName=Person, Query=SqlFieldsQuery " +
+                  "[Sql=select _T0._KEY, _T0._VAL from \"person_org\".Person as _T0 where " +
+                  "(((_T0._KEY > ?) and (_T0.AGE1 > ?)) " +
+                  "and (_T0.NAME like \'%\' || ? || \'%\') ), Arguments=[10, 20, x], Local=False, " +
+                  "PageSize=1024, EnableDistributedJoins=True, EnforceJoinOrder=False, " +
+                  "Timeout=00:00:00, ReplicatedOnly=False, Colocated=False]]", str);
         }
 
         /// <summary>
@@ -1377,12 +1422,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Create and populate partitioned caches
             var personCache = ignite.CreateCache<int, Person>(new CacheConfiguration("partitioned_persons",
-                new QueryEntity(typeof(int), typeof(Person))));
+                new QueryEntity(typeof(int), typeof(Person)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
 
             personCache.PutAll(GetSecondPersonCache().ToDictionary(x => x.Key, x => x.Value));
 
             var roleCache = ignite.CreateCache<int, Role>(new CacheConfiguration("partitioned_roles",
-                    new QueryEntity(typeof(int), typeof(Role))));
+                    new QueryEntity(typeof(int), typeof(Role)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
 
             roleCache.PutAll(GetRoleCache().ToDictionary(x => x.Key.Foo, x => x.Value));
 
@@ -1432,7 +1483,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Use new cache to avoid touching static data.
             var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("deleteAllTest",
-                    new QueryEntity(typeof(int), typeof(Person))));
+                    new QueryEntity(typeof(int), typeof(Person)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll()
+            });
 
             Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
             
@@ -1491,7 +1545,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Gets the person cache.
         /// </summary>
         /// <returns></returns>
-        private static ICache<int, Person> GetPersonCache()
+        private ICache<int, Person> GetPersonCache()
         {
             return GetCacheOf<Person>();
         }
@@ -1500,7 +1554,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Gets the org cache.
         /// </summary>
         /// <returns></returns>
-        private static ICache<int, Organization> GetOrgCache()
+        private ICache<int, Organization> GetOrgCache()
         {
             return GetCacheOf<Organization>();
         }
@@ -1508,7 +1562,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Gets the cache.
         /// </summary>
-        private static ICache<int, T> GetCacheOf<T>()
+        private ICache<int, T> GetCacheOf<T>()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, T>(new CacheConfiguration(PersonOrgCacheName,
@@ -1527,23 +1581,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             new QueryField("MyValue", typeof(T)),
                         }
                     },
-                    new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Replicated});
+                    new QueryEntity(typeof (int), typeof (Organization)))
+                {
+                    CacheMode = CacheMode.Replicated,
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
         }
 
         /// <summary>
         /// Gets the role cache.
         /// </summary>
-        private static ICache<RoleKey, Role> GetRoleCache()
+        private ICache<RoleKey, Role> GetRoleCache()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<RoleKey, Role>(new CacheConfiguration(RoleCacheName,
-                    new QueryEntity(typeof (RoleKey), typeof (Role))) {CacheMode = CacheMode.Replicated});
+                    new QueryEntity(typeof (RoleKey), typeof (Role)))
+                {
+                    CacheMode = CacheMode.Replicated,
+                    SqlEscapeAll = GetSqlEscapeAll()
+                });
         }
 
         /// <summary>
         /// Gets the second person cache.
         /// </summary>
-        private static ICache<int, Person> GetSecondPersonCache()
+        private ICache<int, Person> GetSecondPersonCache()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, Person>(
@@ -1553,7 +1615,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             TableName = "CustomPersons"
                         })
                     {
-                        CacheMode = CacheMode.Replicated
+                        CacheMode = CacheMode.Replicated,
+                        SqlEscapeAll = GetSqlEscapeAll()
                     });
         }
 

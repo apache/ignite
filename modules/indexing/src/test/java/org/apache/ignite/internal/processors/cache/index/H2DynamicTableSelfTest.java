@@ -23,7 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -34,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
@@ -59,8 +62,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
 
-        client().getOrCreateCache(cacheConfigurationForIndexing());
-
         client().addCacheConfiguration(cacheConfiguration());
     }
 
@@ -72,8 +73,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        client().getOrCreateCache(cacheConfigurationForIndexing());
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        client().destroyCache("Person");
+        if (client().cache("Person") != null)
+            cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"Person\".\"Person\""));
 
         super.afterTest();
     }
@@ -91,6 +100,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             IgniteEx node = grid(i);
 
             assertNotNull(node.cache("Person"));
+
+            DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor("Person");
+
+            assertNotNull(cacheDesc);
+
+            assertTrue(cacheDesc.sql());
 
             QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
 
@@ -142,6 +157,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to {@code CREATE TABLE} that already exists yields an error.
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateExistingTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -193,6 +209,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to {@code DROP TABLE} that does not exist yields an error.
      * @throws Exception if failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -201,6 +218,62 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "Table doesn't exist: City");
+    }
+
+    /**
+     * Check that {@code DROP TABLE} for caches not created with {@code CREATE TABLE} yields an error.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDropNonDynamicTable() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                cache().query(new SqlFieldsQuery("DROP TABLE \"Integer\""));
+
+                return null;
+            }
+        }, IgniteSQLException.class,
+        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx]");
+    }
+
+    /**
+     * Test that attempting to destroy via cache API a cache created via SQL yields an error.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDestroyDynamicSqlCache() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"cacheTemplate=cache\""));
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                client().destroyCache("Person");
+
+                return null;
+            }
+        }, CacheException.class,
+        "Only cache created with cache API may be removed with direct call to destroyCache [cacheName=Person]");
+    }
+
+    /**
+     * Test that attempting to start a node that has a cache with the name already present in the grid and whose
+     * SQL flag does not match that of cache with the same name that is already started, yields an error.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testSqlFlagCompatibilityCheck() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"cacheTemplate=cache\""));
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Ignition.start(clientConfiguration(5).setCacheConfiguration(new CacheConfiguration("Person")));
+
+                return null;
+            }
+        }, IgniteException.class, "SQL flag mismatch (fix sql flag in cache configuration");
     }
 
     /**

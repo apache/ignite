@@ -25,7 +25,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 public class GridContinuousBatchAdapter implements GridContinuousBatch {
     /** Buffer. */
-    private final ConcurrentLinkedDeque8<Object> buf = new ConcurrentLinkedDeque8<>();
+    protected final ConcurrentLinkedDeque8<Object> buf = new ConcurrentLinkedDeque8<>();
 
     /** {@inheritDoc} */
     @Override public void add(Object obj) {

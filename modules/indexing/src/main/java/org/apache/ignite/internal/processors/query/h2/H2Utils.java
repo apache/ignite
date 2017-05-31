@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -46,11 +45,8 @@ public class H2Utils {
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
 
-    /** */
-    public static final char ESC_CH = '\"';
-
-    /** */
-    private static final String ESC_STR = ESC_CH + "" + ESC_CH;
+    /** Quotation character. */
+    private static final char ESC_CH = '\"';
 
     /**
      * @param c1 First column.
@@ -98,15 +94,14 @@ public class H2Utils {
      * @param ifNotExists Quietly skip index creation if it exists.
      * @return Statement string.
      */
-    public static String indexCreateSql(String fullTblName, GridH2IndexBase h2Idx, boolean ifNotExists,
-        boolean escapeAll) {
+    public static String indexCreateSql(String fullTblName, GridH2IndexBase h2Idx, boolean ifNotExists) {
         boolean spatial = F.eq(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
 
         GridStringBuilder sb = new SB("CREATE ")
             .a(spatial ? "SPATIAL " : "")
             .a("INDEX ")
             .a(ifNotExists ? "IF NOT EXISTS " : "")
-            .a(escapeName(h2Idx.getName(), escapeAll))
+            .a(withQuotes(h2Idx.getName()))
             .a(" ON ")
             .a(fullTblName)
             .a(" (");
@@ -119,7 +114,7 @@ public class H2Utils {
             else
                 sb.a(", ");
 
-            sb.a("\"" + col.columnName + "\"").a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
+            sb.a(withQuotes(col.columnName)).a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
         }
 
         sb.a(')');
@@ -132,53 +127,10 @@ public class H2Utils {
      * @param schemaName <b>Quoted</b> schema name.
      * @param idxName Index name.
      * @param ifExists Quietly skip index drop if it exists.
-     * @param escapeAll Escape flag.
      * @return Statement string.
      */
-    public static String indexDropSql(String schemaName, String idxName, boolean ifExists, boolean escapeAll) {
-        return "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + schemaName + '.' + escapeName(idxName, escapeAll);
-    }
-
-    /**
-     * Escapes name to be valid SQL identifier. Currently just replaces '.' and '$' sign with '_'.
-     *
-     * @param name Name.
-     * @param escapeAll Escape flag.
-     * @return Escaped name.
-     */
-    public static String escapeName(String name, boolean escapeAll) {
-        if (name == null) // It is possible only for a cache name.
-            return ESC_STR;
-
-        if (escapeAll)
-            return ESC_CH + name + ESC_CH;
-
-        SB sb = null;
-
-        for (int i = 0; i < name.length(); i++) {
-            char ch = name.charAt(i);
-
-            if (!Character.isLetter(ch) && !Character.isDigit(ch) && ch != '_' &&
-                !(ch == '"' && (i == 0 || i == name.length() - 1)) && ch != '-') {
-                // Class name can also contain '$' or '.' - these should be escaped.
-                assert ch == '$' || ch == '.';
-
-                if (sb == null)
-                    sb = new SB();
-
-                sb.a(name.substring(sb.length(), i));
-
-                // Replace illegal chars with '_'.
-                sb.a('_');
-            }
-        }
-
-        if (sb == null)
-            return name;
-
-        sb.a(name.substring(sb.length(), name.length()));
-
-        return sb.toString();
+    public static String indexDropSql(String schemaName, String idxName, boolean ifExists) {
+        return "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + withQuotes(schemaName) + '.' + withQuotes(idxName);
     }
 
     /**
@@ -231,20 +183,13 @@ public class H2Utils {
     }
 
     /**
-     * Stores rule for constructing schemaName according to cache configuration.
+     * Add quotes around the name.
      *
-     * @param ccfg Cache configuration.
-     * @return Proper schema name according to ANSI-99 standard.
+     * @param str String.
+     * @return String with quotes.
      */
-    public static String schemaNameFromCacheConfiguration(CacheConfiguration<?, ?> ccfg) {
-        if (ccfg.getSqlSchema() == null)
-            return escapeName(ccfg.getName(), true);
-
-        if (ccfg.getSqlSchema().charAt(0) == ESC_CH)
-            return ccfg.getSqlSchema();
-
-        return ccfg.isSqlEscapeAll() ?
-            escapeName(ccfg.getSqlSchema(), true) : ccfg.getSqlSchema().toUpperCase();
+    public static String withQuotes(String str) {
+        return ESC_CH + str + ESC_CH;
     }
 
     /**
