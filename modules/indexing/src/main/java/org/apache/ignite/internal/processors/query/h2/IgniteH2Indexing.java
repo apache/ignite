@@ -743,7 +743,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public GridH2IndexBase createSortedIndex(H2Schema schema, String name, GridH2Table tbl, boolean pk,
         List<IndexColumn> cols, int inlineSize) {
         try {
-            GridCacheContext cctx = schema.cacheContext();
+            GridCacheContext cctx = tbl.cache();
 
             if (log.isDebugEnabled())
                 log.debug("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
@@ -1519,15 +1519,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type description.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public boolean registerType(String cacheName, GridQueryTypeDescriptor type)
+    @Override public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
         validateTypeDescriptor(type);
 
-        String schemaName = schema(cacheName);
+        String schemaName = schema(cctx.name());
 
         H2Schema schema = schemas.get(schemaName);
 
-        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cacheName);
+        H2TableDescriptor tbl = new H2TableDescriptor(this, schema, type, cctx);
 
         try {
             Connection conn = connectionForThread(schemaName);
@@ -1609,7 +1609,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Creating DB table with SQL: " + sql);
 
-        GridH2RowDescriptor rowDesc = new H2RowDescriptor(this, tbl.type(), schema);
+        GridH2RowDescriptor rowDesc = new H2RowDescriptor(this, tbl, tbl.type(), schema);
 
         H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
 

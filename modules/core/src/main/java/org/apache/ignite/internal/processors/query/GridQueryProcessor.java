@@ -1367,7 +1367,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     if (idx != null)
-                        idx.registerType(cacheName, desc);
+                        idx.registerType(cctx, desc);
                 }
 
                 cacheNames.add(CU.mask(cacheName));

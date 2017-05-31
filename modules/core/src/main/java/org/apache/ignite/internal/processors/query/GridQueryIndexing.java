@@ -188,12 +188,12 @@ public interface GridQueryIndexing {
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(String cacheName, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
 
     /**
      * Unregisters type and removes all corresponding data.

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -80,6 +79,9 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     /** Indexing SPI. */
     private final IgniteH2Indexing idx;
 
+    /** Table descriptor. */
+    private final H2TableDescriptor tbl;
+
     /** */
     private final GridQueryTypeDescriptor type;
 
@@ -114,14 +116,19 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final int valueAliasColumnId;
 
     /**
+     * Constructor.
+     *
+     * @param idx Indexing.
+     * @param tbl Table.
      * @param type Type descriptor.
      * @param schema Schema.
      */
-    H2RowDescriptor(IgniteH2Indexing idx, GridQueryTypeDescriptor type, H2Schema schema) {
+    H2RowDescriptor(IgniteH2Indexing idx, H2TableDescriptor tbl, GridQueryTypeDescriptor type, H2Schema schema) {
         assert type != null;
         assert schema != null;
 
         this.idx = idx;
+        this.tbl = tbl;
         this.type = type;
         this.schema = schema;
 
@@ -177,7 +184,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridCacheContext<?, ?> context() {
-        return schema.cacheContext();
+        return tbl.cache();
     }
 
     /** {@inheritDoc} */
