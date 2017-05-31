@@ -181,6 +181,21 @@ public class BinarySerializedFieldComparator {
     }
 
     /**
+     * Reads integer value which is presented in varint encoding.
+     * Starts reading from given offset.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param off Offset.
+     * @return Decoded integer value.
+     */
+    private int readUnsignedVarint(int off) {
+        if (offheap())
+            return BinaryUtils.doReadUnsignedVarint(ptr, curFieldPos + off);
+        else
+            return BinaryUtils.doReadUnsignedVarint(arr, curFieldPos + off);
+    }
+
+    /**
      * Read long value.
      *
      * @param off Offset.
@@ -302,12 +317,12 @@ public class BinarySerializedFieldComparator {
      */
     private static boolean compareByteArrays(BinarySerializedFieldComparator c1, BinarySerializedFieldComparator c2,
                                              int off) {
-        int len = c1.readInt(off);
+        int len = c1.readUnsignedVarint(off);
 
-        if (len != c2.readInt(off))
+        if (len != c2.readUnsignedVarint(off))
             return false;
         else {
-            off += 4;
+            off += BinaryUtils.sizeInUnsignedVarint(len);
 
             if (c1.offheap()) {
                 if (c2.offheap())
