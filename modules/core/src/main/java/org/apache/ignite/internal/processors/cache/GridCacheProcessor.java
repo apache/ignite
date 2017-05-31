@@ -1197,7 +1197,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         if (sharedCtx.pageStore() != null)
-            sharedCtx.pageStore().initializeForCache(cacheCtx.config());
+            sharedCtx.pageStore().initializeForCache(grpDesc, cacheCtx.config());
 
         CacheConfiguration cfg = cacheCtx.config();
 
@@ -1237,8 +1237,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
-        if (log.isInfoEnabled()){
-            log.info("Started cache [name=" + cfg.getName() +(cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") + ", memoryPolicyName=" + cfg.getMemoryPolicyName() + ", mode=" + cfg.getCacheMode() +", atomicity=" + cfg.getAtomicityMode() + ']');}
+        if (log.isInfoEnabled()) {
+            log.info("Started cache [name=" + cfg.getName() +
+                (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
+                ", memoryPolicyName=" + cfg.getMemoryPolicyName() +
+                ", mode=" + cfg.getCacheMode() +
+                ", atomicity=" + cfg.getAtomicityMode() + ']');
+        }
     }
 
     /**

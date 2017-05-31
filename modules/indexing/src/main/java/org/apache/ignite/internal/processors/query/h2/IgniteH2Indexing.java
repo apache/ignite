@@ -1775,7 +1775,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (s == null)
             return Collections.emptySet();
 
-        return s.tables().values();
+        return s.tables();
     }
 
     /**
@@ -2366,5 +2366,4 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
     }
-
 }
