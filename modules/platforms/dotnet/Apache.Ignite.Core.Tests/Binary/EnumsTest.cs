@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Check array.
             var arr = new[] {val, val};
-            var arrRes = TestUtils.SerializeDeserialize(arr);
+            var arrRes = SerializeDeserialize(arr);
 
             Assert.AreEqual(arr, arrRes);
 
@@ -131,6 +131,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Serializes and deserializes a value.
+        /// </summary>
+        private static T SerializeDeserialize<T>(T val)
+        {
+            var marsh = GetMarshaller();
+
+            return marsh.Unmarshal<T>(marsh.Marshal(val));
+        }
+
+        /// <summary>
         /// Tests enums as a field in binarizable object.
         /// </summary>
         [Test]
@@ -139,7 +149,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Min values.
             var val = new EnumsBinarizable();
             
-            var res = TestUtils.SerializeDeserialize(val);
+            var res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
 
             // Max values.
@@ -155,10 +165,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UShort = UShortEnum.Bar
             };
 
-            res = TestUtils.SerializeDeserialize(val);
+            res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
         }
-
 
         /// <summary>
         /// Tests enums as a nullable field in binarizable object.
@@ -169,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Default values.
             var val = new EnumsBinarizableNullable();
             
-            var res = TestUtils.SerializeDeserialize(val);
+            var res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
 
             // Max values.
@@ -185,7 +194,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UShort = UShortEnum.Bar
             };
 
-            res = TestUtils.SerializeDeserialize(val);
+            res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
         }
 
@@ -198,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Min values.
             var val = new EnumsSerializable();
 
-            var res = TestUtils.SerializeDeserialize(val);
+            var res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
 
             // Max values.
@@ -214,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UShort = UShortEnum.Bar
             };
 
-            res = TestUtils.SerializeDeserialize(val);
+            res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
         }
 
@@ -227,7 +236,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Default values.
             var val = new EnumsSerializableNullable();
 
-            var res = TestUtils.SerializeDeserialize(val);
+            var res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
 
             // Max values.
@@ -243,7 +252,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UShort = UShortEnum.Bar
             };
 
-            res = TestUtils.SerializeDeserialize(val);
+            res = SerializeDeserialize(val);
             Assert.AreEqual(val, res);
         }
 
