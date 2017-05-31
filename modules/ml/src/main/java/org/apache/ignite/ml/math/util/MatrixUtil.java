@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.math.util;
 
+import java.util.List;
+
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
@@ -24,7 +27,6 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -117,6 +119,38 @@ public class MatrixUtil {
     /** */
     private static boolean isCopyLikeSupport(Matrix matrix) {
         return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
-            matrix instanceof PivotedMatrixView || matrix instanceof SparseDistributedMatrix;
+            matrix instanceof PivotedMatrixView;
+    }
+
+    /** */
+    public static DenseLocalOnHeapMatrix fromList(List<Vector> vecs, boolean entriesAreRows) {
+        GridArgumentCheck.notEmpty(vecs, "vecs");
+
+        int dim = vecs.get(0).size();
+        int vecsSize = vecs.size();
+
+        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(entriesAreRows ? vecsSize : dim,
+            entriesAreRows ? dim : vecsSize);
+
+        for (int i = 0; i < vecsSize; i++) {
+            for (int j = 0; j < dim; j++) {
+                int r = entriesAreRows ? i : j;
+                int c = entriesAreRows ? j : i;
+
+                res.setX(r, c, vecs.get(i).get(j));
+            }
+        }
+
+        return res;
+    }
+
+    /** TODO: rewrite in a more optimal way. */
+    public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
+        DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
+
+        for (int i = 0; i < vec.size(); i++)
+            res.setX(i, vec.getX(i));
+
+        return res;
     }
 }

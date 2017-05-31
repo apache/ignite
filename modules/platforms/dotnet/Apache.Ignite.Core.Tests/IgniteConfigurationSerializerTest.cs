@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests
                             <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                             <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheInitialSize='67' systemCacheMaxSize='68'>
                                 <memoryPolicies>
-                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' />
+                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' rateTimeInterval='0:1:2' subIntervals='9' />
                                 </memoryPolicies>
                             </memoryConfiguration>
                         </igniteConfig>";
@@ -274,6 +274,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(89, memPlc.InitialSize);
             Assert.AreEqual(98, memPlc.MaxSize);
             Assert.IsTrue(memPlc.MetricsEnabled);
+            Assert.AreEqual(9, memPlc.SubIntervals);
+            Assert.AreEqual(TimeSpan.FromSeconds(62), memPlc.RateTimeInterval);
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
         }
@@ -822,7 +824,9 @@ namespace Apache.Ignite.Core.Tests
                             MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
-                            SwapFilePath = "myPath1"
+                            SwapFilePath = "myPath1",
+                            RateTimeInterval = TimeSpan.FromSeconds(22),
+                            SubIntervals = 99
                         },
                         new MemoryPolicyConfiguration
                         {

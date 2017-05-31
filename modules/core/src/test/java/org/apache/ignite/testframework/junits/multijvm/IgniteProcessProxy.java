@@ -536,7 +536,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
-        CacheConfiguration<K, V> cacheCfg) {
+        CacheConfiguration<K, V> cacheCfg, boolean sql) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -546,7 +546,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean destroyCache0(String cacheName) throws CacheException {
+    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
