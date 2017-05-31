@@ -54,7 +54,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -2073,7 +2072,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
         if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
             for (H2Schema schema : schemas.values())
-                schema.onDrop();
+                schema.dropAll();
         }
 
         for (Connection c : conns)
@@ -2083,8 +2082,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemas.clear();
         cacheName2schema.clear();
 
-        try (Connection c = DriverManager.getConnection(dbUrl);
-             Statement s = c.createStatement()) {
+        try (Connection c = DriverManager.getConnection(dbUrl); Statement s = c.createStatement()) {
             s.execute("SHUTDOWN");
         }
         catch (SQLException e) {
@@ -2129,25 +2127,39 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void unregisterCache(String cacheName) {
         String schemaName = schema(cacheName);
 
-        H2Schema rmv = schemas.remove(schemaName);
+        boolean dflt = isDefaultSchema(schemaName);
 
-        if (rmv != null) {
+        H2Schema schema = dflt ? schemas.get(schemaName) : schemas.remove(schemaName);
+
+        if (schema != null) {
             cacheName2schema.remove(cacheName);
             mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 
-            rmv.onDrop();
+            // Drop tables.
+            Collection<H2TableDescriptor> rmvTbls = new HashSet<>();
 
-            try {
-                dropSchema(schemaName);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+            for (H2TableDescriptor tbl : schema.tables()) {
+                if (F.eq(tbl.cache().name(), cacheName)) {
+                    schema.drop(tbl);
+
+                    rmvTbls.add(tbl);
+                }
             }
 
-            for (H2TableDescriptor tblDesc : rmv.tables())
-                for (Index idx : tblDesc.table().getIndexes())
+            if (!dflt) {
+                try {
+                    dropSchema(schemaName);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+                }
+            }
+
+            for (H2TableDescriptor tbl : rmvTbls) {
+                for (Index idx : tbl.table().getIndexes())
                     idx.close(null);
+            }
 
             int cacheId = CU.cacheId(cacheName);
 

@@ -106,10 +106,25 @@ public class H2Schema {
     }
 
     /**
+     * Drop table.
+     *
+     * @param tbl Table to be removed.
+     */
+    public void drop(H2TableDescriptor tbl) {
+        tbl.onDrop();
+
+        tbls.remove(tbl.tableName());
+        typeToTbl.remove(tbl.typeName());
+    }
+
+    /**
      * Called after the schema was dropped.
      */
-    public void onDrop() {
-        for (H2TableDescriptor tblDesc : tbls.values())
-            tblDesc.onDrop();
+    public void dropAll() {
+        for (H2TableDescriptor tbl : tbls.values())
+            tbl.onDrop();
+
+        tbls.clear();
+        typeToTbl.clear();
     }
 }

@@ -197,7 +197,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         Index hashIdx = createHashIndex(
-            schema,
             tbl,
             "_key_PK_hash",
             H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), keyCol, affCol)
@@ -321,13 +320,12 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /**
      * Create hash index.
      *
-     * @param schema Schema.
      * @param tbl Table.
      * @param idxName Index name.
      * @param cols Columns.
      * @return Index.
      */
-    private Index createHashIndex(H2Schema schema, GridH2Table tbl, String idxName, List<IndexColumn> cols) {
+    private Index createHashIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         if (cctx.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 
