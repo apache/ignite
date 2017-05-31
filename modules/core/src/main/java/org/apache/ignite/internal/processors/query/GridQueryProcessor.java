@@ -1782,19 +1782,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Query SQL fields without strict dependency on concrete cache.
      *
-     * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @return Cursot.
+     * @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final String schemaName, final SqlFieldsQuery qry,
-        final boolean keepBinary) {
+    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
 
         if (qry.isLocal())
             throw new IgniteException("Local query is not supported without specific cache.");
+
+        if (qry.getSchema() == null)
+            throw new IgniteException("Query schema is not set.");
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -1804,7 +1805,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     GridQueryCancel cancel = new GridQueryCancel();
 
-                    return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, null);
+                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null);
                 }
             };
 
