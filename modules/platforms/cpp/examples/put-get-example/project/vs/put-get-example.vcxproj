@@ -95,7 +95,7 @@ copy "$(ProjectDir)..\..\..\..\project\vs\$(Platform)\$(Configuration)\ignite.co
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\putget_example.cpp" />
+    <ClCompile Include="..\..\src\put_get_example.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\ignite\examples\address.h" />

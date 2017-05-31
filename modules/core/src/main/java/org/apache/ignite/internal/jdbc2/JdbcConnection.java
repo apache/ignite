@@ -56,8 +56,12 @@ import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -544,10 +548,24 @@ public class JdbcConnection implements Connection {
         if (!stream)
             stmt = new JdbcPreparedStatement(this, sql);
         else {
+            GridQueryIndexing idx = ignite().context().query().getIndexing();
+
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
-                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite);
+            if (!idx.isInsertStatement(nativeStmt))
+                throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
+
+            streamer.autoFlushFrequency(streamFlushTimeout);
+            streamer.allowOverwrite(streamAllowOverwrite);
+
+            if (streamNodeBufSize > 0)
+                streamer.perNodeBufferSize(streamNodeBufSize);
+
+            if (streamNodeParOps > 0)
+                streamer.perNodeParallelOperations(streamNodeParOps);
 
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }
@@ -736,8 +754,8 @@ public class JdbcConnection implements Connection {
     /**
      * @return Ignite node.
      */
-    Ignite ignite() {
-        return ignite;
+    IgniteKernal ignite() {
+        return (IgniteKernal)ignite;
     }
 
     /**

@@ -121,6 +121,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpMemoryMetrics = 26;
 
+        /** */
+        private const int OpMemoryMetricsByName = 27;
+
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -575,6 +578,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
                 return res;
             });
+        }
+
+        /// <summary>
+        /// Gets the memory metrics.
+        /// </summary>
+        public IMemoryMetrics GetMemoryMetrics(string memoryPolicyName)
+        {
+            return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
+                stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
         }
 
         /// <summary>

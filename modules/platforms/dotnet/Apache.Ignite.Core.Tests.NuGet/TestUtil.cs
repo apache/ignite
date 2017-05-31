@@ -17,6 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Threading;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -38,6 +42,32 @@ namespace Apache.Ignite.Core.Tests.NuGet
                     Endpoints = new[] {"127.0.0.1:47500..47503"}
                 }
             };
+        }
+
+        /// <summary>
+        /// Attaches the process console reader.
+        /// </summary>
+        public static void AttachProcessConsoleReader(Process process)
+        {
+            Attach(process, process.StandardOutput, false);
+            Attach(process, process.StandardError, true);
+        }
+
+        /// <summary>
+        /// Attach output reader to the process.
+        /// </summary>
+        private static void Attach(Process proc, TextReader reader, bool err)
+        {
+            new Thread(() =>
+            {
+                while (!proc.HasExited)
+                {
+                    Console.WriteLine(err ? ">>> {0} ERR: {1}" : ">>> {0} OUT: {1}", proc.Id, reader.ReadLine());
+                }
+            })
+            {
+                IsBackground = true
+            }.Start();
         }
     }
 }
