@@ -367,11 +367,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         // Remove
         cacheA.remove(2);
         cacheB.remove(1);
-
-        // Unregister.
-        spi.unregisterType(spi.schema(typeAA.cacheName()), typeAA.name());
-        spi.unregisterType(spi.schema(typeAB.cacheName()), typeAB.name());
-        spi.unregisterType(spi.schema(typeBA.cacheName()), typeBA.name());
     }
 
     /**

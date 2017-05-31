@@ -581,7 +581,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tbl Table to unregister.
      * @throws IgniteCheckedException If failed to unregister.
      */
-    private void removeTable(H2TableDescriptor tbl) throws IgniteCheckedException {
+    private void dropTable(H2TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
         if (log.isDebugEnabled())
@@ -614,10 +614,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             U.close(stmt, log);
         }
-
-        tbl.onDrop();
-
-        tbl.schema().remove(tbl);
     }
 
     /**
@@ -777,15 +773,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return new GridEmptyCloseableIterator<>();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unregisterType(String schemaName, String typeName)
-        throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
-
-        if (tbl != null)
-            removeTable(tbl);
     }
 
     /**
@@ -2141,6 +2128,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             for (H2TableDescriptor tbl : schema.tables()) {
                 if (F.eq(tbl.cache().name(), cacheName)) {
+                    try {
+                        dropTable(tbl);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
+                    }
+
                     schema.drop(tbl);
 
                     rmvTbls.add(tbl);

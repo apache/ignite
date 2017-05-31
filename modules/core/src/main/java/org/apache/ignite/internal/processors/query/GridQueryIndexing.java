@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -193,15 +192,6 @@ public interface GridQueryIndexing {
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
     public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
-
-    /**
-     * Unregisters type and removes all corresponding data.
-     *
-     * @param schemaName Schema name.
-     * @param typeName Type name.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unregisterType(String schemaName, String typeName) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
