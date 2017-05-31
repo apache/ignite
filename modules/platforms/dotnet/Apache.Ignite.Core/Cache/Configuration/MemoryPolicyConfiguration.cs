@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
@@ -51,6 +52,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// The default sub intervals.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with Java config")]
         public const int DefaultSubIntervals = 5;
 
         /// <summary>
@@ -186,6 +189,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Bigger value results in more accurate metrics.
         /// </summary>
         [DefaultValue(DefaultSubIntervals)]
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", 
+            Justification = "Consistency with Java config")]
         public int SubIntervals { get; set; }
     }
 }
