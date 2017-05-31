@@ -1001,7 +1001,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             long time = U.currentTimeMillis() - start;
 
-            long longQryExecTimeout = schemas.get(schema).cacheContext().config().getLongQueryWarningTimeout();
+            long longQryExecTimeout = ctx.config().getLongQueryWarningTimeout();
 
             if (time > longQryExecTimeout) {
                 String msg = "Query execution is too long (" + time + " ms): " + sql;
@@ -2098,17 +2098,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
-        CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+    @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         // TODO: Do not do this for public schema.
-        if (schemas.putIfAbsent(schemaName, new H2Schema(schemaName, cctx)) != null)
+        if (schemas.putIfAbsent(schemaName, new H2Schema(schemaName)) != null)
             throw new IgniteCheckedException("Schema already registered: " + U.maskName(schemaName));
 
         cacheName2schema.put(cacheName, schemaName);
 
         createSchema(schemaName);
 
-        createSqlFunctions(schemaName, ccfg.getSqlFunctionClasses());
+        createSqlFunctions(schemaName, cctx.config().getSqlFunctionClasses());
     }
 
     /** {@inheritDoc} */

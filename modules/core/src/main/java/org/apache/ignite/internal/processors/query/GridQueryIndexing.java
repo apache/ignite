@@ -171,11 +171,10 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param cctx Cache context.
-     * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx,
-        CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx)
+        throws IgniteCheckedException;
 
     /**
      * Unregisters cache.

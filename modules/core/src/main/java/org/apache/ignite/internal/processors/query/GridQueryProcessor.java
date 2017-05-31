@@ -1336,7 +1336,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Collection<QueryTypeCandidate> cands) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
-                idx.registerCache(cacheName, schemaName, cctx, cctx.config());
+                idx.registerCache(cacheName, schemaName, cctx);
 
             try {
                 for (QueryTypeCandidate cand : cands) {

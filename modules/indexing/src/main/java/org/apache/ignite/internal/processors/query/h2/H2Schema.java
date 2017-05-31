@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
@@ -45,27 +44,15 @@ public class H2Schema {
     /** Cache for deserialized offheap rows. */
     private final CacheLongKeyLIRS<GridH2Row> rowCache;
 
-    /** */
-    private final GridCacheContext<?, ?> cctx;
-
     /**
      * Constructor.
      *
      * @param schemaName Schema name.
-     * @param cctx Cache context.
      */
-    public H2Schema(String schemaName, GridCacheContext<?, ?> cctx) {
-        this.cctx = cctx;
+    public H2Schema(String schemaName) {
         this.schemaName = schemaName;
 
         rowCache = null;
-    }
-
-    /**
-     * @return Cache context.
-     */
-    public GridCacheContext cacheContext() {
-        return cctx;
     }
 
     /**
