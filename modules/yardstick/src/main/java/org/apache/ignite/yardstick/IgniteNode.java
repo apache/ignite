@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -169,6 +170,8 @@ public class IgniteNode implements BenchmarkServer {
 
         if (args.persistentStoreEnabled()) {
             PersistentStoreConfiguration pcCfg = new PersistentStoreConfiguration();
+
+            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
             c.setPersistentStoreConfiguration(pcCfg);
         }
