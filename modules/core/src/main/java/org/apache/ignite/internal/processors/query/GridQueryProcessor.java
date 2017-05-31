@@ -1833,11 +1833,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param streamer Data streamer.
      * @param qry Query.
      * @return Iterator.
      */
-    public long streamUpdateQuery(@Nullable final String cacheName,
+    public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
         assert streamer != null;
 
@@ -1846,8 +1847,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             GridCacheContext cctx = ctx.cache().cache(cacheName).context();
-
-            final String schemaName = idx.schema(cacheName);
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {

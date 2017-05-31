@@ -55,17 +55,16 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -111,7 +110,10 @@ public class JdbcConnection implements Connection {
     private final String cfg;
 
     /** Cache name. */
-    private String cacheName;
+    private final String cacheName;
+
+    /** Schema name. */
+    private String schemaName;
 
     /** Closed flag. */
     private boolean closed;
@@ -162,6 +164,7 @@ public class JdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case Ignite node failed to start.
      */
+    @SuppressWarnings("unchecked")
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
@@ -169,6 +172,10 @@ public class JdbcConnection implements Connection {
         this.url = url;
 
         cacheName = props.getProperty(PROP_CACHE);
+
+        if (cacheName == null)
+            throw new SQLException(PROP_CACHE + " cannot be null.");
+
         locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
@@ -196,6 +203,10 @@ public class JdbcConnection implements Connection {
 
             if (!isValid(2))
                 throw new SQLException("Client is invalid. Probably cache name is wrong.");
+
+            CacheConfiguration ccfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
         }
         catch (Exception e) {
             close();
@@ -722,18 +733,21 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSchema(String schema) throws SQLException {
-        assert ignite instanceof IgniteEx;
-
-        cacheName = ((IgniteEx)ignite).context().query().cacheName(schema);
+    @Override public void setSchema(String schemaName) throws SQLException {
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public String getSchema() throws SQLException {
-        String sqlSchema = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getSqlSchema();
+        return schemaName;
+    }
 
-        return U.firstNotNull(sqlSchema, cacheName, "");
+    /**
+     * @return Normalized schema name.
+     */
+    public String schemaName() {
+        return F.isEmpty(schemaName) ? QueryUtils.DFLT_SCHEMA : schemaName;
     }
 
     /** {@inheritDoc} */
@@ -830,8 +844,7 @@ public class JdbcConnection implements Connection {
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
     PreparedStatement prepareNativeStatement(String sql) throws SQLException {
-        return ((IgniteCacheProxy) ignite().cache(cacheName())).context()
-            .kernalContext().query().prepareNativeStatement(getSchema(), sql);
+        return ignite().context().query().prepareNativeStatement(schemaName(), sql);
     }
 
     /**
@@ -859,7 +872,7 @@ public class JdbcConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public Boolean call() {
-            return cacheName == null || ignite.cache(cacheName) != null;
+            return ignite.cache(cacheName) != null;
         }
     }
 
