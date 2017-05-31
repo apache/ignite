@@ -28,7 +28,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
@@ -248,18 +247,19 @@ class GridDhtPartitionSupplier {
             Iterator<Integer> partIt = sctx != null ? sctx.partIt : d.partitions().iterator();
 
             if (sctx == null) {
-                long keysCnt = 0;
-
                 for (Integer part : d.partitions()) {
                     GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
                     if (loc == null || loc.state() != OWNING)
                         continue;
 
-                    keysCnt += grp.offheap().totalPartitionEntriesCount(part);
+                    if (grp.sharedGroup()) {
+                        for (int cacheId : grp.cacheIds())
+                            s.addKeysForCache(cacheId, grp.offheap().cacheEntriesCount(cacheId, part));
+                    }
+                    else
+                        s.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
                 }
-
-                s.estimatedKeysCount(keysCnt);
             }
 
             while ((sctx != null && newReq) || partIt.hasNext()) {

@@ -700,6 +700,13 @@ public class CacheGroupInfrastructure {
     }
 
     /**
+     * @return Caches in this group.
+     */
+    public List<GridCacheContext> caches() {
+        return this.caches;
+    }
+
+    /**
      * @return {@code True} if group contains caches.
      */
     boolean hasCaches() {

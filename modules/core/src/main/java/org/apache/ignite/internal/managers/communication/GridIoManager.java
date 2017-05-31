@@ -1008,7 +1008,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 default:
-                    assert plc >= 0 : "Negative policy: " + plc;
+                    assert plc >= 0 : "Negative policy [plc=" + plc + ", msg=" + msg + ']';
 
                     if (isReservedGridIoPolicy(plc))
                         throw new IgniteCheckedException("Failed to process message with policy of reserved range. " +

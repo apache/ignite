@@ -16,7 +16,6 @@
  */
 
 package org.apache.ignite.cache.database;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +23,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -36,6 +36,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.processors.cache.database.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -64,6 +66,9 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /** */
     private CacheConfiguration[] ccfgs;
 
+    /** */
+    private boolean activeOnStart = true;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -83,6 +88,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
+
+        cfg.setActiveOnStart(activeOnStart);
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
         memCfg.setPageSize(1024);
@@ -145,6 +152,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testClusterRestartCachesWithH2Indexes() throws Exception {
         CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
 
@@ -168,17 +176,10 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         node.createCaches(Arrays.asList(ccfgs1));
 
-        for (String cacheName : caches) {
-            IgniteCache<Object, Object> cache = node.cache(cacheName);
+        putPersons(caches, node);
 
-            for (int i = 0; i < 10; i++)  {
-                cache.put(i, new Person("" + i, cacheName));
-
-                assertEquals(new Person("" + i, cacheName), cache.get(i));
-            }
-
-            assertEquals(10, cache.size());
-        }
+        checkPersons(caches, node);
+        checkPersonsQuery(caches, node);
 
         stopAllGrids();
 
@@ -194,21 +195,81 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         int idx = rnd.nextInt(caches.length);
 
         String cacheName = caches[idx];
+        CacheConfiguration cacheCfg = ccfgs1[idx];
 
         node.destroyCache(cacheName);
 
-        IgniteCache<Object, Object> cache = node.createCache(ccfgs1[idx]);
+        node.createCache(cacheCfg);
 
-        for (int i = 0; i < 10; i++)  {
-            cache.put(i, new Person("" + i, cacheName));
-
-            assertEquals(new Person("" + i, cacheName), cache.get(i));
-        }
-
-        assertEquals(10, cache.size());
+        putPersons(new String[]{cacheName}, node);
 
         checkPersons(caches, node);
         checkPersonsQuery(caches, node);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExpiryPolicy() throws Exception {
+        long ttl = 10000;
+
+        activeOnStart = false;
+
+        CacheConfiguration[] ccfgs1 = new CacheConfiguration[5];
+
+        // Several caches with the same indexed type (and index names)
+        ccfgs1[0] = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1);
+        ccfgs1[1] = cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1);
+        ccfgs1[2] = cacheConfiguration(GROUP2, "c3", PARTITIONED, ATOMIC, 1);
+        ccfgs1[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1);
+        ccfgs1[4] = cacheConfiguration(null, "c5", PARTITIONED, ATOMIC, 1);
+
+        String[] caches = {"c1", "c2", "c3", "c4", "c5"};
+
+        startGrids(3);
+
+        Ignite node = ignite(0);
+
+        node.active(true);
+
+        node.createCaches(Arrays.asList(ccfgs1));
+
+        ExpiryPolicy plc = new PlatformExpiryPolicy(ttl, -2, -2);
+
+        for (String cacheName : caches) {
+            IgniteCache<Object, Object> cache = node.cache(cacheName).withExpiryPolicy(plc);
+
+            for (int i = 0; i < 10; i++)
+                cache.put(i, cacheName + i);
+        }
+
+        long deadline = System.currentTimeMillis() + (long)(ttl * 1.2);
+
+        stopAllGrids();
+
+        startGrids(3);
+
+        node = ignite(0);
+
+        node.active(true);
+
+        for (String cacheName : caches) {
+            IgniteCache<Object, Object> cache = node.cache(cacheName);
+
+            for (int i = 0; i < 10; i++)
+                assertEquals(cacheName + i, cache.get(i));
+
+            assertEquals(10, cache.size());
+        }
+
+        // wait for expiration
+        Thread.sleep(Math.max(deadline - System.currentTimeMillis(), 0));
+
+        for (String cacheName : caches) {
+            IgniteCache<Object, Object> cache = node.cache(cacheName);
+
+            assertEquals(0, cache.size());
+        }
     }
 
     /**
@@ -223,6 +284,19 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         ignite.cache("c1").destroy();
 
         stopGrid();
+    }
+
+    /**
+     * @param caches Cache names to put data into.
+     * @param node Ignite node.
+     */
+    private void putPersons(String[] caches, Ignite node) {
+        for (String cacheName : caches) {
+            IgniteCache<Object, Object> cache = node.cache(cacheName);
+
+            for (int i = 0; i < 10; i++)
+                cache.put(i, new Person("" + i, cacheName));
+        }
     }
 
     /**
@@ -274,7 +348,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         ccfgs[3] = cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1);
         ccfgs[4] = cacheConfiguration(null, "c5", PARTITIONED, ATOMIC, 1);
 
-        String[] caches = {"c1", "c2", "c3", "c5", "c5"};
+        String[] caches = {"c1", "c2", "c3", "c4", "c5"};
 
         for (int i = 0; i < nodes; i++) {
             if (staticCaches)
@@ -346,10 +420,12 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
      */
     static class Person implements Serializable {
         /** */
+        @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
         String fName;
 
         /** */
+        @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
         String lName;
 
