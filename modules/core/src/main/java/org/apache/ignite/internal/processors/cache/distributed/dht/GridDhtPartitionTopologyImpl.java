@@ -1256,11 +1256,45 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void applyUpdateCounters(Map<Integer, T2<Long, Long>> cntrMap) {
+        assert cntrMap != null;
+
+        lock.writeLock().lock();
+
+        try {
+            if (stopping)
+                return;
+
+            for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
+                T2<Long, Long> cntr = this.cntrMap.get(e.getKey());
+
+                if (cntr == null || cntr.get2() < e.getValue().get2())
+                    this.cntrMap.put(e.getKey(), e.getValue());
+            }
+
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
+
+                if (part == null)
+                    continue;
+
+                T2<Long, Long> cntr = cntrMap.get(part.id());
+
+                if (cntr != null && cntr.get2() > part.updateCounter())
+                    part.updateCounter(cntr.get2());
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap update(
         @Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap
+        GridDhtPartitionMap parts
     ) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
@@ -1278,27 +1312,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             if (stopping)
                 return null;
-
-            if (cntrMap != null) {
-                for (Map.Entry<Integer, T2<Long, Long>> e : cntrMap.entrySet()) {
-                    T2<Long, Long> cntr = this.cntrMap.get(e.getKey());
-
-                    if (cntr == null || cntr.get2() < e.getValue().get2())
-                        this.cntrMap.put(e.getKey(), e.getValue());
-                }
-
-                for (int i = 0; i < locParts.length(); i++) {
-                    GridDhtLocalPartition part = locParts.get(i);
-
-                    if (part == null)
-                        continue;
-
-                    T2<Long, Long> cntr = cntrMap.get(part.id());
-
-                    if (cntr != null && cntr.get2() > part.updateCounter())
-                        part.updateCounter(cntr.get2());
-                }
-            }
 
             if (lastExchangeId != null && exchId != null && lastExchangeId.compareTo(exchId) > 0) {
                 if (log.isDebugEnabled())

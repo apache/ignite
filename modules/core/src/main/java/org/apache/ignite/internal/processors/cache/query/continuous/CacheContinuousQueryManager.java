@@ -193,7 +193,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 lsnr.keepBinary(),
                 partId,
                 updCntr,
-                topVer);
+                topVer,
+                (byte)0);
 
             CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
                 cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
@@ -339,7 +340,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 lsnr.keepBinary(),
                 partId,
                 updateCntr,
-                topVer);
+                topVer,
+                (byte)0);
 
             IgniteCacheProxy jcache = cctx.kernalContext().cache().jcacheProxy(cctx.name());
 
@@ -400,7 +402,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     lsnr.keepBinary(),
                     e.partition(),
                     -1,
-                    null);
+                    null,
+                    (byte)0);
 
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent(
                     cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
@@ -568,9 +571,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param topVer Topology version.
+     * @param topVer Finished exchange topology version.
      */
-    public void beforeExchange(AffinityTopologyVersion topVer) {
+    public void flushBackupQueue(AffinityTopologyVersion topVer) {
         for (CacheContinuousQueryListener lsnr : lsnrs.values())
             lsnr.flushBackupQueue(cctx.kernalContext(), topVer);
     }
@@ -703,7 +706,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     keepBinary,
                                     0,
                                     -1,
-                                    null);
+                                    null,
+                                    (byte)0);
 
                                 next = new CacheContinuousQueryEvent<>(
                                     cctx.kernalContext().cache().jcache(cctx.name()),

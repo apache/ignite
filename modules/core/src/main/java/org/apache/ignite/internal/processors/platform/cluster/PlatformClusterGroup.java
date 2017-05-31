@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
@@ -112,6 +113,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_MEMORY_METRICS = 26;
 
+    /** */
+    private static final int OP_MEMORY_METRICS_BY_NAME = 27;
+
     /** Projection. */
     private final ClusterGroupEx prj;
 
@@ -142,12 +146,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 writer.writeInt(metrics.size());
 
                 for (MemoryMetrics m : metrics) {
-                    writer.writeString(m.getName());
-                    writer.writeLong(m.getTotalAllocatedPages());
-                    writer.writeFloat(m.getAllocationRate());
-                    writer.writeFloat(m.getEvictionRate());
-                    writer.writeFloat(m.getLargeEntriesPagesPercentage());
-                    writer.writeFloat(m.getPagesFillFactor());
+                    writeMemoryMetrics(writer, m);
                 }
 
                 break;
@@ -232,6 +231,22 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 IgniteCache cache = platformCtx.kernalContext().grid().cache(cacheName);
 
                 PlatformCache.writeCacheMetrics(writer, cache.metrics(prj));
+
+                break;
+            }
+
+            case OP_MEMORY_METRICS_BY_NAME: {
+                String plcName = reader.readString();
+
+                MemoryMetrics metrics = platformCtx.kernalContext().grid().memoryMetrics(plcName);
+
+                if (metrics != null) {
+                    writer.writeBoolean(true);
+                    writeMemoryMetrics(writer, metrics);
+                }
+                else {
+                    writer.writeBoolean(false);
+                }
 
                 break;
             }
@@ -398,5 +413,23 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
 
         return ((IgniteCluster)prj).topology(topVer);
+    }
+
+    /**
+     * Writes the memory metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    private static void writeMemoryMetrics(BinaryRawWriter writer, MemoryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeString(metrics.getName());
+        writer.writeLong(metrics.getTotalAllocatedPages());
+        writer.writeFloat(metrics.getAllocationRate());
+        writer.writeFloat(metrics.getEvictionRate());
+        writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
+        writer.writeFloat(metrics.getPagesFillFactor());
     }
 }

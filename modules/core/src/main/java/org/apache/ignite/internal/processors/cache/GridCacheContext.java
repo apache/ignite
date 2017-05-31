@@ -1417,14 +1417,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if should use offheap (PageMemory) index.
-     */
-    public boolean offheapIndex() {
-        // TODO GG-10884.
-        return true;
-    }
-
-    /**
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
@@ -1713,7 +1705,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
-        return cacheObjCtx.unwrapBinariesIfNeeded(col, keepBinary);
+        return CacheObjectUtils.unwrapBinariesIfNeeded(cacheObjCtx, col, keepBinary);
     }
 
     /**
@@ -1724,7 +1716,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped object.
      */
     public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
-        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary);
+        return unwrapBinaryIfNeeded(o, keepBinary, true);
     }
 
     /**

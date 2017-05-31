@@ -1154,6 +1154,16 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
+            jobject JniContext::ProcessorCompute(jobject obj, jobject prj, JniErrorInfo* errInfo) {
+                JNIEnv* env = Attach();
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_compute, prj);
+
+                ExceptionCheck(env, errInfo);
+
+                return LocalToGlobal(env, res);
+            }
+
             jobject JniContext::ProcessorMessage(jobject obj, jobject prj) {
                 JNIEnv* env = Attach();
 

@@ -103,11 +103,11 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 
 // Controllers
-import caches from 'controllers/caches-controller';
-import clusters from 'controllers/clusters-controller';
-import domains from 'controllers/domains-controller';
-import igfs from 'controllers/igfs-controller';
-import profile from 'controllers/profile-controller';
+import caches from '../controllers/caches-controller';
+import clusters from '../controllers/clusters-controller';
+import domains from '../controllers/domains-controller';
+import igfs from '../controllers/igfs-controller';
+import profile from '../controllers/profile-controller';
 import auth from './controllers/auth.controller';
 import resetPassword from './controllers/reset-password.controller';
 
@@ -121,7 +121,7 @@ import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
 
 // Inject external modules.
-import 'ignite_modules_temp/index';
+import IgniteModules from 'IgniteModules/index';
 
 import baseTemplate from 'views/base.pug';
 
@@ -175,12 +175,12 @@ angular
     'ignite-console.loading',
     // Ignite configuration module.
     'ignite-console.config',
-    // Ignite modules.
-    'ignite-console.modules',
     // Components
     webConsoleHeader.name,
     webConsoleFooter.name,
-    igniteIcon.name
+    igniteIcon.name,
+    // Ignite modules.
+    IgniteModules.name
 ])
 // Directives.
 .directive(...igniteAutoFocus)

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -90,6 +91,11 @@ public class BinaryTypeProxy implements BinaryType {
     /** {@inheritDoc} */
     @Override public boolean isEnum() {
         return target().isEnum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryObject> enumValues() {
+        return target().enumValues();
     }
 
     /**

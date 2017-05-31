@@ -60,15 +60,15 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     protected static final int KEY_AFTER = 200;
 
     /** SQL to check index on the field 1. */
-    protected static final String SQL_SIMPLE_FIELD_1 = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 + " >= ?";
+    protected static final String SQL_SIMPLE_FIELD_1 = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1_ESCAPED + " >= ?";
 
     /** SQL to check composite index */
-    protected static final String SQL_COMPOSITE = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 +
-        " >= ? AND " + alias(FIELD_NAME_2) + " >= ?";
+    protected static final String SQL_COMPOSITE = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1_ESCAPED +
+        " >= ? AND " + alias(FIELD_NAME_2_ESCAPED) + " >= ?";
 
     /** SQL to check index on the field 2. */
     protected static final String SQL_SIMPLE_FIELD_2 =
-        "SELECT * FROM " + TBL_NAME + " WHERE " + alias(FIELD_NAME_2) + " >= ?";
+        "SELECT * FROM " + TBL_NAME + " WHERE " + alias(FIELD_NAME_2_ESCAPED) + " >= ?";
 
     /** Argument for simple SQL (1). */
     protected static final int SQL_ARG_1 = 40;
@@ -165,12 +165,12 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         entity.addQueryField(FIELD_KEY_ALIAS, entity.getKeyType(), null);
 
         entity.addQueryField(FIELD_KEY, Long.class.getName(), null);
-        entity.addQueryField(FIELD_NAME_1, Long.class.getName(), null);
-        entity.addQueryField(FIELD_NAME_2, Long.class.getName(), null);
+        entity.addQueryField(FIELD_NAME_1_ESCAPED, Long.class.getName(), null);
+        entity.addQueryField(FIELD_NAME_2_ESCAPED, Long.class.getName(), null);
 
         entity.setKeyFields(Collections.singleton(FIELD_KEY));
 
-        entity.setAliases(Collections.singletonMap(FIELD_NAME_2, alias(FIELD_NAME_2)));
+        entity.setAliases(Collections.singletonMap(FIELD_NAME_2_ESCAPED, alias(FIELD_NAME_2_ESCAPED)));
 
         ccfg.setQueryEntities(Collections.singletonList(entity));
 
@@ -264,8 +264,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      */
     protected static BinaryObject value(Ignite ignite, long id) {
         return ignite.binary().builder(ValueClass.class.getName())
-            .setField(FIELD_NAME_1, id)
-            .setField(FIELD_NAME_2, id)
+            .setField(FIELD_NAME_1_ESCAPED, id)
+            .setField(FIELD_NAME_2_ESCAPED, id)
             .build();
     }
 
@@ -388,7 +388,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param expSize Expected size.
      */
     protected static void assertSqlSimpleData(Ignite node, String sql, int expSize) {
-        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_ARG_1);
+        SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
 
         List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
 
@@ -397,8 +397,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
             long id = entry.getKey().field(FIELD_KEY);
 
-            long field1 = entry.getValue().field(FIELD_NAME_1);
-            long field2 = entry.getValue().field(FIELD_NAME_2);
+            long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
+            long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
 
             assertTrue(field1 >= SQL_ARG_1);
 
@@ -420,7 +420,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param expSize Expected size.
      */
     protected static void assertSqlCompositeData(Ignite node, String sql, int expSize) {
-        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_ARG_1, SQL_ARG_2);
+        SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1, SQL_ARG_2);
 
         List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
 
@@ -429,8 +429,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
             long id = entry.getKey().field(FIELD_KEY);
 
-            long field1 = entry.getValue().field(FIELD_NAME_1);
-            long field2 = entry.getValue().field(FIELD_NAME_2);
+            long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
+            long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
 
             assertTrue(field1 >= SQL_ARG_2);
 

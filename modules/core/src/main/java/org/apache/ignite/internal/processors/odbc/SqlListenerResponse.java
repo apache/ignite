@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL listener response.
  */
-public class SqlListenerResponse {
+public abstract class SqlListenerResponse {
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
 
@@ -32,26 +30,10 @@ public class SqlListenerResponse {
     public static final int STATUS_FAILED = 1;
 
     /** Success status. */
-    private final int status;
+    private int status;
 
     /** Error. */
-    private final String err;
-
-    /** Response object. */
-    @GridToStringInclude
-    private final Object obj;
-
-    /**
-     * Constructs successful rest response.
-     *
-     * @param obj Response object.
-     */
-    public SqlListenerResponse(Object obj) {
-        this.status = STATUS_SUCCESS;
-
-        this.obj = obj;
-        this.err = null;
-    }
+    private String err;
 
     /**
      * Constructs failed rest response.
@@ -60,11 +42,7 @@ public class SqlListenerResponse {
      * @param err Error, {@code null} if success is {@code true}.
      */
     public SqlListenerResponse(int status, @Nullable String err) {
-        assert status != STATUS_SUCCESS;
-
         this.status = status;
-
-        this.obj = null;
         this.err = err;
     }
 
@@ -76,10 +54,10 @@ public class SqlListenerResponse {
     }
 
     /**
-     * @return Response object.
+     * @param status Status.
      */
-    public Object response() {
-        return obj;
+    public void status(int status) {
+        this.status = status;
     }
 
     /**
@@ -89,8 +67,10 @@ public class SqlListenerResponse {
         return err;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlListenerResponse.class, this);
+    /**
+     * @param err Error message.
+     */
+    public void error(String err) {
+        this.err = err;
     }
 }

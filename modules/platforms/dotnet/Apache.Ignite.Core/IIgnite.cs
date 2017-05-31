@@ -337,5 +337,14 @@ namespace Apache.Ignite.Core
         /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
         /// </summary>
         ICollection<IMemoryMetrics> GetMemoryMetrics();
+
+        /// <summary>
+        /// Gets the memory metrics for the specified memory policy.
+        /// <para />
+        /// To get metrics for the default memory region,
+        /// use <see cref="MemoryConfiguration.DefaultMemoryPolicyName"/>.
+        /// </summary>
+        /// <param name="memoryPolicyName">Name of the memory policy.</param>
+        IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
     }
 }

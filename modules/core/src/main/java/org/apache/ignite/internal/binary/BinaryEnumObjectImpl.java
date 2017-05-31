@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -97,9 +98,18 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
-        assert arr[0] == GridBinaryMarshaller.ENUM;
 
-        valBytes = arr;
+        if (arr[0] == GridBinaryMarshaller.ENUM)
+            valBytes = arr;
+        else {
+            assert arr[0] == GridBinaryMarshaller.BINARY_ENUM;
+
+            valBytes = new byte[arr.length];
+
+            valBytes[0] = GridBinaryMarshaller.ENUM;
+
+            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+        }
 
         this.ctx = ctx;
 
@@ -187,6 +197,23 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
+    @Override public String enumName() throws BinaryObjectException {
+        BinaryMetadata metadata = ctx.metadata0(typeId);
+
+        if (metadata == null)
+            throw new BinaryObjectException("Failed to get metadata for enum [typeId=" +
+                typeId + ", typeName='" + clsName + "', ordinal=" + ord + "]");
+
+        String name = metadata.getEnumNameByOrdinal(ord);
+
+        if (name == null)
+            throw new BinaryObjectException("Unable to resolve enum constant name [typeId=" +
+                typeId + ", typeName='" + metadata.typeName() + "', ordinal=" + ord + "]");
+
+        return name;
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * typeId + ord;
     }
@@ -254,12 +281,12 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         return deserialize();
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext cacheCtx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext cacheCtx) throws IgniteCheckedException {
         if (valBytes != null)
             return valBytes;
 
@@ -308,12 +335,12 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).binaryContext();
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext();
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         // No-op.
     }
 
