@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
@@ -65,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckValue<T>(T val, bool isBinaryEnum = true)
         {
-            var marsh = new Marshaller(null) {CompactFooter = false};
+            var marsh = GetMarshaller();
             var bytes = marsh.Marshal(val);
             var res = marsh.Unmarshal<T>(bytes);
             var binRes = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
@@ -76,8 +77,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             if (isBinaryEnum)
             {
                 Assert.AreEqual(TypeCaster<int>.Cast(val), binRes.EnumValue);
-                Assert.AreEqual(string.Format("BinaryEnum [typeId={0}, enumValue={1}]",
-                    BinaryUtils.GetStringHashCode(typeof(T).FullName), binRes.EnumValue), binRes.ToString());
+
+                if (IsOnline())
+                {
+                    // TODO
+                }
+                else
+                {
+                    Assert.AreEqual(string.Format("BinaryEnum [typeId={0}, enumValue={1}]",
+                        BinaryUtils.GetStringHashCode(typeof(T).FullName), binRes.EnumValue), binRes.ToString());
+                }
             }
             else
             {
@@ -89,6 +98,26 @@ namespace Apache.Ignite.Core.Tests.Binary
             var arrRes = TestUtils.SerializeDeserialize(arr);
 
             Assert.AreEqual(arr, arrRes);
+        }
+
+        /// <summary>
+        /// Gets the marshaller.
+        /// </summary>
+        private static Marshaller GetMarshaller()
+        {
+            var ignite = Ignition.TryGetIgnite();
+
+            return ignite != null
+                ? ((Ignite) ignite).Marshaller
+                : new Marshaller(null) {CompactFooter = false};
+        }
+
+        /// <summary>
+        /// Determines whether Ignite is started.
+        /// </summary>
+        private static bool IsOnline()
+        {
+            return Ignition.TryGetIgnite() != null;
         }
 
         /// <summary>
@@ -164,6 +193,35 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Max values.
             val = new EnumsSerializable
+            {
+                Byte = ByteEnum.Bar,
+                Int = IntEnum.Bar,
+                Long = LongEnum.Bar,
+                SByte = SByteEnum.Bar,
+                Short = ShortEnum.Bar,
+                UInt = UIntEnum.Bar,
+                ULong = ULongEnum.Bar,
+                UShort = UShortEnum.Bar
+            };
+
+            res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
+        }
+
+        /// <summary>
+        /// Tests enums as a nullable field in ISerializable object.
+        /// </summary>
+        [Test]
+        public void TestSerializableNullableField()
+        {
+            // Default values.
+            var val = new EnumsSerializableNullable();
+
+            var res = TestUtils.SerializeDeserialize(val);
+            Assert.AreEqual(val, res);
+
+            // Max values.
+            val = new EnumsSerializableNullable
             {
                 Byte = ByteEnum.Bar,
                 Int = IntEnum.Bar,
@@ -377,6 +435,21 @@ namespace Apache.Ignite.Core.Tests.Binary
                 info.AddValue("long", Long);
                 info.AddValue("ulong", ULong);
             }
+        }
+    }
+
+    public class EnumsTestOnline : EnumsTest
+    {
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
         }
     }
 }
