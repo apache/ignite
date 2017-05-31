@@ -53,10 +53,10 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -204,9 +204,12 @@ public class JdbcConnection implements Connection {
                 throw new SQLException("Client is invalid. Probably cache name is wrong.");
 
             if (cacheName != null) {
-                CacheConfiguration ccfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
+                DynamicCacheDescriptor cacheDesc = ignite().context().cache().cacheDescriptor(cacheName);
 
-                schemaName = QueryUtils.normalizeSchemaName(cacheName, ccfg.getSqlSchema());
+                if (cacheDesc == null)
+                    throw new SQLException("Cache doesn't exist: " + cacheName);
+
+                schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
             }
             else
                 schemaName = QueryUtils.DFLT_SCHEMA;
