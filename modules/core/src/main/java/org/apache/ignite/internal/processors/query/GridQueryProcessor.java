@@ -358,6 +358,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName));
             }
+            else if (!cacheDesc.sql()) {
+                if (log.isDebugEnabled())
+                    log.debug("Dynamic DDL operations are allowed only on caches created with CREATE TABLE " +
+                        "(will report error) [cacheName=" + cacheName + ']');
+
+                msg.onError(new SchemaOperationException("Dynamic DDL operations are allowed only on caches created " +
+                    "with CREATE TABLE"));
+            }
             else {
                 CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
