@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,6 +43,7 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
+    /** Random for generating cluster region ids */
     private final Random random = new Random();
     /** Type of current test*/
     private volatile Type type = Type.RANDOM;
@@ -49,17 +52,26 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration conf = super.getConfiguration(gridName);
-        conf.setNetworkTimeout(conf.getNetworkTimeout()/10);
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        cfg.setNetworkTimeout(Integer.MAX_VALUE);
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
+        cfg.setPeerClassLoadingEnabled(false);
+        TcpCommunicationSpi spi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
+        spi.setConnectTimeout(Integer.MAX_VALUE);
+        spi.setMaxConnectTimeout(Long.MAX_VALUE);
+        spi.setIdleConnectionTimeout(Integer.MAX_VALUE);
+        spi.setSharedMemoryPort(-1);
+        spi.setSocketWriteTimeout(Integer.MAX_VALUE);
+
         switch (type){
-            case RANDOM: return conf.setClusterRegionId(random.nextLong());
+            case RANDOM: return cfg.setClusterRegionId(random.nextLong());
             case TWOREGION: {
                 long id = flag?1:0;
                 flag = !flag;
-                return conf.setClusterRegionId(id);
+                return cfg.setClusterRegionId(id);
             }
-            case NONE: return conf;
-            default: return conf;
+            case NONE: return cfg;
+            default: return cfg;
         }
     }
 
@@ -71,7 +83,7 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
     private static void checkRing(Collection<TcpDiscoveryNode> nodes) {
         long lastRegionId = Long.MIN_VALUE;
         long lastId = Long.MIN_VALUE;
-        /*
+
         for (TcpDiscoveryNode node: nodes) {
             long regionId = node.getClusterRegionId();
             assertTrue(regionId + " >= " + lastRegionId, regionId >=lastRegionId);
@@ -80,11 +92,11 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
                 assertTrue(id >=lastId);
             lastRegionId = regionId;
             lastId = id;
-        }*/
+        }
     }
 
     /**
-     * Randomly start and stop nodes.
+     * Randomly start N and stop Т/2 nodes N times.
      *
      * @throws Exception If failed.
      */
@@ -92,13 +104,17 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
         final int N = 2;
         for (int i = 0; i < N; i++) {
             System.out.println("=======================> 0");
-            final Ignite ignite = startGridsMultiThreaded(N*i, N);
+            startGrids(N,N*i);
+            //!!! Если тут заменить на startGridsMultiThreaded(N*i, N)
+            //Порядок аргуметов другой т.к. я перенес метод startGrids из класса GridCacheVariableTopologySelfTest,
+            // который какой-то чувак написал без оглядки на startGridsMultiThreaded.
+
             System.out.println("=======================> 1");
-            final IgniteConfiguration cfg = GridTestUtils.getFieldValue(((IgniteKernal) (ignite)), "cfg");
+            final IgniteConfiguration cfg = GridTestUtils.getFieldValue(((IgniteKernal) (Ignition.allGrids().get(0))), "cfg");
             final ServerImpl impl = GridTestUtils.getFieldValue(cfg.getDiscoverySpi(), TcpDiscoverySpi.class, "impl");
             System.out.println("=======================> 2");
-            //checkRing(new ArrayList(impl.ring().allNodes()));
-            assertTrue(N*(i+1)+i*(N/2) <= ignite.cluster().topologyVersion());
+            checkRing(impl.ring().allNodes());
+            assertEquals(N*(i+1)+i*(N/2), Ignition.allGrids().get(0).cluster().topologyVersion());
             System.out.println("=======================> 3");
             final Random rnd = new Random();
             int j = 0;
@@ -113,7 +129,7 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
                 System.out.println("=======================> 4_"+j);
                 grid.close();
                 System.out.println("=======================> 5_"+j);
-                //checkRing(new ArrayList(impl.ring().allNodes()));
+                checkRing(impl.ring().allNodes());
             }
         }
     }

@@ -653,6 +653,19 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cnt Number of grids to starts.
+     * @param startIdx Start grid index.
+     * @throws Exception If failed to start grids.
+     */
+    public void startGrids(int cnt, int startIdx) throws Exception {
+        assert startIdx >= 0;
+        assert cnt >= 0;
+
+        for (int idx = startIdx; idx < startIdx + cnt; idx++)
+            startGrid(idx);
+    }
+
+    /**
      * @param cnt Grid count.
      * @return First started grid.
      * @throws Exception If failed.

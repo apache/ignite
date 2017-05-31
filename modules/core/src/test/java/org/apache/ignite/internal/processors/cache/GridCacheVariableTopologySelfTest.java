@@ -90,19 +90,6 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cnt Number of grids to starts.
-     * @param startIdx Start grid index.
-     * @throws Exception If failed to start grids.
-     */
-    private void startGrids(int cnt, int startIdx) throws Exception {
-        assert startIdx >= 0;
-        assert cnt >= 0;
-
-        for (int idx = startIdx; idx < startIdx + cnt; idx++)
-            startGrid(idx);
-    }
-
-    /**
      * JUnit.
      *
      * @throws Exception If failed.

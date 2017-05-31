@@ -168,6 +168,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
 
+    /** true если нода поняла что она третья */
+    private volatile boolean imtheproblem = false;
+
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
@@ -2410,6 +2413,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
+            if (imtheproblem && msg instanceof TcpDiscoveryNodeAddedMessage) {
+                TcpDiscoveryNodeAddedMessage t = (TcpDiscoveryNodeAddedMessage)msg;
+                if (t.node().internalOrder()==4) {
+                    System.out.println("!!!~ в 3 ноду пришло о 4. Добавили в addMessage");
+                }
+            }
+
             if (msg.highPriority())
                 queue.addFirst(msg);
             else
@@ -2713,6 +2723,24 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else if (log.isTraceEnabled())
                     log.trace("Next node remains the same [nextId=" + next.id() +
                         ", nextOrder=" + next.internalOrder() + ']');
+
+                if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    System.out.println("!!!~ Шлем в ноду: " +
+                        "\n\tid:" + next.id() +
+                        "\n\torder:" + next.internalOrder() +
+                        "\n\tcoord:" + resolveCoordinator().id().equals(next.id())+
+                        "\n\tabout:"+((TcpDiscoveryNodeAddedMessage)msg).node().internalOrder()
+                    );
+                }
+                if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                    System.out.println("!!!~ finish шлем в ноду: " +
+                        "\n\tid:" + locNode.id() +
+                        "\n\torder:" + locNode.internalOrder() +
+                        "\n\tcoord:" + isLocalNodeCoordinator() +
+                        "\n\tthis:" + locNode.id().equals(((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId()) +
+                        "\n\tabout:" + ring.node(((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId()).internalOrder()
+                    );
+                }
 
                 // Flag that shows whether next node exists and accepts incoming connections.
                 boolean nextNodeExists = sock != null;
@@ -3037,6 +3065,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     } // Try to reconnect.
                 } // Iterating node's addresses.
+
+                if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    TcpDiscoveryNodeAddedMessage t = (TcpDiscoveryNodeAddedMessage)msg;
+                    if (t.node().internalOrder()==4 && next.internalOrder()==3) {
+                        System.out.println("!!!~ ОТПРАВЛЕНО: "+sent);
+                    }
+                }
 
                 if (!sent) {
                     if (!failedNodes.contains(next)) {
@@ -3896,6 +3931,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 processNodeAddFinishedMessage(addFinishMsg);
 
+                System.out.println("!!!~ координатор добавил и пошлет finish "+node.internalOrder());
+
                 if (addFinishMsg.verified())
                     msgHist.add(addFinishMsg);
 
@@ -3906,7 +3943,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
 
             msg.verify(locNodeId);
-
+            System.out.println("!!!~ верифицировал "+node.internalOrder());
             return false;
         }
 
@@ -4161,6 +4198,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert node != null;
 
+            if (locNode.id().equals(node.id()) && node.internalOrder()==3) {
+                //Эта нода является проблемой
+                imtheproblem = true;
+            }
+
+            System.out.println("!!!~ пришло в ноду: "+
+                "\n\tid:"+locNode.id()+
+                "\n\torder:"+locNode.internalOrder()+
+                "\n\tcoord:"+isLocalNodeCoordinator()+
+                "\n\tthis:"+locNode.id().equals(node.id())+
+                "\n\tabout:"+((TcpDiscoveryNodeAddedMessage)msg).node().internalOrder()
+            );
+
             if (node.internalOrder() < locNode.internalOrder()) {
                 if (log.isDebugEnabled())
                     log.debug("Discarding node added message since local node's order is greater " +
@@ -4242,6 +4292,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 msg.willReachNode()) {
                 if (subProcessAddedMessageFromThisNode(msg, node, locNodeId))
                     return;
+                System.out.println("!!!~ Теперь я и сам знаю что меня добавили: "+node.internalOrder());
+
                 msg.toCoordinator();
 
                 if (sendMessageToRemotes(msg))
@@ -4268,12 +4320,21 @@ class ServerImpl extends TcpDiscoveryImpl {
             TcpDiscoveryNode node = ring.node(nodeId);
 
             if (node == null) {
+                System.out.println("!!!~ ошибка");
                 if (log.isDebugEnabled())
                     log.debug("Discarding node add finished message since node is not found " +
                         "[msg=" + msg + ']');
 
                 return;
             }
+
+            System.out.println("!!!~ finish пришло в ноду: "+
+                "\n\tid:"+locNode.id()+
+                "\n\torder:"+locNode.internalOrder()+
+                "\n\tcoord:"+isLocalNodeCoordinator()+
+                "\n\tthis:"+locNode.id().equals(node.id())+
+                "\n\tabout:"+node.internalOrder()
+            );
 
             if (log.isDebugEnabled())
                 log.debug("Node to finish add: " + node);
@@ -4287,7 +4348,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     spi.stats.onRingMessageReceived(msg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
-
+                    System.out.println("!!!~ Полностью добавили ноду и уже шлю discard: "+node.internalOrder());
                     return;
                 }
 
@@ -5637,6 +5698,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     TcpDiscoveryAbstractMessage msg = spi.readMessage(sock, in, spi.netTimeout);
 
+                    if (imtheproblem) {
+                        if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                            TcpDiscoveryNodeAddedMessage t = (TcpDiscoveryNodeAddedMessage)msg;
+                            if (t.node().internalOrder() == 4) {
+                                System.out.println("!!!~ в 3 ноду пришло о 4. считали из spi.readMessage");
+                            }
+                            else {
+                                System.out.println("!!!~ ещё читаем из spi.readMessage");
+                            }
+                        }
+                        else {
+                            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                                System.out.println("!!!~ ещё читаем из spi.readMessage: " + msg.getClass());
+                        }
+                    }
+
                     // Ping.
                     if (msg instanceof TcpDiscoveryPingRequest) {
                         if (!spi.isNodeStopping0()) {
@@ -5800,6 +5877,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                             U.resolveClassLoader(spi.ignite().configuration()));
 
                         msg.senderNodeId(nodeId);
+
+                        if (imtheproblem) {
+                            if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                                TcpDiscoveryNodeAddedMessage t = (TcpDiscoveryNodeAddedMessage)msg;
+                                if (t.node().internalOrder() == 4) {
+                                    System.out.println("!!!~ в 3 ноду пришло о 4. Размаршелил");
+                                }
+                                else {
+                                    System.out.println("!!!~ ещё читаем из маршела");
+                                }
+                            }
+                            else {
+                                if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                                    System.out.println("!!!~ ещё читаем из маршела: " + msg);
+                            }
+                        }
 
                         DebugLogger debugLog = messageLogger(msg);
 
@@ -6467,6 +6560,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             while (!isInterrupted()) {
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
+
+                if (imtheproblem && msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    TcpDiscoveryNodeAddedMessage t = (TcpDiscoveryNodeAddedMessage)msg;
+                    if (t.node().internalOrder()==4) {
+                        System.out.println("!!!~ в 3 ноду пришло о 4. Считано из queue");
+                    }
+                }
 
                 if (msg == null)
                     noMessageLoop();
