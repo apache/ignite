@@ -28,16 +28,16 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
  */
 public class OdbcColumnMeta {
     /** Cache name. */
-    private String schemaName;
+    private final String schemaName;
 
     /** Table name. */
-    private String tableName;
+    private final String tableName;
 
     /** Column name. */
-    private String columnName;
+    private final String columnName;
 
     /** Data type. */
-    private Class<?> dataType;
+    private final Class<?> dataType;
 
     /**
      * @param schemaName Cache name.
@@ -104,18 +104,9 @@ public class OdbcColumnMeta {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
-        writer.writeByte(BinaryUtils.typeByClass(dataType));
-    }
 
-    /**
-     * Read from binary format.
-     *
-     * @param reader Binary input.
-     */
-    public void read(BinaryRawReader reader) {
-        schemaName = reader.readString();
-        tableName = reader.readString();
-        columnName = reader.readString();
-        dataType = BinaryUtils.plainClassByType(reader.readByte());
+        byte typeId = BinaryUtils.typeByClass(dataType);
+
+        writer.writeByte(typeId);
     }
 }
