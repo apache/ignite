@@ -1187,17 +1187,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param grpDesc Cache group descriptor.
      * @param cache Cache to start.
      * @param schema Cache schema.
      * @throws IgniteCheckedException If failed to start cache.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void startCache(CacheGroupDescriptor grpDesc, GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
+    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
-
-        if (sharedCtx.pageStore() != null)
-            sharedCtx.pageStore().initializeForCache(grpDesc, cacheCtx.config());
 
         CacheConfiguration cfg = cacheCtx.config();
 
@@ -1939,7 +1935,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         caches.put(cacheCtx.name(), cache);
 
-        startCache(grpDesc, cache, schema != null ? schema : new QuerySchema());
+        startCache(cache, schema != null ? schema : new QuerySchema());
 
         grp.onCacheStarted(cacheCtx);
 
