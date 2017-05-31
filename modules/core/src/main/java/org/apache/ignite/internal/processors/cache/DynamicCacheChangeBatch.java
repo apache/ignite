@@ -133,8 +133,10 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /**
      * @param caches restarting caches.
      */
-    public void restartingCaches(Set<String> caches) {
+    public DynamicCacheChangeBatch restartingCaches(Set<String> caches) {
         this.restartingCaches = caches;
+
+        return this;
     }
 
     /**

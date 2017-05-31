@@ -130,7 +130,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         super.start(activeOnStart);
 
-        globalState = activeOnStart ? ACTIVE : INACTIVE;
+        globalState = state(activeOnStart);
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
 
@@ -215,11 +215,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
+        assert globalState != null;
+
         return globalState;
     }
 
     /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+        assert data != null;
+
         if (ctx.localNodeId().equals(joiningNodeId))
             globalState = (ClusterState)data;
     }
@@ -310,6 +314,34 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         }
 
         return cgsFut;
+    }
+
+    /**
+     * @param flag Flag.
+     */
+    private ClusterState state(boolean flag){
+        return flag ? ACTIVE : INACTIVE;
+    }
+
+    /**
+     *
+     */
+    public boolean onJoinChanged() {
+        return state(sharedCtx.gridConfig().isActiveOnStart()) != globalState;
+    }
+
+    /**
+     *
+     */
+    public boolean changeActiveToInactive(){
+        return state(sharedCtx.gridConfig().isActiveOnStart()) == ACTIVE && globalState == INACTIVE;
+    }
+
+    /**
+     *
+     */
+    public boolean changeInActiveToActive(){
+        return state(sharedCtx.gridConfig().isActiveOnStart()) == INACTIVE && globalState == ACTIVE;
     }
 
     /**
@@ -406,7 +438,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             //todo revert change if deactivate request fail
         }
 
-        globalState = actx.activate ? INACTIVE : ACTIVE;
+        globalState = state(actx.activate);
 
         GridChangeGlobalStateFuture af = cgsLocFut.get();
 
