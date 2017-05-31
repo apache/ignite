@@ -64,7 +64,7 @@ public class ExchangeActions {
         return F.isEmpty(cachesToStart) &&
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cacheGrpsToStart) &&
-            F.isEmpty(cacheGroupsToStop()) &&
+            F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts);
     }
 

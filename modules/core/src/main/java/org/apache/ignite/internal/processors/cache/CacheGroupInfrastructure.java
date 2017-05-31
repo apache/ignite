@@ -73,6 +73,9 @@ public class CacheGroupInfrastructure {
     /** Node ID cache group was received from. */
     private final UUID rcvdFrom;
 
+    /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
+    private boolean needsRecovery;
+
     /** */
     private final AffinityTopologyVersion locStartVer;
 
@@ -88,7 +91,7 @@ public class CacheGroupInfrastructure {
     /** */
     private final CacheType cacheType;
 
-    /** IO policy. */
+    /** */
     private final byte ioPlc;
 
     /** */
@@ -96,9 +99,6 @@ public class CacheGroupInfrastructure {
 
     /** */
     private final boolean storeCacheId;
-
-    /** Flag indicating that this cache group is in a recovery mode due to partitions loss. */
-    private boolean needsRecovery;
 
     /** */
     private volatile List<GridCacheContext> caches;
@@ -127,10 +127,10 @@ public class CacheGroupInfrastructure {
     /** */
     private final CacheObjectContext cacheObjCtx;
 
-    /** FreeList instance this group is associated with. */
+    /** */
     private final FreeList freeList;
 
-    /** ReuseList instance this group is associated with */
+    /** */
     private final ReuseList reuseList;
 
     /** */
@@ -799,12 +799,12 @@ public class CacheGroupInfrastructure {
                 skipCtx = cctx.continuousQueries().skipUpdateCounter(skipCtx, part, cntr, topVer, primary);
         }
 
-        final List<Runnable> sndC = skipCtx != null ? skipCtx.sendClosures() : null;
+        final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
 
-        if (sndC != null) {
+        if (procC != null) {
             ctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
-                    for (Runnable c : sndC)
+                    for (Runnable c : procC)
                         c.run();
                 }
             });

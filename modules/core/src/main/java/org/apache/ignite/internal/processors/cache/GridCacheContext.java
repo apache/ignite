@@ -264,6 +264,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cacheCfg Cache configuration.
      * @param grp Cache group.
      * @param cacheType Cache type.
+     * @param locStartTopVer Topology version when cache was started on local node.
      * @param affNode {@code True} if local node is affinity node.
      * @param updatesAllowed Updates allowed flag.
      * @param evtMgr Cache event manager.

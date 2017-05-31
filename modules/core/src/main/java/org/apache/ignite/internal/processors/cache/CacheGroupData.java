@@ -56,6 +56,9 @@ public class CacheGroupData implements Serializable {
     @GridToStringInclude
     private final Map<String, Integer> caches;
 
+    /** */
+    private long flags;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -72,7 +75,8 @@ public class CacheGroupData implements Serializable {
         UUID rcvdFrom,
         @Nullable AffinityTopologyVersion startTopVer,
         IgniteUuid deploymentId,
-        Map<String, Integer> caches) {
+        Map<String, Integer> caches,
+        long flags) {
         assert cacheCfg != null;
         assert grpId != 0;
         assert deploymentId != null;
@@ -84,6 +88,7 @@ public class CacheGroupData implements Serializable {
         this.startTopVer = startTopVer;
         this.deploymentId = deploymentId;
         this.caches = caches;
+        this.flags = flags;
     }
 
     /**

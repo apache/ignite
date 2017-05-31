@@ -74,7 +74,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
         private final IgniteUuid deploymentId;
 
         /** Flags added for future usage. */
-        private final byte flags;
+        private final long flags;
 
         /**
          * @param ccfg Cache group configuration.
@@ -83,7 +83,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
          */
         CacheGroupInfo(CacheConfiguration ccfg,
             IgniteUuid deploymentId,
-            byte flags) {
+            long flags) {
             assert ccfg != null;
             assert deploymentId != null;
 
@@ -127,7 +127,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
         private final boolean nearCache;
 
         /** Flags added for future usage. */
-        private final byte flags;
+        private final long flags;
 
         /**
          * @param ccfg Cache configuration.
@@ -140,7 +140,7 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
             CacheType cacheType,
             IgniteUuid deploymentId,
             boolean nearCache,
-            byte flags) {
+            long flags) {
             assert ccfg != null;
             assert cacheType != null;
             assert deploymentId != null;

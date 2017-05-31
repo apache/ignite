@@ -131,6 +131,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             final long pageId = pageId(nextLink);
 
+            // Group is null if try evict page, with persistence evictions should be disabled.
             assert grp != null || !sharedCtx.database().persistenceEnabled();
 
             int grpId = grp != null ? grp.groupId() : 0;

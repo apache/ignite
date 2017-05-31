@@ -535,7 +535,7 @@ class ClusterCachesInfo {
 
                 cacheGrpsInfo.put(grp.groupId(), new CacheClientReconnectDiscoveryData.CacheGroupInfo(desc.config(),
                     desc.deploymentId(),
-                    (byte)0));
+                    0));
             }
 
             for (IgniteInternalCache cache : ctx.cache().caches()) {
@@ -547,7 +547,7 @@ class ClusterCachesInfo {
                     desc.cacheType(),
                     desc.deploymentId(),
                     cache.context().isNear(),
-                    (byte)0));
+                    0));
             }
 
             return new CacheClientReconnectDiscoveryData(cacheGrpsInfo, cachesInfo);
@@ -662,7 +662,8 @@ class ClusterCachesInfo {
                 grpDesc.receivedFrom(),
                 grpDesc.startTopologyVersion(),
                 grpDesc.deploymentId(),
-                grpDesc.caches());
+                grpDesc.caches(),
+                0);
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -680,7 +681,7 @@ class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 desc.sql(),
                 false,
-                (byte)0);
+                0);
 
             caches.put(desc.cacheName(), cacheData);
         }
@@ -698,7 +699,7 @@ class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 false,
                 true,
-                (byte)0);
+                0);
 
             templates.put(desc.cacheName(), cacheData);
         }

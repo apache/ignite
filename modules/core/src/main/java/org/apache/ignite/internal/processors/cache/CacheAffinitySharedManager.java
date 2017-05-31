@@ -515,6 +515,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         return exchActions.clientOnlyExchange();
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @param closeReqs Close requests.
+     * @return {@code True} if requests contain request for given cache ID.
+     */
     private boolean cacheClosed(int cacheId, List<ExchangeActions.ActionData> closeReqs) {
         for (ExchangeActions.ActionData req : closeReqs) {
             if (req.descriptor().cacheId() == cacheId)
