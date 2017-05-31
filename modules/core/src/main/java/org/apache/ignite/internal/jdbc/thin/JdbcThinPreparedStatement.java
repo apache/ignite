@@ -40,7 +40,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 
 /**
  * JDBC prepared statement implementation.

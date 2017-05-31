@@ -23,9 +23,6 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
  * SQL listener command request.
  */
 public class OdbcRequest extends SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
     /** Execute sql query. */
     public static final int QRY_EXEC = 2;
 

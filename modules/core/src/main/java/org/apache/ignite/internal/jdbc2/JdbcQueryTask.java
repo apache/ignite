@@ -191,7 +191,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
             rows.add(row0);
 
-            if (rows.size() == fetchSize) // If pageSize is 0 then unlimited
+            if (rows.size() == fetchSize) // If fetchSize is 0 then unlimited
                 break;
         }
 
