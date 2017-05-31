@@ -197,7 +197,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
 
     /** On join batches. */
-    private ConcurrentMap<UUID, DynamicCacheChangeBatch> onJoinBatches = new ConcurrentHashMap<>();
+    private ConcurrentMap<UUID, CacheConfiguration[]> onJoinBatches = new ConcurrentHashMap<>();
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
@@ -2103,21 +2103,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
         if (!sharedCtx.kernalContext().state().active()) {
-            if (ctx.localNodeId().equals(nodeId)) {
-                CacheConfiguration[] cfgs = sharedCtx.gridConfig().getCacheConfiguration();
-
-                List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cfgs.length);
-
-                try {
-                    for (CacheConfiguration cfg : cfgs)
-                        reqs.add(createRequest(cfg, true));
-                }
-                catch (Exception e) {
-                    // Todo
-                }
-
-                return new DynamicCacheChangeBatch(reqs).restartingCaches(Collections.<String>emptySet());
-            }
+            if (ctx.localNodeId().equals(nodeId))
+                return sharedCtx.gridConfig().getCacheConfiguration();
         }
 
         boolean reconnect = ctx.localNodeId().equals(nodeId) && cachesOnDisconnect != null;
@@ -2234,14 +2221,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     registeredCaches.clear();
                     registeredTemplates.clear();
                 }
-
-                return;
             }
         }
 
         if (!ctx.state().active()) {
-            if (data instanceof DynamicCacheChangeBatch)
-                onJoinBatches.put(rmtNodeId, (DynamicCacheChangeBatch)data);
+            if (data instanceof CacheConfiguration[])
+                onJoinBatches.put(rmtNodeId, (CacheConfiguration[])data);
 
             return;
         }
@@ -2780,11 +2765,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         List<CacheConfiguration> cfgs = new ArrayList();
 
-        Collections.addAll(cfgs, ctx.config().getCacheConfiguration());
-
-        for (DynamicCacheChangeBatch batch : onJoinBatches.values())
-            for (DynamicCacheChangeRequest req : batch.requests())
-                cfgs.add(req.startCacheConfiguration());
+        for (CacheConfiguration[] staticCfgs : onJoinBatches.values())
+            Collections.addAll(cfgs, staticCfgs);
 
         if (!ctx.config().isDaemon() &&
             sharedCtx.pageStore() != null &&
