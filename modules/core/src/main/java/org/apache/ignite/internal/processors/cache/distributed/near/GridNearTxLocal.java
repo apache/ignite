@@ -1728,7 +1728,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         for (KeyCacheObject cacheKey : lockKeys) {
                             K keyVal = (K)
                                 (keepCacheObjects ? cacheKey :
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary));
+                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(cacheKey, !deserializeBinary,
+                                        true));
 
                             if (retMap.containsKey(keyVal))
                                 // We already have a return value.

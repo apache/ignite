@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -28,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
@@ -466,18 +466,21 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
             @Override public void run() {
                 assertTrue(node2.context().clientDisconnected());
 
-                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
                 try {
-                    queryProcessor(node1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                    dynamicIndexCreate(node1, CACHE_NAME, TBL_NAME, idx, false);
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     throw new IgniteException(e);
                 }
             }
         });
 
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME,
+            QueryUtils.normalizeObjectName(TBL_NAME, true),
+            QueryUtils.normalizeObjectName(IDX_NAME_1, false),
+            field(QueryUtils.normalizeObjectName(FIELD_NAME_1_ESCAPED, false)));
     }
 
     /**

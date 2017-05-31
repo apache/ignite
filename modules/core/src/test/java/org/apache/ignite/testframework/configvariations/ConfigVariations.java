@@ -84,7 +84,7 @@ public class ConfigVariations {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
-        Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
+        Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), binaryMarshallerFactory()),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
     };
 
@@ -183,14 +183,10 @@ public class ConfigVariations {
     /**
      * @return Marshaller.
      */
-    public static Factory<OptimizedMarshaller> optimizedMarshallerFactory() {
-        return new Factory<OptimizedMarshaller>() {
-            @Override public OptimizedMarshaller create() {
-                OptimizedMarshaller marsh = new OptimizedMarshaller(true);
-
-                marsh.setRequireSerializable(false);
-
-                return marsh;
+    public static Factory<BinaryMarshaller> binaryMarshallerFactory() {
+        return new Factory<BinaryMarshaller>() {
+            @Override public BinaryMarshaller create() {
+                return new BinaryMarshaller();
             }
         };
     }

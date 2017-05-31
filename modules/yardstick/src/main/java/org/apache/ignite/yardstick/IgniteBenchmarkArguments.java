@@ -102,6 +102,10 @@ public class IgniteBenchmarkArguments {
     private boolean storeEnabled;
 
     /** */
+    @Parameter(names = {"-cwd", "--cleanWorkDirectory"}, description = "Clean Work Directory")
+    private boolean cleanWorkDirectory = false;
+
+    /** */
     @Parameter(names = {"-wb", "--writeBehind"}, description = "Enable or disable writeBehind for cache store")
     private boolean writeBehind;
 

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -65,13 +65,16 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 public class GridH2Table extends TableBase {
     /** */
-    private final String spaceName;
+    private final String cacheName;
 
     /** */
     private final GridH2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
+
+    /** */
+    private final int pkIndexPos;
 
     /** */
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
@@ -86,7 +89,7 @@ public class GridH2Table extends TableBase {
     private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
 
     /** */
-    private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
+    private final AtomicReferenceArray<Object[]> actualSnapshot;
 
     /** */
     private IndexColumn affKeyCol;
@@ -116,16 +119,16 @@ public class GridH2Table extends TableBase {
      * @param desc Row descriptor.
      * @param rowFactory Row factory.
      * @param idxsFactory Indexes factory.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      */
     public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, @Nullable String spaceName) {
+        GridH2SystemIndexFactory idxsFactory, String cacheName) {
         super(createTblData);
 
         assert idxsFactory != null;
 
         this.desc = desc;
-        this.spaceName = spaceName;
+        this.cacheName = cacheName;
 
         if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -135,10 +138,8 @@ public class GridH2Table extends TableBase {
             int affKeyColId = -1;
 
             if (affKey != null) {
-                String colName = desc.context().config().isSqlEscapeAll() ? affKey : affKey.toUpperCase();
-
-                if (doesColumnExist(colName))
-                    affKeyColId = getColumn(colName).getColumnId();
+                if (doesColumnExist(affKey))
+                    affKeyColId = getColumn(affKey).getColumnId();
                 else
                     affinityColExists = false;
             }
@@ -164,20 +165,30 @@ public class GridH2Table extends TableBase {
         assert idxs != null;
 
         List<Index> clones = new ArrayList<>(idxs.size());
-        for (Index index: idxs) {
+        for (Index index : idxs) {
             Index clone = createDuplicateIndexIfNeeded(index);
             if (clone != null)
-               clones.add(clone);
+                clones.add(clone);
         }
         idxs.addAll(clones);
 
+        boolean hasHashIndex = idxs.size() >= 2 && index(0).getIndexType().isHash();
+
         // Add scan index at 0 which is required by H2.
-        if (idxs.size() >= 2 && index(0).getIndexType().isHash())
+        if (hasHashIndex)
             idxs.add(0, new GridH2PrimaryScanIndex(this, index(1), index(0)));
         else
             idxs.add(0, new GridH2PrimaryScanIndex(this, index(0), null));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
+
+        pkIndexPos = hasHashIndex ? 2 : 1;
+
+        final int segments = desc != null ? desc.configuration().getQueryParallelism() :
+            // Get index segments count from PK index. Null desc can be passed from tests.
+            index(pkIndexPos).segmentsCount();
+
+        actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
 
         lock = new ReentrantReadWriteLock();
     }
@@ -209,10 +220,10 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @return Space name.
+     * @return Cache name.
      */
-    @Nullable public String spaceName() {
-        return spaceName;
+    @Nullable public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
@@ -233,8 +244,13 @@ public class GridH2Table extends TableBase {
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
 
-        if (snapshotInLock())
-            snapshotIndexes(null);
+        if (snapshotInLock()) {
+            final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            assert qctx != null;
+
+            snapshotIndexes(null, qctx.segment());
+        }
 
         return false;
     }
@@ -255,21 +271,22 @@ public class GridH2Table extends TableBase {
 
     /**
      * @param qctx Query context.
+     * @param segment id of index segment to be snapshoted.
      */
-    public void snapshotIndexes(GridH2QueryContext qctx) {
+    public void snapshotIndexes(GridH2QueryContext qctx, int segment) {
         if (!snapshotEnabled)
             return;
 
-        Object[] snapshots;
+        Object[] segmentSnapshot;
 
         // Try to reuse existing snapshots outside of the lock.
-        for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
-            snapshots = actualSnapshot.get();
+        for (long waitTime = 200; ; waitTime *= 2) { // Increase wait time to avoid starvation.
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) { // Reuse existing snapshot without locking.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) { // Reuse existing snapshot without locking.
+                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
 
-                if (snapshots != null)
+                if (segmentSnapshot != null)
                     return; // Reused successfully.
             }
 
@@ -281,17 +298,17 @@ public class GridH2Table extends TableBase {
             ensureNotDestroyed();
 
             // Try again inside of the lock.
-            snapshots = actualSnapshot.get();
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) // Try reusing.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) // Try reusing.
+                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
 
-            if (snapshots == null) { // Reuse failed, produce new snapshots.
-                snapshots = doSnapshotIndexes(null, qctx);
+            if (segmentSnapshot == null) { // Reuse failed, produce new snapshots.
+                segmentSnapshot = doSnapshotIndexes(segment,null, qctx);
 
-                assert snapshots != null;
+                assert segmentSnapshot != null;
 
-                actualSnapshot.set(snapshots);
+                actualSnapshot.set(segment, segmentSnapshot);
             }
         }
         finally {
@@ -375,19 +392,22 @@ public class GridH2Table extends TableBase {
      * Must be called inside of write lock because when using multiple indexes we have to ensure that all of them have
      * the same contents at snapshot taking time.
      *
+     * @param segment id of index segment snapshot.
+     * @param segmentSnapshot snapshot to be reused.
      * @param qctx Query context.
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
+    private Object[] doSnapshotIndexes(int segment, Object[] segmentSnapshot, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
-        if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 2];
+        //TODO: make HashIndex snapshotable or remove it at all?
+        if (segmentSnapshot == null) // Nothing to reuse, create new snapshots.
+            segmentSnapshot = new Object[idxs.size() - pkIndexPos];
 
-        // Take snapshots on all except first which is scan and second which is hash.
-        for (int i = 2, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 2];
+        // Take snapshots on all except first which is scan.
+        for (int i = pkIndexPos, len = idxs.size(); i < len; i++) {
+            Object s = segmentSnapshot[i - pkIndexPos];
 
             boolean reuseExisting = s != null;
 
@@ -401,20 +421,20 @@ public class GridH2Table extends TableBase {
                 if (qctx != null)
                     qctx.clearSnapshots();
 
-                for (int j = 2; j < i; j++)
+                for (int j = pkIndexPos; j < i; j++)
                     if ((idxs.get(j) instanceof GridH2IndexBase))
                         index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(snapshots, null);
+                actualSnapshot.compareAndSet(segment, segmentSnapshot, null);
 
                 return null;
             }
 
-            snapshots[i - 2] = s;
+            segmentSnapshot[i - pkIndexPos] = s;
         }
 
-        return snapshots;
+        return segmentSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -587,7 +607,7 @@ public class GridH2Table extends TableBase {
 
                 int len = idxs.size();
 
-                int i = 2;
+                int i = pkIndexPos;
 
                 // Put row if absent to all indexes sequentially.
                 // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
@@ -609,7 +629,7 @@ public class GridH2Table extends TableBase {
                 if (old != null) {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
-                    for (int i = 3, len = idxs.size(); i < len; i++) {
+                    for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
                         if (!(idxs.get(i) instanceof GridH2IndexBase))
                             continue;
                         Row res = index(i).remove(old);
@@ -627,7 +647,8 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            actualSnapshot.set(null);
+            if (actualSnapshot != null)
+                actualSnapshot.set(pk.segmentForRow(row), null);
 
             return true;
         }
@@ -684,9 +705,10 @@ public class GridH2Table extends TableBase {
     ArrayList<GridH2IndexBase> indexes() {
         ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
 
-        for (int i = 2, len = idxs.size(); i < len; i++)
+        for (int i = pkIndexPos, len = idxs.size(); i < len; i++) {
             if (idxs.get(i) instanceof GridH2IndexBase)
                 res.add(index(i));
+        }
 
         return res;
     }
@@ -695,6 +717,8 @@ public class GridH2Table extends TableBase {
      *
      */
     public void markRebuildFromHashInProgress(boolean value) {
+        assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
+
         rebuildFromHashInProgress = value;
     }
 
@@ -765,6 +789,7 @@ public class GridH2Table extends TableBase {
             newIdxs.addAll(idxs);
 
             newIdxs.add(idx);
+
             if (cloneIdx != null)
                 newIdxs.add(cloneIdx);
 
@@ -804,6 +829,23 @@ public class GridH2Table extends TableBase {
         }
     }
 
+    /**
+     * Check whether user index with provided name exists.
+     *
+     * @param idxName Index name.
+     * @return {@code True} if exists.
+     */
+    public boolean containsUserIndex(String idxName) {
+        for (int i = 2; i < idxs.size(); i++) {
+            Index idx = idxs.get(i);
+
+            if (idx.getName().equalsIgnoreCase(idxName))
+                return true;
+        }
+
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void removeIndex(Index h2Idx) {
         throw DbException.getUnsupportedException("must use removeIndex(session, idx)");
@@ -820,14 +862,14 @@ public class GridH2Table extends TableBase {
         try {
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
 
-            Index targetIdx = (h2Idx instanceof GridH2ProxyIndex)?
-                    ((GridH2ProxyIndex)h2Idx).underlyingIndex(): h2Idx;
+            Index targetIdx = (h2Idx instanceof GridH2ProxyIndex) ?
+                ((GridH2ProxyIndex)h2Idx).underlyingIndex() : h2Idx;
 
-            for (int i = 2; i < idxs.size(); ) {
+            for (int i = pkIndexPos; i < idxs.size();) {
                 Index idx = idxs.get(i);
 
                 if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
-                   ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
+                    ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
 
                     idxs.remove(i);
 
@@ -983,24 +1025,29 @@ public class GridH2Table extends TableBase {
      * @return Proxy index.
      */
     public Index createDuplicateIndexIfNeeded(Index target) {
-        if (!(target instanceof H2TreeIndex) &&
-            !(target instanceof SpatialIndex))
+        if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
             return null;
 
         IndexColumn[] cols = target.getIndexColumns();
+
         List<IndexColumn> proxyCols = new ArrayList<>(cols.length);
+
         boolean modified = false;
-        for (int i = 0; i < cols.length; i++) {
-            IndexColumn col = cols[i];
+
+        for (IndexColumn col : cols) {
             IndexColumn proxyCol = new IndexColumn();
+
             proxyCol.columnName = col.columnName;
             proxyCol.column = col.column;
             proxyCol.sortType = col.sortType;
 
             int altColId = desc.getAlternativeColumnId(proxyCol.column.getColumnId());
+
             if (altColId != proxyCol.column.getColumnId()) {
                 proxyCol.column = getColumn(altColId);
+
                 proxyCol.columnName = proxyCol.column.getName();
+
                 modified = true;
             }
 

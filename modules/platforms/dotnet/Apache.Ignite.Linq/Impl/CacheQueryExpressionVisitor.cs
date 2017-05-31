@@ -29,6 +29,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
@@ -278,10 +279,10 @@ namespace Apache.Ignite.Linq.Impl
             // Count, sum, max, min expect a single field or *
             // In other cases we need both parts of cache entry
             var format = _includeAllFields
-                ? "{0}.*, {0}._key, {0}._val"
+                ? "{0}.*, {0}._KEY, {0}._VAL"
                 : _useStar
                     ? "{0}.*"
-                    : "{0}._key, {0}._val";
+                    : "{0}._KEY, {0}._VAL";
 
             var tableName = Aliases.GetTableAlias(expression);
 
@@ -308,30 +309,32 @@ namespace Apache.Ignite.Linq.Impl
 
             if (queryable != null)
             {
-                var fieldName = GetFieldName(expression, queryable);
+                var fieldName = GetEscapedFieldName(expression, queryable);
 
                 ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(expression), fieldName);
             }
             else
-                AppendParameter(RegisterEvaluatedParameter(expression));
+                AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
 
             return expression;
         }
 
         /// <summary>
-        /// Registers query parameter that is evaluated from a lambda expression argument.
+        /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
-        public object RegisterEvaluatedParameter(Expression expression)
+        private static string GetEscapedFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
         {
-            _modelVisitor.ParameterExpressions.Add(expression);
+            var sqlEscapeAll = queryable.CacheConfiguration.SqlEscapeAll;
+            var fieldName = GetFieldName(expression, queryable);
 
-            return ExpressionWalker.EvaluateExpression<object>(expression);
+            return sqlEscapeAll ? string.Format("\"{0}\"", fieldName) : fieldName;
         }
 
         /// <summary>
-        /// Gets the name of the field from a member expression.
+        /// Gets the name of the field from a member expression, with quotes when necessary.
         /// </summary>
-        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
+        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable,
+            bool ignoreAlias = false)
         {
             var fieldName = GetMemberFieldName(expression.Member);
 
@@ -339,20 +342,18 @@ namespace Apache.Ignite.Linq.Impl
             var cacheCfg = queryable.CacheConfiguration;
 
             if (cacheCfg.QueryEntities == null || cacheCfg.QueryEntities.All(x => x.Aliases == null))
-                return fieldName;  // There are no aliases defined - early exit
+            {
+                // There are no aliases defined - early exit.
+                return fieldName;
+            }
 
             // Find query entity by key-val types
-            var keyValTypes = queryable.ElementType.GetGenericArguments();
-
-            Debug.Assert(keyValTypes.Length == 2);
-
-            var entity = cacheCfg.QueryEntities.FirstOrDefault(e =>
-                e.Aliases != null &&
-                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
-                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
+            var entity = GetQueryEntity(queryable, cacheCfg);
 
             if (entity == null)
+            {
                 return fieldName;
+            }
 
             // There are some aliases for the current query type
             // Calculate full field name and look for alias
@@ -361,12 +362,41 @@ namespace Apache.Ignite.Linq.Impl
 
             while ((member = member.Expression as MemberExpression) != null &&
                    member.Member.DeclaringType != queryable.ElementType)
-                fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
+            {
+                fullFieldName = GetFieldName(member, queryable, true) + "." + fullFieldName;
+            }
 
-            var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
-                .Select(x => x.Alias).FirstOrDefault();
+            var alias = ignoreAlias ? null : ((IQueryEntityInternal)entity).GetAlias(fullFieldName);
 
             return alias ?? fieldName;
+        }
+
+        /// <summary>
+        /// Finds matching query entity in the cache configuration.
+        /// </summary>
+        private static QueryEntity GetQueryEntity(ICacheQueryableInternal queryable, CacheConfiguration cacheCfg)
+        {
+            if (cacheCfg.QueryEntities.Count == 1)
+            {
+                return cacheCfg.QueryEntities.Single();
+            }
+
+            var keyValTypes = queryable.ElementType.GetGenericArguments();
+
+            Debug.Assert(keyValTypes.Length == 2);
+
+            // PERF: No LINQ.
+            foreach (var e in cacheCfg.QueryEntities)
+            {
+                if (e.Aliases != null
+                    && (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName)
+                    && (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName))
+                {
+                    return e;
+                }
+            }
+            
+            return null;
         }
 
         /// <summary>
@@ -387,7 +417,7 @@ namespace Apache.Ignite.Linq.Impl
                 if (m.DeclaringType != null &&
                     m.DeclaringType.IsGenericType &&
                     m.DeclaringType.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
-                    return "_" + m.Name.ToLowerInvariant().Substring(0, 3);
+                    return "_" + m.Name.ToUpperInvariant().Substring(0, 3);
 
                 var qryFieldAttr = m.GetCustomAttributes(true)
                     .OfType<QuerySqlFieldAttribute>().FirstOrDefault();

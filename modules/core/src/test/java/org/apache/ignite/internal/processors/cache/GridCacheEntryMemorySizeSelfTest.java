@@ -144,7 +144,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Marshaller.
      */
     protected Marshaller createMarshaller() throws IgniteCheckedException {
-        Marshaller marsh = new OptimizedMarshaller();
+        Marshaller marsh = createStandaloneBinaryMarshaller();
 
         marsh.setContext(new MarshallerContext() {
             @Override public boolean registerClassName(byte platformId, int typeId, String clsName) {

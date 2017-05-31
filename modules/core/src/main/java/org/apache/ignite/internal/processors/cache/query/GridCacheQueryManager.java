@@ -173,7 +173,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridQueryProcessor qryProc;
 
     /** */
-    private String space;
+    private String cacheName;
 
     /** */
     private int maxIterCnt;
@@ -221,9 +221,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         qryProc = cctx.kernalContext().query();
 
-        space = cctx.name();
+        cacheName = cctx.name();
 
-        enabled = qryProcEnabled || (isIndexingSpiEnabled() && !CU.isSystemCache(space));
+        enabled = qryProcEnabled || (isIndexingSpiEnabled() && !CU.isSystemCache(cacheName));
 
         maxIterCnt = ccfg.getMaxQueryIteratorsCount();
 
@@ -409,11 +409,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 Object val0 = unwrapIfNeeded(val, coctx);
 
-                cctx.kernalContext().indexing().store(space, key0, val0, expirationTime);
+                cctx.kernalContext().indexing().store(cacheName, key0, val0, expirationTime);
             }
 
             if(qryProcEnabled)
-                qryProc.store(space, key, partId, prevVal, prevVer, val, ver, expirationTime, link);
+                qryProc.store(cacheName, key, partId, prevVal, prevVer, val, ver, expirationTime, link);
         }
         finally {
             invalidateResultCache();
@@ -443,12 +443,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (isIndexingSpiEnabled()) {
                 Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
 
-                cctx.kernalContext().indexing().remove(space, key0);
+                cctx.kernalContext().indexing().remove(cacheName, key0);
             }
 
             // val may be null if we have no previous value. We should not call processor in this case.
             if(qryProcEnabled && val != null)
-                qryProc.remove(space, key, partId, val, ver);
+                qryProc.remove(cacheName, key, partId, val, ver);
         }
         finally {
             invalidateResultCache();
@@ -628,7 +628,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = qryProc.queryText(space, qry.clause(), qry.queryClassName(), filter(qry));
+                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry));
 
                     break;
 
@@ -739,7 +739,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         try {
             if (qry.type() == SPI) {
-                IgniteSpiCloseableIterator<?> iter = cctx.kernalContext().indexing().query(space, F.asList(args),
+                IgniteSpiCloseableIterator<?> iter = cctx.kernalContext().indexing().query(cacheName, F.asList(args),
                     filter(qry));
 
                 res.onDone(iter);
@@ -1907,7 +1907,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             // Remote nodes that have current cache.
             Collection<ClusterNode> nodes = F.view(cctx.discovery().remoteNodes(), new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode n) {
-                    return cctx.kernalContext().discovery().cacheAffinityNode(n, space);
+                    return cctx.kernalContext().discovery().cacheAffinityNode(n, cacheName);
                 }
             });
 
@@ -1945,7 +1945,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
             // Metadata for current cache must be first in list.
-            col.add(new CacheSqlMetadata(map.remove(space)));
+            col.add(new CacheSqlMetadata(map.remove(cacheName)));
 
             for (Collection<CacheSqlMetadata> metas : map.values())
                 col.add(new CacheSqlMetadata(metas));
@@ -1969,10 +1969,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return null;
 
         return new IndexingQueryFilter() {
-            @Nullable @Override public IgniteBiPredicate<K, V> forSpace(final String spaceName) {
+            @Nullable @Override public IgniteBiPredicate<K, V> forCache(final String cacheName) {
                 final GridKernalContext ctx = cctx.kernalContext();
 
-                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
                 if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
                     return null;
@@ -2016,10 +2016,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * FOR TESTING ONLY
      *
-     * @return Indexing space for this query manager.
+     * @return Cache name for this query manager.
      */
-    public String space() {
-        return space;
+    public String cacheName() {
+        return cacheName;
     }
 
     /**

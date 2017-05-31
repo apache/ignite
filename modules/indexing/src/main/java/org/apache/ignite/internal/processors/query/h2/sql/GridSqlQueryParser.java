@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
@@ -32,11 +33,18 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.AlterTableAddConstraint;
 import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.CreateTable;
+import org.h2.command.ddl.CreateTableData;
+import org.h2.command.ddl.DefineCommand;
 import org.h2.command.ddl.DropIndex;
+import org.h2.command.ddl.DropTable;
 import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
@@ -46,6 +54,7 @@ import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
+import org.h2.engine.Constants;
 import org.h2.engine.FunctionAlias;
 import org.h2.expression.Aggregate;
 import org.h2.expression.Alias;
@@ -351,6 +360,47 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<SchemaCommand, Schema> SCHEMA_COMMAND_SCHEMA = getter(SchemaCommand.class, "schema");
+
+    /** */
+    private static final Getter<CreateTable, CreateTableData> CREATE_TABLE_DATA = getter(CreateTable.class, "data");
+
+    /** */
+    private static final Getter<CreateTable, ArrayList<DefineCommand>> CREATE_TABLE_CONSTRAINTS =
+        getter(CreateTable.class, "constraintCommands");
+
+    /** */
+    private static final Getter<CreateTable, IndexColumn[]> CREATE_TABLE_PK = getter(CreateTable.class,
+        "pkColumns");
+
+    /** */
+    private static final Getter<CreateTable, Boolean> CREATE_TABLE_IF_NOT_EXISTS = getter(CreateTable.class,
+        "ifNotExists");
+
+    /** */
+    private static final Getter<CreateTable, Query> CREATE_TABLE_QUERY = getter(CreateTable.class, "asQuery");
+
+    /** */
+    private static final Getter<DropTable, Boolean> DROP_TABLE_IF_EXISTS = getter(DropTable.class, "ifExists");
+
+    /** */
+    private static final Getter<DropTable, String> DROP_TABLE_NAME = getter(DropTable.class, "tableName");
+
+    /** */
+    private static final Getter<Column, Boolean> COLUMN_IS_COMPUTED = getter(Column.class, "isComputed");
+
+    /** */
+    private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
+
+    /** */
+    private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
+
+    /** */
+    private static final String PARAM_CACHE_TEMPLATE = "cacheTemplate";
+
+    /** Names of the params that need to be present in WITH clause of CREATE TABLE. */
+    private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
+        PARAM_CACHE_TEMPLATE
+    };
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -725,7 +775,7 @@ public class GridSqlQueryParser {
     private GridSqlDropIndex parseDropIndex(DropIndex dropIdx) {
         GridSqlDropIndex res = new GridSqlDropIndex();
 
-        res.name(DROP_INDEX_NAME.get(dropIdx));
+        res.indexName(DROP_INDEX_NAME.get(dropIdx));
         res.schemaName(SCHEMA_COMMAND_SCHEMA.get(dropIdx).getName());
         res.ifExists(DROP_INDEX_IF_EXISTS.get(dropIdx));
 
@@ -778,6 +828,210 @@ public class GridSqlQueryParser {
         res.index(idx);
 
         return res;
+    }
+
+    /**
+     * Parse {@code CREATE TABLE} statement.
+     *
+     * @param createTbl {@code CREATE TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_table">H2 {@code CREATE TABLE} spec.</a>
+     */
+    private GridSqlCreateTable parseCreateTable(CreateTable createTbl) {
+        GridSqlCreateTable res = new GridSqlCreateTable();
+
+        Query qry = CREATE_TABLE_QUERY.get(createTbl);
+
+        if (qry != null)
+            throw new IgniteSQLException("CREATE TABLE ... AS ... syntax is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        List<DefineCommand> constraints = CREATE_TABLE_CONSTRAINTS.get(createTbl);
+
+        if (constraints.size() == 0)
+            throw new IgniteSQLException("No PRIMARY KEY defined for CREATE TABLE",
+                IgniteQueryErrorCode.PARSING);
+
+        if (constraints.size() > 1)
+            throw new IgniteSQLException("Too many constraints - only PRIMARY KEY is supported for CREATE TABLE",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        DefineCommand constraint = constraints.get(0);
+
+        if (!(constraint instanceof AlterTableAddConstraint))
+            throw new IgniteSQLException("Unsupported type of constraint for CREATE TABLE - only PRIMARY KEY " +
+                "is supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        AlterTableAddConstraint alterTbl = (AlterTableAddConstraint)constraint;
+
+        if (alterTbl.getType() != Command.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY)
+            throw new IgniteSQLException("Unsupported type of constraint for CREATE TABLE - only PRIMARY KEY " +
+                "is supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(createTbl);
+
+        res.schemaName(schema.getName());
+
+        CreateTableData data = CREATE_TABLE_DATA.get(createTbl);
+
+        LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
+
+        for (Column col : data.columns) {
+            if (col.isAutoIncrement())
+                throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (!col.isNullable())
+                throw new IgniteSQLException("Non nullable columns are forbidden [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.PARSING);
+
+            if (COLUMN_IS_COMPUTED.get(col))
+                throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (col.getDefaultExpression() != null)
+                throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (col.getSequence() != null)
+                throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
+                throw new IgniteSQLException("SELECTIVITY column attr is not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
+                throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
+                    ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
+
+            gridCol.resultType(GridSqlType.fromColumn(col));
+
+            cols.put(col.getName(), gridCol);
+        }
+
+        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+            cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
+            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
+                IgniteQueryErrorCode.PARSING);
+
+        IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
+
+        if (F.isEmpty(pkIdxCols))
+            throw new AssertionError("No PRIMARY KEY columns specified");
+
+        LinkedHashSet<String> pkCols = new LinkedHashSet<>();
+
+        for (IndexColumn pkIdxCol : pkIdxCols) {
+            GridSqlColumn gridCol = cols.get(pkIdxCol.columnName);
+
+            assert gridCol != null;
+
+            pkCols.add(gridCol.columnName());
+        }
+
+        int valColsNum = cols.size() - pkCols.size();
+
+        if (valColsNum == 0)
+            throw new IgniteSQLException("No cache value related columns found");
+
+        res.columns(cols);
+
+        res.primaryKeyColumns(pkCols);
+
+        res.tableName(data.tableName);
+
+        res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
+
+        List<String> extraParams = data.tableEngineParams;
+
+        res.params(extraParams);
+
+        Map<String, String> params = new HashMap<>();
+
+        if (!F.isEmpty(extraParams)) {
+            for (String p : extraParams) {
+                String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
+
+                if (parts.length > 2)
+                    throw new IgniteSQLException("Invalid param syntax: key[=value] expected [paramStr=" + p + ']',
+                        IgniteQueryErrorCode.PARSING);
+
+                String name = parts[0];
+
+                String val = parts.length > 1 ? parts[1] : null;
+
+                if (F.isEmpty(name))
+                    throw new IgniteSQLException("Invalid param syntax: no name given [paramStr=" + p + ']',
+                        IgniteQueryErrorCode.PARSING);
+
+                params.put(name, val);
+            }
+        }
+
+        for (String mandParamName : MANDATORY_CREATE_TABLE_PARAMS) {
+            if (!params.containsKey(mandParamName))
+                throw new IgniteSQLException("Mandatory param is missing [paramName=" + mandParamName + ']');
+        }
+
+        for (Map.Entry<String, String> e : params.entrySet())
+            processExtraParam(e.getKey(), e.getValue(), res);
+
+        return res;
+    }
+
+    /**
+     * Parse {@code DROP TABLE} statement.
+     *
+     * @param dropTbl {@code DROP TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_table">H2 {@code DROP TABLE} spec.</a>
+     */
+    private GridSqlDropTable parseDropTable(DropTable dropTbl) {
+        GridSqlDropTable res = new GridSqlDropTable();
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(dropTbl);
+
+        res.schemaName(schema.getName());
+
+        res.ifExists(DROP_TABLE_IF_EXISTS.get(dropTbl));
+
+        res.tableName(DROP_TABLE_NAME.get(dropTbl));
+
+        return res;
+    }
+
+    /**
+     * @param name Param name.
+     * @param val Param value.
+     * @param res Table params to update.
+     */
+    private static void processExtraParam(String name, String val, GridSqlCreateTable res) {
+        assert !F.isEmpty(name);
+
+        switch (name) {
+            case PARAM_CACHE_TEMPLATE:
+                ensureParamValueNotEmpty(PARAM_CACHE_TEMPLATE, val);
+
+                res.templateCacheName(val);
+
+                break;
+
+            default:
+                throw new IgniteSQLException("Unknown CREATE TABLE param [paramName=" + name + ']',
+                    IgniteQueryErrorCode.PARSING);
+        }
+    }
+
+    /**
+     * Check that param with mandatory value has it specified.
+     * @param name Param name.
+     * @param val Param value to check.
+     */
+    private static void ensureParamValueNotEmpty(String name, String val) {
+        if (F.isEmpty(val))
+            throw new IgniteSQLException("No value has been given for a CREATE TABLE param [paramName=" + name + ']',
+                IgniteQueryErrorCode.PARSING);
     }
 
     /**
@@ -848,6 +1102,12 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof DropIndex)
             return parseDropIndex((DropIndex)stmt);
+
+        if (stmt instanceof CreateTable)
+            return parseCreateTable((CreateTable)stmt);
+
+        if (stmt instanceof DropTable)
+            return parseDropTable((DropTable) stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }

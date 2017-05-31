@@ -22,8 +22,11 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
@@ -40,17 +43,23 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.command.Parser;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.CreateTable;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
+import org.h2.table.Column;
+import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -532,7 +541,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public void testParseDropIndex() throws Exception {
-        // Schema that is not set defaults to default schema of connection which is empty string
+        // Schema that is not set defaults to default schema of connection which is sch1
         assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index idx");
         assertDropIndexEquals(buildDropIndex("idx", "sch1", true), "drop index if exists idx");
         assertDropIndexEquals(buildDropIndex("idx", "sch1", true), "drop index if exists sch1.idx");
@@ -543,6 +552,75 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("drop index", DbException.class, null);
         assertParseThrows("drop index if exists", DbException.class, null);
         assertParseThrows("drop index if exists schema2.", DbException.class, null);
+    }
+
+    /**
+     *
+     */
+    public void testParseDropTable() throws Exception {
+        // Schema that is not set defaults to default schema of connection which is sch1
+        assertDropTableEquals(buildDropTable("sch1", "tbl", false), "drop table tbl");
+        assertDropTableEquals(buildDropTable("sch1", "tbl", true), "drop table if exists tbl");
+        assertDropTableEquals(buildDropTable("sch1", "tbl", true), "drop table if exists sch1.tbl");
+        assertDropTableEquals(buildDropTable("sch1", "tbl", false), "drop table sch1.tbl");
+
+        // Message is null as long as it may differ from system to system, so we just check for exceptions
+        assertParseThrows("drop table schema2.", DbException.class, null);
+        assertParseThrows("drop table", DbException.class, null);
+        assertParseThrows("drop table if exists", DbException.class, null);
+        assertParseThrows("drop table if exists schema2.", DbException.class, null);
+    }
+
+    /** */
+    public void testParseCreateTable() throws Exception {
+        assertCreateTableEquals(
+            buildCreateTable("sch1", "Person", "cache", F.asList("id", "city"),
+                true, c("id", Value.INT), c("city", Value.STRING), c("name", Value.STRING),
+                c("surname", Value.STRING), c("age", Value.INT)),
+            "CREATE TABLE IF NOT EXISTS sch1.\"Person\" (\"id\" integer, \"city\" varchar," +
+                " \"name\" varchar, \"surname\" varchar, \"age\" integer, PRIMARY KEY (\"id\", \"city\")) WITH " +
+                "\"cacheTemplate=cache\"");
+
+        assertCreateTableEquals(
+            buildCreateTable("sch1", "Person", "cache", F.asList("id"),
+                false, c("id", Value.INT), c("city", Value.STRING), c("name", Value.STRING),
+                c("surname", Value.STRING), c("age", Value.INT)),
+            "CREATE TABLE sch1.\"Person\" (\"id\" integer PRIMARY KEY, \"city\" varchar," +
+                " \"name\" varchar, \"surname\" varchar, \"age\" integer) WITH " +
+                "\"cacheTemplate=cache\"");
+
+        assertParseThrows("create table Person (id int)",
+            IgniteSQLException.class, "No PRIMARY KEY defined for CREATE TABLE");
+
+        assertParseThrows("create table Person (id int) AS SELECT 2 * 2",
+            IgniteSQLException.class, "CREATE TABLE ... AS ... syntax is not supported");
+
+        assertParseThrows("create table Person (id int primary key)",
+            IgniteSQLException.class, "No cache value related columns found");
+
+        assertParseThrows("create table Person (id int primary key, age int null)",
+            IgniteSQLException.class, "Mandatory param is missing [paramName=cacheTemplate]");
+
+        assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "Non nullable columns are forbidden");
+
+        assertParseThrows("create table Person (id int primary key, age int unique) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");
+
+        assertParseThrows("create table Person (id int auto_increment primary key, age int) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "AUTO_INCREMENT columns are not supported");
+
+        assertParseThrows("create table Person (id int primary key check id > 0, age int) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "Column CHECK constraints are not supported [colName=ID]");
+
+        assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "Computed columns are not supported [colName=ID]");
+
+        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "DEFAULT expressions are not supported [colName=AGE]");
+
+        assertParseThrows("create table Int (_key int primary key, _val int) WITH \"cacheTemplate=cache\"",
+            IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
     }
 
     /**
@@ -591,7 +669,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * Test two instances of {@link GridSqlDropIndex} for equality.
      */
     private static void assertDropIndexEquals(GridSqlDropIndex exp, GridSqlDropIndex actual) {
-        assertEqualsIgnoreCase(exp.name(), actual.name());
+        assertEqualsIgnoreCase(exp.indexName(), actual.indexName());
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEquals(exp.ifExists(), actual.ifExists());
     }
@@ -602,8 +680,114 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static GridSqlDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
         GridSqlDropIndex res = new GridSqlDropIndex();
 
-        res.name(name);
+        res.indexName(name);
         res.schemaName(schema);
+        res.ifExists(ifExists);
+
+        return res;
+    }
+
+    /**
+     * Parse SQL and compare it to expected instance of DROP TABLE.
+     */
+    private void assertCreateTableEquals(GridSqlCreateTable exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
+        assertTrue(stmt instanceof GridSqlCreateTable);
+
+        assertCreateTableEquals(exp, (GridSqlCreateTable) stmt);
+    }
+
+    /**
+     * Test two instances of {@link GridSqlDropTable} for equality.
+     */
+    private static void assertCreateTableEquals(GridSqlCreateTable exp, GridSqlCreateTable actual) {
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
+        assertEquals(exp.templateCacheName(), actual.templateCacheName());
+        assertEquals(exp.primaryKeyColumns(), actual.primaryKeyColumns());
+        assertEquals(new ArrayList<>(exp.columns().keySet()), new ArrayList<>(actual.columns().keySet()));
+
+        for (Map.Entry<String, GridSqlColumn> col : exp.columns().entrySet()) {
+            GridSqlColumn val = actual.columns().get(col.getKey());
+
+            assertNotNull(val);
+
+            assertEquals(col.getValue().columnName(), val.columnName());
+            assertEquals(col.getValue().column().getType(), val.column().getType());
+        }
+
+        assertEquals(exp.ifNotExists(), actual.ifNotExists());
+    }
+
+    /**
+     *
+     */
+    private static GridSqlCreateTable buildCreateTable(String schema, String tbl, String tplCacheName,
+        Collection<String> pkColNames, boolean ifNotExists, GridSqlColumn... cols) {
+        GridSqlCreateTable res = new GridSqlCreateTable();
+
+        res.schemaName(schema);
+
+        res.tableName(tbl);
+
+        res.templateCacheName(tplCacheName);
+
+        res.primaryKeyColumns(new LinkedHashSet<>(pkColNames));
+
+        LinkedHashMap<String, GridSqlColumn> m = new LinkedHashMap<>();
+
+        for (GridSqlColumn col : cols)
+            m.put(col.columnName(), col);
+
+        res.columns(m);
+
+        res.ifNotExists(ifNotExists);
+
+        return res;
+    }
+
+    /**
+     * @param name Column name.
+     * @param type Column data type.
+     * @return {@link GridSqlColumn} with given name and type.
+     */
+    private static GridSqlColumn c(String name, int type) {
+        return new GridSqlColumn(new Column(name, type), null, name);
+    }
+
+    /**
+     * Parse SQL and compare it to expected instance of DROP TABLE.
+     */
+    private void assertDropTableEquals(GridSqlDropTable exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
+        assertTrue(stmt instanceof GridSqlDropTable);
+
+        assertDropTableEquals(exp, (GridSqlDropTable) stmt);
+    }
+
+    /**
+     * Test two instances of {@link GridSqlDropTable} for equality.
+     */
+    private static void assertDropTableEquals(GridSqlDropTable exp, GridSqlDropTable actual) {
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
+        assertEquals(exp.ifExists(), actual.ifExists());
+    }
+
+    /**
+     *
+     */
+    private static GridSqlDropTable buildDropTable(String schema, String tbl, boolean ifExists) {
+        GridSqlDropTable res = new GridSqlDropTable();
+
+        res.schemaName(schema);
+        res.tableName(tbl);
         res.ifExists(ifExists);
 
         return res;
@@ -686,7 +870,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        return (JdbcConnection)idx.connectionForSpace(DEFAULT_CACHE_NAME);
+        String schemaName = idx.schema(DEFAULT_CACHE_NAME);
+
+        return (JdbcConnection)idx.connectionForSchema(schemaName);
     }
 
     /**
@@ -723,6 +909,87 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param createTbl {@code CREATE TABLE} command.
+     * @return Corresponding SQL.
+     */
+    private static String createTableToSql(GridSqlCreateTable createTbl) {
+        GridStringBuilder b = new SB("CREATE TABLE ")
+            .a(createTbl.ifNotExists() ? "IF NOT EXISTS " : "")
+            .a("\n")
+            .a(Parser.quoteIdentifier(createTbl.schemaName()))
+            .a('.')
+            .a(Parser.quoteIdentifier(createTbl.tableName()))
+            .a("\n(");
+
+        boolean singleColPk = false;
+
+        boolean first = true;
+
+        for (GridSqlColumn col : createTbl.columns().values()) {
+            if (!first)
+                b.a(",\n");
+            else
+                first = false;
+
+            if (col.column().isPrimaryKey()) {
+                // Only one column may be marked PRIMARY KEY - multi-col PK is defined separately
+                assert !singleColPk;
+
+                singleColPk = true;
+            }
+
+            b.a('\t')
+                .a(col.getSQL())
+                .a(' ')
+                .a(col.resultType().sql())
+                .a(col.column().isPrimaryKey() ? " PRIMARY KEY" : "");
+        }
+
+        first = true;
+
+        if (!singleColPk && !F.isEmpty(createTbl.primaryKeyColumns())) {
+            b.a(",\n")
+                .a('\t')
+                .a("PRIMARY KEY (\n");
+
+            for (String col : createTbl.primaryKeyColumns()) {
+                GridSqlColumn pkCol = createTbl.columns().get(col);
+
+                assert pkCol != null;
+
+                if (!first)
+                    b.a(",\n");
+                else
+                    first = false;
+
+                b.a("\t\t")
+                    .a(pkCol.getSQL());
+            }
+
+            b.a("\n\t)");
+        }
+
+        b.a("\n)");
+
+        if (!F.isEmpty(createTbl.params())) {
+            b.a("\nWITH ");
+
+            first = true;
+
+            for (String p : createTbl.params()) {
+                if (!first)
+                    b.a(',');
+                else
+                    first = false;
+
+                b.a(Parser.quoteIdentifier(p));
+            }
+        }
+
+        return b.toString();
+    }
+
+    /**
      * @param qry Query.
      */
     private void checkQuery(String qry) throws Exception {
@@ -731,6 +998,23 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         GridSqlStatement gQry = new GridSqlQueryParser(false).parse(prepared);
 
         String res = gQry.getSQL();
+
+        System.out.println(normalizeSql(res));
+
+        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
+    }
+
+    /**
+     * @param qry Query.
+     */
+    private void checkCreateTable(String qry) throws Exception {
+        Prepared prepared = parse(qry);
+
+        assertTrue(prepared instanceof CreateTable);
+
+        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(prepared);
+
+        String res = createTableToSql((GridSqlCreateTable)gridStmt);
 
         System.out.println(normalizeSql(res));
 
