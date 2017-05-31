@@ -1099,11 +1099,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     if (oldInfo == null)
                         utilityCache.put(dsKey, dsInfo);
+                    else {
+                        IgniteCheckedException err = oldInfo.validate(dsInfo, true);
 
-                    IgniteCheckedException err = oldInfo.validate(dsInfo, true);
-
-                    if (err != null)
-                        throw err;
+                        if (err != null)
+                            throw err;
+                    }
 
                     final GridCacheContext cacheCtx = ctx.cache().internalCache(colInfo.cacheName).context();
 
