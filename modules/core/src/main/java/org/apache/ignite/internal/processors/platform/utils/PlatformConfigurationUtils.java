@@ -1351,7 +1351,9 @@ public class PlatformConfigurationUtils {
                         .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
                         .setEvictionThreshold(in.readDouble())
                         .setEmptyPagesPoolSize(in.readInt())
-                        .setMetricsEnabled(in.readBoolean());
+                        .setMetricsEnabled(in.readBoolean())
+                        .setSubIntervals(in.readInt())
+                        .setRateTimeInterval((int) (in.readLong() / 1000));
 
                 plcs[i] = cfg;
             }
@@ -1396,6 +1398,8 @@ public class PlatformConfigurationUtils {
                 w.writeDouble(plc.getEvictionThreshold());
                 w.writeInt(plc.getEmptyPagesPoolSize());
                 w.writeBoolean(plc.isMetricsEnabled());
+                w.writeInt(plc.getSubIntervals());
+                w.writeLong(plc.getRateTimeInterval() * 1000);
             }
         }
         else {
