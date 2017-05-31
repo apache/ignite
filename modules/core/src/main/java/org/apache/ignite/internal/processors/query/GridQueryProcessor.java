@@ -595,9 +595,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean nop = false;
 
         if (cacheExists) {
-            if (cacheDesc.staticallyConfigured())
-                err = new SchemaOperationException("Dynamic DDL operations on statically configured caches " +
-                    "are forbidden [cacheName=" + op.space() + ']');
+            if (!cacheDesc.sql())
+                err = new SchemaOperationException("Dynamic DDL operations are allowed only on caches created with " +
+                    "CREATE TABLE [cacheName=" + op.cacheName() + ']');
             else if (cacheRegistered) {
                 // If cache is started, we perform validation against real schema.
                 T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);

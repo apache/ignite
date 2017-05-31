@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,12 +31,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import javax.cache.CacheException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -76,7 +77,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        node().destroyCache(CACHE_NAME);
+        node().context().cache().dynamicDestroyCache(CACHE_NAME, true, false).get();
 
         super.afterTest();
     }
@@ -88,8 +89,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param atomicityMode Atomicity mode.
      * @param near Near flag.
      */
-    private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) {
-        node().getOrCreateCache(cacheConfiguration(mode, atomicityMode, near));
+    private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws IgniteCheckedException {
+        createSqlCache(node(), cacheConfiguration(mode, atomicityMode, near));
 
         grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
 
@@ -874,7 +875,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     public void testFailOnLocalCache() throws Exception {
         for (Ignite node : Ignition.allGrids()) {
             if (!node.configuration().isClientMode())
-                node.getOrCreateCache(cacheConfiguration().setCacheMode(LOCAL));
+                createSqlCache(node, cacheConfiguration().setCacheMode(LOCAL));
         }
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
@@ -899,22 +900,24 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testFailOnStaticallyConfiguredCache() throws Exception {
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+    public void testFailOnNonSqlCache() throws Exception {
+        final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
             }
-        }, IgniteQueryErrorCode.UNKNOWN);
+        }, "Dynamic DDL operations are allowed only on caches created with CREATE TABLE [cacheName=cache_static]",
+            IgniteQueryErrorCode.UNKNOWN);
 
-        assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
+        assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_2);
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
             }
-        }, IgniteQueryErrorCode.UNKNOWN);
+        }, "Dynamic DDL operations are allowed only on caches created with CREATE TABLE [cacheName=cache_static]",
+            IgniteQueryErrorCode.UNKNOWN);
     }
 
     /**
@@ -957,6 +960,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             return cfg;
 
         CacheConfiguration staticCacheCfg = cacheConfiguration().setName(STATIC_CACHE_NAME);
+
+        ((QueryEntity)staticCacheCfg.getQueryEntities().iterator().next()).setIndexes(Collections.singletonList(index(
+            IDX_NAME_1, field(FIELD_NAME_1)
+        )));
 
         CacheConfiguration[] newCfgs = new CacheConfiguration[F.isEmpty(cfg.getCacheConfiguration()) ? 1 :
             cfg.getCacheConfiguration().length + 1];
@@ -1039,6 +1046,17 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param expCode Error code.
      */
     protected static void assertSchemaException(RunnableX r, int expCode) {
+        assertSchemaException(r, null, expCode);
+    }
+
+    /**
+     * Ensure that schema exception is thrown.
+     *
+     * @param r Runnable.
+     * @param msg Exception message to expect, or {@code null} if it can be waived.
+     * @param expCode Error code.
+     */
+    protected static void assertSchemaException(RunnableX r, String msg, int expCode) {
         try {
             r.run();
         }
@@ -1054,6 +1072,10 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
             assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
                 ", msg=" + cause.getMessage() + ']', expCode, code);
+
+            if (msg != null)
+                assertEquals("Unexpected error message [expected=" + msg + ", actual=" + cause0.getMessage() + ']',
+                    msg, cause0.getMessage());
 
             return;
         }
