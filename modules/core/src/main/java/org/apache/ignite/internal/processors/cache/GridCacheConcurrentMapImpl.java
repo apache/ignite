@@ -248,7 +248,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         CacheMapHolder hld = entriesMap(ctx.cacheIdBoxed(), false);
 
-        boolean rmv = hld != null ? hld.map.remove(entry.key(), entry) : null;
+        boolean rmv = hld != null && hld.map.remove(entry.key(), entry);
 
         if (rmv) {
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED)) {
