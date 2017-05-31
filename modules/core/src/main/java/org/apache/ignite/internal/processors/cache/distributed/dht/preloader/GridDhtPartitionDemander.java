@@ -395,7 +395,7 @@ public class GridDhtPartitionDemander {
 
                 Collection<Integer> parts= e.getValue().partitions();
 
-                assert parts != null : "Partitions are null [grp=" + grp.name() + ", fromNode=" + nodeId + "]";
+                assert parts != null : "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId + "]";
 
                 fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
             }
@@ -439,14 +439,14 @@ public class GridDhtPartitionDemander {
 
                     final int finalCnt = cnt;
 
-                            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-@Override public void run() {
-                        try {
+                    ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            try {
                                 if (!fut.isDone()) {
-                        ctx.io().sendOrderedMessage(node,
-                            rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
+                                    ctx.io().sendOrderedMessage(node,
+                                        rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
 
-// Cleanup required in case partitions demanded in parallel with cancellation.
+                                    // Cleanup required in case partitions demanded in parallel with cancellation.
                                     synchronized (fut) {
                                         if (fut.isDone())
                                             fut.cleanupRemoteContexts(node.id());
