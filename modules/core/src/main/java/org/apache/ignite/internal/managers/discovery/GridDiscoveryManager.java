@@ -73,6 +73,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
@@ -88,7 +89,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -662,7 +662,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 Map<Integer, Serializable> data = new HashMap<>();
 
+                Serializable val = ctx.state().collectDiscoveryData(nodeId);
+
+                int type = ctx.state().discoveryDataType().ordinal();
+
+                assert val != null;
+
+                data.put(type, val);
+
                 for (GridComponent comp : ctx.components()) {
+                    if (comp instanceof GridClusterStateProcessor)
+                        continue;
+
                     Serializable compData = comp.collectDiscoveryData(nodeId);
 
                     if (compData != null) {
@@ -676,6 +687,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                GridClusterStateProcessor stateProc = ctx.state();
+
+                int type = stateProc.discoveryDataType().ordinal();
+
+                Serializable data0 = data.get(type);
+
+                if (data0 != null)
+                    stateProc.onDiscoveryDataReceived(joiningNodeId, nodeId, data0);
+
                 for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
                     GridComponent comp = null;
 
@@ -687,7 +707,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
 
-                    if (comp != null)
+                    if (comp != null && !(comp instanceof GridClusterStateProcessor))
                         comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
                     else {
                         if (log.isDebugEnabled())

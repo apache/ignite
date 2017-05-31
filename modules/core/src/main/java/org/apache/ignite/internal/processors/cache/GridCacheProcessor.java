@@ -600,7 +600,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        //if inActivate on start then skip registrate caches
+        // If inActivate on start then skip registrate caches.
         if (!activeOnStart)
             return;
 
@@ -775,48 +775,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             checkConsistency();
 
-            boolean currStatus = ctx.state().active();
+            if (ctx.state().onJoinChanged()){
+                // Node was active on start and joint -> inActive cluster.
+                if (ctx.state().changeActiveToInactive()){
 
-            boolean changed = false;
+                }
 
-            if (currStatus != activeOnStart) {
-                activeOnStart = currStatus;
+                // Node was inActive on start and joint -> active cluster.
+                if (ctx.state().changeInActiveToActive()){
+                    if (!ctx.isDaemon()){
+                        List<CacheConfiguration> tmpCacheCfg = new ArrayList<>();
 
-                changed = true;
-            }
-            // If we start as inactive node, and join to active cluster, we must register all caches
-            // which were received on join.
-            if (!ctx.isDaemon() && changed) {
-                List<CacheConfiguration> tmpCacheCfg = new ArrayList<>();
+                        for (CacheConfiguration conf : ctx.config().getCacheConfiguration()) {
+                            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                                CacheConfiguration c = desc.cacheConfiguration();
+                                IgnitePredicate filter = c.getNodeFilter();
 
-                for (CacheConfiguration conf : ctx.config().getCacheConfiguration()) {
-                    for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                        CacheConfiguration c = desc.cacheConfiguration();
-                        IgnitePredicate filter = c.getNodeFilter();
+                                if (c.getName().equals(conf.getName()) &&
+                                    ((desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) ||
+                                        CU.isSystemCache(c.getName()))) {
 
-                        if (c.getName().equals(conf.getName()) &&
-                            ((desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter)) ||
-                                CU.isSystemCache(c.getName()))) {
+                                    if (CU.isSystemCache(c.getName()))
+                                        desc.locallyConfigured(true);
 
-                            if (CU.isSystemCache(c.getName()))
-                                desc.locallyConfigured(true);
+                                    tmpCacheCfg.add(c);
 
-                            tmpCacheCfg.add(c);
+                                    break;
+                                }
+                            }
+                        }
 
-                            break;
+                        if (!tmpCacheCfg.isEmpty()) {
+                            CacheConfiguration[] newCacheCfg = new CacheConfiguration[tmpCacheCfg.size()];
+
+                            tmpCacheCfg.toArray(newCacheCfg);
+
+                            ctx.config().setCacheConfiguration(newCacheCfg);
                         }
                     }
                 }
-
-                if (!tmpCacheCfg.isEmpty()) {
-                    CacheConfiguration[] newCacheCfg = new CacheConfiguration[tmpCacheCfg.size()];
-
-                    tmpCacheCfg.toArray(newCacheCfg);
-
-                    ctx.config().setCacheConfiguration(newCacheCfg);
-                }
-
-                activeOnStart = currStatus;
             }
 
             if (activeOnStart && !ctx.clientNode() && !ctx.isDaemon())
@@ -876,7 +873,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.onKernalStart(false);
 
         // Escape if start active on start false
-        if (!activeOnStart)
+        if (!ctx.state().active())
             return;
 
         for (GridCacheAdapter<?, ?> cache : caches.values())
@@ -2105,9 +2102,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        if (!sharedCtx.kernalContext().state().active())
-            return new DynamicCacheChangeBatch(Collections.<DynamicCacheChangeRequest>emptyList())
-                .restartingCaches(Collections.<String>emptySet());
+        if (!sharedCtx.kernalContext().state().active()) {
+            if (ctx.localNodeId().equals(nodeId)) {
+                CacheConfiguration[] cfgs = sharedCtx.gridConfig().getCacheConfiguration();
+
+                List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cfgs.length);
+
+                try {
+                    for (CacheConfiguration cfg : cfgs)
+                        reqs.add(createRequest(cfg, true));
+                }
+                catch (Exception e) {
+                    // Todo
+                }
+
+                return new DynamicCacheChangeBatch(reqs).restartingCaches(Collections.<String>emptySet());
+            }
+        }
 
         boolean reconnect = ctx.localNodeId().equals(nodeId) && cachesOnDisconnect != null;
 
@@ -2214,21 +2225,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
-        if (!ctx.state().active()) {
-            if (!ctx.localNodeId().equals(joiningNodeId)){
-                if (data instanceof DynamicCacheChangeBatch)
-                    onJoinBatches.put(rmtNodeId, (DynamicCacheChangeBatch)data);
+        if (ctx.state().onJoinChanged()){
+            if (ctx.state().changeActiveToInactive()){
+                if (ctx.localNodeId().equals(joiningNodeId)) {
+                    for (DynamicCacheDescriptor desc : registeredCaches.values())
+                        ctx.discovery().removeCacheFilter(desc.cacheConfiguration().getName());
+
+                    registeredCaches.clear();
+                    registeredTemplates.clear();
+                }
 
                 return;
-            }else {
-                registeredCaches.clear();
-                registeredTemplates.clear();
-
-                for (DynamicCacheDescriptor desc : registeredCaches.values())
-                    ctx.discovery().removeCacheFilter(desc.cacheConfiguration().getName());
-
-                registeredCaches.clear();
             }
+        }
+
+        if (!ctx.state().active()) {
+            if (data instanceof DynamicCacheChangeBatch)
+                onJoinBatches.put(rmtNodeId, (DynamicCacheChangeBatch)data);
+
+            return;
         }
 
         if (data instanceof DynamicCacheChangeBatch) {
