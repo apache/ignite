@@ -1114,7 +1114,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Nullable @Override public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, Long> cntrMap,
         boolean checkEvictions) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
@@ -1132,22 +1131,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             if (stopping)
                 return false;
-
-            if (cntrMap != null) {
-                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
-                    Integer p = e.getKey();
-
-                    Long cntr = this.cntrMap.get(p);
-
-                    if (cntr == null || cntr < e.getValue())
-                        this.cntrMap.put(p, e.getValue());
-
-                    GridDhtLocalPartition part = locParts.get(p);
-
-                    if (part != null)
-                        part.updateCounter(e.getValue());
-                }
-            }
 
             if (lastExchangeId != null && exchId != null && lastExchangeId.compareTo(exchId) > 0) {
                 if (log.isDebugEnabled())
@@ -1220,6 +1203,35 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 log.debug("Partition map after single update: " + fullMapString());
 
             return changed;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applyUpdateCounters(Map<Integer, Long> cntrMap) {
+        lock.writeLock().lock();
+
+        try {
+            if (stopping)
+                return;
+
+            if (cntrMap != null) {
+                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
+                    Integer p = e.getKey();
+
+                    Long cntr = this.cntrMap.get(p);
+
+                    if (cntr == null || cntr < e.getValue())
+                        this.cntrMap.put(p, e.getValue());
+
+                    GridDhtLocalPartition part = locParts.get(p);
+
+                    if (part != null)
+                        part.updateCounter(e.getValue());
+                }
+            }
         }
         finally {
             lock.writeLock().unlock();

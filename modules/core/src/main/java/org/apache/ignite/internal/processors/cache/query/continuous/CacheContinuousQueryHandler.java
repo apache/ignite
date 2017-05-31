@@ -1125,15 +1125,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             break;
                     }
                 }
-            }
 
-            if (log.isDebugEnabled()) {
-                log.debug("Will send to listener the following events [entries=" + entries +
-                    ", lastFiredEvt=" + lastFiredEvt +
-                    ", curTop=" + curTop +
-                    ", entUpdCnt=" + entry.updateCounter() +
-                    ", partId=" + entry.partition() +
-                    ", pendingEvts=" + pendingEvts + ']');
+                if (log.isDebugEnabled()) {
+                    log.debug("Will send to listener the following events [entries=" + entries +
+                        ", lastFiredEvt=" + lastFiredEvt +
+                        ", curTop=" + curTop +
+                        ", entUpdCnt=" + entry.updateCounter() +
+                        ", partId=" + entry.partition() +
+                        ", pendingEvts=" + pendingEvts + ']');
+                }
             }
 
             return entries;

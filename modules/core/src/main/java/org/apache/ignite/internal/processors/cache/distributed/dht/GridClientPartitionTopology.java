@@ -645,7 +645,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Nullable @Override public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        Map<Integer, Long> cntrMap,
         boolean checkEvictions) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
@@ -742,6 +741,28 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 log.debug("Partition map after single update: " + fullMapString());
 
             return changed;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applyUpdateCounters(Map<Integer, Long> cntrMap) {
+        lock.writeLock().lock();
+
+        try {
+            if (stopping)
+                return;
+
+            if (cntrMap != null) {
+                for (Map.Entry<Integer, Long> e : cntrMap.entrySet()) {
+                    Long cntr = this.cntrMap.get(e.getKey());
+
+                    if (cntr == null || cntr < e.getValue())
+                        this.cntrMap.put(e.getKey(), e.getValue());
+                }
+            }
         }
         finally {
             lock.writeLock().unlock();

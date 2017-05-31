@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -163,6 +164,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Messages received from new coordinator. */
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
+
+    /** */
+    private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -1108,6 +1112,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         topSnapshot.set(null);
         singleMsgs.clear();
         fullMsgs.clear();
+        msgs.clear();
         crd = null;
         partReleaseFut = null;
     }
@@ -1195,7 +1200,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (updateSingleMap) {
             try {
-                updatePartitionSingleMap(msg);
+                updatePartitionSingleMap(node, msg);
             }
             finally {
                 synchronized (mux) {
@@ -1265,6 +1270,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal())
                         cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
+                }
+            }
+
+            for (GridDhtPartitionsAbstractMessage msg : msgs.values()) {
+                if (msg instanceof GridDhtPartitionsSingleMessage) {
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage)msg;
+
+                    for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg0.partitions().entrySet()) {
+                        Integer cacheId = entry.getKey();
+                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                        GridDhtPartitionTopology top = cacheCtx != null ? cacheCtx.topology() :
+                            cctx.exchange().clientTopology(cacheId, this);
+
+                        Map<Integer, Long> cntrs = msg0.partitionUpdateCounters(cacheId);
+
+                        if (cntrs != null)
+                            top.applyUpdateCounters(cntrs);
+                    }
                 }
             }
 
@@ -1450,9 +1474,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * Updates partition map in all caches.
      *
+     * @param node Node.
      * @param msg Partitions single message.
      */
-    private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
+    private void updatePartitionSingleMap(ClusterNode node,
+        GridDhtPartitionsSingleMessage msg) {
+        msgs.put(node.id(), msg);
+
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -1460,7 +1488,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridDhtPartitionTopology top = cacheCtx != null ? cacheCtx.topology() :
                 cctx.exchange().clientTopology(cacheId, this);
 
-            top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(cacheId), false);
+            top.update(exchId, entry.getValue(), false);
         }
     }
 
