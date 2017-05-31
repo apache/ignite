@@ -53,9 +53,10 @@ More info: https://apacheignite-net.readme.io/
         <file src="NuGet\Install.ps1" target="tools" />
         <file src="NuGet\Uninstall.ps1" target="tools" />
         <file src="NuGet\PostBuild.ps1" target="tools" />
-        
-        <!-- Other files should go to Content folder to be automatically included in project. -->
-        <!--<file src="..\..\..\..\config\default-config.xml" target="Content\Config" />-->
+
+        <!-- Include Apache.Ignite.exe -->
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />
         
         <!-- 
             Library files (jars) should not be included in project, so that NuGet package restore works properly.

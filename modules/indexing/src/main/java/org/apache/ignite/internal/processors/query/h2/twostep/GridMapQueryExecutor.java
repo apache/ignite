@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -87,7 +88,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
@@ -573,15 +573,17 @@ public class GridMapQueryExecutor {
 
                     Objects.requireNonNull(h2Tbl, tbl.toString());
 
-                    h2Tbl.snapshotIndexes(qctx);
+                    h2Tbl.snapshotIndexes(qctx, segmentId);
 
                     snapshotedTbls.add(h2Tbl);
                 }
             }
 
-            Connection conn = h2.connectionForSpace(mainCctx.name());
+            String schemaName = h2.schema(mainCctx.name());
 
-            setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
+            Connection conn = h2.connectionForSchema(schemaName);
+
+            H2Utils.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
             GridH2QueryContext.set(qctx);
 
@@ -608,7 +610,7 @@ public class GridMapQueryExecutor {
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
-                        rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
+                        rs = h2.executeSqlQueryWithTimer(h2.schema(mainCctx.name()), conn, qry.query(),
                             F.asList(qry.parameters(params)), true,
                             timeout,
                             qr.cancels[qryIdx]);
@@ -1144,17 +1146,13 @@ public class GridMapQueryExecutor {
                         if (val instanceof GridH2ValueCacheObject) {
                             GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
-                            GridCacheContext cctx = valCacheObj.getCacheContext();
+                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                                @Override public Object getObject() {
+                                    return getObject(true);
+                                }
+                            };
 
-                            if (cctx != null && cctx.needValueCopy()) {
-                                row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheContext(), valCacheObj.getCacheObject()) {
-                                    @Override public Object getObject() {
-                                        return getObject(true);
-                                    }
-                                };
-
-                                copied = true;
-                            }
+                            copied = true;
                         }
                     }
 

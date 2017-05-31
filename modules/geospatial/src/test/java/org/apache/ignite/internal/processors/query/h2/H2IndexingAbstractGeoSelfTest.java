@@ -30,9 +30,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -74,20 +72,15 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     /** */
     private static final int QRY_PARALLELISM_LVL = 7;
 
-    /** Binary marshaller flag. */
-    private final boolean binary;
-
     /** Segmented index flag. */
     private final boolean segmented;
 
     /**
      * Constructor.
      *
-     * @param binary Binary marshaller flag.
      * @param segmented Segmented index flag.
      */
-    protected H2IndexingAbstractGeoSelfTest(boolean binary, boolean segmented) {
-        this.binary = binary;
+    protected H2IndexingAbstractGeoSelfTest(boolean segmented) {
         this.segmented = segmented;
     }
 
@@ -99,16 +92,6 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return DUR * 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (binary)
-            cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
     }
 
     /**
@@ -157,8 +140,11 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             IgniteCache<K, V> cache = grid(0).getOrCreateCache(ccfg);
 
             // Process indexes dynamically.
-            for (QueryIndex idx : idxs)
-                createDynamicIndex(cache, entity, idx);
+            for (QueryIndex idx : idxs) {
+                QueryEntity normalEntity = QueryUtils.normalizeQueryEntity(entity, ccfg.isSqlEscapeAll());
+
+                createDynamicIndex(cache, normalEntity, idx);
+            }
 
             return cache;
         }

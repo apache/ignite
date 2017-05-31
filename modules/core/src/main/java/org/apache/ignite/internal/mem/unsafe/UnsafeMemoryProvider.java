@@ -20,6 +20,7 @@ package org.apache.ignite.internal.mem.unsafe;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -73,7 +74,22 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         long chunkSize = sizes[regions.size()];
 
-        long ptr = GridUnsafe.allocateMemory(chunkSize);
+        long ptr;
+
+        try {
+            ptr = GridUnsafe.allocateMemory(chunkSize);
+        }
+        catch (IllegalArgumentException e) {
+            String msg = "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true) +
+                ". Check if chunkSize is too large and 32-bit JVM is used.";
+
+            if (regions.size() == 0)
+                throw new IgniteException(msg, e);
+
+            U.error(log, msg);
+
+            return null;
+        }
 
         if (ptr <= 0) {
             U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true));

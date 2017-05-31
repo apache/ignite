@@ -166,6 +166,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\common\big_integer.h" />
+    <ClInclude Include="..\..\include\ignite\common\cancelable.h" />
     <ClInclude Include="..\..\include\ignite\common\concurrent.h" />
     <ClInclude Include="..\..\include\ignite\common\decimal.h" />
     <ClInclude Include="..\..\include\ignite\common\default_allocator.h" />

@@ -130,7 +130,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             insertInDb(org);
         }
 
-       // Adresses.
+        // Adresses.
         List<Address> addreses = new ArrayList<>();
 
         for (int i = 0; i < ADDR_CNT; i++) {
@@ -259,13 +259,13 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         List<List<?>> res = compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person left join \"addr\".Address " +
-            " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
+                " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
 
         assertNotSame(0, res);
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person join \"addr\".Address on Person.addrId = Address.id " +
-            "where lower(Address.street) = lower(?)", addStreet);
+                "where lower(Address.street) = lower(?)", addStreet);
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person left join \"addr\".Address " +
@@ -274,7 +274,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person, \"addr\".Address where Person.addrId = Address.id " +
-            "and lower(Address.street) = lower(?)", addStreet);
+                "and lower(Address.street) = lower(?)", addStreet);
 
         compareQueryRes0(cachePers, "select firstName, date from \"pers\".Person");
         compareQueryRes0(cachePers, "select distinct firstName, date from \"pers\".Person");
@@ -483,8 +483,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      */
     public void testOrdered() throws Exception {
         compareOrderedQueryRes0(cachePers, "select firstName, lastName" +
-                " from \"pers\".Person" +
-                " order by lastName, firstName");
+            " from \"pers\".Person" +
+            " order by lastName, firstName");
     }
 
     /**
