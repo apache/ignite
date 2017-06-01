@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
@@ -43,6 +44,37 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
      */
     public SparseLocalOnHeapVectorStorage() {
         // No-op.
+    }
+
+    /**
+     *
+     * @param map
+     */
+    public SparseLocalOnHeapVectorStorage(Map<Integer, Double> map, boolean copy) {
+        assert map.size() > 0;
+
+        this.size = map.size();
+
+        if (map instanceof Int2DoubleRBTreeMap)
+            acsMode = SEQUENTIAL_ACCESS_MODE;
+        else
+            if (map instanceof Int2DoubleOpenHashMap)
+                acsMode = RANDOM_ACCESS_MODE;
+            else
+                acsMode = UNKNOWN_STORAGE_MODE;
+
+        if (copy)
+            switch (acsMode) {
+                case SEQUENTIAL_ACCESS_MODE:
+                    sto = new Int2DoubleRBTreeMap(map);
+                case RANDOM_ACCESS_MODE:
+                    sto = new Int2DoubleOpenHashMap(map);
+                    break;
+                default:
+                    sto = new HashMap<>(map);
+            }
+        else
+            sto = map;
     }
 
     /**

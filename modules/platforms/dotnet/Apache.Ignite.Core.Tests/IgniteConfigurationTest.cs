@@ -262,6 +262,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultEvictionThreshold, plc.EvictionThreshold);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultInitialSize, plc.InitialSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);
             }
         }
 
@@ -598,7 +600,9 @@ namespace Apache.Ignite.Core.Tests
                             MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
-                            SwapFilePath = "myPath1"
+                            SwapFilePath = "myPath1",
+                            RateTimeInterval = TimeSpan.FromSeconds(35),
+                            SubIntervals = 7
                         },
                         new MemoryPolicyConfiguration
                         {

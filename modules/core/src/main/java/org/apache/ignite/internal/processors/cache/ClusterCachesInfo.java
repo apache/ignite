@@ -52,7 +52,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 
 /**
- * Logic related to cache discovery date processing.
+ * Logic related to cache discovery data processing.
  */
 class ClusterCachesInfo {
     /** */
@@ -112,7 +112,7 @@ class ClusterCachesInfo {
                 CacheData cacheData = gridData.caches().get(locCfg.getName());
 
                 if (cacheData != null)
-                    checkCache(locCfg, cacheData.cacheConfiguration(), cacheData.receivedFrom());
+                    checkCache(locCacheInfo, cacheData, cacheData.receivedFrom());
             }
         }
 
@@ -122,18 +122,22 @@ class ClusterCachesInfo {
     /**
      * Checks that remote caches has configuration compatible with the local.
      *
-     * @param locCfg Local configuration.
-     * @param rmtCfg Remote configuration.
+     * @param locInfo Local configuration.
+     * @param rmtData Remote configuration.
      * @param rmt Remote node.
      * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(CacheConfiguration<?, ?> locCfg, CacheConfiguration<?, ?> rmtCfg, UUID rmt)
+    @SuppressWarnings("unchecked")
+    private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
-        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtCfg);
-        GridCacheAttributes locAttr = new GridCacheAttributes(locCfg);
+        GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.sql());
+        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.config(), locInfo.sql());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "sql", "SQL flag",
+            locAttr.sql(), rmtAttr.sql(), true);
 
         if (rmtAttr.cacheMode() != LOCAL) {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "interceptor", "Cache Interceptor",
@@ -147,8 +151,8 @@ class ClusterCachesInfo {
 
             ClusterNode rmtNode = ctx.discovery().node(rmt);
 
-            if (CU.affinityNode(ctx.discovery().localNode(), locCfg.getNodeFilter())
-                && rmtNode != null && CU.affinityNode(rmtNode, rmtCfg.getNodeFilter())) {
+            if (CU.affinityNode(ctx.discovery().localNode(), locInfo.config().getNodeFilter())
+                && rmtNode != null && CU.affinityNode(rmtNode, rmtData.cacheConfiguration().getNodeFilter())) {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
                     locAttr.storeFactoryClassName(), rmtAttr.storeFactoryClassName(), true);
             }
@@ -248,6 +252,7 @@ class ClusterCachesInfo {
                         true,
                         req.initiatingNodeId(),
                         false,
+                        false,
                         req.deploymentId(),
                         req.schema());
 
@@ -287,6 +292,7 @@ class ClusterCachesInfo {
                             false,
                             req.initiatingNodeId(),
                             false,
+                            req.sql(),
                             req.deploymentId(),
                             req.schema());
 
@@ -377,6 +383,22 @@ class ClusterCachesInfo {
                 assert req.stop() ^ req.close() : req;
 
                 if (desc != null) {
+                    if (req.sql() && !desc.sql()) {
+                        ctx.cache().completeCacheStartFuture(req, false,
+                            new IgniteCheckedException("Only cache created with CREATE TABLE may be removed with " +
+                                "DROP TABLE [cacheName=" + req.cacheName() + ']'));
+
+                        continue;
+                    }
+
+                    if (!req.sql() && desc.sql()) {
+                        ctx.cache().completeCacheStartFuture(req, false,
+                            new IgniteCheckedException("Only cache created with cache API may be removed with " +
+                                "direct call to destroyCache [cacheName=" + req.cacheName() + ']'));
+
+                        continue;
+                    }
+
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
                     assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
@@ -587,6 +609,7 @@ class ClusterCachesInfo {
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
+                desc.sql(),
                 false,
                 (byte)0);
 
@@ -603,6 +626,7 @@ class ClusterCachesInfo {
                 desc.schema(),
                 desc.receivedFrom(),
                 desc.staticallyConfigured(),
+                false,
                 true,
                 (byte)0);
 
@@ -632,6 +656,7 @@ class ClusterCachesInfo {
                 true,
                 cacheData.receivedFrom(),
                 cacheData.staticallyConfigured(),
+                false,
                 cacheData.deploymentId(),
                 cacheData.schema());
 
@@ -648,6 +673,7 @@ class ClusterCachesInfo {
                 false,
                 cacheData.receivedFrom(),
                 cacheData.staticallyConfigured(),
+                cacheData.sql(),
                 cacheData.deploymentId(),
                 cacheData.schema());
 
@@ -707,6 +733,7 @@ class ClusterCachesInfo {
                             desc.template(),
                             desc.receivedFrom(),
                             desc.staticallyConfigured(),
+                            desc.sql(),
                             desc.deploymentId(),
                             desc.schema());
 
@@ -784,6 +811,7 @@ class ClusterCachesInfo {
                     true,
                     nodeId,
                     true,
+                    false,
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
 
@@ -803,6 +831,7 @@ class ClusterCachesInfo {
                     false,
                     nodeId,
                     true,
+                    cacheInfo.sql(),
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cfg.getQueryEntities()));
 

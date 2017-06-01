@@ -88,7 +88,7 @@ int main()
     cfg.jvmInitMem = 512;
     cfg.jvmMaxMem = 512;
 
-    cfg.springCfgPath = "platforms/cpp/examples/putget-example/config/example-cache.xml";
+    cfg.springCfgPath = "platforms/cpp/examples/put-get-example/config/example-cache.xml";
 
     try
     {
