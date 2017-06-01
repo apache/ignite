@@ -191,8 +191,8 @@ public class IgniteBenchmarkArguments {
     private String cacheGrp;
 
     /** */
-    @Parameter(names = {"-cig", "--cachesInGrp"}, description = "Number of caches to create in configured group")
-    private int cachesInGrp = 1;
+    @Parameter(names = {"-cc", "--cachesCnt"}, description = "Number of caches to create")
+    private int cachesCnt = 1;
 
     /**
      * @return List of enabled load test operations.
@@ -452,10 +452,10 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Number of caches to create in configured group.
+     * @return Number of caches to create.
      */
-    public int cachesInGroup() {
-        return cachesInGrp;
+    public int cachesCount() {
+        return cachesCnt;
     }
 
     /**
