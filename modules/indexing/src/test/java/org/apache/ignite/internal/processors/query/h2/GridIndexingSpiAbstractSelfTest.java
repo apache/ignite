@@ -367,11 +367,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         // Remove
         cacheA.remove(2);
         cacheB.remove(1);
-
-        // Unregister.
-        spi.unregisterType(spi.schema(typeAA.cacheName()), typeAA.name());
-        spi.unregisterType(spi.schema(typeAB.cacheName()), typeAB.name());
-        spi.unregisterType(spi.schema(typeBA.cacheName()), typeBA.name());
     }
 
     /**
@@ -384,7 +379,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         ignite0.createCache(cacheACfg());
 
-        long longQryExecTime = CacheConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
+        long longQryExecTime = IgniteConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
 
         GridStringLogger log = new GridStringLogger(false, this.log);
 

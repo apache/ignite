@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearPeekModesTes
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxPreloadNoWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
+import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
@@ -227,6 +228,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheStartOnJoinTest.class);
         suite.addTestSuite(IgniteCacheStartTest.class);
         suite.addTestSuite(CacheDiscoveryDataConcurrentJoinTest.class);
+        suite.addTestSuite(IgniteClientCacheInitializationFailTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 

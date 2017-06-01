@@ -54,29 +54,29 @@ public class JdbcThinResultSet implements ResultSet {
     /** Statement. */
     private final JdbcThinStatement stmt;
 
-    /** Future ID. */
+    /** Query ID. */
     private final Long qryId;
 
-    /** Table names. */
-    private List<JdbcColumnMeta> metaRef;
+    /** Metadata. */
+    private List<JdbcColumnMeta> meta;
 
-    /** Table names. */
+    /** Metadata initialization flag. */
     private boolean metaInit;
 
-    /** Fields iterator. */
-    private List<List<Object>> fields;
+    /** Rows. */
+    private List<List<Object>> rows;
 
-    /** Fields iterator. */
-    private Iterator<List<Object>> fieldsIt;
+    /** Rows iterator. */
+    private Iterator<List<Object>> rowsIter;
+
+    /** Current row. */
+    private List<Object> curRow;
+
+    /** Current position. */
+    private int curPos;
 
     /** Finished flag. */
     private boolean finished;
-
-    /** Current position. */
-    private int pos;
-
-    /** Current. */
-    private List<Object> curr;
 
     /** Closed flag. */
     private boolean closed;
@@ -100,38 +100,39 @@ public class JdbcThinResultSet implements ResultSet {
      * @param qryId Query ID.
      * @param fetchSize Fetch size.
      * @param finished Finished flag.
-     * @param fields Query result page.
+     * @param rows Rows.
      * @param isQuery Is Result ser for Select query
      */
     @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
-        List<List<Object>> fields, boolean isQuery) {
+        List<List<Object>> rows, boolean isQuery) {
         assert stmt != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.qryId = qryId;
         this.fetchSize = fetchSize;
-        this.fields = fields;
+        this.rows = rows;
         this.finished = finished;
 
-        fieldsIt = fields.iterator();
+        rowsIter = rows.iterator();
 
         this.isQuery = isQuery;
     }
 
+    // TODO
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fieldsIt == null && !finished) {
+        if (rowsIter == null && !finished) {
             try {
                 JdbcQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
 
-                fields = res.items();
+                rows = res.items();
                 finished = res.last();
 
-                fieldsIt = fields.iterator();
+                rowsIter = rows.iterator();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -143,17 +144,17 @@ public class JdbcThinResultSet implements ResultSet {
             }
         }
 
-        if (fieldsIt != null) {
-            if (fieldsIt.hasNext()) {
-                curr = fieldsIt.next();
+        if (rowsIter != null) {
+            if (rowsIter.hasNext()) {
+                curRow = rowsIter.next();
 
-                pos++;
+                curPos++;
 
                 return true;
             }
             else {
-                fieldsIt = null;
-                curr = null;
+                rowsIter = null;
+                curRow = null;
 
                 return false;
             }
@@ -465,28 +466,28 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean isBeforeFirst() throws SQLException {
         ensureNotClosed();
 
-        return pos < 1;
+        return curPos < 1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt == null && curr == null;
+        return finished && rowsIter == null && curRow == null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFirst() throws SQLException {
         ensureNotClosed();
 
-        return pos == 1;
+        return curPos == 1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt != null && !fieldsIt.hasNext() && curr != null;
+        return finished && rowsIter != null && !rowsIter.hasNext() && curRow != null;
     }
 
     /** {@inheritDoc} */
@@ -521,7 +522,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public int getRow() throws SQLException {
         ensureNotClosed();
 
-        return isAfterLast() ? 0 : pos;
+        return isAfterLast() ? 0 : curPos;
     }
 
     /** {@inheritDoc} */
@@ -1466,7 +1467,7 @@ public class JdbcThinResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            Object val = curr.get(colIdx - 1);
+            Object val = curRow.get(colIdx - 1);
 
             wasNull = val == null;
 
@@ -1501,7 +1502,7 @@ public class JdbcThinResultSet implements ResultSet {
      * @throws SQLException If result set is not positioned on a row.
      */
     private void ensureHasCurrentRow() throws SQLException {
-        if (curr == null)
+        if (curRow == null)
             throw new SQLException("Result set is not positioned on a row.");
     }
 
@@ -1514,7 +1515,7 @@ public class JdbcThinResultSet implements ResultSet {
             try {
                 JdbcQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
 
-                metaRef = res.meta();
+                meta = res.meta();
 
                 metaInit = true;
             }
@@ -1528,7 +1529,7 @@ public class JdbcThinResultSet implements ResultSet {
             }
         }
 
-        return metaRef;
+        return meta;
     }
 
     /**
