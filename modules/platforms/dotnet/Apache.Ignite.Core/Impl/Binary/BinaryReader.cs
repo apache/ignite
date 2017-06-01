@@ -623,12 +623,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             Stream.Seek(binaryBytesPos + offset, SeekOrigin.Begin);
 
+            _mode = BinaryMode.KeepBinary;
+
             try
             {
                 return Deserialize<T>();
             }
             finally
             {
+                _mode = BinaryMode.Deserialize;
+
                 Stream.Seek(retPos, SeekOrigin.Begin);
             }
         }
