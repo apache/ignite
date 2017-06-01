@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -25,6 +27,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -502,6 +505,30 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + idxName;
 
         executeSql(node, cacheName, sql);
+    }
+
+    /**
+     * Start SQL cache on given node.
+     * @param node Node to create cache on.
+     * @param ccfg Cache configuration.
+     * @return Created cache.
+     */
+    protected IgniteCache<?, ?> createSqlCache(Ignite node, CacheConfiguration ccfg) throws IgniteCheckedException {
+        ((IgniteEx)node).context().cache().dynamicStartSqlCache(ccfg).get();
+
+        IgniteCache<?, ?> res = node.cache(CACHE_NAME);
+
+        assertNotNull(res);
+
+        return res;
+    }
+
+    /**
+     * Destroy SQL cache on given node.
+     * @param node Node to create cache on.
+     */
+    protected void destroySqlCache(Ignite node) throws IgniteCheckedException {
+        ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false).get();
     }
 
     /**

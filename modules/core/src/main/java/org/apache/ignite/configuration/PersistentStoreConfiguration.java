@@ -26,17 +26,17 @@ public class PersistentStoreConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final int DFLT_CHECKPOINT_FREQ = 180000;
+    public static final int DFLT_CHECKPOINTING_FREQ = 180000;
 
     /** Lock default wait time, 10 sec. */
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
 
     /** */
     @SuppressWarnings("UnnecessaryBoxing")
-    public static final Long DFLT_CHECKPOINT_PAGE_BUFFER_SIZE = new Long(256L * 1024 * 1024);
+    public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = new Long(256L * 1024 * 1024);
 
-    /** Default number of checkpoint threads. */
-    public static final int DFLT_CHECKPOINT_THREADS = 1;
+    /** Default number of checkpointing threads. */
+    public static final int DFLT_CHECKPOINTING_THREADS = 1;
 
     /** */
     private static final int DFLT_WAL_HISTORY_SIZE = 20;
@@ -50,17 +50,17 @@ public class PersistentStoreConfiguration implements Serializable {
     /** */
     private String persistenteStorePath;
 
-    /** Checkpoint frequency. */
-    private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
+    /** Checkpointing frequency. */
+    private long checkpointingFreq = DFLT_CHECKPOINTING_FREQ;
 
     /** Lock wait time. */
     private int lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
-    private Long checkpointPageBufSize = DFLT_CHECKPOINT_PAGE_BUFFER_SIZE;
+    private Long checkpointingPageBufSize = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
 
     /** */
-    private int checkpointThreads = DFLT_CHECKPOINT_THREADS;
+    private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
 
     /** */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
@@ -97,67 +97,68 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Gets checkpoint frequency.
+     * Gets checkpointing frequency.
      *
-     * @return Checkpoint frequency in milliseconds.
+     * @return checkpointing frequency in milliseconds.
      */
-    public long getCheckpointFrequency() {
-        return checkpointFreq <= 0 ? DFLT_CHECKPOINT_FREQ : checkpointFreq;
+    public long getCheckpointingFrequency() {
+        return checkpointingFreq <= 0 ? DFLT_CHECKPOINTING_FREQ : checkpointingFreq;
     }
 
     /**
-     * Sets the checkpoint frequency which is a minimal interval when the memory state (updated data, indexes, etc.)
-     * will be written to the Persistent Store. If the rate is high, checkpoints can happen more frequently.
+     * Sets the checkpointing frequency which is a minimal interval when the dirty pages will be written
+     * to the Persistent Store. If the rate is high, checkpointing will be triggered more frequently.
      *
-     * @param checkpointFreq Checkpoint frequency in milliseconds.
+     * @param checkpointingFreq checkpointing frequency in milliseconds.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointFrequency(long checkpointFreq) {
-        this.checkpointFreq = checkpointFreq;
+    public PersistentStoreConfiguration setCheckpointingFrequency(long checkpointingFreq) {
+        this.checkpointingFreq = checkpointingFreq;
 
         return this;
     }
 
     /**
-     * Gets amount of memory allocated for a checkpoint temporary buffer.
+     * Gets amount of memory allocated for a checkpointing temporary buffer.
      *
-     * @return Checkpoint page buffer size.
+     * @return checkpointing page buffer size in bytes.
      */
-    public Long getCheckpointPageBufferSize() {
-        return checkpointPageBufSize;
+    public Long getCheckpointingPageBufferSize() {
+        return checkpointingPageBufSize;
     }
 
     /**
-     * Sets amount of memory allocated for the checkpoint temporary buffer. The buffer is used to create temporary
-     * copies of pages when the checkpoint process is in progress.
+     * Sets amount of memory allocated for the checkpointing temporary buffer. The buffer is used to create temporary
+     * copies of pages that are being written to disk and being update in parallel while the checkpointing is in
+     * progress.
      *
-     * @param checkpointPageBufSize Checkpoint page buffer size.
+     * @param checkpointingPageBufSize checkpointing page buffer size in bytes.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
-        this.checkpointPageBufSize = checkpointPageBufSize;
+    public PersistentStoreConfiguration setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
+        this.checkpointingPageBufSize = checkpointingPageBufSize;
 
         return this;
     }
 
 
     /**
-     * Gets a number of threads to use for the checkpoint purposes.
+     * Gets a number of threads to use for the checkpointing purposes.
      *
-     * @return Number of checkpoint threads.
+     * @return Number of checkpointing threads.
      */
-    public int getCheckpointThreads() {
-        return checkpointThreads;
+    public int getCheckpointingThreads() {
+        return checkpointingThreads;
     }
 
     /**
-     * Sets a number of threads to use for the checkpoint purposes
+     * Sets a number of threads to use for the checkpointing purposes.
      *
-     * @param checkpointThreads Number of checkpoint threads. One thread is used by default.
+     * @param checkpointingThreads Number of checkpointing threads. One thread is used by default.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointThreads(int checkpointThreads) {
-        this.checkpointThreads = checkpointThreads;
+    public PersistentStoreConfiguration setCheckpointingThreads(int checkpointingThreads) {
+        this.checkpointingThreads = checkpointingThreads;
 
         return this;
     }

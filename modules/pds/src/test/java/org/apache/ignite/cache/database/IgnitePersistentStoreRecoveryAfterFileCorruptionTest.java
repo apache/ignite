@@ -99,7 +99,7 @@ public class IgnitePersistentStoreRecoveryAfterFileCorruptionTest extends GridCo
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
-        pCfg.setCheckpointFrequency(500);
+        pCfg.setCheckpointingFrequency(500);
 
         cfg.setPersistentStoreConfiguration(pCfg);
 

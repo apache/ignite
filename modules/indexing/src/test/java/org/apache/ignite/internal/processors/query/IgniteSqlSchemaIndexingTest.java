@@ -105,7 +105,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, "Cache already registered: ");
+        }, IgniteException.class, "Schema already registered: ");
     }
 
     /**

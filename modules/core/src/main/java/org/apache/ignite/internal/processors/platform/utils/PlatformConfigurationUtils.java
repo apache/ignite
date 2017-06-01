@@ -59,8 +59,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
-import org.apache.ignite.internal.binary.BinaryIdentityResolver;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
@@ -1197,40 +1195,6 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads resolver
-     *
-     * @param r Reader.
-     * @return Resolver.
-     */
-    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
-        int type = r.readByte();
-
-        switch (type) {
-            case 0:
-                return null;
-
-            case 1:
-                return new BinaryArrayIdentityResolver();
-            default:
-                assert false;
-                return null;
-        }
-    }
-
-    /**
-     * Writes the resolver.
-     *
-     * @param w Writer.
-     * @param resolver Resolver.
-     */
-    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
-        if (resolver instanceof BinaryArrayIdentityResolver)
-            w.writeByte((byte)1);
-        else
-            w.writeByte((byte)0);
-    }
-
-    /**
      * Reads the plugin configuration.
      *
      * @param cfg Ignite configuration to update.
@@ -1351,7 +1315,9 @@ public class PlatformConfigurationUtils {
                         .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
                         .setEvictionThreshold(in.readDouble())
                         .setEmptyPagesPoolSize(in.readInt())
-                        .setMetricsEnabled(in.readBoolean());
+                        .setMetricsEnabled(in.readBoolean())
+                        .setSubIntervals(in.readInt())
+                        .setRateTimeInterval(in.readLong());
 
                 plcs[i] = cfg;
             }
@@ -1396,6 +1362,8 @@ public class PlatformConfigurationUtils {
                 w.writeDouble(plc.getEvictionThreshold());
                 w.writeInt(plc.getEmptyPagesPoolSize());
                 w.writeBoolean(plc.isMetricsEnabled());
+                w.writeInt(plc.getSubIntervals());
+                w.writeLong(plc.getRateTimeInterval());
             }
         }
         else {

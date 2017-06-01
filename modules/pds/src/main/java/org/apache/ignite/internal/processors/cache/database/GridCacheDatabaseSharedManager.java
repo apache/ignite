@@ -278,7 +278,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         assert dbCfg != null : "PageStore should not be created if persistence is disabled.";
 
-        checkpointFreq = dbCfg.getCheckpointFrequency();
+        checkpointFreq = dbCfg.getCheckpointingFrequency();
 
         lockWaitTime = dbCfg.getLockWaitTime();
 
@@ -344,12 +344,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     @Override public void initDataBase() throws IgniteCheckedException {
-        Long cpBufSize = dbCfg.getCheckpointPageBufferSize();
+        Long cpBufSize = dbCfg.getCheckpointingPageBufferSize();
 
-        if (dbCfg.getCheckpointThreads() > 1)
+        if (dbCfg.getCheckpointingThreads() > 1)
             asyncRunner = new ThreadPoolExecutor(
-                dbCfg.getCheckpointThreads(),
-                dbCfg.getCheckpointThreads(),
+                dbCfg.getCheckpointingThreads(),
+                dbCfg.getCheckpointingThreads(),
                 30L,
                 TimeUnit.SECONDS,
                 new LinkedBlockingQueue<Runnable>()
@@ -357,7 +357,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         // Intentionally use identity comparison to check if configuration default has changed.
         // Noinspection NumberEquality.
-        if (cpBufSize == PersistentStoreConfiguration.DFLT_CHECKPOINT_PAGE_BUFFER_SIZE) {
+        if (cpBufSize == PersistentStoreConfiguration.DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE) {
             MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
             assert memCfg != null;

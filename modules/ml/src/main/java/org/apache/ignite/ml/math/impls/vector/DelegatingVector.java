@@ -59,6 +59,11 @@ public class DelegatingVector implements Vector {
         this.dlg = dlg;
     }
 
+    /** Get the delegating vector */
+    public Vector getVector() {
+        return dlg;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(dlg);

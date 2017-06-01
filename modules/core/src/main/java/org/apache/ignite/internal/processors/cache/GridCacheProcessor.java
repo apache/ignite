@@ -2044,8 +2044,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Stop request.
      * @return Stopped cache context.
      */
-    private GridCacheContext<?, ?> prepareCacheStop(DynamicCacheChangeRequest req) {
-        assert req.stop() || req.close() : req;
+    private GridCacheContext<?, ?> prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
+        assert req.stop() || req.close() || forceClose : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(req.cacheName());
 
@@ -2065,6 +2065,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Closes cache even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param topVer Completed topology version.
+     * @param act Exchange action.
+     * @param err Error.
+     */
+    void forceCloseCache(
+        AffinityTopologyVersion topVer,
+        final ExchangeActions.ActionData act,
+        Throwable err
+    ) {
+        ExchangeActions actions = new ExchangeActions(){
+            @Override List<DynamicCacheChangeRequest> closeRequests(UUID nodeId) {
+                return Collections.singletonList(act.request());
+            }
+        };
+
+        onExchangeDone(topVer, actions, err, true);
+    }
+
+    /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
      * @param topVer Completed topology version.
@@ -2075,7 +2096,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
         @Nullable ExchangeActions exchActions,
-        Throwable err
+        Throwable err,
+        boolean forceClose
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
@@ -2088,19 +2110,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (exchActions != null && err == null) {
+        if (exchActions != null && (err == null || forceClose)) {
             Collection<IgniteBiTuple<CacheGroupInfrastructure, Boolean>> stopped = null;
 
             GridCacheContext<?, ?> stopCtx = null;
             boolean destroy = false;
-
             for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();
 
                 try {
-                    stopCtx = prepareCacheStop(action.request());
+                    stopCtx = prepareCacheStop(action.request(), forceClose);
                     destroy = action.request().destroy();
                 }
                 finally {
@@ -2140,7 +2161,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         sharedCtx.database().checkpointReadLock();
 
                         try {
-                            stopCtx = prepareCacheStop(req.request());
+                            stopCtx = prepareCacheStop(req.request(), forceClose);
 
                             destroy = req.request().destroy();
 
@@ -2161,6 +2182,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     stopped.add(F.t(stopCtx.group(), destroy));
                 }
+
+                if (forceClose)
+                    completeCacheStartFuture(req, false, err);
+
             }
 
             if (stopped != null && !sharedCtx.kernalContext().clientNode())
@@ -2205,7 +2230,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Request to complete future for.
      * @param err Error if any.
      */
-    void completeCacheStartFuture(DynamicCacheChangeRequest req, boolean success, @Nullable Exception err) {
+    void completeCacheStartFuture(DynamicCacheChangeRequest req, boolean success, @Nullable Throwable err) {
         if (req.initiatingNodeId().equals(ctx.localNodeId())) {
             DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 

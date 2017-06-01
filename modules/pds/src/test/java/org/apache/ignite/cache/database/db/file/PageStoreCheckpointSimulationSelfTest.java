@@ -106,7 +106,7 @@ public class PageStoreCheckpointSimulationSelfTest extends GridCommonAbstractTes
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
-        pCfg.setCheckpointFrequency(500);
+        pCfg.setCheckpointingFrequency(500);
 
         cfg.setPersistentStoreConfiguration(pCfg);
 

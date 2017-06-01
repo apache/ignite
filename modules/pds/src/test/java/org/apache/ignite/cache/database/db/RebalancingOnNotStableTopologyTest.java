@@ -167,7 +167,7 @@ public class RebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
 
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
-        pCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
+        pCfg.setCheckpointingFrequency(CHECKPOINT_FREQUENCY);
 
         cfg.setPersistentStoreConfiguration(pCfg);
 

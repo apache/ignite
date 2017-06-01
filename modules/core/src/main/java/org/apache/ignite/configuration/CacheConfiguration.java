@@ -180,6 +180,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
 
     /** Default timeout after which long query warning will be printed. */
+    @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
     /** Default number of queries detail metrics to collect. */
@@ -323,6 +324,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Class<?>[] sqlFuncCls;
 
     /** */
+    @Deprecated
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** */
@@ -1565,7 +1567,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @return Timeout in milliseconds.
+     * @deprecated Use {@link IgniteConfiguration#getLongQueryWarningTimeout()} instead.
      */
+    @Deprecated
     public long getLongQueryWarningTimeout() {
         return longQryWarnTimeout;
     }
@@ -1575,7 +1579,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
 

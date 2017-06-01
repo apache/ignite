@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.jsr166.ConcurrentHashMap8;
 
 import java.util.Collection;
@@ -30,9 +27,6 @@ import java.util.concurrent.ConcurrentMap;
  * Database schema object.
  */
 public class H2Schema {
-    /** */
-    private final String cacheName;
-
     /** */
     private final String schemaName;
 
@@ -45,37 +39,13 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<String, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
 
-    /** Cache for deserialized offheap rows. */
-    private final CacheLongKeyLIRS<GridH2Row> rowCache;
-
-    /** */
-    private final GridCacheContext<?, ?> cctx;
-
     /**
-     * @param cacheName Cache name.
+     * Constructor.
+     *
      * @param schemaName Schema name.
-     * @param cctx Cache context.
      */
-    public H2Schema(String cacheName, String schemaName, GridCacheContext<?, ?> cctx) {
-        this.cacheName = cacheName;
-        this.cctx = cctx;
+    public H2Schema(String schemaName) {
         this.schemaName = schemaName;
-
-        rowCache = null;
-    }
-
-    /**
-     * @return Cache context.
-     */
-    public GridCacheContext cacheContext() {
-        return cctx;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
     }
 
     /**
@@ -90,13 +60,6 @@ public class H2Schema {
      */
     public GridUnsafeMemory offheap() {
         return offheap;
-    }
-
-    /**
-     * @return Row cache.
-     */
-    public CacheLongKeyLIRS<GridH2Row> rowCache() {
-        return rowCache;
     }
 
     /**
@@ -138,14 +101,30 @@ public class H2Schema {
      */
     public void remove(H2TableDescriptor tbl) {
         tbls.remove(tbl.tableName());
+
+        typeToTbl.remove(tbl.typeName());
+    }
+
+    /**
+     * Drop table.
+     *
+     * @param tbl Table to be removed.
+     */
+    public void drop(H2TableDescriptor tbl) {
+        tbl.onDrop();
+
+        tbls.remove(tbl.tableName());
         typeToTbl.remove(tbl.typeName());
     }
 
     /**
      * Called after the schema was dropped.
      */
-    public void onDrop() {
-        for (H2TableDescriptor tblDesc : tbls.values())
-            tblDesc.onDrop();
+    public void dropAll() {
+        for (H2TableDescriptor tbl : tbls.values())
+            tbl.onDrop();
+
+        tbls.clear();
+        typeToTbl.clear();
     }
 }

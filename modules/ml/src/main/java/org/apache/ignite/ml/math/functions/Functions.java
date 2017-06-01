@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.math.functions;
 
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.util.List;
+
 /**
  * Compatibility with Apache Mahout.
  */
@@ -63,6 +67,9 @@ public final class Functions {
     /** Function that returns {@code a - b}. */
     public static final IgniteBiFunction<Double, Double, Double> MINUS = (a, b) -> a - b;
 
+    /** Function that returns {@code min(a, b)}. */
+    public static final IgniteBiFunction<Double, Double, Double> MIN = Math::min;
+
     /** Function that returns {@code abs(a - b)}. */
     public static final IgniteBiFunction<Double, Double, Double> MINUS_ABS = (a, b) -> Math.abs(a - b);
 
@@ -80,6 +87,38 @@ public final class Functions {
 
     /** Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}. */
     public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
+
+    /** */
+    public  static <A, B, C> IgniteFunction<B, C> curry(IgniteBiFunction<A, B, C> f, A a) {
+        return (IgniteFunction<B, C>)b -> f.apply(a, b);
+    }
+
+    /** */
+    public static <A, B extends Comparable<B>> IgniteBiTuple<Integer, A> argmin(List<A> args, IgniteFunction<A, B> f) {
+        A res = null;
+        B fRes = null;
+
+        if (!args.isEmpty()) {
+            res = args.iterator().next();
+            fRes = f.apply(res);
+        }
+
+        int resInd = 0;
+        int i = 0;
+
+        for (A arg : args) {
+            B curRes = f.apply(arg);
+
+            if (fRes.compareTo(curRes) > 0) {
+                res = arg;
+                resInd = i;
+                fRes = curRes;
+            }
+
+            i++;
+        }
+        return new IgniteBiTuple<>(resInd, res);
+    }
 
     /**
      * Function that returns {@code a + b}. {@code a} is a variable, {@code b} is fixed.
