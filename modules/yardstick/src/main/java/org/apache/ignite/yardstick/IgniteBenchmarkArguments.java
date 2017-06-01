@@ -85,16 +85,23 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
     @GridToStringInclude
-    public int range = 1_000_000;
+    private int range = 1_000_000;
+
+    /** */
+    @Parameter(names = {"-sf", "--scaleFactor"}, description = "Scale factor")
+    private int scaleFactor = 1;
+
+    /** */
+    @Parameter(names = {"-ntv", "--native"}, description = "Native benchmarking flag")
+    private boolean ntv = false;
 
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
-    @GridToStringInclude
-    public int preloadAmount = 500_000;
+    private int preloadAmount = 500_000;
 
     /** */
     @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
-    public long preloadLogsInterval = 30_000;
+    private long preloadLogsInterval = 30_000;
 
     /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
@@ -141,6 +148,10 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-tempDb", "--temporaryDatabase"}, description = "Whether it's needed to create and drop " +
         "temporary database for JDBC benchmarks dummy data")
     private boolean createTempDatabase = false;
+
+    /** */
+    @Parameter(names = {"-dbn", "--databaseName"}, description = "Name of database")
+    private String dbn = null;
 
     /** */
     @Parameter(names = {"-rd", "--restartdelay"}, description = "Restart delay in seconds")
@@ -215,16 +226,32 @@ public class IgniteBenchmarkArguments {
         return jdbcUrl;
     }
 
+    /**
+     * @return JDBC driver.
+     */
     public String jdbcDriver() {
         return jdbcDriver;
     }
 
+    /**
+     * @return schema definition.
+     */
     public String schemaDefinition() {
         return schemaDefinition;
     }
 
+    /**
+     * @return flag for creation temporary database.
+     */
     public boolean createTempDatabase() {
         return createTempDatabase;
+    }
+
+    /**
+     * @return existing database name defined in property file.
+     */
+    public String dbn() {
+        return dbn;
     }
 
     /**
@@ -291,6 +318,13 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return {@code True} if flag for native benchmarking is set.
+     */
+    public boolean isNative(){
+        return ntv;
+    }
+
+    /**
      * @return Nodes.
      */
     public int nodes() {
@@ -302,6 +336,13 @@ public class IgniteBenchmarkArguments {
      */
     public int range() {
         return range;
+    }
+
+    /**
+     * @return Scale factor.
+     */
+    public int scaleFactor() {
+        return scaleFactor;
     }
 
     /**
