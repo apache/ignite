@@ -1053,8 +1053,8 @@ public class GridSqlQueryParser {
                 else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
                     mode = CacheAtomicityMode.ATOMIC;
                 else
-                    throw new IgniteSQLException("Invalid value of ATOMICITY param - allowed values are TRANSACTIONAL" +
-                        " and ATOMIC (case insensitive): " + val, IgniteQueryErrorCode.PARSING);
+                    throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
+                        "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.atomicityMode(mode);
 
