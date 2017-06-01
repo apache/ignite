@@ -512,7 +512,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void onCacheStop(GridCacheContext cctx) {
-        snapshotMgr.onCacheStop(cctx); // TODO IGNITE-5075.
+        snapshotMgr.onCacheStop(cctx);
     }
 
     /** {@inheritDoc} */
