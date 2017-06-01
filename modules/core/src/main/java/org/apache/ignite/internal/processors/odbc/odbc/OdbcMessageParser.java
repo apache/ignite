@@ -83,7 +83,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
         switch (cmd) {
             case OdbcRequest.QRY_EXEC: {
-                String cache = reader.readString();
+                String schema = reader.readString();
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
 
@@ -92,7 +92,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 for (int i = 0; i < argsNum; ++i)
                     params[i] = SqlListenerUtils.readObject(reader, true);
 
-                res = new OdbcQueryExecuteRequest(cache, sql, params);
+                res = new OdbcQueryExecuteRequest(schema, sql, params);
 
                 break;
             }

@@ -174,7 +174,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
+//            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.schema());
 
             if (cache0 == null)
                 return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,

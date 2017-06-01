@@ -169,9 +169,9 @@ namespace ignite
 
             SqlResult::Type DataQuery::MakeRequestExecute()
             {
-                const std::string& cacheName = connection.GetCache();
+                const std::string& schema = connection.GetSchema();
 
-                QueryExecuteRequest req(cacheName, sql, params);
+                QueryExecuteRequest req(schema, sql, params);
                 QueryExecuteResponse rsp;
 
                 try
