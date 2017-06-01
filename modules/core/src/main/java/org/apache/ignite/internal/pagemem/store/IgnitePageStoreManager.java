@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -59,7 +58,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param destroy Flag indicating if the cache is being destroyed and data should be cleaned.
      * @throws IgniteCheckedException If failed to handle cache destroy callback.
      */
-    public void shutdownForCacheGroup(CacheGroupInfrastructure grp, boolean destroy) throws IgniteCheckedException;
+    public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException;
 
     /**
      * Callback called when a partition is created on the local node.

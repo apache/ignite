@@ -2112,7 +2112,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (exchActions != null && (err == null || forceClose)) {
-            Collection<IgniteBiTuple<CacheGroupInfrastructure, Boolean>> stopped = null;
+            Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stopped = null;
 
             GridCacheContext<?, ?> stopCtx = null;
             boolean destroy = false;

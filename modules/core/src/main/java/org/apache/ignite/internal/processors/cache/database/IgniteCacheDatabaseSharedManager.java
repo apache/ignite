@@ -39,7 +39,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -733,7 +733,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param stoppedGrps A collection of tuples (cache group, destroy flag).
      */
-    public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupInfrastructure, Boolean>> stoppedGrps) {
+    public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
         // No-op.
     }
 

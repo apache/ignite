@@ -403,12 +403,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     cctx.cache().forceCloseCache(fut.topologyVersion(), action, e);
                 }
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
-                    "[cacheName=" + req.cacheName() + ']', e);
-
-                cctx.cache().forceCloseCache(fut.topologyVersion(), action, e);
-            }
         }
 
             Set<Integer> gprs = new HashSet<>();

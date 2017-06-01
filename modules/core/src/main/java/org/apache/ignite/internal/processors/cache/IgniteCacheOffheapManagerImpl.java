@@ -1720,7 +1720,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        CacheDataTree(
+        public CacheDataTree(
             CacheGroupContext grp,
             String name,
             ReuseList reuseList,
@@ -2338,7 +2338,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        PendingEntriesTree(
+        public PendingEntriesTree(
             CacheGroupContext grp,
             String name,
             PageMemory pageMem,

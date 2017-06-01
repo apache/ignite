@@ -576,7 +576,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             Collection<CacheGroupDescriptor> grpDescs = new ArrayList<>();
 
                             for (Integer grpId : op.cacheGroupIds()) {
-                                CacheGroupInfrastructure cacheGrp = cctx.cache().cacheGroup(grpId);
+                                CacheGroupContext cacheGrp = cctx.cache().cacheGroup(grpId);
 
                                 if (cacheGrp == null)
                                     continue;
