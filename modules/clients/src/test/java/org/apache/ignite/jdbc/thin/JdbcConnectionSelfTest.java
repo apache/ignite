@@ -27,7 +27,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
+import java.sql.Savepoint;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -974,9 +976,324 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSomething() throws Exception {
+    public void testGetSetTypeMap() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
 
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.getTypeMap();
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "Types mapping is not supported"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setTypeMap(new HashMap<String, Class<?>>());
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "Types mapping is not supported"
+        );
+
+        conn.close();
+
+        // Exception when called on closed connection
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.getTypeMap();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+
+        // Exception when called on closed connection
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setTypeMap(new HashMap<String, Class<?>>());
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+
+        //TODO: is it at all possible to pass something other than java.util.Map to setTypeMap()?
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetHoldability() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // default value
+        assertEquals(conn.getMetaData().getResultSetHoldability(), conn.getHoldability());
+
+        assertEquals(HOLD_CURSORS_OVER_COMMIT, conn.getHoldability());
+
+        conn.setHoldability(CLOSE_CURSORS_AT_COMMIT);
+
+        assertEquals(CLOSE_CURSORS_AT_COMMIT, conn.getHoldability());
+
+        // Invalid constant
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setHoldability(-1);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid result set holdability value"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.getHoldability();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setHoldability(HOLD_CURSORS_OVER_COMMIT);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetSavepoint() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        conn.setSavepoint();
+
+        // Disallowed in auto-commit mode
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Auto-commit mode"
+        );
+
+        conn.setAutoCommit(false);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint();
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "Savepoints are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint();
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetSavepointName() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Invalid arg
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint(null);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid argument"
+        );
+
+        final String name = "savepoint";
+
+        conn.setSavepoint();
+
+        // Disallowed in auto-commit mode
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint(name);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Auto-commit mode"
+        );
+
+        conn.setAutoCommit(false);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint(name);
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "Savepoints are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSavepoint(name);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRollbackSavePoint() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Invalid arg
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.rollback(null);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid argument"
+        );
+
+        final Savepoint savepoint = new Savepoint() {
+            @Override public int getSavepointId() throws SQLException {
+                return 100;
+            }
+
+            @Override public String getSavepointName() throws SQLException {
+                return "savepoint";
+            }
+        };
+
+        // Disallowed in auto-commit mode
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.rollback(savepoint);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Auto-commit mode"
+        );
+
+        conn.setAutoCommit(false);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.rollback(savepoint);
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "Savepoints are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.rollback(savepoint);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReleaseSavepoint() throws Exception {
+        
+    }
+
+    // Clob createClob() throws SQLException;
+    // Blob createBlob() throws SQLException;
+    // NClob createNClob() throws SQLException;
+    // SQLXML createSQLXML() throws SQLException;
+    // void setClientInfo(String name, String value)
+    // void setClientInfo(Properties properties)
+    // String getClientInfo(String name)
+    // Properties getClientInfo()
+    // Array createArrayOf(String typeName, Object[] elements) throws
+    // Struct createStruct(String typeName, Object[] attributes)
+    // void setSchema(String schema) throws SQLException;
+    // String getSchema() throws SQLException;
+    // void abort(Executor executor) throws SQLException;
+    // void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException;
+    // int getNetworkTimeout() throws SQLException;
 
 
     // TODO: Methods to throw SQLException when database access fails (network conn lost / cluster stop)
@@ -990,10 +1307,14 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     // setCatalog/getCatalog
     // setTransactionIsolationLevel/getTransactionIsolationLevel
     // getWarnings/clearWarnings
+    // getTypeMap/setTypeMap
+    // getHoldability/setHoldability
+    // setSavePoint
     //
     // TODO: methods disallowed during distributed transactions
     // setAutoCommit
     // commit/rollback
+    // setSavePoint
     //
     // TODO: methods disallowed during transaction
     // setReadOnly
