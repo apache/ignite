@@ -30,6 +30,7 @@ import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -951,7 +952,10 @@ public class GridSqlQueryParser {
 
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
-        List<String> extraParams = data.tableEngineParams;
+        List<String> extraParams = new ArrayList<>();
+
+        for (String s : data.tableEngineParams)
+            extraParams.addAll(F.asList(s.split(",")));
 
         res.params(extraParams);
 
@@ -1042,10 +1046,17 @@ public class GridSqlQueryParser {
             case PARAM_ATOMICITY:
                 ensureNotEmpty(name, val);
 
-                CacheAtomicityMode atomicity =
-                    parseEnumParam(PARAM_ATOMICITY, val.toUpperCase(), CacheAtomicityMode.class);
+                CacheAtomicityMode mode;
 
-                res.atomicityMode(atomicity);
+                if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
+                    mode = CacheAtomicityMode.TRANSACTIONAL;
+                else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
+                    mode = CacheAtomicityMode.ATOMIC;
+                else
+                    throw new IgniteSQLException("Invalid value of ATOMICITY param - allowed values are TRANSACTIONAL" +
+                        " and ATOMIC (case insensitive): " + val, IgniteQueryErrorCode.PARSING);
+
+                res.atomicityMode(mode);
 
                 break;
 
@@ -1077,23 +1088,6 @@ public class GridSqlQueryParser {
         catch (NumberFormatException e) {
             throw new IgniteSQLException("Parameter value must be an integer [name=" + name + ", value=" + val + ']',
                 IgniteQueryErrorCode.PARSING);
-        }
-    }
-
-    /**
-     * Parse given value as an enum member, or throw an {@link IgniteSQLException} if this parsing fails.
-     * @param name param name.
-     * @param val param value.
-     * @return parsed int value.
-     */
-    @SuppressWarnings("unchecked")
-    private static <T extends Enum> T parseEnumParam(String name, String val, Class<T> enumCls) {
-        try {
-            return (T)Enum.valueOf(enumCls, val);
-        }
-        catch (IllegalArgumentException e) {
-            throw new IgniteSQLException("Parameter value must be an enum member [name=" + name + ", value=" +
-                val + ", enumType=" + enumCls.getName() + ']', IgniteQueryErrorCode.PARSING);
         }
     }
 
