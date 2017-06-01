@@ -370,6 +370,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "[name=" + plcCfg.getName() +
                 ", subIntervals=" + plcCfg.getSubIntervals() + "]"
             );
+
+        if (plcCfg.getRateTimeInterval() < 1_000)
+            throw new IgniteCheckedException("Rate time interval must be longer that 1 second (1_000 milliseconds) " +
+                "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval) " +
+                "[name=" + plcCfg.getName() +
+                ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]");
     }
 
     /**
