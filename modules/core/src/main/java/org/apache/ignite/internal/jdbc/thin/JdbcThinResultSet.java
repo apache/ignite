@@ -39,6 +39,7 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -54,29 +55,32 @@ public class JdbcThinResultSet implements ResultSet {
     /** Statement. */
     private final JdbcThinStatement stmt;
 
-    /** Future ID. */
+    /** Query ID. */
     private final Long qryId;
 
-    /** Table names. */
-    private List<JdbcColumnMeta> metaRef;
+    /** Metadata. */
+    private List<JdbcColumnMeta> meta;
 
-    /** Table names. */
+    /** Column order map. */
+    private Map<String, Integer> colOrder;
+
+    /** Metadata initialization flag. */
     private boolean metaInit;
 
-    /** Fields iterator. */
-    private List<List<Object>> fields;
+    /** Rows. */
+    private List<List<Object>> rows;
 
-    /** Fields iterator. */
-    private Iterator<List<Object>> fieldsIt;
+    /** Rows iterator. */
+    private Iterator<List<Object>> rowsIter;
+
+    /** Current row. */
+    private List<Object> curRow;
+
+    /** Current position. */
+    private int curPos;
 
     /** Finished flag. */
     private boolean finished;
-
-    /** Current position. */
-    private int pos;
-
-    /** Current. */
-    private List<Object> curr;
 
     /** Closed flag. */
     private boolean closed;
@@ -100,25 +104,25 @@ public class JdbcThinResultSet implements ResultSet {
      * @param qryId Query ID.
      * @param fetchSize Fetch size.
      * @param finished Finished flag.
-     * @param fields Query result page.
+     * @param rows Rows.
      * @param isQuery Is Result ser for Select query
      */
-    @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
-        List<List<Object>> fields, boolean isQuery, long updCnt) {
+    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
+        List<List<Object>> rows, boolean isQuery, long updCnt) {
         assert stmt != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.qryId = qryId;
+        this.fetchSize = fetchSize;
         this.finished = finished;
         this.isQuery = isQuery;
 
         if (isQuery) {
             this.fetchSize = fetchSize;
-            this.fields = fields;
+            this.rows = rows;
 
-            fieldsIt = fields.iterator();
+            rowsIter = rows.iterator();
         }
         else
             this.updCnt = updCnt;
@@ -129,14 +133,14 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
-        if (fieldsIt == null && !finished) {
+        if (rowsIter == null && !finished) {
             try {
                 JdbcQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
 
-                fields = res.items();
+                rows = res.items();
                 finished = res.last();
 
-                fieldsIt = fields.iterator();
+                rowsIter = rows.iterator();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -148,17 +152,17 @@ public class JdbcThinResultSet implements ResultSet {
             }
         }
 
-        if (fieldsIt != null) {
-            if (fieldsIt.hasNext()) {
-                curr = fieldsIt.next();
+        if (rowsIter != null) {
+            if (rowsIter.hasNext()) {
+                curRow = rowsIter.next();
 
-                pos++;
+                curPos++;
 
                 return true;
             }
             else {
-                fieldsIt = null;
-                curr = null;
+                rowsIter = null;
+                curRow = null;
 
                 return false;
             }
@@ -194,14 +198,57 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public String getString(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, String.class);
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
+        try {
+            Object val = curRow.get(colIdx - 1);
+
+            wasNull = val == null;
+
+            if (val == null)
+                return null;
+            else
+                return String.valueOf(val);
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new SQLException("Invalid column index: " + colIdx, e);
+        }
+        catch (ClassCastException e) {
+            throw new SQLException("Value is an not instance of " + String.class.getName(), e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(int colIdx) throws SQLException {
-        Boolean val = getTypedValue(colIdx, Boolean.class);
+        try {
+            Object val = curRow.get(colIdx - 1);
 
-        return val != null ? val : false;
+            wasNull = val == null;
+
+            if (val == null)
+                return false;
+            else if (val.getClass() == Boolean.class)
+                return (Boolean)val;
+            else {
+                if (val.getClass() == Byte.class
+                    || val.getClass() == Short.class
+                    || val.getClass() == Integer.class
+                    || val.getClass() == Long.class)
+                    return castToBoolean((Number)val);
+                else if (val.getClass() == Character.class
+                    || val.getClass() == String.class)
+                    return castToBoolean(val.toString());
+                else
+                    throw new ClassCastException("Cannot cast " + val.getClass().getName() + " to boolean");
+            }
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new SQLException("Invalid column index: " + colIdx, e);
+        }
+        catch (ClassCastException e) {
+            throw new SQLException("Value is an not instance of " + Boolean.class.getName(), e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -258,7 +305,27 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, Date.class);
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
+        try {
+            Object val = curRow.get(colIdx - 1);
+
+            wasNull = val == null;
+
+            if (val == null)
+                return null;
+            else if (val.getClass() == java.util.Date.class)
+                return new java.sql.Date(((java.util.Date)val).getTime());
+            else
+                return (Date)val;
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new SQLException("Invalid column index: " + colIdx, e);
+        }
+        catch (ClassCastException e) {
+            throw new SQLException("Value is an not instance of Date", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -294,14 +361,20 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public String getString(String colLb) throws SQLException {
-        return getTypedValue(colLb, String.class);
+        int colIdx = findColumn(colLb);
+
+        assert colIdx > 0;
+
+        return getString(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(String colLb) throws SQLException {
-        Boolean val = getTypedValue(colLb, Boolean.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : false;
+        assert colIdx > 0;
+
+        return getBoolean(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -358,7 +431,11 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(String colLb) throws SQLException {
-        return getTypedValue(colLb, Date.class);
+        int colIdx = findColumn(colLb);
+
+        assert colIdx > 0;
+
+        return getDate(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -432,14 +509,13 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public int findColumn(final String colLb) throws SQLException {
         ensureNotClosed();
 
-        List<JdbcColumnMeta> meta = meta();
 
-        for (int i = 0; i < meta.size(); i++) {
-            if (meta.get(i).columnName().equalsIgnoreCase(colLb))
-                return i + 1;
-        }
+        Integer order = columnOrder().get(colLb.toUpperCase());
 
-        throw new SQLException("Column not found: " + colLb);
+        if (order == null)
+            throw new SQLException("Column not found: " + colLb);
+
+        return order + 1;
     }
 
     /** {@inheritDoc} */
@@ -470,28 +546,28 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean isBeforeFirst() throws SQLException {
         ensureNotClosed();
 
-        return pos < 1;
+        return curPos < 1 && rowsIter != null && rowsIter.hasNext();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAfterLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt == null && curr == null;
+        return finished && rowsIter == null && curRow == null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFirst() throws SQLException {
         ensureNotClosed();
 
-        return pos == 1;
+        return curPos == 1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLast() throws SQLException {
         ensureNotClosed();
 
-        return finished && fieldsIt != null && !fieldsIt.hasNext() && curr != null;
+        return finished && rowsIter != null && !rowsIter.hasNext() && curRow != null;
     }
 
     /** {@inheritDoc} */
@@ -526,7 +602,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public int getRow() throws SQLException {
         ensureNotClosed();
 
-        return isAfterLast() ? 0 : pos;
+        return isAfterLast() ? 0 : curPos;
     }
 
     /** {@inheritDoc} */
@@ -914,6 +990,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public void cancelRowUpdates() throws SQLException {
         ensureNotClosed();
+
+        if (getConcurrency() == CONCUR_READ_ONLY)
+            throw new SQLException("The result set concurrency is CONCUR_READ_ONLY");
     }
 
     /** {@inheritDoc} */
@@ -926,6 +1005,9 @@ public class JdbcThinResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public void moveToCurrentRow() throws SQLException {
         ensureNotClosed();
+
+        if (getConcurrency() == CONCUR_READ_ONLY)
+            throw new SQLException("The result set concurrency is CONCUR_READ_ONLY");
     }
 
     /** {@inheritDoc} */
@@ -937,7 +1019,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(int colIdx, Map<String, Class<?>> map) throws SQLException {
-        return getTypedValue(colIdx, Object.class);
+        throw new SQLFeatureNotSupportedException("SQL structured type are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -970,7 +1052,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(String colLb, Map<String, Class<?>> map) throws SQLException {
-        return getTypedValue(colLb, Object.class);
+        throw new SQLFeatureNotSupportedException("SQL structured type are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -1003,12 +1085,36 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx, Calendar cal) throws SQLException {
-        return getTypedValue(colIdx, Date.class);
+        ensureNotClosed();
+        ensureHasCurrentRow();
+
+        try {
+            Object val = curRow.get(colIdx - 1);
+
+            wasNull = val == null;
+
+            if (val == null)
+                return null;
+            else if (val.getClass() == java.util.Date.class)
+                return new Date(((java.util.Date)val).getTime());
+            else
+                return (Date)val;
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new SQLException("Invalid column index: " + colIdx, e);
+        }
+        catch (ClassCastException e) {
+            throw new SQLException("Value is an not instance of Date", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Date getDate(String colLb, Calendar cal) throws SQLException {
-        return getTypedValue(colLb, Date.class);
+        int colIdx = findColumn(colLb);
+
+        assert colIdx > 0;
+
+        return getDate(colIdx, cal);
     }
 
     /** {@inheritDoc} */
@@ -1471,22 +1577,20 @@ public class JdbcThinResultSet implements ResultSet {
         ensureHasCurrentRow();
 
         try {
-            Object val = curr.get(colIdx - 1);
+            Object val = curRow.get(colIdx - 1);
 
             wasNull = val == null;
 
             if (val == null)
                 return null;
-            else if (cls == String.class)
-                return (T)String.valueOf(val);
             else
                 return (T)val;
         }
-        catch (IndexOutOfBoundsException ignored) {
-            throw new SQLException("Invalid column index: " + colIdx);
+        catch (IndexOutOfBoundsException e) {
+            throw new SQLException("Invalid column index: " + colIdx, e);
         }
-        catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+        catch (ClassCastException e) {
+            throw new SQLException("Value is an not instance of " + cls.getName(), e);
         }
     }
 
@@ -1506,7 +1610,7 @@ public class JdbcThinResultSet implements ResultSet {
      * @throws SQLException If result set is not positioned on a row.
      */
     private void ensureHasCurrentRow() throws SQLException {
-        if (curr == null)
+        if (curRow == null)
             throw new SQLException("Result set is not positioned on a row.");
     }
 
@@ -1519,9 +1623,11 @@ public class JdbcThinResultSet implements ResultSet {
             try {
                 JdbcQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
 
-                metaRef = res.meta();
+                meta = res.meta();
 
                 metaInit = true;
+
+                columnOrder();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -1533,7 +1639,29 @@ public class JdbcThinResultSet implements ResultSet {
             }
         }
 
-        return metaRef;
+        return meta;
+    }
+
+    /**
+     * Init column order map.
+     * @throws SQLException On error.
+     * @return Column order map.
+     */
+    private Map<String, Integer> columnOrder() throws SQLException {
+        if(colOrder != null)
+            return colOrder;
+
+        if(!metaInit)
+            meta();
+
+        colOrder = new HashMap<>(meta.size());
+
+        for (int i = 0; i < meta.size(); ++i) {
+            if(!colOrder.containsKey(meta.get(i).columnName()))
+                colOrder.put(meta.get(i).columnName(), i);
+        }
+
+        return colOrder;
     }
 
     /**
@@ -1548,5 +1676,32 @@ public class JdbcThinResultSet implements ResultSet {
      */
     public long updatedCount() {
         return updCnt;
+    }
+
+    /**
+     * @param val Number value.
+     * @return Boolean value.
+     */
+    private static boolean castToBoolean(Number val) {
+        if (val == 1)
+            return true;
+        else if (val == 0)
+            return false;
+        else
+            throw new ClassCastException("Cannot cast " + val.getClass().getName()
+                + " [val=" + val +"] to boolean");
+    }
+
+    /**
+     * @param str String value.
+     * @return Boolean value.
+     */
+    private static boolean castToBoolean(String str) {
+        try {
+            return castToBoolean(Integer.parseInt(str));
+        }
+        catch (NumberFormatException e) {
+            throw new ClassCastException("Cannot cast [val=" + str +"] to boolean");
+        }
     }
 }

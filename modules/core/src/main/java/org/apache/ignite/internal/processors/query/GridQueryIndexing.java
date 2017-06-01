@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -171,11 +170,10 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      * @param schemaName Schema name.
      * @param cctx Cache context.
-     * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx,
-        CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(String cacheName, String schemaName, GridCacheContext<?,?> cctx)
+        throws IgniteCheckedException;
 
     /**
      * Unregisters cache.
@@ -188,21 +186,12 @@ public interface GridQueryIndexing {
     /**
      * Registers type if it was not known before or updates it otherwise.
      *
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(String cacheName, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
-
-    /**
-     * Unregisters type and removes all corresponding data.
-     *
-     * @param schemaName Schema name.
-     * @param typeName Type name.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unregisterType(String schemaName, String typeName) throws IgniteCheckedException;
+    public boolean registerType(GridCacheContext cctx, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
@@ -273,14 +262,6 @@ public interface GridQueryIndexing {
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
     public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
-
-    /**
-     * Gets cache name from database schema.
-     *
-     * @param schemaName Schema name. Could not be null. Could be empty.
-     * @return Cache name. Could be null.
-     */
-    public String cacheName(String schemaName);
 
     /**
      * Collect queries that already running more than specified duration.
