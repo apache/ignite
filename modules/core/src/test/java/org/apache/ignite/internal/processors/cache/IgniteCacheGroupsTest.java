@@ -473,10 +473,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(loc ? 0 : 1);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                cache1 = ignite.cache(CACHE1);
-                cache2 = ignite.cache(CACHE2);
+            cache1 = ignite.cache(CACHE1);
+            cache2 = ignite.cache(CACHE2);
 
+            try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = 0; i < keys ; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
@@ -570,10 +570,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(loc ? 0 : 1);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                IgniteCache<Integer, Integer> cache1 = ignite.cache(CACHE1);
-                IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE2);
+            IgniteCache<Integer, Integer> cache1 = ignite.cache(CACHE1);
+            IgniteCache<Integer, Integer> cache2 = ignite.cache(CACHE2);
 
+            try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = 0; i < keys ; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
@@ -654,10 +654,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(1);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                cache1 = ignite.cache(CACHE1);
-                cache2 = ignite.cache(CACHE2);
+            cache1 = ignite.cache(CACHE1);
+            cache2 = ignite.cache(CACHE2);
 
+            try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = 0; i < keys ; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
@@ -755,10 +755,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(local ? 0 : 1);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                IgniteCache cache1 = ignite.cache(CACHE1);
-                IgniteCache cache2 = ignite.cache(CACHE2);
+            IgniteCache cache1 = ignite.cache(CACHE1);
+            IgniteCache cache2 = ignite.cache(CACHE2);
 
+            try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = 0; i < keys ; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
@@ -839,10 +839,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(local ? 0 : 1);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                IgniteCache cache1 = ignite.cache(CACHE1);
-                IgniteCache cache2 = ignite.cache(CACHE2);
+            IgniteCache cache1 = ignite.cache(CACHE1);
+            IgniteCache cache2 = ignite.cache(CACHE2);
 
+            try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = 0; i < keys ; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
@@ -902,10 +902,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         if (atomicityMode == TRANSACTIONAL) {
             Ignite ignite = ignite(1);
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                IgniteCache cache1 = ignite.cache(CACHE1);
-                IgniteCache cache2 = ignite.cache(CACHE2);
+            IgniteCache cache1 = ignite.cache(CACHE1);
+            IgniteCache cache2 = ignite.cache(CACHE2);
 
+            try (Transaction tx = ignite.transactions().txStart()) {
                 for (int i = 0; i < keys ; i++) {
                     cache1.put(i, data1[i]);
                     cache2.put(i, data2[i]);
