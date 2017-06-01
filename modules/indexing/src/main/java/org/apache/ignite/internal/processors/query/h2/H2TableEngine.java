@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SystemIndexFactory;
@@ -84,12 +85,12 @@ public class H2TableEngine implements TableEngine {
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        String cacheName = null;
+        GridCacheContext cctx = null;
 
         if (idxFactory0 instanceof H2TableDescriptor)
-            cacheName = ((H2TableDescriptor)idxFactory0).schema().cacheName();
+            cctx = ((H2TableDescriptor)idxFactory0).cache();
 
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.cache());
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, idxFactory0, cctx);
 
         return resTbl0;
     }

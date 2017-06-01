@@ -89,12 +89,13 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        // TODO: IGNITE-4994: Restore mock.
         Driver.load();
 
         conn = DriverManager.getConnection(DB_URL);
 
-        tbl = H2TableEngine.createTable(conn, CREATE_TABLE_SQL, null, null, new GridH2SystemIndexFactory() {
+        tbl = H2TableEngine.createTable(conn, CREATE_TABLE_SQL, null, null,
+            new GridH2SystemIndexFactory() {
+            /** {@inheritDoc} */
             @Override public ArrayList<Index> createSystemIndexes(GridH2Table tbl) {
                 ArrayList<Index> idxs = new ArrayList<>();
 

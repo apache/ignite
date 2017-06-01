@@ -223,7 +223,7 @@ public class GridH2Table extends TableBase {
      * @return Cache name.
      */
     public String cacheName() {
-        return cctx.name();
+        return cctx != null ? cctx.name() : null;
     }
 
     /**
@@ -243,8 +243,6 @@ public class GridH2Table extends TableBase {
 
         ses.addLock(this);
 
-        lock(exclusive);
-
         if (destroyed) {
             unlock(exclusive);
 
@@ -258,6 +256,10 @@ public class GridH2Table extends TableBase {
 
             snapshotIndexes(null, qctx.segment());
         }
+
+        // Actually lock only after we're done with snapshots - otherwise we'd get stuck forever
+        // as snapshotIndexes does tryLock inside its body.
+        lock(exclusive);
 
         return false;
     }
@@ -273,7 +275,7 @@ public class GridH2Table extends TableBase {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         // On MAP queries with distributed joins we lock tables before the queries.
-        return qctx == null || qctx.type() != MAP || !qctx.hasIndexSnapshots();
+        return qctx != null && (qctx.type() != MAP || !qctx.hasIndexSnapshots());
     }
 
     /**
