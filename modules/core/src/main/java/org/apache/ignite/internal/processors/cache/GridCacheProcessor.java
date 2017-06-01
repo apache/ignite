@@ -2107,7 +2107,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     sharedCtx.database().checkpointReadUnlock();
                 }
 
-                if (stopCtx != null) {
+                if (stopCtx != null && !stopCtx.group().hasCaches()) {
                     if (stopped == null)
                         stopped = new ArrayList<>();
 
@@ -2155,7 +2155,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 // TODO IGNITE-5075 group descriptors.
-                if (stopCtx != null) {
+                if (stopCtx != null && !stopCtx.group().hasCaches()) {
                     if (stopped == null)
                         stopped = new ArrayList<>();
 
