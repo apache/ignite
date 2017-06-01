@@ -39,7 +39,7 @@ import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -381,6 +381,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "[name=" + plcCfg.getName() +
                 ", subIntervals=" + plcCfg.getSubIntervals() + "]"
             );
+
+        if (plcCfg.getRateTimeInterval() < 1_000)
+            throw new IgniteCheckedException("Rate time interval must be longer that 1 second (1_000 milliseconds) " +
+                "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval) " +
+                "[name=" + plcCfg.getName() +
+                ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]");
     }
 
     /**
@@ -727,7 +733,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param stoppedGrps A collection of tuples (cache group, destroy flag).
      */
-    public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupInfrastructure, Boolean>> stoppedGrps) {
+    public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
         // No-op.
     }
 

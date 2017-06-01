@@ -187,7 +187,7 @@ class GridAffinityUtils {
                 new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
 
             return F.t(
-                affinityMessage(ctx, cctx.group().affinityFunction()),
+                affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
                 assign);
         }

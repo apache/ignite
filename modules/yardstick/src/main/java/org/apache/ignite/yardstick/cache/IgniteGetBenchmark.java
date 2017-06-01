@@ -19,11 +19,7 @@ package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
-
-import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Ignite benchmark that performs get operations.
@@ -42,18 +38,7 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
 
     /** {@inheritDoc} */
     @Override protected void loadCacheData(String cacheName) {
-        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
-            for (int i = 0; i < args.preloadAmount(); i++) {
-                dataLdr.addData(i, new SampleValue(i));
-
-                if (i % 100000 == 0) {
-                    if (Thread.currentThread().isInterrupted())
-                        break;
-
-                    println("Loaded entries: " + i);
-                }
-            }
-        }
+        loadSampleValues(cacheName, args.preloadAmount());
     }
 
     /** {@inheritDoc} */

@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.ml.clustering;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.ml.math.Vector;
 
-/**
- * Basic test suite.
- * May be removed soon as all tests were moved to {@link IgniteBasicTestSuite}
- */
-@Deprecated
-public class IgniteBinaryBasicTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        return new TestSuite("GridGain Binary Basic Test Suite: migrated to Ignite Basic Test Suite");
+import static org.junit.Assert.assertTrue;
+
+/** Base test for k-means algorithms. */
+public class KMeansUtil {
+    /** */
+    public static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
+        for (int i = 0; i < v1s.length; i++) {
+            assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
+                v1s[i].minus(v2s[i]).kNorm(2) < epsilon);
+        }
     }
 }

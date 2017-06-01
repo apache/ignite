@@ -125,7 +125,7 @@ public class TransactionsHangTest extends GridCommonAbstractTest {
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         pCfg.setWalHistorySize(1);
-        pCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
+        pCfg.setCheckpointingFrequency(CHECKPOINT_FREQUENCY);
 
         cfg.setPersistentStoreConfiguration(pCfg);
 

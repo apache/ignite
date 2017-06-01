@@ -77,6 +77,9 @@ public interface CacheContinuousQueryListener<K, V> {
     public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt, AffinityTopologyVersion topVer, boolean primary);
 
     /**
+     * For cache updates in shared cache group need notify others caches CQ listeners
+     * that generated counter should be skipped.
+     *
      * @param cctx Cache context.
      * @param skipCtx Context.
      * @param part Partition.
@@ -84,7 +87,7 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param topVer Topology version.
      * @return Context.
      */
-    public CounterSkipContext skipUpdateCounter(
+    @Nullable public CounterSkipContext skipUpdateCounter(
         GridCacheContext cctx,
         @Nullable CounterSkipContext skipCtx,
         int part,

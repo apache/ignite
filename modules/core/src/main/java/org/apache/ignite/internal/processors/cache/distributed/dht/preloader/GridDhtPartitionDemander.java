@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -41,7 +40,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -85,7 +84,7 @@ public class GridDhtPartitionDemander {
     private final GridCacheSharedContext<?, ?> ctx;
 
     /** */
-    private final CacheGroupInfrastructure grp;
+    private final CacheGroupContext grp;
 
     /** */
     private final IgniteLogger log;
@@ -113,7 +112,7 @@ public class GridDhtPartitionDemander {
     /**
      * @param grp Ccahe group.
      */
-    public GridDhtPartitionDemander(CacheGroupInfrastructure grp) {
+    public GridDhtPartitionDemander(CacheGroupContext grp) {
         assert grp != null;
 
         this.grp = grp;
@@ -339,41 +338,21 @@ public class GridDhtPartitionDemander {
 
             return new Runnable() {
                 @Override public void run() {
-                    try {
-                        if (next != null)
-                            fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                                @Override public void apply(IgniteInternalFuture<Boolean> f) {
-                                    try {
-                                        if (f.get()) // Not cancelled.
-                                            next.run(); // Starts next cache rebalancing (according to the order).
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        if (log.isDebugEnabled())
-                                            log.debug(e.getMessage());
-                                    }
+                    if (next != null)
+                        fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                            @Override public void apply(IgniteInternalFuture<Boolean> f) {
+                                try {
+                                    if (f.get()) // Not cancelled.
+                                        next.run(); // Starts next cache rebalancing (according to the order).
                                 }
-                            });
+                                catch (IgniteCheckedException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug(e.getMessage());
+                                }
+                            }
+                        });
 
-                        requestPartitions(fut, assigns);
-                    }
-                    catch (IgniteCheckedException e) {
-                        ClusterTopologyCheckedException cause = e.getCause(ClusterTopologyCheckedException.class);
-
-                        if (cause != null)
-                            log.warning("Failed to send initial demand request to node. " + e.getMessage());
-                        else
-                            log.error("Failed to send initial demand request to node.", e);
-
-                        fut.cancel();
-                    }
-                    catch (Throwable th) {
-                        log.error("Runtime error caught during initial demand request sending.", th);
-
-                        fut.cancel();
-
-                        if (th instanceof Error)
-                            throw th;
-                    }
+                    requestPartitions(fut, assigns);
                 }
             };
         }
@@ -408,12 +387,8 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Rebalance future.
      * @param assigns Assignments.
-     * @throws IgniteCheckedException If failed.
      */
-    private void requestPartitions(
-        RebalanceFuture fut,
-        GridDhtPreloaderAssignments assigns
-    ) throws IgniteCheckedException {
+    private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assigns) {
         assert fut != null;
 
         if (topologyChanged(fut)) {
@@ -422,7 +397,7 @@ public class GridDhtPartitionDemander {
             return;
         }
 
-        synchronized (fut) {
+        synchronized (fut) { // Synchronized to prevent consistency issues in case of parallel cancellation.
             if (fut.isDone())
                 return;
 
@@ -433,7 +408,7 @@ public class GridDhtPartitionDemander {
 
                 Collection<Integer> parts= e.getValue().partitions();
 
-                assert parts != null : "Partitions are null [grp=" + grp.name() + ", fromNode=" + nodeId + "]";
+                assert parts != null : "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId + "]";
 
                 fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
             }
@@ -454,7 +429,7 @@ public class GridDhtPartitionDemander {
                 ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
                 ", topology=" + fut.topologyVersion() + ", updateSeq=" + fut.updateSeq + "]");
 
-            List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
+            final List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
 
             for (int cnt = 0; cnt < lsnrCnt; cnt++)
                 sParts.add(new HashSet<Integer>());
@@ -469,26 +444,49 @@ public class GridDhtPartitionDemander {
             for (cnt = 0; cnt < lsnrCnt; cnt++) {
                 if (!sParts.get(cnt).isEmpty()) {
                     // Create copy.
-                    GridDhtPartitionDemandMessage initD = createDemandMessage(d, sParts.get(cnt));
+                    final GridDhtPartitionDemandMessage initD = createDemandMessage(d, sParts.get(cnt));
 
                     initD.topic(rebalanceTopics.get(cnt));
                     initD.updateSequence(fut.updateSeq);
                     initD.timeout(cfg.getRebalanceTimeout());
 
-                    synchronized (fut) {
-                        if (fut.isDone())
-                            return;// Future can be already cancelled at this moment and all failovers happened.
+                    final int finalCnt = cnt;
 
-                        // New requests will not be covered by failovers.
-                        ctx.io().sendOrderedMessage(node,
-                            rebalanceTopics.get(cnt), initD, grp.ioPolicy(), initD.timeout());
-                    }
+                    ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                if (!fut.isDone()) {
+                                    ctx.io().sendOrderedMessage(node, rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
 
+                                    // Cleanup required in case partitions demanded in parallel with cancellation.
+                                    synchronized (fut) {
+                                        if (fut.isDone())
+                                            fut.cleanupRemoteContexts(node.id());
+                                    }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Requested rebalancing [from node=" + node.id() + ", listener index=" +
-                            cnt + ", partitions count=" + sParts.get(cnt).size() +
-                            " (" + partitionsList(sParts.get(cnt)) + ")]");
+                                    if (log.isDebugEnabled())
+                                        log.debug("Requested rebalancing [from node=" + node.id() + ", listener index=" +
+                                            finalCnt + ", partitions count=" + sParts.get(finalCnt).size() +
+                                            " (" + partitionsList(sParts.get(finalCnt)) + ")]");
+                                }
+                            }
+                            catch (IgniteCheckedException e) {
+                                ClusterTopologyCheckedException cause = e.getCause(ClusterTopologyCheckedException.class);
+
+                                if (cause != null)
+                                    log.warning("Failed to send initial demand request to node. " + e.getMessage());
+                                else
+                                    log.error("Failed to send initial demand request to node.", e);
+
+                                fut.cancel();
+                            }
+                            catch (Throwable th) {
+                                log.error("Runtime error caught during initial demand request sending.", th);
+
+                                fut.cancel();
+                            }
+                        }
+                    }, /*system pool*/true);
                 }
             }
         }
@@ -856,7 +854,7 @@ public class GridDhtPartitionDemander {
         private final GridCacheSharedContext<?, ?> ctx;
 
         /** */
-        private final CacheGroupInfrastructure grp;
+        private final CacheGroupContext grp;
 
         /** */
         private final IgniteLogger log;
@@ -884,7 +882,7 @@ public class GridDhtPartitionDemander {
          * @param updateSeq Update sequence.
          */
         RebalanceFuture(
-            CacheGroupInfrastructure grp,
+            CacheGroupContext grp,
             GridDhtPreloaderAssignments assigns,
             IgniteLogger log,
             long updateSeq) {

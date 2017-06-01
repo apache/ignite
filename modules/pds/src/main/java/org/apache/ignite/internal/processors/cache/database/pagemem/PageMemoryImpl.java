@@ -1892,7 +1892,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * @param cacheId Cache id.
+         * @param grpId Cache group id.
          */
         private void resetPartTags(int grpId) {
             assert getWriteHoldCount() > 0;

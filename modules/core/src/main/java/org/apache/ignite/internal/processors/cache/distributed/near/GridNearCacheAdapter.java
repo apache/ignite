@@ -99,8 +99,10 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
+    /**
+     * @return Entry factory.
+     */
+    private GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,

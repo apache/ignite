@@ -541,11 +541,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * @return Entry factory.
-     */
-    protected abstract GridCacheMapEntryFactory entryFactory();
-
-    /**
      * Starts this cache. Child classes should override this method
      * to provide custom start-up behavior.
      *
@@ -3530,7 +3525,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
                 nodes,
                 true,
-                0);
+                0,
+                false);
     }
 
     /**
@@ -3698,7 +3694,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             return ctx.kernalContext().task().execute(
                 new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
-        } catch (ClusterGroupEmptyException e) {
+        }
+        catch (ClusterGroupEmptyException e) {
             return new GridFinishedFuture<>(0);
         }
     }

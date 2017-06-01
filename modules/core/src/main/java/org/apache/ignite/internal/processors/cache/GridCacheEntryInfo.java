@@ -319,6 +319,7 @@ public class GridCacheEntryInfo implements Message {
     /**
      * @param ctx Cache object context.
      * @return Marshalled size.
+     * @throws IgniteCheckedException If failed.
      */
     public int marshalledSize(CacheObjectContext ctx) throws IgniteCheckedException {
         int size = 0;

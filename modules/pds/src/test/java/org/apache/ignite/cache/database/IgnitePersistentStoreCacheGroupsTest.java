@@ -74,13 +74,20 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         super.beforeTestsStarted();
 
         System.setProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE, "LOG_ONLY");
-
-        GridTestUtils.deleteDbFiles();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(FileWriteAheadLogManager.IGNITE_PDS_WAL_MODE);
+
+        GridTestUtils.deleteDbFiles();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        GridTestUtils.deleteDbFiles();
     }
 
     /** {@inheritDoc} */
@@ -281,6 +288,50 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         Ignite ignite = startGrid();
 
         ignite.cache("c1").destroy();
+
+        stopGrid();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateDropCache1() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1);
+
+        CacheConfiguration ccfg2 = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1);
+
+        Ignite ignite = startGrid();
+
+        ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
+
+
+        ignite.cache("c1").destroy();
+
+        ignite.cache("c2").destroy();
+
+        ignite.createCache(ccfg1);
+        ignite.createCache(ccfg2);
+
+        stopGrid();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateDropCache2() throws Exception {
+        CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1)
+            .setIndexedTypes(Integer.class, Person.class);
+
+        CacheConfiguration ccfg2 = cacheConfiguration(GROUP1, "c2", PARTITIONED, ATOMIC, 1)
+            .setIndexedTypes(Integer.class, Person.class);
+
+        Ignite ignite = startGrid();
+
+        ignite.createCaches(Arrays.asList(ccfg1, ccfg2));
+
+        ignite.cache("c1").destroy();
+
+        ignite.createCache(ccfg1);
 
         stopGrid();
     }

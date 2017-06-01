@@ -62,6 +62,9 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Utility methods for queries.
  */
 public class QueryUtils {
+    /** Default schema. */
+    public static final String DFLT_SCHEMA = "PUBLIC";
+
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";
 

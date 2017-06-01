@@ -41,7 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSna
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
@@ -51,8 +51,8 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImp
 import org.apache.ignite.internal.processors.cache.database.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionCountersIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -596,7 +596,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @param walIt WAL iterator.
          * @param part Partition ID.
          */
-        private RebalanceIteratorAdapter(CacheGroupInfrastructure grp, WALIterator walIt, int part) {
+        private RebalanceIteratorAdapter(CacheGroupContext grp, WALIterator walIt, int part) {
             this.cacheGrpCaches = grp.cacheIds();
             this.walIt = walIt;
             this.part = part;

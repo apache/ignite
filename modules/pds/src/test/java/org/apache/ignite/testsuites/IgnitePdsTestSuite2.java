@@ -19,10 +19,11 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.database.IgnitePersistentStoreAtomicCacheRebalancingTest;
-import org.apache.ignite.cache.database.IgnitePersistentStoreTxCacheRebalancingTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreContinuousRestartSelfTest;
+import org.apache.ignite.cache.database.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.cache.database.IgnitePersistentStorePageSizesTest;
 import org.apache.ignite.cache.database.IgnitePersistentStoreRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.cache.database.IgnitePersistentStoreTxCacheRebalancingTest;
 import org.apache.ignite.cache.database.db.DbPageEvictionDuringPartitionClearSelfTest;
 import org.apache.ignite.cache.database.db.IgniteDbWholeClusterRestartSelfTest;
 import org.apache.ignite.cache.database.db.RebalancingOnNotStableTopologyTest;
@@ -69,6 +70,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalHistoryReservationsSelfTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreContinuousRestartSelfTest.class);
+
+        suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 
         return suite;
     }
