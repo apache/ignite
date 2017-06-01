@@ -630,7 +630,7 @@ public class GridMapQueryExecutor {
 
                     conn.setQueryContext(qctx);
 
-                    rs = h2.executeSqlQueryWithTimer(h2.schema(mainCctx.name()), conn, qry.query(),
+                    rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
                         qry.parameters(params),
                         timeout,
                         qr.cancels[qryIdx]);

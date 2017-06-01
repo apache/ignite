@@ -734,7 +734,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 runs.putIfAbsent(run.id(), run);
 
-                H2ResultSet rs = executeSqlQueryWithTimer(schemaName, stmt, conn, qry, params, timeout, cancel);
+                H2ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
 
                 return new H2FieldsIterator(rs) {
                     @Override public void onClose() throws IgniteCheckedException {
@@ -840,8 +840,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Executes sql query and prints warning if query is too slow..
      *
-     * @param schema Schema.
-     * @param conn Connection,.
+     * @param conn Connection,
      * @param sql Sql query.
      * @param params Parameters.
      * @param cancel Query cancel.
@@ -863,7 +862,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Executes sql query and prints warning if query is too slow.
      *
-     * @param schema Schema.
      * @param stmt Prepared statement for query.
      * @param conn Connection.
      * @param sql Sql query.
@@ -872,15 +870,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private H2ResultSet executeSqlQueryWithTimer(
-        String schema,
-        PreparedStatement stmt,
+    private H2ResultSet executeSqlQueryWithTimer( PreparedStatement stmt,
         H2Connection conn,
         String sql,
         @Nullable Object[] params,
         int timeoutMillis,
-        @Nullable GridQueryCancel cancel
-    ) throws IgniteCheckedException {
+        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {
@@ -1023,7 +1018,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2ResultSet rs;
 
         try {
-            rs = executeSqlQueryWithTimer(schemaName, conn, sql, params, 0, cancel);
+            rs = executeSqlQueryWithTimer(conn, sql, params, 0, cancel);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             runs.remove(run.id(), run);
@@ -2012,9 +2007,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Schema schema = dflt ? schemas.get(schemaName) : schemas.remove(schemaName);
 
         if (schema != null) {
-            cacheName2schema.remove(cacheName);
             mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
+
+            // Remove this mapping only after callback to DML proc - it needs that mapping internally
+            cacheName2schema.remove(cacheName);
 
             // Drop tables.
             Collection<H2TableDescriptor> rmvTbls = new HashSet<>();

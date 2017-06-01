@@ -15,21 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.yardstick.cache.model;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
- * Basic test suite.
- * May be removed soon as all tests were moved to {@link IgniteBasicTestSuite}
+ * Entity class for benchmark.
  */
-@Deprecated
-public class IgniteBinaryBasicTestSuite extends TestSuite {
+public class Accounts {
+    /** */
+    @QuerySqlField
+    private long val;
+
+    /** */
+    public Accounts() {
+        // No-op.
+    }
+
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @param val Id.
      */
-    public static TestSuite suite() throws Exception {
-        return new TestSuite("GridGain Binary Basic Test Suite: migrated to Ignite Basic Test Suite");
+    public Accounts(long val) {
+        this.val = val;
+    }
+
+    /**
+     * @param val Val.
+     */
+    public Accounts setVal(long val) {
+        this.val = val;
+
+        return this;
+    }
+
+    /**
+     * @return Val.
+     */
+    public long getVal() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Accounts [val=" + val + ']';
     }
 }
