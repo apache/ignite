@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.CreateTableParams;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
+import org.h2.command.ddl.CreateTableData;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -155,9 +157,15 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
                             cmd.tableName());
                 }
-                else
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateCacheName(),
+                else {
+                    CreateTableParams params = new CreateTableParams()
+                        .templateCacheName(cmd.templateCacheName())
+                        .atomicityMode(cmd.atomicityMode())
+                        .backups(cmd.backups());
+
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), params,
                         cmd.ifNotExists());
+                }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;

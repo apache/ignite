@@ -1277,13 +1277,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
-     * @param templateCacheName Cache name to take settings from.
+     * @param params Additional params.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, CreateTableParams params, boolean ifNotExists)
         throws IgniteCheckedException {
+        String templateCacheName = params.templateCacheName();
+
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
 
         if (templateCfg == null)
@@ -1294,6 +1296,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 "[cacheName=" + templateCacheName + ']');
 
         CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
+
+        if (params.atomicityMode() != null)
+            newCfg.setAtomicityMode(params.atomicityMode());
+
+        if (params.backups() > 0)
+            newCfg.setBackups(params.backups());
 
         newCfg.setName(entity.getTableName());
         newCfg.setQueryEntities(Collections.singleton(entity));
