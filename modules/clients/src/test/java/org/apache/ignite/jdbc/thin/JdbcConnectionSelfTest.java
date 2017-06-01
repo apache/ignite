@@ -1450,8 +1450,98 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     // void setClientInfo(Properties properties)
     // String getClientInfo(String name)
     // Properties getClientInfo()
-    // Array createArrayOf(String typeName, Object[] elements)
-    // Struct createStruct(String typeName, Object[] attributes)
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateArrayOf() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        final String typeName = "varchar";
+
+        final String[] elements = new String[] {"apple", "pear"};
+
+        // Invalid typename
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.createArrayOf(null, null);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid type name"
+        );
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createArrayOf(typeName, elements);
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "SQL-specific types are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createArrayOf(typeName, elements);
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateStruct() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Invalid typename
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createStruct(null, null);
+                }
+            },
+            SQLException.class,
+            "Invalid type name"
+        );
+
+        final String typeName = "employee";
+
+        final Object[] attrs = new Object[] {100, "Tom"};
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createStruct(typeName, attrs);
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "SQL-specific types are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createStruct(typeName, attrs);
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
 
     /**
      * @throws Exception If failed.
@@ -1616,6 +1706,8 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     // releaseSavepoint
     // createClob/createBlob/createNClob/createSQLXML
     //
+    // createArrayOf
+    // createStruct
     // setSchema/getSchema
     // abort
     // setNetworTimeout/getNetworkTimeout
