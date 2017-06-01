@@ -38,7 +38,7 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
 
     /** {@inheritDoc} */
     @Override protected void loadCacheData(String cacheName) {
-        loadSampleValues(cacheName, args.preloadAmount);
+        loadSampleValues(cacheName, args.preloadAmount());
     }
 
     /** {@inheritDoc} */
