@@ -3198,10 +3198,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             assert sslHnd != null;
 
                             buf = ByteBuffer.allocate(1000);
+                            buf.order(ByteOrder.nativeOrder());
 
                             ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-
-                            buf.order(ByteOrder.nativeOrder());
+                            decode.order(ByteOrder.nativeOrder());
 
                             for (int i = 0; i < 9; ) {
                                 int read = ch.read(buf);
