@@ -89,8 +89,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -639,8 +639,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (!recon) {
                     TcpDiscoveryNode node = locNode;
 
-                    if (locNode.order() > 0)
+                    if (locNode.order() > 0) {
                         node = locNode.clientReconnectNode(spi.spiCtx.nodeAttributes());
+
+                        marshalCredentials(node);
+                    }
 
                     msg = new TcpDiscoveryJoinRequestMessage(
                             node,
@@ -736,8 +739,11 @@ class ClientImpl extends TcpDiscoveryImpl {
             // Use security-unsafe getter.
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
-                U.marshal(spi.marshaller(), attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+            Object creds = attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+
+            assert !(creds instanceof byte[]);
+
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, U.marshal(spi.marshaller(), creds));
 
             node.setAttributes(attrs);
         }

@@ -2791,13 +2791,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
-        return getOrCreateCache0(cacheCfg).get1();
+        return getOrCreateCache0(cacheCfg, false).get1();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
-        CacheConfiguration<K, V> cacheCfg) {
+        CacheConfiguration<K, V> cacheCfg, boolean sql) {
         A.notNull(cacheCfg, "cacheCfg");
         CU.validateCacheName(cacheCfg.getName());
 
@@ -2809,7 +2809,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             Boolean res = false;
 
             if (ctx.cache().cache(cacheCfg.getName()) == null) {
-                res = ctx.cache().dynamicStartCache(cacheCfg,
+                res =
+                    sql ? ctx.cache().dynamicStartSqlCache(cacheCfg).get() :
+                    ctx.cache().dynamicStartCache(cacheCfg,
                     cacheCfg.getName(),
                     null,
                     false,
@@ -3017,14 +3019,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        destroyCache0(cacheName);
+        destroyCache0(cacheName, false);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean destroyCache0(String cacheName) throws CacheException {
+    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
         CU.validateCacheName(cacheName);
 
-        IgniteInternalFuture<Boolean> stopFut = destroyCacheAsync(cacheName, true);
+        IgniteInternalFuture<Boolean> stopFut = destroyCacheAsync(cacheName, sql, true);
 
         try {
             return stopFut.get();
@@ -3050,10 +3052,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cacheName Cache name.
+     * @param sql If the cache needs to be destroyed only if it was created by SQL {@code CREATE TABLE} command.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Ignite future.
      */
-    public IgniteInternalFuture<Boolean> destroyCacheAsync(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<Boolean> destroyCacheAsync(String cacheName, boolean sql, boolean checkThreadTx) {
         CU.validateCacheName(cacheName);
 
         guard();
@@ -3061,7 +3064,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.cache().dynamicDestroyCache(cacheName, checkThreadTx);
+            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx);
         }
         finally {
             unguard();

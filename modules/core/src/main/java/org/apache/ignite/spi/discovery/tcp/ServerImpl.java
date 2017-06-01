@@ -70,6 +70,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -116,9 +117,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -957,7 +958,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, U.marshal(spi.marshaller(), subj));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
 
             locNode.setAttributes(attrs);
 
@@ -995,7 +997,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                 try {
                     IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
-                    Integer res = sendMessageDirectly(joinReq, addr, timeoutHelper);
+                    Integer res;
+
+                    try {
+                        SecurityUtils.serializeVersion(1);
+
+                        res = sendMessageDirectly(joinReq, addr, timeoutHelper);
+                    }
+                    finally {
+                        SecurityUtils.restoreDefaultSerializeVersion();
+                    }
 
                     assert res != null;
 
@@ -1940,6 +1951,39 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * @param obj Object.
+     * @param ver Security serialize version.
+     * @return Marshaled object.
+     */
+    private byte[] marshalWithSecurityVersion(Object obj, int ver) throws IgniteCheckedException {
+        try {
+            SecurityUtils.serializeVersion(ver);
+
+            return U.marshal(spi.marshaller(), obj);
+        }
+        finally {
+            SecurityUtils.restoreDefaultSerializeVersion();
+        }
+    }
+
+    /**
+     * @param bytes Marshaled object.
+     * @param ver Security serialize version.
+     * @return Unmarshaled object.
+     */
+    private <T> T unmarshalWithSecurityVersion(byte[] bytes, int ver) throws IgniteCheckedException {
+        try {
+            if (ver > 0)
+                SecurityUtils.serializeVersion(ver);
+
+            return spi.marshaller().unmarshal(bytes, U.resolveClassLoader(spi.ignite().configuration()));
+        }
+        finally {
+            SecurityUtils.restoreDefaultSerializeVersion();
         }
     }
 
@@ -2974,6 +3018,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     pendingMsgs.customDiscardId);
 
                             try {
+                                SecurityUtils.serializeVersion(1);
+
                                 long tstamp = U.currentTimeMillis();
 
                                 if (timeoutHelper == null)
@@ -3020,6 +3066,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
                             finally {
+                                SecurityUtils.restoreDefaultSerializeVersion();
+
                                 clearNodeAddedMessage(msg);
                             }
 
@@ -3410,7 +3458,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Stick in authentication subject to node (use security-safe attributes for copy).
                             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, U.marshal(spi.marshaller(), subj));
+                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
+                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
 
                             node.setAttributes(attrs);
                         }
@@ -4066,9 +4115,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            SecurityContext coordSubj = U.unmarshal(spi.marshaller(),
-                                node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                            byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+                            byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+                            SecurityContext coordSubj;
+
+                            try {
+                                if (subjBytesV2 == null)
+                                    SecurityUtils.serializeVersion(1);
+
+                                coordSubj = U.unmarshal(spi.marshaller(),
+                                    subjBytesV2 != null ? subjBytesV2 : subjBytes,
+                                    U.resolveClassLoader(spi.ignite().configuration()));
+                            }
+                            finally {
+                                SecurityUtils.restoreDefaultSerializeVersion();
+                            }
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -4152,13 +4214,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
 
                                 try {
-                                    ClassLoader cl = U.resolveClassLoader(spi.ignite().configuration());
-
                                     byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
                                     byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
 
-                                    SecurityContext rmCrd = spi.marshaller().unmarshal(rmSubj, cl);
-                                    SecurityContext locCrd = spi.marshaller().unmarshal(locSubj, cl);
+                                    byte[] rmSubjV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+                                    byte[] locSubjV2 = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+                                    int ver = 1; // Compatible version.
+
+                                    if (rmSubjV2 != null && locSubjV2 != null) {
+                                        rmSubj = rmSubjV2;
+                                        locSubj = locSubjV2;
+
+                                        ver = 0; // Default version.
+                                    }
+
+                                    SecurityContext rmCrd = unmarshalWithSecurityVersion(rmSubj, ver);
+                                    SecurityContext locCrd = unmarshalWithSecurityVersion(locSubj, ver);
 
                                     if (!permissionsEqual(locCrd.subject().permissions(),
                                         rmCrd.subject().permissions())) {
@@ -5835,6 +5907,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while (!isInterrupted()) {
                     try {
+                        SecurityUtils.serializeVersion(1);
+
                         TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
                             U.resolveClassLoader(spi.ignite().configuration()));
 
@@ -6090,6 +6164,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", rmtNodeId=" + nodeId + ']', e);
 
                         return;
+                    }
+                    finally {
+                        SecurityUtils.restoreDefaultSerializeVersion();
                     }
                 }
             }

@@ -48,6 +48,9 @@ public class DynamicCacheDescriptor {
     /** Statically configured flag. */
     private final boolean staticCfg;
 
+    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
+    private boolean sql;
+
     /** Cache type. */
     private CacheType cacheType;
 
@@ -97,6 +100,7 @@ public class DynamicCacheDescriptor {
      * @param template {@code True} if this is template configuration.
      * @param rcvdFrom ID of node provided cache configuration
      * @param staticCfg {@code True} if cache statically configured.
+     * @param sql SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}.
      * @param deploymentId Deployment ID.
      * @param schema Query schema.
      */
@@ -107,6 +111,7 @@ public class DynamicCacheDescriptor {
         boolean template,
         UUID rcvdFrom,
         boolean staticCfg,
+        boolean sql,
         IgniteUuid deploymentId,
         QuerySchema schema) {
         assert cacheCfg != null;
@@ -123,6 +128,7 @@ public class DynamicCacheDescriptor {
         this.template = template;
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
+        this.sql = sql;
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
@@ -167,6 +173,13 @@ public class DynamicCacheDescriptor {
      */
     public boolean staticallyConfigured() {
         return staticCfg;
+    }
+
+    /**
+     * @return SQL flag.
+     */
+    public boolean sql() {
+        return sql;
     }
 
     /**

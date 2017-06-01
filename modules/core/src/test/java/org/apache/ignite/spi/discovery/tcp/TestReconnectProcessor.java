@@ -17,11 +17,13 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -37,6 +39,9 @@ import org.jetbrains.annotations.Nullable;
  * Updates node attributes on disconnect.
  */
 public class TestReconnectProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
+    /** Enabled flag. */
+    public static boolean enabled;
+
     /**
      * @param ctx Kernal context.
      */
@@ -45,9 +50,14 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, new SecurityCredentials());
+    }
+
+    /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node,
         SecurityCredentials cred) throws IgniteCheckedException {
-        return null;
+        return new TestSecurityContext();
     }
 
     /** {@inheritDoc} */
@@ -83,11 +93,44 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return false;
+        return enabled;
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         ctx.addNodeAttribute("test", "2");
+    }
+
+    /**
+     *
+     */
+    private static class TestSecurityContext implements SecurityContext, Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubject subject() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            return true;
+        }
     }
 }
