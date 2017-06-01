@@ -1151,10 +1151,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
 
         try {
             if (nodeId.equals(sync.getOwnerNode())) {
-                sync.setBroken(true);
-
-                if (!sync.failoverSafe)
+                if (!sync.failoverSafe) {
+                    sync.setBroken(true);
                     sync.interruptAll();
+                }
             }
 
             // Try to notify any waiting threads.
@@ -1173,7 +1173,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             return;
         }
 
-        sync.setBroken(true);
+        if (!sync.failoverSafe) {
+            sync.setBroken(true);
+        }
 
         sync.interruptAll();
 

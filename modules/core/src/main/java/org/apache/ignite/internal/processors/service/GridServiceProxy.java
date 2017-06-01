@@ -192,8 +192,8 @@ public class GridServiceProxy<T> implements Serializable {
                             new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false,
-                            waitTimeout
-                        ).get();
+                            waitTimeout,
+                            true).get();
                     }
                 }
                 catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {

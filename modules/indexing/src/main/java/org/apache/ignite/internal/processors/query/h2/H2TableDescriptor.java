@@ -59,8 +59,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /** */
     private final H2Schema schema;
 
-    /** Cache name. */
-    private final String cacheName;
+    /** Cache context. */
+    private final GridCacheContext cctx;
 
     /** */
     private GridH2Table tbl;
@@ -77,13 +77,14 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @param idx Indexing.
      * @param schema Schema.
      * @param type Type descriptor.
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      */
-    H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type, String cacheName) {
+    public H2TableDescriptor(IgniteH2Indexing idx, H2Schema schema, GridQueryTypeDescriptor type,
+        GridCacheContext cctx) {
         this.idx = idx;
         this.type = type;
         this.schema = schema;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
 
         fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
     }
@@ -145,10 +146,10 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     }
 
     /**
-     * @return Cache name.
+     * @return Cache context.
      */
-    String cacheName() {
-        return cacheName;
+    GridCacheContext cache() {
+        return cctx;
     }
 
     /**
@@ -177,8 +178,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return H2 row factory.
      */
     H2RowFactory rowFactory(GridH2RowDescriptor rowDesc) {
-        GridCacheContext cctx = schema.cacheContext();
-
         if (cctx.affinityNode())
             return new H2RowFactory(rowDesc, cctx);
 
@@ -198,7 +197,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         Index hashIdx = createHashIndex(
-            schema,
             tbl,
             "_key_PK_hash",
             H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), keyCol, affCol)
@@ -322,15 +320,12 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
     /**
      * Create hash index.
      *
-     * @param schema Schema.
      * @param tbl Table.
      * @param idxName Index name.
      * @param cols Columns.
      * @return Index.
      */
-    private Index createHashIndex(H2Schema schema, GridH2Table tbl, String idxName, List<IndexColumn> cols) {
-        GridCacheContext cctx = schema.cacheContext();
-
+    private Index createHashIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         if (cctx.affinityNode()) {
             assert pkHashIdx == null : pkHashIdx;
 

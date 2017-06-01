@@ -526,7 +526,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         new BlockSetCallable(cctx.name(), id),
                         nodes,
                         true,
-                        0).get();
+                        0, false).get();
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(ClusterTopologyCheckedException.class)) {
@@ -550,7 +550,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         new RemoveSetDataCallable(cctx.name(), id, topVer),
                         nodes,
                         true,
-                        0).get();
+                        0, false).get();
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(ClusterTopologyCheckedException.class)) {

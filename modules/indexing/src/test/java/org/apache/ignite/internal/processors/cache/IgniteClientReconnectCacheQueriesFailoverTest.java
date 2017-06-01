@@ -101,7 +101,7 @@ public class IgniteClientReconnectCacheQueriesFailoverTest extends IgniteClientR
 
                     assertEquals(1, res.size());
 
-                    Double avg = (Double)res.get(0).get(0);
+                    Integer avg = (Integer)res.get(0).get(0);
 
                     assertEquals(5_000, avg.intValue());
                 }

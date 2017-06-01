@@ -14,24 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.ml.math;
 
-package org.apache.ignite.testsuites;
+import java.io.Externalizable;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
 
 /**
- * H2 indexing SPI tests.
+ * This class is based on the corresponding class from Apache Common Math lib.
+ * Interface for distance measures of n-dimensional vectors.
  */
-public class IgniteH2IndexingSpiTestSuite extends TestSuite {
+public interface DistanceMeasure extends Externalizable {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * Compute the distance between two n-dimensional vectors.
+     * <p>
+     * The two vectors are required to have the same dimension.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the distance between the two vectors
+     * @throws CardinalityException if the array lengths differ.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("H2 Indexing SPI Test Suite");
-
-        // No-op.
-
-        return suite;
-    }
+    double compute(Vector a, Vector b) throws CardinalityException;
 }
