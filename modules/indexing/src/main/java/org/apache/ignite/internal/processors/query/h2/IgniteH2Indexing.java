@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -134,7 +135,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Insert;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Cursor;
@@ -407,6 +407,39 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (SQLException e) {
             U.error(log, "Failed to release pooled connection.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] getParameterTypes(String cacheName, String sql) {
+        H2Connection c = takeConnectionForCache(cacheName);
+
+        try {
+            c.setupConnection(false, true);
+
+            PreparedStatement s = c.prepare(sql, null);
+
+            ParameterMetaData pm = s.getParameterMetaData();
+
+            int cnt = pm.getParameterCount();
+
+            if (cnt == 0)
+                return U.EMPTY_INTS;
+
+            int[] types = new int[cnt];
+
+            for (int i = 0; i < cnt; i++)
+                types[i] = pm.getParameterType(i + 1);
+
+            return types;
+        }
+        catch (SQLException e) {
+            onSqlException(c);
+
+            throw new IgniteSQLException(e);
+        }
+        finally {
+            returnToPool(c);
         }
     }
 
@@ -1551,13 +1584,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res = "";
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
-        Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
-
-        return prep instanceof Insert;
     }
 
     /** {@inheritDoc} */

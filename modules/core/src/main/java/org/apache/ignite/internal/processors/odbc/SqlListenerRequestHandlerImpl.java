@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -377,17 +375,13 @@ public class SqlListenerRequestHandlerImpl implements SqlListenerRequestHandler 
      */
     private SqlListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
-            PreparedStatement stmt = null; // TODO ctx.query().prepareNativeStatement(req.cacheName(), req.query());
+            int[] sqlTypes = ctx.query().getIndexing()
+                .getParameterTypes(req.cacheName(), req.query());
 
-            ParameterMetaData pmd = stmt.getParameterMetaData();
+            byte[] typeIds = F.isEmpty(sqlTypes) ? U.EMPTY_BYTES : new byte[sqlTypes.length];
 
-            byte[] typeIds = new byte[pmd.getParameterCount()];
-
-            for (int i = 1; i <= pmd.getParameterCount(); ++i) {
-                int sqlType = pmd.getParameterType(i);
-
-                typeIds[i - 1] = sqlTypeToBinary(sqlType);
-            }
+            for (int i = 0; i < sqlTypes.length; i++)
+                typeIds[i] = sqlTypeToBinary(sqlTypes[i]);
 
             OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);
 

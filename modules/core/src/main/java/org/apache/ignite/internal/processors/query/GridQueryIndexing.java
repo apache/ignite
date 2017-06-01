@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
@@ -282,10 +282,11 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statement.
+     * Gets SQL parameter data types as in {@link Types}.
      *
-     * @param nativeStmt Native statement.
-     * @return {@code True} if insert.
+     * @param cacheName Cache name.
+     * @param sql SQL Statement.
+     * @return Parameter types.
      */
-    public boolean isInsertStatement(PreparedStatement nativeStmt);
+    public int[] getParameterTypes(String cacheName, String sql);
 }

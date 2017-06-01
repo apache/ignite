@@ -283,14 +283,17 @@ public abstract class IgniteUtils {
     /** All grid events. */
     private static final int[] GRID_EVTS;
 
+    /** Empty byte array. */
+    public static final byte[] EMPTY_BYTES = {};
+
     /** Empty integers array. */
-    public static final int[] EMPTY_INTS = new int[0];
+    public static final int[] EMPTY_INTS = {};
 
-    /** Empty  longs. */
-    public static final long[] EMPTY_LONGS = new long[0];
+    /** Empty longs. */
+    public static final long[] EMPTY_LONGS = {};
 
-    /** Empty  longs. */
-    public static final Field[] EMPTY_FIELDS = new Field[0];
+    /** Empty fields. */
+    public static final Field[] EMPTY_FIELDS = {};
 
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
