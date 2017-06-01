@@ -30,7 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.CreateTableParams;
+import org.apache.ignite.internal.processors.query.GridCreateTableParams;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
-import org.h2.command.ddl.CreateTableData;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.jdbc.JdbcPreparedStatement;
@@ -158,7 +157,7 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
-                    CreateTableParams params = new CreateTableParams()
+                    GridCreateTableParams params = new GridCreateTableParams()
                         .templateCacheName(cmd.templateCacheName())
                         .atomicityMode(cmd.atomicityMode())
                         .backups(cmd.backups());

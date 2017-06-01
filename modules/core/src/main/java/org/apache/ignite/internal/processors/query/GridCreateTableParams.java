@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Additional params for {@code CREATE TABLE} command.
  */
-public class CreateTableParams {
+public class GridCreateTableParams {
     /** Cache name upon which new cache configuration for this table must be based. */
     private String tplCacheName;
 
@@ -43,7 +44,9 @@ public class CreateTableParams {
      * @param tplCacheName Cache name upon which new cache configuration for this table must be based.
      * @return {@code this} for chaining.
      */
-    public CreateTableParams templateCacheName(String tplCacheName) {
+    public GridCreateTableParams templateCacheName(String tplCacheName) {
+        A.notNullOrEmpty(tplCacheName, "tplCacheName");
+
         this.tplCacheName = tplCacheName;
 
         return this;
@@ -60,7 +63,7 @@ public class CreateTableParams {
      * @param backups Backups number for new cache.
      * @return {@code this} for chaining.
      */
-    public CreateTableParams backups(int backups) {
+    public GridCreateTableParams backups(int backups) {
         this.backups = backups;
 
         return this;
@@ -77,7 +80,7 @@ public class CreateTableParams {
      * @param atomicityMode Atomicity mode for new cache.
      * @return {@code this} for chaining.
      */
-    public CreateTableParams atomicityMode(CacheAtomicityMode atomicityMode) {
+    public GridCreateTableParams atomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 
         return this;

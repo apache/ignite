@@ -1282,8 +1282,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, CreateTableParams params, boolean ifNotExists)
-        throws IgniteCheckedException {
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, GridCreateTableParams params,
+        boolean ifNotExists) throws IgniteCheckedException {
         String templateCacheName = params.templateCacheName();
 
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
