@@ -358,6 +358,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName));
             }
+            else if (!cacheDesc.sql()) {
+                if (log.isDebugEnabled())
+                    log.debug("Received schema propose discovery message, but cache was not created through " +
+                        "CREATE TABLE command (will report error) [opId=" + opId + ", msg=" + msg + ']');;
+
+                msg.onError(new SchemaOperationException("CREATE INDEX and DROP INDEX operations are only allowed on " +
+                    "caches created with CREATE TABLE command [cacheName=" + cacheName + ']'));
+            }
             else {
                 CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
@@ -593,6 +601,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean nop = false;
 
         if (cacheExists) {
+            assert cacheDesc.sql();
+
             if (cacheRegistered) {
                 // If cache is started, we perform validation against real schema.
                 T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
@@ -1336,7 +1346,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Collection<QueryTypeCandidate> cands) throws IgniteCheckedException {
         synchronized (stateMux) {
             if (idx != null)
-                idx.registerCache(cacheName, schemaName, cctx, cctx.config());
+                idx.registerCache(cacheName, schemaName, cctx);
 
             try {
                 for (QueryTypeCandidate cand : cands) {
@@ -1367,7 +1377,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     if (idx != null)
-                        idx.registerType(cacheName, desc);
+                        idx.registerType(cctx, desc);
                 }
 
                 cacheNames.add(CU.mask(cacheName));
@@ -1732,7 +1742,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final String schemaName = idx.schema(cctx.name());
+            final String schemaName = qry.getSchema() != null ? qry.getSchema() : idx.schema(cctx.name());
             final int mainCacheId = CU.cacheId(cctx.name());
 
             IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
@@ -1782,19 +1792,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Query SQL fields without strict dependency on concrete cache.
      *
-     * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @return Cursot.
+     * @return Cursor.
      */
-    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final String schemaName, final SqlFieldsQuery qry,
-        final boolean keepBinary) {
+    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
 
         if (qry.isLocal())
             throw new IgniteException("Local query is not supported without specific cache.");
+
+        if (qry.getSchema() == null)
+            throw new IgniteException("Query schema is not set.");
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
@@ -1804,7 +1815,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     GridQueryCancel cancel = new GridQueryCancel();
 
-                    return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, null);
+                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null);
                 }
             };
 
@@ -1833,11 +1844,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param streamer Data streamer.
      * @param qry Query.
      * @return Iterator.
      */
-    public long streamUpdateQuery(@Nullable final String cacheName,
+    public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
         final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
         assert streamer != null;
 
@@ -1846,8 +1858,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             GridCacheContext cctx = ctx.cache().cache(cacheName).context();
-
-            final String schemaName = idx.schema(cacheName);
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
@@ -2103,16 +2113,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         String schemaName = idx.schema(cacheName);
 
         return idx.prepareNativeStatement(schemaName, sql);
-    }
-
-    /**
-     * @param schema Schema name.
-     * @return Cache name from schema name.
-     */
-    public String cacheName(String schema) throws SQLException {
-        checkxEnabled();
-
-        return idx.cacheName(schema);
     }
 
     /**
