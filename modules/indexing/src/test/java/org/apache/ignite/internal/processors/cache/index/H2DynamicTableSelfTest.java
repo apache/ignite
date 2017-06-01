@@ -94,7 +94,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testCreateTable() throws Exception {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\",\"backups=10\",\"atomicity=ATOMIC\""));
+            "\"cacheTemplate=cache\",\"backups=10\",\"atomicity=atomic\""));
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);

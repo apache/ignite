@@ -1034,7 +1034,7 @@ public class GridSqlQueryParser {
 
             case PARAM_ATOMICITY:
                 if (!F.isEmpty(val))
-                    res.atomicityMode(parseEnumParam(PARAM_ATOMICITY, val, CacheAtomicityMode.class));
+                    res.atomicityMode(parseEnumParam(PARAM_ATOMICITY, val.toUpperCase(), CacheAtomicityMode.class));
 
                 break;
 
