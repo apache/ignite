@@ -172,8 +172,6 @@ public class JdbcThinTcpIo {
     public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
-        JdbcUtils.setReadSqlObject(true);
-
         return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
             args == null ? null : args.toArray(new Object[args.size()])), QUERY_EXEC_MSG_INIT_CAP);
     }
@@ -214,8 +212,6 @@ public class JdbcThinTcpIo {
      */
     public JdbcQueryFetchResult queryFetch(Long qryId, int pageSize)
         throws IOException, IgniteCheckedException {
-        JdbcUtils.setReadSqlObject(true);
-
         return sendRequest(new JdbcQueryFetchRequest(qryId, pageSize), QUERY_FETCH_MSG_SIZE);
     }
 

@@ -181,6 +181,71 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         assert cnt == 1;
+
+
+        ResultSet rs0 = stmt.executeQuery("select 1");
+
+        assert rs0.next();
+        assert rs0.getBoolean(1);
+
+        rs0 = stmt.executeQuery("select 0");
+
+        assert rs0.next();
+        assert !rs0.getBoolean(1);
+
+        rs0 = stmt.executeQuery("select '1'");
+
+        assert rs0.next();
+        assert rs0.getBoolean(1);
+
+        rs0 = stmt.executeQuery("select '0'");
+
+        assert rs0.next();
+        assert !rs0.getBoolean(1);
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ResultSet rs0 = stmt.executeQuery("select 10");
+
+                assert rs0.next();
+                assert rs0.getBoolean(1);
+
+                return null;
+            }
+        }, ClassCastException.class, "Cannot cast java.lang.Integer [val=10] to boolean");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ResultSet rs0 = stmt.executeQuery("select '10'");
+
+                assert rs0.next();
+                assert rs0.getBoolean(1);
+
+                return null;
+            }
+        }, ClassCastException.class, "Cannot cast java.lang.Integer [val=10] to boolean");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ResultSet rs0 = stmt.executeQuery("select ''");
+
+                assert rs0.next();
+                assert rs0.getBoolean(1);
+
+                return null;
+            }
+        }, ClassCastException.class, "Cannot cast [val=] to boolean");
+
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ResultSet rs0 = stmt.executeQuery("select 'qwe'");
+
+                assert rs0.next();
+                assert rs0.getBoolean(1);
+
+                return null;
+            }
+        }, ClassCastException.class, "Cannot cast [val=qwe] to boolean");
     }
 
     /**
@@ -473,6 +538,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
         assert !rs.isFirst();
         assert !rs.isLast();
         assert rs.getRow() == 0;
+
+        rs = stmt.executeQuery("select id from TestObject where id < 0");
+
+        assert !rs.isBeforeFirst();
     }
 
     /**
