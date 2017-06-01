@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,6 +55,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** */
     private final static String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
+
+    /** */
+    private final static String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -77,6 +81,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         super.beforeTest();
 
         client().getOrCreateCache(cacheConfigurationForIndexing());
+        client().getOrCreateCache(cacheConfigurationForIndexingInPublicSchema());
     }
 
     /** {@inheritDoc} */
@@ -229,12 +234,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                executeDdl("DROP TABLE \"Integer\"");
+                executeDdl("DROP TABLE PUBLIC.\"Integer\"");
 
                 return null;
             }
         }, IgniteSQLException.class,
-        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx]");
+        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
     }
 
     /**
@@ -432,5 +437,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         ));
 
         return ccfg;
+    }
+
+    /**
+     * @return Cache configuration with query entities in {@code PUBLIC} schema.
+     */
+    private CacheConfiguration cacheConfigurationForIndexingInPublicSchema() {
+        return cacheConfigurationForIndexing().setName(INDEXED_CACHE_NAME_2).setSqlSchema(QueryUtils.DFLT_SCHEMA);
     }
 }
