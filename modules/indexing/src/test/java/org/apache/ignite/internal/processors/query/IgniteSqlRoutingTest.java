@@ -172,10 +172,10 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQrySelectAffKeyEqualConst() throws Exception {
+    public void testUnicastQuerySelectAffinityKeyEqualsConstant() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
-        List<List<?>> result = runQryEnsureUnicast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
                 new SqlFieldsQuery("select id, name, duration from Call where personId=100 order by id"), 1);
 
         assertEquals(2, result.size());
@@ -185,10 +185,10 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQrySelectAffKeyEqualParam() throws Exception {
+    public void testUnicastQuerySelectAffinityKeyEqualsParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
-        List<List<?>> result = runQryEnsureUnicast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
                 new SqlFieldsQuery("select id, name, duration from Call where personId=? order by id").setArgs(100), 1);
 
         assertEquals(2, result.size());
@@ -198,11 +198,11 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQrySelectKeyEqualParamReuse() throws Exception {
+    public void testUnicastQuerySelectKeyEqualsParameterReused() throws Exception {
         IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
         for (int key : new int[] {0, 250, 500, 750, 1000} ) {
-            List<List<?>> result = runQryEnsureUnicast(cache,
+            List<List<?>> result = runQueryEnsureUnicast(cache,
                     new SqlFieldsQuery("select name, age from Person where _key=?").setArgs(key), 1);
 
             assertEquals(1, result.size());
@@ -214,12 +214,12 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQrySelectKeyEqualParam() throws Exception {
+    public void testUnicastQuerySelectKeyEqualsParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
 
-        List<List<?>> result = runQryEnsureUnicast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
                 new SqlFieldsQuery("select name, duration from Call where _key=?")
                 .setArgs(callKey), 1);
 
@@ -231,7 +231,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** Check group, having, ordering allowed to be unicast requests */
-    public void testUnicastQryGroups() throws Exception {
+    public void testUnicastQueryGroups() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         String qry = "select name, count(1) " +
@@ -243,7 +243,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         final int personId = 10;
 
-        List<List<?>> result = runQryEnsureUnicast(cache, new SqlFieldsQuery(qry).setArgs(personId), 1);
+        List<List<?>> result = runQueryEnsureUnicast(cache, new SqlFieldsQuery(qry).setArgs(personId), 1);
 
         assertEquals(2, result.size());
 
@@ -252,12 +252,12 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQrySelectKeyEqualAndFieldParam() throws Exception {
+    public void testUnicastQuerySelectKeyEqualAndFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
 
-        List<List<?>> result = runQryEnsureUnicast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
                 new SqlFieldsQuery("select name, duration from Call where _key=? and duration=?")
                         .setArgs(callKey, 100), 1);
 
@@ -269,13 +269,13 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testUnicastQrySelect2KeyEqualsAndFieldParam() throws Exception {
+    public void testUnicastQuerySelect2KeyEqualsAndFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey1 = new CallKey(5, 1);
         CallKey callKey2 = new CallKey(1000, 1);
 
-        List<List<?>> result = runQryEnsureUnicast(cache,
+        List<List<?>> result = runQueryEnsureUnicast(cache,
                 new SqlFieldsQuery("select name, duration from Call where (_key=? and duration=?) or (_key=?)")
                         .setArgs(callKey1, 100, callKey2), 2);
 
@@ -291,12 +291,12 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testBCastQrySelectKeyEqualsOrFieldParam() throws Exception {
+    public void testBroadcastQuerySelectKeyEqualsOrFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
         CallKey callKey = new CallKey(5, 1);
 
-        List<List<?>> result = runQryEnsureBcast(cache,
+        List<List<?>> result = runQueryEnsureBroadcast(cache,
                 new SqlFieldsQuery("select name, duration from Call where _key=? or duration=?")
                         .setArgs(callKey, 100));
 
@@ -317,7 +317,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
             personCache.put(i, person);
 
-            //each person gets 2 calls
+            // each person gets 2 calls
             callCache.put(new CallKey(i, 1), new Call("caller1", 100));
             callCache.put(new CallKey(i, 2), new Call("caller2", 200));
         }
@@ -336,24 +336,24 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** Run query and check that only one node did generate 'query executed' event for it */
-    private List<List<?>> runQryEnsureUnicast(IgniteCache<?,?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
-        try (EvtCounter evtCounter = new EvtCounter(nodeCnt)) {
+    private List<List<?>> runQueryEnsureUnicast(IgniteCache<?,?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
+        try (EventCounter evtCounter = new EventCounter(nodeCnt)) {
             List<List<?>> result = cache.query(qry).getAll();
 
-            //do broadcast 'marker' query to ensure that we received all events from previous qry
+            // do broadcast 'marker' query to ensure that we received all events from previous qry
             cache.query(new SqlFieldsQuery(
                     MessageFormat.format(FINAL_QRY, cache.getName()))
                     .setArgs(FINAL_QRY_PARAM)).getAll();
 
-            //wait for all events from 'marker' query
+            // wait for all events from 'marker' query
             evtCounter.await();
 
-            //return result set of first query
+            // return result set of first query
             return result;
         }
     }
 
-    private List<List<?>> runQryEnsureBcast(IgniteCache<?, ?> cache, SqlFieldsQuery qry) throws Exception {
+    private List<List<?>> runQueryEnsureBroadcast(IgniteCache<?, ?> cache, SqlFieldsQuery qry) throws Exception {
         final CountDownLatch execLatch = new CountDownLatch(NODE_COUNT);
 
         final IgnitePredicate<Event> pred = new IgnitePredicate<Event>() {
@@ -374,6 +374,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
             grid(i).events().localListen(pred, EVT_CACHE_QUERY_EXECUTED);
 
         List<List<?>> result = cache.query(qry).getAll();
+
         assertTrue(execLatch.await(5000, MILLISECONDS));
 
         for (int i = 0; i < NODE_COUNT; i++)
@@ -383,7 +384,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private class EvtCounter implements AutoCloseable {
+    private class EventCounter implements AutoCloseable {
         /** */
         final AtomicInteger cnt;
 
@@ -425,7 +426,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         };
 
         /** */
-        private EvtCounter(int cnt) {
+        private EventCounter(int cnt) {
             this.cnt = new AtomicInteger(cnt);
 
             this.execLatch = new CountDownLatch(NODE_COUNT);
