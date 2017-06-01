@@ -2119,9 +2119,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Schema schema = dflt ? schemas.get(schemaName) : schemas.remove(schemaName);
 
         if (schema != null) {
-            cacheName2schema.remove(cacheName);
             mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
+
+            // Remove this mapping only after callback to DML proc - it needs that mapping internally
+            cacheName2schema.remove(cacheName);
 
             // Drop tables.
             Collection<H2TableDescriptor> rmvTbls = new HashSet<>();

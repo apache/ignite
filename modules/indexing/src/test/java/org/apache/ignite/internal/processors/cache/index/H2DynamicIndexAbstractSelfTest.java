@@ -64,7 +64,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        client().getOrCreateCache(cacheConfiguration());
+        createSqlCache(client(), cacheConfiguration());
 
         assertNoIndex(CACHE_NAME, TBL_NAME_ESCAPED, IDX_NAME_1_ESCAPED);
 
@@ -77,7 +77,7 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        client().destroyCache(CACHE_NAME);
+        destroySqlCache(client());
 
         super.afterTest();
     }

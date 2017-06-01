@@ -30,7 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.*;
+import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
 /**
  *
@@ -210,25 +210,19 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         assertEquals(resInner, res.innerTypeCol);
     }
 
-    /** */
+    /**
+     * Check that few sequential start-stops of the cache do not affect work of DML.
+     */
     public void testCacheRestartHandling() {
-        IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p = ignite(0).cache("I2AT");
+        for (int i = 0; i < 4; i++) {
+            IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p =
+                ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
+                    IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class));
 
-        p.query(new SqlFieldsQuery("insert into AllTypes(_key, _val) values (1, ?)")
-            .setArgs(new AllTypes(1L)));
+            p.query(new SqlFieldsQuery("insert into AllTypes(_key, _val, dateCol) values (1, ?, null)")
+                .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
 
-        p.destroy();
-
-        p = ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
-            AllTypes.class));
-
-        p.query(new SqlFieldsQuery("insert into AllTypes(_key, _val, dateCol) values (1, ?, null)")
-            .setArgs(new AllTypes(1L)));
-
-        AllTypes exp = new AllTypes(1L);
-
-        exp.dateCol = null;
-
-        assertEquals(exp, p.get(1));
+            p.destroy();
+        }
     }
 }
