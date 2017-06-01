@@ -333,7 +333,7 @@ public class ExchangeActions {
     /**
      * @param grpDesc Group descriptor.
      */
-    void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
+    public void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
         assert grpDesc != null;
 
         if (cacheGrpsToStop == null)

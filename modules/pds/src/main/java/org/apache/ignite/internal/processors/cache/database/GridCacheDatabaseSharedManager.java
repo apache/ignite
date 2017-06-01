@@ -769,12 +769,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (IgniteBiTuple<CacheGroupInfrastructure, Boolean> tup : stoppedGrps) {
                 CacheGroupInfrastructure grp = tup.get1();
 
-                try {
-                    cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
-                        "[cache=" + grp.cacheOrGroupName() + "]", e);
+                if (grp.affinityNode()) {
+                    try {
+                        cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                            "[cache=" + grp.cacheOrGroupName() + "]", e);
+                    }
                 }
             }
         }
