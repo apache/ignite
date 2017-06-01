@@ -952,10 +952,11 @@ public class GridSqlQueryParser {
 
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
-        List<String> extraParams = new ArrayList<>();
+        List<String> extraParams = data.tableEngineParams != null ? new ArrayList<String>() : null;
 
-        for (String s : data.tableEngineParams)
-            extraParams.addAll(F.asList(s.split(",")));
+        if (data.tableEngineParams != null)
+            for (String s : data.tableEngineParams)
+                extraParams.addAll(F.asList(s.split(",")));
 
         res.params(extraParams);
 
