@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.lang.IgniteClosure;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
@@ -83,7 +86,7 @@ public class DdlStatementsProcessor {
      * @param sql SQL.
      * @param stmt H2 statement to parse and execute.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
         throws IgniteCheckedException {
         assert stmt instanceof JdbcPreparedStatement;
@@ -155,9 +158,23 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
                             cmd.tableName());
                 }
-                else
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateCacheName(),
+                else {
+                    QueryEntity e = toQueryEntity(cmd);
+
+                    Exception ex = QueryUtils.checkQueryEntityConflicts(cmd.schemaName(), e,
+                        ctx.cache().cacheDescriptors(),
+                        new IgniteClosure<String, Exception>() {
+                            @Override public Exception apply(String s) {
+                                return new IgniteSQLException(s);
+                            }
+                        });
+
+                    if (ex != null)
+                        throw (IgniteSQLException)ex;
+
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateCacheName(),
                         cmd.ifNotExists());
+                }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;

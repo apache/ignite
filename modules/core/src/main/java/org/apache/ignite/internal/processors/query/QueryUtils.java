@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethods
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -1013,6 +1016,133 @@ public class QueryUtils {
             return (SchemaOperationException)e;
 
         return new SchemaOperationException("Unexpected exception.", e);
+    }
+
+    /**
+     *
+     * @param schema
+     * @param newEntity
+     * @param descs
+     * @param exClo
+     * @return
+     */
+    public static Exception checkQueryEntityConflicts(String schema, QueryEntity newEntity,
+        Collection<DynamicCacheDescriptor> descs, IgniteClosure<String, Exception> exClo) {
+        for (DynamicCacheDescriptor desc : descs) {
+            if (!F.eq(schema, desc.cacheConfiguration().getSqlSchema()))
+                continue;
+
+            for (QueryEntity entity : desc.schema().entities()) {
+                if (!F.eq(entity.getTableName(), newEntity.getTableName()))
+                    continue;
+
+                Exception res;
+
+                res = check(schema, entity.getTableName(), entity.getKeyType(), newEntity.getKeyType(),
+                    "key type names don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                res = check(schema, entity.getTableName(), entity.getValueType(), newEntity.getValueType(),
+                    "value type names don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                res = check(schema, entity.getTableName(), entity.getFields(), newEntity.getFields(),
+                    "field lists don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                res = check(schema, entity.getTableName(), entity.getKeyFields(), newEntity.getKeyFields(),
+                    "key field lists don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                res = check(schema, entity.getTableName(), entity.getAliases(), newEntity.getAliases(),
+                    "aliases don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                res = check(schema, entity.getTableName(), entity.getKeyFieldName(), newEntity.getKeyFieldName(),
+                    "key field names don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                res = check(schema, entity.getTableName(), entity.getValueFieldName(), newEntity.getValueFieldName(),
+                    "value field names don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                Map<String, QueryIndex> oldIdxs = new HashMap<>();
+
+                for (QueryIndex idx : entity.getIndexes())
+                    oldIdxs.put(idx.getName(), idx);
+
+                Map<String, QueryIndex> newIdxs = new HashMap<>();
+
+                for (QueryIndex idx : newEntity.getIndexes())
+                    newIdxs.put(idx.getName(), idx);
+
+                res = check(schema, entity.getTableName(), oldIdxs.keySet(), newIdxs.keySet(),
+                    "names of indexes don't match", exClo);
+
+                if (res != null)
+                    return res;
+
+                for (QueryIndex newIdx : newIdxs.values()) {
+                    QueryIndex oldIdx = oldIdxs.get(newIdx.getName());
+
+                    assert oldIdx != null;
+
+                    res = check(schema, entity.getTableName(), oldIdx.getFields(), newIdx.getFields(),
+                        "field lists don't match for index " + newIdx.getName(), exClo);
+
+                    if (res != null)
+                        return res;
+
+                    res = check(schema, entity.getTableName(), oldIdx.getIndexType(), newIdx.getIndexType(),
+                        "index types don't match for index " + newIdx.getName(), exClo);
+
+                    if (res != null)
+                        return res;
+
+                    res = check(schema, entity.getTableName(), oldIdx.getInlineSize(), newIdx.getInlineSize(),
+                        "inline sizes don't match for index " + newIdx.getName(), exClo);
+
+                    if (res != null)
+                        return res;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Compare values of a single field and construct exception using given closure and base error message, if needed.
+     * @param schema Schema name.
+     * @param tblName
+     * @param oldVal
+     * @param newVal
+     * @param baseErrMsg
+     * @param exClo
+     * @param <T>
+     * @return
+     */
+    private static <T> Exception check(String schema, String tblName, T oldVal, T newVal, String baseErrMsg,
+        IgniteClosure<String, Exception> exClo) {
+        if (!F.eq(oldVal, newVal))
+            return exClo.apply("Configuration conflict during attempt to create table " +schema + '.' + tblName + ": " +
+                baseErrMsg + " [oldVal=" + oldVal + ", newVal=" + newVal + ']');
+        else
+            return null;
     }
 
     /**

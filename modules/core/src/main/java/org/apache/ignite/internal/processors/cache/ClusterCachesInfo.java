@@ -33,16 +33,20 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
@@ -285,6 +289,32 @@ class ClusterCachesInfo {
 
                         assert req.cacheType() != null : req;
                         assert F.eq(ccfg.getName(), req.cacheName()) : req;
+
+                        boolean entityChkRes = true;
+
+                        if (!F.isEmpty(ccfg.getQueryEntities())) {
+                            for (QueryEntity e : ccfg.getQueryEntities()) {
+                                Exception ex = QueryUtils.checkQueryEntityConflicts(ccfg.getSqlSchema(), e,
+                                    ctx.cache().cacheDescriptors(),
+                                    new IgniteClosure<String, Exception>() {
+                                        @Override public Exception apply(String s) {
+                                            return new IgniteCheckedException(s);
+                                        }
+                                    });
+
+                                if (ex != null) {
+                                    ctx.cache().completeCacheStartFuture(req, false, ex);
+
+                                    entityChkRes = false;
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        // We've completed cache start future above, so we can move on to other caches.
+                        if (!entityChkRes)
+                            continue;
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
                             ccfg,
