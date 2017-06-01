@@ -156,7 +156,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /** */
-    private IgniteUuid getUUID(){
+    public IgniteUuid getUUID(){
         return ((SparseDistributedMatrixStorage) getStorage()).getUUID();
     }
 }

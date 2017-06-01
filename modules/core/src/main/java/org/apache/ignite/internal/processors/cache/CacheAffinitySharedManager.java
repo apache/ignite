@@ -382,28 +382,35 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     CU.affinityNode(cctx.localNode(), cacheDesc.groupDescriptor().config().getNodeFilter());
             }
 
-            if (startCache) {
-                cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
+            try {
+                if (startCache) {
+                    cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
-                if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                    if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
-                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                    if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                        if (fut.discoCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
+                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
+                    }
                 }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                    "[cacheName=" + req.cacheName() + ']', e);
+
+                cctx.cache().forceCloseCache(fut.topologyVersion(), action, e);
             }
         }
 
-        Set<Integer> gprs = new HashSet<>();
+            Set<Integer> gprs = new HashSet<>();
 
-        for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
-            Integer grpId = action.descriptor().groupId();
+                for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
+                    Integer grpId = action.descriptor().groupId();
 
-            if (gprs.add(grpId)) {
-                if (crd && lateAffAssign)
-                    initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());
-                else {
-                    CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+                    if (gprs.add(grpId)) {
+                        if (crd && lateAffAssign)
+                    initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());else  {
+                        CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
 
-                    if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.topologyVersion())) {
+                        if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.topologyVersion())) {
                         assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
 
                         initAffinity(registeredGrps.get(grp.groupId()), grp.affinity(), fut);
