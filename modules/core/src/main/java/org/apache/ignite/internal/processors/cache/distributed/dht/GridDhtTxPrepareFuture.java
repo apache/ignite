@@ -69,7 +69,6 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -98,7 +97,8 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  *
  */
 @SuppressWarnings("unchecked")
-public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNearTxPrepareResponse>
+public final class GridDhtTxPrepareFuture
+    extends GridCacheFutureAdapter<GridNearTxPrepareResponse>
     implements GridCacheMvccFuture<GridNearTxPrepareResponse> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -1563,7 +1563,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNea
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
+    private class MiniFuture {
         /** */
         private final int futId;
 
@@ -1728,9 +1728,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNea
                                 drType,
                                 false)) {
                                 if (rec && !entry.isInternal())
-                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                        false, null, null, null, false);
+                                    cacheCtx.events().addEvent(
+                                        entry.partition(),
+                                        entry.key(),
+                                        cctx.localNodeId(),
+                                        (IgniteUuid)null,
+                                        null,
+                                        EVT_CACHE_REBALANCE_OBJECT_LOADED,
+                                        info.value(),
+                                        true,
+                                        null,
+                                        false,
+                                        null,
+                                        null,
+                                        null,
+                                        false);
 
                                 if (retVal && !invoke)
                                     ret.value(cacheCtx, info.value(), false);
