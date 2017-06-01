@@ -829,14 +829,15 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
         else {
             synchronized (this) {
-                added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
-
-                if (added) {
-                    int cnt = lsnrCnt.incrementAndGet();
-
-                    if (cctx.group().sharedGroup() && cnt == 1 && !cctx.isLocal())
+                if (lsnrCnt.get() == 0) {
+                    if (cctx.group().sharedGroup() && !cctx.isLocal())
                         cctx.group().addCacheWithContinuousQuery(cctx);
                 }
+
+                added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
+
+                if (added)
+                    lsnrCnt.incrementAndGet();
             }
 
             if (added)
