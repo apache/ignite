@@ -198,11 +198,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
-    /** Default cache name. */
-    public static final String DFLT_CACHE_NAME = "default_cache";
-
     /** Cache name. */
-    private String name = DFLT_CACHE_NAME;
+    private String name;
 
     /** Name of {@link MemoryPolicyConfiguration} for this cache */
     private String memPlcName;
