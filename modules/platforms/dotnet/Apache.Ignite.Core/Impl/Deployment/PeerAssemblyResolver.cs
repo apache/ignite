@@ -45,6 +45,8 @@ namespace Apache.Ignite.Core.Impl.Deployment
 
             _handler = (sender, args) => GetAssembly(ignite, args.Name, originNodeId);
 
+            // AssemblyResolve handler is called only when aseembly can't be found via normal lookup,
+            // so we won't end up loading assemblies that are already present.
             AppDomain.CurrentDomain.AssemblyResolve += _handler;
         }
 
