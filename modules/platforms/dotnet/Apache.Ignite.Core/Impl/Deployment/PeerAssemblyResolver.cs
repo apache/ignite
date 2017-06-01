@@ -197,6 +197,12 @@ namespace Apache.Ignite.Core.Impl.Deployment
                 // Normal situation: node has left.
                 return null;
             }
+            catch (AggregateException aex)
+            {
+                // Normal situation: node has left.
+                aex.Handle(e => e is ClusterGroupEmptyException);
+                return null;
+            }
         }
     }
 }
