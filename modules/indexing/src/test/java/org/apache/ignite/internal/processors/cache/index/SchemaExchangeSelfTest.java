@@ -174,7 +174,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node3, ValueClass.class);
 
         // Check restarts from the first node.
-        node1.destroyCache(CACHE_NAME);
+        destroySqlCache(node1);
 
         node1.getOrCreateCache(cacheConfiguration());
 
@@ -325,7 +325,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         if (dynamic) {
             node2 = startClientNoCache(2);
 
-            node2.getOrCreateCache(cacheConfiguration(KeyClass.class, ValueClass.class));
+            createSqlCache(node2, cacheConfiguration(KeyClass.class, ValueClass.class));
         }
         else
             node2 = startClient(2, KeyClass.class, ValueClass.class);
@@ -353,7 +353,8 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         node8.cache(CACHE_NAME);
         assertTypes(node8, ValueClass.class);
 
-        node2.destroyCache(CACHE_NAME);
+        destroySqlCache(node2);
+
         node2.getOrCreateCache(
             cacheConfiguration(KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class));
 
@@ -540,13 +541,16 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setCacheConfiguration(cacheConfiguration(clss));
         cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
 
-        return (IgniteEx)Ignition.start(cfg);
+        IgniteEx res = (IgniteEx)Ignition.start(cfg);
+
+        createSqlCache(res, cacheConfiguration(clss));
+
+        return res;
     }
 
     /**

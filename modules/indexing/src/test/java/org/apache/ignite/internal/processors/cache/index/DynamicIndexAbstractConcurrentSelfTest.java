@@ -141,7 +141,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Start client which will execute operations.
         Ignite cli = Ignition.start(clientConfiguration(5));
 
-        cli.getOrCreateCache(cacheConfiguration());
+        createSqlCache(cli);
 
         put(srv1, 0, KEY_AFTER);
 
@@ -200,7 +200,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         Ignition.start(serverConfiguration(3, true));
         Ignition.start(clientConfiguration(4));
 
-        srv1.getOrCreateCache(cacheConfiguration());
+        createSqlCache(srv1);
 
         blockIndexing(srv1);
 
@@ -248,7 +248,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
     public void testNodeJoinOnPendingOperation() throws Exception {
         Ignite srv1 = Ignition.start(serverConfiguration(1));
 
-        srv1.getOrCreateCache(cacheConfiguration());
+        createSqlCache(srv1);
 
         blockIndexing(srv1);
 
@@ -291,7 +291,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         awaitPartitionMapExchange();
 
-        IgniteCache<BinaryObject, BinaryObject> cache = srv1.createCache(cacheConfiguration()).withKeepBinary();
+        IgniteCache<BinaryObject, BinaryObject> cache = createSqlCache(srv1).withKeepBinary();
 
         // Start data change operations from several threads.
         final AtomicBoolean stopped = new AtomicBoolean();
@@ -384,7 +384,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         Ignite srv1 = Ignition.start(serverConfiguration(1));
         Ignite srv2 = Ignition.start(serverConfiguration(2));
 
-        srv1.createCache(cacheConfiguration());
+        createSqlCache(srv1);
 
         awaitPartitionMapExchange();
 
@@ -435,7 +435,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         Ignite cli = Ignition.start(clientConfiguration(4));
 
         // Start cache and populate it with data.
-        IgniteCache cache = cli.getOrCreateCache(cacheConfiguration());
+        IgniteCache cache = createSqlCache(cli);
 
         put(cli, KEY_AFTER);
 
@@ -449,8 +449,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         Thread.sleep(100);
 
-        // Destroy cache.
-        cache.destroy();
+        // Destroy cache (drop table).
+        destroySqlCache(cli);
 
         // Unblock indexing and see what happens.
         unblockIndexing(srv1);
@@ -478,7 +478,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         Ignite cli = Ignition.start(clientConfiguration(4));
 
-        cli.createCache(cacheConfiguration());
+        createSqlCache(cli);
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -552,7 +552,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         Ignite cli = Ignition.start(clientConfiguration(4));
 
-        cli.createCache(cacheConfiguration());
+        createSqlCache(cli);
 
         put(cli, 0, KEY_AFTER);
 
@@ -650,7 +650,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         final Ignite cli = Ignition.start(clientConfiguration(4));
 
-        cli.createCache(cacheConfiguration());
+        createSqlCache(cli);
 
         // Check index create.
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
@@ -712,9 +712,14 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
             @Override public void run() {
                 if (restart) {
-                    srvNode.destroyCache(CACHE_NAME);
+                    try {
+                        destroySqlCache(srvNode);
 
-                    srvNode.getOrCreateCache(cacheConfiguration().setName(CACHE_NAME));
+                        createSqlCache(srvNode);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new AssertionError(e);
+                    }
                 }
 
                 try {
@@ -743,7 +748,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         final Ignite cli = Ignition.start(clientConfiguration(4));
 
-        cli.createCache(cacheConfiguration());
+        createSqlCache(cli);
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -842,7 +847,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         idxFut.get();
 
         // Make sure cache is operational at this point.
-        cli.getOrCreateCache(cacheConfiguration());
+        createSqlCache(cli);
 
         queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
         queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
@@ -879,12 +884,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
                     if (exists) {
-                        node.destroyCache(CACHE_NAME);
+                        destroySqlCache(node);
 
                         exists = false;
                     }
                     else {
-                        node.createCache(cacheConfiguration());
+                        createSqlCache(node);
 
                         exists = true;
                     }
@@ -943,7 +948,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         idxFut.get();
 
         // Make sure cache is operational at this point.
-        cli.getOrCreateCache(cacheConfiguration());
+        createSqlCache(cli);
 
         queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, true).get();
         queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, true).get();
@@ -1058,5 +1063,14 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
             super.dynamicIndexDrop(schemaName, idxName, ifExists);
         }
+    }
+
+    /**
+     * Start SQL cache on given node.
+     * @param node Node to create cache on.
+     * @return Created cache.
+     */
+    private IgniteCache<?, ?> createSqlCache(Ignite node) throws IgniteCheckedException {
+        return createSqlCache(node, cacheConfiguration());
     }
 }

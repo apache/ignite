@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.BinaryOperator;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,6 +29,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -38,6 +40,7 @@ import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
@@ -378,6 +381,50 @@ public class CacheUtils {
 
             return a;
         });
+    }
+
+    public static <K, V, A> A distributedFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal) {
+        return sparseFold(cacheName, folder, keyFilter, accumulator, zeroVal, null, null, 0 ,
+            false);
+    }
+
+    private static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal, V defVal, K defKey, long defValCnt, boolean isNilpotent) {
+
+        A defRes = zeroVal;
+
+        if (!isNilpotent)
+            for (int i = 0; i < defValCnt; i++)
+                defRes = folder.apply(new CacheEntryImpl<>(defKey, defVal), defRes);
+
+        Collection<A> totalRes = bcast(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
+
+            int partsCnt = ignite.affinity(cacheName).partitions();
+
+            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            Affinity affinity = ignite.affinity(cacheName);
+            ClusterNode localNode = ignite.cluster().localNode();
+
+            A a = zeroVal;
+
+            // Iterate over all partitions. Some of them will be stored on that local node.
+            for (int part = 0; part < partsCnt; part++) {
+                int p = part;
+
+                // Iterate over given partition.
+                // Query returns an empty cursor if this partition is not stored on this node.
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
+                    (k, v) -> affinity.mapPartitionToNode(p) == localNode  && (keyFilter == null || keyFilter.apply(k)))))
+                    a = folder.apply(entry, a);
+            }
+
+            return a;
+        });
+        totalRes.add(defRes);
+        return totalRes.stream().reduce(zeroVal, accumulator);
     }
 
     /**
