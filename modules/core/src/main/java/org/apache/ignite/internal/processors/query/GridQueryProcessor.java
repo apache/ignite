@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -361,7 +362,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (!cacheDesc.sql()) {
                 if (log.isDebugEnabled())
                     log.debug("Received schema propose discovery message, but cache was not created through " +
-                        "CREATE TABLE command (will report error) [opId=" + opId + ", msg=" + msg + ']');;
+                        "CREATE TABLE command (will report error) [opId=" + opId + ", msg=" + msg + ']');
 
                 msg.onError(new SchemaOperationException("CREATE INDEX and DROP INDEX operations are only allowed on " +
                     "caches created with CREATE TABLE command [cacheName=" + cacheName + ']'));
@@ -1287,31 +1288,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
-     * @param params Additional params.
+     * @param templateName Template name.
+     * @param atomicityMode Atomicity mode.
+     * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, GridCreateTableParams params,
-        boolean ifNotExists) throws IgniteCheckedException {
-        String templateCacheName = params.templateCacheName();
-
-        CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName,
+        CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
+        CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateName);
 
         if (templateCfg == null)
-            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
 
         if (!F.isEmpty(templateCfg.getQueryEntities()))
-            throw new SchemaOperationException("Template cache already contains query entities which it should not " +
-                "[cacheName=" + templateCacheName + ']');
+            throw new SchemaOperationException("Template cannot contain query entities [template=" +
+                templateName + ']');
 
         CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
 
-        if (params.atomicityMode() != null)
-            newCfg.setAtomicityMode(params.atomicityMode());
+        if (atomicityMode != null)
+            newCfg.setAtomicityMode(atomicityMode);
 
-        if (params.backups() > 0)
-            newCfg.setBackups(params.backups());
+        newCfg.setBackups(backups);
 
         newCfg.setName(entity.getTableName());
         newCfg.setQueryEntities(Collections.singleton(entity));

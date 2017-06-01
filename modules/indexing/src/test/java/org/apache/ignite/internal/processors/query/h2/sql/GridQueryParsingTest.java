@@ -706,7 +706,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static void assertCreateTableEquals(GridSqlCreateTable exp, GridSqlCreateTable actual) {
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
-        assertEquals(exp.templateCacheName(), actual.templateCacheName());
+        assertEquals(exp.templateName(), actual.templateName());
         assertEquals(exp.primaryKeyColumns(), actual.primaryKeyColumns());
         assertEquals(new ArrayList<>(exp.columns().keySet()), new ArrayList<>(actual.columns().keySet()));
 
@@ -733,7 +733,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         res.tableName(tbl);
 
-        res.templateCacheName(tplCacheName);
+        res.templateName(tplCacheName);
 
         res.primaryKeyColumns(new LinkedHashSet<>(pkColNames));
 

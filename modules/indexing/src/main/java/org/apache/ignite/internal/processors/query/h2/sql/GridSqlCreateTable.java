@@ -36,7 +36,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private String tblName;
 
     /** Cache name upon which new cache configuration for this table must be based. */
-    private String tplCacheName;
+    private String templateName;
 
     /** Backups number for new cache. */
     private int backups;
@@ -59,15 +59,15 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
      */
-    public String templateCacheName() {
-        return tplCacheName;
+    public String templateName() {
+        return templateName;
     }
 
     /**
-     * @param tplCacheName Cache name upon which new cache configuration for this table must be based.
+     * @param templateName Cache name upon which new cache configuration for this table must be based.
      */
-    public void templateCacheName(String tplCacheName) {
-        this.tplCacheName = tplCacheName;
+    public void templateName(String templateName) {
+        this.templateName = templateName;
     }
 
     /**

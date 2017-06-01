@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridCreateTableParams;
+import org.apache.ignite.internal.processors.query.GridCreateTableParameters;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -164,13 +164,8 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
-                    GridCreateTableParams params = new GridCreateTableParams()
-                        .templateCacheName(cmd.templateCacheName())
-                        .atomicityMode(cmd.atomicityMode())
-                        .backups(cmd.backups());
-
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), params,
-                        cmd.ifNotExists());
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateName(),
+                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
