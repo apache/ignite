@@ -217,7 +217,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         File cacheWorkDir = cacheWorkDirectory(grpDesc, ccfg);
         File file;
 
-        assert cacheWorkDir.exists() : cacheWorkDir + " not exists";
+        assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
         if (grpDesc.sharedGroup())
             file = new File(cacheWorkDir, ccfg.getName() + CACHE_CONF_FILENAME);
