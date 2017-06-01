@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
@@ -154,6 +156,10 @@ public class DdlStatementsProcessor {
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
+
+                if (F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("CREATE TABLE command can only ber performed in " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
