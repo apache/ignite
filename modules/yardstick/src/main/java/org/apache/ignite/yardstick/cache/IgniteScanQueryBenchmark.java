@@ -17,37 +17,46 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite benchmark that performs get operations.
+ *
  */
-public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+public class IgniteScanQueryBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-
-        if (args.preloadAmount() > args.range())
-            throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
-                "must by less then the range (\"-r\", \"--range\").");
 
         loadCachesData();
     }
 
     /** {@inheritDoc} */
     @Override protected void loadCacheData(String cacheName) {
-        loadSampleValues(cacheName, args.preloadAmount);
+        loadSampleValues(cacheName, args.range());
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        IgniteCache<Integer, Object> cache = cacheForOperation();
+        ScanQuery<Integer, Object> qry = new ScanQuery<>();
 
-        cache.get(key);
+        qry.setFilter(new KeyFilter(key));
+
+        IgniteCache<Integer, Object> cache = cacheForOperation().withKeepBinary();
+
+        List<IgniteCache.Entry<Integer, Object>> res = cache.query(qry).getAll();
+
+        if (res.size() != 1)
+            throw new Exception("Invalid result size: " + res.size());
+
+        if (res.get(0).getKey() != key)
+            throw new Exception("Invalid entry found [key=" + key + ", entryKey=" + res.get(0).getKey() + ']');
 
         return true;
     }
@@ -55,5 +64,25 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("atomic");
+    }
+
+    /**
+     *
+     */
+    static class KeyFilter implements IgniteBiPredicate<Integer, Object> {
+        /** */
+        private final Integer key;
+
+        /**
+         * @param key Key to find.
+         */
+        public KeyFilter(Integer key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Integer key, Object val) {
+            return this.key.equals(key);
+        }
     }
 }

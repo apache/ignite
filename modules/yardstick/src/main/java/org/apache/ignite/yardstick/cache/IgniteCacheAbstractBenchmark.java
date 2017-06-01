@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.apache.ignite.yardstick.IgniteNode;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
@@ -215,6 +216,27 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         }
         else
             loadCacheData(caches.get(0).getName());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param cnt Number of entries to load.
+     */
+    protected final void loadSampleValues(String cacheName, int cnt) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+            for (int i = 0; i < cnt; i++) {
+                dataLdr.addData(i, new SampleValue(i));
+
+                if (i % 100000 == 0) {
+                    if (Thread.currentThread().isInterrupted())
+                        break;
+
+                    println("Loaded entries [cache=" + cacheName + ", cnt=" + i + ']');
+                }
+            }
+        }
+
+        println("Load entries done [cache=" + cacheName + ", cnt=" + cnt + ']');
     }
 
     /**
