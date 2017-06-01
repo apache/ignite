@@ -55,7 +55,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateSingleThreaded() throws Exception {
         threadsCnt = 1;
-        memMetrics.rateTimeInterval(10);
+        memMetrics.rateTimeInterval(10_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -75,7 +75,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateMultiThreaded() throws Exception {
         threadsCnt = 4;
-        memMetrics.rateTimeInterval(5);
+        memMetrics.rateTimeInterval(5_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -110,7 +110,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateTimeIntervalConcurrentChange() throws Exception {
         threadsCnt = 5;
-        memMetrics.rateTimeInterval(5);
+        memMetrics.rateTimeInterval(5_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -123,7 +123,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++) {
             Thread.sleep(25);
 
-            memMetrics.rateTimeInterval((2 + i * 5) % 3 + 1);
+            memMetrics.rateTimeInterval(((2 + i * 5) % 3 + 1) * 1000);
         }
 
         joinAllThreads();
@@ -137,7 +137,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testAllocationRateSubintervalsConcurrentChange() throws Exception {
         threadsCnt = 5;
-        memMetrics.rateTimeInterval(5);
+        memMetrics.rateTimeInterval(5_000);
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
