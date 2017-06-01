@@ -131,16 +131,6 @@ namespace Apache.Ignite.Core.Tests.Deployment
         }
 
         /// <summary>
-        /// Tests the situation when originating node leaves the grid during computation
-        /// so that peer request failover occurs.
-        /// </summary>
-        [Test]
-        public void TestLeavingNode()
-        {
-            // TODO
-        }
-
-        /// <summary>
         /// Tests the peer deployment.
         /// </summary>
         public static void TestDeployment(Action<ICompute> test, bool enablePeerDeployment = true)
