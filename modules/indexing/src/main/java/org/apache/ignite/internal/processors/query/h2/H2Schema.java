@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.util.Map;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * Database schema object.
  */
 public class H2Schema {
-    /** */
-    private final String cacheName;
-
     /** */
     private final String schemaName;
 
@@ -43,43 +36,16 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap8<>();
 
-    /** Cache for deserialized offheap rows. */
-    private final CacheLongKeyLIRS<GridH2Row> rowCache;
-
     /** */
-    private final GridCacheContext<?, ?> cctx;
-
-    /** */
-    private final CacheConfiguration<?, ?> ccfg;
+    private final ConcurrentMap<String, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
 
     /**
-     * @param cacheName Cache name.
+     * Constructor.
+     *
      * @param schemaName Schema name.
-     * @param cctx Cache context.
-     * @param ccfg Cache configuration.
      */
-    H2Schema(String cacheName, String schemaName, GridCacheContext<?, ?> cctx,
-        CacheConfiguration<?, ?> ccfg) {
-        this.cacheName = cacheName;
-        this.cctx = cctx;
+    public H2Schema(String schemaName) {
         this.schemaName = schemaName;
-        this.ccfg = ccfg;
-
-        rowCache = null;
-    }
-
-    /**
-     * @return Cache context.
-     */
-    public GridCacheContext cacheContext() {
-        return cctx;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
     }
 
     /**
@@ -97,39 +63,68 @@ public class H2Schema {
     }
 
     /**
-     * @return Row cache.
+     * @return Tables.
      */
-    public CacheLongKeyLIRS<GridH2Row> rowCache() {
-        return rowCache;
+    public Collection<H2TableDescriptor> tables() {
+        return tbls.values();
     }
 
     /**
-     * @return Tables.
+     * @param tblName Table name.
+     * @return Table.
      */
-    public Map<String, H2TableDescriptor> tables() {
-        return tbls;
+    public H2TableDescriptor tableByName(String tblName) {
+        return tbls.get(tblName);
+    }
+
+    /**
+     * @param typeName Type name.
+     * @return Table.
+     */
+    public H2TableDescriptor tableByTypeName(String typeName) {
+        return typeToTbl.get(typeName);
     }
 
     /**
      * @param tbl Table descriptor.
      */
     public void add(H2TableDescriptor tbl) {
-        if (tbls.putIfAbsent(tbl.typeName(), tbl) != null)
+        if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
+            throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
+
+        if (typeToTbl.putIfAbsent(tbl.typeName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
     }
 
     /**
-     * @return Escape all.
+     * @param tbl Table descriptor.
      */
-    public boolean escapeAll() {
-        return ccfg.isSqlEscapeAll();
+    public void remove(H2TableDescriptor tbl) {
+        tbls.remove(tbl.tableName());
+
+        typeToTbl.remove(tbl.typeName());
+    }
+
+    /**
+     * Drop table.
+     *
+     * @param tbl Table to be removed.
+     */
+    public void drop(H2TableDescriptor tbl) {
+        tbl.onDrop();
+
+        tbls.remove(tbl.tableName());
+        typeToTbl.remove(tbl.typeName());
     }
 
     /**
      * Called after the schema was dropped.
      */
-    public void onDrop() {
-        for (H2TableDescriptor tblDesc : tbls.values())
-            tblDesc.onDrop();
+    public void dropAll() {
+        for (H2TableDescriptor tbl : tbls.values())
+            tbl.onDrop();
+
+        tbls.clear();
+        typeToTbl.clear();
     }
 }

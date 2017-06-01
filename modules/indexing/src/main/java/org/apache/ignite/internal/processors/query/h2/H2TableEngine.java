@@ -89,7 +89,7 @@ public class H2TableEngine implements TableEngine {
         if (idxFactory0 instanceof H2TableDescriptor)
             cacheName = ((H2TableDescriptor)idxFactory0).schema().cacheName();
 
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, idxFactory0, cacheName);
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, rowFactory0, tblDesc0, tblDesc0.cache());
 
         return resTbl0;
     }

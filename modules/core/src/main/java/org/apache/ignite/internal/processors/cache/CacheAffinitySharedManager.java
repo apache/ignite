@@ -339,6 +339,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 false,
                 action.descriptor().receivedFrom(),
                 action.descriptor().staticallyConfigured(),
+                action.descriptor().sql(),
                 req.deploymentId(),
                 req.schema());
 
@@ -395,40 +396,48 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
             }
 
-            if (startCache) {
-                cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
+            try {
+                if (startCache) {
+                    cctx.cache().prepareCacheStart(cacheDesc, nearCfg, fut.topologyVersion());
 
-                if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
-                    if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
-                        U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
-                }
-            }
-
-            if (!crd || !lateAffAssign) {
-                GridCacheContext cacheCtx = cctx.cacheContext(cacheDesc.cacheId());
-
-                if (cacheCtx != null && !cacheCtx.isLocal()) {
-                    boolean clientCacheStarted =
-                        req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId());
-
-                    if (clientCacheStarted)
-                        initAffinity(cacheDesc, cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
-                    else if (!req.clientStartOnly()) {
-                        assert fut.topologyVersion().equals(cacheCtx.startTopologyVersion());
-
-                        GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
-
-                        assert aff.lastVersion().equals(AffinityTopologyVersion.NONE) : aff.lastVersion();
-
-                        List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
-                            fut.discoveryEvent(), fut.discoCache());
-
-                        aff.initialize(fut.topologyVersion(), assignment);
+                    if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
+                        if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
+                            U.quietAndWarn(log, "No server nodes found for cache client: " + req.cacheName());
                     }
                 }
+
+                if (!crd || !lateAffAssign) {
+                    GridCacheContext cacheCtx = cctx.cacheContext(cacheDesc.cacheId());
+
+                    if (cacheCtx != null && !cacheCtx.isLocal()) {
+                        boolean clientCacheStarted =
+                            req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId());
+
+                        if (clientCacheStarted)
+                            initAffinity(cacheDesc, cacheCtx.affinity().affinityCache(), fut, lateAffAssign);
+                        else if (!req.clientStartOnly()) {
+                            assert fut.topologyVersion().equals(cacheCtx.startTopologyVersion());
+
+                            GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
+
+                            assert aff.lastVersion().equals(AffinityTopologyVersion.NONE) : aff.lastVersion();
+
+                            List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
+                                fut.discoveryEvent(), fut.discoCache());
+
+                            aff.initialize(fut.topologyVersion(), assignment);
+                        }
+                    }
+                }
+                else
+                    initStartedCacheOnCoordinator(fut, cacheDesc.cacheId());
             }
-            else
-                initStartedCacheOnCoordinator(fut, cacheDesc.cacheId());
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to initialize cache. Will try to rollback cache start routine. " +
+                    "[cacheName=" + req.cacheName() + ']', e);
+
+                cctx.cache().forceCloseCache(fut.topologyVersion(), action, e);
+            }
         }
 
         for (DynamicCacheChangeRequest req : exchActions.closeRequests(cctx.localNodeId())) {
