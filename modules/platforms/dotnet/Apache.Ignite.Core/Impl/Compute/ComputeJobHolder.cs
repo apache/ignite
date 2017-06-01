@@ -103,7 +103,6 @@ namespace Apache.Ignite.Core.Impl.Compute
             object res;
             bool success;
 
-            // TODO: Guid?
             using (PeerAssemblyResolver.GetInstance(_ignite, Guid.Empty))
             {
                 Execute0(cancel, out res, out success);

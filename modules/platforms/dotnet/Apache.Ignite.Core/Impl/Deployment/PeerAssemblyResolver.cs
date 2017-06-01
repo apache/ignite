@@ -171,7 +171,10 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// </summary>
         private static IEnumerable<Guid> GetDotNetNodes(IIgnite ignite, Guid originNodeId)
         {
-            yield return originNodeId;
+            if (originNodeId != Guid.Empty)
+            {
+                yield return originNodeId;
+            }
 
             foreach (var node in ignite.GetCluster().ForDotNet().ForRemotes().GetNodes())
             {
