@@ -154,6 +154,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Convert to IBinaryObject.
+        /// </summary>
+        private static IBinaryObject ToBinary<T>(T val)
+        {
+            var marsh = GetMarshaller();
+
+            return marsh.Unmarshal<IBinaryObject>(marsh.Marshal(val), BinaryMode.ForceBinary);
+        }
+
+        /// <summary>
         /// Tests enums as a field in binarizable object.
         /// </summary>
         [Test]
@@ -175,6 +185,33 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UInt = UIntEnum.Bar,
                 ULong = ULongEnum.Bar,
                 UShort = UShortEnum.Bar
+            };
+
+            CheckSerializeDeserialize(val);
+        }
+
+        /// <summary>
+        /// Tests enums as a BinaryObject field in binarizable object.
+        /// </summary>
+        [Test]
+        public void TestBinarizableFieldAsBinaryObject()
+        {
+            // Null values.
+            var val = new EnumsBinaryForm();
+            
+            CheckSerializeDeserialize(val);
+
+            // Max values.
+            val = new EnumsBinaryForm
+            {
+                Byte = ToBinary(ByteEnum.Bar),
+                Int = ToBinary(IntEnum.Bar),
+                Long = ToBinary(LongEnum.Bar),
+                SByte = ToBinary(SByteEnum.Bar),
+                Short = ToBinary(ShortEnum.Bar),
+                UInt = ToBinary(UIntEnum.Bar),
+                ULong = ToBinary(ULongEnum.Bar),
+                UShort = ToBinary(UShortEnum.Bar)
             };
 
             CheckSerializeDeserialize(val);
@@ -347,6 +384,49 @@ namespace Apache.Ignite.Core.Tests.Binary
                     hashCode = (hashCode * 397) ^ (int) UInt;
                     hashCode = (hashCode * 397) ^ Long.GetHashCode();
                     hashCode = (hashCode * 397) ^ ULong.GetHashCode();
+                    return hashCode;
+                }
+            }
+        }
+
+        private class EnumsBinaryForm
+        {
+            public IBinaryObject Byte { get; set; }
+            public IBinaryObject SByte { get; set; }
+            public IBinaryObject Short { get; set; }
+            public IBinaryObject UShort { get; set; }
+            public IBinaryObject Int { get; set; }
+            public IBinaryObject UInt { get; set; }
+            public IBinaryObject Long { get; set; }
+            public IBinaryObject ULong { get; set; }
+
+            private bool Equals(EnumsBinaryForm other)
+            {
+                return Equals(Byte, other.Byte) && Equals(SByte, other.SByte) && Equals(Short, other.Short) &&
+                       Equals(UShort, other.UShort) && Equals(Int, other.Int) && Equals(UInt, other.UInt) &&
+                       Equals(Long, other.Long) && Equals(ULong, other.ULong);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((EnumsBinaryForm) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = (Byte != null ? Byte.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (SByte != null ? SByte.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (Short != null ? Short.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (UShort != null ? UShort.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (Int != null ? Int.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (UInt != null ? UInt.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (Long != null ? Long.GetHashCode() : 0);
+                    hashCode = (hashCode*397) ^ (ULong != null ? ULong.GetHashCode() : 0);
                     return hashCode;
                 }
             }
