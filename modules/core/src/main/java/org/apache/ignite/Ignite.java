@@ -24,6 +24,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -433,7 +434,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
-     * is {@code true}.
+     * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Sequence name.
      * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
@@ -442,6 +443,20 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If sequence could not be fetched or created.
      */
     public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Sequence name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Sequence for the given name.
+     * @throws IgniteException If sequence could not be fetched or created.
+     */
+    public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -458,7 +473,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
-     * is {@code true}.
+     * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Atomic reference name.
      * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
@@ -467,6 +482,20 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If atomic reference could not be fetched or created.
      */
     public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic reference name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic reference for the given name.
+     * @throws IgniteException If atomic reference could not be fetched or created.
+     */
+    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, @Nullable T initVal, boolean create)
         throws IgniteException;
 
     /**

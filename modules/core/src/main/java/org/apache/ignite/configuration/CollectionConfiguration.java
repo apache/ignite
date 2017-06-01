@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -55,7 +56,7 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
      */
-    public boolean isCollocated() {
+    @Deprecated public boolean isCollocated() {
         return collocated;
     }
 
@@ -66,7 +67,7 @@ public class CollectionConfiguration implements Serializable {
      *
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setCollocated(boolean collocated) {
+    @Deprecated public CollectionConfiguration setCollocated(boolean collocated) {
         this.collocated = collocated;
 
         return this;
@@ -75,7 +76,7 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Cache atomicity mode.
      */
-    public CacheAtomicityMode getAtomicityMode() {
+    @Deprecated public CacheAtomicityMode getAtomicityMode() {
         return atomicityMode;
     }
 
@@ -83,7 +84,7 @@ public class CollectionConfiguration implements Serializable {
      * @param atomicityMode Cache atomicity mode.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
+    @Deprecated public CollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
 
         return this;
@@ -92,7 +93,7 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Cache mode.
      */
-    public CacheMode getCacheMode() {
+    @Deprecated public CacheMode getCacheMode() {
         return cacheMode;
     }
 
@@ -100,7 +101,7 @@ public class CollectionConfiguration implements Serializable {
      * @param cacheMode Cache mode.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setCacheMode(CacheMode cacheMode) {
+    @Deprecated public CollectionConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
 
         return this;
@@ -109,7 +110,7 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Predicate specifying on which nodes the cache should be started.
      */
-    public IgnitePredicate<ClusterNode> getNodeFilter() {
+    @Deprecated public IgnitePredicate<ClusterNode> getNodeFilter() {
         return nodeFilter;
     }
 
@@ -117,7 +118,7 @@ public class CollectionConfiguration implements Serializable {
      * @param nodeFilter Predicate specifying on which nodes the cache should be started.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+    @Deprecated public CollectionConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
 
         return this;
@@ -126,7 +127,7 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Number of backups.
      */
-    public int getBackups() {
+    @Deprecated public int getBackups() {
         return backups;
     }
 
@@ -134,7 +135,7 @@ public class CollectionConfiguration implements Serializable {
      * @param backups Cache number of backups.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setBackups(int backups) {
+    @Deprecated public CollectionConfiguration setBackups(int backups) {
         this.backups = backups;
 
         return this;
@@ -143,7 +144,7 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Off-heap memory size.
      */
-    public long getOffHeapMaxMemory() {
+    @Deprecated public long getOffHeapMaxMemory() {
         return offHeapMaxMem;
     }
 
@@ -151,10 +152,29 @@ public class CollectionConfiguration implements Serializable {
      * @param offHeapMaxMemory Off-heap memory size.
      * @return {@code this} for chaining.
      */
-    public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
+    @Deprecated public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
         this.offHeapMaxMem = offHeapMaxMemory;
 
         return this;
+    }
+
+    /**
+     * Configuration of cache that will be used to store data and metadata. If {@code null}, a default one will be used.
+     *
+     * @return Cache configuration.
+     */
+    @Nullable public CacheConfiguration getCacheConfiguration() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * See {@link #getCacheConfiguration()}.
+     *
+     * @param ccfg Cache configuration
+     * @return {@code this} for chaining.
+     */
+    public CollectionConfiguration setCacheConfiguration(@Nullable CacheConfiguration ccfg) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */

@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -51,8 +52,10 @@ public class AtomicConfiguration {
 
     /**
      * @return Number of backup nodes.
+     * @deprecated This property will only be used if {@link #getCacheConfiguration()} is null, to generate
+     * the default configuration. Same for other deprecated properties.
      */
-    public int getBackups() {
+    @Deprecated public int getBackups() {
         return backups;
     }
 
@@ -60,7 +63,7 @@ public class AtomicConfiguration {
      * @param backups Number of backup nodes.
      * @return {@code this} for chaining.
      */
-    public AtomicConfiguration setBackups(int backups) {
+    @Deprecated public AtomicConfiguration setBackups(int backups) {
         this.backups = backups;
 
         return this;
@@ -69,7 +72,7 @@ public class AtomicConfiguration {
     /**
      * @return Cache mode.
      */
-    public CacheMode getCacheMode() {
+    @Deprecated public CacheMode getCacheMode() {
         return cacheMode;
     }
 
@@ -77,7 +80,7 @@ public class AtomicConfiguration {
      * @param cacheMode Cache mode.
      * @return {@code this} for chaining.
      */
-    public AtomicConfiguration setCacheMode(CacheMode cacheMode) {
+    @Deprecated public AtomicConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
 
         return this;
@@ -116,7 +119,7 @@ public class AtomicConfiguration {
      *
      * @return Affinity function or null, if not set.
      */
-    public AffinityFunction getAffinity() {
+    @Deprecated public AffinityFunction getAffinity() {
         return aff;
     }
 
@@ -126,10 +129,29 @@ public class AtomicConfiguration {
      * @param aff Affinity function.
      * @return {@code this} for chaining.
      */
-    public AtomicConfiguration setAffinity(AffinityFunction aff) {
+    @Deprecated public AtomicConfiguration setAffinity(AffinityFunction aff) {
         this.aff = aff;
 
         return this;
+    }
+
+    /**
+     * Configuration of cache that will be used to store data and metadata. If {@code null}, a default one will be used.
+     *
+     * @return Cache configuration.
+     */
+    @Nullable public CacheConfiguration getCacheConfiguration() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * See {@link #getCacheConfiguration()}.
+     *
+     * @param ccfg Cache configuration
+     * @return {@code this} for chaining.
+     */
+    public AtomicConfiguration setCacheConfiguration(@Nullable CacheConfiguration ccfg) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
