@@ -175,10 +175,39 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), true);
+    @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
+        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
-        return (T)BinaryEnumCache.get(cls, ord);
+        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, true);
+
+        return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
+    }
+
+    /**
+     * Get value for the given class without any caching.
+     *
+     * @param cls Class.
+     */
+    private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
+        assert cls != null;
+
+        if (ord >= 0) {
+            Object[] vals = cls.getEnumConstants();
+
+            if (ord < vals.length)
+                return (T)vals[ord];
+            else
+                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
+                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
+        }
+        else
+            return null;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T deserialize() throws BinaryObjectException {
+        return (T)deserialize(null);
     }
 
     /** {@inheritDoc} */

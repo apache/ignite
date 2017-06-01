@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryClassLoaderTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -51,6 +52,7 @@ public class IgniteBinaryObjectsCacheTestSuite3 {
 
         suite.addTestSuite(GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class);
+        suite.addTestSuite(BinaryClassLoaderTest.class);
 
         return suite;
     }
