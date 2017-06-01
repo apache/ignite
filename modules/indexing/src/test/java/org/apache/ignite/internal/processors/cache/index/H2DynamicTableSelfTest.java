@@ -114,9 +114,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     *
-     * @param tplCacheName
-     * @param mode
+     * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
+     * H2 table and type descriptor on all nodes, optionally with cache type check.
+     * @param tplCacheName Template cache name.
+     * @param mode Expected cache mode, or {@code null} if no check is needed.
      */
     private void doTestCreateTable(String tplCacheName, CacheMode mode) {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
