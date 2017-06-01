@@ -847,7 +847,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public H2ResultSet executeSqlQueryWithTimer(String schema,
+    public H2ResultSet executeSqlQueryWithTimer(
         H2Connection conn,
         String sql,
         @Nullable Object[] params,
@@ -855,7 +855,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         PreparedStatement s = preparedStatementWithParams(conn, sql, params);
 
-        return executeSqlQueryWithTimer(schema, s,
+        return executeSqlQueryWithTimer(s,
             conn, sql, params, timeoutMillis, cancel);
     }
 
@@ -870,12 +870,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private H2ResultSet executeSqlQueryWithTimer( PreparedStatement stmt,
+    private H2ResultSet executeSqlQueryWithTimer(
+        PreparedStatement stmt,
         H2Connection conn,
         String sql,
         @Nullable Object[] params,
         int timeoutMillis,
-        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        @Nullable GridQueryCancel cancel
+    ) throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {

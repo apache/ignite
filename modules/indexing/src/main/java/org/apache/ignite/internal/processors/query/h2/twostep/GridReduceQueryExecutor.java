@@ -851,7 +851,7 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        H2ResultSet res = h2.executeSqlQueryWithTimer(schemaName,
+        H2ResultSet res = h2.executeSqlQueryWithTimer(
             conn,
             rdc.query(),
             rdc.parameters(params),
