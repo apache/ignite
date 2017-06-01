@@ -1094,14 +1094,14 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
             std::stringstream stream;
             stream << "A" << key;
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(stream.str()) == 0);
+            BOOST_REQUIRE_EQUAL(entry.GetValue().GetName().compare(stream.str()), 0);
 
-            BOOST_REQUIRE(entry.GetValue().GetAge() == key * 10);
+            BOOST_REQUIRE_EQUAL(entry.GetValue().GetAge(), key * 10);
         }
     }
 
     // Ensure that all keys were read.
-    BOOST_REQUIRE(keys.size() == entryCnt);
+    BOOST_CHECK_EQUAL(keys.size(), entryCnt);
 }
 
 /**
