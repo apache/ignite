@@ -123,7 +123,6 @@ public class JdbcThinResultSet implements ResultSet {
         this.isQuery = isQuery;
     }
 
-    // TODO
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
