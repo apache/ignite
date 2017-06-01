@@ -106,8 +106,8 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Sets the checkpoint frequency which is a minimal interval when the memory state (updated data, indexes, etc.)
-     * will be written to the Persistent Store. If the rate is high, checkpoints can happen more frequently.
+     * Sets the checkpointing frequency which is a minimal interval when the dirty pages will be written
+     * to the Persistent Store. If the rate is high, checkpointing will be triggered more frequently.
      *
      * @param checkpointFreq Checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
