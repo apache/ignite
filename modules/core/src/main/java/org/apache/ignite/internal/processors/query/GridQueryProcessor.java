@@ -1294,6 +1294,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
         throws IgniteCheckedException {
+        if (!QueryUtils.DFLT_SCHEMA.equals(schemaName))
+            throw new SchemaOperationException("Dynamic tables may be created only in default schema named PUBLIC " +
+                "[schemaName=" + schemaName + ']');
+
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
 
         if (templateCfg == null)
