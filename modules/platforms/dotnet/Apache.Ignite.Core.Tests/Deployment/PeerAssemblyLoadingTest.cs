@@ -124,6 +124,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         [Test]
         public void TestRuntimeDependency()
         {
+            // TODO: TestDll is not loaded in this domain, so peer deployment fails!
             TestDeployment(remoteCompute =>
             {
                 Assert.AreEqual("dcba", remoteCompute.Apply(new RuntimeDependencyFunc(), "abcd"));
