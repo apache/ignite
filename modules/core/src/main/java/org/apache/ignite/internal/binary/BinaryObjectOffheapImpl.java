@@ -130,7 +130,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+        return reader(null, null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -199,13 +199,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldName);
+        return (F) reader(null, null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null, false).unmarshalField(fieldId);
+        return (F) reader(null, null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -410,18 +410,26 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, false).unmarshalField(fieldName);
+        return (F)reader(rCtx, null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null, false).findFieldByName(fieldName);
+        return reader(null, null, false).findFieldByName(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
+        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
+
+        return (T)deserializeValue(resolveLdr);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserializeValue();
+        return (T)deserialize(null);
     }
 
     /** {@inheritDoc} */
@@ -448,7 +456,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
-        return (T)deserializeValue();
+        return (T)deserializeValue(this.ctx.configuration().getClassLoader());
     }
 
     /** {@inheritDoc} */
@@ -507,27 +515,31 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /**
+     * @param ldr Class loader.
      * @return Deserialized value.
      */
-    private Object deserializeValue() {
-        return reader(null, true).deserialize();
+    private Object deserializeValue(ClassLoader ldr) {
+        return reader(null, ldr, true).deserialize();
     }
 
     /**
      * Create new reader for this object.
      *
      * @param rCtx Reader context.
+     * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
+
+        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
         stream.position(start);
 
         return new BinaryReaderExImpl(ctx,
             stream,
-            ctx.configuration().getClassLoader(),
+            resolveLdr,
             rCtx,
             forUnmarshal);
     }
