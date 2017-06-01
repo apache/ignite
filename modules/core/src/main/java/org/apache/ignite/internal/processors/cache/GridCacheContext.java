@@ -2011,7 +2011,6 @@ public class GridCacheContext<K, V> implements Externalizable {
             topology().partitionState(localNodeId(), part) == OWNING :
             "result = " + result + ", persistenceEnabled = " + ctx.cache().context().database().persistenceEnabled() +
                 ", partitionState = " + topology().partitionState(localNodeId(), part);
-        ;
 
         return result;
     }

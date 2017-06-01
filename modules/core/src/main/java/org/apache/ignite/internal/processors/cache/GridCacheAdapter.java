@@ -3694,7 +3694,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             return ctx.kernalContext().task().execute(
                 new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
-        } catch (ClusterGroupEmptyException e) {
+        }
+        catch (ClusterGroupEmptyException e) {
             return new GridFinishedFuture<>(0);
         }
     }
