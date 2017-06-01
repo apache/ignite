@@ -64,8 +64,8 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  * H2 Table implementation.
  */
 public class GridH2Table extends TableBase {
-    /** */
-    private final String cacheName;
+    /** Cache context. */
+    private final GridCacheContext cctx;
 
     /** */
     private final GridH2RowDescriptor desc;
@@ -119,16 +119,16 @@ public class GridH2Table extends TableBase {
      * @param desc Row descriptor.
      * @param rowFactory Row factory.
      * @param idxsFactory Indexes factory.
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      */
     public GridH2Table(CreateTableData createTblData, @Nullable GridH2RowDescriptor desc, H2RowFactory rowFactory,
-        GridH2SystemIndexFactory idxsFactory, String cacheName) {
+        GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
         assert idxsFactory != null;
 
         this.desc = desc;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
 
         if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -184,7 +184,7 @@ public class GridH2Table extends TableBase {
 
         pkIndexPos = hasHashIndex ? 2 : 1;
 
-        final int segments = desc != null ? desc.configuration().getQueryParallelism() :
+        final int segments = desc != null ? desc.context().config().getQueryParallelism() :
             // Get index segments count from PK index. Null desc can be passed from tests.
             index(pkIndexPos).segmentsCount();
 
@@ -197,7 +197,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.configuration().getCacheMode() == PARTITIONED;
+        return desc != null && desc.context().config().getCacheMode() == PARTITIONED;
     }
 
     /**
@@ -222,8 +222,15 @@ public class GridH2Table extends TableBase {
     /**
      * @return Cache name.
      */
-    @Nullable public String cacheName() {
-        return cacheName;
+    public String cacheName() {
+        return cctx.name();
+    }
+
+    /**
+     * @return Cache context.
+     */
+    public GridCacheContext cache() {
+        return cctx;
     }
 
     /** {@inheritDoc} */

@@ -173,7 +173,7 @@ public class H2Utils {
             if (!ctor.isAccessible())
                 ctor.setAccessible(true);
 
-            final int segments = tbl.rowDescriptor().configuration().getQueryParallelism();
+            final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
 
             return (GridH2IndexBase)ctor.newInstance(tbl, idxName, segments, cols);
         }

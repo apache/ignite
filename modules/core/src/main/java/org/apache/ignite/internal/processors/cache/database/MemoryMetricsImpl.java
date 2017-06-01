@@ -58,8 +58,8 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
     private final MemoryPolicyConfiguration memPlcCfg;
 
-    /** Time interval (in seconds) when allocations/evictions are counted to calculate rate. */
-    private volatile int rateTimeInterval;
+    /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
+    private volatile long rateTimeInterval;
 
     /**
      * @param memPlcCfg MemoryPolicyConfiguration.
@@ -99,7 +99,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         for (int i = 0; i < subInts; i++)
             res += allocRateCounters[i].floatValue();
 
-        return res / rateTimeInterval;
+        return res * 1000 / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -200,8 +200,8 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /**
      * @param intervalNum Interval number.
      */
-    private int subInt(int intervalNum) {
-        return (rateTimeInterval * 1000 * intervalNum) / subInts;
+    private long subInt(int intervalNum) {
+        return (rateTimeInterval * intervalNum) / subInts;
     }
 
     /**
@@ -277,9 +277,9 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     }
 
     /**
-     * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
+     * @param rateTimeInterval Time interval (in milliseconds) used to calculate allocation/eviction rate.
      */
-    public void rateTimeInterval(int rateTimeInterval) {
+    public void rateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
     }
 
@@ -294,10 +294,8 @@ public class MemoryMetricsImpl implements MemoryMetrics {
         if (this.subInts == subInts)
             return;
 
-        int rateIntervalMs = rateTimeInterval * 1000;
-
-        if (rateIntervalMs / subInts < 10)
-            subInts = rateIntervalMs / 10;
+        if (rateTimeInterval / subInts < 10)
+            subInts = (int) rateTimeInterval / 10;
 
         LongAdder8[] newCounters = new LongAdder8[subInts];
 
