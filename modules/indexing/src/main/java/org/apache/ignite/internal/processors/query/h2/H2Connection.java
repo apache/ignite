@@ -73,6 +73,9 @@ public final class H2Connection implements GridCancelable {
     /** */
     private final AtomicReference<State> state;
 
+    /** */
+    private volatile H2ResultSet currentResult;
+
     /**
      * @param dbUrl Database URL.
      */
@@ -87,6 +90,15 @@ public final class H2Connection implements GridCancelable {
         ses = (Session)((JdbcConnection)conn).getSession();
 
         state = new AtomicReference<>(pool == null ? null : State.IN_POOL);
+    }
+
+    /**
+     * @param currentResult Current active result set.
+     */
+    void setCurrentResult(H2ResultSet currentResult) {
+        assert this.currentResult == null ^ currentResult == null: currentResult;
+
+        this.currentResult = currentResult;
     }
 
     /**
@@ -262,6 +274,17 @@ public final class H2Connection implements GridCancelable {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+        H2ResultSet rs = currentResult;
+
+        if (rs != null) {
+            try {
+                rs.cancel();
+            }
+            catch (SQLException e) {
+                // No-op.
+            }
+        }
+
         destroy();
     }
 
@@ -309,6 +332,8 @@ public final class H2Connection implements GridCancelable {
      *
      */
     public void onPoolPut() {
+        assert currentResult == null;
+
         if (!state.compareAndSet(State.TAKEN_FROM_POOL, State.IN_POOL)) {
             if (state.get() != State.DESTROYED)
                 throw new IllegalStateException("Wrong take/release sequence.");

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
@@ -57,15 +58,24 @@ public final class H2ResultSet implements AutoCloseable {
     /** */
     private final int colCnt;
 
+    /** */
+    private final String sql;
+
+    /** */
+    private final AtomicBoolean canceled = new AtomicBoolean();
+
     /**
      * @param conn Pooled H2 connection.
+     * @param sql SQL Query running.
      * @param rs Result set.
      */
-    public H2ResultSet(H2Connection conn, ResultSet rs) {
+    public H2ResultSet(H2Connection conn, String sql, ResultSet rs) {
         assert conn != null;
+        assert sql != null;
 
         this.conn = conn;
         this.rs = rs;
+        this.sql = sql;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -75,6 +85,8 @@ public final class H2ResultSet implements AutoCloseable {
         }
 
         colCnt = res.getVisibleColumnCount();
+
+        conn.setCurrentResult(this);
     }
 
     /**
@@ -99,10 +111,23 @@ public final class H2ResultSet implements AutoCloseable {
         return res.currentRow();
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() throws SQLException {
+    /**
+     * @throws SQLException If failed.
+     */
+    boolean cancel() throws SQLException {
+        if (!canceled.compareAndSet(false, true))
+            return false;
+
         rs.close();
 
-        conn.returnToPool();
+        conn.setCurrentResult(null);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws SQLException {
+        if (cancel())
+            conn.returnToPool();
     }
 }

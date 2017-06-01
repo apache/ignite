@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -36,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.util.GridNonReentrantRWLock;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -81,7 +79,7 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final ReadWriteLock lock;
+    private final GridNonReentrantRWLock lock = new GridNonReentrantRWLock();
 
     /** */
     private boolean destroyed;
@@ -190,8 +188,6 @@ public class GridH2Table extends TableBase {
             index(pkIndexPos).segmentsCount();
 
         actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
-
-        lock = new ReentrantReadWriteLock();
     }
 
     /**
@@ -247,6 +243,8 @@ public class GridH2Table extends TableBase {
         lock(exclusive);
 
         if (destroyed) {
+            sessions.remove(ses);
+
             unlock(exclusive);
 
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
@@ -346,10 +344,11 @@ public class GridH2Table extends TableBase {
      * @param exclusive Exclusive flag.
      */
     private void lock(boolean exclusive) {
-        Lock l = exclusive ? lock.writeLock() : lock.readLock();
-
         try {
-            l.lockInterruptibly();
+            if (exclusive)
+                lock.writeLock();
+            else
+                lock.readLock();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -364,19 +363,17 @@ public class GridH2Table extends TableBase {
      * @return Whether lock was acquired.
      */
     private boolean tryLock(boolean exclusive, long waitMillis) {
-        Lock l = exclusive ? lock.writeLock() : lock.readLock();
-
         try {
-            if (!l.tryLock(waitMillis, TimeUnit.MILLISECONDS))
-                return false;
+            if (exclusive)
+                return lock.tryWriteLock(waitMillis, TimeUnit.MILLISECONDS);
+            else
+                return lock.tryReadLock(waitMillis, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
-
-        return true;
     }
 
     /**
@@ -385,9 +382,10 @@ public class GridH2Table extends TableBase {
      * @param exclusive Exclusive flag.
      */
     private void unlock(boolean exclusive) {
-        Lock l = exclusive ? lock.writeLock() : lock.readLock();
-
-        l.unlock();
+        if (exclusive)
+            lock.writeUnlock();
+        else
+            lock.readUnlock();
     }
 
     /**

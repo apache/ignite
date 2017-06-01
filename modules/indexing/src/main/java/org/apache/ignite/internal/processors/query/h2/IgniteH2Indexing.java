@@ -908,7 +908,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 LT.warn(log, longMsg, msg);
             }
 
-            return new H2ResultSet(conn, rs);
+            return new H2ResultSet(conn, sql, rs);
         }
         catch (SQLException e) {
             onSqlException(conn);
@@ -1020,7 +1020,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         runs.put(run.id(), run);
 
-        H2ResultSet rs = executeSqlQueryWithTimer(schemaName, conn, sql, params, 0, cancel);
+        H2ResultSet rs;
+
+        try {
+            rs = executeSqlQueryWithTimer(schemaName, conn, sql, params, 0, cancel);
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            runs.remove(run.id(), run);
+
+            throw e;
+        }
 
         return new H2KeyValueIterator(rs) {
             @Override public void onClose() throws IgniteCheckedException {
@@ -1930,11 +1939,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-//        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
-        if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
-            for (H2Schema schema : schemas.values())
-                schema.dropAll();
-        }
+        cancelAllQueries();
 
         try {
             connPool.close();
@@ -1943,10 +1948,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.error(log, "Failed to close connection pool.", e);
         }
 
+//        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
+        if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
+            for (H2Schema schema : schemas.values())
+                schema.dropAll();
+        }
+
         schemas.clear();
         cacheName2schema.clear();
 
-        H2Connection c = null;try { c = new H2Connection(null,dbUrl);
+        H2Connection c = null;
+
+        try {
+            c = new H2Connection(null, dbUrl);
 
             c.executeUpdate("SHUTDOWN");
         }
