@@ -70,7 +70,6 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setClientMode(client);
-        cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
         return cfg;
     }

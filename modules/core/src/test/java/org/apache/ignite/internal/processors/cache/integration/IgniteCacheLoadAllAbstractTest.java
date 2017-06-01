@@ -49,15 +49,6 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private static ConcurrentHashMap8<Object, Object> storeMap;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);

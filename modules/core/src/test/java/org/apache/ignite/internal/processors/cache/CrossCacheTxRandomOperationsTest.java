@@ -83,8 +83,6 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
             cfg.setClientMode(true);
 
-        cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
-
         return cfg;
     }
 
