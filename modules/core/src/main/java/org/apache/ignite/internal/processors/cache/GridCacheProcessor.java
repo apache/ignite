@@ -2112,11 +2112,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (exchActions != null && (err == null || forceClose)) {
-            Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stopped = null;
+            Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps = null;
 
-            GridCacheContext<?, ?> stopCtx = null;
-            boolean destroy = false;
             for (ExchangeActions.ActionData action : exchActions.cacheStopRequests()) {
+                GridCacheContext<?, ?> stopCtx;
+                boolean destroy;
+
                 stopGateway(action.request());
 
                 sharedCtx.database().checkpointReadLock();
@@ -2129,11 +2130,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     sharedCtx.database().checkpointReadUnlock();
                 }
 
-                if (stopCtx != null) {
-                    if (stopped == null)
-                        stopped = new ArrayList<>();
+                if (stopCtx != null && !stopCtx.group().hasCaches()) {
+                    if (stoppedGrps == null)
+                        stoppedGrps = new ArrayList<>();
 
-                    stopped.add(F.t(stopCtx.group(), destroy));
+                    stoppedGrps.add(F.t(stopCtx.group(), destroy));
                 }
             }
 
@@ -2162,12 +2163,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         sharedCtx.database().checkpointReadLock();
 
                         try {
-                            stopCtx = prepareCacheStop(req.request(), forceClose);
+                            GridCacheContext<?, ?> stopCtx = prepareCacheStop(req.request(), forceClose);
 
-                            destroy = req.request().destroy();
+                            if (stopCtx != null && !stopCtx.group().hasCaches()) {
+                                assert  !stopCtx.group().affinityNode() : stopCtx.name();
 
-                            if (stopCtx != null && !stopCtx.group().hasCaches())
                                 stopCacheGroup(stopCtx.groupId());
+                            }
 
                         }
                         finally {
@@ -2176,20 +2178,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                // TODO IGNITE-5075 group descriptors.
-                if (stopCtx != null) {
-                    if (stopped == null)
-                        stopped = new ArrayList<>();
-
-                    stopped.add(F.t(stopCtx.group(), destroy));
-                }
-
                 if (forceClose)
                     completeCacheStartFuture(req.request(), false, err);
             }
 
-            if (stopped != null && !sharedCtx.kernalContext().clientNode())
-                sharedCtx.database().onCacheGroupsStopped(stopped);
+            if (stoppedGrps != null && !sharedCtx.kernalContext().clientNode())
+                sharedCtx.database().onCacheGroupsStopped(stoppedGrps);
         }
     }
 
