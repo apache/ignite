@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCachePreloaderAdapter implements GridCachePreloader {
     /** */
-    protected final CacheGroupInfrastructure grp;
+    protected final CacheGroupContext grp;
 
     /** */
     protected final GridCacheSharedContext ctx;
@@ -57,7 +57,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     /**
      * @param grp Cache group.
      */
-    public GridCachePreloaderAdapter(CacheGroupInfrastructure grp) {
+    public GridCachePreloaderAdapter(CacheGroupContext grp) {
         assert grp != null;
 
         this.grp = grp;

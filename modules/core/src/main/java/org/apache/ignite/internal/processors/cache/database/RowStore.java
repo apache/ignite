@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
@@ -46,7 +46,7 @@ public class RowStore {
      * @param grp Cache group.
      * @param freeList Free list.
      */
-    public RowStore(CacheGroupInfrastructure grp, FreeList freeList) {
+    public RowStore(CacheGroupContext grp, FreeList freeList) {
         assert grp != null;
         assert freeList != null;
 

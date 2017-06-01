@@ -510,7 +510,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             }, part);
                         }
                         else
-                            skipCtx.addSendClosure(new Runnable() {
+                            skipCtx.addProcessClosure(new Runnable() {
                                 @Override public void run() {
                                     locLsnr.onUpdated(evts);
                                 }
@@ -525,7 +525,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 final Object entryOrList = buf.processEntry(skipCtx.entry(), !primary);
 
                 if (entryOrList != null) {
-                    skipCtx.addSendClosure(new Runnable() {
+                    skipCtx.addProcessClosure(new Runnable() {
                         @Override public void run() {
                             try {
                                 ctx.continuous().addNotification(nodeId,
@@ -808,27 +808,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
-     * @param evt Event.
-     */
-    private void handleLocalListener(CacheContinuousQueryEvent evt) {
-        CacheContinuousQueryEntry entry = evt.entry();
-
-        if (!locCache) {
-            Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
-
-            if (!evts.isEmpty())
-                locLsnr.onUpdated(evts);
-
-            if (!internal && !skipPrimaryCheck)
-                sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
-        }
-        else {
-            if (!entry.isFiltered())
-                locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
-        }
-    }
-
-    /**
      * @param evt Continuous query event.
      * @param notify Notify flag.
      * @param loc Listener deployed on this node.
@@ -841,11 +820,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (cctx == null)
                 return;
 
-            if (loc)
-                handleLocalListener(evt);
-            else {
-                CacheContinuousQueryEntry entry = evt.entry();
+            final CacheContinuousQueryEntry entry = evt.entry();
 
+            if (loc) {
+                if (!locCache) {
+                    Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
+
+                    if (!evts.isEmpty())
+                        locLsnr.onUpdated(evts);
+
+                    if (!internal && !skipPrimaryCheck)
+                        sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
+                }
+                else {
+                    if (!entry.isFiltered())
+                        locLsnr.onUpdated(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt));
+                }
+            }
+            else {
                 if (!entry.isFiltered())
                     prepareEntry(cctx, nodeId, entry);
 

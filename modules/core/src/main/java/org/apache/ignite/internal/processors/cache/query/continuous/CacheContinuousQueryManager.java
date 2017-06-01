@@ -127,7 +127,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
 
         if (cctx.affinityNode()) {
-            cctx.io().addHandler(false, cctx.cacheId(), CacheContinuousQueryBatchAck.class,
+            cctx.io().addCacheHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
                 new CI2<UUID, CacheContinuousQueryBatchAck>() {
                     @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
                         CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
@@ -829,14 +829,15 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
         else {
             synchronized (this) {
-                added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
-
-                if (added) {
-                    int cnt = lsnrCnt.incrementAndGet();
-
-                    if (cctx.group().sharedGroup() && cnt == 1 && !cctx.isLocal())
+                if (lsnrCnt.get() == 0) {
+                    if (cctx.group().sharedGroup() && !cctx.isLocal())
                         cctx.group().addCacheWithContinuousQuery(cctx);
                 }
+
+                added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
+
+                if (added)
+                    lsnrCnt.incrementAndGet();
             }
 
             if (added)

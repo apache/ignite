@@ -62,7 +62,7 @@ public class CacheData implements Serializable {
     private final boolean template;
 
     /** Flags added for future usage. */
-    private final byte flags;
+    private final long flags;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -87,7 +87,7 @@ public class CacheData implements Serializable {
         boolean staticCfg,
         boolean sql,
         boolean template,
-        byte flags) {
+        long flags) {
         assert cacheCfg != null;
         assert rcvdFrom != null : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();

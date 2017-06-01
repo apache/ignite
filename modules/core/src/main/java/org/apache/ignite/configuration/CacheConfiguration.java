@@ -458,13 +458,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeSync = cc.getWriteSynchronizationMode();
     }
 
-    // TODO IGNTIE-5075.
+    /**
+     * @return Cache group name.
+     */
     public String getGroupName() {
         return grpName;
     }
 
-    public CacheConfiguration<K, V> setGroupName(String groupName) {
-        this.grpName = groupName;
+    /**
+     * @param grpName Cache group name.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setGroupName(String grpName) {
+        this.grpName = grpName;
 
         return this;
     }

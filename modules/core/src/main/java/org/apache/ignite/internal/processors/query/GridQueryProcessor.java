@@ -1540,7 +1540,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                     fut.onDone(e);
                 }
                 catch (Throwable e) {
-                    U.error(log, "Failed to rebuild indexes for type [cacheName=" + cacheName +
+                    U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
                         ", name=" + desc.name() + ']', e);
 
                     fut.onDone(e);

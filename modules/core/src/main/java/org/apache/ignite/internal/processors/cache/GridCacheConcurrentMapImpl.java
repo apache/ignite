@@ -233,6 +233,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /**
      * @param sizeChange Size delta.
+     * @param hld Map holder.
      * @param e Map entry.
      */
     protected void release(int sizeChange, CacheMapHolder hld, GridCacheEntryEx e) {

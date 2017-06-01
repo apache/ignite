@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.apache.ignite.yardstick.IgniteNode;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
@@ -50,7 +51,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     protected IgniteCache<K, V> cache;
 
     /** */
-    protected List<IgniteCache> grpCaches;
+    protected List<IgniteCache> testCaches;
 
     /** */
     private ThreadLocal<ThreadRange> threadRange = new ThreadLocal<>();
@@ -59,7 +60,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     private AtomicInteger threadIdx = new AtomicInteger();
 
     /** */
-    private int cachesInGrp;
+    private int caches;
 
     /** */
     private final AtomicInteger opCacheIdx = new AtomicInteger();
@@ -79,12 +80,12 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
      * @return Cache for benchmark operation.
      */
     protected final IgniteCache<K, V> cacheForOperation(boolean perThread) {
-        if (cachesInGrp > 1) {
+        if (caches > 1) {
             if (perThread) {
                 IgniteCache<K, V> cache = opCache.get();
 
                 if (cache == null) {
-                    cache = grpCaches.get(opCacheIdx.getAndIncrement() % cachesInGrp);
+                    cache = testCaches.get(opCacheIdx.getAndIncrement() % caches);
 
                     opCache.set(cache);
 
@@ -94,7 +95,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 return cache;
             }
             else
-                return grpCaches.get(ThreadLocalRandom.current().nextInt(cachesInGrp));
+                return testCaches.get(ThreadLocalRandom.current().nextInt(caches));
         }
 
         return cache;
@@ -115,34 +116,28 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             ", cacheGroup="+ grpName +
             ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
 
-        cachesInGrp = args.cachesInGroup();
+        caches = args.cachesCount();
 
-        if (cachesInGrp > 1) {
-            if (grpName == null)
-                throw new IllegalArgumentException("Group is not configured for cache: " + cache.getName());
-
-            JdkMarshaller marsh = new JdkMarshaller();
-
-            ccfg = marsh.unmarshal(marsh.marshal(ccfg), null);
-
+        if (caches > 1) {
             List<CacheConfiguration> toCreate = new ArrayList<>();
 
-            for (int i = 0; i < cachesInGrp - 1; i++) {
-                CacheConfiguration<?, ?> ccfg0 = new CacheConfiguration<>(ccfg);
+            for (int i = 0; i < caches - 1; i++) {
+                JdkMarshaller marsh = new JdkMarshaller();
+
+                CacheConfiguration ccfg0 = marsh.unmarshal(marsh.marshal(ccfg), null);
 
                 ccfg0.setName(cache.getName() + "-" + i);
-                ccfg0.setGroupName(grpName);
 
                 toCreate.add(ccfg0);
             }
 
             Collection<IgniteCache> caches = ignite().getOrCreateCaches(toCreate);
 
-            grpCaches = new ArrayList<>(caches);
+            testCaches = new ArrayList<>(caches);
 
-            grpCaches.add(cache);
+            testCaches.add(cache);
 
-            BenchmarkUtils.println(cfg, "Created additional caches for group [cachesInGrp=" + grpCaches.size() +
+            BenchmarkUtils.println(cfg, "Created additional caches [caches=" + testCaches.size() +
                 ", grp=" + grpName + ']');
         }
 
@@ -196,7 +191,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
      * @throws Exception If failed.
      */
     protected final void loadCachesData() throws Exception {
-        List<IgniteCache> caches = grpCaches != null ? grpCaches : (List)Collections.singletonList(cache);
+        List<IgniteCache> caches = testCaches != null ? testCaches : Collections.<IgniteCache>singletonList(cache);
 
         if (caches.size() > 1) {
             ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -221,6 +216,27 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         }
         else
             loadCacheData(caches.get(0).getName());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param cnt Number of entries to load.
+     */
+    protected final void loadSampleValues(String cacheName, int cnt) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+            for (int i = 0; i < cnt; i++) {
+                dataLdr.addData(i, new SampleValue(i));
+
+                if (i % 100000 == 0) {
+                    if (Thread.currentThread().isInterrupted())
+                        break;
+
+                    println("Loaded entries [cache=" + cacheName + ", cnt=" + i + ']');
+                }
+            }
+        }
+
+        println("Load entries done [cache=" + cacheName + ", cnt=" + cnt + ']');
     }
 
     /**

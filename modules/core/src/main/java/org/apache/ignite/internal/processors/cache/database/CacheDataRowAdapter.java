@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -97,7 +97,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    public final void initFromLink(CacheGroupInfrastructure grp, RowData rowData) throws IgniteCheckedException {
+    public final void initFromLink(CacheGroupContext grp, RowData rowData) throws IgniteCheckedException {
         initFromLink(grp, grp.shared(), grp.memoryPolicy().pageMemory(), rowData);
     }
 
@@ -112,7 +112,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(
-        @Nullable CacheGroupInfrastructure grp,
+        @Nullable CacheGroupContext grp,
         GridCacheSharedContext<?, ?> sharedCtx,
         PageMemory pageMem,
         RowData rowData)
@@ -131,6 +131,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             final long pageId = pageId(nextLink);
 
+            // Group is null if try evict page, with persistence evictions should be disabled.
             assert grp != null || !sharedCtx.database().persistenceEnabled();
 
             int grpId = grp != null ? grp.groupId() : 0;

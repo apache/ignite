@@ -28,6 +28,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
@@ -48,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 class GridDhtPartitionSupplier {
     /** */
-    private final CacheGroupInfrastructure grp;
+    private final CacheGroupContext grp;
 
     /** */
     private final IgniteLogger log;
@@ -68,7 +69,7 @@ class GridDhtPartitionSupplier {
     /**
      * @param grp Cache group.
      */
-    GridDhtPartitionSupplier(CacheGroupInfrastructure grp) {
+    GridDhtPartitionSupplier(CacheGroupContext grp) {
         assert grp != null;
 
         this.grp = grp;

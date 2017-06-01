@@ -30,7 +30,7 @@ public class CounterSkipContext {
     private final CacheContinuousQueryEntry entry;
 
     /** */
-    private List<Runnable> sndC;
+    private List<Runnable> procC;
 
     /**
      * @param part Partition.
@@ -62,17 +62,17 @@ public class CounterSkipContext {
     /**
      * @return Entries
      */
-    @Nullable public List<Runnable> sendClosures() {
-        return sndC;
+    @Nullable public List<Runnable> processClosures() {
+        return procC;
     }
 
     /**
      * @param c Closure send
      */
-    void addSendClosure(Runnable c) {
-        if (sndC == null)
-            sndC = new ArrayList<>();
+    void addProcessClosure(Runnable c) {
+        if (procC == null)
+            procC = new ArrayList<>();
 
-        sndC.add(c);
+        procC.add(c);
     }
 }

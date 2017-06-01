@@ -30,7 +30,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -242,7 +242,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        CacheGroupInfrastructure grp = ctx.cache().cacheGroup(grpId);
+        CacheGroupContext grp = ctx.cache().cacheGroup(grpId);
 
         for (CacheEntryInfoCollection col : infos().values()) {
             List<GridCacheEntryInfo> entries = col.infos();

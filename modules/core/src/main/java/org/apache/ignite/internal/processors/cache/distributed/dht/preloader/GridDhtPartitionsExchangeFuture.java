@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.ClusterState;
@@ -728,7 +728,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         try {
             if (crd != null) {
-                for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal())
                         continue;
 
@@ -746,7 +746,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void updateTopologies(boolean crd) throws IgniteCheckedException {
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
@@ -861,7 +861,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (crd != null) {
             if (crd.isLocal()) {
-                for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     boolean updateTop = !grp.isLocal() &&
                         exchId.topologyVersion().equals(grp.localStartVersion());
 
@@ -894,7 +894,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         else {
             if (centralizedAff) { // Last server node failed.
-                for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     GridAffinityAssignmentCache aff = grp.affinity();
 
                     aff.initialize(topologyVersion(), aff.idealAssignment());
@@ -913,7 +913,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         assert !cctx.kernalContext().clientNode();
 
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
@@ -939,7 +939,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal() || cacheGroupStopping(grp.groupId()))
                 continue;
 
@@ -1067,7 +1067,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void onLeft() {
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
@@ -1292,7 +1292,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
        }
 
         if (err == null && realExchange) {
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
@@ -1325,7 +1325,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Map<Integer, CacheValidation> m = new HashMap<>(cctx.cache().cacheGroups().size());
 
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 Collection<Integer> lostParts = grp.isLocal() ?
                     Collections.<Integer>emptyList() : grp.topology().lostPartitions();
 
@@ -1388,7 +1388,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             initFut.onDone(err == null);
 
             if (exchId.isLeft()) {
-                for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups())
+                for (CacheGroupContext grp : cctx.cache().cacheGroups())
                     grp.affinityFunction().removeNode(exchId.nodeId());
             }
 
@@ -1438,7 +1438,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
-        CacheGroupInfrastructure grp = cctx.group();
+        CacheGroupContext grp = cctx.group();
 
         PartitionLossPolicy partLossPlc = grp.config().getPartitionLossPolicy();
 
@@ -1829,7 +1829,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (Thread.currentThread().isInterrupted())
                 return;
 
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (!grp.isLocal())
                     grp.topology().detectLostPartitions(discoEvt);
             }
@@ -1844,7 +1844,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (Thread.currentThread().isInterrupted())
                 return;
 
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
@@ -1869,7 +1869,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert partHistSuppliers.isEmpty();
 
             if (!crd.equals(discoCache.serverNodes().get(0))) {
-                for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
                         grp.topology().beforeExchange(this, !centralizedAff);
                 }
@@ -1881,7 +1881,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg0.partitions().entrySet()) {
                         Integer grpId = entry.getKey();
-                        CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                         GridDhtPartitionTopology top = grp != null ? grp.topology() :
                             cctx.exchange().clientTopology(grpId, this);
@@ -1964,7 +1964,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void assignPartitionsStates() {
         if (cctx.database().persistenceEnabled()) {
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
@@ -2101,7 +2101,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Map<Integer, T2<Long, Long>> cntrMap = msg.partitionUpdateCounters(grpId);
 
-            CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             if (grp != null)
                 grp.topology().update(this, entry.getValue(), cntrMap,
@@ -2125,7 +2125,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
-            CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             GridDhtPartitionTopology top = grp != null ? grp.topology() :
                 cctx.exchange().clientTopology(grpId, this);
@@ -2280,7 +2280,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             List<ClusterNode> empty = Collections.emptyList();
 
-                            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+                            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                                 List<List<ClusterNode>> affAssignment = new ArrayList<>(grp.affinity().partitions());
 
                                 for (int i = 0; i < grp.affinity().partitions(); i++)
