@@ -511,6 +511,13 @@ public final class IgniteSystemProperties {
         "IGNITE_H2_INDEXING_CONNECTION_POOL_PICK_ATTEMPTS";
 
     /**
+     * If lazy SQL query execution is enabled by default.
+     * <p>
+     * Default value is {@code true}.
+     */
+    public static final String IGNITE_H2_INDEXING_LAZY_SQL = "IGNITE_H2_INDEXING_LAZY_SQL";
+
+    /**
      * Size of the distributed SQL plan cache.
      * <p>
      * Default value is {@code 1024}.

@@ -150,6 +150,8 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_SQL_PLAN_CACHE_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_LAZY_SQL;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
@@ -193,7 +195,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
         ";RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0;NESTED_JOINS=0;BATCH_JOINS=1" +
         ";ROW_FACTORY=\"" + GridH2RowFactory.class.getName() + "\"" +
-        ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
+        ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName() +
+        (getBoolean(IGNITE_H2_INDEXING_LAZY_SQL, true) ?
+            ";LAZY_QUERY_EXECUTION=1" : "")
+        ;
 
         // Uncomment this setting to get debug output from H2 to sysout.
 //        ";TRACE_LEVEL_SYSTEM_OUT=3";
