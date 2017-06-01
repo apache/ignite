@@ -133,12 +133,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Serializes and deserializes a value.
         /// </summary>
-        private static void CheckSerializeDeserialize<T>(T val)
+        private static void CheckSerializeDeserialize<T>(T val, bool cacheOnly = false)
         {
-            var marsh = GetMarshaller();
+            if (!cacheOnly)
+            {
+                var marsh = GetMarshaller();
 
-            var res = marsh.Unmarshal<T>(marsh.Marshal(val));
-            Assert.AreEqual(val, res);
+                var res = marsh.Unmarshal<T>(marsh.Marshal(val));
+                Assert.AreEqual(val, res);
+            }
 
             var ignite = Ignition.TryGetIgnite();
 
@@ -147,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache = ignite.GetOrCreateCache<int, T>(typeof(T).FullName);
 
                 cache.Put(1, val);
-                res = cache.Get(1);
+                var res = cache.Get(1);
 
                 Assert.AreEqual(val, res);
             }
@@ -214,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 UShort = ToBinary(UShortEnum.Bar)
             };
 
-            CheckSerializeDeserialize(val);
+            CheckSerializeDeserialize(val, true);
         }
 
         /// <summary>

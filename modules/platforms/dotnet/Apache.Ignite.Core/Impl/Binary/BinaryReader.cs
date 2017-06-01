@@ -584,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return true;
 
                 case BinaryUtils.TypeEnum:
-                    res = ReadEnum0<T>(this, _mode == BinaryMode.ForceBinary);
+                    res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                     return true;
 
