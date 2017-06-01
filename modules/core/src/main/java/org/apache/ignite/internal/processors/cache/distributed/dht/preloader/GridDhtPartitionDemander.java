@@ -388,7 +388,6 @@ public class GridDhtPartitionDemander {
     /**
      * @param fut Rebalance future.
      * @param assigns Assignments.
-     * @throws IgniteCheckedException If failed.
      */
     private void requestPartitions(final RebalanceFuture fut, GridDhtPreloaderAssignments assigns) {
         assert fut != null;
@@ -431,7 +430,7 @@ public class GridDhtPartitionDemander {
                 ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
                 ", topology=" + fut.topologyVersion() + ", updateSeq=" + fut.updateSeq + "]");
 
-            List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
+            final List<Set<Integer>> sParts = new ArrayList<>(lsnrCnt);
 
             for (int cnt = 0; cnt < lsnrCnt; cnt++)
                 sParts.add(new HashSet<Integer>());
@@ -454,14 +453,13 @@ public class GridDhtPartitionDemander {
 
                     final int finalCnt = cnt;
 
-                            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-@Override public void run() {
-                        try {
+                    ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            try {
                                 if (!fut.isDone()) {
-                        ctx.io().sendOrderedMessage(node,
-                            rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
+                                    ctx.io().sendOrderedMessage(node, rebalanceTopics.get(finalCnt), initD, grp.ioPolicy(), initD.timeout());
 
-// Cleanup required in case partitions demanded in parallel with cancellation.
+                                    // Cleanup required in case partitions demanded in parallel with cancellation.
                                     synchronized (fut) {
                                         if (fut.isDone())
                                             fut.cleanupRemoteContexts(node.id());

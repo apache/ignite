@@ -2077,8 +2077,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Throwable err
     ) {
         ExchangeActions actions = new ExchangeActions(){
-            @Override List<DynamicCacheChangeRequest> closeRequests(UUID nodeId) {
-                return Collections.singletonList(act.request());
+            @Override List<ActionData> closeRequests(UUID nodeId) {
+                return Collections.singletonList(act);
             }
         };
 
@@ -2184,7 +2184,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 if (forceClose)
-                    completeCacheStartFuture(req, false, err);
+                    completeCacheStartFuture(req.request(), false, err);
 
             }
 
