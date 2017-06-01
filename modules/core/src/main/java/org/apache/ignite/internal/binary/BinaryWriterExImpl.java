@@ -382,7 +382,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4 + 4);
+            out.unsafeEnsure(1 + 4 + 5);
 
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
@@ -400,7 +400,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (negative)
                 vals[0] |= -0x80;
 
-            doWriteUnsignedVarint(vals.length);
+            doUnsafeWriteUnsignedVarint(vals.length);
             out.writeByteArray(vals);
         }
     }
@@ -419,12 +419,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else
                 strArr = val.getBytes(UTF_8);
 
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING);
 
-            doWriteUnsignedVarint(strArr.length);
-
-            out.write(strArr, 0, strArr.length);
+            doUnsafeWriteUnsignedVarint(strArr.length);
+            out.writeByteArray(strArr);
         }
     }
 
@@ -505,9 +504,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeByteArray(val);
         }
@@ -520,9 +519,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.SHORT_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeShortArray(val);
         }
@@ -535,9 +534,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.INT_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeIntArray(val);
         }
@@ -559,6 +558,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.writeByte((byte)(val & 0x7F));
     }
 
+    /**
+     * Writes integer value in varint encoding.
+     * Uses unsafe writing methods.
+     * Before calling, make sure that {@link #out} has 5 bytes for writing.
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     * Value must be positive.
+     *
+     * @param val Value to write.
+     */
+    public void doUnsafeWriteUnsignedVarint(int val) {
+        while ((val & 0xFFFFFF80) != 0) {
+            out.unsafeWriteByte((byte)((val & 0x7F) | 0x80));
+            val >>>= 7;
+        }
+
+        out.unsafeWriteByte((byte)(val & 0x7F));
+    }
 
     /**
      * @param val Long array.
@@ -567,9 +583,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.LONG_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeLongArray(val);
         }
@@ -582,9 +598,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.FLOAT_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeFloatArray(val);
         }
@@ -597,9 +613,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeDoubleArray(val);
         }
@@ -612,9 +628,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.CHAR_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeCharArray(val);
         }
@@ -627,9 +643,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             out.writeBooleanArray(val);
         }
@@ -642,9 +658,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             for (BigDecimal str : val)
                 doWriteDecimal(str);
@@ -658,9 +674,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             for (String str : val)
                 doWriteString(str);
@@ -674,9 +690,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.UUID_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             for (UUID uuid : val)
                 doWriteUuid(uuid);
@@ -690,9 +706,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.DATE_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             for (Date date : val)
                 doWriteDate(date);
@@ -706,9 +722,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
          if (val == null)
              out.writeByte(GridBinaryMarshaller.NULL);
          else {
-             out.unsafeEnsure(1);
+             out.unsafeEnsure(1 + 5);
              out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
-             doWriteUnsignedVarint(val.length);
+             doUnsafeWriteUnsignedVarint(val.length);
 
              for (Timestamp ts : val)
                  doWriteTimestamp(ts);
@@ -722,9 +738,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.TIME_ARR);
-            doWriteUnsignedVarint(val.length);
+            doUnsafeWriteUnsignedVarint(val.length);
 
             for (Time time : val)
                 doWriteTime(time);
@@ -773,9 +789,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (tryWriteAsHandle(col))
                 return;
 
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 4 + 1);
             out.unsafeWriteByte(GridBinaryMarshaller.COL);
-            out.writeInt(col.size());
+            out.unsafeWriteInt(col.size());
             out.unsafeWriteByte(ctx.collectionType(col.getClass()));
 
             for (Object obj : col)
@@ -794,9 +810,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (tryWriteAsHandle(map))
                 return;
 
-            out.unsafeEnsure(1);
+            out.unsafeEnsure(1 + 4 + 1);
             out.unsafeWriteByte(GridBinaryMarshaller.MAP);
-            out.writeInt(map.size());
+            out.unsafeWriteInt(map.size());
             out.unsafeWriteByte(ctx.mapType(map.getClass()));
 
             for (Map.Entry<?, ?> e : map.entrySet()) {

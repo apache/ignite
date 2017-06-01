@@ -1246,7 +1246,7 @@ public class BinaryUtils {
      */
     public static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
-            int len =  doReadUnsignedVarint(in);
+            int len = doReadUnsignedVarint(in);
             byte[] arr = in.readByteArray(len);
 
             if (USE_STR_SERIALIZATION_VER_2)
