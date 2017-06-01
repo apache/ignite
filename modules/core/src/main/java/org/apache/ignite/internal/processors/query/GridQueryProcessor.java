@@ -1296,7 +1296,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName,
-        CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
+        @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateName);
 
         if (templateCfg == null)

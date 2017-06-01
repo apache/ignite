@@ -1020,7 +1020,9 @@ public class GridSqlQueryParser {
 
         switch (name) {
             case PARAM_TEMPLATE:
-                ensureParamValueNotEmpty(PARAM_TEMPLATE, val);
+                if (F.isEmpty(val))
+                    throw new IgniteSQLException("\"" + PARAM_TEMPLATE + "\" parameter cannot be empty.",
+                        IgniteQueryErrorCode.PARSING);
 
                 res.templateName(val);
 
@@ -1042,17 +1044,6 @@ public class GridSqlQueryParser {
                 throw new IgniteSQLException("Unknown CREATE TABLE param [paramName=" + name + ']',
                     IgniteQueryErrorCode.PARSING);
         }
-    }
-
-    /**
-     * Check that param with mandatory value has it specified.
-     * @param name Param name.
-     * @param val Param value to check.
-     */
-    private static void ensureParamValueNotEmpty(String name, String val) {
-        if (F.isEmpty(val))
-            throw new IgniteSQLException("No value has been given for a CREATE TABLE param [paramName=" + name + ']',
-                IgniteQueryErrorCode.PARSING);
     }
 
     /**

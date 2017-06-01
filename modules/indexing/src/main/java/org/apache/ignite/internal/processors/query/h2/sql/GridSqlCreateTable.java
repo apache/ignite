@@ -38,11 +38,11 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Cache name upon which new cache configuration for this table must be based. */
     private String templateName;
 
-    /** Backups number for new cache. */
-    private int backups;
-
     /** Atomicity mode for new cache. */
     private CacheAtomicityMode atomicityMode;
+
+    /** Backups number for new cache. */
+    private int backups;
 
     /** Quietly ignore this command if table already exists. */
     private boolean ifNotExists;
@@ -71,20 +71,6 @@ public class GridSqlCreateTable extends GridSqlStatement {
     }
 
     /**
-     * @return Backups number for new cache.
-     */
-    public int backups() {
-        return backups;
-    }
-
-    /**
-     * @param backups Backups number for new cache.
-     */
-    public void backups(int backups) {
-        this.backups = backups;
-    }
-
-    /**
      * @return Atomicity mode for new cache.
      */
     public CacheAtomicityMode atomicityMode() {
@@ -96,6 +82,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void atomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
+    }
+
+    /**
+     * @return Backups number for new cache.
+     */
+    public int backups() {
+        return backups;
+    }
+
+    /**
+     * @param backups Backups number for new cache.
+     */
+    public void backups(int backups) {
+        this.backups = backups;
     }
 
     /**
