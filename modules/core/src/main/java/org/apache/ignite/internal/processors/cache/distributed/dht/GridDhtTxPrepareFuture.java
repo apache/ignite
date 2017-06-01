@@ -43,11 +43,11 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheCompoundFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -82,7 +82,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,30 +98,14 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  *
  */
 @SuppressWarnings("unchecked")
-public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
+public final class GridDhtTxPrepareFuture extends GridCacheFutureAdapter<GridNearTxPrepareResponse>
     implements GridCacheMvccFuture<GridNearTxPrepareResponse> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Error updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxPrepareFuture, Throwable> ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxPrepareFuture.class, Throwable.class, "err");
-
-    /** */
-    private static final IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse> REDUCER =
-        new IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse>() {
-            @Override public boolean collect(IgniteInternalTx e) {
-                return true;
-            }
-
-            @Override public GridNearTxPrepareResponse reduce() {
-                // Nothing to aggregate.
-                return null;
-            }
-        };
 
     /** Replied flag updater. */
     private static final AtomicIntegerFieldUpdater<GridDhtTxPrepareFuture> REPLIED_UPD =
@@ -230,8 +213,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         boolean last,
         boolean retVal
     ) {
-        super(REDUCER);
-
         this.cctx = cctx;
         this.tx = tx;
         this.dhtVerMap = dhtVerMap;
@@ -844,7 +825,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert F.isEmpty(tx.invalidPartitions());
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-            -1,
+            tx.writeEntries() != null && !tx.writeEntries().isEmpty() ?
+                F.first(tx.writeEntries()).key().partition() : -1,
             tx.nearXidVersion(),
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
             nearMiniId,
@@ -1800,8 +1782,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             synchronized (GridDhtTxPrepareFuture.this) {
-                clear();
-
                 lockKeys.clear();
             }
 

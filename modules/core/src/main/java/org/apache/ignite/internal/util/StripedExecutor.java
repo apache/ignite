@@ -479,6 +479,8 @@ public class StripedExecutor implements ExecutorService {
                     if (cmd != null) {
                         active = true;
 
+//                        U.debug(log, "Running [r=" + cmd + ']');
+
                         try {
                             cmd.run();
                         }

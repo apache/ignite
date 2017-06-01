@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -46,13 +45,8 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Evicted readers. */
-    @GridToStringInclude
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> nearEvicted;
-
     /** Mini ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
@@ -74,14 +68,20 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param lockVer Lock version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
+     * @param part Partition.
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
-        boolean addDepInfo) {
-        super(cacheId, lockVer, futId, cnt, addDepInfo);
-
-        assert miniId != null;
+    public GridDhtLockResponse(
+        int cacheId,
+        GridCacheVersion lockVer,
+        IgniteUuid futId,
+        int miniId,
+        int part,
+        int cnt,
+        boolean addDepInfo
+    ) {
+        super(cacheId, lockVer, futId, part, cnt, addDepInfo);
 
         this.miniId = miniId;
     }
@@ -90,36 +90,28 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param lockVer Lock ID.
      * @param futId Future ID.
      * @param miniId Mini future ID.
+     * @param part Partition.
      * @param err Error.
-     * @param addDepInfo
+     * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
-        Throwable err, boolean addDepInfo) {
-        super(cacheId, lockVer, futId, err, addDepInfo);
-
-        assert miniId != null;
+    public GridDhtLockResponse(
+        int cacheId,
+        GridCacheVersion lockVer,
+        IgniteUuid futId,
+        int miniId,
+        int part,
+        Throwable err,
+        boolean addDepInfo
+    ) {
+        super(cacheId, lockVer, futId, part, err, addDepInfo);
 
         this.miniId = miniId;
     }
 
     /**
-     * @return Evicted readers.
-     */
-    public Collection<IgniteTxKey> nearEvicted() {
-        return nearEvicted;
-    }
-
-    /**
-     * @param nearEvicted Evicted readers.
-     */
-    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
-        this.nearEvicted = nearEvicted;
-    }
-
-    /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -168,11 +160,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
-                key.prepareMarshal(cctx);
-        }
-
         if (preloadEntries != null)
             marshalInfos(preloadEntries, cctx);
     }
@@ -182,11 +169,6 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         super.finishUnmarshal(ctx, ldr);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (nearEvicted != null) {
-            for (IgniteTxKey key : nearEvicted)
-                key.finishUnmarshal(cctx, ldr);
-        }
 
         if (preloadEntries != null)
             unmarshalInfos(preloadEntries, ctx.cacheContext(cacheId), ldr);
@@ -207,20 +189,14 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         }
 
         switch (writer.state()) {
-            case 10:
+            case 11:
                 if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
             case 12:
-                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -247,7 +223,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 11:
                 invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -255,16 +231,8 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
                 reader.incrementState();
 
-            case 11:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 12:
-                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
