@@ -962,7 +962,7 @@ public class GridSqlQueryParser {
                 String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
                 if (parts.length > 2)
-                    throw new IgniteSQLException("Invalid parameter syntax (key[=value] expected): " + p,
+                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
                         IgniteQueryErrorCode.PARSING);
 
                 String name = parts[0].trim().toUpperCase();
@@ -970,18 +970,17 @@ public class GridSqlQueryParser {
                 String val = parts.length > 1 ? parts[1].trim() : null;
 
                 if (F.isEmpty(name))
-                    throw new IgniteSQLException("Invalid parameter syntax (key[=value] expected): " + p,
+                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
                         IgniteQueryErrorCode.PARSING);
 
                 if (params.put(name, val) != null)
-                    throw new IgniteSQLException("Duplicate parameter value: " + name,
-                        IgniteQueryErrorCode.PARSING);
+                    throw new IgniteSQLException("Duplicate parameter: " + p, IgniteQueryErrorCode.PARSING);
             }
         }
 
-        for (String mandParamName : MANDATORY_CREATE_TABLE_PARAMS) {
-            if (!params.containsKey(mandParamName))
-                throw new IgniteSQLException("Mandatory parameter is missing: " + mandParamName,
+        for (String paramName : MANDATORY_CREATE_TABLE_PARAMS) {
+            if (!params.containsKey(paramName))
+                throw new IgniteSQLException("Mandatory parameter is missing: " + paramName,
                     IgniteQueryErrorCode.PARSING);
         }
 
@@ -1021,19 +1020,19 @@ public class GridSqlQueryParser {
 
         switch (name) {
             case PARAM_TEMPLATE:
-                ensureParamValueNotEmpty(name, val);
+                ensureNotEmpty(name, val);
 
                 res.templateName(val);
 
                 break;
 
             case PARAM_BACKUPS:
-                ensureParamValueNotEmpty(name, val);
+                ensureNotEmpty(name, val);
 
                 int backups = parseIntParam(PARAM_BACKUPS, val);
 
                 if (backups < 0)
-                    throw new IgniteSQLException("Backups number must be nonnegative: " + backups,
+                    throw new IgniteSQLException("\"" + PARAM_BACKUPS + "\" cannot be negative: " + backups,
                         IgniteQueryErrorCode.PARSING);
 
                 res.backups(backups);
@@ -1041,15 +1040,17 @@ public class GridSqlQueryParser {
                 break;
 
             case PARAM_ATOMICITY:
-                ensureParamValueNotEmpty(name, val);
+                ensureNotEmpty(name, val);
 
-                res.atomicityMode(parseEnumParam(PARAM_ATOMICITY, val.toUpperCase(), CacheAtomicityMode.class));
+                CacheAtomicityMode atomicity =
+                    parseEnumParam(PARAM_ATOMICITY, val.toUpperCase(), CacheAtomicityMode.class);
+
+                res.atomicityMode(atomicity);
 
                 break;
 
             default:
-                throw new IgniteSQLException("Unknown CREATE TABLE parameter: " + name,
-                    IgniteQueryErrorCode.PARSING);
+                throw new IgniteSQLException("Unsupported parameter: " + name, IgniteQueryErrorCode.PARSING);
         }
     }
 
@@ -1058,10 +1059,9 @@ public class GridSqlQueryParser {
      * @param name Param name.
      * @param val Param value to check.
      */
-    private static void ensureParamValueNotEmpty(String name, String val) {
+    private static void ensureNotEmpty(String name, String val) {
         if (F.isEmpty(val))
-            throw new IgniteSQLException("No value has been given for a CREATE TABLE parameter: " + name,
-                IgniteQueryErrorCode.PARSING);
+            throw new IgniteSQLException("Parameter value cannot be empty: " + name, IgniteQueryErrorCode.PARSING);
     }
 
     /**
