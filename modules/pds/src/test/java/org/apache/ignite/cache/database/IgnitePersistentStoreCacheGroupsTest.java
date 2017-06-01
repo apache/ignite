@@ -210,7 +210,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testExpiryPolicy() throws Exception {
+    public void _testExpiryPolicy() throws Exception {
         long ttl = 10000;
 
         activeOnStart = false;
