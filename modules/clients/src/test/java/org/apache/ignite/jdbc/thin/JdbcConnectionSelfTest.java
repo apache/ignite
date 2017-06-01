@@ -31,6 +31,8 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
@@ -1219,15 +1221,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             "Invalid argument"
         );
 
-        final Savepoint savepoint = new Savepoint() {
-            @Override public int getSavepointId() throws SQLException {
-                return 100;
-            }
-
-            @Override public String getSavepointName() throws SQLException {
-                return "savepoint";
-            }
-        };
+        final Savepoint savepoint = getFakeSavepoint();
 
         // Disallowed in auto-commit mode
         GridTestUtils.assertThrows(log,
@@ -1276,25 +1270,334 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReleaseSavepoint() throws Exception {
-        
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Invalid arg
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.releaseSavepoint(null);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid argument"
+        );
+
+        final Savepoint savepoint = getFakeSavepoint();
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.releaseSavepoint(savepoint);
+
+                    return null;
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "Savepoints are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.releaseSavepoint(savepoint);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
     }
 
-    // Clob createClob() throws SQLException;
-    // Blob createBlob() throws SQLException;
-    // NClob createNClob() throws SQLException;
-    // SQLXML createSQLXML() throws SQLException;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateClob() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createClob();
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "SQL-specific types are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createClob();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateBlob() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createBlob();
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "SQL-specific types are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createBlob();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateNClob() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createNClob();
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "SQL-specific types are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createNClob();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateSQLXML() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // Unsupported
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createSQLXML();
+                }
+            },
+            SQLFeatureNotSupportedException.class,
+            "SQL-specific types are not supported"
+        );
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.createSQLXML();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetClientInfo() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        conn.setClientInfo("name", "val");
+
+        // TODO: ?????????????????
+    }
+
     // void setClientInfo(String name, String value)
     // void setClientInfo(Properties properties)
     // String getClientInfo(String name)
     // Properties getClientInfo()
-    // Array createArrayOf(String typeName, Object[] elements) throws
+    // Array createArrayOf(String typeName, Object[] elements)
     // Struct createStruct(String typeName, Object[] attributes)
-    // void setSchema(String schema) throws SQLException;
-    // String getSchema() throws SQLException;
-    // void abort(Executor executor) throws SQLException;
-    // void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException;
-    // int getNetworkTimeout() throws SQLException;
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetSchema() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        assertEquals("PUBLIC", conn.getSchema());
+
+        // Invalid schema
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSchema(null);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid schema value"
+        );
+
+        final String schema = "test";
+
+        conn.setSchema(schema);
+
+        assertEquals(schema, conn.getSchema());
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setSchema(schema);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.getSchema();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAbort() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        //Invalid executor
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.abort(null);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid executor value"
+        );
+
+        final Executor executor = Executors.newFixedThreadPool(1);
+
+        conn.abort(executor);
+
+        assertTrue(conn.isClosed());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetNetworkTimeout() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        // default
+        assertEquals(0, conn.getNetworkTimeout());
+
+        final Executor executor = Executors.newFixedThreadPool(1);
+
+        final int timeout = 1000;
+
+        //Invalid executor
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setNetworkTimeout(null, timeout);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid executor value"
+        );
+
+        //Invalid timeout
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setNetworkTimeout(executor, -1);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Invalid timeout value"
+        );
+
+        conn.setNetworkTimeout(executor, timeout);
+
+        assertEquals(timeout, conn.getNetworkTimeout());
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.getNetworkTimeout();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setNetworkTimeout(executor, timeout);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
 
     // TODO: Methods to throw SQLException when database access fails (network conn lost / cluster stop)
     // createStatement
@@ -1309,7 +1612,13 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     // getWarnings/clearWarnings
     // getTypeMap/setTypeMap
     // getHoldability/setHoldability
-    // setSavePoint
+    // setSavepoint
+    // releaseSavepoint
+    // createClob/createBlob/createNClob/createSQLXML
+    //
+    // setSchema/getSchema
+    // abort
+    // setNetworTimeout/getNetworkTimeout
     //
     // TODO: methods disallowed during distributed transactions
     // setAutoCommit
@@ -1319,4 +1628,16 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     // TODO: methods disallowed during transaction
     // setReadOnly
     //
+
+    private Savepoint getFakeSavepoint() {
+        return new Savepoint() {
+            @Override public int getSavepointId() throws SQLException {
+                return 100;
+            }
+
+            @Override public String getSavepointName() throws SQLException {
+                return "savepoint";
+            }
+        };
+    }
 }
