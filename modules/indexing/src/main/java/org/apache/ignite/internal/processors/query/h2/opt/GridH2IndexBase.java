@@ -316,7 +316,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public void releaseSnapshot() {
         Object s = snapshot.get();
 
-        assert s != null;
+        if (s == null)
+            return; // Nothing to do.
 
         snapshot.remove();
 
