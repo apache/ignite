@@ -22,13 +22,12 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using System.IO;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
-    using Apache.Ignite.Log4Net;
+    using Apache.Ignite.NLog;
     using NUnit.Framework;
     using Address = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Address;
 
@@ -47,8 +46,10 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             TestDeployment(remoteCompute =>
             {
-                var ex = Assert.Throws<IgniteException>(() => remoteCompute.Call(new ProcessNameFunc()));
+                var ex = Assert.Throws<AggregateException>(() => remoteCompute.Call(new ProcessNameFunc()))
+                    .InnerException;
 
+                Assert.IsNotNull(ex);
                 Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.", 
                     ex.Message);
 
@@ -110,9 +111,9 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             TestDeployment(remoteCompute =>
             {
-                // Arg is object, value is from Apache.Ignite.Log4Net, and it further depends on log4net.
-                Assert.AreEqual("Apache.IgniteApache.Ignite.Log4Net.IgniteLog4NetLogger", remoteCompute.Call(
-                    new ProcessNameFunc {Arg = new IgniteLog4NetLogger()}));
+                // Arg is object, value is from Apache.Ignite.Log4Net, and it further depends on NLog.
+                Assert.AreEqual("Apache.IgniteApache.Ignite.NLog.IgniteNLogLogger", remoteCompute.Call(
+                    new ProcessNameFunc {Arg = new IgniteNLogLogger()}));
             });
         }
 

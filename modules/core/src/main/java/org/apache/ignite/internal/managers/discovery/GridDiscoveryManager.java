@@ -117,6 +117,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -133,9 +134,12 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -145,7 +149,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
-    /** */
+    /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
     /** */
@@ -287,6 +291,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
         try {
             return mem.getNonHeapMemoryUsage();
+        }
+        catch (IllegalArgumentException ignored) {
+            return new MemoryUsage(0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Returns the current memory usage of the heap
+     * @return memory usage or fake value with zero in case there was exception during take of metrics
+     */
+    private MemoryUsage getHeapMemoryUsage() {
+        // Catch exception here to allow discovery proceed even if metrics are not available
+        // java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616
+        // at java.lang.management.MemoryUsage.<init>(Unknown Source)
+        try {
+            return mem.getHeapMemoryUsage();
         }
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
@@ -449,6 +469,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         spi.setMetricsProvider(createMetricsProvider());
 
         if (ctx.security().enabled()) {
+            if (isSecurityCompatibilityMode())
+                ctx.addNodeAttribute(ATTR_SECURITY_COMPATIBILITY_MODE, true);
+
             spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
                 @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
                     try {
@@ -799,19 +822,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             @Override public long getHeapMemoryInitialized() {
-                return mem.getHeapMemoryUsage().getInit();
+                return getHeapMemoryUsage().getInit();
             }
 
             @Override public long getHeapMemoryUsed() {
-                return mem.getHeapMemoryUsage().getUsed();
+                return getHeapMemoryUsage().getUsed();
             }
 
             @Override public long getHeapMemoryCommitted() {
-                return mem.getHeapMemoryUsage().getCommitted();
+                return getHeapMemoryUsage().getCommitted();
             }
 
             @Override public long getHeapMemoryMaximum() {
-                return mem.getHeapMemoryUsage().getMax();
+                return getHeapMemoryUsage().getMax();
             }
 
             @Override public long getNonHeapMemoryInitialized() {
@@ -1072,6 +1095,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         boolean locActiveOnStart = locNode.attribute(ATTR_ACTIVE_ON_START);
 
         Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+        Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
@@ -1180,6 +1204,37 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
+            }
+
+            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) >= 0
+                && ctx.security().enabled() // Matters only if security enabled.
+               ) {
+                Boolean rmtSecurityCompatibilityEnabled = n.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
+
+                if (!F.eq(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
+                    throw new IgniteCheckedException("Local node's " + IGNITE_SECURITY_COMPATIBILITY_MODE +
+                        " property value differs from remote node's value " +
+                        "(to make sure all nodes in topology have identical Ignite security compatibility mode enabled, " +
+                        "configure system property explicitly) " +
+                        "[locSecurityCompatibilityEnabled=" + locSecurityCompatibilityEnabled +
+                        ", rmtSecurityCompatibilityEnabled=" + rmtSecurityCompatibilityEnabled +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(n) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
+                }
+            }
+
+            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) < 0
+                && ctx.security().enabled() // Matters only if security enabled.
+                && (locSecurityCompatibilityEnabled == null || !locSecurityCompatibilityEnabled)) {
+                throw new IgniteCheckedException("Remote node does not support service security permissions. " +
+                    "To be able to join to it, local node must be started with " + IGNITE_SECURITY_COMPATIBILITY_MODE +
+                    " system property set to \"true\". " +
+                    "[locSecurityCompatibilityEnabled=" + locSecurityCompatibilityEnabled +
+                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
+                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ", " +
+                    ", rmtNodeVer" + n.version() + ']');
             }
         }
 

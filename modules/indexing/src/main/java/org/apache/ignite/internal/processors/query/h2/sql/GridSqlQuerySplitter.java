@@ -51,6 +51,7 @@ import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.IndexColumn;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
@@ -1851,12 +1852,12 @@ public class GridSqlQuerySplitter {
         /* Note Distinct aggregate can be performed only on reduce phase, so
            if query contains distinct aggregate then other aggregates must be processed the same way. */
         switch (agg.type()) {
-            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) )  or  AVG(CAST( x AS DOUBLE))
+            case AVG: // SUM( AVG(CAST(x AS DOUBLE))*COUNT(x) )/SUM( COUNT(x) )  or  AVG(x)
                 if (hasDistinctAggregate) /* and has no collocated group by */ {
                     mapAgg = agg.child();
 
-                    rdcAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.DOUBLE)
-                        .addChild(function(CAST).resultType(GridSqlType.DOUBLE).addChild(column(mapAggAlias.alias())));
+                    rdcAgg = aggregate(agg.distinct(), agg.type()).resultType(agg.resultType())
+                        .addChild(column(mapAggAlias.alias()));
                 }
                 else {
                     //-- COUNT(x) map
@@ -1883,7 +1884,13 @@ public class GridSqlQuerySplitter {
 
                     GridSqlElement sumDownRdc = aggregate(false, SUM).addChild(column(cntMapAggAlias));
 
-                    rdcAgg = op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc);
+                    if (!isFractionalType(agg.resultType().type())) {
+                        sumUpRdc =  function(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
+                        sumDownRdc = function(CAST).resultType(GridSqlType.BIGINT).addChild(sumDownRdc);
+                    }
+
+                    rdcAgg = function(CAST).resultType(agg.resultType())
+                        .addChild(op(GridSqlOperationType.DIVIDE, sumUpRdc, sumDownRdc));
                 }
 
                 break;
@@ -1986,6 +1993,14 @@ public class GridSqlQuerySplitter {
      */
     private static GridSqlFunction function(GridSqlFunctionType type) {
         return new GridSqlFunction(type);
+    }
+
+    /**
+     * @param type data type id
+     * @return true if given type is fractional
+     */
+    private static boolean isFractionalType(int type) {
+        return type == Value.DECIMAL || type == Value.FLOAT || type == Value.DOUBLE;
     }
 
     /**

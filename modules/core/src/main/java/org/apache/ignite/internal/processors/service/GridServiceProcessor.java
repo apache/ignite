@@ -708,8 +708,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             call,
             Collections.singletonList(node),
             false,
-            timeout
-        ).get();
+            timeout,
+            true).get();
     }
 
     /**

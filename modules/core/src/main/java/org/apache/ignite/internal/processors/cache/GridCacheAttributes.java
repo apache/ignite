@@ -47,11 +47,16 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration. */
     private CacheConfiguration ccfg;
 
+    /** SQL flag - whether the cache is created by an SQL command such as {@code CREATE TABLE}. */
+    private boolean sql;
+
     /**
      * @param cfg Cache configuration.
      */
-    public GridCacheAttributes(CacheConfiguration cfg) {
+    public GridCacheAttributes(CacheConfiguration cfg, boolean sql) {
         ccfg = cfg;
+
+        this.sql = sql;
     }
 
     /**
@@ -270,6 +275,13 @@ public class GridCacheAttributes implements Serializable {
      */
     public String interceptorClassName() {
         return className(ccfg.getInterceptor());
+    }
+
+    /**
+     * @return SQL flag.
+     */
+    public boolean sql() {
+        return sql;
     }
 
     /**

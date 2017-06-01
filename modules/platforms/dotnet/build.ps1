@@ -112,10 +112,7 @@ if (!$skipJava) {
     $libsDir = "$PSScriptRoot\bin\Libs"
     mkdir -Force $libsDir; del -Force $libsDir\*.*
     
-    copy -Force target\release-package\libs\*.jar $libsDir
-    copy -Force target\release-package\libs\ignite-spring\*.jar $libsDir
-    copy -Force target\release-package\libs\ignite-indexing\*.jar $libsDir
-    copy -Force target\release-package\libs\licenses\*.jar $libsDir
+    ls modules\indexing\target,modules\core\target,modules\spring\target*.jar -recurse -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" -exclude "*-sources*","*-javadoc*","*-tests*" | % { copy -Force $_ $libsDir }
 
     # Restore directory
     cd $PSScriptRoot
