@@ -42,10 +42,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ClusterState;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -88,7 +86,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private final GridCacheSharedContext ctx;
 
     /** */
-    private final CacheGroupInfrastructure grp;
+    private final CacheGroupContext grp;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -123,9 +121,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Lock. */
     private final StripedCompositeReadWriteLock lock = new StripedCompositeReadWriteLock(16);
 
-    /** */
-    private final GridCacheMapEntryFactory entryFactory;
-
     /** Partition update counter. */
     private Map<Integer, T2<Long, Long>> cntrMap = new HashMap<>();
 
@@ -138,18 +133,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      * @param ctx Cache shared context.
      * @param grp Cache group.
-     * @param entryFactory Entry factory.
      */
     public GridDhtPartitionTopologyImpl(GridCacheSharedContext ctx,
-        CacheGroupInfrastructure grp,
-        GridCacheMapEntryFactory entryFactory) {
+        CacheGroupContext grp) {
         assert ctx != null;
         assert grp != null;
-        assert entryFactory != null;
 
         this.ctx = ctx;
         this.grp = grp;
-        this.entryFactory = entryFactory;
 
         log = ctx.logger(getClass());
 
@@ -736,7 +727,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc == null || loc.state() == EVICTED) {
-            locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p, entryFactory));
+            locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
             if (ctx.pageStore() != null) {
                 try {
@@ -804,7 +795,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
-                locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p, entryFactory));
+                locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
                 if (updateSeq)
                     this.updateSeq.incrementAndGet();

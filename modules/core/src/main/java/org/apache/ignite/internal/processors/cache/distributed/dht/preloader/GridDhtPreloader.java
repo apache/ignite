@@ -31,7 +31,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
@@ -96,7 +96,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * @param grp Cache group.
      */
-    public GridDhtPreloader(CacheGroupInfrastructure grp) {
+    public GridDhtPreloader(CacheGroupContext grp) {
         super(grp);
 
         top = grp.topology();

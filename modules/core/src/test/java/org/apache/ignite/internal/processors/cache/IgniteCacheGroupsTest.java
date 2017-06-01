@@ -1447,8 +1447,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (Integer p : aff.primaryPartitions(srv1.cluster().localNode()))
             srv1Parts.add(p);
 
-        CacheGroupInfrastructure grpSrv0 = cacheGroup(srv0, GROUP1);
-        CacheGroupInfrastructure grpSrv1 = cacheGroup(srv1, GROUP1);
+        CacheGroupContext grpSrv0 = cacheGroup(srv0, GROUP1);
+        CacheGroupContext grpSrv1 = cacheGroup(srv1, GROUP1);
 
         for (int p = 0; p < aff.partitions(); p++) {
             if (srv1Parts.contains(p)) {
@@ -2490,6 +2490,267 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testCacheIdConflict() throws Exception {
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa"), new CacheConfiguration("AaAaBB")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa")};
+
+        startGrid(0);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaBB")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(1);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("AaAaBB"));
+
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite1.createCache(new CacheConfiguration("AaAaBB"));
+
+                return null;
+            }
+        }, CacheException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("AaAaBB"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheGroupIdConflict1() throws Exception {
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE1).setGroupName("AaAaAa"),
+            new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE1).setGroupName("AaAaAa")};
+
+        startGrid(0);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(1);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains(CACHE2));
+
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite1.createCache(new CacheConfiguration(CACHE2).setGroupName("AaAaBB"));
+
+                return null;
+            }
+        }, CacheException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains(CACHE2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheGroupIdConflict2() throws Exception {
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa"),
+            new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa")};
+
+        startGrid(0);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(1);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains(CACHE2));
+
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite1.createCache(new CacheConfiguration(CACHE2).setGroupName("AaAaBB"));
+
+                return null;
+            }
+        }, CacheException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains(CACHE2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheGroupIdConflict3() throws Exception {
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB"),
+            new CacheConfiguration("AaAaAa")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration(CACHE2).setGroupName("AaAaBB")};
+
+        startGrid(0);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("AaAaAa")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(1);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("AaAaAa"));
+
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite1.createCache(new CacheConfiguration("AaAaAa"));
+
+                return null;
+            }
+        }, CacheException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("AaAaAa"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheGroupNameConflict1() throws Exception {
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1"), new CacheConfiguration("cache2").setGroupName("cache1")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1")};
+
+        startGrid(0);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(1);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("cache2"));
+
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite1.createCache(new CacheConfiguration("cache2").setGroupName("cache1"));
+
+                return null;
+            }
+        }, CacheException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("cache2"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheGroupNameConflict2() throws Exception {
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1"), new CacheConfiguration("cache1")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(0);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache2").setGroupName("cache1")};
+
+        startGrid(0);
+
+        ccfgs = new CacheConfiguration[]{new CacheConfiguration("cache1")};
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(1);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("cache1"));
+
+        final Ignite ignite1 = startGrid(1);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite1.createCache(new CacheConfiguration("cache1"));
+
+                return null;
+            }
+        }, CacheException.class, null);
+
+        assertFalse(ignite(0).cacheNames().contains("cache1"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testConfigurationConsistencyValidation() throws Exception {
         startGrids(2);
 
@@ -2841,7 +3102,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }, 5, "update-thread");
 
-        CacheGroupInfrastructure grp = cacheGroup(node, GROUP1);
+        CacheGroupContext grp = cacheGroup(node, GROUP1);
 
         Integer cacheId = null;
 
@@ -3022,7 +3283,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 }
 
                 for (int n = 0; n < SRVS; n++) {
-                    CacheGroupInfrastructure grp = cacheGroup(ignite(n), GROUP1);
+                    CacheGroupContext grp = cacheGroup(ignite(n), GROUP1);
 
                     assertNotNull(grp);
 
@@ -3464,8 +3725,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param grpName Cache group name.
      * @return Cache group.
      */
-    private CacheGroupInfrastructure cacheGroup(Ignite node, String grpName) {
-        for (CacheGroupInfrastructure grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
+    private CacheGroupContext cacheGroup(Ignite node, String grpName) {
+        for (CacheGroupContext grp : ((IgniteKernal)node).context().cache().cacheGroups()) {
             if (grpName.equals(grp.name()))
                 return grp;
         }

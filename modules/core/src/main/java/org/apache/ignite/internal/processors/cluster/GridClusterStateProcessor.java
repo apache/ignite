@@ -134,7 +134,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
 
-        sharedCtx.io().addHandler(false, 0,
+        sharedCtx.io().addCacheHandler(0,
             GridChangeGlobalStateMessageResponse.class,
             new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
                 @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {

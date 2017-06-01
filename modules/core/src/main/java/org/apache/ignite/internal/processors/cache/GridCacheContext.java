@@ -135,7 +135,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheSharedContext<K, V> sharedCtx;
 
     /** Cache group. */
-    private CacheGroupInfrastructure grp;
+    private CacheGroupContext grp;
 
     /** Logger. */
     private IgniteLogger log;
@@ -284,7 +284,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
-        CacheGroupInfrastructure grp,
+        CacheGroupContext grp,
         CacheType cacheType,
         AffinityTopologyVersion locStartTopVer,
         boolean affNode,
@@ -382,7 +382,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache group.
      */
-    public CacheGroupInfrastructure group() {
+    public CacheGroupContext group() {
         return grp;
     }
 

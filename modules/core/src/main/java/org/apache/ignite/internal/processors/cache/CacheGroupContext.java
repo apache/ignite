@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -66,8 +65,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
 /**
  *
  */
-public class CacheGroupInfrastructure {
-    /** Group ID. */
+public class CacheGroupContext {
+    /**
+     * Unique group ID. Currently for shared group it is generated as group name hash,
+     * for non-shared as cache name hash (see {@link ClusterCachesInfo#checkCacheConflict}).
+     */
     private final int grpId;
 
     /** Node ID cache group was received from. */
@@ -152,7 +154,7 @@ public class CacheGroupInfrastructure {
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
      */
-    CacheGroupInfrastructure(
+    CacheGroupContext(
         GridCacheSharedContext ctx,
         int grpId,
         UUID rcvdFrom,
@@ -824,20 +826,10 @@ public class CacheGroupInfrastructure {
             ccfg.getCacheMode() == LOCAL);
 
         if (ccfg.getCacheMode() != LOCAL) {
-            GridCacheMapEntryFactory entryFactory = new GridCacheMapEntryFactory() {
-                @Override public GridCacheMapEntry create(
-                    GridCacheContext ctx,
-                    AffinityTopologyVersion topVer,
-                    KeyCacheObject key
-                ) {
-                    return new GridDhtCacheEntry(ctx, topVer, key);
-                }
-            };
-
-            top = new GridDhtPartitionTopologyImpl(ctx, this, entryFactory);
+            top = new GridDhtPartitionTopologyImpl(ctx, this);
 
             if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addHandler(true, groupId(), GridDhtAffinityAssignmentRequest.class,
+                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
                     new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>() {
                         @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentRequest msg) {
                             processAffinityAssignmentRequest(nodeId, msg);
@@ -946,6 +938,6 @@ public class CacheGroupInfrastructure {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheGroupInfrastructure [grp=" + cacheOrGroupName() + ']';
+        return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
     }
 }

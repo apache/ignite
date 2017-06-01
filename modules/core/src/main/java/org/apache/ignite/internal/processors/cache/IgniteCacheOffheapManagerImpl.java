@@ -86,7 +86,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected GridCacheSharedContext ctx;
 
     /** */
-    protected CacheGroupInfrastructure grp;
+    protected CacheGroupContext grp;
 
     /** */
     protected IgniteLogger log;
@@ -121,7 +121,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public void start(GridCacheSharedContext ctx, CacheGroupInfrastructure grp) throws IgniteCheckedException {
+    @Override public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException {
         this.ctx = ctx;
         this.grp = grp;
         this.log = ctx.logger(getClass());
@@ -1616,7 +1616,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataRowStore rowStore;
 
         /** */
-        private final CacheGroupInfrastructure grp;
+        private final CacheGroupContext grp;
 
         /**
          * @param grp Ccahe group.
@@ -1628,7 +1628,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @throws IgniteCheckedException If failed.
          */
         CacheDataTree(
-            CacheGroupInfrastructure grp,
+            CacheGroupContext grp,
             String name,
             ReuseList reuseList,
             CacheDataRowStore rowStore,
@@ -1832,7 +1832,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param freeList Free list.
          * @param partId Partition number.
          */
-        public CacheDataRowStore(CacheGroupInfrastructure grp, FreeList freeList, int partId) {
+        public CacheDataRowStore(CacheGroupContext grp, FreeList freeList, int partId) {
             super(grp, freeList);
 
             this.partId = partId;
@@ -2211,7 +2211,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @return Row.
          * @throws IgniteCheckedException If failed.
          */
-        PendingRow initKey(CacheGroupInfrastructure grp) throws IgniteCheckedException {
+        PendingRow initKey(CacheGroupContext grp) throws IgniteCheckedException {
             CacheDataRowAdapter rowData = new CacheDataRowAdapter(link);
             rowData.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
 
@@ -2234,7 +2234,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final static Object WITHOUT_KEY = new Object();
 
         /** */
-        private final CacheGroupInfrastructure grp;
+        private final CacheGroupContext grp;
 
         /**
          * @param grp Cache group.
@@ -2246,7 +2246,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @throws IgniteCheckedException If failed.
          */
         PendingEntriesTree(
-            CacheGroupInfrastructure grp,
+            CacheGroupContext grp,
             String name,
             PageMemory pageMem,
             long metaPageId,

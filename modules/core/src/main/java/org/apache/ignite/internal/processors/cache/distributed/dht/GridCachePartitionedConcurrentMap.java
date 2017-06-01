@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -39,12 +39,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
     /** Cache group. */
-    private final CacheGroupInfrastructure grp;
+    private final CacheGroupContext grp;
 
     /**
      * @param grp Cache group.
      */
-    GridCachePartitionedConcurrentMap(CacheGroupInfrastructure grp) {
+    GridCachePartitionedConcurrentMap(CacheGroupContext grp) {
         this.grp = grp;
     }
 

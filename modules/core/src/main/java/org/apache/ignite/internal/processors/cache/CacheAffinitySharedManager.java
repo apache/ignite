@@ -305,11 +305,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param grp Cache group.
      */
-    void onCacheGroupCreated(CacheGroupInfrastructure grp) {
+    void onCacheGroupCreated(CacheGroupContext grp) {
         final Integer grpId = grp.groupId();
 
         if (!grpHolders.containsKey(grp.groupId())) {
-            cctx.io().addHandler(true, grpId, GridDhtAffinityAssignmentResponse.class,
+            cctx.io().addCacheGroupHandler(grpId, GridDhtAffinityAssignmentResponse.class,
                 new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                     @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
                         processAffinityAssignmentResponse(grpId, nodeId, res);
@@ -408,7 +408,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     if (gprs.add(grpId)) {
                         if (crd && lateAffAssign)
                     initStartedGroupOnCoordinator(fut, action.descriptor().groupDescriptor());else  {
-                        CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                         if (grp != null && !grp.isLocal() && grp.localStartVersion().equals(fut.topologyVersion())) {
                         assert grp.affinity().lastVersion().equals(AffinityTopologyVersion.NONE) : grp.affinity().lastVersion();
@@ -425,7 +425,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             cctx.cache().blockGateway(req.request());
 
             if (crd) {
-                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(req.descriptor().groupId());
+                CacheGroupContext grp = cctx.cache().cacheGroup(req.descriptor().groupId());
 
                 assert grp != null;
 
@@ -780,7 +780,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 c.apply(grp.affinity());
         }
         else {
-            for (CacheGroupInfrastructure grp : cctx.kernalContext().cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.kernalContext().cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
@@ -805,7 +805,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         CacheGroupHolder grpHolder = grpHolders.get(grpId);
 
-        CacheGroupInfrastructure grp = cctx.kernalContext().cache().cacheGroup(grpId);
+        CacheGroupContext grp = cctx.kernalContext().cache().cacheGroup(grpId);
 
         if (grpHolder == null) {
             grpHolder = grp != null ?
@@ -1009,7 +1009,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
 
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
@@ -1100,7 +1100,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         boolean centralizedAff;
 
         if (lateAffAssign) {
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
@@ -1131,7 +1131,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void initAffinityNoLateAssignment(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         assert !lateAffAssign;
 
-        for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
@@ -1164,10 +1164,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 // Need initialize holders and affinity if this node became coordinator during this exchange.
                 final Integer grpId = desc.groupId();
 
-                CacheGroupInfrastructure grp = cctx.cache().cacheGroup(grpId);
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                 if (grp == null) {
-                    cctx.io().addHandler(true, desc.groupId(), GridDhtAffinityAssignmentResponse.class,
+                    cctx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
                         new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                             @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
                                 processAffinityAssignmentResponse(grpId, nodeId, res);
@@ -1256,10 +1256,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (cacheGrp != null)
             return cacheGrp;
 
-        final CacheGroupInfrastructure grp = cctx.cache().cacheGroup(desc.groupId());
+        final CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
         if (grp == null) {
-            cctx.io().addHandler(true, desc.groupId(), GridDhtAffinityAssignmentResponse.class,
+            cctx.io().addCacheGroupHandler(desc.groupId(), GridDhtAffinityAssignmentResponse.class,
                 new IgniteBiInClosure<UUID, GridDhtAffinityAssignmentResponse>() {
                     @Override public void apply(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
                         processAffinityAssignmentResponse(desc.groupId(), nodeId, res);
@@ -1294,7 +1294,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final Map<Object, List<List<ClusterNode>>> affCache = new HashMap<>();
 
         if (!crd) {
-            for (CacheGroupInfrastructure grp : cctx.cache().cacheGroups()) {
+            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal())
                     continue;
 
@@ -1713,13 +1713,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     private class CacheGroupHolder1 extends CacheGroupHolder {
         /** */
-        private final CacheGroupInfrastructure grp;
+        private final CacheGroupContext grp;
 
         /**
          * @param grp Cache group.
          * @param initAff Current affinity.
          */
-        CacheGroupHolder1(CacheGroupInfrastructure grp, @Nullable GridAffinityAssignmentCache initAff) {
+        CacheGroupHolder1(CacheGroupContext grp, @Nullable GridAffinityAssignmentCache initAff) {
             super(grp.rebalanceEnabled(), grp.affinity(), initAff);
 
             assert !grp.isLocal() : grp;

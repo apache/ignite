@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -41,7 +40,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -84,7 +83,7 @@ public class GridDhtPartitionDemander {
     private final GridCacheSharedContext<?, ?> ctx;
 
     /** */
-    private final CacheGroupInfrastructure grp;
+    private final CacheGroupContext grp;
 
     /** */
     private final IgniteLogger log;
@@ -112,7 +111,7 @@ public class GridDhtPartitionDemander {
     /**
      * @param grp Ccahe group.
      */
-    public GridDhtPartitionDemander(CacheGroupInfrastructure grp) {
+    public GridDhtPartitionDemander(CacheGroupContext grp) {
         assert grp != null;
 
         this.grp = grp;
@@ -803,7 +802,7 @@ public class GridDhtPartitionDemander {
         private final GridCacheSharedContext<?, ?> ctx;
 
         /** */
-        private final CacheGroupInfrastructure grp;
+        private final CacheGroupContext grp;
 
         /** */
         private final IgniteLogger log;
@@ -831,7 +830,7 @@ public class GridDhtPartitionDemander {
          * @param updateSeq Update sequence.
          */
         RebalanceFuture(
-            CacheGroupInfrastructure grp,
+            CacheGroupContext grp,
             GridDhtPreloaderAssignments assigns,
             IgniteLogger log,
             long updateSeq) {

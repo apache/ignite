@@ -1193,19 +1193,31 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Adds message handler.
-     *
-     * @param cacheGrp {@code True} if cache group message, {@code false} if cache message.
      * @param hndId Message handler ID.
      * @param type Type of message.
      * @param c Handler.
      */
-    public void addHandler(
-        boolean cacheGrp,
+    public void addCacheHandler(
         int hndId,
         Class<? extends GridCacheMessage> type,
         IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
-        addHandler(hndId, type, c, cacheGrp ? grpHandlers : cacheHandlers);
+        assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
+
+        addHandler(hndId, type, c, cacheHandlers);
+    }
+
+    /**
+     * @param hndId Message handler ID.
+     * @param type Type of message.
+     * @param c Handler.
+     */
+    public void addCacheGroupHandler(
+        int hndId,
+        Class<? extends GridCacheGroupIdMessage> type,
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+        assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
+
+        addHandler(hndId, type, c, grpHandlers);
     }
 
     /**
@@ -1321,6 +1333,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param topic Topic.
+     * @param c Handler.
+     */
+    public void addOrderedCacheHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheIdMessage> c) {
+        addOrderedHandler(false, topic, c);
+    }
+
+    /**
+     * @param topic Topic.
+     * @param c Handler.
+     */
+    public void addOrderedCacheGroupHandler(Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+        addOrderedHandler(true, topic, c);
+    }
+
+    /**
      * Adds ordered message handler.
      *
      * @param cacheGrp {@code True} if cache group message, {@code false} if cache message.
@@ -1328,7 +1356,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param c Handler.
      */
     @SuppressWarnings({"unchecked"})
-    public void addOrderedHandler(boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
         IgniteLogger log0 = log;
