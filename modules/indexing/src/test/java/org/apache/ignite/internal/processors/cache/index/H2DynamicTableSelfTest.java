@@ -92,9 +92,36 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTable() throws Exception {
+        doTestCreateTable(CACHE_NAME, null);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code REPLICATED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableReplicated() throws Exception {
+        doTestCreateTable("REPLICATED", CacheMode.REPLICATED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTablePartitioned() throws Exception {
+        doTestCreateTable("PARTITIONED", CacheMode.PARTITIONED);
+    }
+
+    /**
+     *
+     * @param tplCacheName
+     * @param mode
+     */
+    private void doTestCreateTable(String tplCacheName, CacheMode mode) {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=" + tplCacheName + "\""));
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -106,6 +133,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             assertNotNull(cacheDesc);
 
             assertTrue(cacheDesc.sql());
+
+            if (mode != null)
+                assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
 
             QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
 

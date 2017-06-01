@@ -1284,16 +1284,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
         throws IgniteCheckedException {
+        CacheConfiguration<?, ?> newCfg;
+
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
 
-        if (templateCfg == null)
-            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
-
-        if (!F.isEmpty(templateCfg.getQueryEntities()))
+        if (templateCfg == null) {
+            if ("PARTITIONED".equals(templateCacheName))
+                newCfg = new CacheConfiguration<>().setCacheMode(CacheMode.PARTITIONED);
+            else if ("REPLICATED".equals(templateCacheName))
+                newCfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
+            else
+                throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
+        }
+        else if (!F.isEmpty(templateCfg.getQueryEntities())) {
             throw new SchemaOperationException("Template cache already contains query entities which it should not " +
                 "[cacheName=" + templateCacheName + ']');
-
-        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
+        }
+        else
+            newCfg = new CacheConfiguration<>(templateCfg);
 
         newCfg.setName(entity.getTableName());
         newCfg.setQueryEntities(Collections.singleton(entity));
