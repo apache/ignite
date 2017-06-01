@@ -509,7 +509,7 @@ public class GridReduceQueryExecutor {
      */
     public Iterator<List<?>> query(
         String schemaName,
-        GridCacheTwoStepQuery qry,
+        final GridCacheTwoStepQuery qry,
         boolean keepBinary,
         boolean enforceJoinOrder,
         int timeoutMillis,
@@ -640,7 +640,7 @@ public class GridReduceQueryExecutor {
 
                     idx = tbl.getMergeIndex();
 
-                    fakeTable(conn, tblIdx++).innerTable(tbl);
+                    fakeTable(conn, tblIdx++).innerTable(r.threadId(), tbl);
                 }
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
@@ -754,45 +754,6 @@ public class GridReduceQueryExecutor {
                 else // Send failed.
                     retry = true;
 
-                Iterator<List<?>> resIter = null;
-
-                if (!retry) {
-                    if (skipMergeTbl)
-                        resIter = new LazyMergeIndexIterator(conn, r.indexes().iterator());
-                    else {
-                        cancel.checkCancelled();
-
-                        UUID locNodeId = ctx.localNodeId();
-
-                        conn.setupConnection(false, enforceJoinOrder);
-
-                        conn.setQueryContext(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
-                            .pageSize(r.pageSize()).distributedJoinMode(OFF));
-
-                        try {
-                            if (qry.explain())
-                                return explainPlan(conn, qry);
-
-                            GridCacheSqlQuery rdc = qry.reduceQuery();
-
-                            H2ResultSet res = h2.executeSqlQueryWithTimer(schemaName,
-                                conn,
-                                rdc.query(),
-                                rdc.parameters(params),
-                                timeoutMillis,
-                                cancel);
-
-                            resIter = new H2FieldsIterator(res);
-
-                            // The statement will cache some extra thread local objects.
-                            conn.dropCachedStatement(rdc.query());
-                        }
-                        finally {
-                            conn.clearSessionLocalQueryContext(); // TODO lazy
-                        }
-                    }
-                }
-
                 if (retry) {
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
@@ -800,7 +761,33 @@ public class GridReduceQueryExecutor {
                     continue;
                 }
 
-                return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary);
+                Iterator<List<?>> resIter;
+
+                if (skipMergeTbl)
+                    resIter = new LazyMergeIndexIterator(conn, r.indexes().iterator());
+                else {
+                    cancel.checkCancelled();
+
+                    resIter = executeReduceQuery(conn, schemaName, qryReqId, qry, enforceJoinOrder,
+                        r.pageSize(), params, timeoutMillis, cancel);
+                }
+
+                return new GridQueryCacheObjectsIterator(resIter, h2.objectContext(), keepBinary) {
+                    @Override public void close() throws Exception {
+                        super.close(); // To close the iterator.
+
+                        // Make sure any activity related to current attempt is cancelled.
+                        cancelRemoteQueriesIfNeeded(finalNodes, r, qryReqId, distributedJoins);
+
+                        if (!runs.remove(qryReqId, r))
+                            U.warn(log, "Query run was already removed: " + qryReqId);
+
+                        if (!skipMergeTbl) {
+                            for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
+                                fakeTable(null, i).innerTable(r.threadId(), null); // Drop all merge tables.
+                        }
+                    }
+                };
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 if (conn != null)
@@ -825,21 +812,56 @@ public class GridReduceQueryExecutor {
 
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
-            finally {
-                h2.returnToPool(conn); // TODO lazy
-
-                // Make sure any activity related to current attempt is cancelled.
-                cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
-
-                if (!runs.remove(qryReqId, r))
-                    U.warn(log, "Query run was already removed: " + qryReqId);
-
-                if (!skipMergeTbl) {
-                    for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
-                        fakeTable(null, i).innerTable(null); // Drop all merge tables.
-                }
-            }
         }
+    }
+
+    /**
+     * @param conn Connection.
+     * @param schemaName Schema name.
+     * @param qryReqId Query id.
+     * @param qry Two step query.
+     * @param enforceJoinOrder Enforce join order of tables.
+     * @param pageSize Page size.
+     * @param params Query parameters.
+     * @param timeoutMillis Timeout in milliseconds.
+     * @param cancel Query cancel.
+     * @return Result iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Iterator<List<?>> executeReduceQuery(
+        H2Connection conn,
+        String schemaName,
+        long qryReqId,
+        GridCacheTwoStepQuery qry,
+        boolean enforceJoinOrder,
+        int pageSize,
+        Object[] params,
+        int timeoutMillis,
+        GridQueryCancel cancel
+    ) throws IgniteCheckedException {
+        UUID locNodeId = ctx.localNodeId();
+
+        conn.setupConnection(false, enforceJoinOrder);
+
+        conn.setQueryContext(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+            .pageSize(pageSize).distributedJoinMode(OFF));
+
+        if (qry.explain())
+            return explainPlan(conn, qry);
+
+        GridCacheSqlQuery rdc = qry.reduceQuery();
+
+        H2ResultSet res = h2.executeSqlQueryWithTimer(schemaName,
+            conn,
+            rdc.query(),
+            rdc.parameters(params),
+            timeoutMillis,
+            cancel);
+
+        // The statement will cache some extra thread local objects.
+        conn.dropCachedStatement(rdc.query());
+
+        return new H2FieldsIterator(res);
     }
 
     /**
@@ -1212,12 +1234,13 @@ public class GridReduceQueryExecutor {
             }
         }
 
+        long threadId = Thread.currentThread().getId();
         int tblIdx = 0;
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             GridMergeTable tbl = createMergeTable(c, mapQry, false);
 
-            fakeTable(c, tblIdx++).innerTable(tbl);
+            fakeTable(c, tblIdx++).innerTable(threadId, tbl);
         }
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
@@ -1228,6 +1251,8 @@ public class GridReduceQueryExecutor {
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
         }
+
+        h2.returnToPool(c);
 
         return lists.iterator();
     }
@@ -1497,7 +1522,8 @@ public class GridReduceQueryExecutor {
 
         /** {@inheritDoc} */
         @Override public void close() throws Exception {
-//            h2.returnToPool(conn); // TODO lazy
+            // The same as H2ResultSet.
+            h2.returnToPool(conn);
         }
 
         /**

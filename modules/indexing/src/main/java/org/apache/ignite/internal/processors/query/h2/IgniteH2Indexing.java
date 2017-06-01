@@ -728,21 +728,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
                 conn.setQueryContext(qctx);
 
-                GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
+                final GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
                     cacheName, U.currentTimeMillis(), cancel, true).connection(conn);
 
                 runs.putIfAbsent(run.id(), run);
 
-                try {
-                    H2ResultSet rs = executeSqlQueryWithTimer(schema, stmt, conn, qry, params, timeout, cancel);
+                H2ResultSet rs = executeSqlQueryWithTimer(schema, stmt, conn, qry, params, timeout, cancel);
 
-                    return new H2FieldsIterator(rs);
-                }
-                finally {
-                    returnToPool(conn); // TODO lazy
+                return new H2FieldsIterator(rs) {
+                    @Override public void onClose() throws IgniteCheckedException {
+                        super.onClose();
 
-                    runs.remove(run.id());
-                }
+                        runs.remove(run.id());
+                    }
+                };
             }
         };
     }
@@ -856,13 +855,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         PreparedStatement s = preparedStatementWithParams(conn, sql, params);
 
-        try {
-            return executeSqlQueryWithTimer(schema, s,
-                conn, sql, params, timeoutMillis, cancel);
-        }
-        finally {
-            // TODO lazy
-        }
+        return executeSqlQueryWithTimer(schema, s,
+            conn, sql, params, timeoutMillis, cancel);
     }
 
     /**
@@ -1036,29 +1030,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Connection conn = takeConnectionForSchema(tbl.schemaName());
 
-        try {
-            conn.setupConnection(false, false);
+        conn.setupConnection(false, false);
 
-            conn.setQueryContext(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
-                    .filter(filter).distributedJoinMode(OFF));
+        conn.setQueryContext(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
+                .filter(filter).distributedJoinMode(OFF));
 
-            GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, cacheName,
-                U.currentTimeMillis(), cancel, true).connection(conn);
+        final GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, cacheName,
+            U.currentTimeMillis(), cancel, true).connection(conn);
 
-            runs.put(run.id(), run);
+        runs.put(run.id(), run);
 
-            try {
-                H2ResultSet rs = executeSqlQueryWithTimer(schema(cacheName), conn, sql, params, 0, cancel);
+        H2ResultSet rs = executeSqlQueryWithTimer(schema(cacheName), conn, sql, params, 0, cancel);
 
-                return new H2KeyValueIterator(rs);
-            }
-            finally {
+        return new H2KeyValueIterator(rs) {
+            @Override public void onClose() throws IgniteCheckedException {
+                super.onClose();
+
                 runs.remove(run.id());
             }
-        }
-        finally {
-            returnToPool(conn); // TODO lazy
-        }
+        };
     }
 
     /**

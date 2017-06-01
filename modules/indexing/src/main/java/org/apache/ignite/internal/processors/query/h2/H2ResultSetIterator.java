@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;

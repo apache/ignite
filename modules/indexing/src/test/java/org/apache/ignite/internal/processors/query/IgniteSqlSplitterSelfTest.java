@@ -45,6 +45,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
@@ -97,6 +99,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         finally {
             Ignition.setClientMode(false);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        assertTrue(GridH2QueryContext.checkNoGlobalQueryContexts());
+        assertTrue(H2Connection.checkNoSessionLocalQueryContexts());
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */

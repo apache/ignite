@@ -393,16 +393,35 @@ public class GridH2QueryContext {
      * @param type Query type.
      * @return {@code True} if context was found.
      */
-    public static boolean clearGlobal(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+    public static boolean clearGlobal(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type, int segmentId) {
+        Key key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+
+        return doClear(key, false);
+    }
+
+    /**
+     * @param locNodeId Local node ID.
+     * @param nodeId The node who initiated the query.
+     * @param qryId The query ID.
+     * @param type Query type.
+     * @return {@code True} if context was found.
+     */
+    public static boolean clearGlobalAllSegments(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
         boolean res = false;
 
-        // TODO optimize iteration over all running queries
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+                res |= doClear(key, false);
         }
 
         return res;
+    }
+
+    /**
+     * @return {@code true} If there are no remaining query contexts.
+     */
+    public static boolean checkNoGlobalQueryContexts() {
+        return qctxs.isEmpty();
     }
 
     /**
@@ -411,14 +430,12 @@ public class GridH2QueryContext {
      * @return {@code True} if context was found.
      */
     private static boolean doClear(Key key, boolean nodeStop) {
-        assert key.type == MAP : key.type;
-
         GridH2QueryContext x = qctxs.remove(key);
 
         if (x == null)
             return false;
 
-        assert x.key.equals(key);
+        assert key.type == MAP : key.type;
 
         x.clearContext(nodeStop);
 
@@ -428,7 +445,7 @@ public class GridH2QueryContext {
     /**
      * @param nodeStop Node is stopping.
      */
-    public void clearContext(boolean nodeStop) {
+    private void clearContext(boolean nodeStop) {
         cleared = true;
 
         clearSnapshots();

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import javax.cache.CacheException;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -45,7 +47,7 @@ import org.h2.value.Value;
  */
 public class GridThreadLocalTable extends Table {
     /** Delegate table */
-    private final ThreadLocal<Table> tbl = new ThreadLocal<>();
+    private final ConcurrentMap<Long, Table> tbl = new ConcurrentHashMap<>();
 
     /**
      * @param schema Schema.
@@ -61,18 +63,18 @@ public class GridThreadLocalTable extends Table {
     /**
      * @param t Table or {@code null} to reset existing.
      */
-    public void innerTable(Table t) {
+    public void innerTable(long threadId, Table t) {
         if (t == null)
-            tbl.remove();
+            tbl.remove(threadId);
         else
-            tbl.set(t);
+            tbl.put(threadId, t);
     }
 
     /**
      * @return Inner table.
      */
     private Table innerTable() {
-        Table t = tbl.get();
+        Table t = tbl.get(Thread.currentThread().getId());
 
         if (t == null)
             throw new CacheException("Table `" + getName() + "` can be accessed only within Ignite query context.");
@@ -230,7 +232,7 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        Table t = tbl.get();
+        Table t = tbl.get(Thread.currentThread().getId());
 
         return t == null ? 0 : t.getRowCountApproximation();
     }

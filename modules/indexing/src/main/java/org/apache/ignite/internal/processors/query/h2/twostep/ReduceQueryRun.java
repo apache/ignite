@@ -51,6 +51,9 @@ class ReduceQueryRun {
     /** */
     private final int pageSize;
 
+    /** */
+    private final long threadId;
+
     /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
     private final AtomicReference<Object> state = new AtomicReference<>();
 
@@ -72,6 +75,15 @@ class ReduceQueryRun {
         this.idxs = new ArrayList<>(idxsCnt);
 
         this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
+
+        threadId = Thread.currentThread().getId();
+    }
+
+    /**
+     * @return Executing thread ID.
+     */
+    long threadId() {
+        return threadId;
     }
 
     /**

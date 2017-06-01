@@ -103,6 +103,6 @@ public final class H2ResultSet implements AutoCloseable {
     @Override public void close() throws SQLException {
         rs.close();
 
-//    TODO    conn.returnToPool();
+        conn.returnToPool();
     }
 }

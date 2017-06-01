@@ -90,6 +90,13 @@ public final class H2Connection implements GridCancelable {
     }
 
     /**
+     * @return {@code true} If there are no remaining query contexts.
+     */
+    public static boolean checkNoSessionLocalQueryContexts() {
+        return sesLocQctx.isEmpty();
+    }
+
+    /**
      * @param ses Session.
      * @return Session local query context or {@code null} if none.
      */
@@ -293,6 +300,8 @@ public final class H2Connection implements GridCancelable {
      * Drops cached statement.
      */
     public void dropCachedStatement(String sql) {
+        // Do not close the removed prepared statement because
+        // lazy result set will be prematurely killed this way.
         stmtCache.remove(sql);
     }
 
