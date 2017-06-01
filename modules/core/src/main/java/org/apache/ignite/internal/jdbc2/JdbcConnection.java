@@ -567,7 +567,7 @@ public class JdbcConnection implements Connection {
         else {
             GridQueryIndexing idx = ignite().context().query().getIndexing();
 
-            PreparedStatement nativeStmt = prepareNativeStatement(sql);
+            PreparedStatement nativeStmt = null; // TODO lazy
 
             if (!idx.isInsertStatement(nativeStmt))
                 throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",

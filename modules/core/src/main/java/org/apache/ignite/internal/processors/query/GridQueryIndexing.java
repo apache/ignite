@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
@@ -281,7 +282,7 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statemtn.
+     * Check if passed statement is insert statement.
      *
      * @param nativeStmt Native statement.
      * @return {@code True} if insert.

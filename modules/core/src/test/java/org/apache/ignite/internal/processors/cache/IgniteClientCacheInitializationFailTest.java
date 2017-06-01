@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -332,11 +331,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
             // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
-            return null;
         }
 
         /** {@inheritDoc} */

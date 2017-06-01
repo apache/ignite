@@ -88,8 +88,6 @@ import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
-import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -136,6 +134,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Insert;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Cursor;
@@ -653,7 +652,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable final Object[] params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
-        final H2Connection conn = takeConnectionForSchema(schema);
+        final H2Connection conn = takeConnectionForSchema(schemaName);
 
         conn.setupConnection(false, enforceJoinOrder);
 
@@ -713,7 +712,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public long streamUpdateQuery(String schemaName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-        final H2Connection conn = takeConnectionForCache(cacheName);
+        final H2Connection conn = takeConnectionForSchema(schemaName);
 
         try {
             final PreparedStatement stmt;
@@ -1089,8 +1088,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) {
         final String sqlQry = qry.getSql();
 
-        Connection c = connectionForSchema(schemaName);
-
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins();
         final boolean grpByCollocated = qry.isCollocated();
@@ -1111,7 +1108,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             final UUID locNodeId = ctx.localNodeId();
 
-            H2Connection c = takeConnectionForCache(cacheName);
+            H2Connection c = takeConnectionForSchema(schemaName);
 
             // Here we will just parse the statement, no need to optimize it at all.
             c.setupConnection(/*distributedJoins*/false, /*enforceJoinOrder*/true);
@@ -1549,6 +1546,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res = "";
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
+        Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
+
+        return prep instanceof Insert;
     }
 
     /** {@inheritDoc} */

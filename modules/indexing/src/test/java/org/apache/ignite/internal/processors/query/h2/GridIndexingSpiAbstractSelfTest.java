@@ -250,13 +250,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         IgniteCache<Integer, BinaryObject> cacheB = ignite0.createCache(cacheBCfg());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeAA.cacheName()), "select * from A.A", null, Collections.emptySet(),
+        assertFalse(spi.queryLocalSql(spi.schema(typeAA.cacheName()), "select * from A.A", null, null,
             typeAA.name(), null, null).hasNext());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select * from A.B", null, Collections.emptySet(),
+        assertFalse(spi.queryLocalSql(spi.schema(typeAB.cacheName()), "select * from A.B", null, null,
             typeAB.name(), null, null).hasNext());
 
-        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A", null, Collections.emptySet(),
+        assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A", null, null,
             typeBA.name(), null, null).hasNext());
 
         assertFalse(spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select * from B.A, A.B, A.A", null,
@@ -264,7 +264,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         try {
             spi.queryLocalSql(spi.schema(typeBA.cacheName()), "select aa.*, ab.*, ba.* from A.A aa, A.B ab, B.A ba",
-                null, Collections.emptySet(), typeBA.name(), null, null).hasNext();
+                null, null, typeBA.name(), null, null).hasNext();
 
             fail("Enumerations of aliases in select block must be prohibited");
         }
