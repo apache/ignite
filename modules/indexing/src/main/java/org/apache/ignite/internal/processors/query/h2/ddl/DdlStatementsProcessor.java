@@ -157,8 +157,8 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
-                if (F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
-                    throw new SchemaOperationException("CREATE TABLE command can only ber performed in " +
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("CREATE TABLE can only be executed on " +
                         QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
@@ -174,6 +174,10 @@ public class DdlStatementsProcessor {
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
+
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("DROP TABLE can only be executed on " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 

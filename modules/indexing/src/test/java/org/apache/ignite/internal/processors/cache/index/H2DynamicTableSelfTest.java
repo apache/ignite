@@ -183,7 +183,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"cacheTemplate=cache\"");
 
-        executeDdl("DROP TABLE PUBLIC.\"Person\"");
+        executeDdl("DROP TABLE \"Person\"");
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -203,7 +203,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testDropMissingTableIfExists() throws Exception {
-        cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache_idx\".\"City\""));
+        executeDdl("DROP TABLE IF EXISTS \"City\"");
     }
 
     /**
@@ -214,7 +214,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("DROP TABLE \"cache_idx\".\"City\""));
+                executeDdl("DROP TABLE \"City\"");
 
                 return null;
             }
@@ -229,7 +229,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("DROP TABLE \"Integer\""));
+                executeDdl("DROP TABLE \"Integer\"");
 
                 return null;
             }
@@ -277,11 +277,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to {@code CREATE TABLE} that already exists yields an error.
+     * Test that {@code CREATE TABLE} on non-public schema causes an exception.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCreateTableNotInPublicSchema() throws Exception {
+    public void testCreateTableNotPublicSchema() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 executeDdl("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
@@ -290,8 +291,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Dynamic tables may be created only in default schema named PUBLIC " +
-            "[schemaName=cache_idx]");
+        }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
+    }
+
+    /**
+     * Test that {@code DROP TABLE} on non-public schema causes an exception.
+     *
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDropTableNotPublicSchema() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("DROP TABLE \"cache_idx\".\"Person\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "DROP TABLE can only be executed on PUBLIC schema.");
     }
 
     /**
