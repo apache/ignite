@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.util.GridNonReentrantRWLock;
+import org.apache.ignite.internal.util.GridReentrantRWLock;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -79,7 +79,7 @@ public class GridH2Table extends TableBase {
     private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
-    private final GridNonReentrantRWLock lock = new GridNonReentrantRWLock();
+    private final GridReentrantRWLock lock = new GridReentrantRWLock();
 
     /** */
     private boolean destroyed;

@@ -19,18 +19,18 @@ package org.apache.ignite.util;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.GridNonReentrantRWLock;
+import org.apache.ignite.internal.util.GridReentrantRWLock;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  */
-public class GridNonReentrantRWLockSelfTest extends GridCommonAbstractTest {
+public class GridReentrantRWLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
     public void testLock() throws Exception {
-        final GridNonReentrantRWLock l = new GridNonReentrantRWLock();
+        final GridReentrantRWLock l = new GridReentrantRWLock();
 
         final long[] f = {1, 1, 2};
 
@@ -92,7 +92,7 @@ public class GridNonReentrantRWLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReleaseFromOtherThread() throws Exception {
-        final GridNonReentrantRWLock l = new GridNonReentrantRWLock();
+        final GridReentrantRWLock l = new GridReentrantRWLock();
 
         assertTrue(l.tryReadLock());
         assertTrue(l.tryReadLock());
@@ -108,9 +108,11 @@ public class GridNonReentrantRWLockSelfTest extends GridCommonAbstractTest {
 
         assertTrue(l.tryWriteLock());
         assertFalse(l.tryReadLock());
+        assertTrue(l.tryWriteLock());
 
         multithreaded(new Runnable() {
             @Override public void run() {
+                l.writeUnlock();
                 l.writeUnlock();
             }
         }, 1);

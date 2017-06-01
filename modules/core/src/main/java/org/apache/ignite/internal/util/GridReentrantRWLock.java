@@ -21,10 +21,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
- * Simple non-reentrant read-write lock that allows to release locks from threads
- * other than the acquiring. Write lock has higher priority than read lock.
+ * Simple reentrant read-write lock that allows to release locks from threads
+ * other than the acquiring.
  */
-public final class GridNonReentrantRWLock {
+public final class GridReentrantRWLock {
     /** */
     private final Sync sync = new Sync();
 
@@ -93,46 +93,92 @@ public final class GridNonReentrantRWLock {
     /**
      */
     private static final class Sync extends AbstractQueuedSynchronizer {
-        /** {@inheritDoc} */
-        @Override protected boolean isHeldExclusively() {
-            return getState() == Integer.MIN_VALUE;
+
+        private static int readLocks(int state) {
+            return state & 0xFFFF;
+        }
+
+        private static int writeLocks(int state) {
+            return (state >>> 16) & 0xFFFF;
+        }
+
+        private static int state(int readLocks, int writeLocks) {
+            assert readLocks >= 0 && readLocks <= 0xFFFF &&
+                writeLocks >= 0 && writeLocks <= 0xFFFF;
+
+            return (writeLocks << 16) | readLocks;
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean tryAcquire(int ignored) {
+        @Override protected boolean isHeldExclusively() {
+            return writeLocks(getState()) != 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean tryAcquire(int ignore) {
             for (;;) {
                 final int s = getState();
-                int t;
+                final int readLocks = readLocks(s);
+                final int writeLocks = writeLocks(s);
 
-                if (s > 0)
-                    t = -s; // Mark that now we have a writer in a queue.
-                else if (s == 0)
-                    t = Integer.MIN_VALUE; // Try to exclusively lock.
-                else
-                    return false; // Already exclusively locked by someone else or have a queued writer.
+                if (readLocks != 0) {
+                    assert writeLocks == 0;
 
-                if (compareAndSetState(s, t))
-                    return s == 0;
+                    return false; // No luck.
+                }
+
+                if (writeLocks != 0 && getExclusiveOwnerThread() != Thread.currentThread())
+                    return false; // No luck.
+
+                int t = state(0, writeLocks + 1); // Enter or reenter.
+
+                if (compareAndSetState(s, t)) {
+                    if (writeLocks == 0) {
+                        assert getExclusiveOwnerThread() == null;
+
+                        setExclusiveOwnerThread(Thread.currentThread());
+                    }
+
+                    return true;
+                }
             }
         }
 
         /** {@inheritDoc} */
         @Override protected boolean tryRelease(int ignored) {
-            if (!compareAndSetState(Integer.MIN_VALUE, 0))
-                throw new IllegalMonitorStateException();
+            for (;;) {
+                final int s = getState();
+                int writeLocks = writeLocks(s);
 
-            return true;
+                if (writeLocks == 0 || readLocks(s) != 0)
+                    throw new IllegalMonitorStateException();
+
+                writeLocks--;
+
+                int t = state(0, writeLocks);
+
+                // It is not a problem if we reset the owner thread earlier than
+                // successful CAS, otherwise we will have a race with tryAcquire.
+                if (writeLocks == 0)
+                    setExclusiveOwnerThread(null);
+
+                if (compareAndSetState(s, t))
+                    return writeLocks == 0;
+            }
         }
 
         /** {@inheritDoc} */
         @Override protected int tryAcquireShared(int ignored) {
             for (;;) {
                 final int s = getState();
+                final int writeLocks = writeLocks(s);
 
-                if (s < 0)
-                    return -1; // Write locked or have a queued writer.
+                if (writeLocks != 0)
+                    return -1; // No luck.
 
-                if (compareAndSetState(s, s + 1))
+                int t = state(readLocks(s) + 1, 0);
+
+                if (compareAndSetState(s, t))
                     return 1;
             }
         }
@@ -141,20 +187,12 @@ public final class GridNonReentrantRWLock {
         @Override protected boolean tryReleaseShared(int ignored) {
             for (;;) {
                 final int s = getState();
-                int t;
+                final int readLocks = readLocks(s);
 
-                if (s < 0) {
-                    if (s == Integer.MIN_VALUE)
-                        throw new IllegalMonitorStateException("Write locked.");
+                if (readLocks == 0 || writeLocks(s) != 0)
+                    throw new IllegalMonitorStateException();
 
-                    t = s + 1;
-                }
-                else {
-                    if (s == 0)
-                        throw new IllegalMonitorStateException("Unlocked.");
-
-                    t = s - 1;
-                }
+                int t = state(readLocks - 1, 0);
 
                 if (compareAndSetState(s, t))
                     return true;

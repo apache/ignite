@@ -42,7 +42,7 @@ import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
-import org.apache.ignite.util.GridNonReentrantRWLockSelfTest;
+import org.apache.ignite.util.GridReentrantRWLockSelfTest;
 import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridRandomSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
@@ -84,7 +84,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridArraysSelfTest.class);
         suite.addTestSuite(GridRandomSelfTest.class);
         suite.addTestSuite(GridStripedPoolSelfTest.class);
-        suite.addTestSuite(GridNonReentrantRWLockSelfTest.class);
+        suite.addTestSuite(GridReentrantRWLockSelfTest.class);
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
