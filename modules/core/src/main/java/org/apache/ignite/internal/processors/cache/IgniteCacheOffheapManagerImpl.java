@@ -1001,6 +1001,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * @param cctx Cache context.
          * @param oldRow Old row.
          * @param dataRow New row.
          * @return {@code True} if it is possible to update old row data.
@@ -1094,7 +1095,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             assert dataRow.link() != 0 : dataRow;
 
-            if (dataRow.cacheId() == UNDEFINED_CACHE_ID && grp.sharedGroup())
+            if (grp.sharedGroup() && dataRow.cacheId() == UNDEFINED_CACHE_ID)
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
@@ -1139,7 +1140,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     assert dataRow.link() != 0 : dataRow;
 
-                    if (dataRow.cacheId() == UNDEFINED_CACHE_ID && grp.sharedGroup())
+                    if (grp.sharedGroup() && dataRow.cacheId() == UNDEFINED_CACHE_ID)
                         dataRow.cacheId(cctx.cacheId());
 
                     if (oldRow != null) {
@@ -1236,6 +1237,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @param oldRow Removed row.
          * @throws IgniteCheckedException If failed.
@@ -1425,9 +1427,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * @param cctx Cache context.
          * @param key Key.
          * @param oldVal Old value.
          * @param newVal New value.
+         * @throws IgniteCheckedException If failed.
          */
         private void updateIgfsMetrics(
             GridCacheContext cctx,
@@ -1454,6 +1458,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /**
          * Isolated method to get length of IGFS block.
          *
+         * @param cctx Cache context.
          * @param val Value.
          * @return Length of value.
          */
@@ -1538,6 +1543,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /**
          * @param hash Hash code.
          * @param link Link.
+         * @param part Partition.
          * @param rowData Required row data.
          */
         DataRow(int hash, long link, int part, CacheDataRowAdapter.RowData rowData) {
@@ -1565,6 +1571,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param ver Version.
          * @param part Partition.
          * @param expireTime Expire time.
+         * @param cacheId Cache ID.
          */
         DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
             super(0);
@@ -1612,6 +1619,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheGroupInfrastructure grp;
 
         /**
+         * @param grp Ccahe group.
          * @param name Tree name.
          * @param reuseList Reuse list.
          * @param rowStore Row store.
@@ -1619,7 +1627,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheDataTree(
+        CacheDataTree(
             CacheGroupInfrastructure grp,
             String name,
             ReuseList reuseList,
@@ -1822,6 +1830,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /**
          * @param grp Cache group.
          * @param freeList Free list.
+         * @param partId Partition number.
          */
         public CacheDataRowStore(CacheGroupInfrastructure grp, FreeList freeList, int partId) {
             super(grp, freeList);
@@ -1830,6 +1839,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * @param cacheId Cache ID.
          * @param hash Hash code.
          * @param link Link.
          * @return Search row.
@@ -1844,6 +1854,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * @param cacheId Cache ID.
          * @param hash Hash code.
          * @param link Link.
          * @param rowData Required row data.
@@ -2226,6 +2237,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheGroupInfrastructure grp;
 
         /**
+         * @param grp Cache group.
          * @param name Tree name.
          * @param pageMem Page memory.
          * @param metaPageId Meta page ID.
@@ -2233,7 +2245,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        public PendingEntriesTree(
+        PendingEntriesTree(
             CacheGroupInfrastructure grp,
             String name,
             PageMemory pageMem,
@@ -2332,7 +2344,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         int getCacheId(long pageAddr, int idx);
     }
 
-    /** */
+    /**
+     *
+     */
     private static abstract class AbstractPendingEntryInnerIO extends BPlusInnerIO<PendingRow> implements PendingRowIO {
         /**
          * @param type Page type.
@@ -2404,7 +2418,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         protected abstract boolean storeCacheId();
     }
 
-    /** */
+    /**
+     *
+     */
     private static abstract class AbstractPendingEntryLeafIO extends BPlusLeafIO<PendingRow> implements PendingRowIO {
         /**
          * @param type Page type.

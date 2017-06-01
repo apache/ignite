@@ -252,19 +252,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     };
 
     /**
-     * @param msg Message.
-     * @return Cache or group descriptor.
-     */
-    private Object descriptorForMessage(GridCacheMessage msg) {
-        if (msg instanceof GridCacheIdMessage)
-            return cctx.cache().cacheDescriptor(((GridCacheIdMessage)msg).cacheId());
-        else if (msg instanceof GridCacheGroupIdMessage)
-            return cctx.cache().cacheGroupDescriptors().get(((GridCacheGroupIdMessage)msg).groupId());
-
-        return null;
-    }
-
-    /**
      * @param nodeId Sender node ID.
      * @param cacheMsg Message.
      */
@@ -1416,6 +1403,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             else
                 throw e;
         }
+    }
+
+    /**
+     * @param msg Message.
+     * @return Cache or group descriptor.
+     */
+    private Object descriptorForMessage(GridCacheMessage msg) {
+        if (msg instanceof GridCacheIdMessage)
+            return cctx.cache().cacheDescriptor(((GridCacheIdMessage)msg).cacheId());
+        else if (msg instanceof GridCacheGroupIdMessage)
+            return cctx.cache().cacheGroupDescriptors().get(((GridCacheGroupIdMessage)msg).groupId());
+
+        return null;
     }
 
     /** {@inheritDoc} */

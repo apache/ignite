@@ -1537,7 +1537,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
                 catch (Throwable e) {
                     U.error(log, "Failed to rebuild indexes for type [cache=" + cacheName +
-                        ", name=" + typeName + ']', e);
+                        ", type=" + typeName + ']', e);
 
                     fut.onDone(e);
 
