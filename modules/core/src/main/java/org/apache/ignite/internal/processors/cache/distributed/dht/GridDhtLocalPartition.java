@@ -190,7 +190,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             cacheMaps = new ConcurrentHashMap<>();
         }
         else {
-            singleCacheEntryMap = new CacheMapHolder(createEntriesMap());
+            singleCacheEntryMap = new CacheMapHolder(grp.singleCacheContext(), createEntriesMap());
             cacheMaps = null;
         }
 
@@ -240,26 +240,31 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMapHolder entriesMap(Integer cacheId, boolean create) {
+    @Override protected CacheMapHolder entriesMap(GridCacheContext cctx) {
         if (grp.sharedGroup())
-            return create ? cacheMapHolder(cacheId) : cacheMaps.get(cacheId);
+            return cacheMapHolder(cctx);
 
         return singleCacheEntryMap;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override protected CacheMapHolder entriesMapIfExists(Integer cacheId) {
+        return grp.sharedGroup() ? cacheMaps.get(cacheId) : singleCacheEntryMap;
+    }
+
     /**
-     * @param cacheId Cache ID.
+     * @param cctx Cache context.
      * @return Map holder.
      */
-    private CacheMapHolder cacheMapHolder(Integer cacheId) {
+    private CacheMapHolder cacheMapHolder(GridCacheContext cctx) {
         assert grp.sharedGroup();
 
-        CacheMapHolder hld = cacheMaps.get(cacheId);
+        CacheMapHolder hld = cacheMaps.get(cctx.cacheIdBoxed());
 
         if (hld != null)
             return hld;
 
-        CacheMapHolder  old = cacheMaps.putIfAbsent(cacheId, hld = new CacheMapHolder(createEntriesMap()));
+        CacheMapHolder  old = cacheMaps.putIfAbsent(cctx.cacheIdBoxed(), hld = new CacheMapHolder(cctx, createEntriesMap()));
 
         if (old != null)
             hld = old;
@@ -411,7 +416,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param ver Version.
      */
     private void removeVersionedEntry(int cacheId, KeyCacheObject key, GridCacheVersion ver) {
-        CacheMapHolder hld = entriesMap(cacheId, false);
+        CacheMapHolder hld = grp.sharedGroup() ? cacheMaps.get(cacheId) : singleCacheEntryMap;
 
         GridCacheMapEntry entry = hld != null ? hld.map.get(key) : null;
 
@@ -966,7 +971,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             clear(singleCacheEntryMap.map, extras, rec);
 
         if (!grp.allowFastEviction()) {
-            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext().dhtCache().context();
+            CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
             try {
                 GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
@@ -977,10 +982,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     try {
                         CacheDataRow row = it0.next();
 
-                        if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != row.cacheId()))
-                            cctx = ctx.cacheContext(row.cacheId()).dhtCache().context();
+                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId())) {
+                            hld = cacheMaps.get(row.cacheId());
 
-                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(cctx,
+                            if (hld == null)
+                                continue;
+                        }
+
+                        assert hld != null;
+
+                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
+                            hld,
+                            hld.cctx,
                             grp.affinity().lastVersion(),
                             row.key(),
                             true,
@@ -988,7 +1001,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                             if (rec) {
-                                cctx.events().addEvent(cached.partition(),
+                                hld.cctx.events().addEvent(cached.partition(),
                                     cached.key(),
                                     ctx.localNodeId(),
                                     (IgniteUuid)null,
@@ -1140,7 +1153,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @Override public void incrementPublicSize(@Nullable CacheMapHolder hld, GridCacheEntryEx e) {
         if (grp.sharedGroup()) {
             if (hld == null)
-                hld = cacheMapHolder(e.context().cacheIdBoxed());
+                hld = cacheMapHolder(e.context());
 
             hld.size.incrementAndGet();
         }
@@ -1157,7 +1170,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @Override public void decrementPublicSize(@Nullable CacheMapHolder hld, GridCacheEntryEx e) {
         if (grp.sharedGroup()) {
             if (hld == null)
-                hld = cacheMapHolder(e.context().cacheIdBoxed());
+                hld = cacheMapHolder(e.context());
 
             hld.size.decrementAndGet();
         }

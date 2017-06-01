@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
@@ -31,15 +32,16 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     private final CacheMapHolder entryMap;
 
     /**
-     * @param cacheId Cache ID.
+     * @param cctx Cache context.
      * @param factory Entry factory.
      * @param initCap Initial capacity.
      */
-    public GridCacheLocalConcurrentMap(int cacheId, GridCacheMapEntryFactory factory, int initCap) {
+    public GridCacheLocalConcurrentMap(GridCacheContext cctx, GridCacheMapEntryFactory factory, int initCap) {
         super(factory);
 
-        this.cacheId = cacheId;
-        this.entryMap = new CacheMapHolder(new ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
+        this.cacheId = cctx.cacheId();
+        this.entryMap = new CacheMapHolder(cctx,
+            new ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
     }
 
     /** {@inheritDoc} */
@@ -48,9 +50,12 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMapHolder entriesMap(Integer cacheId, boolean create) {
-        assert this.cacheId == cacheId;
+    @Nullable @Override protected CacheMapHolder entriesMap(GridCacheContext cctx) {
+        return entryMap;
+    }
 
+    /** {@inheritDoc} */
+    @Nullable @Override protected CacheMapHolder entriesMapIfExists(Integer cacheId) {
         return entryMap;
     }
 
