@@ -55,6 +55,19 @@ namespace Apache.Ignite.Core.Impl.Deployment
         }
 
         /// <summary>
+        /// Gets an instance of <see cref="PeerAssemblyResolver"/> when peer loading is enabled; otherwise null.
+        /// </summary>
+        public static PeerAssemblyResolver GetInstance(Ignite ignite, Guid originNodeId)
+        {
+            if (ignite == null || ignite.Configuration.PeerAssemblyLoadingMode == PeerAssemblyLoadingMode.Disabled)
+            {
+                return null;
+            }
+
+            return new PeerAssemblyResolver(ignite, originNodeId);
+        }
+
+        /// <summary>
         /// Gets the assembly from remote nodes.
         /// </summary>
         /// <param name="typeName">Assembly-qualified type name.</param>
