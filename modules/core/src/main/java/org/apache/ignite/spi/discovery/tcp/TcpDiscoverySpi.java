@@ -1311,17 +1311,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange) {
+    @Override public void setDataExchange(DiscoverySpiDataExchange exchange) {
         this.exchange = exchange;
-
-        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
+    @Override public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
         this.metricsProvider = metricsProvider;
-
-        return this;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.message.DbException;
+import org.h2.mvstore.cache.CacheLongKeyLIRS;
 import org.h2.result.SearchRow;
 import org.h2.result.SimpleRow;
 import org.h2.value.DataType;
@@ -56,6 +56,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -79,6 +80,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractK
 public class H2RowDescriptor implements GridH2RowDescriptor {
     /** Indexing SPI. */
     private final IgniteH2Indexing idx;
+
+    /** Table descriptor. */
+    private final H2TableDescriptor tbl;
 
     /** */
     private final GridQueryTypeDescriptor type;
@@ -114,14 +118,19 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final int valueAliasColumnId;
 
     /**
+     * Constructor.
+     *
+     * @param idx Indexing.
+     * @param tbl Table.
      * @param type Type descriptor.
      * @param schema Schema.
      */
-    H2RowDescriptor(IgniteH2Indexing idx, GridQueryTypeDescriptor type, H2Schema schema) {
+    H2RowDescriptor(IgniteH2Indexing idx, H2TableDescriptor tbl, GridQueryTypeDescriptor type, H2Schema schema) {
         assert type != null;
         assert schema != null;
 
         this.idx = idx;
+        this.tbl = tbl;
         this.type = type;
         this.schema = schema;
 
@@ -154,8 +163,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         }
 
         final List<String> fieldsList = Arrays.asList(fields);
-        keyAliasColumnId = (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldName()) : -1;
-        valueAliasColumnId = (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldName()) : -1;
+
+        keyAliasColumnId =
+            (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : -1;
+
+        valueAliasColumnId =
+            (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
 
         // Index is not snapshotable in db-x.
         snapshotableIdx = false;
@@ -173,12 +186,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridCacheContext<?, ?> context() {
-        return schema.cacheContext();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheConfiguration configuration() {
-        return schema.cacheContext().config();
+        return tbl.cache();
     }
 
     /** {@inheritDoc} */
@@ -192,12 +200,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
         assert ptr > 0 : ptr;
 
-        schema.rowCache().put(ptr, row);
+        rowCache().put(ptr, row);
     }
 
     /** {@inheritDoc} */
     @Override public void uncache(long ptr) {
-        schema.rowCache().remove(ptr);
+        rowCache().remove(ptr);
     }
 
     /** {@inheritDoc} */
@@ -214,9 +222,9 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
             CacheObject co = (CacheObject)obj;
 
             if (type == Value.JAVA_OBJECT)
-                return new GridH2ValueCacheObject(idx.cacheContext(schema.cacheName()), co);
+                return new GridH2ValueCacheObject(co, idx.objectContext());
 
-            obj = co.value(idx.objectContext(schema.cacheName()), false);
+            obj = co.value(idx.objectContext(), false);
         }
 
         switch (type) {
@@ -276,8 +284,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime) throws IgniteCheckedException {
+        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
@@ -294,15 +301,11 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
 
-        GridCacheContext cctx = idx.cacheContext(schema.cacheName());
+        row.ver = ver;
 
-        if (cctx.offheapIndex()) {
-            row.ver = ver;
-
-            row.key = key;
-            row.val = val;
-            row.partId = partId;
-        }
+        row.key = key;
+        row.val = val;
+        row.partId = partId;
 
         return row;
     }
@@ -349,7 +352,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridH2KeyValueRowOffheap createPointer(long ptr) {
-        GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)schema.rowCache().get(ptr);
+        GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)rowCache().get(ptr);
 
         if (row != null) {
             assert row.pointer() == ptr : ptr + " " + row.pointer();
@@ -362,7 +365,7 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public GridH2Row cachedRow(long link) {
-        return schema.rowCache().get(link);
+        return rowCache().get(link);
     }
 
     /** {@inheritDoc} */
@@ -475,5 +478,12 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         }
 
         return colId;
+    }
+
+    /**
+     * @return Row cache.
+     */
+    @NotNull private CacheLongKeyLIRS<GridH2Row> rowCache() {
+        throw new UnsupportedOperationException(); // TODO: Unused for not.
     }
 }

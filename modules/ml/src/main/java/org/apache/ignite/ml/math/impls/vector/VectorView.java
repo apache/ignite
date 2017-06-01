@@ -60,6 +60,7 @@ public class VectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector copy() {
+        // TODO: revise this
         DelegateVectorStorage sto = storage();
 
         return new VectorView(sto.delegate(), sto.offset(), sto.length());

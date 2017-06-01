@@ -132,7 +132,7 @@ public class ExchangeActions {
     private void completeRequestFutures(Map<String, ActionData> map, GridCacheSharedContext ctx) {
         if (map != null) {
             for (ActionData req : map.values())
-                ctx.cache().completeCacheStartFuture(req.req, null);
+                ctx.cache().completeCacheStartFuture(req.req, true, null);
         }
     }
 
