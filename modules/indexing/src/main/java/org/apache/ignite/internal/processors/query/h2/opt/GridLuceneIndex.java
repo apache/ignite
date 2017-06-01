@@ -257,9 +257,6 @@ public class GridLuceneIndex implements AutoCloseable {
             if (updates != 0) {
                 writer.commit();
 
-                if (writer.hasPendingMerges())
-                    writer.maybeMerge();
-
                 updateCntr.addAndGet(-updates);
             }
 
