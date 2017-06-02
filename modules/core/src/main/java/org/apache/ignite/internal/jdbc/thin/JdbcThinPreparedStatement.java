@@ -65,19 +65,14 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        try {
-            execute0(sql, args);
+        executeWithArguments();
 
-            ResultSet rs = getResultSet();
+        ResultSet rs = getResultSet();
 
-            if (rs == null)
-                throw new SQLException("The query isn't SELECT query: " + sql);
+        if (rs == null)
+            throw new SQLException("The query isn't SELECT query: " + sql);
 
-            return rs;
-        }
-        finally {
-            args = null;
-        }
+        return rs;
     }
 
     /** {@inheritDoc} */
@@ -87,19 +82,14 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public int executeUpdate() throws SQLException {
-        try {
-            execute0(sql, args);
+        executeWithArguments();
 
-            int res = getUpdateCount();
+        int res = getUpdateCount();
 
-            if (res == -1)
-                throw new SQLException("The query is not DML statememt: " + sql);
+        if (res == -1)
+            throw new SQLException("The query is not DML statememt: " + sql);
 
-            return res;
-        }
-        finally {
-            args = null;
-        }
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -217,11 +207,20 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public boolean execute() throws SQLException {
-        ensureNotClosed();
-
-        execute0(sql, args);
+        executeWithArguments();
 
         return rs.isQuery();
+    }
+
+    /**
+     * Execute query with arguments and nullify them afterwards.
+     *
+     * @throws SQLException If failed.
+     */
+    private void executeWithArguments() throws SQLException {
+        execute0(sql, args);
+
+        args = null;
     }
 
     /** {@inheritDoc} */
