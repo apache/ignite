@@ -246,14 +246,14 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
+    public void _testConcurrentUpdatesAndQueryStartAtomicCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(ATOMIC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
+    public void _testConcurrentUpdatesAndQueryStartTxCacheGroup() throws Exception {
         concurrentUpdatesAndQueryStart(TRANSACTIONAL, true);
     }
 
@@ -379,9 +379,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
                         return evtCnt.get() >= THREADS * UPDATES;
                     }
                 }, 5000);
-            }
 
-            for (T2<AtomicInteger, QueryCursor>  qry : qrys) {
                 assertEquals(THREADS * UPDATES, qry.get1().get());
 
                 qry.get2().close();
