@@ -372,7 +372,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().countDownLatch(t.get2(), 0, false, false);
+            return t.get1().dataStructures().countDownLatch(t.get2(), null, 0, false, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

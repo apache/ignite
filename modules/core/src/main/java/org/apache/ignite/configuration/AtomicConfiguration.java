@@ -136,7 +136,7 @@ public class AtomicConfiguration {
      * @return Group name.
      */
     public String getGroupName() {
-        throw new UnsupportedOperationException("Not implemented");
+        return null;
     }
 
     /**

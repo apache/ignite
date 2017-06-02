@@ -3101,6 +3101,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name) throws IgniteCheckedException {
+        return getOrStartCache(name, null);
+    }
+
+    /**
+     * @param name Cache name.
+     * @return Cache instance for given name.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> IgniteInternalCache<K, V> getOrStartCache(String name, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert name != null;
 
         if (log.isDebugEnabled())
@@ -3109,7 +3119,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheProxy<?, ?> cache = jCacheProxies.get(name);
 
         if (cache == null) {
-            dynamicStartCache(null, name, null, false, true, true).get();
+            dynamicStartCache(ccfg, name, null, false, true, true).get();
 
             cache = jCacheProxies.get(name);
         }
