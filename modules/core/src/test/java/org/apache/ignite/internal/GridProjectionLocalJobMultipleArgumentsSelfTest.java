@@ -88,7 +88,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
         Collection<Integer> res = new ArrayList<>();
 
         for (int i : F.asList(1, 2, 3)) {
-            res.add(grid().compute().affinityCall(null, i, new IgniteCallable<Integer>() {
+            res.add(grid().compute().affinityCall((String)null, i, new IgniteCallable<Integer>() {
                 @Override public Integer call() {
                     ids.add(this);
 
@@ -106,7 +106,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
      */
     public void testAffinityRun() throws Exception {
         for (int i : F.asList(1, 2, 3)) {
-            grid().compute().affinityRun(null, i, new IgniteRunnable() {
+            grid().compute().affinityRun((String)null, i, new IgniteRunnable() {
                 @Override public void run() {
                     ids.add(this);
 

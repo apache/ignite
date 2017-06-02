@@ -45,7 +45,7 @@ public class CacheInvokeDirectResult implements Message {
     private CacheObject res;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Exception err;
 
@@ -106,7 +106,7 @@ public class CacheInvokeDirectResult implements Message {
         key.prepareMarshal(ctx.cacheObjectContext());
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = U.marshal(ctx.marshaller(), err);
 
         if (res != null)
             res.prepareMarshal(ctx.cacheObjectContext());
@@ -121,7 +121,7 @@ public class CacheInvokeDirectResult implements Message {
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
         if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            err = U.unmarshal(ctx.marshaller(), errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (res != null)
             res.finishUnmarshal(ctx.cacheObjectContext(), ldr);
