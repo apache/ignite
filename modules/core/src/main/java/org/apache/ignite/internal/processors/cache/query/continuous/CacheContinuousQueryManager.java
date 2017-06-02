@@ -192,6 +192,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 null,
                 lsnr.keepBinary(),
                 partId,
+                primary,
                 updCntr,
                 topVer);
 
@@ -338,6 +339,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 lsnr.oldValueRequired() ? oldVal : null,
                 lsnr.keepBinary(),
                 partId,
+                primary,
                 updateCntr,
                 topVer);
 
@@ -399,6 +401,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     lsnr.oldValueRequired() ? oldVal : null,
                     lsnr.keepBinary(),
                     e.partition(),
+                    primary,
                     -1,
                     null);
 
@@ -694,6 +697,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
                                 CacheDataRow e = it.next();
 
+                                boolean primary = cctx.affinity().primaryByPartition(
+                                    cctx.localNode(),
+                                    e.partition(),
+                                    AffinityTopologyVersion.NONE);
+
                                 CacheContinuousQueryEntry entry = new CacheContinuousQueryEntry(
                                     cctx.cacheId(),
                                     CREATED,
@@ -702,6 +710,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     null,
                                     keepBinary,
                                     0,
+                                    primary,
                                     -1,
                                     null);
 

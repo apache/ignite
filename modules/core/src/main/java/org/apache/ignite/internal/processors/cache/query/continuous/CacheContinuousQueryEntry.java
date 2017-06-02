@@ -111,6 +111,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** Keep binary. */
     private boolean keepBinary;
 
+    /** Flag of primary node. */
+    private boolean primary;
+
     /**
      * Required by {@link Message}.
      */
@@ -125,6 +128,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param newVal New value.
      * @param oldVal Old value.
      * @param part Partition.
+     * @param primary Flag of primary node.
      * @param updateCntr Update partition counter.
      * @param topVer Topology version if applicable.
      */
@@ -136,6 +140,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         @Nullable CacheObject oldVal,
         boolean keepBinary,
         int part,
+        boolean primary,
         long updateCntr,
         @Nullable AffinityTopologyVersion topVer) {
         this.cacheId = cacheId;
@@ -144,6 +149,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         this.newVal = newVal;
         this.oldVal = oldVal;
         this.part = part;
+        this.primary = primary;
         this.updateCntr = updateCntr;
         this.topVer = topVer;
         this.keepBinary = keepBinary;
@@ -222,7 +228,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
             return this;
 
         CacheContinuousQueryEntry e = new CacheContinuousQueryEntry(
-                cacheId, null, null, null, null, keepBinary, part, updateCntr, topVer);
+                cacheId, null, null, null, null, keepBinary, part, primary, updateCntr, topVer);
 
         e.flags = flags;
 
@@ -248,6 +254,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     boolean isKeepBinary() {
         return keepBinary;
+    }
+
+    /**
+     * @return {@code True} if called on primary node.
+     */
+    boolean isPrimary() {
+        return primary;
     }
 
     /**
