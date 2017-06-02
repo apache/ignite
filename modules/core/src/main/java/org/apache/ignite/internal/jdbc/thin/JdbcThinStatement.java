@@ -57,11 +57,14 @@ public class JdbcThinStatement implements Statement {
     private JdbcThinResultSet rs;
 
     /** Query arguments. */
+    // TODO: Move to prep stmt.
+    // TODO: Nullify args after execute
     protected ArrayList<Object> args;
 
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
+    /** */
     private boolean alreadyRead;
 
     /**
@@ -77,10 +80,12 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
-        JdbcThinResultSet rs = execute0(sql);
+        execute0(sql);
 
-        if (!rs.isQuery())
-            throw new SQLException("The query isn't SELECT query: [sql=" + sql +']');
+        ResultSet rs = getResultSet();
+
+        if (rs == null)
+            throw new SQLException("The query isn't SELECT query: " + sql);
 
         return rs;
     }
@@ -127,11 +132,14 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql) throws SQLException {
-        ensureNotClosed();
-
         execute0(sql);
 
-        return getUpdateCount();
+        int res = getUpdateCount();
+
+        if (res == -1)
+            throw new SQLException("The query is not DML statememt: " + sql);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -227,26 +235,33 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet getResultSet() throws SQLException {
+        JdbcThinResultSet rs = lastResultSet();
+
+        return rs == null || !rs.isQuery() ? null : rs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getUpdateCount() throws SQLException {
+        JdbcThinResultSet rs = lastResultSet();
+
+        return rs == null || rs.isQuery() ? -1 : (int)rs.updatedCount();
+    }
+
+    /**
+     * Get last result set if any.
+     *
+     * @return Result set or null.
+     * @throws SQLException If failed.
+     */
+    private JdbcThinResultSet lastResultSet() throws SQLException {
         ensureNotClosed();
 
-        if (rs == null || !rs.isQuery() || alreadyRead)
+        if (rs == null || alreadyRead)
             return null;
 
         alreadyRead = true;
 
         return rs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getUpdateCount() throws SQLException {
-        ensureNotClosed();
-
-        if (rs == null || rs.isQuery() || alreadyRead)
-            return -1;
-
-        alreadyRead = true;
-
-        return (int)rs.updatedCount();
     }
 
     /** {@inheritDoc} */
