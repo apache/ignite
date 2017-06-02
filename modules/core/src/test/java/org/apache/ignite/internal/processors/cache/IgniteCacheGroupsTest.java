@@ -1268,7 +1268,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 baseName + i, PARTITIONED,
                 i % 2 == 0 ? TRANSACTIONAL : ATOMIC,
                 2,
-                false);
+                false).setAffinity(new RendezvousAffinityFunction(false, 256));
         }
 
         return ccfgs;
