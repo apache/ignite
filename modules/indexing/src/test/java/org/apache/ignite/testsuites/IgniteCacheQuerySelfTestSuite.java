@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfT
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
@@ -287,6 +288,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest.class);
         suite.addTestSuite(IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class);
         suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);
+        suite.addTestSuite(IgniteSqlRoutingTest.class);
 
         return suite;
     }

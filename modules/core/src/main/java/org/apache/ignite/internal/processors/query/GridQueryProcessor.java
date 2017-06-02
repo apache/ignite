@@ -1310,6 +1310,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         newCfg.setName(entity.getTableName());
         newCfg.setQueryEntities(Collections.singleton(entity));
+        newCfg.setSqlSchema(schemaName);
 
         // Preserve user specified names as they are.
         newCfg.setSqlEscapeAll(true);
