@@ -15,23 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.yardstick.cache.model;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
- * H2 indexing SPI tests.
+ * Entity class for benchmark.
  */
-public class IgniteH2IndexingSpiTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("H2 Indexing SPI Test Suite");
+public class Accounts {
+    /** */
+    @QuerySqlField
+    private long val;
 
+    /** */
+    public Accounts() {
         // No-op.
+    }
 
-        return suite;
+    /**
+     * @param val Id.
+     */
+    public Accounts(long val) {
+        this.val = val;
+    }
+
+    /**
+     * @param val Val.
+     */
+    public Accounts setVal(long val) {
+        this.val = val;
+
+        return this;
+    }
+
+    /**
+     * @return Val.
+     */
+    public long getVal() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Accounts [val=" + val + ']';
     }
 }
