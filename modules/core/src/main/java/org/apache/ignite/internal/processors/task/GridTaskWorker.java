@@ -1123,7 +1123,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Reduced job responses [reduceRes=" + reduceRes + ", ses=" + ses + ']');
+                log.debug(S.toString("Reduced job responses",
+                    "reduceRes", reduceRes, true,
+                    "ses", ses, false));
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }

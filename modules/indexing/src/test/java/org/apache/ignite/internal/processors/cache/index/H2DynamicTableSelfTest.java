@@ -97,9 +97,64 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTable() throws Exception {
+        doTestCreateTable(CACHE_NAME, null);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code REPLICATED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableReplicated() throws Exception {
+        doTestCreateTable("REPLICATED", CacheMode.REPLICATED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTablePartitioned() throws Exception {
+        doTestCreateTable("PARTITIONED", CacheMode.PARTITIONED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code REPLICATED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableReplicatedCaseInsensitive() throws Exception {
+        doTestCreateTable("replicated", CacheMode.REPLICATED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTablePartitionedCaseInsensitive() throws Exception {
+        doTestCreateTable("partitioned", CacheMode.PARTITIONED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
+     * H2 table and type descriptor on all nodes, when no cache template name is given.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableNoTemplate() throws Exception {
+        doTestCreateTable(null, CacheMode.PARTITIONED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
+     * H2 table and type descriptor on all nodes, optionally with cache type check.
+     * @param tplCacheName Template cache name.
+     * @param mode Expected cache mode, or {@code null} if no check is needed.
+     */
+    private void doTestCreateTable(String tplCacheName, CacheMode mode) {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"template=cache,backups=10\",\"atomicity=atomic\"");
+            (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"");
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -110,11 +165,17 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertNotNull(cacheDesc);
 
-            assertEquals(10, cacheDesc.cacheConfiguration().getBackups());
+            if (mode == CacheMode.REPLICATED)
+                assertEquals(Integer.MAX_VALUE, cacheDesc.cacheConfiguration().getBackups());
+            else
+                assertEquals(10, cacheDesc.cacheConfiguration().getBackups());
 
             assertEquals(CacheAtomicityMode.ATOMIC, cacheDesc.cacheConfiguration().getAtomicityMode());
 
             assertTrue(cacheDesc.sql());
+
+            if (mode != null)
+                assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
 
             QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
 
