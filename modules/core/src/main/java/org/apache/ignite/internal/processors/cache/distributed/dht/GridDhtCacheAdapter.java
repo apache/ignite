@@ -933,7 +933,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                         res = new GridNearSingleGetResponse(ctx.cacheId(),
                             req.futureId(),
-                            req.topologyVersion(),
+                            null,
                             res0,
                             false,
                             req.addDeploymentInfo());
@@ -1033,8 +1033,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                 if (!F.isEmpty(fut.invalidPartitions()))
                     res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().readyAffinityVersion());
-                else
-                    res.invalidPartitions(fut.invalidPartitions(), req.topologyVersion());
 
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());
