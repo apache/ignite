@@ -15,29 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
+
+import java.util.Collection;
 
 /**
- * SQL listener command request.
+ * SQL listener query execute result.
  */
-public abstract class SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+public class OdbcQueryExecuteResult {
+    /** Query ID. */
+    private final long queryId;
 
-    /** Request ID. */
-    private long reqId;
+    /** Fields metadata. */
+    private final Collection<OdbcColumnMeta> columnsMeta;
 
     /**
-     * @return Request ID.
+     * @param queryId Query ID.
+     * @param columnsMeta Columns metadata.
      */
-    public long requestId() {
-        return reqId;
+    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta) {
+        this.queryId = queryId;
+        this.columnsMeta = columnsMeta;
     }
 
     /**
-     * @param reqId Request ID.
+     * @return Query ID.
      */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    public long getQueryId() {
+        return queryId;
+    }
+
+    /**
+     * @return Columns metadata.
+     */
+    public Collection<OdbcColumnMeta> getColumnsMetadata() {
+        return columnsMeta;
     }
 }

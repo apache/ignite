@@ -15,29 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.jdbc.thin;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * SQL listener command request.
+ * Connection test.
  */
-public abstract class SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /** Request ID. */
-    private long reqId;
-
-    /**
-     * @return Request ID.
-     */
-    public long requestId() {
-        return reqId;
+public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
     }
 
-    /**
-     * @param reqId Request ID.
-     */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setOdbcConfiguration(new OdbcConfiguration());
+
+        return cfg;
     }
 }

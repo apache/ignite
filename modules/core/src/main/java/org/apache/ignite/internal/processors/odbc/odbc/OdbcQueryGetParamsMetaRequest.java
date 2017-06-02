@@ -15,29 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener command request.
+ * ODBC query get params meta request.
  */
-public abstract class SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+public class OdbcQueryGetParamsMetaRequest extends OdbcRequest {
+    /** Cache. */
+    private final String cacheName;
 
-    /** Request ID. */
-    private long reqId;
+    /** Query. */
+    private final String query;
 
     /**
-     * @return Request ID.
+     * @param query SQL Query.
      */
-    public long requestId() {
-        return reqId;
+    public OdbcQueryGetParamsMetaRequest(String cacheName, String query) {
+        super(META_PARAMS);
+
+        this.cacheName = cacheName;
+        this.query = query;
     }
 
     /**
-     * @param reqId Request ID.
+     * @return SQL Query.
      */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    public String query() {
+        return query;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryGetParamsMetaRequest.class, this);
     }
 }

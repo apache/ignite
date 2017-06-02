@@ -15,29 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.odbc;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener command request.
+ * SQL listener query close request.
  */
-public abstract class SqlListenerRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /** Request ID. */
-    private long reqId;
+public class OdbcQueryCloseRequest extends OdbcRequest {
+    /** Query ID. */
+    private final long queryId;
 
     /**
-     * @return Request ID.
+     * @param queryId Query ID.
      */
-    public long requestId() {
-        return reqId;
+    public OdbcQueryCloseRequest(long queryId) {
+        super(QRY_CLOSE);
+
+        this.queryId = queryId;
     }
 
     /**
-     * @param reqId Request ID.
+     * @return Query ID.
      */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    public long queryId() {
+        return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryCloseRequest.class, this);
     }
 }
