@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -1287,21 +1288,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
-     * @param templateCacheName Cache name to take settings from.
+     * @param templateCacheName Cache name to take settings from, if {@code null},
+     *     a new {@code PARTITIONED} cache will be created.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateCacheName, boolean ifNotExists)
         throws IgniteCheckedException {
+        // Use PARTITIONED as template cache name if no actual name is given.
+        templateCacheName = U.firstNotNull(templateCacheName, CacheMode.PARTITIONED.name());
+
         CacheConfiguration<?, ?> newCfg;
 
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateCacheName);
 
         if (templateCfg == null) {
-            if ("PARTITIONED".equals(templateCacheName))
+            if (CacheMode.PARTITIONED.name().equalsIgnoreCase(templateCacheName))
                 newCfg = new CacheConfiguration<>().setCacheMode(CacheMode.PARTITIONED);
-            else if ("REPLICATED".equals(templateCacheName))
+            else if (CacheMode.REPLICATED.name().equalsIgnoreCase(templateCacheName))
                 newCfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
             else
                 throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);

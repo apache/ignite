@@ -114,6 +114,33 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code REPLICATED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableReplicatedCaseInsensitive() throws Exception {
+        doTestCreateTable("replicated", CacheMode.REPLICATED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTablePartitionedCaseInsensitive() throws Exception {
+        doTestCreateTable("partitioned", CacheMode.PARTITIONED);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
+     * H2 table and type descriptor on all nodes, when no cache template name is given.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableNoTemplate() throws Exception {
+        doTestCreateTable(null, CacheMode.PARTITIONED);
+    }
+
+    /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
      * @param tplCacheName Template cache name.
@@ -121,8 +148,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private void doTestCreateTable(String tplCacheName, CacheMode mode) {
         cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
-            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=" + tplCacheName + "\""));
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\"))" +
+            (F.isEmpty(tplCacheName) ? "" : " WITH \"cacheTemplate=" + tplCacheName + "\"")));
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
