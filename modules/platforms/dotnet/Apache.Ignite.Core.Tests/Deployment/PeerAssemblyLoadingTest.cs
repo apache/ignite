@@ -118,6 +118,19 @@ namespace Apache.Ignite.Core.Tests.Deployment
         }
 
         /// <summary>
+        /// Tests the runtime dependency: AssemblyResolve event fires during job execution,
+        /// not during deserialization. This happens with static classes, for example.
+        /// </summary>
+        [Test]
+        public void TestRuntimeDependency()
+        {
+            TestDeployment(remoteCompute =>
+            {
+                Assert.AreEqual("dcba", remoteCompute.Apply(new RuntimeDependencyFunc(), "abcd"));
+            });
+        }
+
+        /// <summary>
         /// Tests the peer deployment.
         /// </summary>
         public static void TestDeployment(Action<ICompute> test, bool enablePeerDeployment = true)
