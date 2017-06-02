@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
@@ -240,1508 +241,1546 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateStatement() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            try (Statement stmt = conn.createStatement()) {
+                assertNotNull(stmt);
 
-        Statement stmt = conn.createStatement();
+                stmt.close();
 
-        assert stmt != null;
+                conn.close();
 
-        stmt.close();
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                // Exception when called on closed connection
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return conn.createStatement();
+                        }
+                    },
+                    SQLException.class,
+                    "Connection is closed"
+                );
+            }
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateStatement2() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Unsupported result set type
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid result set type"
+            );
 
-        // Unsupported result set type
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid result set type"
-        );
+            // Unsupported concurrency type
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_UPDATABLE);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid concurrency"
+            );
 
-        // Unsupported concurrency type
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_UPDATABLE);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid concurrency"
-        );
+            // Accepted parameters
+            try (Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY)) {
+                assertNotNull(stmt);
 
-        // Accepted parameters
-        Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                stmt.close();
+            }
 
-        assert stmt != null;
+            conn.close();
 
-        stmt.close();
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateStatement3() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Unsupported result set type
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStatement(TYPE_SCROLL_INSENSITIVE,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid result set type"
+            );
 
-        // Unsupported result set type
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement(TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid result set type"
-        );
+            // Unsupported concurrency type
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStatement(TYPE_FORWARD_ONLY,
+                            CONCUR_UPDATABLE, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid concurrency"
+            );
 
-        // Unsupported concurrency type
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_UPDATABLE, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid concurrency"
-        );
+            // Accepted parameters
+            try (Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY,
+                CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT)) {
+                assertNotNull(stmt);
 
-        // Accepted parameters
-        Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                assertEquals(HOLD_CURSORS_OVER_COMMIT, stmt.getResultSetHoldability());
+            }
 
-        assert stmt != null;
+            try (Statement stmt = conn.createStatement(TYPE_FORWARD_ONLY,
+                CONCUR_UPDATABLE, CLOSE_CURSORS_AT_COMMIT)) {
+                assertNotNull(stmt);
 
-        assertEquals(HOLD_CURSORS_OVER_COMMIT, stmt.getResultSetHoldability());
+                assertEquals(CLOSE_CURSORS_AT_COMMIT, stmt.getResultSetHoldability());
+            }
 
-        stmt.close();
+            conn.close();
 
-        stmt = conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_UPDATABLE, CLOSE_CURSORS_AT_COMMIT);
-
-        assert stmt != null;
-
-        assertEquals(CLOSE_CURSORS_AT_COMMIT, stmt.getResultSetHoldability());
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStatement(TYPE_FORWARD_ONLY,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrepareStatement() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // null query text
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(null);
+                    }
+                },
+                SQLException.class,
+                "Invalid arguments"
+            );
 
-        // null query text
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(null);
-                }
-            },
-            SQLException.class,
-            "Invalid arguments"
-        );
+            final String sqlText = "select * from test where param = ?";
 
-        final String sqlText = "select * from test where param = ?";
+            try (PreparedStatement prepared = conn.prepareStatement(sqlText)) {
+                assertNotNull(prepared);
+            }
 
-        PreparedStatement prepared = conn.prepareStatement(sqlText);
+            conn.close();
 
-        assert prepared != null;
-
-        prepared.close();
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrepareStatement3() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // null query text
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(null, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLException.class,
+                "Invalid arguments"
+            );
 
-        // null query text
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(null, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
-                }
-            },
-            SQLException.class,
-            "Invalid arguments"
-        );
+            final String sqlText = "select * from test where param = ?";
 
-        final String sqlText = "select * from test where param = ?";
+            // Unsupported result set type
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid result set type"
+            );
 
-        // Unsupported result set type
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid result set type"
-        );
+            // Unsupported concurrency
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid concurrency"
+            );
 
-        // Unsupported concurrency
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid concurrency"
-        );
+            try (PreparedStatement prepared = conn.prepareStatement(sqlText,
+                TYPE_FORWARD_ONLY, CONCUR_READ_ONLY)) {
+                assertNotNull(prepared);
+            }
 
-        PreparedStatement prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+            conn.close();
 
-        assert prepared != null;
-
-        prepared.close();
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrepareStatement4() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // null query text
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(null, TYPE_FORWARD_ONLY,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLException.class,
+                "Invalid arguments"
+            );
 
-        // null query text
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(null, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLException.class,
-            "Invalid arguments"
-        );
+            final String sqlText = "select * from test where param = ?";
 
-        final String sqlText = "select * from test where param = ?";
+            // Unsupported result set type
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, TYPE_SCROLL_INSENSITIVE,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid result set type"
+            );
 
-        // Unsupported result set type
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid result set type"
-        );
+            // Unsupported concurrency
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
+                            CONCUR_UPDATABLE, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Invalid concurrency"
+            );
 
-        // Unsupported concurrency
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Invalid concurrency"
-        );
+            try (PreparedStatement prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
+                CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT)) {
+                assertNotNull(prepared);
 
-        PreparedStatement prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                assertEquals(HOLD_CURSORS_OVER_COMMIT, prepared.getResultSetHoldability());
+            }
 
-        assert prepared != null;
+            try (PreparedStatement prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
+                CONCUR_READ_ONLY, CLOSE_CURSORS_AT_COMMIT)) {
+                assertNotNull(prepared);
 
-        assertEquals(HOLD_CURSORS_OVER_COMMIT, prepared.getResultSetHoldability());
+                assertEquals(CLOSE_CURSORS_AT_COMMIT, prepared.getResultSetHoldability());
+            }
 
-        prepared.close();
+            conn.close();
 
-        prepared = conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, CLOSE_CURSORS_AT_COMMIT);
-
-        assert prepared != null;
-
-        assertEquals(CLOSE_CURSORS_AT_COMMIT, prepared.getResultSetHoldability());
-
-        prepared.close();
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrepareStatementAutoGeneratedKeysUnsupported() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            final String sqlText = "insert into test (val) values (?)";
 
-        final String sqlText = "insert into test (val) values (?)";
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, RETURN_GENERATED_KEYS);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, RETURN_GENERATED_KEYS);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Auto generated keys are not supported."
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, NO_GENERATED_KEYS);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, NO_GENERATED_KEYS);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Auto generated keys are not supported."
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, new int[] {1});
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, new int[] {1});
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Auto generated keys are not supported."
-        );
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareStatement(sqlText, new String[] {"ID"});
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Auto generated keys are not supported."
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareStatement(sqlText, new String[] {"ID"});
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Auto generated keys are not supported."
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrepareCallUnsupported() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            final String sqlText = "exec test()";
 
-        final String sqlText = "exec test()";
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareCall(sqlText);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Callable functions are not supported."
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareCall(sqlText);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Callable functions are not supported."
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Callable functions are not supported."
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Callable functions are not supported."
-        );
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Callable functions are not supported."
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY,
+                            CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Callable functions are not supported."
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNativeSql() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // null query text
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.nativeSQL(null);
+                    }
+                },
+                SQLException.class,
+                "Invalid arguments"
+            );
 
-        // null query text
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.nativeSQL(null);
-                }
-            },
-            SQLException.class,
-            "Invalid arguments"
-        );
+            final String sqlText = "select * from test";
 
-        final String sqlText = "select * from test";
+            assertEquals(sqlText, conn.nativeSQL(sqlText));
 
-        assertEquals(sqlText, conn.nativeSQL(sqlText));
+            conn.close();
 
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.nativeSQL(sqlText);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.nativeSQL(sqlText);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetAutoCommit() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            assertTrue(conn.getAutoCommit());
 
-        assertTrue(conn.getAutoCommit());
+            conn.setAutoCommit(false);
 
-        conn.setAutoCommit(false);
+            assertFalse(conn.getAutoCommit());
 
-        assertFalse(conn.getAutoCommit());
+            conn.setAutoCommit(true);
 
-        conn.setAutoCommit(true);
+            assertTrue(conn.getAutoCommit());
 
-        assertTrue(conn.getAutoCommit());
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(true);
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setAutoCommit(true);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getAutoCommit();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getAutoCommit();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCommit() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Should not be called in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.commit();
 
-        // Should not be called in auto-commit mode
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.commit();
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto commit mode"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Auto commit mode"
-        );
+            conn.setAutoCommit(false);
 
-        conn.setAutoCommit(false);
+            conn.commit();
 
-        conn.commit();
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.commit();
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.commit();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRollback() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Should not be called in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback();
 
-        // Should not be called in auto-commit mode
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.rollback();
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto commit mode"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Auto commit mode"
-        );
+            conn.setAutoCommit(false);
 
-        conn.setAutoCommit(false);
+            conn.rollback();
 
-        conn.rollback();
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback();
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.rollback();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetMetaData() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            DatabaseMetaData meta = conn.getMetaData();
 
-        DatabaseMetaData meta = conn.getMetaData();
+            assertNotNull(meta);
 
-        assert meta != null;
+            conn.close();
 
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getMetaData();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getMetaData();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetReadOnly() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            assertFalse(conn.isReadOnly());
 
-        assertFalse(conn.isReadOnly());
+            conn.setReadOnly(true);
 
-        conn.setReadOnly(true);
+            assertTrue(conn.isReadOnly());
 
-        assertTrue(conn.isReadOnly());
+            conn.setReadOnly(false);
 
-        conn.setReadOnly(false);
+            assertFalse(conn.isReadOnly());
 
-        assertFalse(conn.isReadOnly());
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setReadOnly(true);
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setReadOnly(true);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.isReadOnly();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.isReadOnly();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetCatalog() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            assertNull(conn.getCatalog());
 
-        assertNull(conn.getCatalog());
+            final String catalog = "catalog";
 
-        final String catalog = "catalog";
+            conn.setCatalog(catalog);
 
-        conn.setCatalog(catalog);
+            assertEquals(catalog, conn.getCatalog());
 
-        assertEquals(catalog, conn.getCatalog());
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setCatalog(catalog);
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setCatalog(catalog);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getCatalog();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getCatalog();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetTransactionIsolation() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Invalid parameter value
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTransactionIsolation(-1);
 
-        // Invalid parameter value
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setTransactionIsolation(-1);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid parameter"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid parameter"
-        );
+            // default level
+            assertEquals(TRANSACTION_NONE, conn.getTransactionIsolation());
 
-        // default level
-        assertEquals(TRANSACTION_NONE, conn.getTransactionIsolation());
+            int[] levels = {
+                TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED,
+                TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE};
 
-        int[] levels = {TRANSACTION_READ_UNCOMMITTED, TRANSACTION_READ_COMMITTED,
-            TRANSACTION_REPEATABLE_READ, TRANSACTION_SERIALIZABLE};
+            for (int level : levels) {
+                conn.setTransactionIsolation(level);
+                assertEquals(level, conn.getTransactionIsolation());
+            }
 
-        for (int level : levels) {
-            conn.setTransactionIsolation(level);
-            assertEquals(level, conn.getTransactionIsolation());
+            conn.close();
+
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getTransactionIsolation();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
         }
-
-        conn.close();
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getTransactionIsolation();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
-
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearGetWarnings() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            SQLWarning warn = conn.getWarnings();
 
-        SQLWarning warn = conn.getWarnings();
+            assertNull(warn);
 
-        assertNull(warn);
+            //TODO: need a way to trigger warning
 
-        //TODO: need a way to trigger warning
+            conn.clearWarnings();
 
-        conn.clearWarnings();
+            warn = conn.getWarnings();
 
-        warn = conn.getWarnings();
+            assertNull(warn);
 
-        assertNull(warn);
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getWarnings();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getWarnings();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.clearWarnings();
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.clearWarnings();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetTypeMap() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getTypeMap();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Types mapping is not supported"
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getTypeMap();
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Types mapping is not supported"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTypeMap(new HashMap<String, Class<?>>());
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setTypeMap(new HashMap<String, Class<?>>());
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Types mapping is not supported"
+            );
 
-                    return null;
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Types mapping is not supported"
-        );
+            conn.close();
 
-        conn.close();
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getTypeMap();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getTypeMap();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            // Exception when called on closed connection
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setTypeMap(new HashMap<String, Class<?>>());
 
-        // Exception when called on closed connection
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setTypeMap(new HashMap<String, Class<?>>());
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
-
-        //TODO: is it at all possible to pass something other than java.util.Map to setTypeMap()?
+            //TODO: is it at all possible to pass something other than java.util.Map to setTypeMap()?
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetHoldability() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // default value
+            assertEquals(conn.getMetaData().getResultSetHoldability(), conn.getHoldability());
 
-        // default value
-        assertEquals(conn.getMetaData().getResultSetHoldability(), conn.getHoldability());
+            assertEquals(HOLD_CURSORS_OVER_COMMIT, conn.getHoldability());
 
-        assertEquals(HOLD_CURSORS_OVER_COMMIT, conn.getHoldability());
+            conn.setHoldability(CLOSE_CURSORS_AT_COMMIT);
 
-        conn.setHoldability(CLOSE_CURSORS_AT_COMMIT);
+            assertEquals(CLOSE_CURSORS_AT_COMMIT, conn.getHoldability());
 
-        assertEquals(CLOSE_CURSORS_AT_COMMIT, conn.getHoldability());
+            // Invalid constant
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setHoldability(-1);
 
-        // Invalid constant
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setHoldability(-1);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid result set holdability value"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid result set holdability value"
-        );
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getHoldability();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getHoldability();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setHoldability(HOLD_CURSORS_OVER_COMMIT);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setHoldability(HOLD_CURSORS_OVER_COMMIT);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSetSavepoint() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSavepoint();
 
-        conn.setSavepoint();
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
 
-        // Disallowed in auto-commit mode
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint();
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto-commit mode"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Auto-commit mode"
-        );
+            conn.setAutoCommit(false);
 
-        conn.setAutoCommit(false);
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint();
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported"
+            );
 
-                    return null;
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Savepoints are not supported"
-        );
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSetSavepointName() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Invalid arg
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint(null);
 
-        // Invalid arg
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint(null);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid argument"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid argument"
-        );
+            final String name = "savepoint";
 
-        final String name = "savepoint";
+            conn.setSavepoint();
 
-        conn.setSavepoint();
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint(name);
 
-        // Disallowed in auto-commit mode
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint(name);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto-commit mode"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Auto-commit mode"
-        );
+            conn.setAutoCommit(false);
 
-        conn.setAutoCommit(false);
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint(name);
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint(name);
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported"
+            );
 
-                    return null;
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Savepoints are not supported"
-        );
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint(name);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSavepoint(name);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRollbackSavePoint() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Invalid arg
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback(null);
 
-        // Invalid arg
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.rollback(null);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid argument"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid argument"
-        );
+            final Savepoint savepoint = getFakeSavepoint();
 
-        final Savepoint savepoint = getFakeSavepoint();
+            // Disallowed in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback(savepoint);
 
-        // Disallowed in auto-commit mode
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.rollback(savepoint);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Auto-commit mode"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Auto-commit mode"
-        );
+            conn.setAutoCommit(false);
 
-        conn.setAutoCommit(false);
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback(savepoint);
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.rollback(savepoint);
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported"
+            );
 
-                    return null;
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Savepoints are not supported"
-        );
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.rollback(savepoint);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.rollback(savepoint);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReleaseSavepoint() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Invalid arg
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.releaseSavepoint(null);
 
-        // Invalid arg
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.releaseSavepoint(null);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid argument"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid argument"
-        );
+            final Savepoint savepoint = getFakeSavepoint();
 
-        final Savepoint savepoint = getFakeSavepoint();
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.releaseSavepoint(savepoint);
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.releaseSavepoint(savepoint);
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported"
+            );
 
-                    return null;
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "Savepoints are not supported"
-        );
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.releaseSavepoint(savepoint);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.releaseSavepoint(savepoint);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateClob() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createClob();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createClob();
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "SQL-specific types are not supported"
-        );
+            conn.close();
 
-        conn.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createClob();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createClob();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateBlob() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createBlob();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createBlob();
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "SQL-specific types are not supported"
-        );
+            conn.close();
 
-        conn.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createBlob();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createBlob();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateNClob() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createNClob();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createNClob();
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "SQL-specific types are not supported"
-        );
+            conn.close();
 
-        conn.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createNClob();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createNClob();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateSQLXML() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createSQLXML();
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createSQLXML();
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "SQL-specific types are not supported"
-        );
+            conn.close();
 
-        conn.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createSQLXML();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createSQLXML();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetClientInfoPair() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            final String name = "ApplicationName";
+            final String val = "SelfTest";
 
-        conn.setClientInfo("name", "val");
+            assertNull(conn.getWarnings());
 
-        //
-        conn.getClientInfo("name");
+            conn.setClientInfo(name, val);
 
-        // TODO: ?????????????????
+            assertNotNull(conn.getWarnings());
+
+            assertNull(conn.getClientInfo(val));
+
+            conn.close();
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getClientInfo(name);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setClientInfo(name, val);
+
+                        return null;
+                    }
+                },
+                SQLClientInfoException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetClientInfoProperties() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            final String name = "ApplicationName";
+            final String val = "SelfTest";
 
-        final Properties props = new Properties();
+            final Properties props = new Properties();
+            props.setProperty(name, val);
 
-        //
-        conn.setClientInfo(props);
+            conn.setClientInfo(props);
 
-        //
-        conn.getClientInfo();
+            Properties propsResult = conn.getClientInfo();
 
-        conn.close();
+            assertNotNull(propsResult);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getClientInfo();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            assertTrue(propsResult.isEmpty());
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setClientInfo(props);
+            conn.close();
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getClientInfo();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setClientInfo(props);
+
+                        return null;
+                    }
+                },
+                SQLClientInfoException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateArrayOf() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            final String typeName = "varchar";
 
-        final String typeName = "varchar";
+            final String[] elements = new String[] {"apple", "pear"};
 
-        final String[] elements = new String[] {"apple", "pear"};
+            // Invalid typename
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.createArrayOf(null, null);
 
-        // Invalid typename
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.createArrayOf(null, null);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid type name"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid type name"
-        );
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createArrayOf(typeName, elements);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createArrayOf(typeName, elements);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "SQL-specific types are not supported"
-        );
+            conn.close();
 
-        conn.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createArrayOf(typeName, elements);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createArrayOf(typeName, elements);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCreateStruct() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // Invalid typename
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStruct(null, null);
+                    }
+                },
+                SQLException.class,
+                "Invalid type name"
+            );
 
-        // Invalid typename
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStruct(null, null);
-                }
-            },
-            SQLException.class,
-            "Invalid type name"
-        );
+            final String typeName = "employee";
 
-        final String typeName = "employee";
+            final Object[] attrs = new Object[] {100, "Tom"};
 
-        final Object[] attrs = new Object[] {100, "Tom"};
+            // Unsupported
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStruct(typeName, attrs);
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "SQL-specific types are not supported"
+            );
 
-        // Unsupported
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStruct(typeName, attrs);
-                }
-            },
-            SQLFeatureNotSupportedException.class,
-            "SQL-specific types are not supported"
-        );
+            conn.close();
 
-        conn.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.createStruct(typeName, attrs);
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.createStruct(typeName, attrs);
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetSchema() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            assertEquals("PUBLIC", conn.getSchema());
 
-        assertEquals("PUBLIC", conn.getSchema());
+            // Invalid schema
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSchema(null);
 
-        // Invalid schema
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSchema(null);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid schema value"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid schema value"
-        );
+            final String schema = "test";
 
-        final String schema = "test";
+            conn.setSchema(schema);
 
-        conn.setSchema(schema);
+            assertEquals(schema, conn.getSchema());
 
-        assertEquals(schema, conn.getSchema());
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSchema(schema);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setSchema(schema);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getSchema();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getSchema();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAbort() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            //Invalid executor
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.abort(null);
 
-        //Invalid executor
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.abort(null);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid executor value"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid executor value"
-        );
+            final Executor executor = Executors.newFixedThreadPool(1);
 
-        final Executor executor = Executors.newFixedThreadPool(1);
+            conn.abort(executor);
 
-        conn.abort(executor);
-
-        assertTrue(conn.isClosed());
+            assertTrue(conn.isClosed());
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetSetNetworkTimeout() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            // default
+            assertEquals(0, conn.getNetworkTimeout());
 
-        // default
-        assertEquals(0, conn.getNetworkTimeout());
+            final Executor executor = Executors.newFixedThreadPool(1);
 
-        final Executor executor = Executors.newFixedThreadPool(1);
+            final int timeout = 1000;
 
-        final int timeout = 1000;
+            //Invalid executor
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setNetworkTimeout(null, timeout);
 
-        //Invalid executor
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setNetworkTimeout(null, timeout);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid executor value"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid executor value"
-        );
+            //Invalid timeout
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setNetworkTimeout(executor, -1);
 
-        //Invalid timeout
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setNetworkTimeout(executor, -1);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid timeout value"
+            );
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid timeout value"
-        );
+            conn.setNetworkTimeout(executor, timeout);
 
-        conn.setNetworkTimeout(executor, timeout);
+            assertEquals(timeout, conn.getNetworkTimeout());
 
-        assertEquals(timeout, conn.getNetworkTimeout());
+            conn.close();
 
-        conn.close();
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return conn.getNetworkTimeout();
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return conn.getNetworkTimeout();
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setNetworkTimeout(executor, timeout);
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.setNetworkTimeout(executor, timeout);
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Connection is closed"
-        );
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Connection is closed"
+            );
+        }
     }
 
     // TODO: Methods to throw SQLException when database access fails (network conn lost / cluster stop)
@@ -1760,7 +1799,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     // setSavepoint
     // releaseSavepoint
     // createClob/createBlob/createNClob/createSQLXML
-    //
+    // setClientInfo/getClientInfo
     // createArrayOf
     // createStruct
     // setSchema/getSchema

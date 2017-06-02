@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinStatement;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -114,10 +115,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         assertNotNull(resultSet);
 
         stmt.setQueryTimeout(1);
-
-
-        // TODO: cannot be called on PreparedStatement
-        //
     }
 
     private Statement getStatement() throws Exception {
