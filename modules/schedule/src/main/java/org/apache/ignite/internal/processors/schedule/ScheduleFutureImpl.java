@@ -585,18 +585,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         A.notNull(lsnr, "lsnr");
         A.notNull(exec, "exec");
 
-        listen(lsnr, exec);
-    }
-
-    /**
-     * @param lsnr Listener.
-     * @param exec Executor.
-     */
-    private void listen(IgniteInClosure<? super IgniteFuture<R>> lsnr, Executor exec) {
-        if (exec != null)
-            listen(new AsyncFutureListener<>(lsnr, exec));
-        else
-            listen(lsnr);
+        listen(new AsyncFutureListener<>(lsnr, exec));
     }
 
     /** {@inheritDoc} */
@@ -627,7 +616,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
             }
         };
 
-        listen(new CI1<IgniteFuture<R>>() {
+        IgniteInClosure<? super IgniteFuture<R>> lsnr = new CI1<IgniteFuture<R>>() {
             @Override public void apply(IgniteFuture<R> fut0) {
                 try {
                     fut.onDone(doneCb.apply(fut0));
@@ -647,7 +636,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                     throw e;
                 }
             }
-        }, exec);
+        };
+
+        if (exec != null)
+            lsnr = new AsyncFutureListener<>(lsnr, exec);
+
+        listen(lsnr);
 
         return new IgniteFutureImpl<>(fut);
     }
