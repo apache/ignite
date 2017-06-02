@@ -231,7 +231,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void sendFinishReply(boolean commit, @Nullable Throwable err) {
+    @Override protected void sendFinishReply(@Nullable Throwable err) {
         // We are in near transaction, do not send finish reply to local node.
     }
 
@@ -1068,50 +1068,48 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             return new GridFinishedFuture<IgniteInternalTx>(this);
         }
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, true);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (prep == null || prep.isDone()) {
             assert prep != null || optimistic();
 
+            IgniteCheckedException err = null;
+
             try {
                 if (prep != null)
                     prep.get(); // Check for errors of a parent future.
-
-                fut.finish();
-            }
-            catch (IgniteTxOptimisticCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                fut.onError(e);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to prepare transaction: " + this, e);
+                err = e;
 
-                fut.onError(e);
+                U.error(log, "Failed to prepare transaction: " + this, e);
             }
+
+            if (err != null)
+                fut.rollbackOnError(err);
+            else
+                fut.finish(true);
         }
         else
             prep.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
+                    IgniteCheckedException err = null;
+
                     try {
                         f.get(); // Check for errors of a parent future.
-
-                        fut.finish();
-                    }
-                    catch (IgniteTxOptimisticCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
-
-                        fut.onError(e);
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to prepare transaction: " + this, e);
+                        err = e;
 
-                        fut.onError(e);
+                        U.error(log, "Failed to prepare transaction: " + this, e);
                     }
+
+                    if (err != null)
+                        fut.rollbackOnError(err);
+                    else
+                        fut.finish(true);
                 }
             });
 
@@ -1127,7 +1125,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Rolling back colocated tx locally: " + this);
 
-        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/false);
+        final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, false);
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
@@ -1144,7 +1142,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                         e.getMessage() + ']');
             }
 
-            fut.finish();
+            fut.finish(false);
         }
         else
             prep.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -1157,7 +1155,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                             e.getMessage() + ']');
                     }
 
-                    fut.finish();
+                    fut.finish(false);
                 }
             });
 

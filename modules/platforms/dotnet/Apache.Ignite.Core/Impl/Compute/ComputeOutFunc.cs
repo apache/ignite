@@ -89,11 +89,9 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Initializes a new instance of the <see cref="ComputeOutFuncWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeOutFuncWrapper(IBinaryReader reader)
+        public ComputeOutFuncWrapper(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _func = reader0.ReadObject<object>();
+            _func = reader.ReadObject<object>();
 
             _invoker = DelegateTypeDescriptor.GetComputeOutFunc(_func.GetType());
         }

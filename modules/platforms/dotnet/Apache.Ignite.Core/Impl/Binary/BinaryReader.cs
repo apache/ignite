@@ -81,6 +81,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _marsh = marsh;
             _mode = mode;
             _builder = builder;
+            _curPos = stream.Position;
 
             Stream = stream;
         }

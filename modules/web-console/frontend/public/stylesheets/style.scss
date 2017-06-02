@@ -752,8 +752,7 @@ button.form-control {
         .error {
             padding: 10px 10px;
 
-            text-align: center;
-            color: $brand-primary;
+            text-align: left;
         }
 
         .empty {
@@ -809,7 +808,7 @@ button.form-control {
     }
 
     .btn-group {
-        vertical-align:top;
+        vertical-align: top;
         margin-left: 10px;
 
         i { line-height: 18px; }
@@ -1854,6 +1853,12 @@ th[st-sort] {
     display: inline-block;
 }
 
+.panel-top-align {
+    label {
+        vertical-align: top !important;
+    }
+}
+
 button.dropdown-toggle {
     margin-right: 5px;
 }
@@ -2296,18 +2301,21 @@ html,body,.splash-screen {
 
 .admin-page {
     .panel-heading {
+        height: 38px;
+
         border-bottom: 0;
         padding-bottom: 0;
 
         cursor: default;
 
         i {
+            margin-top: 2px;
             margin-right: 10px;
         }
 
         label {
             cursor: default;
-            line-height: 24px;
+            line-height: 28px;
         }
 
         sub {
@@ -2325,5 +2333,33 @@ html,body,.splash-screen {
 
     .ui-grid-filter-select {
         width: calc(100% - 10px);
+    }
+
+    .ui-grid-cell-contents > i {
+        line-height: $line-height-base;
+    }
+}
+
+.datepicker.dropdown-menu {
+    width: 250px;
+    height: 270px;
+
+    button {
+        outline: none;
+        border: 0;
+    }
+
+    tbody {
+        height: 180px;
+    }
+
+    tbody button {
+        padding: 6px;
+    }
+
+    &.datepicker-mode-1, &.datepicker-mode-2 {
+        tbody button {
+            height: 65px;
+        }
     }
 }

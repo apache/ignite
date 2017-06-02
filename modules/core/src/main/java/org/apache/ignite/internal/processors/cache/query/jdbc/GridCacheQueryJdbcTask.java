@@ -268,7 +268,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 qry.setPageSize(pageSize);
 
-                QueryCursor<List<?>> cursor = cache.query(qry);
+                QueryCursor<List<?>> cursor = cache.withKeepBinary().query(qry);
 
                 Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)cursor).fieldsMeta();
 

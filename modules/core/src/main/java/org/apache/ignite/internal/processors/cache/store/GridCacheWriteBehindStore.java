@@ -673,10 +673,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Map<K, Entry<? extends K, ? extends  V>> vals,
         boolean initSes) {
 
-        if (initSes && storeMgr != null)
-            storeMgr.writeBehindSessionInit();
-
         try {
+            if (initSes && storeMgr != null)
+                storeMgr.writeBehindSessionInit();
+
             boolean threwEx = true;
 
             try {

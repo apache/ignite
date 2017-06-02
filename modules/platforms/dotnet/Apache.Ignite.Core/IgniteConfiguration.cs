@@ -771,7 +771,8 @@
         {
             IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
 
-            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
             {
                 // Skip XML header.
                 xmlReader.MoveToContent();

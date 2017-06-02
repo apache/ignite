@@ -42,11 +42,7 @@ module.exports.factory = (_, mongo, errors) => {
                 return Promise.reject(new errors.IllegalAccessError('Became this user is not permitted. Only administrators can perform this actions.'));
 
             return mongo.Account.findById(viewedUserId).lean().exec()
-                .then((viewedUser) => {
-                    viewedUser.token = session.req.user.token;
-
-                    session.viewedUser = viewedUser;
-                });
+                .then((viewedUser) => session.viewedUser = viewedUser);
         }
 
         /**

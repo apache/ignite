@@ -48,7 +48,6 @@ import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -58,8 +57,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -169,7 +169,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private IgniteInternalCache<Object, Object> cache;
 
     /** Topology listener. */
-    private GridLocalEventListener topLsnr = new TopologyListener();
+    private DiscoveryEventListener topLsnr = new TopologyListener();
 
     static {
         Set<IgniteProductVersion> versions = new TreeSet<>(new Comparator<IgniteProductVersion>() {
@@ -253,7 +253,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cache = ctx.cache().utilityCache();
 
         if (!ctx.clientNode())
-            ctx.event().addLocalEventListener(topLsnr, EVTS);
+            ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
 
         try {
             if (ctx.deploy().enabled())
@@ -323,7 +323,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         if (!ctx.clientNode())
-            ctx.event().removeLocalEventListener(topLsnr);
+            ctx.event().removeDiscoveryEventListener(topLsnr);
 
         Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
@@ -721,8 +721,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 call,
                 Collections.singletonList(node),
                 false,
-                timeout
-            ).get();
+                timeout,
+                true).get();
         }
         else
             return serviceTopology(cache, name);
@@ -1151,7 +1151,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             // Start service in its own thread.
             final ExecutorService exe = svcCtx.executor();
 
-            exe.submit(new Runnable() {
+            exe.execute(new Runnable() {
                 @Override public void run() {
                     try {
                         svc.execute(svcCtx);
@@ -1414,7 +1414,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 return;
 
             try {
-                depExe.submit(new DepRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         onSystemCacheUpdated(deps);
                     }
@@ -1573,9 +1573,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Topology listener.
      */
-    private class TopologyListener implements GridLocalEventListener {
+    private class TopologyListener implements DiscoveryEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(Event evt) {
+        @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
             if (!busyLock.enterBusy())
                 return;
 
@@ -1599,11 +1599,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         return;
                 }
                 else
-                    topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
+                    topVer = new AffinityTopologyVersion((evt).topologyVersion(), 0);
 
-                depExe.submit(new DepRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
-                        ClusterNode oldest = ctx.discovery().oldestAliveCacheServerNode(topVer);
+                        // In case the cache instance isn't tracked by DiscoveryManager anymore.
+                        discoCache.updateAlives(ctx.discovery());
+
+                        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                         if (oldest != null && oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();

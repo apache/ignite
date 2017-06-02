@@ -155,15 +155,13 @@ namespace Apache.Ignite.Core.Impl.Messaging
         /// Initializes a new instance of the <see cref="MessageListenerHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public MessageListenerHolder(IBinaryReader reader)
+        public MessageListenerHolder(BinaryReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _filter = reader0.ReadObject<object>();
+            _filter = reader.ReadObject<object>();
 
             _invoker = GetInvoker(_filter);
 
-            _ignite = reader0.Marshaller.Ignite;
+            _ignite = reader.Marshaller.Ignite;
 
             ResourceProcessor.Inject(_filter, _ignite);
         }
