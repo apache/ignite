@@ -106,7 +106,7 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
      * @return Internal future
      */
     protected  <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
-        return fut.chain(new C1<IgniteInternalFuture<V>, T>() {
+        C1<IgniteInternalFuture<V>, T> clos = new C1<IgniteInternalFuture<V>, T>() {
             @Override public T apply(IgniteInternalFuture<V> fut) {
                 assert IgniteFutureImpl.this.fut == fut;
 
@@ -117,7 +117,12 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
                     throw new GridClosureException(e);
                 }
             }
-        }, exec);
+        };
+
+        if (exec != null)
+            return fut.chain(clos, exec);
+
+        return fut.chain(clos);
     }
 
     /** {@inheritDoc} */

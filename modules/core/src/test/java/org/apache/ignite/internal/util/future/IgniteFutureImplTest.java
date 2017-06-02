@@ -25,8 +25,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,7 +76,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testFutureGet() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFutureImpl<String> fut = createFuture(fut0);
 
         assertFalse(fut.isDone());
 
@@ -93,7 +95,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testFutureException() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        final IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        final IgniteFutureImpl<String> fut = createFuture(fut0);
 
         assertFalse(fut.isDone());
 
@@ -103,27 +105,27 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
         fut0.onDone(err0);
 
-        IgniteException err = (IgniteException)GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Exception err = (Exception)GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 fut.get();
 
                 return null;
             }
-        }, IgniteException.class, "test error");
+        }, expectedException(), "test error");
 
-        assertEquals(err0, err.getCause());
+        assertExpectedException(err, err0);
 
         assertTrue(fut.isDone());
 
-        err = (IgniteException)GridTestUtils.assertThrows(log, new Callable<Void>() {
+        err = (Exception)GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 fut.get();
 
                 return null;
             }
-        }, IgniteException.class, null);
+        }, expectedException(), null);
 
-        assertEquals(err0, err.getCause());
+        assertExpectedException(err, err0);
     }
 
     /**
@@ -132,21 +134,21 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testFutureIgniteException() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        final IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        final IgniteFutureImpl<String> fut = createFuture(fut0);
 
         IgniteException err0 = new IgniteException("test error");
 
         fut0.onDone(err0);
 
-        IgniteException err = (IgniteException)GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Exception err = (Exception)GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 fut.get();
 
                 return null;
             }
-        }, IgniteException.class, "test error");
+        }, expectedException(), "test error");
 
-        assertEquals(err0, err);
+        assertExpectedException(err, err0);
     }
 
     /**
@@ -155,7 +157,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testListeners() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFutureImpl<String> fut = createFuture(fut0);
 
         final AtomicInteger lsnr1Cnt = new AtomicInteger();
 
@@ -200,7 +202,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         {
             GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-            IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+            IgniteFutureImpl<String> fut = createFuture(fut0);
 
             final IgniteException err0 = new IgniteException("test error");
 
@@ -213,8 +215,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                         fail();
                     }
-                    catch (IgniteException err) {
-                        assertEquals(err0, err);
+                    catch (IgniteException | CacheException err) {
+                        assertExpectedException(err, err0);
 
                         passed.set(true);
                     }
@@ -231,7 +233,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         {
             GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-            IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+            IgniteFutureImpl<String> fut = createFuture(fut0);
 
             final IgniteCheckedException err0 = new IgniteCheckedException("test error");
 
@@ -244,8 +246,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                         fail();
                     }
-                    catch (IgniteException err) {
-                        assertEquals(err0, err.getCause());
+                    catch (IgniteException | CacheException err) {
+                        assertExpectedException(err, err0);
 
                         passed.set(true);
                     }
@@ -266,7 +268,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testAsyncListeners() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFutureImpl<String> fut = createFuture(fut0);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 
@@ -284,13 +286,21 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
         assert latch1.await(1, TimeUnit.SECONDS) : latch1.getCount();
 
-        final CountDownLatch latch2 = new CountDownLatch(1);
+        checkAsyncListener(fut);
+        checkAsyncListener(createFuture(new GridFinishedFuture<>("test")));
+    }
 
-        IgniteInClosure<? super IgniteFuture<String>> lsnr2 = createAsyncListener(latch2, CUSTOM_THREAD_NAME, null);
+    /**
+     * @param fut Future.
+     */
+    private void checkAsyncListener(IgniteFutureImpl<String> fut) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
 
-        fut.listenAsync(lsnr2, customExec);
+        IgniteInClosure<? super IgniteFuture<String>> lsnr = createAsyncListener(latch, CUSTOM_THREAD_NAME, null);
 
-        assert latch1.await(1, TimeUnit.SECONDS) : latch2.getCount();
+        fut.listenAsync(lsnr, customExec);
+
+        assert latch.await(1, TimeUnit.SECONDS) : latch.getCount();
     }
 
     /**
@@ -307,7 +317,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     private void checkAsyncListenerOnError(Exception err0) throws InterruptedException {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFutureImpl<String> fut = createFuture(fut0);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
 
@@ -321,13 +331,22 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
         assert latch1.await(1, TimeUnit.SECONDS);
 
-        final CountDownLatch latch2 = new CountDownLatch(1);
+        checkAsyncListenerOnError(err0, fut);
+        checkAsyncListenerOnError(err0, createFuture(new GridFinishedFuture<String>(err0)));
+    }
 
-        IgniteInClosure<? super IgniteFuture<String>> lsnr2 = createAsyncListener(latch2, CUSTOM_THREAD_NAME, err0);
+    /**
+     * @param err0 Err 0.
+     * @param fut Future.
+     */
+    private void checkAsyncListenerOnError(Exception err0, IgniteFutureImpl<String> fut) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
 
-        fut.listenAsync(lsnr2, customExec);
+        IgniteInClosure<? super IgniteFuture<String>> lsnr = createAsyncListener(latch, CUSTOM_THREAD_NAME, err0);
 
-        assert latch2.await(1, TimeUnit.SECONDS);
+        fut.listenAsync(lsnr, customExec);
+
+        assert latch.await(1, TimeUnit.SECONDS);
     }
 
     /**
@@ -350,7 +369,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
                     if (err != null)
                         fail();
                 }
-                catch (IgniteException e) {
+                catch (IgniteException | CacheException e) {
                     if (err != null)
                         assertExpectedException(e, err);
                     else
@@ -369,7 +388,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testChain() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFutureImpl<String> fut = createFuture(fut0);
 
         IgniteFuture<Integer> chained = fut.chain(new C1<IgniteFuture<String>, Integer>() {
             @Override public Integer apply(IgniteFuture<String> fut) {
@@ -411,7 +430,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         {
             GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-            IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+            IgniteFutureImpl<String> fut = createFuture(fut0);
 
             final IgniteException err0 = new IgniteException("test error");
 
@@ -426,8 +445,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                         return -1;
                     }
-                    catch (IgniteException err) {
-                        assertEquals(err0, err);
+                    catch (IgniteException | CacheException err) {
+                        assertExpectedException(err, err0);
 
                         chainedPassed.set(true);
 
@@ -445,8 +464,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                         fail();
                     }
-                    catch (IgniteException err) {
-                        assertEquals(err0, err);
+                    catch (IgniteException | CacheException err) {
+                        assertExpectedException(err, err0);
 
                         lsnrPassed.set(true);
                     }
@@ -466,8 +485,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                 fail();
             }
-            catch (IgniteException err) {
-                assertEquals(err0, err);
+            catch (IgniteException | CacheException err) {
+                assertExpectedException(err, err0);
             }
 
             try {
@@ -475,15 +494,15 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                 fail();
             }
-            catch (IgniteException err) {
-                assertEquals(err0, err);
+            catch (IgniteException | CacheException err) {
+                assertExpectedException(err, err0);
             }
         }
 
         {
             GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-            IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+            IgniteFutureImpl<String> fut = createFuture(fut0);
 
             final IgniteCheckedException err0 = new IgniteCheckedException("test error");
 
@@ -498,8 +517,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                         return -1;
                     }
-                    catch (IgniteException err) {
-                        assertEquals(err0, err.getCause());
+                    catch (IgniteException | CacheException err) {
+                        assertExpectedException(err, err0);
 
                         chainedPassed.set(true);
 
@@ -517,8 +536,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                         fail();
                     }
-                    catch (IgniteException err) {
-                        assertEquals(err0, err.getCause());
+                    catch (IgniteException | CacheException err) {
+                        assertExpectedException(err, err0);
 
                         lsnrPassed.set(true);
                     }
@@ -538,8 +557,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                 fail();
             }
-            catch (IgniteException err) {
-                assertEquals(err0, err.getCause());
+            catch (IgniteException | CacheException err) {
+                assertExpectedException(err, err0);
             }
 
             try {
@@ -547,8 +566,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                 fail();
             }
-            catch (IgniteException err) {
-                assertEquals(err0, err.getCause());
+            catch (IgniteException | CacheException err) {
+                assertExpectedException(err, err0);
             }
         }
     }
@@ -559,28 +578,38 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testChainAsync() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFuture<String> fut = createFuture(fut0);
 
-        IgniteFuture<Integer> chained1 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
+        C1<IgniteFuture<String>, Integer> chainClos = new C1<IgniteFuture<String>, Integer>() {
             @Override public Integer apply(IgniteFuture<String> fut) {
                 assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
 
                 return Integer.valueOf(fut.get());
             }
-        }, customExec);
+        };
+
+        IgniteFuture<Integer> chained1 = fut.chainAsync(chainClos, customExec);
 
         assertFalse(chained1.isDone());
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        chained1.listen(new CI1<IgniteFuture<Integer>>() {
+        class TestClosure implements CI1<IgniteFuture<Integer>> {
+            private final CountDownLatch latch;
+
+            private TestClosure(CountDownLatch latch) {
+                this.latch = latch;
+            }
+
             @Override public void apply(IgniteFuture<Integer> fut) {
                 assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
                 assertEquals(10, (int)fut.get());
 
                 latch.countDown();
             }
-        });
+        }
+
+        chained1.listen(new TestClosure(latch));
 
         fut0.onDone("10");
 
@@ -596,6 +625,23 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         assertTrue(fut.isDone());
 
         assertEquals("10", fut.get());
+
+        // Test finished future
+        GridFinishedFuture<String> ffut0 = new GridFinishedFuture<>("10");
+
+        CountDownLatch latch1 = new CountDownLatch(1);
+
+        IgniteFuture<Integer> chained2 = createFuture(ffut0).chainAsync(chainClos, customExec);
+
+        chained2.listen(new TestClosure(latch1));
+
+        chained2.get(100, TimeUnit.MILLISECONDS);
+
+        assertTrue(chained2.isDone());
+
+        assertEquals(10, (int)chained2.get());
+
+        assert latch1.await(100, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -604,6 +650,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     public void testChainAsyncOnError() throws Exception {
         checkChainedOnError(new IgniteException("Test exception"));
         checkChainedOnError(new IgniteCheckedException("Test checked exception"));
+        checkChainedOnErrorFinishedFuture(new IgniteException("Test exception"));
+        checkChainedOnErrorFinishedFuture(new IgniteCheckedException("Test checked exception"));
     }
 
     /**
@@ -613,7 +661,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     private void checkChainedOnError(final Exception err) throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
-        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+        IgniteFutureImpl<String> fut = createFuture(fut0);
 
         // Chain callback will be invoked in specific executor.
         IgniteFuture<Integer> chained1 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
@@ -625,7 +673,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                     fail();
                 }
-                catch (IgniteException e) {
+                catch (IgniteException | CacheException e) {
                     assertExpectedException(e, err);
 
                     throw e;
@@ -649,7 +697,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                     fail();
                 }
-                catch (IgniteException e) {
+                catch (IgniteException | CacheException e) {
                     assertExpectedException(e, err);
                 }
                 finally {
@@ -670,6 +718,40 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param err Err.
+     */
+    private void checkChainedOnErrorFinishedFuture(final Exception err) throws Exception {
+        IgniteFutureImpl<String> fut = createFuture(new GridFinishedFuture<String>(err));
+
+        // Chain callback will be invoked in specific executor.
+        IgniteFuture<Integer> chained1 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
+            @Override public Integer apply(IgniteFuture<String> fut) {
+                assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
+
+                try {
+                    fut.get();
+
+                    fail();
+                }
+                catch (IgniteException e) {
+                    assertExpectedException(e, err);
+
+                    throw e;
+                }
+
+                return -1;
+            }
+        }, customExec);
+
+
+        assertExceptionThrown(err, chained1);
+        assertExceptionThrown(err, fut);
+
+        assertTrue(chained1.isDone());
+        assertTrue(fut.isDone());
+    }
+
+    /**
      * @param err Expected exception.
      * @param fut Future.
      */
@@ -679,20 +761,20 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteException e) {
+        catch (IgniteException | CacheException e) {
             assertExpectedException(e, err);
         }
     }
 
     /**
      * @param e Actual exception.
-     * @param err Expected exception.
+     * @param exp Expected exception.
      */
-    private void assertExpectedException(IgniteException e, Exception err) {
-        if (err instanceof IgniteException)
-            assertEquals(err, e);
+    protected void assertExpectedException(Exception e, Exception exp) {
+        if (exp instanceof IgniteException)
+            assertEquals(exp, e);
         else
-            assertEquals(err, e.getCause());
+            assertEquals(exp, e.getCause());
     }
 
     /**
@@ -708,5 +790,19 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
                 return t;
             }
         });
+    }
+
+    /**
+     * @param fut Future.
+     */
+    protected <V> IgniteFutureImpl<V> createFuture(IgniteInternalFuture<V> fut) {
+        return new IgniteFutureImpl<>(fut);
+    }
+
+    /**
+     *
+     */
+    protected Class<? extends Exception> expectedException() {
+        return IgniteException.class;
     }
 }

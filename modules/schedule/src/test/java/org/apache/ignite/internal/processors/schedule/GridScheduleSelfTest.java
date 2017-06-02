@@ -41,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Test for task scheduler.
@@ -153,6 +154,21 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 }
             });
 
+            final SchedulerFuture<?> fut0 = fut;
+
+            //noinspection ThrowableNotThrown
+            assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    fut0.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> fut) {
+                            // No-op
+                        }
+                    }, null);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
             fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> fut) {
                     assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
@@ -160,6 +176,21 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                     notifyCnt.incrementAndGet();
                 }
             }, exec);
+
+            //noinspection ThrowableNotThrown
+            assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    fut0.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
+                        @Override public String apply(IgniteFuture<?> fut) {
+                            // No-op
+
+                            return null;
+                        }
+                    }, null);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
 
             IgniteFuture<String> chained1 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
                 @Override public String apply(IgniteFuture<?> fut) {

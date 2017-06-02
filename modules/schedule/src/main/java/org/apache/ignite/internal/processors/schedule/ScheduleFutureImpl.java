@@ -582,6 +582,9 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
     /** {@inheritDoc} */
     @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr, Executor exec) {
+        A.notNull(lsnr, "lsnr");
+        A.notNull(exec, "exec");
+
         listen(lsnr, exec);
     }
 
