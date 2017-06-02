@@ -822,7 +822,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             AffinityTopologyVersion rmtTopVer =
                 lastFut != null ? lastFut.topologyVersion() : AffinityTopologyVersion.NONE;
 
-            Collection<ClusterNode> rmts = CU.remoteNodes(cctx, AffinityTopologyVersion.NONE);
+            Collection<ClusterNode> rmts = CU.remoteNodes(cctx, rmtTopVer);
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());
