@@ -1009,7 +1009,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             cctx.versions().last(),
             true);
 
-        Map<Object, T2<Integer,GridPartitionStateMap>> dupData = new HashMap<>();
+        Map<Object, T2<Integer, GridPartitionStateMap>> dupData = new HashMap<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
