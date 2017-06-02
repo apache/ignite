@@ -369,13 +369,15 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 5);
                 byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
 
+                boolean negative = data[0] < 0;
+
+                if (negative)
+                    data[0] &= 0x7F;
+
                 BigInteger intVal = new BigInteger(data);
 
-                if (scale < 0) {
-                    scale &= 0x7FFFFFFF;
-
+                if (negative)
                     intVal = intVal.negate();
-                }
 
                 val = new BigDecimal(intVal, scale);
 
