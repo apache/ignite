@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
-    using System;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
