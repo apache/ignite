@@ -192,6 +192,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         startGrids(3);
 
+        awaitPartitionMapExchange();
+
         node = ignite(0);
 
         checkPersons(caches, node);
@@ -427,6 +429,8 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         stopAllGrids();
 
         node = startGrids(nodes);
+
+        awaitPartitionMapExchange();
 
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
