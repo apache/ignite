@@ -604,7 +604,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets values for IN expression.
         /// </summary>
-        public static IEnumerable<object> GetInValues(Expression fromExpression)
+        public static IEnumerable<object> GetInValues(Expression fromExpression, bool allowParameterExpression = false)
         {
             IEnumerable result;
             switch (fromExpression.NodeType)
@@ -625,8 +625,13 @@ namespace Apache.Ignite.Linq.Impl
                         .Select(ExpressionWalker.EvaluateExpression<object>);
                     break;
                 case ExpressionType.Parameter:
-                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
-                    throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
+                    if (!allowParameterExpression)
+                    {
+                        // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
+                        throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
+                    }
+                    result = ExpressionWalker.EvaluateExpression<IEnumerable<int>>(fromExpression);
+                    break;
                 default:
                     result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
                     break;

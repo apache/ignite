@@ -605,7 +605,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Join with local collection passed as parameter
 
-            var qry5 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc,
+            var qry5 = CompiledQuery.Compile((int[] lc) => persons.Join(lc,
                 pe => pe.Value.OrganizationId,
                 i => i,
                 (pe, o) => pe
@@ -613,15 +613,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(PersonCount, qry5(allOrganizationIds).Count());
 
-            // Outer join
-            var qry6 = persons.Join(new[] {-1, -2}.DefaultIfEmpty(),
-                    pe => pe.Value.OrganizationId,
-                    i => i,
-                    (pe, o) => pe
-                )
-                .ToArray();
 
-            Assert.AreEqual(PersonCount, qry6.Length);
+            //var qry6 = CompiledQuery.Compile((IEnumerable<int> lc) => persons.Join(lc.DefaultIfEmpty(),
+            //    pe => pe.Value.OrganizationId,
+            //    i => i,
+            //    (pe, o) => pe
+            //));
+
+            //Assert.AreEqual(PersonCount, qry6(allOrganizationIds).Count());
+
+            //// Outer join
+            //var qry6 = persons.Join(new[] {-1, -2}.DefaultIfEmpty(),
+            //        pe => pe.Value.OrganizationId,
+            //        i => i,
+            //        (pe, o) => pe
+            //    )
+            //    .ToArray();
+
+            //Assert.AreEqual(PersonCount, qry6.Length);
         }
 
         /// <summary>

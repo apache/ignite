@@ -38,9 +38,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause)
+        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause, bool throwWhenNotFound = true)
         {
-            return GetCacheQueryable(fromClause.FromExpression);
+            return GetCacheQueryable(fromClause.FromExpression, throwWhenNotFound);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
-                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause);
+                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause, throwWhenNotFound);
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetCacheQueryable(fromSource);
+                    return GetCacheQueryable(fromSource, throwWhenNotFound);
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 

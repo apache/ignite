@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -230,7 +231,7 @@ namespace Apache.Ignite.Linq
             // Get default parameter values.
             var paramValues = expression.Parameters
                 .Select(x => x.Type)
-                .Select(x => x.IsValueType ? Activator.CreateInstance(x) : null)
+                .Select(x => x.IsValueType ? Activator.CreateInstance(x) : GetValue(x))
                 .ToArray();
 
             // Invoke the delegate to obtain the cacheQueryable.
@@ -242,6 +243,37 @@ namespace Apache.Ignite.Linq
                 throw GetInvalidQueryException(queryable);
 
             return cacheQueryable.CompileQuery<T>(expression);
+        }
+
+
+        private static object GetValue(Type type)
+        {
+            if (type == typeof(string))
+                return null;
+
+            Type itemType = null;
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                itemType = type.GetGenericArguments()[0];
+            }
+            else
+            {
+                var implementedIEnumerableType = type.GetInterfaces()
+                    .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+                if (implementedIEnumerableType == null)
+                {
+                    throw new NotSupportedException("Not supported collection type for Join with local collection: " + type.FullName);
+                }
+
+                itemType = implementedIEnumerableType.GetGenericArguments()[0];
+            }
+
+            if (itemType == null)
+                return null;
+
+            var emptyEnumerable = typeof(Enumerable).GetMethod("Empty").MakeGenericMethod(new[] {itemType}).Invoke(null, null);
+            return emptyEnumerable;
         }
 
         /// <summary>
