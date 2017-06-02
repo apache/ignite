@@ -73,7 +73,7 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /** Test sensitive mode. */
-    public static final boolean TEST_SENSITIVE = true;//System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
+    public static final boolean TEST_SENSITIVE = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
 
     /** Prefix for all suspicious sensitive data. */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
