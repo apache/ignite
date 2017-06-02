@@ -161,9 +161,10 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
                             cmd.tableName());
                 }
-                else
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateCacheName(),
-                        cmd.ifNotExists());
+                else {
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateName(),
+                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
