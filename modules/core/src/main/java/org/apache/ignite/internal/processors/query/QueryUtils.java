@@ -1019,22 +1019,41 @@ public class QueryUtils {
     }
 
     /**
+     * Check given {@link QueryEntity} for conflicts with any query entities existing in collection of
+     * {@link DynamicCacheDescriptor}s and belonging to the same schema.
      *
-     * @param schema
-     * @param newEntity
-     * @param descs
-     * @param exClo
-     * @return
+     * @param schema Schema name.
+     * @param newEntity Proposed entity.
+     * @param descs Cache descriptors.
+     * @param exClo Closure to convert error message to the exception handled by calling code.
+     * @return {@link Exception} returned by {@code exClo} describing found conflict or {@code null} if none found.
      */
     public static Exception checkQueryEntityConflicts(String schema, QueryEntity newEntity,
         Collection<DynamicCacheDescriptor> descs, IgniteClosure<String, Exception> exClo) {
+        Set<String> idxNames = new HashSet<>();
+
+        if (!F.isEmpty(newEntity.getIndexes()))
+            for (QueryIndex idx : newEntity.getIndexes())
+                idxNames.add(idx.getName());
+
         for (DynamicCacheDescriptor desc : descs) {
             if (!F.eq(schema, desc.cacheConfiguration().getSqlSchema()))
                 continue;
 
             for (QueryEntity entity : desc.schema().entities()) {
-                if (!F.eq(entity.getTableName(), newEntity.getTableName()))
+                if (!F.eq(entity.getTableName(), newEntity.getTableName())) {
+                    if (!F.isEmpty(entity.getIndexes())) {
+                        for (QueryIndex idx : entity.getIndexes())
+                            if (idxNames.contains(idx.getName()))
+                                return exClo.apply("Index name must be unique in schema scope [schemaName=" + schema +
+                                    ", indexName=" + idx.getName() + ", tableName=" + entity.getTableName() + ", " +
+                                    "newTableName=" + newEntity.getTableName() + ']');
+                    }
+
+                    // The rest of the check is for entities corresponding to the same table.
                     continue;
+                }
+
 
                 Exception res;
 
@@ -1128,13 +1147,13 @@ public class QueryUtils {
     /**
      * Compare values of a single field and construct exception using given closure and base error message, if needed.
      * @param schema Schema name.
-     * @param tblName
-     * @param oldVal
-     * @param newVal
-     * @param baseErrMsg
-     * @param exClo
-     * @param <T>
-     * @return
+     * @param tblName Table name.
+     * @param oldVal Field value in existing {@link QueryEntity}.
+     * @param newVal Field value in new, validated {@link QueryEntity}.
+     * @param baseErrMsg Error message specific to this field, will be used to form resulting error message.
+     * @param exClo Closure to wrap error message into {@link Exception}.
+     * @param <T> Type of objects being compared.
+     * @return {@link Exception} returned by closure, or {@code null} if given values match.
      */
     private static <T> Exception check(String schema, String tblName, T oldVal, T newVal, String baseErrMsg,
         IgniteClosure<String, Exception> exClo) {
