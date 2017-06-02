@@ -92,10 +92,10 @@ public class JdbcThinStatement implements Statement {
 
     /**
      * @param sql Sql query.
-     * @return Result set.
+     *
      * @throws SQLException Onj error.
      */
-    protected JdbcThinResultSet execute0(String sql) throws SQLException {
+    protected void execute0(String sql) throws SQLException {
         ensureNotClosed();
 
         if (rs != null) {
@@ -117,8 +117,6 @@ public class JdbcThinStatement implements Statement {
 
             rs = new JdbcThinResultSet(this, res.getQueryId(), pageSize, res.last(), res.items(),
                 res.isQuery(), res.updateCount());
-
-            return rs;
         }
         catch (IOException e) {
             conn.close();
@@ -228,7 +226,7 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        rs = execute0(sql);
+        execute0(sql);
 
         return rs.isQuery();
     }
