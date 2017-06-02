@@ -359,14 +359,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName));
             }
-            else if (!cacheDesc.sql()) {
-                if (log.isDebugEnabled())
-                    log.debug("Received schema propose discovery message, but cache was not created through " +
-                        "CREATE TABLE command (will report error) [opId=" + opId + ", msg=" + msg + ']');;
-
-                msg.onError(new SchemaOperationException("CREATE INDEX and DROP INDEX operations are only allowed on " +
-                    "caches created with CREATE TABLE command [cacheName=" + cacheName + ']'));
-            }
             else {
                 CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
@@ -602,8 +594,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean nop = false;
 
         if (cacheExists) {
-            assert cacheDesc.sql();
-
             if (cacheRegistered) {
                 // If cache is started, we perform validation against real schema.
                 T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
@@ -1312,8 +1302,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateCacheName);
         }
         else if (!F.isEmpty(templateCfg.getQueryEntities())) {
-            throw new SchemaOperationException("Template cache already contains query entities which it should not " +
-                "[cacheName=" + templateCacheName + ']');
+            throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
+                templateCacheName);
         }
         else
             newCfg = new CacheConfiguration<>(templateCfg);
