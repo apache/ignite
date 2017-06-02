@@ -309,7 +309,7 @@ namespace ignite
                     LOG_MSG("\n[" << i << "] SchemaName:     " << meta[i].GetSchemaName()
                          << "\n[" << i << "] TableName:      " << meta[i].GetTableName()
                          << "\n[" << i << "] ColumnName:     " << meta[i].GetColumnName()
-                         << "\n[" << i << "] ColumnType:     " << meta[i].GetDataType());
+                         << "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(meta[i].GetDataType()));
                 }
 
                 return SqlResult::AI_SUCCESS;
