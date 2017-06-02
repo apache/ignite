@@ -1139,7 +1139,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // We use GetType() of a real object instead of typeof(T) to take advantage of 
+            // We use GetType() of a real object instead of typeof(T) to take advantage of
             // automatic Nullable'1 unwrapping.
             Type type = obj.GetType();
 
@@ -1224,7 +1224,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var schemaOffset = dataEnd - pos;
 
                 int schemaId;
-                    
+
                 var flags = desc.UserType
                     ? BinaryObjectHeader.Flag.UserType
                     : BinaryObjectHeader.Flag.None;
