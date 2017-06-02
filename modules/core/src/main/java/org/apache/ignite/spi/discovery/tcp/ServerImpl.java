@@ -6243,7 +6243,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private IgniteProductVersion clientVer;
 
-        /** period of time after which client node which does not send heartbeat messages, is considered dead.
+        /**
+         * Period of time after which client node which does not send heartbeat messages, is considered dead.
          * Measured in milliseconds
          */
         private long heartBeatTimeOut;
@@ -6321,7 +6322,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (period >= heartBeatTimeOut) {
                 if (log.isInfoEnabled())
-                    log.info("### No heartbeat message from node:" + clientNodeId + "; timeOut=" + heartBeatTimeOut + "; period=" + period);
+                    log.info("Heartbeat timeout for node:" + clientNodeId + "; timeOut=" + heartBeatTimeOut + "; period=" + period);
 
                 TcpDiscoveryAbstractMessage msg = new TcpDiscoveryNodeLeftMessage(clientNodeId);
 

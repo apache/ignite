@@ -884,7 +884,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 if (log.isDebugEnabled())
                     log.debug("*** Send heartbeat message from node:    "+msg.creatorNodeId());
-
             }
         }
     }
