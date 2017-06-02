@@ -93,15 +93,30 @@ public final class GridReentrantRWLock {
     /**
      */
     private static final class Sync extends AbstractQueuedSynchronizer {
+        /** */
+        private static final long serialVersionUID = 0L;
 
+        /**
+         * @param state State.
+         * @return Read locks.
+         */
         private static int readLocks(int state) {
             return state & 0xFFFF;
         }
 
+        /**
+         * @param state State.
+         * @return Write locks.
+         */
         private static int writeLocks(int state) {
             return (state >>> 16) & 0xFFFF;
         }
 
+        /**
+         * @param readLocks Read locks.
+         * @param writeLocks Write locks.
+         * @return State.
+         */
         private static int state(int readLocks, int writeLocks) {
             assert readLocks >= 0 && readLocks <= 0xFFFF &&
                 writeLocks >= 0 && writeLocks <= 0xFFFF;
