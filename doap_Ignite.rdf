@@ -44,6 +44,8 @@
     <category rdf:resource="http://projects.apache.org/category/sql" />
     <category rdf:resource="http://projects.apache.org/category/cloud" />
     <category rdf:resource="http://projects.apache.org/category/database" />
+    <category rdf:resource="http://projects.apache.org/category/distributed-sql-database" />
+    <category rdf:resource="http://projects.apache.org/category/data-management-platform" />
     <category rdf:resource="http://projects.apache.org/category/hadoop" />
     <category rdf:resource="http://projects.apache.org/category/network-server" />
     <category rdf:resource="http://projects.apache.org/category/network-client" />

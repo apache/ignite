@@ -67,7 +67,7 @@ public class GridLuceneIndex implements AutoCloseable {
     public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
 
     /** */
-    private final String spaceName;
+    private final String cacheName;
 
     /** */
     private final GridQueryTypeDescriptor type;
@@ -106,14 +106,14 @@ public class GridLuceneIndex implements AutoCloseable {
      *
      * @param ctx Kernal context.
      * @param mem Unsafe memory.
-     * @param spaceName Space name.
+     * @param cacheName Cache name.
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
     public GridLuceneIndex(GridKernalContext ctx, @Nullable GridUnsafeMemory mem,
-        @Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
+        @Nullable String cacheName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
         this.ctx = ctx;
-        this.spaceName = spaceName;
+        this.cacheName = cacheName;
         this.type = type;
 
         dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem);
@@ -151,7 +151,7 @@ public class GridLuceneIndex implements AutoCloseable {
         if (ctx == null)
             return null;
 
-        return ctx.cache().internalCache(spaceName).context().cacheObjectContext();
+        return ctx.cache().internalCache(cacheName).context().cacheObjectContext();
     }
 
     /**
@@ -293,7 +293,7 @@ public class GridLuceneIndex implements AutoCloseable {
         IgniteBiPredicate<K, V> fltr = null;
 
         if (filters != null)
-            fltr = filters.forSpace(spaceName);
+            fltr = filters.forCache(cacheName);
 
         return new It<>(reader, searcher, docs.scoreDocs, fltr);
     }
@@ -400,7 +400,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 ClassLoader ldr = null;
 
                 if (ctx != null && ctx.deploy().enabled())
-                    ldr = ctx.cache().internalCache(spaceName).context().deploy().globalLoader();
+                    ldr = ctx.cache().internalCache(cacheName).context().deploy().globalLoader();
 
                 K k = unmarshall(doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
 

@@ -101,6 +101,10 @@ public class IgniteBenchmarkArguments {
     private boolean storeEnabled;
 
     /** */
+    @Parameter(names = {"-cwd", "--cleanWorkDirectory"}, description = "Clean Work Directory")
+    private boolean cleanWorkDirectory = false;
+
+    /** */
     @Parameter(names = {"-wb", "--writeBehind"}, description = "Enable or disable writeBehind for cache store")
     private boolean writeBehind;
 
@@ -419,6 +423,13 @@ public class IgniteBenchmarkArguments {
      */
     public String additionalCachesName() {
         return additionalCachesName;
+    }
+
+    /**
+     * @return Flag for cleaning working directory.
+     */
+    public boolean cleanWorkDirectory() {
+        return cleanWorkDirectory;
     }
 
     /**
