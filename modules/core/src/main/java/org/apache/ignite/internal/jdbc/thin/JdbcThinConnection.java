@@ -55,7 +55,7 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
-    /** Conection URL. */
+    /** Connection URL. */
     private String url;
 
     /** Schema name. */
@@ -91,6 +91,7 @@ public class JdbcThinConnection implements Connection {
         assert props != null;
 
         this.url = url;
+
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
@@ -272,7 +273,7 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return null;
+        return new JdbcThinDatabaseMetadata(this);
     }
 
     /** {@inheritDoc} */

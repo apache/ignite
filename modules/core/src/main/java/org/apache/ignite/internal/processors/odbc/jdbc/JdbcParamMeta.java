@@ -79,6 +79,62 @@ public class JdbcParamMeta implements JdbcRawBinarylizable {
         mode = meta.getParameterMode(order);
     }
 
+    /**
+     * @return Nullable mode.
+     */
+    public int isNullable() {
+        return isNullable;
+    }
+
+    /**
+     * @return Signed flag.
+     */
+    public boolean isSigned() {
+        return signed;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return precision;
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return scale;
+    }
+
+    /**
+     * @return SQL type.
+     */
+    public int type() {
+        return type;
+    }
+
+    /**
+     * @return SQL type name.
+     */
+    public String typeName() {
+        return typeName;
+    }
+
+    /**
+     * @return Type class name.
+     */
+    public String typeClass() {
+        return typeClass;
+    }
+
+    /**
+     * @return Mode.
+     */
+    public int mode() {
+        return mode;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         writer.writeInt(isNullable);

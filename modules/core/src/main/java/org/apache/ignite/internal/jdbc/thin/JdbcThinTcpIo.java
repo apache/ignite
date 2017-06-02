@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -47,7 +49,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -275,13 +276,24 @@ public class JdbcThinTcpIo {
      * @param tbl Table
      * @param unique Is Index unique.
      * @param approximate Request approximate index.
+     * @return Result.
      * @throws IOException On error.
      * @throws IgniteCheckedException On error.
-     * @return Result.
      */
     public JdbcMetaIndexesResult indexMeta(String catalog, String schema, String tbl,
         boolean unique, boolean approximate) throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcMetaIndexesRequest(catalog, schema, tbl, unique, approximate), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schema Schema.
+     * @param sql SQL query.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaParamsResult parametersMeta(String schema, String sql) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaParamsRequest(schema, sql), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
