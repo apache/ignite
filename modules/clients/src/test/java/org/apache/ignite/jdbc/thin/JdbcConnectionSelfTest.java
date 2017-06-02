@@ -30,6 +30,7 @@ import java.sql.SQLWarning;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -1438,18 +1439,55 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSetClientInfo() throws Exception {
+    public void testGetSetClientInfoPair() throws Exception {
         final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
 
         conn.setClientInfo("name", "val");
 
+        //
+        conn.getClientInfo("name");
+
         // TODO: ?????????????????
     }
 
-    // void setClientInfo(String name, String value)
-    // void setClientInfo(Properties properties)
-    // String getClientInfo(String name)
-    // Properties getClientInfo()
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetSetClientInfoProperties() throws Exception {
+        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+
+        final Properties props = new Properties();
+
+        //
+        conn.setClientInfo(props);
+
+        //
+        conn.getClientInfo();
+
+        conn.close();
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return conn.getClientInfo();
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.setClientInfo(props);
+
+                    return null;
+                }
+            },
+            SQLException.class,
+            "Connection is closed"
+        );
+    }
 
     /**
      * @throws Exception If failed.
