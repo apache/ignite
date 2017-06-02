@@ -1,10 +1,6 @@
 $ver = (gi ..\Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
 
-rmdir nupkg -Force -Recurse
-rmdir pkg -Force -Recurse
-
-mkdir nupkg
-mkdir pkg
+rmdir packages -Force -Recurse
 
 # Replace versions in project files
 (Get-Content packages.config) `
