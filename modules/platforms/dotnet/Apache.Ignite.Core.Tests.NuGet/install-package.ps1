@@ -1,10 +1,3 @@
-$ng = (Get-Item .).FullName + '\nuget.exe'
-
-if (!(Test-Path $ng)) {
-    $ng = 'nuget'
-}
-
-$cfg = 'Release'
 $ver = (gi ..\Apache.Ignite.Core\bin\$cfg\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
 
 rmdir nupkg -Force -Recurse
@@ -12,11 +5,6 @@ rmdir pkg -Force -Recurse
 
 mkdir nupkg
 mkdir pkg
-
-# Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present).
-ls ..\*.nuspec -Recurse  `
-    | % { If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
-    | % { & $ng pack $_ -Prop Configuration=$cfg -Version $ver -Prop Platform=AnyCPU -OutputDirectory nupkg }
 
 # Replace versions in project files
 (Get-Content packages.config) `
