@@ -45,7 +45,7 @@ namespace ignite
 
             const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
-            const std::string Configuration::DefaultValue::schema   = "public";
+            const std::string Configuration::DefaultValue::schema   = "PUBLIC";
             const std::string Configuration::DefaultValue::address  = "";
             const std::string Configuration::DefaultValue::server   = "";
 

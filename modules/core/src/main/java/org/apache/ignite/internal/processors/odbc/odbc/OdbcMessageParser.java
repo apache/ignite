@@ -115,11 +115,11 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             }
 
             case OdbcRequest.META_COLS: {
-                String cache = reader.readString();
+                String schema = reader.readString();
                 String table = reader.readString();
                 String column = reader.readString();
 
-                res = new OdbcQueryGetColumnsMetaRequest(cache, table, column);
+                res = new OdbcQueryGetColumnsMetaRequest(schema, table, column);
 
                 break;
             }
@@ -136,10 +136,10 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             }
 
             case OdbcRequest.META_PARAMS: {
-                String cacheName = reader.readString();
+                String schema = reader.readString();
                 String sqlQuery = reader.readString();
 
-                res = new OdbcQueryGetParamsMetaRequest(cacheName, sqlQuery);
+                res = new OdbcQueryGetParamsMetaRequest(schema, sqlQuery);
 
                 break;
             }
