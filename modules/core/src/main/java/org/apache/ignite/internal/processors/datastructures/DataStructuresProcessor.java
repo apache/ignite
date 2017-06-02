@@ -61,6 +61,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.CacheGroupInfrastructure;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -153,7 +154,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private GridCacheContext dsCacheCtx;
 
     /** Atomic data structures configuration. */
-    private final AtomicConfiguration atomicCfg;
+    private final AtomicConfiguration defaultAtomicCfg;
 
     /** */
     private IgniteInternalCache<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
@@ -198,7 +199,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
 
-        atomicCfg = ctx.config().getAtomicConfiguration();
+        defaultAtomicCfg = ctx.config().getAtomicConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -233,7 +234,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert utilityCache != null;
 
-        if (atomicCfg != null) {
+        if (defaultAtomicCfg != null) {
             IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
 
             assert atomicsCache != null;
@@ -415,8 +416,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         return null;
 
                     // We should use offset because we already reserved left side of range.
-                    long off = atomicCfg.getAtomicSequenceReserveSize() > 1 ?
-                        atomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
+                    long off = defaultAtomicCfg.getAtomicSequenceReserveSize() > 1 ?
+                        defaultAtomicCfg.getAtomicSequenceReserveSize() - 1 : 1;
 
                     long upBound;
                     long locCntr;
@@ -446,7 +447,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         key,
                         seqView,
                         dsCacheCtx,
-                        atomicCfg.getAtomicSequenceReserveSize(),
+                        defaultAtomicCfg.getAtomicSequenceReserveSize(),
                         locCntr,
                         upBound);
 
@@ -467,7 +468,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, ATOMIC_SEQ, null), create, IgniteAtomicSequence.class);
+        }, new DataStructureInfo(name, null, ATOMIC_SEQ, null), create, IgniteAtomicSequence.class);
     }
 
     /**
@@ -566,7 +567,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, ATOMIC_LONG, null), create, IgniteAtomicLong.class);
+        }, new DataStructureInfo(name, null, ATOMIC_LONG, null), create, IgniteAtomicLong.class);
     }
 
     /**
@@ -583,7 +584,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
+        int groupId = CU.cacheId(dsInfo.groupName != null ? dsInfo.groupName : CU.ATOMICS_CACHE_NAME);
+
+        CacheGroupInfrastructure grp = ctx.cache().cacheGroup(groupId);
+
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
+
+//        if (!create && (grp == null || !grp.hasCache(dsInfo.name)))
+//            return null;
 
         if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
             return null;
@@ -669,7 +677,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         if (dsMap == null || !dsMap.containsKey(name))
             return;
 
-        final DataStructureInfo dsInfo = new DataStructureInfo(name, type, null);
+        final DataStructureInfo dsInfo = new DataStructureInfo(name, null, type, null);
 
         IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, false);
 
@@ -719,6 +727,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     @SuppressWarnings("unchecked")
     public final <T> IgniteAtomicReference<T> atomicReference(final String name,
+        @Nullable AtomicConfiguration cfg,
         final T initVal,
         final boolean create)
         throws IgniteCheckedException
@@ -727,7 +736,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         awaitInitialization();
 
-        checkAtomicsConfiguration();
+        if (cfg == null) {
+            checkAtomicsConfiguration();
+
+            cfg = defaultAtomicCfg;
+        }
 
         startQuery();
 
@@ -779,7 +792,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, ATOMIC_REF, null), create, IgniteAtomicReference.class);
+        }, new DataStructureInfo(name, null, ATOMIC_REF, null), create, IgniteAtomicReference.class);
     }
 
     /**
@@ -881,7 +894,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, ATOMIC_STAMPED, null), create, IgniteAtomicStamped.class);
+        }, new DataStructureInfo(name, null, ATOMIC_STAMPED, null), create, IgniteAtomicStamped.class);
     }
 
     /**
@@ -940,6 +953,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
+            null,
             QUEUE,
             cfg != null ? new QueueInfo(cacheName, cfg.isCollocated(), cap) : null);
 
@@ -1225,7 +1239,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, COUNT_DOWN_LATCH, null), create, GridCacheCountDownLatchEx.class);
+        }, new DataStructureInfo(name, null, COUNT_DOWN_LATCH, null), create, GridCacheCountDownLatchEx.class);
     }
 
     /**
@@ -1346,7 +1360,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, SEMAPHORE, null), create, GridCacheSemaphoreEx.class);
+        }, new DataStructureInfo(name, null, SEMAPHORE, null), create, GridCacheSemaphoreEx.class);
     }
 
     /**
@@ -1463,7 +1477,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, REENTRANT_LOCK, null), create, GridCacheLockEx.class);
+        }, new DataStructureInfo(name, null, REENTRANT_LOCK, null), create, GridCacheLockEx.class);
     }
 
     /**
@@ -1680,6 +1694,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             cacheName = compatibleConfiguration(cfg);
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
+            null,
             SET,
             cfg != null ? new CollectionInfo(cacheName, cfg.isCollocated()) : null);
 
@@ -1769,7 +1784,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @throws IgniteException If atomics configuration is not provided.
      */
     private void checkAtomicsConfiguration() throws IgniteException {
-        if (atomicCfg == null)
+        if (defaultAtomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide IgniteAtomicConfiguration.");
     }
@@ -2040,6 +2055,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         private String name;
 
         /** */
+        @Nullable private String groupName;
+
+        /** */
         private DataStructureType type;
 
         /** */
@@ -2057,8 +2075,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
          * @param type Data structure type.
          * @param info Data structure information.
          */
-        DataStructureInfo(String name, DataStructureType type, Externalizable info) {
+        DataStructureInfo(String name, @Nullable String groupName, DataStructureType type, Externalizable info) {
             this.name = name;
+            this.groupName = groupName;
             this.type = type;
             this.info = info;
         }
@@ -2105,6 +2124,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, name);
+            U.writeString(out, groupName);
             U.writeEnum(out, type);
             out.writeObject(info);
         }
@@ -2112,6 +2132,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             name = U.readString(in);
+            groupName = U.readString(in);
             type = DataStructureType.fromOrdinal(in.readByte());
             info = in.readObject();
         }

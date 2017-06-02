@@ -365,7 +365,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().atomicReference(t.get2(), null, false);
+            return t.get1().dataStructures().atomicReference(t.get2(), null, null, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
