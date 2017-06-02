@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -395,11 +397,17 @@ public class GridSqlQueryParser {
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
 
     /** */
-    private static final String PARAM_CACHE_TEMPLATE = "cacheTemplate";
+    private static final String PARAM_TEMPLATE = "TEMPLATE";
+
+    /** */
+    private static final String PARAM_BACKUPS = "BACKUPS";
+
+    /** */
+    private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** Names of the params that need to be present in WITH clause of CREATE TABLE. */
     private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
-        PARAM_CACHE_TEMPLATE
+        PARAM_TEMPLATE
     };
 
     /** */
@@ -944,7 +952,11 @@ public class GridSqlQueryParser {
 
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
-        List<String> extraParams = data.tableEngineParams;
+        List<String> extraParams = data.tableEngineParams != null ? new ArrayList<String>() : null;
+
+        if (data.tableEngineParams != null)
+            for (String s : data.tableEngineParams)
+                extraParams.addAll(F.asList(s.split(",")));
 
         res.params(extraParams);
 
@@ -955,24 +967,26 @@ public class GridSqlQueryParser {
                 String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
                 if (parts.length > 2)
-                    throw new IgniteSQLException("Invalid param syntax: key[=value] expected [paramStr=" + p + ']',
+                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
                         IgniteQueryErrorCode.PARSING);
 
-                String name = parts[0];
+                String name = parts[0].trim().toUpperCase();
 
-                String val = parts.length > 1 ? parts[1] : null;
+                String val = parts.length > 1 ? parts[1].trim() : null;
 
                 if (F.isEmpty(name))
-                    throw new IgniteSQLException("Invalid param syntax: no name given [paramStr=" + p + ']',
+                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
                         IgniteQueryErrorCode.PARSING);
 
-                params.put(name, val);
+                if (params.put(name, val) != null)
+                    throw new IgniteSQLException("Duplicate parameter: " + p, IgniteQueryErrorCode.PARSING);
             }
         }
 
-        for (String mandParamName : MANDATORY_CREATE_TABLE_PARAMS) {
-            if (!params.containsKey(mandParamName))
-                throw new IgniteSQLException("Mandatory param is missing [paramName=" + mandParamName + ']');
+        for (String paramName : MANDATORY_CREATE_TABLE_PARAMS) {
+            if (!params.containsKey(paramName))
+                throw new IgniteSQLException("Mandatory parameter is missing: " + paramName,
+                    IgniteQueryErrorCode.PARSING);
         }
 
         for (Map.Entry<String, String> e : params.entrySet())
@@ -1010,16 +1024,45 @@ public class GridSqlQueryParser {
         assert !F.isEmpty(name);
 
         switch (name) {
-            case PARAM_CACHE_TEMPLATE:
-                ensureParamValueNotEmpty(PARAM_CACHE_TEMPLATE, val);
+            case PARAM_TEMPLATE:
+                ensureNotEmpty(name, val);
 
-                res.templateCacheName(val);
+                res.templateName(val);
+
+                break;
+
+            case PARAM_BACKUPS:
+                ensureNotEmpty(name, val);
+
+                int backups = parseIntParam(PARAM_BACKUPS, val);
+
+                if (backups < 0)
+                    throw new IgniteSQLException("\"" + PARAM_BACKUPS + "\" cannot be negative: " + backups,
+                        IgniteQueryErrorCode.PARSING);
+
+                res.backups(backups);
+
+                break;
+
+            case PARAM_ATOMICITY:
+                ensureNotEmpty(name, val);
+
+                CacheAtomicityMode mode;
+
+                if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
+                    mode = CacheAtomicityMode.TRANSACTIONAL;
+                else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
+                    mode = CacheAtomicityMode.ATOMIC;
+                else
+                    throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
+                        "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
+
+                res.atomicityMode(mode);
 
                 break;
 
             default:
-                throw new IgniteSQLException("Unknown CREATE TABLE param [paramName=" + name + ']',
-                    IgniteQueryErrorCode.PARSING);
+                throw new IgniteSQLException("Unsupported parameter: " + name, IgniteQueryErrorCode.PARSING);
         }
     }
 
@@ -1028,10 +1071,25 @@ public class GridSqlQueryParser {
      * @param name Param name.
      * @param val Param value to check.
      */
-    private static void ensureParamValueNotEmpty(String name, String val) {
+    private static void ensureNotEmpty(String name, String val) {
         if (F.isEmpty(val))
-            throw new IgniteSQLException("No value has been given for a CREATE TABLE param [paramName=" + name + ']',
+            throw new IgniteSQLException("Parameter value cannot be empty: " + name, IgniteQueryErrorCode.PARSING);
+    }
+
+    /**
+     * Parse given value as integer, or throw an {@link IgniteSQLException} if it's not of matching format.
+     * @param name param name.
+     * @param val param value.
+     * @return parsed int value.
+     */
+    private static int parseIntParam(String name, String val) {
+        try {
+            return Integer.parseInt(val);
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteSQLException("Parameter value must be an integer [name=" + name + ", value=" + val + ']',
                 IgniteQueryErrorCode.PARSING);
+        }
     }
 
     /**
