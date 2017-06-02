@@ -15,35 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.vector;
+package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.storage.matrix.MapWrapperStorage;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 
-import java.util.Map;
-
-/**
- * Vector wrapping a given map.
- */
-public class MapWrapperVector extends AbstractVector {
-
-    /**
-     * Construct a vector wrapping given map.
-     *
-     * @param map Map to wrap.
-     */
-    public MapWrapperVector(Map<Integer, Double> map) {
-        setStorage(new MapWrapperStorage(map));
+/** */
+public class JdbcThinDynamicIndexTransactionalPartitionedSelfTest extends JdbcThinDynamicIndexAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override public Vector like(int crd) {
-        throw new UnsupportedOperationException();
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix likeMatrix(int rows, int cols) {
-        throw new UnsupportedOperationException();
+    @Override protected boolean nearCache() {
+        return false;
     }
 }

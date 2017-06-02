@@ -15,18 +15,6 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite for all tests located in org.apache.ignite.ml.clustering package.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-        KMeansDistributedClustererTest.class,
-        KMeansLocalClustererTest.class
-})
-public class ClusteringTesetSuite {
-}
+^Received response to join request \[addr=
+\[(msg(Id)?|job)=.+,\s*res=\d+\]$
+GC server mode is not enabled, this could lead to less than optimal performance on multi-core machines

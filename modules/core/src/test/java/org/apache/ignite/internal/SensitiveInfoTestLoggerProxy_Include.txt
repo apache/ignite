@@ -15,18 +15,4 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite for all tests located in org.apache.ignite.ml.clustering package.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-        KMeansDistributedClustererTest.class,
-        KMeansLocalClustererTest.class
-})
-public class ClusteringTesetSuite {
-}
+(^|[^\.-])\b(k|keys?|v|vals?|(new|old|merge|loc)Vals?|rows?|fields?|params?|args?|items?|elements?|data|obj|res|result|clause|query|qry|sqlQry|ordinal|entrySet|keys?Set|vals?Set)\b\s*=\s*(?!\{?[\w-\.\$]*\s*[\[@])(?!null\b|true\b|false\b|BinaryEnum\b|class\s|\?\s).+?($|[,\[\]])

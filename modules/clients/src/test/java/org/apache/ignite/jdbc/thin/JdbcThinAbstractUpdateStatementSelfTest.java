@@ -15,35 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.impls.vector;
+package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.storage.matrix.MapWrapperStorage;
-
-import java.util.Map;
+import java.sql.Statement;
 
 /**
- * Vector wrapping a given map.
+ *
  */
-public class MapWrapperVector extends AbstractVector {
-
-    /**
-     * Construct a vector wrapping given map.
-     *
-     * @param map Map to wrap.
-     */
-    public MapWrapperVector(Map<Integer, Double> map) {
-        setStorage(new MapWrapperStorage(map));
-    }
+public abstract class JdbcThinAbstractUpdateStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+    /** SQL query to populate cache. */
+    private static final String ITEMS_SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
+        "('p1', 1, 'John', 'White', 25), " +
+        "('p2', 2, 'Joe', 'Black', 35), " +
+        "('p3', 3, 'Mike', 'Green', 40)";
 
     /** {@inheritDoc} */
-    @Override public Vector like(int crd) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix likeMatrix(int rows, int cols) {
-        throw new UnsupportedOperationException();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+        jcache(0).clear();
+        try (Statement s = conn.createStatement()) {
+            s.executeUpdate(ITEMS_SQL);
+        }
     }
 }
