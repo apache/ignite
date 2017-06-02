@@ -453,7 +453,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().sequence(t.get2(), 0L, false);
+            return t.get1().dataStructures().sequence(t.get2(), null, 0L, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

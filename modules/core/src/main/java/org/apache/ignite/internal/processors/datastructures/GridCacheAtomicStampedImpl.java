@@ -302,7 +302,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().atomicStamped(t.get2(), null, null, false);
+            return t.get1().dataStructures().atomicStamped(t.get2(), null, null, null, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

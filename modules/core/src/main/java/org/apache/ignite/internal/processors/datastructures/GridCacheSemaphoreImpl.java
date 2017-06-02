@@ -1001,6 +1001,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
             IgniteSemaphore sem = IgnitionEx.localIgnite().context().dataStructures().semaphore(
                 t.get2(),
+                null,
                 0,
                 false,
                 false);

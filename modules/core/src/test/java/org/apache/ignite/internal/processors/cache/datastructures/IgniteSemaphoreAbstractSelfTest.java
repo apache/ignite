@@ -455,7 +455,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         // Ensure semaphore is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().semaphore(semaphoreName, 10, true, false));
+            assertNull(((IgniteKernal)g).context().dataStructures().semaphore(semaphoreName, null, 10, true, false));
 
         checkRemovedSemaphore(semaphore);
     }

@@ -1508,6 +1508,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         try {
             IgniteLock lock = IgnitionEx.localIgnite().context().dataStructures().reentrantLock(
                 name,
+                null,
                 false,
                 false,
                 false);
