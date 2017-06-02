@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -446,6 +447,11 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         return g.atomicSequence(name, initVal, create);
     }
 
+    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         checkIgnite();
@@ -461,6 +467,11 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         return g.atomicReference(name, initVal, create);
+    }
+
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */

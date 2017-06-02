@@ -79,6 +79,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -3457,6 +3458,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         guard();
@@ -3480,12 +3486,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable T initVal,
         boolean create
     ) {
+        return atomicReference(name, null, initVal, create);
+    }
+
+    @Override
+    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, @Nullable T initVal,
+        boolean create) throws IgniteException {
         guard();
 
         try {
             checkClusterState();
 
-            return ctx.dataStructures().atomicReference(name, initVal, create);
+            return ctx.dataStructures().atomicReference(name, cfg, initVal, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
