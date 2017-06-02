@@ -1674,9 +1674,9 @@ public class JdbcThinResultSet implements ResultSet {
      * @return Boolean value.
      */
     private static boolean castToBoolean(Number val) {
-        if (val == 1)
+        if (val.intValue() == 1)
             return true;
-        else if (val == 0)
+        else if (val.intValue() == 0)
             return false;
         else
             throw new ClassCastException("Cannot cast " + val.getClass().getName()
