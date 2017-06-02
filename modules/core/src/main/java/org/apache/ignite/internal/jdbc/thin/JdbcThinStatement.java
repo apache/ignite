@@ -24,7 +24,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
-import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -54,12 +54,7 @@ public class JdbcThinStatement implements Statement {
     private int timeout;
 
     /** Current result set. */
-    private JdbcThinResultSet rs;
-
-    /** Query arguments. */
-    // TODO: Move to prep stmt.
-    // TODO: Nullify args after execute
-    protected ArrayList<Object> args;
+    protected JdbcThinResultSet rs;
 
     /** Fetch size. */
     private int pageSize = DFLT_PAGE_SIZE;
@@ -80,7 +75,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
-        execute0(sql);
+        execute0(sql, null);
 
         ResultSet rs = getResultSet();
 
@@ -92,10 +87,11 @@ public class JdbcThinStatement implements Statement {
 
     /**
      * @param sql Sql query.
+     * @param args Query parameters.
      *
      * @throws SQLException Onj error.
      */
-    protected void execute0(String sql) throws SQLException {
+    protected void execute0(String sql, List<Object> args) throws SQLException {
         ensureNotClosed();
 
         if (rs != null) {
@@ -130,7 +126,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql) throws SQLException {
-        execute0(sql);
+        execute0(sql, null);
 
         int res = getUpdateCount();
 
@@ -226,7 +222,7 @@ public class JdbcThinStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        execute0(sql);
+        execute0(sql, null);
 
         return rs.isQuery();
     }
@@ -235,14 +231,24 @@ public class JdbcThinStatement implements Statement {
     @Override public ResultSet getResultSet() throws SQLException {
         JdbcThinResultSet rs = lastResultSet();
 
-        return rs == null || !rs.isQuery() ? null : rs;
+        ResultSet res = rs == null || !rs.isQuery() ? null : rs;
+
+        if (res != null)
+            alreadyRead = true;
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
         JdbcThinResultSet rs = lastResultSet();
 
-        return rs == null || rs.isQuery() ? -1 : (int)rs.updatedCount();
+        int res = rs == null || rs.isQuery() ? -1 : (int)rs.updatedCount();
+
+        if (res != -1)
+            alreadyRead = true;
+
+        return res;
     }
 
     /**
@@ -256,8 +262,6 @@ public class JdbcThinStatement implements Statement {
 
         if (rs == null || alreadyRead)
             return null;
-
-        alreadyRead = true;
 
         return rs;
     }

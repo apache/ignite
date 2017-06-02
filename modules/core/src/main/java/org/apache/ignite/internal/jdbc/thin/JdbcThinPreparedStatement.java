@@ -48,6 +48,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** SQL query. */
     private final String sql;
 
+    /** Query arguments. */
+    protected ArrayList<Object> args;
+
     /**
      * Creates new prepared statement.
      *
@@ -62,11 +65,19 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        ResultSet rs = super.executeQuery(sql);
+        try {
+            execute0(sql, args);
 
-        args = null;
+            ResultSet rs = getResultSet();
 
-        return rs;
+            if (rs == null)
+                throw new SQLException("The query isn't SELECT query: " + sql);
+
+            return rs;
+        }
+        finally {
+            args = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -76,9 +87,19 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public int executeUpdate() throws SQLException {
-        ensureNotClosed();
+        try {
+            execute0(sql, args);
 
-        return super.executeUpdate(sql);
+            int res = getUpdateCount();
+
+            if (res == -1)
+                throw new SQLException("The query is not DML statememt: " + sql);
+
+            return res;
+        }
+        finally {
+            args = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -196,7 +217,11 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public boolean execute() throws SQLException {
-        return super.execute(sql);
+        ensureNotClosed();
+
+        execute0(sql, args);
+
+        return rs.isQuery();
     }
 
     /** {@inheritDoc} */
