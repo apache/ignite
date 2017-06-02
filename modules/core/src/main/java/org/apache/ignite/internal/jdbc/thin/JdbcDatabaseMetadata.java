@@ -36,12 +36,12 @@ import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
 @SuppressWarnings("RedundantCast")
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** Connection. */
-    private final JdbcConnection conn;
+    private final JdbcThinConnection conn;
 
     /**
      * @param conn Connection.
      */
-    JdbcDatabaseMetadata(JdbcConnection conn) {
+    JdbcDatabaseMetadata(JdbcThinConnection conn) {
         this.conn = conn;
     }
 
