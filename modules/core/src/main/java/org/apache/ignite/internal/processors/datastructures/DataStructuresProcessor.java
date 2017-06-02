@@ -156,7 +156,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration atomicCfg;
 
     /** */
-    private IgniteInternalCache<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
+    private IgniteInternalCache<T2<CacheDataStructuresConfigurationKey, String>, DataStructureInfo> utilityCache;
 
     /** */
     private IgniteInternalCache<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
@@ -583,15 +583,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
-        Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
+        final T2<CacheDataStructuresConfigurationKey, String> dsKey = new T2<>(DATA_STRUCTURES_KEY, dsInfo.name);
 
-        if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
+        DataStructureInfo cachedInfo = utilityCache.get(dsKey);
+
+        if (!create && cachedInfo == null)
             return null;
 
-        IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, create);
+        if (cachedInfo != null) {
+            IgniteCheckedException err = cachedInfo.validate(dsInfo, create);
 
-        if (err != null)
-            throw err;
+            if (err != null)
+                throw err;
+        }
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
 
@@ -607,11 +611,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     return c.applyx();
 
                 try (GridNearTxLocal tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    IgniteCheckedException err =
-                        utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
+                    DataStructureInfo oldInfo = utilityCache.get(dsKey);
 
-                    if (err != null)
-                        throw err;
+                    if (oldInfo == null)
+                        utilityCache.put(dsKey, dsInfo);
+                    else {
+                        IgniteCheckedException err = oldInfo.validate(dsInfo, true);
+                        if (err != null)
+                            throw err;
+                    }
 
                     T dataStructure = c.applyx();
 
@@ -664,35 +672,36 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable final IgniteInClosureX<T> afterRmv)
         throws IgniteCheckedException
     {
-        Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
+        final T2<CacheDataStructuresConfigurationKey, String> dsKey = new T2<>(DATA_STRUCTURES_KEY, name);
 
-        if (dsMap == null || !dsMap.containsKey(name))
+        DataStructureInfo removeDs = utilityCache.get(dsKey);
+
+        if (removeDs == null)
             return;
 
         final DataStructureInfo dsInfo = new DataStructureInfo(name, type, null);
 
-        IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, false);
+        if (removeDs != null) {
+            IgniteCheckedException err = removeDs.validate(dsInfo, false);
 
-        if (err != null)
-            throw err;
+            if (err != null)
+                throw err;
+        }
 
         retryTopologySafe(new IgniteOutClosureX<Void>() {
             @Override public Void applyx() throws IgniteCheckedException {
                 try (GridNearTxLocal tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    T2<Boolean, IgniteCheckedException> res =
-                        utilityCache.invoke(DATA_STRUCTURES_KEY, new RemoveDataStructureProcessor(dsInfo)).get();
+                    DataStructureInfo oldInfo = utilityCache.get(dsKey);
 
-                    IgniteCheckedException err = res.get2();
-
-                    if (err != null)
-                        throw err;
-
-                    assert res.get1() != null;
-
-                    boolean exists = res.get1();
-
-                    if (!exists)
+                    if (oldInfo == null)
                         return null;
+
+                    IgniteCheckedException err = oldInfo.validate(dsInfo, false);
+
+                    if (err == null)
+                        utilityCache.remove(dsKey);
+                    else
+                        throw err;
 
                     T rmvInfo = c.applyx();
 
@@ -1057,22 +1066,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     {
         awaitInitialization();
 
-        Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
+        final T2<CacheDataStructuresConfigurationKey, String> dsKey = new T2<>(DATA_STRUCTURES_KEY, dsInfo.name);
 
-        if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
+        DataStructureInfo cachedDsInfo = utilityCache.get(dsKey);
+
+        if (!create && cachedDsInfo == null)
             return null;
 
-        IgniteCheckedException err = validateDataStructure(dsMap, dsInfo, create);
+        if (cachedDsInfo != null) {
+            IgniteCheckedException err = cachedDsInfo.validate(dsInfo, create);
 
-        if (err != null)
-            throw err;
+            if (err != null)
+                throw err;
+        }
 
         if (!create) {
-            DataStructureInfo oldInfo = dsMap.get(dsInfo.name);
+            assert cachedDsInfo.info instanceof CollectionInfo : cachedDsInfo.info;
 
-            assert oldInfo.info instanceof CollectionInfo : oldInfo.info;
-
-            String cacheName = ((CollectionInfo)oldInfo.info).cacheName;
+            String cacheName = ((CollectionInfo)cachedDsInfo.info).cacheName;
 
             GridCacheContext cacheCtx = ctx.cache().getOrStartCache(cacheName).context();
 
@@ -1082,17 +1093,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
                 try (GridNearTxLocal tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    T2<String, IgniteCheckedException> res =
-                        utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
+                    CollectionInfo colInfo = (CollectionInfo)dsInfo.info;
 
-                    IgniteCheckedException err = res.get2();
+                    DataStructureInfo oldInfo = utilityCache.get(dsKey);
 
-                    if (err != null)
-                        throw err;
+                    if (oldInfo == null)
+                        utilityCache.put(dsKey, dsInfo);
+                    else {
+                        IgniteCheckedException err = oldInfo.validate(dsInfo, true);
 
-                    String cacheName = res.get1();
+                        if (err != null)
+                            throw err;
+                    }
 
-                    final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
+                    final GridCacheContext cacheCtx = ctx.cache().internalCache(colInfo.cacheName).context();
 
                     T col = c.applyx(cacheCtx);
 
@@ -1120,28 +1134,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     "(thread has been interrupted).", e);
             }
         }
-    }
-
-    /**
-     * @param dsMap Map with data structure information.
-     * @param info New data structure information.
-     * @param create Create flag.
-     * @return {@link IgniteException} if validation failed.
-     */
-    @Nullable private static IgniteCheckedException validateDataStructure(
-        @Nullable Map<String, DataStructureInfo> dsMap,
-        DataStructureInfo info,
-        boolean create)
-    {
-        if (dsMap == null)
-            return null;
-
-        DataStructureInfo oldInfo = dsMap.get(info.name);
-
-        if (oldInfo != null)
-            return oldInfo.validate(info, create);
-
-        return null;
     }
 
     /**
