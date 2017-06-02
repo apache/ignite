@@ -837,7 +837,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 runs.putIfAbsent(run.id(), run);
 
                 try {
-                    ResultSet rs = executeSqlQueryWithTimer(schemaName, stmt, conn, qry, params, timeout, cancel);
+                    ResultSet rs = executeSqlQueryWithTimer(stmt, conn, qry, params, timeout, cancel);
 
                     return new H2FieldsIterator(rs);
                 }
@@ -941,8 +941,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Executes sql query and prints warning if query is too slow..
      *
-     * @param schema Schema.
-     * @param conn Connection,.
+     * @param conn Connection,
      * @param sql Sql query.
      * @param params Parameters.
      * @param useStmtCache If {@code true} uses stmt cache.
@@ -950,21 +949,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public ResultSet executeSqlQueryWithTimer(String schema,
-        Connection conn,
-        String sql,
-        @Nullable Collection<Object> params,
-        boolean useStmtCache,
-        int timeoutMillis,
-        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        return executeSqlQueryWithTimer(schema, preparedStatementWithParams(conn, sql, params, useStmtCache),
+    public ResultSet executeSqlQueryWithTimer(Connection conn, String sql, @Nullable Collection<Object> params,
+        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel);
     }
 
     /**
      * Executes sql query and prints warning if query is too slow.
      *
-     * @param schema Schema.
      * @param stmt Prepared statement for query.
      * @param conn Connection.
      * @param sql Sql query.
@@ -973,12 +966,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    private ResultSet executeSqlQueryWithTimer(String schema, PreparedStatement stmt,
-        Connection conn,
-        String sql,
-        @Nullable Collection<Object> params,
-        int timeoutMillis,
-        @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+    private ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, Connection conn, String sql,
+        @Nullable Collection<Object> params, int timeoutMillis, @Nullable GridQueryCancel cancel)
+        throws IgniteCheckedException {
         long start = U.currentTimeMillis();
 
         try {
@@ -1133,7 +1123,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         runs.put(run.id(), run);
 
         try {
-            ResultSet rs = executeSqlQueryWithTimer(schemaName, conn, sql, params, true, 0, cancel);
+            ResultSet rs = executeSqlQueryWithTimer(conn, sql, params, true, 0, cancel);
 
             return new H2KeyValueIterator(rs);
         }
