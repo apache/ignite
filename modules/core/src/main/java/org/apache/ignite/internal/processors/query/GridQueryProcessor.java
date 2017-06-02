@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -1278,7 +1279,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
-     * @param templateName Template name.
+     * @param templateName Cache name to take settings from, if {@code null},
+     *     a new {@code PARTITIONED} cache will be created.
      * @param atomicityMode Atomicity mode.
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
@@ -1287,19 +1289,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName,
         @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
-        assert !F.isEmpty(templateName);
-        assert backups >= 0;
+
+        // Use PARTITIONED as template cache name if no actual name is given.
+        templateName = U.firstNotNull(templateName, CacheMode.PARTITIONED.name());
+
+        CacheConfiguration<?, ?> newCfg;
 
         CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateName);
 
-        if (templateCfg == null)
-            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
-
-        if (!F.isEmpty(templateCfg.getQueryEntities()))
-            throw new SchemaOperationException("Template cannot contain query entities [template=" +
-                templateName + ']');
-
-        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
+        if (templateCfg == null) {
+            if (CacheMode.PARTITIONED.name().equalsIgnoreCase(templateName))
+                newCfg = new CacheConfiguration<>().setCacheMode(CacheMode.PARTITIONED);
+            else if (CacheMode.REPLICATED.name().equalsIgnoreCase(templateName))
+                newCfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
+            else
+                throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
+        }
+        else if (!F.isEmpty(templateCfg.getQueryEntities())) {
+            throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
+                templateName);
+        }
+        else
+            newCfg = new CacheConfiguration<>(templateCfg);
 
         if (atomicityMode != null)
             newCfg.setAtomicityMode(atomicityMode);

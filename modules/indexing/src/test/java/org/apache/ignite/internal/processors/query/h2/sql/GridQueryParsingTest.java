@@ -598,10 +598,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("create table Person (id int primary key)",
             IgniteSQLException.class, "No cache value related columns found");
 
-        assertParseThrows("create table Person (id int primary key, age int null)",
-            IgniteSQLException.class, "Mandatory parameter is missing: TEMPLATE");
-
-        assertParseThrows("create table Person (id int primary key, age int not null) WITH \"template=cache\"",
+        assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
             IgniteSQLException.class, "Non nullable columns are forbidden");
 
         assertParseThrows("create table Person (id int primary key, age int unique) WITH \"template=cache\"",

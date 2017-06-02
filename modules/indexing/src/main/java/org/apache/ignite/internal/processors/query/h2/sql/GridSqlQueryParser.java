@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
@@ -404,11 +405,6 @@ public class GridSqlQueryParser {
 
     /** */
     private static final String PARAM_ATOMICITY = "ATOMICITY";
-
-    /** Names of the params that need to be present in WITH clause of CREATE TABLE. */
-    private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
-        PARAM_TEMPLATE
-    };
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -960,33 +956,28 @@ public class GridSqlQueryParser {
 
         res.params(extraParams);
 
+        if (F.isEmpty(extraParams))
+            return res;
+
         Map<String, String> params = new HashMap<>();
 
-        if (!F.isEmpty(extraParams)) {
-            for (String p : extraParams) {
-                String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
+        for (String p : extraParams) {
+        String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
-                if (parts.length > 2)
-                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
-                        IgniteQueryErrorCode.PARSING);
-
-                String name = parts[0].trim().toUpperCase();
-
-                String val = parts.length > 1 ? parts[1].trim() : null;
-
-                if (F.isEmpty(name))
-                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
-                        IgniteQueryErrorCode.PARSING);
-
-                if (params.put(name, val) != null)
-                    throw new IgniteSQLException("Duplicate parameter: " + p, IgniteQueryErrorCode.PARSING);
-            }
-        }
-
-        for (String paramName : MANDATORY_CREATE_TABLE_PARAMS) {
-            if (!params.containsKey(paramName))
-                throw new IgniteSQLException("Mandatory parameter is missing: " + paramName,
+            if (parts.length > 2)
+                throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
                     IgniteQueryErrorCode.PARSING);
+
+            String name = parts[0].trim().toUpperCase();
+
+            String val = parts.length > 1 ? parts[1].trim() : null;
+
+            if (F.isEmpty(name))
+                throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
+                    IgniteQueryErrorCode.PARSING);
+
+            if (params.put(name, val) != null)
+                throw new IgniteSQLException("Duplicate parameter: " + p, IgniteQueryErrorCode.PARSING);
         }
 
         for (Map.Entry<String, String> e : params.entrySet())
