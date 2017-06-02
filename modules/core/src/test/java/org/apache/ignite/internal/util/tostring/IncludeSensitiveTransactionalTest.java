@@ -14,52 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.transactions.Transaction;
 
 /**
- * Helper wrapper containing StringBuilder and additional values. Stored as a thread-local variable.
+ *
  */
-class GridToStringThreadLocal {
-    /** */
-    private SB sb = new SB(256);
+public class IncludeSensitiveTransactionalTest extends IncludeSensitiveTest {
+    /** Active transaction. */
+    private Transaction tx;
 
-    /** */
-    private Object[] addNames = new Object[7];
-
-    /** */
-    private Object[] addVals = new Object[7];
-
-    /** */
-    private boolean[] addSens = new boolean[7];
-
-    /**
-     * @return String builder.
-     */
-    SB getStringBuilder() {
-        return sb;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
-    /**
-     * @return Additional names.
-     */
-    Object[] getAdditionalNames() {
-        return addNames;
+    /** {@inheritDoc} */
+    @Override protected void startTx() {
+        tx = grid(0).transactions().txStart();
     }
 
-    /**
-     * @return Additional values.
-     */
-    Object[] getAdditionalValues() {
-        return addVals;
-    }
-
-    /**
-     * @return Additional values.
-     */
-    boolean[] getAdditionalSensitives() {
-        return addSens;
+    /** {@inheritDoc} */
+    @Override protected void commitTx() {
+        tx.commit();
     }
 }
