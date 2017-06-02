@@ -72,7 +72,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -195,6 +194,15 @@ public final class GridDhtTxPrepareFuture
     /** Timeout object. */
     private final PrepareTimeoutObject timeoutObj;
 
+    /** */
+    private List<MiniFuture> miniFuts;
+
+    /** */
+    private int completedMiniCnt;
+
+    /** */
+    private boolean inited;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -236,6 +244,37 @@ public final class GridDhtTxPrepareFuture
         assert nearMap != null;
 
         timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
+    }
+
+    /**
+     * Marks future as initialized.
+     */
+    private void markInitialized() {
+        boolean completed;
+
+        synchronized (this) {
+            if (inited)
+                return;
+
+            inited = true;
+
+            completed = miniFuts == null || completedMiniCnt == miniFuts.size();
+        }
+
+        if (completed)
+            onDone();
+    }
+
+    /**
+     * @param fut Mini future to add.
+     */
+    private synchronized void add(MiniFuture fut) {
+        if (miniFuts == null)
+            miniFuts = new ArrayList<>();
+
+        assert fut.futureId() == miniFuts.size();
+
+        miniFuts.add(fut);
     }
 
     /** {@inheritDoc} */
@@ -300,16 +339,22 @@ public final class GridDhtTxPrepareFuture
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteInternalFuture<?> fut : futures())
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
+        List<MiniFuture> miniFuts0;
 
-                if (f.node().id().equals(nodeId)) {
-                    f.onNodeLeft();
+        synchronized (this) {
+            if (miniFuts == null)
+                return false;
 
-                    return true;
-                }
+            miniFuts0 = new ArrayList<>(miniFuts);
+        }
+
+        for (MiniFuture miniFut : miniFuts0) {
+            if (miniFut.node().id().equals(nodeId)) {
+                miniFut.onNodeLeft();
+
+                return true;
             }
+        }
 
         return false;
     }
@@ -354,7 +399,8 @@ public final class GridDhtTxPrepareFuture
 
                 if (readOld) {
                     boolean readThrough = !txEntry.skipStore() &&
-                        (txEntry.op() == TRANSFORM || ((retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue()));
+                        (txEntry.op() == TRANSFORM || ((retVal || hasFilters) &&
+                            cacheCtx.config().isLoadPreviousValue()));
 
                     boolean evt = retVal || txEntry.op() == TRANSFORM;
 
@@ -519,11 +565,8 @@ public final class GridDhtTxPrepareFuture
 
         MiniFuture mini = miniFuture(res.miniId());
 
-        if (mini != null) {
-            assert mini.node().id().equals(nodeId);
-
+        if (mini != null)
             mini.onResult(res);
-        }
         else {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
@@ -543,26 +586,9 @@ public final class GridDhtTxPrepareFuture
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
-        // We iterate directly over the futs collection here to avoid copy.
         synchronized (this) {
-            int size = futuresCountNoLock();
-
-            // Avoid iterator creation.
-            for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<IgniteInternalTx> fut = future(i);
-
-                if (!isMini(fut))
-                    continue;
-
-                MiniFuture mini = (MiniFuture)fut;
-
-                if (mini.futureId() == miniId) {
-                    if (!mini.isDone())
-                        return mini;
-                    else
-                        return null;
-                }
-            }
+            if (miniFuts != null && !miniFuts.get(miniId).isDone())
+                return miniFuts.get(miniId);
         }
 
         return null;
@@ -671,8 +697,8 @@ public final class GridDhtTxPrepareFuture
 
     /** {@inheritDoc} */
     @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err) {
-        assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
-            "pending mini futures: " + this;
+// TODO        assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
+//            "pending mini futures: " + this;
 
         ERR_UPD.compareAndSet(this, null, err);
 
@@ -926,20 +952,11 @@ public final class GridDhtTxPrepareFuture
     }
 
     /**
-     * @param f Future.
-     * @return {@code True} if mini-future.
-     */
-    private boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(MiniFuture.class);
-    }
-
-    /**
      * Completeness callback.
      *
      * @param res Response.
-     * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
-    private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
+    private void onComplete(@Nullable GridNearTxPrepareResponse res) {
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
@@ -949,11 +966,7 @@ public final class GridDhtTxPrepareFuture
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
-
-            return true;
         }
-
-        return false;
     }
 
     /**
@@ -1232,7 +1245,7 @@ public final class GridDhtTxPrepareFuture
                     if (tx.remainingTime() == -1)
                         return;
 
-                    MiniFuture fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
+                    MiniFuture fut = new MiniFuture(n.id(), miniId++, dhtMapping, nearMapping);
 
                     add(fut); // Append new future.
 
@@ -1374,11 +1387,11 @@ public final class GridDhtTxPrepareFuture
                                         GridCacheMvccCandidate added = entry.cached().candidate(version());
 
                                         assert added != null : "Null candidate for non-group-lock entry " +
-                                            "[added=" + added + ", entry=" + entry + ']';
+                                            "[added=null, entry=" + entry + ']';
                                         assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
                                             "[added=" + added + ", entry=" + entry + ']';
 
-                                        if (added != null && added.ownerVersion() != null)
+                                        if (added.ownerVersion() != null)
                                             req.owned(entry.txKey(), added.ownerVersion());
                                     }
 
@@ -1544,18 +1557,10 @@ public final class GridDhtTxPrepareFuture
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
-            }
-        });
-
+    @Override public synchronized String toString() {
         return S.toString(GridDhtTxPrepareFuture.class, this,
             "xid", tx.xidVersion(),
-            "innerFuts", futs,
+            "innerFuts", miniFuts,
             "super", super.toString());
     }
 
@@ -1577,6 +1582,9 @@ public final class GridDhtTxPrepareFuture
         /** Near mapping. */
         @GridToStringInclude
         private GridDistributedTxMapping nearMapping;
+
+        /** */
+        private volatile boolean done;
 
         /**
          * @param nodeId Node ID.
@@ -1620,7 +1628,7 @@ public final class GridDhtTxPrepareFuture
                 log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
 
             // Fail.
-            onDone(e);
+            GridDhtTxPrepareFuture.this.onDone(e);
         }
 
         /**
@@ -1635,7 +1643,7 @@ public final class GridDhtTxPrepareFuture
             if (tx != null)
                 tx.removeMapping(nodeId);
 
-            onDone(tx);
+            onDone();
         }
 
         /**
@@ -1752,7 +1760,7 @@ public final class GridDhtTxPrepareFuture
                         }
                         catch (IgniteCheckedException e) {
                             // Fail the whole thing.
-                            onDone(e);
+                            GridDhtTxPrepareFuture.this.onDone(e);
 
                             return;
                         }
@@ -1765,13 +1773,42 @@ public final class GridDhtTxPrepareFuture
                 }
 
                 // Finish mini future.
-                onDone(tx);
+                onDone();
             }
+        }
+
+        /**
+         * @return {@code True} if done.
+         */
+        public boolean isDone() {
+            return done;
+        }
+
+        /**
+         *
+         */
+        public void onDone() {
+            boolean complete;
+
+            synchronized (GridDhtTxPrepareFuture.this) {
+                if (done)
+                    return;
+
+                done = true;
+
+                complete = (++completedMiniCnt == miniFuts.size()) && inited;
+            }
+
+            if (complete)
+                GridDhtTxPrepareFuture.this.onDone();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
+            return S.toString(MiniFuture.class, this,
+                "done", isDone(),
+                "cancelled", isCancelled(),
+                "err", error());
         }
     }
 

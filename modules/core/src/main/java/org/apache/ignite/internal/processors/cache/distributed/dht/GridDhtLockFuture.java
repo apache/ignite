@@ -477,15 +477,20 @@ public final class GridDhtLockFuture extends GridCacheFutureAdapter<Boolean>
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        synchronized (this) {
-            if (miniFuts != null) {
-                for (MiniFuture miniFut : miniFuts) {
-                    if (miniFut.node().id().equals(nodeId)) {
-                        miniFut.onResult();
+        List<MiniFuture> miniFuts0;
 
-                        found = true;
-                    }
-                }
+        synchronized (this) {
+            if (miniFuts == null)
+                return false;
+
+            miniFuts0 = new ArrayList<>(miniFuts);
+        }
+
+        for (MiniFuture miniFut : miniFuts0) {
+            if (miniFut.node().id().equals(nodeId)) {
+                miniFut.onResult();
+
+                found = true;
             }
         }
 
