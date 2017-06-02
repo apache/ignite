@@ -6383,7 +6383,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug("###  Received heartbeat message from node:" + hbmsg.creatorNodeId());
 
                     this.metrics = hbmsg.metrics();
-
                     this.lastHeartBeatTime=U.currentTimeMillis();
                 }
                 else {

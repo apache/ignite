@@ -814,6 +814,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         try {
             timer.cancel();
         } catch (Throwable e) {
+            // No-op.
         }
 
         U.join(sockWriter, log);
