@@ -55,6 +55,9 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** Conection URL. */
+    private String url;
+
     /** Schema name. */
     private String schemaName;
 
@@ -87,6 +90,7 @@ public class JdbcThinConnection implements Connection {
         assert url != null;
         assert props != null;
 
+        this.url = url;
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
@@ -541,5 +545,12 @@ public class JdbcThinConnection implements Connection {
      */
     JdbcThinTcpIo cliIo() {
         return cliIo;
+    }
+
+    /**
+     * @return Connection URL.
+     */
+    public String url() {
+        return url;
     }
 }

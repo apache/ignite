@@ -98,6 +98,31 @@ public class JdbcThinResultSet implements ResultSet {
     private long updCnt;
 
     /**
+     * Constructs static result set.
+     *
+     * @param fields Fields.
+     * @param meta Columns metadata.
+     */
+    JdbcThinResultSet(List<List<Object>> fields, List<JdbcColumnMeta> meta) {
+        stmt = null;
+        fetchSize = 0;
+        qryId = -1L;
+        finished = true;
+        isQuery = true;
+        updCnt = -1;
+
+        this.rows = fields;
+
+        rowsIter = fields.iterator();
+
+        this.meta = meta;
+
+        metaInit = true;
+
+        initColumnOrder();
+    }
+
+    /**
      * Creates new result set.
      *
      * @param stmt Statement.
@@ -106,6 +131,7 @@ public class JdbcThinResultSet implements ResultSet {
      * @param finished Finished flag.
      * @param rows Rows.
      * @param isQuery Is Result ser for Select query
+     * @param updCnt Update count.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
     JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
@@ -174,7 +200,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closed || stmt.connection().isClosed())
+        if (closed || stmt == null || stmt.connection().isClosed())
             return;
 
         try {
@@ -1638,7 +1664,6 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /**
-     * Init column order map.
      * @throws SQLException On error.
      * @return Column order map.
      */
@@ -1649,6 +1674,15 @@ public class JdbcThinResultSet implements ResultSet {
         if(!metaInit)
             meta();
 
+        initColumnOrder();
+
+        return colOrder;
+    }
+
+    /**
+     * Init column order map.
+     */
+    private void initColumnOrder() {
         colOrder = new HashMap<>(meta.size());
 
         for (int i = 0; i < meta.size(); ++i) {
@@ -1657,8 +1691,6 @@ public class JdbcThinResultSet implements ResultSet {
             if(!colOrder.containsKey(colName))
                 colOrder.put(colName, i);
         }
-
-        return colOrder;
     }
 
     /**

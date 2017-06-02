@@ -64,8 +64,26 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Schema name.
+     * @param schemaName Schema.
+     * @param tableName Table.
+     * @param columnName Column.
+     * @param cls Type.
      */
+    public JdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> cls) {
+        this.schemaName = schemaName;
+        this.tableName = tableName;
+        this.columnName = columnName;
+
+        String type = cls.getName();
+        dataType = JdbcThinUtils.type(type);
+        dataTypeName = JdbcThinUtils.typeName(type);
+        dataTypeClass = type;
+    }
+
+
+        /**
+         * @return Schema name.
+         */
     public String schemaName() {
         return schemaName;
     }

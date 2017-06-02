@@ -31,6 +31,12 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
@@ -57,7 +63,7 @@ public class JdbcThinTcpIo {
     private static final int HANDSHAKE_MSG_SIZE = 10;
 
     /** Initial output for query message. */
-    private static final int QUERY_EXEC_MSG_INIT_CAP = 1024;
+    private static final int DYNAMIC_SIZE_MSG_CAP = 1024;
 
     /** Initial output for query fetch message. */
     private static final int QUERY_FETCH_MSG_SIZE = 13;
@@ -173,7 +179,7 @@ public class JdbcThinTcpIo {
         String sql, List<Object> args)
         throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
-            args == null ? null : args.toArray(new Object[args.size()])), QUERY_EXEC_MSG_INIT_CAP);
+            args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
@@ -234,6 +240,48 @@ public class JdbcThinTcpIo {
      */
     public void queryClose(long qryId) throws IOException, IgniteCheckedException {
         sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
+    }
+
+    /**
+     * @param catalog Catalog.
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
+     * @param types Table types
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaTablesResult tablesMeta(String catalog, String schemaPtrn, String tablePtrn, String[] types)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaTablesRequest(catalog, schemaPtrn, tablePtrn, types), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schemaPtrn Schema name pattern.
+     * @param tablePtrn Table name pattern.
+     * @param columnPtrn Column name pattern.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaColumnsResult columnsMeta(String schemaPtrn, String tablePtrn, String columnPtrn)
+        throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tablePtrn, columnPtrn), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param catalog Catalog.
+     * @param schema Schema.
+     * @param tbl Table
+     * @param unique Is Index unique.
+     * @param approximate Request approximate index.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     * @return Result.
+     */
+    public JdbcMetaIndexesResult indexMeta(String catalog, String schema, String tbl,
+        boolean unique, boolean approximate) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaIndexesRequest(catalog, schema, tbl, unique, approximate), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**

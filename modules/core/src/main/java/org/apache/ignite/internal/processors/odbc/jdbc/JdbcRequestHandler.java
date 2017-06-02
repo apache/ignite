@@ -17,15 +17,28 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaResult;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetTablesMetaRequest;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetTablesMetaResult;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcResponse;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcTableMeta;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -33,6 +46,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_TABLES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
@@ -111,6 +128,18 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case QRY_META:
                     return getQueryMeta((JdbcQueryMetadataRequest)req);
+
+                case META_TABLES:
+                    return getTablesMeta((JdbcMetaTablesRequest)req);
+
+                case META_COLUMNS:
+                    return getColumnsMeta((JdbcMetaColumnsRequest)req);
+
+                case META_INDEXES:
+                    return getIndexesMeta((JdbcMetaIndexesRequest)req);
+
+                case META_PARAMS:
+                    return getParamsMeta((JdbcMetaParamsRequest)req);
             }
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, "Unsupported JDBC request [req=" + req + ']');
@@ -281,5 +310,144 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
         }
+    }
+
+    /**
+     * @param req Get tables metadata request.
+     * @return Response.
+     */
+    private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
+        try {
+            List<JdbcTableMeta> meta = new ArrayList<>();
+
+            String realSchema = req.schema();
+
+            for (String cacheName : ctx.cache().cacheNames())
+            {
+                if (!matches(cacheName, realSchema))
+                    continue;
+
+                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+
+                for (GridQueryTypeDescriptor table : tablesMeta) {
+                    if (!matches(table.name(), req.table()))
+                        continue;
+
+                    boolean tblTypeMatch = false;
+
+                    if (req.tableTypes() == null)
+                        tblTypeMatch = true;
+                    else {
+                        for (String type : req.tableTypes()) {
+                            if (matches("TABLE", type)) {
+                                tblTypeMatch = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (tblTypeMatch) {
+                        JdbcTableMeta tableMeta = new JdbcTableMeta(null, cacheName, table.name(), "TABLE");
+
+                        if (!meta.contains(tableMeta))
+                            meta.add(tableMeta);
+                    }
+                }
+            }
+
+            JdbcMetaTablesResult res = new JdbcMetaTablesResult(meta);
+
+            return new JdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * {@link OdbcQueryGetColumnsMetaRequest} command handler.
+     *
+     * @param req Get columns metadata request.
+     * @return Response.
+     */
+    private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
+        try {
+            String cacheName;
+            String tableName;
+
+            if (req.tableName().contains(".")) {
+                // Parsing two-part table name.
+                String[] parts = req.tableName().split("\\.");
+
+                cacheName = parts[0];
+
+                tableName = parts[1];
+            }
+            else {
+                cacheName = req.cacheName();
+
+                tableName = req.tableName();
+            }
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
+
+            List<JdbcColumnMeta> meta = new ArrayList<>();
+
+            for (GridQueryTypeDescriptor table : tablesMeta) {
+                if (!matches(table.name(), tableName))
+                    continue;
+
+                for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
+                    if (!matches(field.getKey(), req.columnName()))
+                        continue;
+
+                    JdbcColumnMeta columnMeta = new JdbcColumnMeta(req.cacheName(), table.name(),
+                        field.getKey(), field.getValue());
+
+                    if (!meta.contains(columnMeta))
+                        meta.add(columnMeta);
+                }
+            }
+
+            JdbcMetaColumnsResult res = new JdbcMetaColumnsResult(meta);
+
+            return new JdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return new JdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @return Response.
+     */
+    private SqlListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
+        return null;
+    }
+
+    /**
+     * @param req Request.
+     * @return Response.
+     */
+    private SqlListenerResponse getParamsMeta(JdbcMetaParamsRequest req) {
+        return null;
+    }
+
+    /**
+     * Checks whether string matches SQL pattern.
+     *
+     * @param str String.
+     * @param ptrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    private static boolean matches(String str, String ptrn) {
+        return str != null && (F.isEmpty(ptrn) ||
+            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 }

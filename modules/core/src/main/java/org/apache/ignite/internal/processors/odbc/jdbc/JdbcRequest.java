@@ -39,6 +39,18 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
     /** Get columns meta query. */
     public static final byte QRY_META = 5;
 
+    /** Get columns meta query. */
+    public static final byte META_TABLES = 6;
+
+    /** Get columns meta query. */
+    public static final byte META_COLUMNS = 7;
+
+    /** Get columns meta query. */
+    public static final byte META_INDEXES = 8;
+
+    /** Get columns meta query. */
+    public static final byte META_PARAMS = 9;
+
     /** Request type. */
     private byte type;
 
@@ -94,6 +106,26 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
             case QRY_CLOSE:
                 req = new JdbcQueryCloseRequest();
+
+                break;
+
+            case META_TABLES:
+                req = new JdbcMetaTablesRequest();
+
+                break;
+
+            case META_COLUMNS:
+                req = new JdbcMetaColumnsRequest();
+
+                break;
+
+            case META_INDEXES:
+                req = new JdbcMetaIndexesRequest();
+
+                break;
+
+            case META_PARAMS:
+                req = new JdbcMetaParamsRequest();
 
                 break;
 

@@ -25,13 +25,20 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -66,14 +73,17 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @param qryEntity Query entity.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
+    protected CacheConfiguration cacheConfiguration(QueryEntity qryEntity) {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        cache.setQueryEntities(Collections.singletonList(qryEntity));
 
         return cache;
     }
@@ -84,16 +94,34 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
         startGridsMultiThreaded(3);
 
-        IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
-            String.class, Organization.class);
+        IgniteCache<String, Organization> orgCache = jcache(grid(0),
+            cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
+                .addQueryField("id", Integer.class.getName(), null)
+                .addQueryField("name", String.class.getName(), null)
+                .setIndexes(Arrays.asList(
+                    new QueryIndex("id"),
+                    new QueryIndex("name", false, "org_name_index")
+                ))), "org");
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(), "pers",
-            AffinityKey.class, Person.class);
+        LinkedHashMap<String, Boolean> persFields = new LinkedHashMap<>();
+
+        persFields.put("name", true);
+        persFields.put("age", false);
+
+        IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(
+            new QueryEntity(AffinityKey.class.getName(), Person.class.getName())
+                .addQueryField("name", String.class.getName(), null)
+                .addQueryField("age", Integer.class.getName(), null)
+                .addQueryField("orgId", Integer.class.getName(), null)
+                .setIndexes(Arrays.asList(
+                    new QueryIndex("orgId"),
+                    new QueryIndex().setFields(persFields)))
+            ), "pers");
 
         assert personCache != null;
 
@@ -147,8 +175,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetTables() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
@@ -185,7 +211,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
+        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller()
+            instanceof BinaryMarshaller;
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
@@ -216,7 +243,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 } else if ("AGE".equals(name) || "ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
-                    assert rs.getInt("NULLABLE") == 0;
+                    assertEquals(primitivesInformationIsLostAfterStore ? 1 : 0, rs.getInt("NULLABLE"));
                 }
                 if ("_KEY".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
@@ -281,8 +308,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMetadataResultSetClose() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5233");
-
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
             int colCnt = tbls.getMetaData().getColumnCount();
@@ -300,20 +325,34 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void _testIndexMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL);
+             ResultSet tbls = conn.getMetaData().getIndexInfo(null, null, "pers", false, false)) {
+
+            int colCnt = tbls.getMetaData().getColumnCount();
+
+        }
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
+            fail();
+        }
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @QuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @QuerySqlField
         private final int age;
 
         /** Organization ID. */
-        @QuerySqlField
         private final int orgId;
 
         /**
@@ -338,11 +377,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @QuerySqlField
         private final int id;
 
         /** Name. */
-        @QuerySqlField(index = false)
         private final String name;
 
         /**
