@@ -153,8 +153,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private void doTestCreateTable(String tplCacheName, CacheMode mode) {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
-            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\"))" +
-            (F.isEmpty(tplCacheName) ? "" : " WITH \"cacheTemplate=" + tplCacheName + "\""));
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"");
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -164,6 +164,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor("Person");
 
             assertNotNull(cacheDesc);
+
+            if (mode == CacheMode.REPLICATED)
+                assertEquals(Integer.MAX_VALUE, cacheDesc.cacheConfiguration().getBackups());
+            else
+                assertEquals(10, cacheDesc.cacheConfiguration().getBackups());
+
+            assertEquals(CacheAtomicityMode.ATOMIC, cacheDesc.cacheConfiguration().getAtomicityMode());
 
             assertTrue(cacheDesc.sql());
 
@@ -202,6 +209,35 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that attempting to specify negative number of backups yields exception.
+     */
+    public void testNegativeBackups() {
+        assertCreateTableWithParamsThrows("bAckUPs = -5  ", "\"BACKUPS\" cannot be negative: -5");
+    }
+
+    /**
+     * Test that attempting to omit mandatory value of BACKUPS parameter yields an error.
+     */
+    public void testEmptyBackups() {
+        assertCreateTableWithParamsThrows(" bAckUPs =  ", "Parameter value cannot be empty: BACKUPS");
+    }
+
+    /**
+     * Test that attempting to omit mandatory value of ATOMICITY parameter yields an error.
+     */
+    public void testEmptyAtomicity() {
+        assertCreateTableWithParamsThrows("AtomicitY=  ", "Parameter value cannot be empty: ATOMICITY");
+    }
+
+    /**
+     * Test that attempting to omit mandatory value of ATOMICITY parameter yields an error.
+     */
+    public void testInvalidAtomicity() {
+        assertCreateTableWithParamsThrows("atomicity=InvalidValue",
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
+    }
+
+    /**
      * Test that attempting to {@code CREATE TABLE} that already exists does not yield an error if the statement
      *     contains {@code IF NOT EXISTS} clause.
      * @throws Exception if failed.
@@ -209,11 +245,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testCreateTableIfNotExists() throws Exception {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\"");
+            "\"template=cache\"");
 
         executeDdl("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\"");
+            "\"template=cache\"");
     }
 
     /**
@@ -224,13 +260,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testCreateExistingTable() throws Exception {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\"");
+            "\"template=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
                     ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"cacheTemplate=cache\"");
+                    "\"template=cache\"");
 
                 return null;
             }
@@ -244,7 +280,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropTable() throws Exception {
         executeDdl("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\"");
+            "\"template=cache\"");
 
         executeDdl("DROP TABLE \"Person\"");
 
@@ -308,7 +344,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDestroyDynamicSqlCache() throws Exception {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\"");
+            "\"template=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -328,7 +364,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testSqlFlagCompatibilityCheck() throws Exception {
         executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
-            "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"cacheTemplate=cache\"");
+            "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -337,6 +373,31 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteException.class, "SQL flag mismatch (fix sql flag in cache configuration");
+    }
+
+    /**
+     * Execute {@code CREATE TABLE} w/given params.
+     * @param params Engine parameters.
+     */
+    private void createTableWithParams(final String params) {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+            ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"template=cache," + params + '"'));
+    }
+
+    /**
+     * Execute {@code CREATE TABLE} w/given params expecting a particular error.
+     * @param params Engine parameters.
+     * @param expErrMsg Expected error message.
+     */
+    private void assertCreateTableWithParamsThrows(final String params, String expErrMsg) {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                createTableWithParams(params);
+
+                return null;
+            }
+        }, IgniteSQLException.class, expErrMsg);
     }
 
     /**
@@ -350,7 +411,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             @Override public Object call() throws Exception {
                 executeDdl("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"cacheTemplate=cache\"");
+                    "\"template=cache\"");
 
                 return null;
             }
