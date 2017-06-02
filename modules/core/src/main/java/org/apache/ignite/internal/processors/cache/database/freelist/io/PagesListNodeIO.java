@@ -210,7 +210,7 @@ public class PagesListNodeIO extends PageIO {
         for (int i = 0; i < cnt; i++) {
             if (getAt(pageAddr, i) == dataPageId) {
                 if (i != cnt - 1)
-                    copyMemory(pageAddr, pageAddr, offset(i + 1), offset(i), 8 * (cnt - i - 1));
+                    copyMemory(pageAddr, offset(i + 1), pageAddr, offset(i), 8 * (cnt - i - 1));
 
                 setCount(pageAddr, cnt - 1);
 

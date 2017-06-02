@@ -95,7 +95,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = tbl.rowDescriptor() == null ? "_" + name : tbl.rowDescriptor().type().typeId() + "_" + name;
+        name = (tbl.rowDescriptor() == null ? "" : tbl.rowDescriptor().type().typeId() + "_") + name;
 
         name = BPlusTree.treeName(name, "H2Tree");
 
@@ -326,10 +326,12 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             if (cctx.affinityNode()) {
-                for (H2Tree tree : segments) {
+                for (int i = 0; i < segments.length; i++) {
+                    H2Tree tree = segments[i];
+
                     tree.destroy();
 
-                    cctx.offheap().dropRootPageForIndex(tree.getName());
+                    cctx.offheap().dropRootPageForIndex(tree.getName() + "%" + i);
                 }
             }
         }
