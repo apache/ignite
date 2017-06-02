@@ -214,9 +214,6 @@ public class JdbcThinResultSet implements ResultSet {
         catch (IndexOutOfBoundsException e) {
             throw new SQLException("Invalid column index: " + colIdx, e);
         }
-        catch (ClassCastException e) {
-            throw new SQLException("Value is an not instance of " + String.class.getName(), e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -509,7 +506,6 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public int findColumn(final String colLb) throws SQLException {
         ensureNotClosed();
 
-
         Integer order = columnOrder().get(colLb.toUpperCase());
 
         if (order == null)
@@ -546,7 +542,7 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public boolean isBeforeFirst() throws SQLException {
         ensureNotClosed();
 
-        return curPos < 1 && rowsIter != null && rowsIter.hasNext();
+        return curPos == 0 && rowsIter != null && rowsIter.hasNext();
     }
 
     /** {@inheritDoc} */
@@ -1626,8 +1622,6 @@ public class JdbcThinResultSet implements ResultSet {
                 meta = res.meta();
 
                 metaInit = true;
-
-                columnOrder();
             }
             catch (IOException e) {
                 stmt.connection().close();
@@ -1657,8 +1651,10 @@ public class JdbcThinResultSet implements ResultSet {
         colOrder = new HashMap<>(meta.size());
 
         for (int i = 0; i < meta.size(); ++i) {
-            if(!colOrder.containsKey(meta.get(i).columnName()))
-                colOrder.put(meta.get(i).columnName(), i);
+            String colName = meta.get(i).columnName().toUpperCase();
+
+            if(!colOrder.containsKey(colName))
+                colOrder.put(colName, i);
         }
 
         return colOrder;
@@ -1667,14 +1663,14 @@ public class JdbcThinResultSet implements ResultSet {
     /**
      * @return Is query flag.
      */
-    public boolean isQuery() {
+    boolean isQuery() {
         return isQuery;
     }
 
     /**
      * @return Update count for no-SELECT queries.
      */
-    public long updatedCount() {
+    long updatedCount() {
         return updCnt;
     }
 
@@ -1683,9 +1679,9 @@ public class JdbcThinResultSet implements ResultSet {
      * @return Boolean value.
      */
     private static boolean castToBoolean(Number val) {
-        if (val == 1)
+        if (val.intValue() == 1)
             return true;
-        else if (val == 0)
+        else if (val.intValue() == 0)
             return false;
         else
             throw new ClassCastException("Cannot cast " + val.getClass().getName()

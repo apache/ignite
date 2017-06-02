@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+namespace Apache.Ignite.Core.Tests.Deployment
+{
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Tests.TestDll;
 
-import junit.framework.TestSuite;
-
-/**
- * H2 indexing SPI tests.
- */
-public class IgniteH2IndexingSpiTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("H2 Indexing SPI Test Suite");
-
-        // No-op.
-
-        return suite;
+    /// <summary>
+    /// Func with runtime dependency via extension method.
+    /// </summary>
+    public class RuntimeDependencyFunc : IComputeFunc<string, string>
+    {
+        /** <inheritdoc /> */
+        public string Invoke(string arg)
+        {
+            return arg.ReverseString();
+        }
     }
 }

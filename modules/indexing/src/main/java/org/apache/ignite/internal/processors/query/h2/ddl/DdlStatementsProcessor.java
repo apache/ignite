@@ -96,6 +96,13 @@ public class DdlStatementsProcessor {
             if (stmt0 instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex cmd = (GridSqlCreateIndex)stmt0;
 
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null)
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
+
+                assert tbl.rowDescriptor() != null;
+
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd.index().getName());
@@ -103,14 +110,6 @@ public class DdlStatementsProcessor {
                 newIdx.setIndexType(cmd.index().getIndexType());
 
                 LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
-
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-
-                if (tbl == null)
-                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                        cmd.tableName());
-
-                assert tbl.rowDescriptor() != null;
 
                 // Let's replace H2's table and property names by those operated by GridQueryProcessor.
                 GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
@@ -130,13 +129,14 @@ public class DdlStatementsProcessor {
                     newIdx, cmd.ifNotExists());
             }
             else if (stmt0 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex)stmt0;
+                GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
 
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
-                if (tbl != null)
+                if (tbl != null) {
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
+                }
                 else {
                     if (cmd.ifExists())
                         fut = new GridFinishedFuture();

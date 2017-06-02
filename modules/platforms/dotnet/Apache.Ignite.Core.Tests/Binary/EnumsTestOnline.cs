@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+namespace Apache.Ignite.Core.Tests.Binary
+{
+    using NUnit.Framework;
 
-import junit.framework.TestSuite;
+    /// <summary>
+    /// Enums test with Ignite running.
+    /// </summary>
+    public class EnumsTestOnline : EnumsTest
+    {
+        /// <summary>
+        /// Sets up the fixture.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+        }
 
-/**
- * Basic test suite.
- * May be removed soon as all tests were moved to {@link IgniteBasicTestSuite}
- */
-@Deprecated
-public class IgniteBinaryBasicTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        return new TestSuite("GridGain Binary Basic Test Suite: migrated to Ignite Basic Test Suite");
+        /// <summary>
+        /// Tears down the fixture.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
     }
 }
