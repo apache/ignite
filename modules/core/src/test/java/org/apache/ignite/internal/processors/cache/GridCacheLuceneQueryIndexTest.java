@@ -130,23 +130,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        IgniteInternalFuture<?> fut1 = multithreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    while (!fut.isDone()) {
-                        Thread.sleep(10000);
-
-//                        ((GridKernal)g).internalCache("local1").context().queries().index().printH2Stats();
-//                        ((GridKernal)g).internalCache("local2").context().queries().index().printH2Stats();
-                    }
-
-                    return null;
-                }
-            },
-            1);
-
         fut.get();
-        fut1.get();
 
         assert cache1.size() == keyCnt;
         assert cache2.size() == keyCnt;
@@ -348,7 +332,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            1);
+            10);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
