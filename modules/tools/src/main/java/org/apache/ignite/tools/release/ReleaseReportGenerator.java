@@ -2,12 +2,12 @@ package org.apache.ignite.tools.release;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Callable;
@@ -30,6 +30,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -38,45 +39,34 @@ import org.json.JSONObject;
  */
 public class ReleaseReportGenerator {
     /** Jira search DateTime format */
-    private final static SimpleDateFormat _jiraSearchDTF = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private final static SimpleDateFormat jiraSearchDTF = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     /** Issue fields list for return from Jira search */
     private final static String[] jiraFields = new String[] {"key", "summary", "description"};
 
-    /** Jira API Url. Using Apache Ignite Jira by default */
-    private static String jiraApiUrl = "https://issues.apache.org/jira/rest/api/2/";
-
-    /** Jira API username. Authentication don't needed be default */
-    private static String jiraUsername = "";
-
-    /** Jira API password. Authentication don't needed be default */
-    private static String jiraPwd = "";
-
-    /** Projects list for search issues included in release (comma separeted ) */
-    private static String jiraProjects = "IGNITE";
-
     /** Issue fix version for search issues included in release */
-    private static String jiraFixVer = "";
-
-    /** Release report header. */
-    private static String reportHdr = "Apache IGNITE";
+    private static String templatePath = "./report_template.json";
 
     /**
      * Generate reports.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
+     * @throws Exception If generating report execution failed.
      */
     public static void main(String... args) throws Exception {
         parseArguments(args);
 
-        if (jiraFixVer.equals(""))
-            throw new Exception("Product version should be set by command line arguments");
+        String sCurrentLine;
+        String templateJsonStr = "";
+        BufferedReader br = new BufferedReader(new FileReader(templatePath));
+        while ((sCurrentLine = br.readLine()) != null)
+            templateJsonStr += sCurrentLine;
 
-        PrintWriter writer = new PrintWriter("./apache-ignite-"+ jiraFixVer +".html", "UTF-8");
-        writer.println(generateHTMLReleaseReport());
+        JSONObject template = new JSONObject(templateJsonStr);
+
+        PrintWriter writer = new PrintWriter(template.getString("outfile"), "UTF-8");
+        writer.println(generateHTMLReleaseReport(template));
         writer.close();
-        generateHTMLReleaseReport();
     }
 
     /**
@@ -86,22 +76,9 @@ public class ReleaseReportGenerator {
      */
     private static void parseArguments(String... args) {
         for (String arg : args) {
-            if (arg.toLowerCase().startsWith("--jiraurl="))
-                jiraApiUrl = arg.substring(10);
-            else if (arg.toLowerCase().startsWith("--jirausername="))
-                jiraUsername = arg.substring(15);
-            else if (arg.toLowerCase().startsWith("--jirapassword="))
-                jiraPwd = arg.substring(15);
-            else if (arg.toLowerCase().startsWith("--jirafixversion="))
-                jiraFixVer = arg.substring(17);
-            else if (arg.toLowerCase().startsWith("--jiraprojects="))
-                jiraProjects = arg.substring(15);
-            else if (arg.toLowerCase().startsWith("--reportHdr="))
-                reportHdr = arg.substring(12);
+            if (arg.toLowerCase().startsWith("--templatePath=") || arg.toLowerCase().startsWith("-tm="))
+                templatePath = arg.toLowerCase().replace("--templatePath=", "").replace("-tm=", "");
         }
-
-        if (!jiraApiUrl.endsWith("/"))
-            jiraApiUrl+= "/";
     }
 
     /**
@@ -109,51 +86,140 @@ public class ReleaseReportGenerator {
      *
      * @throws HttpException On search failed throws exception
      */
-    private static String generateHTMLReleaseReport() throws HttpException {
-        String htmlReport = "<head>" + buildReleaseReportCss() + "</head>\n";
+    private static String generateHTMLReleaseReport(JSONObject template) throws HttpException {
+        String htmlReport = "<head>" + buildReleaseReportCss()+  "</head>\n";
 
         htmlReport += "<body>\n";
 
-        htmlReport += "<h1 id=\"" + reportHdr + " " + jiraFixVer + "\">"+ reportHdr + " " + jiraFixVer + "</h1>\n";
+        htmlReport += "<h1>" + template.getString("header") + "</h1>\n";
 
-        //New features not .NET
-        htmlReport += buildReportForIssueList("New Features",searchIssues(
-            String.format("project in (%s) and fixVersion = %s and type in (\"New Feature\") and component != documentation " +
-            "and ((labels != .net and labels != .NET) or labels is EMPTY) and status in (Closed, Resolved)", jiraProjects, jiraFixVer) +
-            " & updated <= '" + _jiraSearchDTF.format(Calendar.getInstance().getTime()) + "'", jiraFields));
-
-        //New features .NET
-        htmlReport += buildReportForIssueList("New Features .NET",searchIssues(
-            String.format("project in (%s) and fixVersion = %s and type in (\"New Feature\") and component != documentation " +
-            "and (labels = .net or labels = .NET)  and status in (Closed, Resolved)", jiraProjects, jiraFixVer) +
-            " & updated <= '" + _jiraSearchDTF.format(Calendar.getInstance().getTime()) + "'", jiraFields));
-        //Improvements not .NET
-        htmlReport += buildReportForIssueList("Improvements",searchIssues(
-            String.format("project in (%s) and fixVersion = %s and type in (Improvement) and component != documentation " +
-            "and ((labels != .net and labels != .NET) or labels is EMPTY) and status in (Closed, Resolved)", jiraProjects, jiraFixVer) +
-            " & updated <= '" + _jiraSearchDTF.format(Calendar.getInstance().getTime()) + "'", jiraFields));
-
-        //Improvements .NET
-        htmlReport += buildReportForIssueList("Improvements .NET",searchIssues(
-            String.format("project in (%s) and fixVersion = %s and type in (Improvement) and component != documentation " +
-            "and (labels = .net or labels = .NET)  and status in (Closed, Resolved)", jiraProjects, jiraFixVer) +
-            " & updated <= '" + _jiraSearchDTF.format(Calendar.getInstance().getTime()) + "'", jiraFields));
-
-        //Bugs not .NET
-        htmlReport += buildReportForIssueList("Fixed",searchIssues(
-            String.format("project in (%s) and fixVersion = %s and affectedVersion != %s and type in (Bug) and component != documentation " +
-            "and ((labels != .net and labels != .NET) or labels is EMPTY) and status in (Closed, Resolved)", jiraProjects, jiraFixVer, jiraFixVer) +
-            " & updated <= '" + _jiraSearchDTF.format(Calendar.getInstance().getTime()) + "'", jiraFields));
-
-        //Bugs .NET
-        htmlReport += buildReportForIssueList("Fixed .NET",searchIssues(
-            String.format("project in (%s) and fixVersion = %s and affectedVersion != %s and type in (Bug) and component != documentation " +
-            "and (labels = .net or labels = .NET) and status in (Closed, Resolved)", jiraProjects, jiraFixVer, jiraFixVer) +
-            " & updated <= '" + _jiraSearchDTF.format(Calendar.getInstance().getTime()) + "'", jiraFields));
+        for (Object item : template.getJSONArray("items")) {
+            htmlReport += buildReportForTemplateItem(template, (JSONObject) item);
+        }
 
         htmlReport += "</body>";
 
         return htmlReport;
+    }
+
+    /**
+     * Build HTML report part for template item
+     *
+     * @param template template for get parent settings
+     * @param item item for build report part
+     * @return String with report if issues founded for conditions in jql's
+     * @throws HttpException If Jira search throw exception
+     */
+    private static String buildReportForTemplateItem(JSONObject template, JSONObject item) throws HttpException{
+        String itemReport = "<h2>" + item.getString("header") + "</h2>\n";
+
+        itemReport += "<ul>\n";
+
+        for (Object search : item.getJSONArray("search")) {
+            JSONObject srv = getJsonObjectFromArrayById(((JSONObject) search).getInt("server"), "id", template.getJSONArray("servers"));
+            if (srv != null)
+                itemReport += buildReportForSearch((JSONObject) search, srv);
+        }
+        itemReport += "</ul>";
+
+        return itemReport.contains("<li>") ? itemReport : "";
+    }
+
+    /**
+     * Get JsonObject from JsonArray by id
+     *
+     * @param id id of object
+     * @param fieldName name of id json field
+     * @param arr JsonArray for search
+     * @return JsonObject of id exist in arr of null if none
+     */
+    private static JSONObject getJsonObjectFromArrayById(int id, String fieldName, JSONArray arr) {
+        for (Object item : arr) {
+            if (((JSONObject) item).getInt(fieldName) == id)
+                return (JSONObject) item;
+        }
+        return null;
+    }
+
+    /**
+     *  Build report part for search with personal settings
+     *
+     * @param search JsonObject with search settings
+     * @return HTML formatted string
+     */
+    private static String buildReportForSearch(JSONObject search, JSONObject srv) throws HttpException{
+        String searchReport = "";
+
+        List<JSONObject> issues = searchIssues(srv.getString("apiurl"), srv.getString("username"), srv.getString("password"), search.getString("jql"), jiraFields);
+
+        for (JSONObject issue : issues) {
+            String summary = issue.getJSONObject("fields").getString("summary");
+
+            if (summary.lastIndexOf(".") == summary.length() - 1)
+                summary = summary.substring(0, summary.length() - 1);
+
+                searchReport += "<li>" + summary;
+
+                if (search.getBoolean("showlink"))
+                    searchReport += "<a href=\"https://issues.apache.org/jira/browse/" + issue.getString("key") + "\"> [#" + issue.getString("key") + "]</a>\n";
+                else
+                    searchReport +=  " <span>[#" + issue.getString("key") + "]</span>";
+
+            searchReport +=  "</li>\n";
+        }
+        return searchReport;
+    }
+
+    /**
+     * Build reporting report css style string for HTML Page
+     *
+     * @return String with css formatted text
+     */
+    private static String buildReleaseReportCss() {
+        return "<style>\n" +
+                "h1 {\n" +
+                "  color: #113847;\n" +
+                "  font-size: 33px;\n" +
+                "  font-weight: bold;\n" +
+                "  margin: 30px 0 15px 0;\n" +
+                "  padding-bottom: 7px;\n" +
+                "  width: 700px;\n" +
+                "}" +
+
+                "h2 {" +
+                "  border-bottom: 2px solid #ccc;\n" +
+                "  color: #113847;\n" +
+                "  font-size: 29px;\n" +
+                "  font-weight: normal;\n" +
+                "  margin: 30px 0 15px 0;\n" +
+                "  padding-bottom: 7px;" +
+                "  width: 700px;\n" +
+                "}" +
+
+                "a {\n" +
+                "  color: #cc0000;\n" +
+                "  text-decoration: none;\n" +
+                "}\n" +
+
+                "span {\n" +
+                "  color: #cc0000;\n" +
+                "}\n" +
+
+                "a:hover {\n" +
+                "  text-decoration: underline;\n" +
+                "}" +
+
+                "ul,\n" +
+                "ol {\n" +
+                "  list-style: disc;\n" +
+                "  margin-left: 30px;\n" +
+                "}\n" +
+
+                "ul li,\n" +
+                "ol li {\n" +
+                "  margin: 5px 0;\n" +
+                "}\n" +
+                "</style>\n";
     }
 
     /**
@@ -164,20 +230,20 @@ public class ReleaseReportGenerator {
      * @return List if issues implemented as JSONObject
      * @throws HttpException All error throws HttpException
      */
-    private static List<JSONObject> searchIssues(final String jql, final String[] fields) throws HttpException {
+    private static List<JSONObject> searchIssues(final String jiraApiUrl, final String jiraUsername, final String jiraApiPwd, final String jql, final String[] fields) throws HttpException {
         final List<JSONObject> issues = new CopyOnWriteArrayList<> ();
         final int startAt = 0;
         final int maxResults = 50;
 
-         JSONObject firstRes = executeSearchRequest(jql, fields, startAt, maxResults);
+        JSONObject firstRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields, startAt, maxResults);
 
-         final int total = firstRes.getInt("total");
+        final int total = firstRes.getInt("total");
 
-         if (!firstRes.isNull("issues")) {
+        if (!firstRes.isNull("issues")) {
             for (Object issue : firstRes.getJSONArray("issues")) {
                 issues.add((JSONObject) issue);
             }
-         }
+        }
 
         ExecutorService svc = Executors.newFixedThreadPool(16);
         Collection<Future<Void>> futs = new ArrayList<>();
@@ -187,7 +253,7 @@ public class ReleaseReportGenerator {
             futs.add(svc.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
-                    JSONObject jiraRes = executeSearchRequest(jql, fields, maxResults * ost, maxResults);
+                    JSONObject jiraRes = executeSearchRequest(jiraApiUrl, jiraUsername, jiraApiPwd, jql, fields, maxResults * ost, maxResults);
 
                     if (jiraRes.getInt("total") != total)
                         throw new HttpException("Total count of issues changed, please restart report");
@@ -227,12 +293,15 @@ public class ReleaseReportGenerator {
      * @return JSONObject with jira response
      * @throws HttpException On search failed
      */
-    private static JSONObject executeSearchRequest(String jql, String[] fields, int startAt, int maxResults) throws HttpException {
+    private static JSONObject executeSearchRequest(String jiraApiUrl, String jiraUsername, String jiraPwd, String jql, String[] fields, int startAt, int maxResults) throws HttpException {
         JSONObject data = new JSONObject();
         data.put("jql", jql);
         data.put("fields", fields);
         data.put("startAt", startAt);
         data.put("maxResults", maxResults);
+
+        if (!jiraApiUrl.endsWith("/"))
+            jiraApiUrl+= "/";
 
         HttpRequestBase req = buildRequestWithData("POST", jiraApiUrl + "search", jiraUsername, jiraPwd, data.toString(), ContentType.APPLICATION_JSON);
 
@@ -355,82 +424,5 @@ public class ReleaseReportGenerator {
         StringEntity input = new StringEntity(data, contentType);
 
         httpReq.setEntity(input);
-    }
-
-    /**
-     * Build reporting report css style string for HTML Page
-     *
-     * @return String with css formatted text
-     */
-    private static String buildReleaseReportCss() {
-        return "<style>\n" +
-                "h1 {\n" +
-                "  color: #113847;\n" +
-                "  font-size: 33px;\n" +
-                "  font-weight: bold;\n" +
-                "  margin: 30px 0 15px 0;\n" +
-                "  padding-bottom: 7px;\n" +
-                "  width: 700px;\n" +
-                "}" +
-
-                "h2 {" +
-                "  border-bottom: 2px solid #ccc;\n" +
-                "  color: #113847;\n" +
-                "  font-size: 29px;\n" +
-                "  font-weight: normal;\n" +
-                "  margin: 30px 0 15px 0;\n" +
-                "  padding-bottom: 7px;" +
-                "  width: 700px;\n" +
-                "}" +
-
-                "a {\n" +
-                "  color: #cc0000;\n" +
-                "  text-decoration: none;\n" +
-                "}\n" +
-
-                "a:hover {\n" +
-                "  text-decoration: underline;\n" +
-                "}" +
-
-                "ul,\n" +
-                "ol {\n" +
-                "  list-style: disc;\n" +
-                "  margin-left: 30px;\n" +
-                "}\n" +
-
-                "ul li,\n" +
-                "ol li {\n" +
-                "  margin: 5px 0;\n" +
-                "}\n" +
-                "</style>\n";
-    }
-
-    /**
-     *  Build report part for issues list
-     *
-     * @param hdr hdr for part
-     * @param issues issues for add to part
-     * @return HTML formatted string
-     */
-    private static String buildReportForIssueList(String hdr, List<JSONObject> issues) {
-        String issuesReport = "";
-
-        if (issues.size() > 0) {
-            issuesReport = "<h2>" + hdr + "</h2>\n";
-
-            issuesReport += "<ul>\n";
-
-            for (JSONObject issue : issues) {
-                String summary = issue.getJSONObject("fields").getString("summary");
-
-                if (summary.lastIndexOf(".") == summary.length() - 1)
-                    summary = summary.substring(0, summary.length() - 1);
-
-                issuesReport += "<li>" + summary + "<a href=\"https://issues.apache.org/jira/browse/" + issue.getString("key") + "\"> [#" + issue.getString("key") + "]</a></li>\n";
-            }
-
-            issuesReport += "</ul>\n";
-        }
-        return issuesReport;
     }
 }
