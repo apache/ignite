@@ -48,6 +48,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
@@ -178,6 +179,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             discoSpi.setJoinTimeout(30_000);
         }
+
+        MemoryConfiguration cfg1 = new MemoryConfiguration();
+        cfg1.setPageCacheSize(50*1024*1024L);
+        cfg.setMemoryConfiguration(cfg1);
+
+
 
         cfg.setClientMode(client);
 
