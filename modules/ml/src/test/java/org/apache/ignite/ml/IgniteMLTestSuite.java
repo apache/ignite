@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml;
 
+import org.apache.ignite.ml.clustering.ClusteringTesetSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.junit.runner.RunWith;
@@ -28,7 +29,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     MathImplMainTestSuite.class,
-    RegressionsTestSuite.class
+    RegressionsTestSuite.class,
+    ClusteringTesetSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

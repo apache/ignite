@@ -998,12 +998,8 @@
         </profile>
 
         <profile>
-            <id>release</id>
-            <activation>
-                <property>
-                    <name>!skipDefault</name><!--activeByDefault-->
-                </property>
-            </activation>
+            <id>licenses</id>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>

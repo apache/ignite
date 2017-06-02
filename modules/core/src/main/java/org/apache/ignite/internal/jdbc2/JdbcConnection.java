@@ -53,15 +53,17 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -107,7 +109,10 @@ public class JdbcConnection implements Connection {
     private final String cfg;
 
     /** Cache name. */
-    private String cacheName;
+    private final String cacheName;
+
+    /** Schema name. */
+    private String schemaName;
 
     /** Closed flag. */
     private boolean closed;
@@ -158,6 +163,7 @@ public class JdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case Ignite node failed to start.
      */
+    @SuppressWarnings("unchecked")
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
@@ -171,6 +177,10 @@ public class JdbcConnection implements Connection {
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
+
+        if (stream && cacheName == null)
+            throw new SQLException("Cache name cannot be null when streaming is enabled.");
+
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
@@ -192,6 +202,17 @@ public class JdbcConnection implements Connection {
 
             if (!isValid(2))
                 throw new SQLException("Client is invalid. Probably cache name is wrong.");
+
+            if (cacheName != null) {
+                DynamicCacheDescriptor cacheDesc = ignite().context().cache().cacheDescriptor(cacheName);
+
+                if (cacheDesc == null)
+                    throw new SQLException("Cache doesn't exist: " + cacheName);
+
+                schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
+            }
+            else
+                schemaName = QueryUtils.DFLT_SCHEMA;
         }
         catch (Exception e) {
             close();
@@ -544,10 +565,24 @@ public class JdbcConnection implements Connection {
         if (!stream)
             stmt = new JdbcPreparedStatement(this, sql);
         else {
+            GridQueryIndexing idx = ignite().context().query().getIndexing();
+
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
-                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite);
+            if (!idx.isInsertStatement(nativeStmt))
+                throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
+
+            streamer.autoFlushFrequency(streamFlushTimeout);
+            streamer.allowOverwrite(streamAllowOverwrite);
+
+            if (streamNodeBufSize > 0)
+                streamer.perNodeBufferSize(streamNodeBufSize);
+
+            if (streamNodeParOps > 0)
+                streamer.perNodeParallelOperations(streamNodeParOps);
 
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }
@@ -704,18 +739,21 @@ public class JdbcConnection implements Connection {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSchema(String schema) throws SQLException {
-        assert ignite instanceof IgniteEx;
-
-        cacheName = ((IgniteEx)ignite).context().query().cacheName(schema);
+    @Override public void setSchema(String schemaName) throws SQLException {
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public String getSchema() throws SQLException {
-        String sqlSchema = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getSqlSchema();
+        return schemaName;
+    }
 
-        return U.firstNotNull(sqlSchema, cacheName, "");
+    /**
+     * @return Normalized schema name.
+     */
+    public String schemaName() {
+        return F.isEmpty(schemaName) ? QueryUtils.DFLT_SCHEMA : schemaName;
     }
 
     /** {@inheritDoc} */
@@ -736,8 +774,8 @@ public class JdbcConnection implements Connection {
     /**
      * @return Ignite node.
      */
-    Ignite ignite() {
-        return ignite;
+    IgniteKernal ignite() {
+        return (IgniteKernal)ignite;
     }
 
     /**
@@ -812,8 +850,7 @@ public class JdbcConnection implements Connection {
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
     PreparedStatement prepareNativeStatement(String sql) throws SQLException {
-        return ((IgniteCacheProxy) ignite().cache(cacheName())).context()
-            .kernalContext().query().prepareNativeStatement(getSchema(), sql);
+        return ignite().context().query().prepareNativeStatement(schemaName(), sql);
     }
 
     /**
