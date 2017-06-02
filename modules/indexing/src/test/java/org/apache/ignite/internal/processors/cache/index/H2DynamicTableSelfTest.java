@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,6 +55,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** */
     private final static String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
+
+    /** */
+    private final static String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -77,12 +81,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         super.beforeTest();
 
         client().getOrCreateCache(cacheConfigurationForIndexing());
+        client().getOrCreateCache(cacheConfigurationForIndexingInPublicSchema());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         if (client().cache("Person") != null)
-            cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"Person\".\"Person\""));
+            executeDdl("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
 
         super.afterTest();
     }
@@ -92,9 +97,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTable() throws Exception {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=cache\"");
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -132,7 +137,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertProperty(desc, "age", Integer.class, false);
 
-            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("Person", "Person");
+            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("PUBLIC", "Person");
 
             assertNotNull(tbl);
         }
@@ -144,13 +149,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableIfNotExists() throws Exception {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=cache\"");
 
-        cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+        executeDdl("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=cache\"");
     }
 
     /**
@@ -159,15 +164,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateExistingTable() throws Exception {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
                     ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"cacheTemplate=cache\""));
+                    "\"cacheTemplate=cache\"");
 
                 return null;
             }
@@ -179,11 +184,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testDropTable() throws Exception {
-        cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+        executeDdl("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=cache\"");
 
-        cache().query(new SqlFieldsQuery("DROP TABLE \"Person\".\"Person\""));
+        executeDdl("DROP TABLE \"Person\"");
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
@@ -199,10 +204,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that attempting to {@code DROP TABLE} that does not exist does not yield an error if the statement contains
      *     {@code IF EXISTS} clause.
+     *
      * @throws Exception if failed.
      */
     public void testDropMissingTableIfExists() throws Exception {
-        cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache_idx\".\"City\""));
+        executeDdl("DROP TABLE IF EXISTS \"City\"");
     }
 
     /**
@@ -213,7 +219,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropMissingTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("DROP TABLE \"cache_idx\".\"City\""));
+                executeDdl("DROP TABLE \"City\"");
 
                 return null;
             }
@@ -228,12 +234,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cache().query(new SqlFieldsQuery("DROP TABLE \"Integer\""));
+                executeDdl("DROP TABLE PUBLIC.\"Integer\"");
 
                 return null;
             }
         }, IgniteSQLException.class,
-        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx]");
+        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
     }
 
     /**
@@ -242,9 +248,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDestroyDynamicSqlCache() throws Exception {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+            "\"cacheTemplate=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -263,9 +269,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testSqlFlagCompatibilityCheck() throws Exception {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
-            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"cacheTemplate=cache\""));
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
+            "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"cacheTemplate=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -274,6 +279,49 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteException.class, "SQL flag mismatch (fix sql flag in cache configuration");
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} on non-public schema causes an exception.
+     *
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCreateTableNotPublicSchema() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
+                    " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+                    "\"cacheTemplate=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
+    }
+
+    /**
+     * Test that {@code DROP TABLE} on non-public schema causes an exception.
+     *
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDropTableNotPublicSchema() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("DROP TABLE \"cache_idx\".\"Person\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "DROP TABLE can only be executed on PUBLIC schema.");
+    }
+
+    /**
+     * Execute DDL statement.
+     *
+     * @param sql Statement.
+     */
+    private void executeDdl(String sql) {
+        queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true);
     }
 
     /**
@@ -389,5 +437,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         ));
 
         return ccfg;
+    }
+
+    /**
+     * @return Cache configuration with query entities in {@code PUBLIC} schema.
+     */
+    private CacheConfiguration cacheConfigurationForIndexingInPublicSchema() {
+        return cacheConfigurationForIndexing().setName(INDEXED_CACHE_NAME_2).setSqlSchema(QueryUtils.DFLT_SCHEMA);
     }
 }

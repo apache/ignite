@@ -28,13 +28,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -46,7 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
@@ -104,8 +103,6 @@ public class DdlStatementsProcessor {
                 if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
 
-                checkSqlCache(tbl.cache());
-
                 assert tbl.rowDescriptor() != null;
 
                 QueryIndex newIdx = new QueryIndex();
@@ -134,13 +131,11 @@ public class DdlStatementsProcessor {
                     newIdx, cmd.ifNotExists());
             }
             else if (stmt0 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex)stmt0;
+                GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
 
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
-                    checkSqlCache(tbl.cache());
-
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
                 }
@@ -155,6 +150,10 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("CREATE TABLE can only be executed on " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
+
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
@@ -168,6 +167,10 @@ public class DdlStatementsProcessor {
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
+
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("DROP TABLE can only be executed on " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -277,23 +280,6 @@ public class DdlStatementsProcessor {
         res.setKeyFields(createTbl.primaryKeyColumns());
 
         return res;
-    }
-
-    /**
-     * Check that given context corresponds to an SQL cache.
-     * @param cctx Cache context.
-     * @throws SchemaOperationException if given context does not correspond to an SQL cache.
-     */
-    private static void checkSqlCache(GridCacheContext cctx) throws SchemaOperationException {
-        A.notNull(cctx, "cctx");
-
-        DynamicCacheDescriptor desc = cctx.grid().context().cache().cacheDescriptor(cctx.cacheId());
-
-        assert desc != null;
-
-        if (!desc.sql())
-            throw new SchemaOperationException("CREATE INDEX and DROP INDEX operations are only allowed on caches " +
-                "created with CREATE TABLE command [cacheName=" + cctx.name() + ']');
     }
 
     /**
