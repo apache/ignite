@@ -81,23 +81,15 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return chain(doneCb, null);
+        return new IgniteFutureImpl<>(chainInternal(doneCb, null));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<T> chainAsync(final IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
+    @Override public <T> IgniteFuture<T> chainAsync(final IgniteClosure<? super IgniteFuture<V>, T> doneCb,
+        Executor exec) {
         A.notNull(doneCb, "doneCb");
         A.notNull(exec, "exec");
 
-        return chain(doneCb, exec);
-    }
-
-    /**
-     * @param doneCb Done callback.
-     * @param exec Executor.
-     * @return Chained future.
-     */
-    protected <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<V>, T> doneCb, @Nullable Executor exec) {
         return new IgniteFutureImpl<>(chainInternal(doneCb, exec));
     }
 
@@ -105,7 +97,8 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
      * @param doneCb Done callback.
      * @return Internal future
      */
-    protected  <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
+    protected  <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb,
+        @Nullable Executor exec) {
         C1<IgniteInternalFuture<V>, T> clos = new C1<IgniteInternalFuture<V>, T>() {
             @Override public T apply(IgniteInternalFuture<V> fut) {
                 assert IgniteFutureImpl.this.fut == fut;
