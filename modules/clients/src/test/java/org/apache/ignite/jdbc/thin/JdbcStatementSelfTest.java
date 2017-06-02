@@ -22,15 +22,19 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLTimeoutException;
 import java.sql.Statement;
+import java.util.concurrent.Callable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinStatement;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -77,6 +81,10 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         cfg.setName(name);
 
+        cfg.setSqlFunctionClasses(getClass());
+
+        cfg.setIndexedTypes(Integer.class, Test.class);
+
         return cfg;
     }
 
@@ -94,6 +102,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(2);
 
         Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+
+        fillCache();
     }
 
     /** {@inheritDoc} */
@@ -105,23 +115,194 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExecuteQuery() throws Exception {
-        Statement stmt = getStatement();
-
         final String sqlText = "select * from test";
 
-        // TODO: need real data
-        ResultSet resultSet = stmt.executeQuery(sqlText);
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
 
-        assertNotNull(resultSet);
+            try (Statement stmt = conn.createStatement()) {
+                try (ResultSet rs = stmt.executeQuery(sqlText)) {
+                    assertNotNull(rs);
 
-        stmt.setQueryTimeout(1);
+                    assertTrue(rs.next());
+
+                    assertEquals(1, rs.getInt(1));
+                }
+
+                stmt.close();
+
+                // Call on a closed statement
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeQuery(sqlText);
+                        }
+                    },
+                    SQLException.class,
+                    "Statement is closed"
+                );
+            }
+        }
+        //TODO: cannot be called on PreparedStatement
     }
 
-    private Statement getStatement() throws Exception {
-        final Connection conn = DriverManager.getConnection(URL_PREFIX + HOST);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryTimeout() throws Exception {
+        final String sqlText = "select sleep_func(5)";
 
-        Statement stmt = conn.createStatement();
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
 
-        return stmt;
+            try (Statement stmt = conn.createStatement()) {
+                stmt.setQueryTimeout(1);
+
+                // Timeout
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeQuery(sqlText);
+                        }
+                    },
+                    SQLTimeoutException.class,
+                    "Timeout"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryMultipleResultSets() throws Exception {
+        final String sqlText = "select * from test; select * from test";
+
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeQuery(sqlText);
+                        }
+                    },
+                    SQLException.class,
+                    "Multiple result sets"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteUpdate() throws Exception {
+        final String sqlText = "update test set val=1 where _key=1";
+
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                assertEquals(1, stmt.executeUpdate(sqlText));
+
+                stmt.close();
+
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeUpdate(sqlText);
+                        }
+                    },
+                    SQLException.class,
+                    "Closed statement"
+                );
+            }
+        }
+
+        // TODO: Cannot be called on PreparedStatement
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteUpdateProducesResultSet() throws Exception {
+        final String sqlText = "select * from test";
+
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeUpdate(sqlText);
+                        }
+                    },
+                    SQLException.class,
+                    "Produces result set"
+                );
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteUpdateTimeout() throws Exception {
+        final String sqlText = "update test set val=1 where _key=sleep_func(5)";
+
+        try (Connection conn = DriverManager.getConnection(URL_PREFIX + HOST)) {
+            conn.setSchema(DEFAULT_CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.setQueryTimeout(1);
+
+                // Timeout
+                GridTestUtils.assertThrows(log,
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            return stmt.executeUpdate(sqlText);
+                        }
+                    },
+                    SQLTimeoutException.class,
+                    "Timeout"
+                );
+            }
+        }
+    }
+
+    /** */
+    private void fillCache() {
+        grid(0).cache(DEFAULT_CACHE_NAME).put(1, new Test(1));
+    }
+
+    /** */
+    public static class Test {
+        @QuerySqlField
+        private int val;
+
+        /** */
+        public Test(int val) {
+            this.val = val;
+        }
+    }
+
+    /**
+     *
+     * @param v seconds to sleep
+     * @return passed value
+     */
+    @SuppressWarnings("unused")
+    @QuerySqlFunction
+    public static int sleep_func(int v) {
+        try {
+            Thread.sleep(v * 1000);
+        }
+        catch (InterruptedException ignored) {
+            // No-op
+        }
+        return v;
     }
 }
