@@ -115,6 +115,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
 
     /**
      * Creates map copy.
+     *
      * @param from Source map.
      * @param onlyActive Retains only active partitions.
      */
