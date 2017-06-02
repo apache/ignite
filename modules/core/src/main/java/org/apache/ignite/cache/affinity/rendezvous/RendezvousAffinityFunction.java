@@ -40,12 +40,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,7 +77,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     public static final int DFLT_PARTITION_COUNT = 1024;
 
     /** Comparator. */
-    private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
+    private static final Comparator<NodeWithHash> COMPARATOR = new HashComparator();
 
     /** Number of partitions. */
     private int parts;
@@ -336,26 +334,27 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     public List<ClusterNode> assignPartition(int part,
         List<ClusterNode> nodes,
         int backups,
-        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache,
+        NodeWithHash[] sortContainer
+    ) {
         if (nodes.size() <= 1)
             return nodes;
 
-        IgniteBiTuple<Long, ClusterNode> [] hashArr =
-            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
+        assert sortContainer.length == nodes.size() : "Invalid sort container [part=" + part +
+            "nodes=" + nodes + ", container=" + Arrays.toString(sortContainer) + ']';
 
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
 
             Object nodeHash = resolveNodeHash(node);
 
-            long hash = hash(nodeHash.hashCode(), part);
-
-            hashArr[i] = F.t(hash, node);
+            sortContainer[i].node = node;
+            sortContainer[i].hash = hash(nodeHash.hashCode(), part);
         }
 
         final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
 
-        Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
+        Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(sortContainer, primaryAndBackups);
 
         Iterator<ClusterNode> it = sortedNodes.iterator();
 
@@ -474,8 +473,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
 
+        NodeWithHash[] container = getOrCreateSortContainer(affCtx);
+
         for (int i = 0; i < parts; i++) {
-            List<ClusterNode> partAssignment = assignPartition(i, nodes, affCtx.backups(), neighborhoodCache);
+            List<ClusterNode> partAssignment = assignPartition(i, nodes, affCtx.backups(), neighborhoodCache, container);
 
             assignments.add(partAssignment);
         }
@@ -486,6 +487,26 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
         // No-op.
+    }
+
+    /**
+     * @param ctx Affinity function context.
+     * @return Array to use for partition assignment.
+     */
+    private NodeWithHash[] getOrCreateSortContainer(AffinityFunctionContext ctx) {
+        NodeWithHash[] prev = ctx.attachment();
+        List<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
+
+        if (prev == null || prev.length != topSnapshot.size()) {
+            prev = new NodeWithHash[topSnapshot.size()];
+
+            for (int i = 0; i < prev.length; i++)
+                prev[i] = new NodeWithHash();
+
+            ctx.attachment(prev);
+        }
+
+        return prev;
     }
 
     /** {@inheritDoc} */
@@ -508,14 +529,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      *
      */
-    private static class HashComparator implements Comparator<IgniteBiTuple<Long, ClusterNode>>, Serializable {
+    private static class HashComparator implements Comparator<NodeWithHash>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
-            return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
-                o1.get2().id().compareTo(o2.get2().id());
+        @Override public int compare(NodeWithHash o1, NodeWithHash o2) {
+            return o1.hash < o2.hash ? -1 : o1.hash > o2.hash ? 1 :
+                o1.node.id().compareTo(o2.node.id());
         }
     }
 
@@ -524,7 +545,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      */
     private static class LazyLinearSortedContainer implements Iterable<ClusterNode> {
         /** Initial node-hash array. */
-        private final IgniteBiTuple<Long, ClusterNode>[] arr;
+        private final NodeWithHash[] arr;
 
         /** Count of the sorted elements */
         private int sorted;
@@ -533,7 +554,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
          * @param arr Node / partition hash list.
          * @param needFirstSortedCnt Estimate count of elements to return by iterator.
          */
-        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int needFirstSortedCnt) {
+        LazyLinearSortedContainer(NodeWithHash[] arr, int needFirstSortedCnt) {
             this.arr = arr;
 
             if (needFirstSortedCnt > (int)Math.log(arr.length)) {
@@ -566,9 +587,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                     throw new NoSuchElementException();
 
                 if (cur < sorted)
-                    return arr[cur++].get2();
+                    return arr[cur++].node;
 
-                IgniteBiTuple<Long, ClusterNode> min = arr[cur];
+                NodeWithHash min = arr[cur];
 
                 int minIdx = cur;
 
@@ -588,7 +609,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
                 sorted = cur++;
 
-                return min.get2();
+                return min.node;
             }
 
             /** {@inheritDoc} */
@@ -596,5 +617,16 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                 throw new UnsupportedOperationException("Remove doesn't supported");
             }
         }
+    }
+
+    /**
+     * A specific tuple which holds a primitive long to avoid unneccessary boxing.
+     */
+    public static class NodeWithHash {
+        /** */
+        private ClusterNode node;
+
+        /** */
+        private long hash;
     }
 }

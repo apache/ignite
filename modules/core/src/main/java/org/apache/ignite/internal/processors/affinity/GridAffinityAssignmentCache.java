@@ -257,8 +257,12 @@ public class GridAffinityAssignmentCache {
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt,
-        DiscoCache discoCache) {
+    public List<List<ClusterNode>> calculate(
+        AffinityTopologyVersion topVer,
+        DiscoveryEvent discoEvt,
+        DiscoCache discoCache,
+        AffinityAttachmentHolder holder
+    ) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -284,12 +288,22 @@ public class GridAffinityAssignmentCache {
             if (!affNode)
                 assignment = prevAssignment;
             else
-                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
+                    sorted,
+                    prevAssignment,
+                    discoEvt,
+                    topVer,
+                    backups,
+                    holder));
         }
         else
-            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
-                topVer, backups));
+            assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
+                sorted,
+                prevAssignment,
+                discoEvt,
+                topVer,
+                backups,
+                holder));
 
         assert assignment != null;
 

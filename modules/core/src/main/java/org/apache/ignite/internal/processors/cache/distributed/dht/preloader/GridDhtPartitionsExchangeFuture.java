@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -50,9 +49,9 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -242,6 +240,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     @GridToStringExclude
     private volatile IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
+
+    /** */
+    private AffinityAttachmentHolder affAttachmentHolder;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -407,6 +408,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @return Affinity attachment holder to use.
+     */
+    public AffinityAttachmentHolder attachmentHolder() {
+        return cctx.exchange().inExchangeWorkerThread() ? affAttachmentHolder : new AffinityAttachmentHolder();
+    }
+
+    /**
      * @param cacheId Cache ID to check.
      * @param topVer Topology version.
      * @return {@code True} if cache was added during this exchange.
@@ -546,6 +554,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             boolean crdNode = crd != null && crd.isLocal();
 
             skipPreload = cctx.kernalContext().clientNode();
+
+            affAttachmentHolder = new AffinityAttachmentHolder();
 
             exchLog.info("Start exchange init [topVer=" + topVer +
                 ", crd=" + crdNode +
@@ -1293,6 +1303,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
+
+            affAttachmentHolder.attachment(null);
 
             if (exchId.isLeft()) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts())

@@ -32,6 +32,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -108,7 +109,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
     public void testPrimaryPartitionsOneNode() throws Exception {
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -151,7 +152,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -182,7 +183,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -216,7 +217,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
 
@@ -239,7 +240,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         AffinityFunction aff = affinity();
 
@@ -258,7 +259,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         AffinityFunction aff = affinity();
 
@@ -278,7 +279,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         AffinityFunction aff = affinity();
 
@@ -303,7 +304,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         AffinityFunctionContext ctx =
             new GridAffinityFunctionContextImpl(new ArrayList<>(grid(0).cluster().nodes()), null, null,
-                new AffinityTopologyVersion(1), 1);
+                new AffinityTopologyVersion(1), 1, new AffinityAttachmentHolder());
 
         AffinityFunction aff = affinity();
 

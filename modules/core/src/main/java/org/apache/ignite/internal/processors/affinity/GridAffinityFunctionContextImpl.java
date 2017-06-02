@@ -43,17 +43,27 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** Number of backups to assign. */
     private final int backups;
 
+    /** */
+    private AffinityAttachmentHolder holder;
+
     /**
      * @param topSnapshot Topology snapshot.
      * @param topVer Topology version.
      */
-    public GridAffinityFunctionContextImpl(List<ClusterNode> topSnapshot, List<List<ClusterNode>> prevAssignment,
-        DiscoveryEvent discoEvt, @NotNull AffinityTopologyVersion topVer, int backups) {
+    public GridAffinityFunctionContextImpl(
+        List<ClusterNode> topSnapshot,
+        List<List<ClusterNode>> prevAssignment,
+        DiscoveryEvent discoEvt,
+        @NotNull AffinityTopologyVersion topVer,
+        int backups,
+        AffinityAttachmentHolder holder
+    ) {
         this.topSnapshot = topSnapshot;
         this.prevAssignment = prevAssignment;
         this.discoEvt = discoEvt;
         this.topVer = topVer;
         this.backups = backups;
+        this.holder = holder;
     }
 
     /** {@inheritDoc} */
@@ -79,6 +89,16 @@ public class GridAffinityFunctionContextImpl implements AffinityFunctionContext 
     /** {@inheritDoc} */
     @Override public int backups() {
         return backups;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T attachment() {
+        return (T)holder.attachment();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> void attachment(T attachment) {
+        holder.attachment(attachment);
     }
 
     /**

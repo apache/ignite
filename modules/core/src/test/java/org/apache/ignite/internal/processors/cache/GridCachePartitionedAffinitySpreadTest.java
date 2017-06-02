@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,7 +47,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
 
         for (int i = 5; i < NODES_CNT; i = i * 3 / 2) {
             for (int replicas = 128; replicas <= 4096; replicas*=2) {
-                Collection<ClusterNode> nodes = createNodes(i, replicas);
+                List<ClusterNode> nodes = createNodes(i, replicas);
 
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 10000);
 
@@ -59,8 +63,8 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
      * @param replicas Value of
      * @return Collection of test nodes.
      */
-    private Collection<ClusterNode> createNodes(int nodesCnt, int replicas) {
-        Collection<ClusterNode> nodes = new ArrayList<>(nodesCnt);
+    private List<ClusterNode> createNodes(int nodesCnt, int replicas) {
+        List<ClusterNode> nodes = new ArrayList<>(nodesCnt);
 
         for (int i = 0; i < nodesCnt; i++)
             nodes.add(new TestRichNode(replicas));
@@ -72,14 +76,22 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
      * @param aff Affinity to check.
      * @param nodes Collection of nodes to test on.
      */
-    private void checkDistribution(RendezvousAffinityFunction aff, Collection<ClusterNode> nodes) {
+    private void checkDistribution(RendezvousAffinityFunction aff, List<ClusterNode> nodes) {
         Map<ClusterNode, Integer> parts = new HashMap<>(nodes.size());
 
+        GridAffinityFunctionContextImpl ctx = new GridAffinityFunctionContextImpl(
+            nodes,
+            null,
+            null,
+            new AffinityTopologyVersion(1, 0),
+            0,
+            new AffinityAttachmentHolder()
+        );
+
+        List<List<ClusterNode>> affDist = aff.assignPartitions(ctx);
+
         for (int part = 0; part < aff.getPartitions(); part++) {
-            Collection<ClusterNode> affNodes = aff.assignPartition(part,
-                new ArrayList<ClusterNode>(nodes),
-                0,
-                new HashMap<UUID, Collection<ClusterNode>>());
+            Collection<ClusterNode> affNodes = affDist.get(part);
 
             assertEquals(1, affNodes.size());
 
@@ -134,7 +146,10 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
          */
         @SuppressWarnings("UnusedDeclaration")
         private TestRichNode(int replicas) {
-            this(UUID.randomUUID(), replicas);
+            super(UUID.randomUUID());
+
+            nodeId = id();
+            this.replicas = replicas;
         }
 
         /**
@@ -143,6 +158,8 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
          * @param nodeId Node id.
          */
         private TestRichNode(UUID nodeId, int replicas) {
+            super(nodeId);
+
             this.nodeId = nodeId;
             this.replicas = replicas;
         }

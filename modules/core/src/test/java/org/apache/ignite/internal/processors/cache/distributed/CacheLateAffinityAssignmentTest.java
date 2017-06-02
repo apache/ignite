@@ -57,6 +57,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -245,7 +246,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             null,
             null,
             topVer(1, 0),
-            cctx.config().getBackups());
+            cctx.config().getBackups(),
+            new AffinityAttachmentHolder());
 
         List<List<ClusterNode>> calcAff1_0 = func.assignPartitions(ctx);
 
@@ -256,7 +258,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             calcAff1_0,
             null,
             topVer(1, 0),
-            cctx.config().getBackups());
+            cctx.config().getBackups(),
+            new AffinityAttachmentHolder());
 
         List<List<ClusterNode>> calcAff2_0 = func.assignPartitions(ctx);
 
@@ -2457,7 +2460,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 previousAssignment(topVer, cacheDesc.cacheId()),
                 evt,
                 topVer0,
-                cacheDesc.cacheConfiguration().getBackups());
+                cacheDesc.cacheConfiguration().getBackups(),
+                new AffinityAttachmentHolder());
 
             List<List<ClusterNode>> assignment = func.assignPartitions(affCtx);
 

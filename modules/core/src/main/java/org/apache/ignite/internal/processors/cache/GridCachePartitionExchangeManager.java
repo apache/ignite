@@ -349,6 +349,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @return {@code true} if current thread is exchange worker.
+     */
+    public boolean inExchangeWorkerThread() {
+        return Thread.currentThread() == exchWorker.runner();
+    }
+
+    /**
      * @return Initial exchange ID.
      */
     private GridDhtPartitionExchangeId initialExchangeId() {

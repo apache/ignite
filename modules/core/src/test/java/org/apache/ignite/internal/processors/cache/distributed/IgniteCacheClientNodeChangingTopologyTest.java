@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -721,7 +722,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             null,
             discoEvt,
             new AffinityTopologyVersion(topVer + 1),
-            1);
+            1,
+            new AffinityAttachmentHolder());
 
         AffinityFunction affFunc = ignite.cache(null).getConfiguration(CacheConfiguration.class).getAffinity();
 

@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityAttachmentHolder;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
@@ -215,7 +216,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     private Collection<ClusterNode> nodes(AffinityFunction aff, int part, Collection<ClusterNode> nodes) {
         List<List<ClusterNode>> assignment = aff.assignPartitions(
             new GridAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, new AffinityTopologyVersion(1),
-                BACKUP_CNT));
+                BACKUP_CNT, new AffinityAttachmentHolder()));
 
         return assignment.get(part);
     }
