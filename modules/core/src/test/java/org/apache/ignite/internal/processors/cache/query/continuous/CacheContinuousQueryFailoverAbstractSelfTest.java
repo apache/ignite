@@ -39,7 +39,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.Duration;
@@ -63,6 +66,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -89,6 +93,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -832,6 +837,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
 
+        int co = 0;
+
         for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
 
             lsnr.setCntBackup(0);
@@ -883,6 +890,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 }
 
                 filtered = !filtered;
+
+                System.out.println("count i: " + co++);
             }
 
             stopGrid(i);
@@ -905,13 +914,233 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             checkEvents(expEvts, lsnr, false);
 
-            if (!asyncCallback()) {
-                assertEquals(1, lsnr.getCntPrimary().get());
-                assertTrue(lsnr.getCntBackup().get() > 1);
-            }
+            System.out.println("test case CntPrimary: " + lsnr.getCntPrimary().get());
+            System.out.println("test case CntBackup: " + lsnr.getCntBackup().get());
+
+//            assertEquals(expEvts.size(), lsnr.getCntBackup().get());
         }
 
         cur.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteFilterException() throws Exception {
+        this.backups = 2;
+
+        final int SRV_NODES = 4;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
+
+        if (cacheMode() != REPLICATED)
+            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
+
+        Affinity<Object> aff = qryClient.affinity(DEFAULT_CACHE_NAME);
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+//        final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3() : new CacheEventListener3();
+        final CacheEventListener3Exception lsnr = new CacheEventListener3Exception();
+
+        qry.setLocalListener(lsnr);
+
+        // deprecated, change to setRemoteFilterFactory
+//        qry.setRemoteFilter(lsnr);
+        qry.setRemoteFilterFactory(new Factory<CacheEntryEventFilter<Object, Object>>() {
+            @Override public CacheEntryEventFilter<Object, Object> create() {
+                return new CacheEntryEventFilter<Object, Object>() {
+                    @Override public boolean evaluate(CacheEntryEvent<? extends Object, ? extends Object> e) {
+
+                        return (Integer)e.getKey() > 10;
+                    }
+                };
+            }
+        });
+
+        int PARTS = 10;
+
+        QueryCursor<?> cur = qryClientCache.query(qry);
+
+        Map<Object, T2<Object, Object>> updates = new HashMap<>();
+
+        final List<T3<Object, Object, Object>> expEvts = new ArrayList<>();
+
+        int co = 0;
+
+        for (int i = 0; i < (atomicityMode() == CacheAtomicityMode.ATOMIC ? SRV_NODES - 1 : SRV_NODES - 2); i++) {
+
+            lsnr.setCntBackup(0);
+            lsnr.setCntPrimary(0);
+
+            log.info("Stop iteration: " + i);
+
+            TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+            Ignite ignite = ignite(i);
+
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            List<Integer> keys = testKeys(cache, PARTS);
+
+            boolean first = true;
+
+            boolean filtered = false;
+
+            for (Integer key : keys) {
+                log.info("Put [node=" + ignite.name() + ", key=" + key + ", part=" + aff.partition(key)
+                    + ", filtered=" + filtered + ']');
+
+                T2<Object, Object> t = updates.get(key);
+
+                Integer val = filtered ?
+                    (key % 2 == 0 ? key + 1 : key) :
+                    key * 2;
+
+                if (t == null) {
+                    updates.put(key, new T2<>((Object)val, null));
+
+                    if (!filtered)
+                        expEvts.add(new T3<>((Object)key, (Object)val, null));
+                }
+                else {
+                    updates.put(key, new T2<>((Object)val, (Object)key));
+
+                    if (!filtered)
+                        expEvts.add(new T3<>((Object)key, (Object)val, (Object)key));
+                }
+
+                cache.put(key, val);
+
+                if (first) {
+                    spi.skipMsg = true;
+
+                    first = false;
+                }
+
+                filtered = !filtered;
+
+                System.out.println("count i: " + co++);
+            }
+
+            stopGrid(i);
+
+            boolean check = GridTestUtils.waitForCondition(new PAX() {
+                @Override public boolean applyx() throws IgniteCheckedException {
+                    return expEvts.size() == lsnr.keys.size();
+                }
+            }, 5000L);
+
+            if (!check) {
+                Set<Integer> keys0 = new HashSet<>(keys);
+
+                keys0.removeAll(lsnr.keys);
+
+                log.info("Missed events for keys: " + keys0);
+
+                fail("Failed to wait for notifications [exp=" + keys.size() + ", left=" + keys0.size() + ']');
+            }
+
+            checkEventsException(expEvts, lsnr, false);
+
+            System.out.println("test case CntPrimary: " + lsnr.getCntPrimary().get());
+            System.out.println("test case CntBackup: " + lsnr.getCntBackup().get());
+
+//            assertEquals(expEvts.size(), lsnr.getCntBackup().get());
+        }
+
+        cur.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteFilter2() throws Exception {
+        this.backups = 5;
+
+        final int SRV_NODES = 2;
+
+        startGridsMultiThreaded(SRV_NODES);
+
+        client = true;
+
+        Ignite qryClient = startGrid(SRV_NODES);
+
+        client = false;
+
+        IgniteCache<Integer, String> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
+
+        if (cacheMode() != REPLICATED)
+            assertEquals(backups, qryClientCache.getConfiguration(CacheConfiguration.class).getBackups());
+
+        int keyCnt = 20;
+
+        // These entries will be queried by initial predicate.
+        for (int i = 0; i < keyCnt; i++)
+            qryClientCache.put(i, Integer.toString(i));
+
+        // Create new continuous query.
+        ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+
+        qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
+            @Override public boolean apply(Integer key, String val) {
+                return key > 10;
+            }
+        }));
+
+        final CacheEventListener33 lsnr = new CacheEventListener33();
+
+        qry.setLocalListener(lsnr);
+        qry.setRemoteFilter(lsnr);
+
+//        // Callback that is called locally when update notifications are received.
+//        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
+//            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts) {
+//                for (CacheEntryEvent<? extends Integer, ? extends String> e : evts)
+//                    System.out.println("Updated entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+//            }
+//        });
+//
+//        // This filter will be evaluated remotely on all nodes.
+//        // Entry that pass this filter will be sent to the caller.
+//        qry.setRemoteFilterFactory(new Factory<CacheEntryEventFilter<Integer, String>>() {
+//            @Override public CacheEntryEventFilter<Integer, String> create() {
+//                return new CacheEntryEventFilter<Integer, String>() {
+//                    @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
+//
+//                        return e.getKey() > 10;
+//                    }
+//                };
+//            }
+//        });
+
+        // Execute query.org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl
+        try (QueryCursor<Cache.Entry<Integer, String>> cur = qryClientCache.query(qry)) {
+            // Iterate through existing data.
+            for (Cache.Entry<Integer, String> e : cur)
+                System.out.println("Queried existing entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+
+            // Add a few more keys and watch more query notifications.
+            for (int i = keyCnt; i < keyCnt + 10; i++)
+                qryClientCache.put(i, Integer.toString(i));
+
+            // Wait for a while while callback is notified about remaining puts.
+            Thread.sleep(2000);
+        }
+
+        stopGrid(0);
+        stopGrid(1);
+
+            System.out.println("test case CntPrimary: " + lsnr.getCntPrimary().get());
+            System.out.println("test case CntBackup: " + lsnr.getCntBackup().get());
     }
 
     /**
@@ -1250,8 +1479,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      * @param e Event
      * @param expVals expected value
-     * @return {@code True} if entries has the same key, value and oldValue. If cache start without backups
-     * than oldValue ignoring in comparison.
+     * @return {@code True} if entries has the same key, value and oldValue. If cache start without backups than
+     * oldValue ignoring in comparison.
      */
     private boolean equalOldValue(CacheEntryEvent<?, ?> e, T3<Object, Object, Object> expVals) {
         return (e.getOldValue() == null && expVals.get3() == null) // Both null
@@ -1265,6 +1494,38 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param lsnr Listener.
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener3 lsnr,
+        boolean allowLoseEvt) throws Exception {
+        if (!allowLoseEvt)
+            assert GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return lsnr.evts.size() == expEvts.size();
+                }
+            }, 2000L);
+
+        for (T3<Object, Object, Object> exp : expEvts) {
+            CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
+
+            assertNotNull("No event for key: " + exp.get1(), e);
+            assertEquals("Unexpected value: " + e, exp.get2(), e.getValue());
+
+            if (allowLoseEvt)
+                lsnr.evts.remove(exp.get1());
+        }
+
+        if (allowLoseEvt)
+            assert lsnr.evts.isEmpty();
+
+        expEvts.clear();
+
+        lsnr.evts.clear();
+        lsnr.keys.clear();
+    }
+
+    /**
+     * @param expEvts Expected events.
+     * @param lsnr Listener.
+     */
+    private void checkEventsException(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener3Exception lsnr,
         boolean allowLoseEvt) throws Exception {
         if (!allowLoseEvt)
             assert GridTestUtils.waitForCondition(new PA() {
@@ -2591,9 +2852,15 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                 assert this.evts.put(key, e) == null;
 
-                if (e.unwrap(CacheQueryEntryEvent.class).isPrimary())
-                    cntBackup.incrementAndGet();
-                else if (e.unwrap(CacheQueryEntryEvent.class).isBackup())
+                boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
+                boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
+
+                System.out.println("primary u: " + primary);
+                System.out.println("backup u: " + backup);
+
+                if (primary)
+                    cntPrimary.incrementAndGet();
+                else if (backup)
                     cntBackup.incrementAndGet();
             }
         }
@@ -2612,7 +2879,126 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         }
 
         public AtomicInteger getCntBackup() {
+            return cntBackup;
+        }
+
+        public void setCntBackup(int cntBackup) {
+            this.cntBackup.set(cntBackup);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener3Exception implements CacheEntryUpdatedListener<Object, Object>,
+        CacheEntryEventSerializableFilter<Object, Object> {
+        /** Keys. */
+        GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** Events. */
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+
+        /** Counter primary nodes. */
+        private AtomicInteger cntPrimary = new AtomicInteger(0);
+
+        /** Counter backup nodes. */
+        private AtomicInteger cntBackup = new AtomicInteger(0);
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
+            for (CacheEntryEvent<?, ?> e : evts) {
+                Integer key = (Integer)e.getKey();
+
+                keys.add(key);
+
+                assert this.evts.put(key, e) == null;
+
+                boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
+                boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
+
+                System.out.println("primary u: " + primary);
+                System.out.println("backup u: " + backup);
+
+                if (primary)
+                    cntPrimary.incrementAndGet();
+                else if (backup)
+                    cntBackup.incrementAndGet();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
+            return (Integer)e.getValue() % 2 == 0;
+        }
+
+        public AtomicInteger getCntPrimary() {
             return cntPrimary;
+        }
+
+        public void setCntPrimary(int cntPrimary) {
+            this.cntPrimary.set(cntPrimary);
+        }
+
+        public AtomicInteger getCntBackup() {
+            return cntBackup;
+        }
+
+        public void setCntBackup(int cntBackup) {
+            this.cntBackup.set(cntBackup);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener33 implements CacheEntryUpdatedListener<Integer, String>,
+        CacheEntryEventSerializableFilter<Integer, String> {
+        /** Keys. */
+        GridConcurrentHashSet<Integer> keys = new GridConcurrentHashSet<>();
+
+        /** Events. */
+        private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
+
+        /** Counter primary nodes. */
+        private AtomicInteger cntPrimary = new AtomicInteger(0);
+
+        /** Counter backup nodes. */
+        private AtomicInteger cntBackup = new AtomicInteger(0);
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts) throws CacheEntryListenerException {
+            for (CacheEntryEvent<?, ?> e : evts) {
+
+                System.out.println("Updated entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+
+                boolean primary = e.unwrap(CacheQueryEntryEvent.class).isPrimary();
+                boolean backup = e.unwrap(CacheQueryEntryEvent.class).isBackup();
+
+                System.out.println("primary u: " + primary);
+                System.out.println("backup u: " + backup);
+
+                if (primary)
+                    cntPrimary.incrementAndGet();
+                else if (backup)
+                    cntBackup.incrementAndGet();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) throws CacheEntryListenerException {
+            return e.getKey() > 10;
+        }
+
+        public AtomicInteger getCntPrimary() {
+            return cntPrimary;
+        }
+
+        public void setCntPrimary(int cntPrimary) {
+            this.cntPrimary.set(cntPrimary);
+        }
+
+        public AtomicInteger getCntBackup() {
+            return cntBackup;
         }
 
         public void setCntBackup(int cntBackup) {
