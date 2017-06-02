@@ -1658,14 +1658,14 @@ public class JdbcThinResultSet implements ResultSet {
     /**
      * @return Is query flag.
      */
-    public boolean isQuery() {
+    boolean isQuery() {
         return isQuery;
     }
 
     /**
      * @return Update count for no-SELECT queries.
      */
-    public long updatedCount() {
+    long updatedCount() {
         return updCnt;
     }
 
