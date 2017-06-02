@@ -78,7 +78,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public int executeUpdate() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        return super.executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
