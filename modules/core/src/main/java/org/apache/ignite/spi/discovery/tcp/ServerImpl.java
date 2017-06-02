@@ -6316,8 +6316,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check the last time a heartbeat message received.
          * In case of timeout, expel client node from the topology
          */
-        @Override
-        protected void noMessageLoop() {
+        @Override protected void noMessageLoop() {
             long period = U.currentTimeMillis() - lastHeartBeatTime;
 
             if (period >= heartBeatTimeOut) {
