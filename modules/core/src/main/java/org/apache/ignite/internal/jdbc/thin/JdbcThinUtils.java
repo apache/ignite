@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import org.apache.ignite.configuration.OdbcConfiguration;
+
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -40,6 +42,54 @@ import static java.sql.Types.VARCHAR;
  * Utility methods for thin JDBC driver.
  */
 public class JdbcThinUtils {
+    /** URL prefix. */
+    public static final String URL_PREFIX = "jdbc:ignite:thin://";
+
+    /** Prefix for property names. */
+    public static final String PROP_PREFIX = "ignite.jdbc";
+
+    /** Port number property name. */
+    public static final String PROP_PORT = PROP_PREFIX + "port";
+
+    /** Hostname property name. */
+    public static final String PROP_HOST = PROP_PREFIX + "host";
+
+    /** Parameter: distributed joins flag. */
+    public static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
+
+    /** Parameter: enforce join order flag. */
+    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+
+    /** Parameter: socket send buffer. */
+    public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
+
+    /** Parameter: socket receive buffer. */
+    public static final String PARAM_SOCK_RCV_BUF = "socketReceiveBuffer";
+
+    /** Parameter: TCP no-delay flag. */
+    public static final String PARAM_TCP_NO_DELAY = "tcpNoDelay";
+
+    /** Distributed joins property name. */
+    public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Socket send buffer property name. */
+    public static final String PROP_SOCK_SND_BUF = PROP_PREFIX + PARAM_SOCK_SND_BUF;
+
+    /** Socket receive buffer property name. */
+    public static final String PROP_SOCK_RCV_BUF = PROP_PREFIX + PARAM_SOCK_RCV_BUF;
+
+    /** TCP no delay property name. */
+    public static final String PROP_TCP_NO_DELAY = PROP_PREFIX + PARAM_TCP_NO_DELAY;
+
+    /** Default port. */
+    public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
+
+    /** Default TCP no delay flag value. */
+    public static final boolean DFLT_TCP_NO_DELAY = true;
+
     /**
      * Converts Java class name to type from {@link Types}.
      *

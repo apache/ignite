@@ -41,10 +41,10 @@ import java.util.logging.Logger;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.IgniteJdbcThinDriver.PROP_DISTRIBUTED_JOINS;
-import static org.apache.ignite.IgniteJdbcThinDriver.PROP_ENFORCE_JOIN_ORDER;
-import static org.apache.ignite.IgniteJdbcThinDriver.PROP_HOST;
-import static org.apache.ignite.IgniteJdbcThinDriver.PROP_PORT;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
 
 /**
  * JDBC connection implementation.
