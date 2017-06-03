@@ -23,28 +23,65 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerAbstractMessageParser;
+import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
 
 /**
  * JDBC message parser.
  */
-public class JdbcMessageParser extends SqlListenerAbstractMessageParser {
+public class JdbcMessageParser implements SqlListenerMessageParser {
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
+    /** Initial output stream capacity. */
+    protected static final int INIT_CAP = 1024;
+
     /**
      * @param ctx Context.
      */
     public JdbcMessageParser(GridKernalContext ctx) {
-        super(ctx, new JdbcObjectReader(), new JdbcObjectWriter());
+        this.ctx = ctx;
     }
 
-    /** {@inheritDoc} */
-    @Override protected BinaryReaderExImpl createReader(byte[] msg) {
+    /**
+     * @param msg Message.
+     * @return Reader.
+     */
+    protected BinaryReaderExImpl createReader(byte[] msg) {
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
         return new BinaryReaderExImpl(null, stream, ctx.config().getClassLoader(), true);
     }
 
-    /** {@inheritDoc} */
-    @Override protected BinaryWriterExImpl createWriter(int cap) {
+    /**
+     * @param cap Capacisty
+     * @return Writer.
+     */
+    protected BinaryWriterExImpl createWriter(int cap) {
         return new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
     }
-}
+
+    /** {@inheritDoc} */
+    @Override public SqlListenerRequest decode(byte[] msg) {
+        assert msg != null;
+
+        BinaryReaderExImpl reader = createReader(msg);
+
+        return JdbcRequest.readRequest(reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] encode(SqlListenerResponse msg) {
+        assert msg != null;
+
+        assert msg instanceof JdbcResponse;
+
+        JdbcResponse res = (JdbcResponse)msg;
+
+        BinaryWriterExImpl writer = createWriter(INIT_CAP);
+
+        res.writeBinary(writer);
+
+        return writer.array();
+    }}

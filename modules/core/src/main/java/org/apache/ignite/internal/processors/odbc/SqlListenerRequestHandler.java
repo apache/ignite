@@ -28,4 +28,12 @@ public interface SqlListenerRequestHandler {
      * @return Response.
      */
     public SqlListenerResponse handle(SqlListenerRequest req);
+
+    /**
+     * Handle exception.
+     *
+     * @param e Exception.
+     * @return Error response.
+     */
+    public SqlListenerResponse handleException(Exception e);
 }

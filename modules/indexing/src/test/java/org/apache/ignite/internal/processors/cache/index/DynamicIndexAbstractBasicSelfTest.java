@@ -897,28 +897,18 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test that operations fail on statically configured cache.
+     * Test that operations work on statically configured cache.
      *
      * @throws Exception If failed.
      */
-    public void testFailOnNonSqlCache() throws Exception {
+    public void testNonSqlCache() throws Exception {
         final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
 
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
-            }
-        }, "CREATE INDEX and DROP INDEX operations are only allowed on caches created with CREATE TABLE command " +
-            "[cacheName=cache_static]", IgniteQueryErrorCode.UNKNOWN);
+        dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true);
+        assertIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
-        assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_2);
-
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
-            }
-        }, "CREATE INDEX and DROP INDEX operations are only allowed on caches created with CREATE TABLE command " +
-            "[cacheName=cache_static]", IgniteQueryErrorCode.UNKNOWN);
+        dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
+        assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**

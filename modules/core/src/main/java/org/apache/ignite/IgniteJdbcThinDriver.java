@@ -31,7 +31,7 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
-import org.apache.ignite.internal.jdbc.thin.JdbcConnection;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
@@ -179,10 +179,13 @@ public class IgniteJdbcThinDriver implements Driver {
 
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
+        if (!acceptsURL(url))
+            return null;
+
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        return new JdbcConnection(url, props);
+        return new JdbcThinConnection(url, props);
     }
 
     /** {@inheritDoc} */

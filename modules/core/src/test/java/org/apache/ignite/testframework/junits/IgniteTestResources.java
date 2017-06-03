@@ -27,6 +27,7 @@ import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -74,9 +75,15 @@ public class IgniteTestResources {
     /** */
     private GridResourceProcessor rsrcProc;
 
-    /** */
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public IgniteTestResources() throws IgniteCheckedException {
-        log = rootLog.getLogger(getClass());
+        if (SensitiveInfoTestLoggerProxy.TEST_SENSITIVE)
+            log = new SensitiveInfoTestLoggerProxy(rootLog.getLogger(getClass()), null, null, null);
+        else
+            log = rootLog.getLogger(getClass());
+
         nodeId = UUID.randomUUID();
         jmx = ManagementFactory.getPlatformMBeanServer();
         home = U.getIgniteHome();
