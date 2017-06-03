@@ -214,7 +214,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @param errMsg Error message.
      */
     @SuppressWarnings("ThrowableNotThrown")
-    private void assertInvalid(String url, String errMsg) {
+    private void assertInvalid(final String url, String errMsg) {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 DriverManager.getConnection(url);
@@ -229,7 +229,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @SuppressWarnings("ThrowableNotThrown")
     public void testClose() throws Exception {
-        Connection conn;
+        final Connection conn;
 
         try (Connection conn0 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             conn = conn0;
