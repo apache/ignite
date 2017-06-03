@@ -253,8 +253,9 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * Test that changes in cache affect index, and vice versa.
      * @throws SQLException If failed.
      */
-    // TODO: https://issues.apache.org/jira/browse/IGNITE-5373
-    public void _testIndexState() throws SQLException {
+    public void testIndexState() throws SQLException {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5373");
+
         IgniteCache<String, Person> cache = cache();
 
         assertSize(3);
