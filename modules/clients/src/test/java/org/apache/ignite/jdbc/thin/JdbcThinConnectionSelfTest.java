@@ -144,22 +144,30 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         int customSndBuf = dfltSndBuf / 2;
         int customRcvBuf = dfltRcvBuf / 4;
 
+        // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
             "socketSendBuffer=" + customSndBuf)) {
-            assertEquals(customSndBuf, socket(conn).getSendBufferSize());
+            int sndBuf = socket(conn).getSendBufferSize();
+            assertTrue(sndBuf == customSndBuf || sndBuf == dfltSndBuf);
+
             assertEquals(dfltRcvBuf, socket(conn).getReceiveBufferSize());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
             "socketReceiveBuffer=" + customRcvBuf)) {
             assertEquals(dfltSndBuf, socket(conn).getSendBufferSize());
-            assertEquals(customRcvBuf, socket(conn).getReceiveBufferSize());
+
+            int rcvBuf = socket(conn).getReceiveBufferSize();
+            assertTrue(rcvBuf == customRcvBuf || rcvBuf == dfltRcvBuf);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
             "socketSendBuffer=" + customSndBuf + "&socketReceiveBuffer=" + customRcvBuf)) {
-            assertEquals(customSndBuf, socket(conn).getSendBufferSize());
-            assertEquals(customRcvBuf, socket(conn).getReceiveBufferSize());
+            int sndBuf = socket(conn).getSendBufferSize();
+            assertTrue(sndBuf == customSndBuf || sndBuf == dfltSndBuf);
+
+            int rcvBuf = socket(conn).getReceiveBufferSize();
+            assertTrue(rcvBuf == customRcvBuf || rcvBuf == dfltRcvBuf);
         }
     }
 
