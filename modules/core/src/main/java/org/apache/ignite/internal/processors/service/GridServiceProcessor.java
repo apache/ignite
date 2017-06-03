@@ -721,8 +721,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 call,
                 Collections.singletonList(node),
                 false,
-                timeout
-            ).get();
+                timeout,
+                true).get();
         }
         else
             return serviceTopology(cache, name);
