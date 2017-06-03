@@ -96,8 +96,8 @@ public class JdbcThinConnection implements Connection {
         boolean distributedJoins = extractBoolean(props, PROP_DISTRIBUTED_JOINS, false);
         boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
 
-        int sockSndBuf = extractInt(props, PROP_SOCK_SND_BUF, 0);
-        int sockRcvBuf = extractInt(props, PROP_SOCK_RCV_BUF, 0);
+        int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
+        int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
 
         boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
 
@@ -599,6 +599,24 @@ public class JdbcThinConnection implements Connection {
             return false;
         else
             throw new SQLException("Failed to parse boolean property [name=" + propName + ", value=" + strVal + ']');
+    }
+
+    /**
+     * Extract non-negative int property.
+     *
+     * @param props Properties.
+     * @param propName Property name.
+     * @param dfltVal Default value.
+     * @return Value.
+     * @throws SQLException If failed.
+     */
+    private static int extractIntNonNegative(Properties props, String propName, int dfltVal) throws SQLException {
+        int res = extractInt(props, propName, dfltVal);
+
+        if (res < 0)
+            throw new SQLException("Property cannot be negative [name=" + propName + ", value=" + res + ']');
+
+        return res;
     }
 
     /**
