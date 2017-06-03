@@ -25,10 +25,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.List;
+
 /**
- * Tests for public schema.
+ * Tests for schemas.
  */
-public class SqlPublicSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 
@@ -46,6 +48,44 @@ public class SqlPublicSchemaSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * Test query without caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryWithoutCacheOnPublicSchema() throws Exception {
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
+
+        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(1, res.get(0).get(0));
+    }
+
+    /**
+     * Test query without caches.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryWithoutCacheOnCacheSchema() throws Exception {
+        node.createCache(new CacheConfiguration<PersonKey, Person>()
+            .setName(CACHE_PERSON)
+            .setIndexedTypes(PersonKey.class, Person.class));
+
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(CACHE_PERSON);
+
+        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(1, res.get(0).get(0));
     }
 
     /**
