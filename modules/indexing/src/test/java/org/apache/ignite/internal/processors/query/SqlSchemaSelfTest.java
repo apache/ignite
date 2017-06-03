@@ -28,9 +28,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.List;
 
 /**
- * Tests for public schema.
+ * Tests for schemas.
  */
-public class SqlPublicSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 
@@ -73,7 +73,7 @@ public class SqlPublicSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryWithoutCacheOnCacheSchema() throws Exception {
-        IgniteCache<PersonKey, Person> cache = node.createCache(new CacheConfiguration<PersonKey, Person>()
+        node.createCache(new CacheConfiguration<PersonKey, Person>()
             .setName(CACHE_PERSON)
             .setIndexedTypes(PersonKey.class, Person.class));
 
