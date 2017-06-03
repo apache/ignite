@@ -83,7 +83,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("EmptyTryBlock")
+    @SuppressWarnings({"EmptyTryBlock", "unused"})
     public void testDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             // No-op.
@@ -97,10 +97,15 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testUrlInvalidPort() throws Exception {
+    public void testInvalidPort() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Invalid port");
         assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Invalid port");
         assertInvalid("jdbc:ignite:thin://127.0.0.1:100000", "Invalid port");
+    }
+
+    public void testInvalidHost() throws Exception {
+        assertInvalid("jdbc:ignite:thin://", "Host name is empty");
+        assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
     }
 

@@ -563,6 +563,9 @@ public class JdbcThinConnection implements Connection {
     private static int extractPort(Properties props) throws SQLException {
         String portStr = props.getProperty(PROP_PORT);
 
+        if (portStr == null)
+            return JdbcThinUtils.DFLT_PORT;
+
         int port;
 
         try {

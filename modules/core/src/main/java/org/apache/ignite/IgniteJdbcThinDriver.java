@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
@@ -156,8 +157,7 @@ public class IgniteJdbcThinDriver implements Driver {
         if (!acceptsURL(url))
             return null;
 
-        if (!parseUrl(url, props))
-            throw new SQLException("URL is invalid: " + url);
+        parseUrl(url, props);
 
         return new JdbcThinConnection(url, props);
     }
@@ -169,8 +169,7 @@ public class IgniteJdbcThinDriver implements Driver {
 
     /** {@inheritDoc} */
     @Override public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
-        if (!parseUrl(url, info))
-            throw new SQLException("URL is invalid: " + url);
+        parseUrl(url, info);
 
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
@@ -207,62 +206,38 @@ public class IgniteJdbcThinDriver implements Driver {
      *
      * @param props Properties.
      * @param url URL.
-     * @return Whether URL is valid.
      */
-    private boolean parseUrl(String url, Properties props) {
-        if (url == null)
-            return false;
+    private void parseUrl(String url, Properties props) throws SQLException {
+        if (F.isEmpty(url))
+            throw new SQLException("URL cannot be null or empty.");
 
-        if (url.startsWith(JdbcThinUtils.URL_PREFIX) && url.length() > JdbcThinUtils.URL_PREFIX.length())
-            return parseJdbcUrl(url, props);
+        if (!url.startsWith(JdbcThinUtils.URL_PREFIX))
+            throw new SQLException("URL must start with \"" + JdbcThinUtils.URL_PREFIX + "\"");
 
-        return false;
-    }
+        String nakedUrl = url.substring(JdbcThinUtils.URL_PREFIX.length()).trim();
 
-    /**
-     * @param url Url.
-     * @param props Properties.
-     * @return Whether URL is valid.
-     */
-    private boolean parseJdbcUrl(String url, Properties props) {
-        url = url.substring(JdbcThinUtils.URL_PREFIX.length());
+        String[] nakedUrlParts = nakedUrl.split("\\?");
 
-        String[] parts = url.split("\\?");
+        if (nakedUrlParts.length > 2)
+            throw new SQLException("Invalid URL format (only one ? character is allowed): " + url);
 
-        if (parts.length > 2)
-            return false;
+        String endpoint = nakedUrlParts[0];
 
-        if (parts.length == 2)
-            if (!parseParameters(parts[1], props))
-                return false;
+        if (endpoint.endsWith("/"))
+            endpoint = endpoint.substring(0, endpoint.length() - 1);
 
-        parts = parts[0].split("/");
+        String[] endpointParts = endpoint.split(":");
 
-        assert parts.length > 0;
+        if (endpointParts.length > 2)
+            throw new SQLException("Invalid endpoint format (should be \"host[:port]\"): " + endpoint);
 
-        if (parts.length > 1)
-            return false;
+        props.setProperty(JdbcThinUtils.PROP_HOST, endpointParts[0]);
 
-        url = parts[0];
+        if (endpointParts.length == 2)
+            props.setProperty(JdbcThinUtils.PROP_PORT, endpointParts[1]);
 
-        parts = url.split(":");
-
-        assert parts.length > 0;
-
-        if (parts.length > 2)
-            return false;
-
-        props.setProperty(JdbcThinUtils.PROP_HOST, parts[0]);
-
-        try {
-            props.setProperty(JdbcThinUtils.PROP_PORT,
-                String.valueOf(parts.length == 2 ? Integer.valueOf(parts[1]) : JdbcThinUtils.DFLT_PORT));
-        }
-        catch (NumberFormatException ignored) {
-            return false;
-        }
-
-        return true;
+        if (nakedUrlParts.length == 2)
+            parseParameters(nakedUrlParts[1], props);
     }
 
     /**
@@ -271,26 +246,25 @@ public class IgniteJdbcThinDriver implements Driver {
      * @param str Parameters string.
      * @param delim Delimiter.
      * @param props Properties.
-     * @return Whether URL parameters string is valid.
+     * @throws SQLException If failed.
      */
-    private boolean parseParameters(String str, Properties props) {
+    private void parseParameters(String str, Properties props) throws SQLException {
         String[] params = str.split("&");
 
         for (String param : params) {
             String[] pair = param.split("=");
 
             if (pair.length != 2)
-                return false;
+                throw new SQLException("Invalid parameter format (only one = character is allowed per key/value " +
+                    "pair: " + param);
 
             String key = pair[0].trim();
             String val = pair[1].trim();
 
             if (key.isEmpty() || val.isEmpty())
-                return false;
+                throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param);
 
             props.setProperty(JdbcThinUtils.PROP_PREFIX + key, val);
         }
-
-        return true;
     }
 }
