@@ -255,7 +255,8 @@ public class IgniteJdbcThinDriver implements Driver {
         props.setProperty(JdbcThinUtils.PROP_HOST, parts[0]);
 
         try {
-            props.setProperty(JdbcThinUtils.PROP_PORT, String.valueOf(parts.length == 2 ? Integer.valueOf(parts[1]) : JdbcThinUtils.DFLT_PORT));
+            props.setProperty(JdbcThinUtils.PROP_PORT,
+                String.valueOf(parts.length == 2 ? Integer.valueOf(parts[1]) : JdbcThinUtils.DFLT_PORT));
         }
         catch (NumberFormatException ignored) {
             return false;

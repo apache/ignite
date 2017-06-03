@@ -87,9 +87,6 @@ public class JdbcThinUtils {
     /** Default port. */
     public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
 
-    /** Default TCP no delay flag value. */
-    public static final boolean DFLT_TCP_NO_DELAY = true;
-
     /**
      * Converts Java class name to type from {@link Types}.
      *
@@ -176,7 +173,6 @@ public class JdbcThinUtils {
             && type != Types.NVARCHAR
             && type != Types.LONGNVARCHAR
             && type != Types.REF
-            && type != Types.NCHAR
             && type != Types.ROWID
             && type != Types.SQLXML;
     }

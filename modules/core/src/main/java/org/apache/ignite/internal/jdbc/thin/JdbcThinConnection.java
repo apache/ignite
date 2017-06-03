@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -41,10 +43,7 @@ import java.util.logging.Logger;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.*;
 
 /**
  * JDBC connection implementation.
@@ -91,36 +90,27 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS, "false"));
-        boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER, "false"));
+        String host = extractHost(props);
+        int port = extractPort(props);
 
-        String host = props.getProperty(PROP_HOST);
-        String portStr = props.getProperty(PROP_PORT);
+        boolean distributedJoins = extractBoolean(props, PROP_DISTRIBUTED_JOINS, false);
+        boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
 
-        try {
-            int port = Integer.parseInt(portStr);
+        int sockSndBuf = extractInt(props, PROP_SOCK_SND_BUF, 0);
+        int sockRcvBuf = extractInt(props, PROP_SOCK_RCV_BUF, 0);
 
-            if (port <= 0 || port > 0xFFFF)
-                throw new SQLException("Invalid port: " + portStr);
-        }
-        catch (NumberFormatException e) {
-            throw new SQLException("Invalid port: " + portStr, e);
-        }
-
-        if (host == null || host.trim().isEmpty())
-            throw new SQLException("Host name is empty.");
-
-        String endpoint = host.trim() + ":" + portStr.trim();
+        boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
 
         try {
-            cliIo = new JdbcThinTcpIo(endpoint, distributedJoins, enforceJoinOrder);
+            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder,
+                sockSndBuf, sockRcvBuf, tcpNoDelay);
 
             cliIo.start();
         }
         catch (Exception e) {
             cliIo.close();
 
-            throw new SQLException("Failed to connect to Ignite cluster [host=" + host + ", port=" + portStr + ']', e);
+            throw new SQLException("Failed to connect to Ignite node [host=" + host + ", port=" + port + ']', e);
         }
     }
 
@@ -486,6 +476,7 @@ public class JdbcThinConnection implements Connection {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Connection is not a wrapper for " + iface.getName());
@@ -541,5 +532,95 @@ public class JdbcThinConnection implements Connection {
      */
     JdbcThinTcpIo cliIo() {
         return cliIo;
+    }
+
+    /**
+     * Extract host.
+     *
+     * @param props Properties.
+     * @return Host.
+     * @throws SQLException If failed.
+     */
+    private static String extractHost(Properties props) throws SQLException {
+        String host = props.getProperty(PROP_HOST);
+
+        if (host != null)
+            host = host.trim();
+
+        if (F.isEmpty(host))
+            throw new SQLException("Host name is empty.");
+
+        return host;
+    }
+
+    /**
+     * Extract port.
+     *
+     * @param props Properties.
+     * @return Port.
+     * @throws SQLException If failed.
+     */
+    private static int extractPort(Properties props) throws SQLException {
+        String portStr = props.getProperty(PROP_PORT);
+
+        int port;
+
+        try {
+            port = Integer.parseInt(portStr);
+
+            if (port <= 0 || port > 0xFFFF)
+                throw new SQLException("Invalid port: " + portStr);
+        }
+        catch (NumberFormatException e) {
+            throw new SQLException("Invalid port: " + portStr, e);
+        }
+
+        return port;
+    }
+
+    /**
+     * Extract boolean property.
+     *
+     * @param props Properties.
+     * @param propName Property name.
+     * @param dfltVal Default value.
+     * @return Value.
+     * @throws SQLException If failed.
+     */
+    private static boolean extractBoolean(Properties props, String propName, boolean dfltVal) throws SQLException {
+        String strVal = props.getProperty(propName);
+
+        if (strVal == null)
+            return dfltVal;
+
+        if (Boolean.TRUE.toString().equalsIgnoreCase(strVal))
+            return true;
+        else if (Boolean.FALSE.toString().equalsIgnoreCase(strVal))
+            return false;
+        else
+            throw new SQLException("Failed to parse boolean property [name=" + propName + ", value=" + strVal + ']');
+    }
+
+    /**
+     * Extract int property.
+     *
+     * @param props Properties.
+     * @param propName Property name.
+     * @param dfltVal Default value.
+     * @return Value.
+     * @throws SQLException If failed.
+     */
+    private static int extractInt(Properties props, String propName, int dfltVal) throws SQLException {
+        String strVal = props.getProperty(propName);
+
+        if (strVal == null)
+            return dfltVal;
+
+        try {
+            return Integer.parseInt(strVal);
+        }
+        catch (NumberFormatException e) {
+            throw new SQLException("Failed to parse int property [name=" + propName + ", value=" + strVal + ']');
+        }
     }
 }
