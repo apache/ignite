@@ -20,8 +20,9 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.List;
-import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -41,9 +42,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUtils;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
-import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
+import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -68,14 +68,29 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
-    /** Logger. */
-    private static final Logger log = Logger.getLogger(JdbcThinTcpIo.class.getName());
+    /** Host. */
+    private final String host;
 
-    /** Server endpoint address. */
-    private final String endpointAddr;
+    /** Port. */
+    private final int port;
+
+    /** Distributed joins. */
+    private final boolean distributedJoins;
+
+    /** Enforce join order. */
+    private final boolean enforceJoinOrder;
+
+    /** Socket send buffer. */
+    private final int sockSndBuf;
+
+    /** Socket receive buffer. */
+    private final int sockRcvBuf;
+
+    /** TCP no delay flag. */
+    private final boolean tcpNoDelay;
 
     /** Endpoint. */
-    private IpcEndpoint endpoint;
+    private IpcClientTcpEndpoint endpoint;
 
     /** Output stream. */
     private BufferedOutputStream out;
@@ -83,26 +98,29 @@ public class JdbcThinTcpIo {
     /** Input stream. */
     private BufferedInputStream in;
 
-    /** Distributed joins. */
-    private boolean distributedJoins;
-
-    /** Enforce join order. */
-    private boolean enforceJoinOrder;
-
     /** Closed flag. */
     private boolean closed;
 
     /**
-     * @param endpointAddr Endpoint.
+     * Constructor.
+     *
+     * @param host Host.
+     * @param port Port.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param sockSndBuf Socket send buffer.
+     * @param sockRcvBuf Socket receive buffer.
+     * @param tcpNoDelay TCP no delay flag.
      */
-    JdbcThinTcpIo(String endpointAddr, boolean distributedJoins, boolean enforceJoinOrder) {
-        assert endpointAddr != null;
-
-        this.endpointAddr = endpointAddr;
+    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, int sockSndBuf,
+        int sockRcvBuf, boolean tcpNoDelay) {
+        this.host = host;
+        this.port = port;
         this.distributedJoins = distributedJoins;
-        this.enforceJoinOrder= enforceJoinOrder;
+        this.enforceJoinOrder = enforceJoinOrder;
+        this.sockSndBuf = sockSndBuf;
+        this.sockRcvBuf = sockRcvBuf;
+        this.tcpNoDelay = tcpNoDelay;
     }
 
     /**
@@ -110,7 +128,24 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws IgniteCheckedException, IOException {
-        endpoint = IpcEndpointFactory.connectEndpoint(endpointAddr, null);
+        Socket sock = new Socket();
+
+        if (sockSndBuf != 0)
+            sock.setSendBufferSize(sockSndBuf);
+
+        if (sockRcvBuf != 0)
+            sock.setReceiveBufferSize(sockRcvBuf);
+
+        sock.setTcpNoDelay(tcpNoDelay);
+
+        try {
+            sock.connect(new InetSocketAddress(host, port));
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to connect to server [host=" + host + ", port=" + port + ']', e);
+        }
+
+        endpoint = new IpcClientTcpEndpoint(sock);
 
         out = new BufferedOutputStream(endpoint.outputStream());
         in = new BufferedInputStream(endpoint.inputStream());
@@ -305,5 +340,26 @@ public class JdbcThinTcpIo {
             endpoint.close();
 
         closed = true;
+    }
+
+    /**
+     * @return Socket send buffer size.
+     */
+    public int socketSendBuffer() {
+        return sockSndBuf;
+    }
+
+    /**
+     * @return Socket receive buffer size.
+     */
+    public int socketReceiveBuffer() {
+        return sockRcvBuf;
+    }
+
+    /**
+     * @return TCP no delay flag.
+     */
+    public boolean tcpNoDelay() {
+        return tcpNoDelay;
     }
 }
