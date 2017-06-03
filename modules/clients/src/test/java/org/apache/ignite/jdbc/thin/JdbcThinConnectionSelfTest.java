@@ -141,8 +141,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals(dfltRcvBuf, socket(conn).getReceiveBufferSize());
         }
 
-        int customSndBuf = dfltSndBuf * 2;
-        int customRcvBuf = dfltRcvBuf * 3;
+        int customSndBuf = dfltSndBuf / 2;
+        int customRcvBuf = dfltRcvBuf / 4;
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
             "socketSendBuffer=" + customSndBuf)) {
