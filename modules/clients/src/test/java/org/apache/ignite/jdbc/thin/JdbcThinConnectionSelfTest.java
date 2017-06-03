@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -124,12 +125,49 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testInvalidSocketBuffers() throws Exception {
+    public void testSocketBuffers() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=-1",
             "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_SND_BUF);
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=-1",
             "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_RCV_BUF);
+
+        // Get default values.
+        int dfltSndBuf;
+        int dfltRcvBuf;
+
+        try (Socket sock = new Socket()) {
+            sock.connect(new InetSocketAddress("127.0.0.1", JdbcThinUtils.DFLT_PORT));
+
+            dfltSndBuf = sock.getSendBufferSize();
+            dfltRcvBuf = sock.getReceiveBufferSize();
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            assertEquals(dfltSndBuf, socket(conn).getSendBufferSize());
+            assertEquals(dfltRcvBuf, socket(conn).getReceiveBufferSize());
+        }
+
+        int customSndBuf = dfltSndBuf * 2;
+        int customRcvBuf = dfltRcvBuf * 3;
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
+            "socketSendBuffer=" + customSndBuf)) {
+            assertEquals(customSndBuf, socket(conn).getSendBufferSize());
+            assertEquals(dfltRcvBuf, socket(conn).getReceiveBufferSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
+            "socketReceiveBuffer=" + customRcvBuf)) {
+            assertEquals(dfltSndBuf, socket(conn).getSendBufferSize());
+            assertEquals(customRcvBuf, socket(conn).getReceiveBufferSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
+            "socketSendBuffer=" + customSndBuf + "&socketReceiveBuffer=" + customRcvBuf)) {
+            assertEquals(customSndBuf, socket(conn).getSendBufferSize());
+            assertEquals(customRcvBuf, socket(conn).getReceiveBufferSize());
+        }
     }
 
     /**
