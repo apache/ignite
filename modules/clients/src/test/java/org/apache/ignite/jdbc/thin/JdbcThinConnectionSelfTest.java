@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -28,8 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -125,49 +124,26 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=-1",
             "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_RCV_BUF);
 
-        // Get default values.
-        int dfltSndBuf;
-        int dfltRcvBuf;
-
-        try (Socket sock = new Socket()) {
-            sock.connect(new InetSocketAddress("127.0.0.1", JdbcThinUtils.DFLT_PORT));
-
-            dfltSndBuf = sock.getSendBufferSize();
-            dfltRcvBuf = sock.getReceiveBufferSize();
-        }
-
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertEquals(dfltSndBuf, socket(conn).getSendBufferSize());
-            assertEquals(dfltRcvBuf, socket(conn).getReceiveBufferSize());
+            assertEquals(0, socket(conn).socketSendBuffer());
+            assertEquals(0, socket(conn).socketReceiveBuffer());
         }
-
-        int customSndBuf = dfltSndBuf / 2;
-        int customRcvBuf = dfltRcvBuf / 4;
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
-            "socketSendBuffer=" + customSndBuf)) {
-            int sndBuf = socket(conn).getSendBufferSize();
-            assertTrue(sndBuf == customSndBuf || sndBuf == dfltSndBuf);
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=1024")) {
+            assertEquals(1024, socket(conn).socketSendBuffer());
+            assertEquals(0, socket(conn).socketReceiveBuffer());
+        }
 
-            assertEquals(dfltRcvBuf, socket(conn).getReceiveBufferSize());
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=1024")) {
+            assertEquals(0, socket(conn).socketSendBuffer());
+            assertEquals(1024, socket(conn).socketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
-            "socketReceiveBuffer=" + customRcvBuf)) {
-            assertEquals(dfltSndBuf, socket(conn).getSendBufferSize());
-
-            int rcvBuf = socket(conn).getReceiveBufferSize();
-            assertTrue(rcvBuf == customRcvBuf || rcvBuf == dfltRcvBuf);
-        }
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
-            "socketSendBuffer=" + customSndBuf + "&socketReceiveBuffer=" + customRcvBuf)) {
-            int sndBuf = socket(conn).getSendBufferSize();
-            assertTrue(sndBuf == customSndBuf || sndBuf == dfltSndBuf);
-
-            int rcvBuf = socket(conn).getReceiveBufferSize();
-            assertTrue(rcvBuf == customRcvBuf || rcvBuf == dfltRcvBuf);
+            "socketSendBuffer=1024&socketReceiveBuffer=2048")) {
+            assertEquals(1024, socket(conn).socketSendBuffer());
+            assertEquals(2048, socket(conn).socketReceiveBuffer());
         }
     }
 
@@ -190,15 +166,15 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertTrue(socket(conn).getTcpNoDelay());
+            assertTrue(socket(conn).tcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true")) {
-            assertTrue(socket(conn).getTcpNoDelay());
+            assertTrue(socket(conn).tcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false")) {
-            assertFalse(socket(conn).getTcpNoDelay());
+            assertFalse(socket(conn).tcpNoDelay());
         }
     }
 
@@ -209,10 +185,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @return Socket.
      * @throws Exception If failed.
      */
-    private static Socket socket(Connection conn) throws Exception {
+    private static JdbcThinTcpIo socket(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        return conn0.io().endpoint().clientSocket();
+        return conn0.io();
     }
 
     /**

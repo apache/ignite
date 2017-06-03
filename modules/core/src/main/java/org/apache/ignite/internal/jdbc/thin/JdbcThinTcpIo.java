@@ -343,9 +343,23 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Endpoint.
+     * @return Socket send buffer size.
      */
-    public IpcClientTcpEndpoint endpoint() {
-        return endpoint;
+    public int socketSendBuffer() {
+        return sockSndBuf;
+    }
+
+    /**
+     * @return Socket receive buffer size.
+     */
+    public int socketReceiveBuffer() {
+        return sockRcvBuf;
+    }
+
+    /**
+     * @return TCP no delay flag.
+     */
+    public boolean tcpNoDelay() {
+        return tcpNoDelay;
     }
 }

@@ -86,11 +86,4 @@ public class IpcClientTcpEndpoint implements IpcEndpoint {
     @Override public void close() {
         U.closeQuiet(clientSock);
     }
-
-    /**
-     * @return Client socket.
-     */
-    public Socket clientSocket() {
-        return clientSock;
-    }
 }
