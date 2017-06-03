@@ -20,12 +20,15 @@ package org.apache.ignite.jdbc.thin;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -95,6 +98,19 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Test invalid hosts.
+     *
+     * @throws Exception If failed.
+     */
+    public void testInvalidHost() throws Exception {
+        assertInvalid("jdbc:ignite:thin://", "Host name is empty");
+        assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
+        assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
+    }
+
+    /**
+     * Test invalid ports.
+     *
      * @throws Exception If failed.
      */
     public void testInvalidPort() throws Exception {
@@ -103,10 +119,61 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid("jdbc:ignite:thin://127.0.0.1:100000", "Invalid port");
     }
 
-    public void testInvalidHost() throws Exception {
-        assertInvalid("jdbc:ignite:thin://", "Host name is empty");
-        assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
-        assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
+    /**
+     * Test invalid socket buffer sizes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testInvalidSocketBuffers() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=-1",
+            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_SND_BUF);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=-1",
+            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_RCV_BUF);
+    }
+
+    /**
+     * Test TCP no delay property handling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPropertyTcpNoDelay() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=0",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            assertTrue(socket(conn).getTcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true")) {
+            assertTrue(socket(conn).getTcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false")) {
+            assertFalse(socket(conn).getTcpNoDelay());
+        }
+    }
+
+    /**
+     * Get client socket for connection.
+     *
+     * @param conn Connection.
+     * @return Socket.
+     * @throws Exception If failed.
+     */
+    private static Socket socket(Connection conn) throws Exception {
+        JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
+
+        return conn0.io().endpoint().clientSocket();
     }
 
     /**

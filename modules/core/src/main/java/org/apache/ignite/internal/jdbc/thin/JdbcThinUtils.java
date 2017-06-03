@@ -88,6 +88,16 @@ public class JdbcThinUtils {
     public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
 
     /**
+     * Trim prefix from property.
+     *
+     * @param prop Property.
+     * @return Parameter name.
+     */
+    public static String trimPrefix(String prop) {
+        return prop.substring(PROP_PREFIX.length());
+    }
+
+    /**
      * Converts Java class name to type from {@link Types}.
      *
      * @param cls Java class name.

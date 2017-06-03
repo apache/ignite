@@ -90,7 +90,7 @@ public class JdbcThinTcpIo {
     private final boolean tcpNoDelay;
 
     /** Endpoint. */
-    private IpcEndpoint endpoint;
+    private IpcClientTcpEndpoint endpoint;
 
     /** Output stream. */
     private BufferedOutputStream out;
@@ -340,5 +340,12 @@ public class JdbcThinTcpIo {
             endpoint.close();
 
         closed = true;
+    }
+
+    /**
+     * @return Endpoint.
+     */
+    public IpcClientTcpEndpoint endpoint() {
+        return endpoint;
     }
 }

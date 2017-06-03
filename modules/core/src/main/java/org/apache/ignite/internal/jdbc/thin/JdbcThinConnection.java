@@ -43,7 +43,14 @@ import java.util.logging.Logger;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.*;
+
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
 
 /**
  * JDBC connection implementation.
@@ -530,7 +537,7 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return Ignite endpoint and I/O protocol.
      */
-    JdbcThinTcpIo cliIo() {
+    public JdbcThinTcpIo io() {
         return cliIo;
     }
 
@@ -601,7 +608,8 @@ public class JdbcThinConnection implements Connection {
         else if (Boolean.FALSE.toString().equalsIgnoreCase(strVal))
             return false;
         else
-            throw new SQLException("Failed to parse boolean property [name=" + propName + ", value=" + strVal + ']');
+            throw new SQLException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
+                    ", value=" + strVal + ']');
     }
 
     /**
@@ -617,7 +625,8 @@ public class JdbcThinConnection implements Connection {
         int res = extractInt(props, propName, dfltVal);
 
         if (res < 0)
-            throw new SQLException("Property cannot be negative [name=" + propName + ", value=" + res + ']');
+            throw new SQLException("Property cannot be negative [name=" + JdbcThinUtils.trimPrefix(propName) +
+                ", value=" + res + ']');
 
         return res;
     }
@@ -641,7 +650,8 @@ public class JdbcThinConnection implements Connection {
             return Integer.parseInt(strVal);
         }
         catch (NumberFormatException e) {
-            throw new SQLException("Failed to parse int property [name=" + propName + ", value=" + strVal + ']');
+            throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
+                ", value=" + strVal + ']');
         }
     }
 }
