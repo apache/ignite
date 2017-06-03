@@ -464,6 +464,7 @@ public class GridMapQueryExecutor {
                         onQueryRequest0(node,
                             req.requestId(),
                             segment,
+                            req.schemaName(),
                             req.queries(),
                             cacheIds,
                             req.topologyVersion(),
@@ -473,7 +474,7 @@ public class GridMapQueryExecutor {
                             req.pageSize(),
                             joinMode,
                             enforceJoinOrder,
-                            replicated,
+                            false,
                             req.timeout(),
                             params);
 
@@ -486,6 +487,7 @@ public class GridMapQueryExecutor {
         onQueryRequest0(node,
             req.requestId(),
             0,
+            req.schemaName(),
             req.queries(),
             cacheIds,
             req.topologyVersion(),
@@ -504,6 +506,7 @@ public class GridMapQueryExecutor {
      * @param node Node authored request.
      * @param reqId Request ID.
      * @param segmentId index segment ID.
+     * @param schemaName Schema name.
      * @param qrys Queries to execute.
      * @param cacheIds Caches which will be affected by these queries.
      * @param topVer Topology version.
@@ -517,6 +520,7 @@ public class GridMapQueryExecutor {
         ClusterNode node,
         long reqId,
         int segmentId,
+        String schemaName,
         Collection<GridCacheSqlQuery> qrys,
         List<Integer> cacheIds,
         AffinityTopologyVersion topVer,
@@ -583,8 +587,6 @@ public class GridMapQueryExecutor {
                     snapshotedTbls.add(h2Tbl);
                 }
             }
-
-            String schemaName = mainCctx != null ? h2.schema(mainCctx.name()) : QueryUtils.DFLT_SCHEMA;
 
             Connection conn = h2.connectionForSchema(schemaName);
 
