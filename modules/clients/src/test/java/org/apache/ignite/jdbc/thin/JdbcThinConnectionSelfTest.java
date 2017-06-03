@@ -99,22 +99,15 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test invalid hosts.
+     * Test invalid endpoint.
      *
      * @throws Exception If failed.
      */
-    public void testInvalidHost() throws Exception {
+    public void testInvalidEndpoint() throws Exception {
         assertInvalid("jdbc:ignite:thin://", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
-    }
 
-    /**
-     * Test invalid ports.
-     *
-     * @throws Exception If failed.
-     */
-    public void testInvalidPort() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Invalid port");
         assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Invalid port");
         assertInvalid("jdbc:ignite:thin://127.0.0.1:100000", "Invalid port");
