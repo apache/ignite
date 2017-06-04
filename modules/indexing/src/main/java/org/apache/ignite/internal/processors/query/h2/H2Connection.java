@@ -94,11 +94,15 @@ public final class H2Connection implements GridCancelable {
 
     /**
      * @param currentResult Current active result set.
+     * @throws SQLException If failed.
      */
-    void setCurrentResult(H2ResultSet currentResult) {
+    void setCurrentResult(H2ResultSet currentResult) throws SQLException {
         assert this.currentResult == null ^ currentResult == null: currentResult;
 
         this.currentResult = currentResult;
+
+        if (currentResult != null && state.get() == State.DESTROYED)
+            currentResult.cancel();
     }
 
     /**
@@ -260,20 +264,16 @@ public final class H2Connection implements GridCancelable {
      * Destroy the connection.
      */
     public void destroy() {
-        State oldState = state.get();
+        for (;;) {
+            State s = state.get();
 
-        if (oldState == State.DESTROYED)
-            return;
+            if (s == State.DESTROYED)
+                return;
 
-        state.set(State.DESTROYED);
+            if (state.compareAndSet(s, State.DESTROYED))
+                break;
+        }
 
-        clearSessionLocalQueryContext();
-
-        U.closeQuiet(conn);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
         H2ResultSet rs = currentResult;
 
         if (rs != null) {
@@ -285,6 +285,13 @@ public final class H2Connection implements GridCancelable {
             }
         }
 
+        clearSessionLocalQueryContext();
+
+        U.closeQuiet(conn);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel() {
         destroy();
     }
 

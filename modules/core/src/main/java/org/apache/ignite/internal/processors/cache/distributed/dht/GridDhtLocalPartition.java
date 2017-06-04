@@ -726,8 +726,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState partState = getPartState(state);
 
-        if (partState != RENTING || getReservations(state) != 0 || groupReserved())
+        if (partState != RENTING || getReservations(state) != 0 || groupReserved()) {
+            if (cctx.kernalContext().isStopping())
+                throw new NodeStoppingException("Node is stopping.");
+
             return;
+        }
 
         if (addEvicting()) {
             try {

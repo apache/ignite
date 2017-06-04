@@ -1949,8 +1949,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-        cancelAllQueries();
-
         try {
             connPool.close();
         }
@@ -2229,7 +2227,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             run.cancel();
 
         rdcQryExec.cancelAllQueries();
-        mapQryExec.cancelAllQueries();
     }
 
     /**

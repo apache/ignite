@@ -632,7 +632,7 @@ public class GridMapQueryExecutor {
                     // Setup a separate connection for each MAP query because we have
                     // to be able lazily traverse each result set independently.
                     // Now in H2 connection can not be reused if it has alive lazy result set.
-                    H2Connection conn = h2.takeConnectionForCache(mainCctx.name());
+                    H2Connection conn = h2.takeConnectionForSchema(schemaName);
 
                     conn.setupConnection(distributedJoinMode != OFF, enforceJoinOrder);
 
@@ -691,14 +691,6 @@ public class GridMapQueryExecutor {
                     throw (Error)e;
             }
         }
-    }
-
-    /**
-     * Cancel all queries.
-     */
-    public void cancelAllQueries() {
-        for (NodeResults nodeRess : qryRess.values())
-            nodeRess.cancelAll();
     }
 
     /**
@@ -863,7 +855,6 @@ public class GridMapQueryExecutor {
                 reservations.remove(grpKey);
         }
     }
-
 
     /**
      *

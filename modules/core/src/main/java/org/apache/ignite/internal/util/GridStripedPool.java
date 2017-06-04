@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Collections;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,6 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class GridStripedPool<T, E extends Exception> implements AutoCloseable {
     /** */
     private final Queue<T>[] stripes;
+
+    /** */
+    private final Set<T> allCreatedInstances = Collections.newSetFromMap(
+        new ConcurrentHashMap<T,Boolean>());
 
     /** */
     private final int maxPickAttempts;
@@ -75,6 +82,13 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
         if (closed.compareAndSet(false, true)) {
             for (Queue<T> queue : stripes)
                 closeStripe(queue);
+
+            if (!allCreatedInstances.isEmpty()) {
+                for (T o : allCreatedInstances)
+                    doDestroy(o);
+            }
+
+            assert allCreatedInstances.isEmpty();
         }
     }
 
@@ -89,7 +103,7 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
             if (o == null)
                 break;
 
-            destroy(o);
+            doDestroy(o);
         }
     }
 
@@ -119,7 +133,7 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
                 if (validate(res))
                     return res;
 
-                destroy(res);
+                doDestroy(res);
             }
         }
 
@@ -127,12 +141,22 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
 
         if (res == null || !validate(res) || closed.get()) {
             if (res != null)
-                destroy(res);
+                doDestroy(res);
 
             throw new IllegalStateException();
         }
 
         return res;
+    }
+
+    /**
+     * @param o The pooled object to destroy.
+     * @throws E If failed.
+     */
+    private void doDestroy(T o) throws E {
+        allCreatedInstances.remove(o);
+
+        destroy(o);
     }
 
     /**
@@ -145,7 +169,7 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
         cleanup(o);
 
         if (!validate(o)) {
-            destroy(o);
+            doDestroy(o);
 
             return;
         }
@@ -181,7 +205,7 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
     protected abstract void cleanup(T o) throws E;
 
     /**
-     * @param o Destroy the given pooled object.
+     * @param o The pooled object to destroy.
      * @throws E If failed.
      */
     protected abstract void destroy(T o) throws E ;

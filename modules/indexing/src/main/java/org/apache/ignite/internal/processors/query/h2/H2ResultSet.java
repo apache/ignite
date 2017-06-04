@@ -68,8 +68,9 @@ public final class H2ResultSet implements AutoCloseable {
      * @param conn Pooled H2 connection.
      * @param sql SQL Query running.
      * @param rs Result set.
+     * @throws SQLException If failed.
      */
-    public H2ResultSet(H2Connection conn, String sql, ResultSet rs) {
+    public H2ResultSet(H2Connection conn, String sql, ResultSet rs) throws SQLException {
         assert conn != null;
         assert sql != null;
 
