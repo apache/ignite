@@ -39,7 +39,7 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
- * ODBC processor.
+ * SQL processor.
  */
 public class SqlListenerProcessor extends GridProcessorAdapter {
     /** Default number of selectors. */
@@ -54,10 +54,10 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
-    /** ODBC TCP Server. */
+    /** TCP Server. */
     private GridNioServer<byte[]> srv;
 
-    /** ODBC executor service. */
+    /** Executor service. */
     private ExecutorService odbcExecSvc;
 
     /**
@@ -87,7 +87,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                     hostPort = HostAndPortRange.parse(odbcCfg.getEndpointAddress(),
                         OdbcConfiguration.DFLT_TCP_PORT_FROM,
                         OdbcConfiguration.DFLT_TCP_PORT_TO,
-                        "Failed to parse ODBC endpoint address"
+                        "Failed to parse SQL connector endpoint address"
                     );
                 }
 
@@ -107,7 +107,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                     host = InetAddress.getByName(hostPort.host());
                 }
                 catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to resolve ODBC host: " + hostPort.host(), e);
+                    throw new IgniteCheckedException("Failed to resolve SQL connector host: " + hostPort.host(), e);
                 }
 
                 Exception lastErr = null;
@@ -147,7 +147,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
-                        log.info("ODBC processor has started on TCP port " + port);
+                        log.info("SQL connector processor has started on TCP port " + port);
 
                         lastErr = null;
 
@@ -165,7 +165,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                         "address=" + hostPort + ", lastErr=" + lastErr + ']');
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Failed to start ODBC processor.", e);
+                throw new IgniteCheckedException("Failed to start SQL connector processor.", e);
             }
         }
     }
@@ -186,7 +186,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
             }
 
             if (log.isDebugEnabled())
-                log.debug("ODBC processor stopped.");
+                log.debug("SQL connector processor stopped.");
         }
     }
 }
