@@ -627,7 +627,26 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(vals, newVals);
         }
-        
+
+        /**
+        * <summary>Checks the writing an integer value in varint encoding.</summary>
+        */
+        [Test]
+        public void TestWriteUvarint()
+        {
+            int[] vals = {int.MinValue, short.MinValue, -16384, -128, 0, 127, 16383, short.MaxValue, int.MaxValue};
+
+            var stream = new BinaryHeapStream(64);
+
+            foreach (int val in vals)
+                BinaryUtils.WriteUvarint(val, stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            foreach (int val in vals)
+                Assert.AreEqual(val, BinaryUtils.ReadUvarint(stream));
+        }
+
         /// <summary>
         /// Test object with dates.
         /// </summary>
