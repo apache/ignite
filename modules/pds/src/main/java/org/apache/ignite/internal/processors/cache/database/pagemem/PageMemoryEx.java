@@ -131,16 +131,16 @@ public interface PageMemoryEx extends PageMemory {
     public int invalidate(int cacheId, int partId);
 
     /**
-     * Clears internal metadata of destroyed cache.
+     * Clears internal metadata of destroyed cache group.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      */
-    public void onCacheDestroyed(int cacheId);
+    public void onCacheGroupDestroyed(int grpId);
 
     /**
      * Asynchronously clears pages satisfying the given predicate.
      *
-     * @param pred Predicate for cacheId, pageId and partition tag.
+     * @param pred Predicate for cache group id, pageId and partition tag.
      * @param cleanDirty Flag indicating that dirty pages collection should be cleaned.
      * @return Future that will be completed when all pages are cleared.
      */

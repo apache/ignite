@@ -32,9 +32,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTran
 import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionTopologyChangeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheGroupsPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDaemonNodePartitionedSelfTest;
@@ -194,6 +196,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteTxGetAfterStopTest.class);
 
         suite.addTestSuite(CacheAsyncOperationsTest.class);
+
+        suite.addTestSuite(IgniteCacheGroupsTest.class);
 
         return suite;
     }

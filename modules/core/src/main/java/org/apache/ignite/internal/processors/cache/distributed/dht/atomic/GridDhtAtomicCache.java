@@ -70,7 +70,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -193,19 +194,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
-        return new GridCacheMapEntryFactory() {
-            @Override public GridCacheMapEntry create(
-                GridCacheContext ctx,
-                AffinityTopologyVersion topVer,
-                KeyCacheObject key
-            ) {
-                return new GridDhtAtomicCacheEntry(ctx, topVer, key);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override protected void init() {
         super.init();
 
@@ -239,11 +227,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         metrics = m;
 
-        preldr = new GridDhtPreloader(ctx);
-
-        preldr.start();
-
-        ctx.io().addHandler(
+        ctx.io().addCacheHandler(
             ctx.cacheId(),
             GridNearGetRequest.class,
             new CI2<UUID, GridNearGetRequest>() {
@@ -257,7 +241,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(
+        ctx.io().addCacheHandler(
             ctx.cacheId(),
             GridNearSingleGetRequest.class,
             new CI2<UUID, GridNearSingleGetRequest>() {
@@ -271,7 +255,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(
+        ctx.io().addCacheHandler(
             ctx.cacheId(),
             GridNearAtomicAbstractUpdateRequest.class,
             new CI2<UUID, GridNearAtomicAbstractUpdateRequest>() {
@@ -290,7 +274,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
             GridNearAtomicUpdateResponse.class,
             new CI2<UUID, GridNearAtomicUpdateResponse>() {
                 @Override public void apply(
@@ -308,7 +293,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(
+        ctx.io().addCacheHandler(
             ctx.cacheId(),
             GridDhtAtomicAbstractUpdateRequest.class,
             new CI2<UUID, GridDhtAtomicAbstractUpdateRequest>() {
@@ -327,7 +312,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(
+        ctx.io().addCacheHandler(
             ctx.cacheId(),
             GridDhtAtomicUpdateResponse.class,
             new CI2<UUID, GridDhtAtomicUpdateResponse>() {
@@ -346,7 +331,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
             GridDhtAtomicDeferredUpdateResponse.class,
             new CI2<UUID, GridDhtAtomicDeferredUpdateResponse>() {
                 @Override public void apply(
@@ -364,7 +350,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
             GridDhtAtomicNearResponse.class,
             new CI2<UUID, GridDhtAtomicNearResponse>() {
             @Override public void apply(UUID uuid, GridDhtAtomicNearResponse msg) {
@@ -377,7 +364,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(),
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
             GridNearAtomicCheckUpdateRequest.class,
             new CI2<UUID, GridNearAtomicCheckUpdateRequest>() {
                 @Override public void apply(UUID uuid, GridNearAtomicCheckUpdateRequest msg) {
@@ -390,8 +378,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
 
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            GridDhtForceKeysRequest.class,
+            new MessageHandler<GridDhtForceKeysRequest>() {
+                @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
+                    processForceKeysRequest(node, msg);
+                }
+            });
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            GridDhtForceKeysResponse.class,
+            new MessageHandler<GridDhtForceKeysResponse>() {
+                @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse msg) {
+                    processForceKeyResponse(node, msg);
+                }
+            });
+
         if (near == null) {
-            ctx.io().addHandler(
+            ctx.io().addCacheHandler(
                 ctx.cacheId(),
                 GridNearGetResponse.class,
                 new CI2<UUID, GridNearGetResponse>() {
@@ -405,7 +411,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                 });
 
-            ctx.io().addHandler(
+            ctx.io().addCacheHandler(
                 ctx.cacheId(),
                 GridNearSingleGetResponse.class,
                 new CI2<UUID, GridNearSingleGetResponse>() {
@@ -1486,7 +1492,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 // Optimistically expect that all keys are available locally (avoid creation of get future).
                 for (KeyCacheObject key : keys) {
                     if (readNoEntry) {
-                        CacheDataRow row = ctx.offheap().read(key);
+                        CacheDataRow row = ctx.offheap().read(ctx, key);
 
                         if (row != null) {
                             long expireTime = row.expireTime();
@@ -1662,7 +1668,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicAbstractUpdateRequest req,
         final UpdateReplyClosure completionCb
     ) {
-        IgniteInternalFuture<Object> forceFut = preldr.request(req, req.topologyVersion());
+        IgniteInternalFuture<Object> forceFut = ctx.group().preloader().request(ctx, req, req.topologyVersion());
 
         if (forceFut == null || forceFut.isDone()) {
             try {

@@ -93,8 +93,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected long nextPartCounter() {
-        return locPart.nextUpdateCounter();
+    @Override protected long nextPartitionCounter(AffinityTopologyVersion topVer,
+        boolean primary,
+        @Nullable Long primaryCntr) {
+        return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, primaryCntr);
     }
 
     /** {@inheritDoc} */
@@ -139,7 +141,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         assert !Thread.holdsLock(this);
 
         // Remove this entry from partition mapping.
-        cctx.dht().topology().onRemoved(this);
+        cctx.topology().onRemoved(this);
     }
 
     /**
@@ -715,8 +717,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * @return Cache name.
      */
-    protected String cacheName() {
-        return cctx.dht().near().name();
+    protected final String cacheName() {
+        return cctx.name();
     }
 
     /** {@inheritDoc} */
@@ -726,12 +728,12 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void incrementMapPublicSize() {
-        locPart.incrementPublicSize(this);
+        locPart.incrementPublicSize(null, this);
     }
 
     /** {@inheritDoc} */
     @Override protected void decrementMapPublicSize() {
-        locPart.decrementPublicSize(this);
+        locPart.decrementPublicSize(null, this);
     }
 
     /**

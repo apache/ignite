@@ -134,7 +134,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         cacheProc = ctx.cache();
         sharedCtx = cacheProc.context();
 
-        sharedCtx.io().addHandler(0,
+        sharedCtx.io().addCacheHandler(0,
             GridChangeGlobalStateMessageResponse.class,
             new CI2<UUID, GridChangeGlobalStateMessageResponse>() {
                 @Override public void apply(UUID nodeId, GridChangeGlobalStateMessageResponse msg) {
@@ -194,7 +194,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        sharedCtx.io().removeHandler(0, GridChangeGlobalStateMessageResponse.class);
+        sharedCtx.io().removeHandler(false, 0, GridChangeGlobalStateMessageResponse.class);
         ctx.event().removeLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         IgniteCheckedException stopErr = new IgniteInterruptedCheckedException(
@@ -452,16 +452,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 sharedCtx.database().initDataBase();
 
+                // TODO IGNITE-5075 group descriptors.
                 for (CacheConfiguration cfg : cfgs) {
                     if (CU.isSystemCache(cfg.getName()))
                         if (pageStore != null)
-                            pageStore.initializeForCache(cfg);
+                            pageStore.initializeForCache(ctx.cache().cacheDescriptors().get(cfg.getName()).groupDescriptor(), cfg);
                 }
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (!CU.isSystemCache(cfg.getName()))
                         if (pageStore != null)
-                            pageStore.initializeForCache(cfg);
+                            pageStore.initializeForCache(ctx.cache().cacheDescriptors().get(cfg.getName()).groupDescriptor(), cfg);
                 }
 
                 sharedCtx.database().onActivate(ctx);

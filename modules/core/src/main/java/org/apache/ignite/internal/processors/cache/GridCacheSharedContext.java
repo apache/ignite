@@ -415,7 +415,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param cacheCtx Cache context to remove.
      */
-    public void removeCacheContext(GridCacheContext cacheCtx) {
+    void removeCacheContext(GridCacheContext cacheCtx) {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
@@ -426,7 +426,7 @@ public class GridCacheSharedContext<K, V> {
             locStoreCnt.decrementAndGet();
 
         // Safely clean up the message listeners.
-        ioMgr.removeHandlers(cacheId);
+        ioMgr.removeCacheHandlers(cacheId);
     }
 
     /**

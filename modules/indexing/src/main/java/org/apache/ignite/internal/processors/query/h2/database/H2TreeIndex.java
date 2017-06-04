@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
@@ -100,8 +99,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         name = BPlusTree.treeName(name, "H2Tree");
 
         if (cctx.affinityNode()) {
-            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
             inlineIdxs = getAvailableInlineColumns(cols);
 
             segments = new H2Tree[segmentsCnt];
@@ -110,8 +107,9 @@ public class H2TreeIndex extends GridH2IndexBase {
                 RootPage page = getMetaPage(name, i);
 
                 segments[i] = new H2Tree(
-                    name,cctx.offheap().reuseListForIndex(name),
-                    cctx.cacheId(),
+                    name,
+                    cctx.offheap().reuseListForIndex(name),
+                    cctx.groupId(),
                     cctx.memoryPolicy().pageMemory(),
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),
@@ -326,10 +324,12 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy() {
         try {
             if (cctx.affinityNode()) {
-                for (H2Tree tree : segments) {
+                for (int i = 0; i < segments.length; i++) {
+                    H2Tree tree = segments[i];
+
                     tree.destroy();
 
-                    cctx.offheap().dropRootPageForIndex(tree.getName());
+                    dropMetaPage(tree.getName(), i);
                 }
             }
         }
@@ -413,10 +413,20 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param name Name.
+     * @param segIdx Segment index.
      * @return RootPage for meta page.
      * @throws IgniteCheckedException If failed.
      */
     private RootPage getMetaPage(String name, int segIdx) throws IgniteCheckedException {
-        return cctx.offheap().rootPageForIndex(name + "%" + segIdx);
+        return cctx.offheap().rootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
+    }
+
+    /**
+     * @param name Name.
+     * @param segIdx Segment index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
+        cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
     }
 }

@@ -20,13 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -43,23 +40,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    protected Ignite ignite;
-
-    /**
-     * @return Atomicity mode.
-     */
-    protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /**
-     * @return Distribution.
-     */
-    protected NearCacheConfiguration nearCacheConfiguration() {
-        return new NearCacheConfiguration();
-    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -117,6 +97,9 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue(e.getMessage().contains("default marshaller"));
+        }
+        finally {
+            stopAllGrids();
         }
     }
 }

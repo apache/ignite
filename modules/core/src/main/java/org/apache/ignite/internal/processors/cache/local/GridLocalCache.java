@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
@@ -65,9 +66,15 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param ctx Cache registry.
      */
     public GridLocalCache(GridCacheContext<K, V> ctx) {
-        super(ctx, DFLT_START_CACHE_SIZE);
+        super(ctx);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        if (map == null)
+            map = new GridCacheLocalConcurrentMap(ctx, entryFactory(), DFLT_START_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -80,8 +87,10 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         return preldr;
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
+    /**
+     * @return Entry factory.
+     */
+    private GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
@@ -97,7 +106,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param key Key of entry.
      * @return Cache entry.
      */
-    @Nullable GridLocalCacheEntry peekExx(KeyCacheObject key) {
+    @Nullable private GridLocalCacheEntry peekExx(KeyCacheObject key) {
         return (GridLocalCacheEntry)peekEx(key);
     }
 
@@ -215,7 +224,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         modes.backup = true;
 
         if (modes.offheap)
-            return ctx.offheap().entriesCount();
+            return ctx.offheap().cacheEntriesCount(ctx.cacheId());
         else if (modes.heap)
             return size();
         else

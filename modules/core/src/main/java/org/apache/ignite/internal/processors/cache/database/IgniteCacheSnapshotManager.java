@@ -64,49 +64,49 @@ public class IgniteCacheSnapshotManager extends GridCacheSharedManagerAdapter {
      *
      */
     public void restoreState() throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /**
      *
      */
     public void onCheckPointBegin() {
-
+        // No-op.
     }
 
     /**
      *
      */
     public void beforeCheckpointPageWritten() {
-
+        // No-op.
     }
 
     /**
      *
      */
     public void afterCheckpointPageWritten() {
-
+        // No-op.
     }
 
     /**
      * @param fullId Full id.
      */
     public void beforePageWrite(FullPageId fullId) {
-
+        // No-op.
     }
 
     /**
      * @param fullId Full id.
      */
     public void onPageWrite(FullPageId fullId, ByteBuffer tmpWriteBuf) {
-
+        // No-op.
     }
 
     /**
      * @param cctx Cctx.
      */
     public void onCacheStop(GridCacheContext cctx) {
-
+        // No-op.
     }
 
     /**

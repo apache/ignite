@@ -1008,7 +1008,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
 
                 default:
-                    assert plc >= 0 : "Negative policy: " + plc;
+                    assert plc >= 0 : "Negative policy [plc=" + plc + ", msg=" + msg + ']';
 
                     if (isReservedGridIoPolicy(plc))
                         throw new IgniteCheckedException("Failed to process message with policy of reserved range. " +
@@ -1153,10 +1153,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
-            U.error(log, "Failed to process regular message due to execution rejection. Will attempt to process " +
-                "message in the listener thread instead.", e);
+            if (!ctx.isStopping()) {
+                U.error(log, "Failed to process regular message due to execution rejection. Will attempt to process " +
+                        "message in the listener thread instead.", e);
 
-            c.run();
+                c.run();
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Failed to process regular message due to execution rejection: " + msg);
         }
     }
 

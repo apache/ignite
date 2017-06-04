@@ -960,12 +960,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void onCacheDestroyed(int cacheId) {
+    @Override public void onCacheGroupDestroyed(int grpId) {
         for (Segment seg : segments) {
             seg.writeLock().lock();
 
             try {
-                seg.resetPartTags(cacheId);
+                seg.resetPartTags(grpId);
             }
             finally {
                 seg.writeLock().unlock();
@@ -1892,9 +1892,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * @param cacheId Cache id.
+         * @param grpId Cache group id.
          */
-        private void resetPartTags(int cacheId) {
+        private void resetPartTags(int grpId) {
             assert getWriteHoldCount() > 0;
 
             Iterator<T2<Integer, Integer>> iter = partTagMap.keySet().iterator();
@@ -1902,7 +1902,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             while (iter.hasNext()) {
                 T2<Integer, Integer> t = iter.next();
 
-                if (t.get1() == cacheId)
+                if (t.get1() == grpId)
                     iter.remove();
             }
         }

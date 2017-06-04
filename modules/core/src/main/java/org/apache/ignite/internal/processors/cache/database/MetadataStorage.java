@@ -53,8 +53,8 @@ public class MetadataStorage implements MetaStore {
     /** Meta page reuse tree. */
     private final ReuseList reuseList;
 
-    /** Cache ID. */
-    private final int cacheId;
+    /** Cache group ID. */
+    private final int grpId;
 
     /** */
     private final int allocPartId;
@@ -70,7 +70,7 @@ public class MetadataStorage implements MetaStore {
         final PageMemory pageMem,
         final IgniteWriteAheadLogManager wal,
         final AtomicLong globalRmvId,
-        final int cacheId,
+        final int grpId,
         final int allocPartId,
         final byte allocSpace,
         final ReuseList reuseList,
@@ -79,12 +79,12 @@ public class MetadataStorage implements MetaStore {
     ) {
         try {
             this.pageMem = pageMem;
-            this.cacheId = cacheId;
+            this.grpId = grpId;
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
 
-            metaTree = new MetaTree(cacheId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
+            metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
                 reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
         }
         catch (IgniteCheckedException e) {
@@ -111,14 +111,14 @@ public class MetadataStorage implements MetaStore {
                 if (reuseList != null)
                     pageId = reuseList.takeRecycledPage();
 
-                pageId = pageId == 0 ? pageMem.allocatePage(cacheId, allocPartId, allocSpace) : pageId;
+                pageId = pageId == 0 ? pageMem.allocatePage(grpId, allocPartId, allocSpace) : pageId;
 
                 tree.put(new IndexItem(idxNameBytes, pageId));
 
-                return new RootPage(new FullPageId(pageId, cacheId), true);
+                return new RootPage(new FullPageId(pageId, grpId), true);
             }
             else {
-                final FullPageId pageId = new FullPageId(row.pageId, cacheId);
+                final FullPageId pageId = new FullPageId(row.pageId, grpId);
 
                 return new RootPage(pageId, false);
             }
@@ -134,10 +134,10 @@ public class MetadataStorage implements MetaStore {
 
         if (row != null) {
             if (reuseList == null)
-                pageMem.freePage(cacheId, row.pageId);
+                pageMem.freePage(grpId, row.pageId);
         }
 
-        return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
+        return row != null ? new RootPage(new FullPageId(row.pageId, grpId), false) : null;
     }
 
     /** {@inheritDoc} */
@@ -288,7 +288,7 @@ public class MetadataStorage implements MetaStore {
         PageUtils.putByte(dstPageAddr, dstOff, len);
         dstOff++;
 
-        PageHandler.copyMemory(srcPageAddr, srcOff, dstPageAddr, dstOff, len);
+        PageHandler.copyMemory(srcPageAddr, dstPageAddr, srcOff, dstOff, len);
         srcOff += len;
         dstOff += len;
 

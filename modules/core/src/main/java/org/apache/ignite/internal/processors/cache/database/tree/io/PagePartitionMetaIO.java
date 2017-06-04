@@ -37,6 +37,9 @@ public class PagePartitionMetaIO extends PageMetaIO {
     private static final int PARTITION_STATE_OFF = GLOBAL_RMV_ID_OFF + 8;
 
     /** */
+    private static final int NEXT_PART_META_PAGE_OFF = PARTITION_STATE_OFF + 1;
+
+    /** */
     public static final IOVersions<PagePartitionMetaIO> VERSIONS = new IOVersions<>(
         new PagePartitionMetaIO(1)
     );
@@ -49,6 +52,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setUpdateCounter(pageAddr, 0);
         setGlobalRemoveId(pageAddr, 0);
         setPartitionState(pageAddr, (byte)-1);
+        setCountersPageId(pageAddr, 0);
     }
 
     /**
@@ -119,5 +123,21 @@ public class PagePartitionMetaIO extends PageMetaIO {
      */
     public void setPartitionState(long pageAddr, byte state) {
         PageUtils.putByte(pageAddr, PARTITION_STATE_OFF, state);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Next meta partial page ID or {@code 0} if it does not exist.
+     */
+    public long getCountersPageId(long pageAddr) {
+        return PageUtils.getLong(pageAddr, NEXT_PART_META_PAGE_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param metaPageId Next partial meta page ID.
+     */
+    public void setCountersPageId(long pageAddr, long metaPageId) {
+        PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, metaPageId);
     }
 }

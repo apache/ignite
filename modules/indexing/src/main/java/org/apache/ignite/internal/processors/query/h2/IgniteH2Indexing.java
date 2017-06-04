@@ -1734,7 +1734,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         IgniteCacheOffheapManager offheapMgr = cctx.isNear() ? cctx.near().dht().context().offheap() : cctx.offheap();
 
         for (int p = 0; p < cctx.affinity().partitions(); p++) {
-            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.keysIterator(p)) {
+            try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.cacheKeysIterator(cctx.cacheId(), p)) {
                 while (keyIter.hasNext()) {
                     cctx.shared().database().checkpointReadLock();
 
@@ -2283,5 +2283,4 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
     }
-
 }
