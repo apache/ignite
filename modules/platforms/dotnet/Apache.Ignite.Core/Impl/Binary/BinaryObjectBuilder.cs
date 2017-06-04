@@ -869,9 +869,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeDecimal:
                     TransferBytes(inStream, outStream, 4); // Transfer scale
 
-                    int magLen = inStream.ReadInt(); // Transfer magnitude length.
+                    int magLen = BinaryUtils.ReadUvarint(inStream); // Transfer magnitude length.
 
-                    outStream.WriteInt(magLen);
+                    BinaryUtils.WriteUvarint(magLen, outStream);
 
                     TransferBytes(inStream, outStream, magLen); // Transfer magnitude.
 
@@ -936,9 +936,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeArrayString:
                 case BinaryUtils.TypeArrayGuid:
                 case BinaryUtils.TypeArrayTimestamp:
-                    int arrLen = inStream.ReadInt();
+                    int arrLen = BinaryUtils.ReadUvarint(inStream);
 
-                    outStream.WriteInt(arrLen);
+                    BinaryUtils.WriteUvarint(arrLen, outStream);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, null);
@@ -958,9 +958,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
                     }
 
-                    arrLen = inStream.ReadInt();
+                    arrLen = BinaryUtils.ReadUvarint(inStream);
 
-                    outStream.WriteInt(arrLen);
+                    BinaryUtils.WriteUvarint(arrLen, outStream);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, EmptyVals);
@@ -995,7 +995,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
                     
                 case BinaryUtils.TypeBinary:
-                    TransferArray(inStream, outStream, 1); // Data array.
+                    int len = inStream.ReadInt();
+
+                    outStream.WriteInt(len);
+
+                    TransferBytes(inStream, outStream, len); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.
 
                     break;
@@ -1034,9 +1038,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void TransferArray(BinaryHeapStream inStream, IBinaryStream outStream,
             int elemSize)
         {
-            int len = inStream.ReadInt();
+            int len = BinaryUtils.ReadUvarint(inStream);
 
-            outStream.WriteInt(len);
+            BinaryUtils.WriteUvarint(len, outStream);
 
             TransferBytes(inStream, outStream, elemSize * len);
         }
