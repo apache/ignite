@@ -1205,7 +1205,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
                     if (prepared.isQuery()) {
-                        twoStepQry = GridSqlQuerySplitter.split(c, stmt, qry.getArgs(),
+                        twoStepQry = GridSqlQuerySplitter.split(this, c, stmt, qry.getArgs(),
                             grpByCollocated, distributedJoins, enforceJoinOrder);
 
                         assert twoStepQry != null;

@@ -562,7 +562,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new QueryResults(reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null, segmentId);
+            qr = new QueryResults(reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -1001,9 +1001,6 @@ public class GridMapQueryExecutor {
         private final String cacheName;
 
         /** */
-        private final int segmentId;
-
-        /** */
         private final AtomicReference<Runnable> onCancel = new AtomicReference<>();
 
         /**
@@ -1015,20 +1012,12 @@ public class GridMapQueryExecutor {
         private QueryResults(long qryReqId, int qrys, @Nullable String cacheName) {
             this.qryReqId = qryReqId;
             this.cacheName = cacheName;
-            this.segmentId = segmentId;
 
             results = new AtomicReferenceArray<>(qrys);
             cancels = new GridQueryCancel[qrys];
 
             for (int i = 0; i < cancels.length; i++)
                 cancels[i] = new GridQueryCancel();
-        }
-
-        /**
-         * @return Segment ID.
-         */
-        public int segmentId() {
-            return segmentId;
         }
 
         /**

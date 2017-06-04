@@ -38,8 +38,8 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.H2Connection;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -159,6 +158,7 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param h2 Indexing.
      * @param conn Connection.
      * @param stmt Prepared statement.
      * @param params Parameters.
@@ -170,6 +170,7 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
+        IgniteH2Indexing h2,
         H2Connection conn,
         PreparedStatement stmt,
         Object[] params,
