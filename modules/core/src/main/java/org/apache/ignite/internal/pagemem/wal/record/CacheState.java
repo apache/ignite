@@ -24,7 +24,7 @@ import java.util.Arrays;
  */
 public class CacheState {
     /** */
-    private short[] parts;
+    private int[] parts;
 
     /** */
     private long[] vals;
@@ -32,11 +32,14 @@ public class CacheState {
     /** */
     private int idx;
 
+    /** */
+    private boolean needsSort;
+
     /**
      * @param partsCnt Partitions count.
      */
     public CacheState(int partsCnt) {
-        parts = new short[partsCnt];
+        parts = new int[partsCnt];
         vals = new long[partsCnt * 2];
     }
 
@@ -52,11 +55,10 @@ public class CacheState {
 
         if (idx > 0) {
             if (parts[idx - 1] >= partId)
-                throw new IllegalStateException("Adding partition in a wrong order [prev=" + parts[idx - 1] +
-                    ", cur=" + partId + ']');
+                needsSort = true;
         }
 
-        parts[idx] = (short)partId;
+        parts[idx] = partId;
         vals[2 * idx] = size;
         vals[2 * idx + 1] = cntr;
 
@@ -92,7 +94,7 @@ public class CacheState {
      * @return Partition ID.
      */
     public int partitionByIndex(int idx) {
-        return parts[idx] & 0xFFFF;
+        return parts[idx];
     }
 
     /**
@@ -123,11 +125,65 @@ public class CacheState {
      * @return Non-negative index of partition if found or negative value if not found.
      */
     private int indexByPartition(int partId) {
-        return Arrays.binarySearch(parts, 0, idx, (short)partId);
+        return Arrays.binarySearch(parts, 0, idx, partId);
+    }
+
+    /**
+     * This method is added for compatibility reasons because in earlier versions
+     * this class has been written as a hash map, which does not preserve sorting.
+     */
+    public void checkSorted() {
+        if (needsSort) {
+            StateElement[] toSort = new StateElement[parts.length];
+
+            for (int i = 0; i < parts.length; i++)
+                toSort[i] = new StateElement(parts[i], vals[2 * i], vals[2 * i + 1]);
+
+            Arrays.sort(toSort);
+
+            for (int i = 0; i < parts.length; i++) {
+                parts[i] = toSort[i].partId;
+                vals[2 * i] = toSort[i].size;
+                vals[2 * i + 1] = toSort[i].cntr;
+            }
+
+            needsSort = false;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheState [cap=" + parts.length + ", size=" + idx + ']';
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
+    private static class StateElement implements Comparable<StateElement> {
+        /** */
+        private int partId;
+
+        /** */
+        private long size;
+
+        /** */
+        private long cntr;
+
+        /**
+         * @param partId Partition ID.
+         * @param size Size.
+         * @param cntr Counter.
+         */
+        private StateElement(int partId, long size, long cntr) {
+            this.partId = partId;
+            this.size = size;
+            this.cntr = cntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(StateElement o) {
+            return Integer.compare(partId, o.partId);
+        }
     }
 }
