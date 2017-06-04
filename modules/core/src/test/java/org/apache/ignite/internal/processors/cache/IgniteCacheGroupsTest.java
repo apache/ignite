@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -145,6 +146,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -1262,7 +1268,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 baseName + i, PARTITIONED,
                 i % 2 == 0 ? TRANSACTIONAL : ATOMIC,
                 2,
-                false);
+                false).setAffinity(new RendezvousAffinityFunction(false, 256));
         }
 
         return ccfgs;
@@ -1299,6 +1305,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 checkCache(i, "testCache2-" + c, 1);
             }
         }
+
+        log.info("Stop nodes.");
 
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
@@ -3514,9 +3522,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @param cache Cache.
      */
     private void cacheOperation(ThreadLocalRandom rnd, IgniteCache cache) {
-        Object key = rnd.nextInt(1000);
+        final int KEYS = 10_000;
 
-        switch (rnd.nextInt(4)) {
+        Integer key = rnd.nextInt(KEYS);
+
+        switch (rnd.nextInt(6)) {
             case 0:
                 cache.put(key, 1);
 
@@ -3534,6 +3544,26 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             case 3:
                 cache.localPeek(key);
+
+                break;
+
+            case 4:
+                Set<Integer> keys = new HashSet<>();
+
+                for (int i = 0; i < 5; i++)
+                    keys.add(rnd.nextInt(KEYS));
+
+                cache.getAll(keys);
+
+                break;
+
+            case 5:
+                Map<Integer, Integer> map = new TreeMap<>();
+
+                for (int i = 0; i < 5; i++)
+                    map.put(rnd.nextInt(KEYS), i);
+
+                cache.putAll(map);
 
                 break;
         }

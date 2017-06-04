@@ -116,15 +116,20 @@ public interface GridCacheConcurrentMap {
      */
     static class CacheMapHolder {
         /** */
+        public final GridCacheContext cctx;
+
+        /** */
         public final AtomicInteger size = new AtomicInteger();
 
         /** */
         public final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map;
 
         /**
+         * @param cctx Cache context.
          * @param map Map.
          */
-        public CacheMapHolder(ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map) {
+        public CacheMapHolder(GridCacheContext cctx, ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map) {
+            this.cctx = cctx;
             this.map = map;
         }
 
