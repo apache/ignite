@@ -996,7 +996,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             true,
                             false);
 
-                        cctx.shared().database().checkpointReadLock();
+                        ctx.database().checkpointReadLock();
 
                         try {if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                             if (rec) {
@@ -1017,7 +1017,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             }
                         }
                         finally {
-                            cctx.shared().database().checkpointReadUnlock();
+                            ctx.database().checkpointReadUnlock();
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {
