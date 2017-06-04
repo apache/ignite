@@ -712,20 +712,20 @@ public class GridReduceQueryExecutor {
                 if (isReplicatedOnly)
                     flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
-                if (send(nodes,
-                        new GridH2QueryRequest()
-                                .requestId(qryReqId)
-                                .topologyVersion(topVer)
-                                .pageSize(r.pageSize())
-                                .caches(qry.cacheIds())
-                                .tables(distributedJoins ? qry.tables() : null)
-                                .partitions(convert(partsMap))
-                                .queries(mapQrys)
-                                .parameters(params)
-                                .flags(flags)
-                                .timeout(timeoutMillis),
-                        parts == null ? null : new ExplicitPartitionsSpecializer(qryMap),
-                        false)) {
+                GridH2QueryRequest req = new GridH2QueryRequest()
+                    .requestId(qryReqId)
+                    .topologyVersion(topVer)
+                    .pageSize(r.pageSize())
+                    .caches(qry.cacheIds())
+                    .tables(distributedJoins ? qry.tables() : null)
+                    .partitions(convert(partsMap))
+                    .queries(mapQrys)
+                    .parameters(params)
+                    .flags(flags)
+                    .timeout(timeoutMillis)
+                    .schemaName(schemaName);
+
+                if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(qryMap), false)) {
                     awaitAllReplies(r, nodes, cancel);
 
                     Object state = r.state();

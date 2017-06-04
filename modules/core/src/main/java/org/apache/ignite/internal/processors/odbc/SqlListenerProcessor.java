@@ -138,6 +138,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                             .socketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize())
                             .filters(filters)
                             .directMode(false)
+                            .idleTimeout(Long.MAX_VALUE)
                             .build();
 
                         srv0.start();

@@ -75,6 +75,7 @@
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
+    <Compile Include="Binary\EnumsTestOnline.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingVersioningTest.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
+    <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />

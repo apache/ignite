@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -97,6 +98,40 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDecimalFieldMarshalling() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        BigDecimal values[] = new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.TEN,
+            new BigDecimal("-100.5"), BigDecimal.valueOf(Long.MAX_VALUE, 0),
+            BigDecimal.valueOf(Long.MIN_VALUE, 0), BigDecimal.valueOf(Long.MAX_VALUE, 8),
+            BigDecimal.valueOf(Long.MIN_VALUE, 8)};
+
+        DecimalValue decVal = new DecimalValue(values[0]);
+
+        BinaryObjectImpl binObj = toBinary(decVal, marsh);
+
+        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("decVal");
+
+        ByteBuffer buf = ByteBuffer.allocate(64);
+
+        for (BigDecimal value : values) {
+            decVal = new DecimalValue(value);
+
+            binObj = toBinary(decVal, marsh);
+
+            field.writeField(binObj, buf);
+
+            buf.flip();
+
+            assertEquals(field.value(binObj), field.readField(buf));
+
+            buf.clear();
+        }
+    }
+
+    /**
      * @param obj Object to transform to a binary object.
      * @param marsh Binary marshaller.
      * @return Binary object.
@@ -156,6 +191,23 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
             lVal = seed;
             fVal = seed;
             dVal = seed;
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class DecimalValue {
+        /** */
+        private BigDecimal decVal;
+
+        /**
+         *
+         * @param decVal Value to use
+         */
+        private DecimalValue(BigDecimal decVal) {
+            this.decVal = decVal;
         }
     }
 }

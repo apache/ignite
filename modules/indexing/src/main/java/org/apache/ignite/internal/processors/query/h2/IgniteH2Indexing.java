@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -1258,15 +1259,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (caches0.isEmpty())
-                    throw new IgniteSQLException("Failed to find at least one cache for SQL statement: " + sqlQry);
+                    twoStepQry.local(true);
+                else {
+                    //Prohibit usage indices with different numbers of segments in same query.
+                    List<Integer> cacheIds = new ArrayList<>(caches0);
 
-                //Prohibit usage indices with different numbers of segments in same query.
-                List<Integer> cacheIds = new ArrayList<>(caches0);
-
-                checkCacheIndexSegmentation(cacheIds);
-
-                twoStepQry.cacheIds(cacheIds);
-                twoStepQry.local(qry.isLocal());
+                    checkCacheIndexSegmentation(cacheIds);
+    
+                    twoStepQry.cacheIds(cacheIds);
+                    twoStepQry.local(qry.isLocal());
+                }
 
                 meta = H2Utils.meta(stmt.getMetaData());
             }
@@ -1292,9 +1294,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (cancel == null)
             cancel = new GridQueryCancel();
 
+        int partitions[] = qry.getPartitions();
+
+        if (partitions == null && twoStepQry.derivedPartitions() != null) {
+            try {
+                partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+            } catch (IgniteCheckedException e) {
+                throw new CacheException("Failed to calculate derived partitions: [qry=" + sqlQry + ", params=" +
+                    Arrays.deepToString(qry.getArgs()) + "]", e);
+            }
+        }
+
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
-                qry.getArgs(), qry.getPartitions()), cancel);
+                qry.getArgs(), partitions), cancel);
 
         cursor.fieldsMeta(meta);
 
@@ -2148,6 +2161,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
+    }
+
+    /**
+     * Bind query parameters and calculate partitions derived from the query.
+     *
+     * @return Partitions.
+     */
+    private int[] calculateQueryPartitions(CacheQueryPartitionInfo[] partInfoList, Object[] params)
+        throws IgniteCheckedException {
+
+        ArrayList<Integer> list = new ArrayList<>(partInfoList.length);
+
+        for (CacheQueryPartitionInfo partInfo: partInfoList) {
+            int partId = partInfo.partition() < 0 ?
+                kernalContext().affinity().partition(partInfo.cacheName(), params[partInfo.paramIdx()]) :
+                partInfo.partition();
+
+            int i = 0;
+
+            while (i < list.size() && list.get(i) < partId)
+                i++;
+
+            if (i < list.size()) {
+                if (list.get(i) > partId)
+                    list.add(i, partId);
+            }
+            else
+                list.add(partId);
+        }
+
+        int[] result = new int[list.size()];
+
+        for (int i = 0; i < list.size(); i++)
+            result[i] = list.get(i);
+
+        return result;
     }
 
     /** {@inheritDoc} */

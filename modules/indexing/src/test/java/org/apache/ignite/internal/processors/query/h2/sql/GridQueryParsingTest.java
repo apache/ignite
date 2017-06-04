@@ -580,7 +580,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
                 c("surname", Value.STRING), c("age", Value.INT)),
             "CREATE TABLE IF NOT EXISTS sch1.\"Person\" (\"id\" integer, \"city\" varchar," +
                 " \"name\" varchar, \"surname\" varchar, \"age\" integer, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                "\"cacheTemplate=cache\"");
+                "\"template=cache\"");
 
         assertCreateTableEquals(
             buildCreateTable("sch1", "Person", "cache", F.asList("id"),
@@ -588,7 +588,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
                 c("surname", Value.STRING), c("age", Value.INT)),
             "CREATE TABLE sch1.\"Person\" (\"id\" integer PRIMARY KEY, \"city\" varchar," +
                 " \"name\" varchar, \"surname\" varchar, \"age\" integer) WITH " +
-                "\"cacheTemplate=cache\"");
+                "\"template=cache\"");
 
         assertParseThrows("create table Person (id int)",
             IgniteSQLException.class, "No PRIMARY KEY defined for CREATE TABLE");
@@ -599,28 +599,25 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("create table Person (id int primary key)",
             IgniteSQLException.class, "No cache value related columns found");
 
-        assertParseThrows("create table Person (id int primary key, age int null)",
-            IgniteSQLException.class, "Mandatory param is missing [paramName=cacheTemplate]");
-
         assertParseThrows("create table Person (id int primary key, age int not null) WITH \"cacheTemplate=cache\"",
             IgniteSQLException.class, "Non nullable columns are forbidden");
 
-        assertParseThrows("create table Person (id int primary key, age int unique) WITH \"cacheTemplate=cache\"",
+        assertParseThrows("create table Person (id int primary key, age int unique) WITH \"template=cache\"",
             IgniteSQLException.class, "Too many constraints - only PRIMARY KEY is supported for CREATE TABLE");
 
-        assertParseThrows("create table Person (id int auto_increment primary key, age int) WITH \"cacheTemplate=cache\"",
+        assertParseThrows("create table Person (id int auto_increment primary key, age int) WITH \"template=cache\"",
             IgniteSQLException.class, "AUTO_INCREMENT columns are not supported");
 
-        assertParseThrows("create table Person (id int primary key check id > 0, age int) WITH \"cacheTemplate=cache\"",
+        assertParseThrows("create table Person (id int primary key check id > 0, age int) WITH \"template=cache\"",
             IgniteSQLException.class, "Column CHECK constraints are not supported [colName=ID]");
 
-        assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"cacheTemplate=cache\"",
+        assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"template=cache\"",
             IgniteSQLException.class, "Computed columns are not supported [colName=ID]");
 
-        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"cacheTemplate=cache\"",
+        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"template=cache\"",
             IgniteSQLException.class, "DEFAULT expressions are not supported [colName=AGE]");
 
-        assertParseThrows("create table Int (_key int primary key, _val int) WITH \"cacheTemplate=cache\"",
+        assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
     }
 
@@ -707,7 +704,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private static void assertCreateTableEquals(GridSqlCreateTable exp, GridSqlCreateTable actual) {
         assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
         assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
-        assertEquals(exp.templateCacheName(), actual.templateCacheName());
+        assertEquals(exp.templateName(), actual.templateName());
         assertEquals(exp.primaryKeyColumns(), actual.primaryKeyColumns());
         assertEquals(new ArrayList<>(exp.columns().keySet()), new ArrayList<>(actual.columns().keySet()));
 
@@ -734,7 +731,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         res.tableName(tbl);
 
-        res.templateCacheName(tplCacheName);
+        res.templateName(tplCacheName);
 
         res.primaryKeyColumns(new LinkedHashSet<>(pkColNames));
 

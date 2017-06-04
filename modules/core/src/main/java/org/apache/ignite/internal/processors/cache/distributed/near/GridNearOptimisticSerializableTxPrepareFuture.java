@@ -114,8 +114,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                     Object key = entry.key().value(ctx.cacheObjectContext(), false);
 
                                     IgniteTxOptimisticCheckedException err0 =
-                                        new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
-                                            "read/write conflict [key=" + key + ", cache=" + ctx.name() + ']');
+                                        new IgniteTxOptimisticCheckedException(S.toString(
+                                            "Failed to prepare transaction, read/write conflict",
+                                            "key", key, true,
+                                            "cache", ctx.name(), false));
 
                                     ERR_UPD.compareAndSet(this, null, err0);
                                 }
