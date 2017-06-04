@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
- * Simple reentrant read-write lock that allows to release locks from threads
- * other than the acquiring.
+ * Reentrant read-write lock (with higher priority for writers) that allows to
+ * release locks from threads other than the acquiring.
  */
 public final class GridReentrantRWLock {
     /** */
@@ -188,7 +188,8 @@ public final class GridReentrantRWLock {
                 final int s = getState();
                 final int writeLocks = writeLocks(s);
 
-                if (writeLocks != 0)
+                // Respect writers over readers to avoid starvation.
+                if (writeLocks != 0 || hasQueuedPredecessors())
                     return -1; // No luck.
 
                 int t = state(readLocks(s) + 1, 0);

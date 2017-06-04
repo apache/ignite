@@ -763,8 +763,11 @@ public class GridReduceQueryExecutor {
 
                 Iterator<List<?>> resIter;
 
-                if (skipMergeTbl)
-                    resIter = new LazyMergeIndexIterator(conn, r.indexes().iterator());
+                if (skipMergeTbl) {
+                    assert conn == null;
+
+                    resIter = new LazyMergeIndexIterator(r.indexes().iterator());
+                }
                 else {
                     cancel.checkCancelled();
 
@@ -1490,10 +1493,7 @@ public class GridReduceQueryExecutor {
     /**
      *
      */
-    private final class LazyMergeIndexIterator implements AutoCloseable, Iterator<List<?>> {
-        /** */
-        final H2Connection conn;
-
+    private final class LazyMergeIndexIterator implements Iterator<List<?>> {
         /** */
         final Iterator<GridMergeIndex> idxs;
 
@@ -1504,26 +1504,15 @@ public class GridReduceQueryExecutor {
         boolean hasNext;
 
         /**
-         * @param conn Connection.
          * @param idxs Indexes.
          */
-        private LazyMergeIndexIterator(
-            H2Connection conn,
-            Iterator<GridMergeIndex> idxs
-        ) {
-            this.conn = conn;
+        private LazyMergeIndexIterator(Iterator<GridMergeIndex> idxs) {
             this.idxs = idxs;
 
             if (!idxs.hasNext())
                 throw new IllegalStateException();
 
             nextCursor();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws Exception {
-            // The same as H2ResultSet.
-            h2.returnToPool(conn);
         }
 
         /**

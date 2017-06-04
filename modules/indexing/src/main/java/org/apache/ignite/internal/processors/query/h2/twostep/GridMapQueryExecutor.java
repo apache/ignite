@@ -684,6 +684,14 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * Cancel all queries.
+     */
+    public void cancelAllQueries() {
+        for (NodeResults nodeRess : qryRess.values())
+            nodeRess.cancelAll();
+    }
+
+    /**
      * @param node Node.
      * @param qryReqId Query request ID.
      * @param err Error.

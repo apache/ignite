@@ -1946,13 +1946,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
-        if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
-            for (H2Schema schema : schemas.values())
-                schema.dropAll();
+        try {
+            if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
+                for (H2Schema schema : schemas.values())
+                    schema.dropAll();
+            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to drop schemas.", e);
         }
 
         schemas.clear();
         cacheName2schema.clear();
+
+        GridH2QueryContext.clearLocalNodeStop(nodeId);
 
         H2Connection c = null;
 
@@ -1968,8 +1975,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (c != null)
                 c.destroy();
         }
-
-        GridH2QueryContext.clearLocalNodeStop(nodeId);
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2175,6 +2180,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             run.cancel();
 
         rdcQryExec.cancelAllQueries();
+        mapQryExec.cancelAllQueries();
     }
 
     /**

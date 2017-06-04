@@ -17,10 +17,11 @@
 
 package org.apache.ignite.util;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.GridReentrantRWLock;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.GridReentrantRWLock;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -81,7 +82,7 @@ public class GridReentrantRWLockSelfTest extends GridCommonAbstractTest {
             }
         }, 16);
 
-        Thread.sleep(2000);
+        Thread.sleep(1000);
 
         stop.set(true);
 
@@ -116,6 +117,51 @@ public class GridReentrantRWLockSelfTest extends GridCommonAbstractTest {
                 l.writeUnlock();
             }
         }, 1);
+
+        assertTrue(l.tryReadLock());
+
+        multithreaded(new Runnable() {
+            @Override public void run() {
+                assertFalse(l.tryWriteLock());
+
+                l.readUnlock();
+
+                assertTrue(l.tryWriteLock());
+            }
+        }, 1);
+
+        l.writeUnlock();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriterPreference() throws Exception {
+        final GridReentrantRWLock l = new GridReentrantRWLock();
+
+        assertTrue(l.tryReadLock());
+        assertTrue(l.tryReadLock());
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                assertFalse(l.tryWriteLock());
+
+                l.writeLock();
+
+                return null;
+            }
+        }, 1);
+
+        Thread.sleep(100);
+
+        assertFalse(l.tryReadLock());
+
+        l.readUnlock();
+        l.readUnlock();
+
+        fut.get();
+
+        l.writeUnlock();
 
         assertTrue(l.tryReadLock());
         l.readUnlock();
