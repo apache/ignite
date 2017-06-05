@@ -93,6 +93,8 @@ public class ReleaseReportGenerator {
 
         htmlReport += "<h1>" + template.getString("header") + "</h1>\n";
 
+        htmlReport += "<div>" + template.getString("description") + "</div>";
+
         for (Object item : template.getJSONArray("items")) {
             htmlReport += buildReportForTemplateItem(template, (JSONObject) item);
         }
