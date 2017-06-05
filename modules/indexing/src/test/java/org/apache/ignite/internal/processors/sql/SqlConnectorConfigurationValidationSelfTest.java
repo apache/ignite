@@ -48,11 +48,6 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
     private static final String CACHE_NAME = "CACHE";
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }

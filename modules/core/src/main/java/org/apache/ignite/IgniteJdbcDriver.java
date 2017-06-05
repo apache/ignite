@@ -371,8 +371,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Logger. */
     private static final IgniteLogger LOG = new JavaLogger();
 
-    /**
-     * Register driver.
+    /*
+     * Static initializer.
      */
     static {
         try {
