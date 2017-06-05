@@ -380,16 +380,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create)
         throws IgniteCheckedException
     {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
-        checkAtomicsConfiguration();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteAtomicSequence, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteAtomicSequence, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteAtomicSequence>() {
+            @Override public T2<IgniteAtomicSequence, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -461,7 +453,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param name Sequence name.
      * @throws IgniteCheckedException If removing failed.
      */
-    final void removeSequence(final String name) throws IgniteCheckedException {
+    final void removeSequence(final String name, @Nullable final String groupName) throws IgniteCheckedException {
         assert name != null;
 
         awaitInitialization();
@@ -498,16 +490,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Nullable AtomicConfiguration cfg,
         final long initVal,
         final boolean create) throws IgniteCheckedException {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
-        checkAtomicsConfiguration();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteAtomicLong, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteAtomicLong, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteAtomicLong>() {
+            @Override public T2<IgniteAtomicLong, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -525,7 +509,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     GridCacheAtomicLongValue retVal = (val == null ? new GridCacheAtomicLongValue(initVal) : null);
 
-                    a = new GridCacheAtomicLongImpl(name, key, atomicLongView, dsCacheCtx);
+                    a = new GridCacheAtomicLongImpl(name, key, cache, cache.context());
 
                     dsMap.put(key, a);
 
@@ -550,13 +534,37 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Data structure instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T> T getAtomic(final IgniteClosureX<AtomicDataStructureValue, T2<T, AtomicDataStructureValue>> c,
-        final AtomicConfiguration cfg,
+    @Nullable private <T> T getAtomic(final AtomicBuilder<T> c,
+        @Nullable AtomicConfiguration cfg,
         final DataStructureInfo dsInfo,
         final boolean create,
         Class<? extends T> cls)
         throws IgniteCheckedException
     {
+        A.notNull(dsInfo.name, "name");
+
+        awaitInitialization();
+
+        if (cfg == null) {
+            checkAtomicsConfiguration();
+
+            cfg = defaultAtomicCfg;
+        }
+
+        final String groupName = cfg.getGroupName();
+
+        startQuery();
+
+        // -----
+
+        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
+
+        // Check type of structure received by key from local cache.
+        T dataStructure = cast(this.dsMap.get(key), cls);
+
+        if (dataStructure != null)
+            return dataStructure;
+
         String cacheName = (cfg.getGroupName() != null ? cfg.getGroupName() + "$" : "") + CU.ATOMICS_CACHE_NAME;
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = create ?
@@ -571,8 +579,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert cache.context().groupId() == CU.cacheId(cfg.getGroupName() != null ? cfg.getGroupName() : CU.ATOMICS_CACHE_NAME);
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
-
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
             cache.context().gate().enter();
@@ -585,7 +591,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 // TODO : validate
 
-                T2<T, ? extends AtomicDataStructureValue> ret = c.applyx(val);
+                T2<T, ? extends AtomicDataStructureValue> ret = c.build(val, cache);
 
                 if (ret.get2() != null)
                     cache.put(key, ret.get2());
@@ -607,7 +613,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param name Atomic long name.
      * @throws IgniteCheckedException If removing failed.
      */
-    final void removeAtomicLong(final String name) throws IgniteCheckedException {
+    final void removeAtomicLong(final String name, @Nullable final String groupNane) throws IgniteCheckedException {
         assert name != null;
         assert dsCacheCtx != null;
 
@@ -626,7 +632,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 return null;
             }
-        }, name, null, ATOMIC_LONG, null);
+        }, name, groupNane, ATOMIC_LONG, null);
     }
 
     /**
@@ -729,22 +735,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create)
         throws IgniteCheckedException
     {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
-        if (cfg == null) {
-            checkAtomicsConfiguration();
-
-            cfg = defaultAtomicCfg;
-        }
-
-        final String groupName = cfg.getGroupName();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteAtomicReference, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteAtomicReference, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteAtomicReference>() {
+            @Override public T2<IgniteAtomicReference, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -763,7 +755,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     AtomicDataStructureValue retVal = (val == null ? new GridCacheAtomicReferenceValue<>(initVal) : null);
 
-                    ref = new GridCacheAtomicReferenceImpl(name, groupName, key, atomicRefView, dsCacheCtx);
+                    ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, dsCacheCtx);
 
                     dsMap.put(key, ref);
 
@@ -823,16 +815,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     @SuppressWarnings("unchecked")
     public final <T, S> IgniteAtomicStamped<T, S> atomicStamped(final String name, @Nullable AtomicConfiguration cfg,
         final T initVal, final S initStamp, final boolean create) throws IgniteCheckedException {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
-        checkAtomicsConfiguration();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteAtomicStamped, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteAtomicStamped, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteAtomicStamped>() {
+            @Override public T2<IgniteAtomicStamped, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 GridCacheInternalKeyImpl key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -874,7 +858,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param name Atomic stamped name.
      * @throws IgniteCheckedException If removing failed.
      */
-    final void removeAtomicStamped(final String name) throws IgniteCheckedException {
+    final void removeAtomicStamped(final String name, @Nullable final String groupName) throws IgniteCheckedException {
         assert name != null;
         assert dsCacheCtx != null;
 
@@ -1163,19 +1147,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create)
         throws IgniteCheckedException
     {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
         if (create)
             A.ensure(cnt >= 0, "count can not be negative");
 
-        checkAtomicsConfiguration();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteCountDownLatch, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteCountDownLatch, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteCountDownLatch>() {
+            @Override public T2<IgniteCountDownLatch, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -1224,7 +1200,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param name Name of the latch.
      * @throws IgniteCheckedException If operation failed.
      */
-    public void removeCountDownLatch(final String name) throws IgniteCheckedException {
+    public void removeCountDownLatch(final String name, @Nullable final String groupName) throws IgniteCheckedException {
         assert name != null;
         assert dsCacheCtx != null;
 
@@ -1279,16 +1255,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public IgniteSemaphore semaphore(final String name, @Nullable AtomicConfiguration cfg, final int cnt,
         final boolean failoverSafe, final boolean create)
         throws IgniteCheckedException {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
-        checkAtomicsConfiguration();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteSemaphore, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteSemaphore, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteSemaphore>() {
+            @Override public T2<IgniteSemaphore, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -1309,8 +1277,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(
                         name,
                         key,
-                        semView,
-                        dsCacheCtx);
+                        cache,
+                        cache.context());
 
                     dsMap.put(key, sem0);
 
@@ -1333,7 +1301,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param name Name of the semaphore.
      * @throws IgniteCheckedException If operation failed.
      */
-    public void removeSemaphore(final String name) throws IgniteCheckedException {
+    public void removeSemaphore(final String name, @Nullable final String groupName) throws IgniteCheckedException {
         assert name != null;
         assert dsCacheCtx != null;
 
@@ -1366,7 +1334,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, name, null, SEMAPHORE, null);
+        }, name, groupName, SEMAPHORE, null);
     }
 
     /**
@@ -1383,16 +1351,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     public IgniteLock reentrantLock(final String name, @Nullable AtomicConfiguration cfg, final boolean failoverSafe,
         final boolean fair, final boolean create) throws IgniteCheckedException {
-        A.notNull(name, "name");
-
-        awaitInitialization();
-
-        checkAtomicsConfiguration();
-
-        startQuery();
-
-        return getAtomic(new IgniteClosureX<AtomicDataStructureValue, T2<IgniteLock, AtomicDataStructureValue>>() {
-            @Override public T2<IgniteLock, AtomicDataStructureValue> applyx(AtomicDataStructureValue val) throws IgniteCheckedException {
+        return getAtomic(new AtomicBuilder<IgniteLock>() {
+            @Override public T2<IgniteLock, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 try {
@@ -1438,7 +1398,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param broken Flag indicating the reentrant lock is broken and should be removed unconditionally.
      * @throws IgniteCheckedException If operation failed.
      */
-    public void removeReentrantLock(final String name, final boolean broken) throws IgniteCheckedException {
+    public void removeReentrantLock(final String name, @Nullable final String groupName, final boolean broken) throws IgniteCheckedException {
         assert name != null;
         assert dsCacheCtx != null;
 
@@ -1533,7 +1493,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 IgniteInternalFuture<?> removeFut = ctx.closure().runLocalSafe(new GPR() {
                                     @Override public void run() {
                                         try {
-                                            removeCountDownLatch(latch0.name());
+                                            removeCountDownLatch(latch0.name(), latch0.groupName());
                                         }
                                         catch (IgniteCheckedException e) {
                                             U.error(log, "Failed to remove count down latch: " + latch0.name(), e);
@@ -2343,5 +2303,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         @Override public String toString() {
             return S.toString(RemoveDataStructureProcessor.class, this);
         }
+    }
+
+    private interface AtomicBuilder<T> {
+        T2<T, AtomicDataStructureValue> build(AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException;
     }
 }

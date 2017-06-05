@@ -149,6 +149,10 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         return name;
     }
 
+    @Override public String groupName() {
+        return ctx.group().name();
+    }
+
     /** {@inheritDoc} */
     @Override public int count() {
         try {
@@ -328,7 +332,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void close() {
         if (!rmvd) {
             try {
-                ctx.kernalContext().dataStructures().removeCountDownLatch(name);
+                ctx.kernalContext().dataStructures().removeCountDownLatch(name, ctx.group().name());
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

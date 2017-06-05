@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -270,7 +271,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicStamped(name);
+            ctx.kernalContext().dataStructures().removeAtomicStamped(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

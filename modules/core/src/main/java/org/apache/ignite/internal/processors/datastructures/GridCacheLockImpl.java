@@ -1532,7 +1532,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             try {
                 boolean force = sync != null && (sync.isBroken() && !sync.failoverSafe);
 
-                ctx.kernalContext().dataStructures().removeReentrantLock(name, force);
+                ctx.kernalContext().dataStructures().removeReentrantLock(name, ctx.group().name(), force);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
