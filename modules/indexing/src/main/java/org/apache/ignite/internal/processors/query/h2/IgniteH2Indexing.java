@@ -412,8 +412,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public int[] getParameterTypes(String cacheName, String sql) {
-        H2Connection c = takeConnectionForCache(cacheName);
+    @Override public int[] getParameterTypes(String schemaName, String sql) {
+        H2Connection c = takeConnectionForSchema(schemaName);
 
         try {
             c.setupConnection(false, true);

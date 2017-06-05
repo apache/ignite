@@ -284,9 +284,9 @@ public interface GridQueryIndexing {
     /**
      * Gets SQL parameter data types as in {@link Types}.
      *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql SQL Statement.
      * @return Parameter types.
      */
-    public int[] getParameterTypes(String cacheName, String sql);
+    public int[] getParameterTypes(String schemaName, String sql);
 }

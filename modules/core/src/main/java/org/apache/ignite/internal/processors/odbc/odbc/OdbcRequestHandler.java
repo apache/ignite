@@ -388,7 +388,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private SqlListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
             int[] sqlTypes = ctx.query().getIndexing()
-                .getParameterTypes(req.cacheName(), req.query());
+                .getParameterTypes(req.schema(), req.query());
 
             byte[] typeIds = F.isEmpty(sqlTypes) ? U.EMPTY_BYTES : new byte[sqlTypes.length];
 

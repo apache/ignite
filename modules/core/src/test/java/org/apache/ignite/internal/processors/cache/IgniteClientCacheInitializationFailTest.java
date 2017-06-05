@@ -354,7 +354,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public int[] getParameterTypes(String cacheName, String sql) {
+        @Override public int[] getParameterTypes(String schemaName, String sql) {
             return U.EMPTY_INTS;
         }
     }
