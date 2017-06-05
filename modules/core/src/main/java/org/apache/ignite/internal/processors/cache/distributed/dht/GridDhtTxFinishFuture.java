@@ -730,6 +730,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheFutureAdapter<Ig
 
         /** {@inheritDoc} */
         @Override public String toString() {
+            ClusterNode node = node();
+
             return "MiniFuture [node=" + node.id() + ", loc=" + node.isLocal() + ", done=" + done + ']';
         }
     }
