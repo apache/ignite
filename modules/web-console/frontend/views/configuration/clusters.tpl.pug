@@ -18,7 +18,7 @@ include /app/helpers/jade/mixins
 
 .docs-header
     h1 Configure Ignite Clusters
-.docs-body(ng-controller='clustersController')
+.docs-body
     ignite-information
         ul
             li Configure #[a(href='https://apacheignite.readme.io/docs/clustering' target='_blank') clusters] properties
@@ -52,13 +52,24 @@ include /app/helpers/jade/mixins
                             include /app/modules/states/configuration/clusters/discovery
                             include /app/modules/states/configuration/clusters/events
                             include /app/modules/states/configuration/clusters/failover
+                            include /app/modules/states/configuration/clusters/hadoop
                             include /app/modules/states/configuration/clusters/igfs
                             include /app/modules/states/configuration/clusters/load-balancing
                             include /app/modules/states/configuration/clusters/logger
                             include /app/modules/states/configuration/clusters/marshaller
+
+                            //- Since ignite 2.0
+                            include /app/modules/states/configuration/clusters/memory
+
+                            include /app/modules/states/configuration/clusters/misc
                             include /app/modules/states/configuration/clusters/metrics
                             include /app/modules/states/configuration/clusters/odbc
+                            include /app/modules/states/configuration/clusters/service
                             include /app/modules/states/configuration/clusters/ssl
+
+                            //- Removed in ignite 2.0
+                            include /app/modules/states/configuration/clusters/swap
+                                
                             include /app/modules/states/configuration/clusters/thread
                             include /app/modules/states/configuration/clusters/time
                             include /app/modules/states/configuration/clusters/transactions

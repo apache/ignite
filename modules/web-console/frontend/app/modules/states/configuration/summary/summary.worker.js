@@ -59,19 +59,20 @@ spec:\n\
 
 // eslint-disable-next-line no-undef
 onmessage = function(e) {
-    const {cluster, data, demo} = e.data;
+    const {cluster, data, demo, targetVer} = e.data;
 
     const zip = new JSZip();
 
     if (!data.docker)
-        data.docker = docker.generate(cluster, 'latest');
+        data.docker = docker.generate(cluster, targetVer);
 
     zip.file('Dockerfile', data.docker);
     zip.file('.dockerignore', docker.ignoreFile());
 
-    const cfg = generator.igniteConfiguration(cluster, false);
-    const clientCfg = generator.igniteConfiguration(cluster, true);
-    const clientNearCaches = _.filter(cluster.caches, (cache) => _.get(cache, 'clientNearConfiguration.enabled'));
+    const cfg = generator.igniteConfiguration(cluster, targetVer.ignite, false);
+    const clientCfg = generator.igniteConfiguration(cluster, targetVer.ignite, true);
+    const clientNearCaches = _.filter(cluster.caches, (cache) =>
+        cache.mode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled'));
 
     const secProps = properties.generate(cfg);
 
@@ -118,7 +119,7 @@ onmessage = function(e) {
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
         'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 
-    zip.file('pom.xml', maven.generate(cluster));
+    zip.file('pom.xml', maven.generate(cluster, targetVer));
 
     zip.file('README.txt', readme.generate());
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());

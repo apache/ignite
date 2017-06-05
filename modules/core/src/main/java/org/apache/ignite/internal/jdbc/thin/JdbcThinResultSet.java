@@ -136,7 +136,7 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (rowsIter == null && !finished) {
             try {
-                JdbcQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
+                JdbcQueryFetchResult res = stmt.connection().io().queryFetch(qryId, fetchSize);
 
                 rows = res.items();
                 finished = res.last();
@@ -178,7 +178,7 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            stmt.connection().cliIo().queryClose(qryId);
+            stmt.connection().io().queryClose(qryId);
 
             closed = true;
         }
@@ -1618,7 +1618,7 @@ public class JdbcThinResultSet implements ResultSet {
     private List<JdbcColumnMeta> meta() throws SQLException {
         if (!metaInit) {
             try {
-                JdbcQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
+                JdbcQueryMetadataResult res = stmt.connection().io().queryMeta(qryId);
 
                 meta = res.meta();
 

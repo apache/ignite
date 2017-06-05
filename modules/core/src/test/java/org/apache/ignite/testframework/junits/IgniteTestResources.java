@@ -58,19 +58,22 @@ public class IgniteTestResources {
     private final IgniteLogger log;
 
     /** Local host. */
-    private final String locHost;
+    private final String locHost = localHost();
 
     /** */
-    private final UUID nodeId;
+    private final UUID nodeId = UUID.randomUUID();
 
     /** */
     private final MBeanServer jmx;
 
     /** */
-    private final String home;
+    private final String home = U.getIgniteHome();
 
     /** */
     private ThreadPoolExecutor execSvc;
+
+    /** */
+    private IgniteConfiguration cfg;
 
     /** */
     private GridResourceProcessor rsrcProc;
@@ -84,14 +87,18 @@ public class IgniteTestResources {
         else
             log = rootLog.getLogger(getClass());
 
-        nodeId = UUID.randomUUID();
-        jmx = ManagementFactory.getPlatformMBeanServer();
-        home = U.getIgniteHome();
-        locHost = localHost();
+        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+    }
 
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        rsrcProc = new GridResourceProcessor(ctx);
+    /**
+     * @param cfg Ignite configuration
+     */
+    public IgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+        this.cfg = cfg;
+        this.log = rootLog.getLogger(getClass());
+        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log, this.cfg));
     }
 
     /**
@@ -101,16 +108,8 @@ public class IgniteTestResources {
         assert jmx != null;
 
         this.jmx = jmx;
-
-        log = rootLog.getLogger(getClass());
-
-        nodeId = UUID.randomUUID();
-        home = U.getIgniteHome();
-        locHost = localHost();
-
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.log = rootLog.getLogger(getClass());
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
     /**
@@ -120,15 +119,8 @@ public class IgniteTestResources {
         assert log != null;
 
         this.log = log.getLogger(getClass());
-
-        nodeId = UUID.randomUUID();
-        jmx = ManagementFactory.getPlatformMBeanServer();
-        home = U.getIgniteHome();
-        locHost = localHost();
-
-        GridTestKernalContext ctx = new GridTestKernalContext(log);
-
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.jmx = ManagementFactory.getPlatformMBeanServer();
+        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
     }
 
     /**
@@ -185,7 +177,7 @@ public class IgniteTestResources {
 
         rsrcProc.injectBasicResource(target, LoggerResource.class, getLogger().getLogger(target.getClass()));
         rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
-            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home));
+            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home, cfg));
     }
 
     /**

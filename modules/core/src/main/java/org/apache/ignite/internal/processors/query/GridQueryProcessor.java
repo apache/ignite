@@ -1810,7 +1810,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteException("Local query is not supported without specific cache.");
 
         if (qry.getSchema() == null)
-            throw new IgniteException("Query schema is not set.");
+            qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
