@@ -68,7 +68,7 @@ public class ReleaseReportGenerator {
         JSONObject template = new JSONObject(templateJsonStr);
 
         String templateCss = "";
-        br = new BufferedReader(new FileReader(templatePath));
+        br = new BufferedReader(new FileReader(cssPath));
         while ((sCurrentLine = br.readLine()) != null)
             templateCss += sCurrentLine;
 
