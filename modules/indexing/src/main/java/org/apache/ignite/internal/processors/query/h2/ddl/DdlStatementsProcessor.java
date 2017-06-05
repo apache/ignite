@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
@@ -96,6 +98,13 @@ public class DdlStatementsProcessor {
             if (stmt0 instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex cmd = (GridSqlCreateIndex)stmt0;
 
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null)
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
+
+                assert tbl.rowDescriptor() != null;
+
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd.index().getName());
@@ -103,14 +112,6 @@ public class DdlStatementsProcessor {
                 newIdx.setIndexType(cmd.index().getIndexType());
 
                 LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
-
-                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-
-                if (tbl == null)
-                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                        cmd.tableName());
-
-                assert tbl.rowDescriptor() != null;
 
                 // Let's replace H2's table and property names by those operated by GridQueryProcessor.
                 GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
@@ -130,13 +131,14 @@ public class DdlStatementsProcessor {
                     newIdx, cmd.ifNotExists());
             }
             else if (stmt0 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex)stmt0;
+                GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
 
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
-                if (tbl != null)
+                if (tbl != null) {
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
+                }
                 else {
                     if (cmd.ifExists())
                         fut = new GridFinishedFuture();
@@ -148,6 +150,10 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("CREATE TABLE can only be executed on " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
+
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
@@ -155,12 +161,17 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
                             cmd.tableName());
                 }
-                else
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateCacheName(),
-                        cmd.ifNotExists());
+                else {
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateName(),
+                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
+
+                if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
+                    throw new SchemaOperationException("DROP TABLE can only be executed on " +
+                        QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 

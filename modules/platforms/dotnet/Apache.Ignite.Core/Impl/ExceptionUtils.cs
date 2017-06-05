@@ -75,6 +75,7 @@ namespace Apache.Ignite.Core.Impl
 
             // Cluster exceptions.
             Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (c, m, e, i) => new ClusterGroupEmptyException(m, e);
+            Exs["org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException"] = (c, m, e, i) => new ClusterGroupEmptyException(m, e);
             Exs["org.apache.ignite.cluster.ClusterTopologyException"] = (c, m, e, i) => new ClusterTopologyException(m, e);
 
             // Compute exceptions.

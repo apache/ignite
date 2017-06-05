@@ -16,7 +16,7 @@
 
 mixin ignite-form-field-bsdropdown(label, model, name, disabled, required, options, tip)
     .dropdown--ignite.ignite-form-field
-        button.btn-ignite.btn-ignite--primary-outline(
+        .btn-ignite.btn-ignite--primary-outline(
             data-ng-model=model
 
             data-ng-required=required && `${required}`
@@ -27,7 +27,6 @@ mixin ignite-form-field-bsdropdown(label, model, name, disabled, required, optio
             data-trigger='hover focus'
             data-placement='bottom-right'
             data-container='self'
-            data-animation=''
 
             tabindex='0'
             aria-haspopup='true'

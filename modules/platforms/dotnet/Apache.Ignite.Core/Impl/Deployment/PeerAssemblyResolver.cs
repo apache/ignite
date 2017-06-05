@@ -45,6 +45,8 @@ namespace Apache.Ignite.Core.Impl.Deployment
 
             _handler = (sender, args) => GetAssembly(ignite, args.Name, originNodeId);
 
+            // AssemblyResolve handler is called only when aseembly can't be found via normal lookup,
+            // so we won't end up loading assemblies that are already present.
             AppDomain.CurrentDomain.AssemblyResolve += _handler;
         }
 
@@ -52,6 +54,19 @@ namespace Apache.Ignite.Core.Impl.Deployment
         public void Dispose()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= _handler;
+        }
+
+        /// <summary>
+        /// Gets an instance of <see cref="PeerAssemblyResolver"/> when peer loading is enabled; otherwise null.
+        /// </summary>
+        public static PeerAssemblyResolver GetInstance(Ignite ignite, Guid originNodeId)
+        {
+            if (ignite == null || ignite.Configuration.PeerAssemblyLoadingMode == PeerAssemblyLoadingMode.Disabled)
+            {
+                return null;
+            }
+
+            return new PeerAssemblyResolver(ignite, originNodeId);
         }
 
         /// <summary>
@@ -158,7 +173,10 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// </summary>
         private static IEnumerable<Guid> GetDotNetNodes(IIgnite ignite, Guid originNodeId)
         {
-            yield return originNodeId;
+            if (originNodeId != Guid.Empty)
+            {
+                yield return originNodeId;
+            }
 
             foreach (var node in ignite.GetCluster().ForDotNet().ForRemotes().GetNodes())
             {
@@ -182,6 +200,12 @@ namespace Apache.Ignite.Core.Impl.Deployment
             catch (ClusterGroupEmptyException)
             {
                 // Normal situation: node has left.
+                return null;
+            }
+            catch (AggregateException aex)
+            {
+                // Normal situation: node has left.
+                aex.Handle(e => e is ClusterGroupEmptyException);
                 return null;
             }
         }
