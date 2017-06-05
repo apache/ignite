@@ -41,8 +41,6 @@ import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethods
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -1048,7 +1046,7 @@ public class QueryUtils {
                 continue;
 
             for (QueryEntity e : desc.schema().entities()) {
-                tblNames.add(tableName(e));
+                tblNames.add(e.getTableName());
 
                 for (QueryIndex idx : e.getIndexes())
                     idxNames.add(idx.getName());
@@ -1056,10 +1054,9 @@ public class QueryUtils {
         }
 
         for (QueryEntity e : ccfg.getQueryEntities()) {
-            String tblName = tableName(e);
-            if (!tblNames.add(tblName))
+            if (!tblNames.add(e.getTableName()))
                 return "Table name must be unique in schema scope [schemaName=" + schema + ", tableName=" +
-                    tblName + ']';
+                    e.getTableName() + ']';
 
             for (QueryIndex idx : e.getIndexes())
                 if (!idxNames.add(idx.getName()))

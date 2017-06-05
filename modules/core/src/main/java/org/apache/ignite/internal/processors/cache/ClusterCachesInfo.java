@@ -33,20 +33,17 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
@@ -279,23 +276,21 @@ class ClusterCachesInfo {
             AffinityTopologyVersion waitTopVer = null;
 
             if (req.start()) {
-                if (!req.clientStartOnly()) {
-                    String err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(),
-                        ctx.cache().cacheDescriptors());
-
-                    if (err != null) {
-                        ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException(err));
-
-                        continue;
-                    }
-                }
-
                 if (desc == null) {
                     if (req.clientStartOnly()) {
                         ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException("Failed to start " +
                             "client cache (a cache with the given name is not started): " + req.cacheName()));
                     }
                     else {
+                        String err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(),
+                            ctx.cache().cacheDescriptors());
+
+                        if (err != null) {
+                            ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException(err));
+
+                            continue;
+                        }
+
                         CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
 
                         assert req.cacheType() != null : req;
