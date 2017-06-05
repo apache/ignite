@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'SpringTransformer', function($scope, spring) {
+export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) {
     const ctrl = this;
 
     delete ctrl.data;
 
+    const targetSince = Version.available.bind(Version);
+
     // Setup generator.
     switch (ctrl.generator) {
         case 'igniteConfiguration':
-            ctrl.generate = (cluster) => spring.cluster(cluster, ctrl.client === 'true');
+            ctrl.generate = (cluster) => spring.cluster(cluster, Version.current, ctrl.client === 'true');
 
             break;
         case 'clusterCaches':
@@ -35,9 +37,9 @@ export default ['$scope', 'SpringTransformer', function($scope, spring) {
                     return acc;
                 }, []);
 
-                const cfg = spring.generator.clusterGeneral(cluster);
+                const cfg = spring.generator.clusterGeneral(cluster, targetSince);
 
-                spring.generator.clusterCaches(cluster, clusterCaches, null, false, cfg);
+                spring.generator.clusterCaches(cluster, clusterCaches, null, targetSince, false, cfg);
 
                 return spring.toSection(cfg);
             };
@@ -53,7 +55,7 @@ export default ['$scope', 'SpringTransformer', function($scope, spring) {
                     return acc;
                 }, []);
 
-                return spring[ctrl.generator](cache, cacheDomains);
+                return spring[ctrl.generator](cache, cacheDomains, targetSince);
             };
 
             break;
@@ -69,6 +71,19 @@ export default ['$scope', 'SpringTransformer', function($scope, spring) {
             };
 
             break;
+        case 'clusterServiceConfiguration':
+            ctrl.generate = (cluster, caches) => {
+                const clusterCaches = _.reduce(caches, (acc, cache) => {
+                    if (_.includes(cluster.caches, cache.value))
+                        acc.push(cache.cache);
+
+                    return acc;
+                }, []);
+
+                return spring.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+            };
+
+            break;
         case 'igfss':
             ctrl.generate = (cluster, igfss) => {
                 const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
@@ -78,11 +93,11 @@ export default ['$scope', 'SpringTransformer', function($scope, spring) {
                     return acc;
                 }, []);
 
-                return spring.clusterIgfss(clusterIgfss);
+                return spring.clusterIgfss(clusterIgfss, targetSince);
             };
 
             break;
         default:
-            ctrl.generate = (master, detail) => spring[ctrl.generator](master, detail);
+            ctrl.generate = (master) => spring[ctrl.generator](master, targetSince);
     }
 }];

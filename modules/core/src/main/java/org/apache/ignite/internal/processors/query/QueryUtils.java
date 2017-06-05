@@ -74,6 +74,12 @@ public class QueryUtils {
     /** Version field name. */
     public static final String VER_FIELD_NAME = "_VER";
 
+    /** Well-known template name for PARTITIONED cache. */
+    public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
+
+    /** Well-known template name for REPLICATED cache. */
+    public static final String TEMPLATE_REPLICÄTED = "REPLICATED";
+
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
 

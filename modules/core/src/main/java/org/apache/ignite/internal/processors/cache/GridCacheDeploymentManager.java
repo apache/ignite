@@ -351,10 +351,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
 
         if (log.isDebugEnabled())
-            log.debug("Finished examining entry [entryCls=" + e.getClass() +
-                ", key=" + key0 + ", keyCls=" + key0.getClass() +
-                ", valCls=" + (val0 != null ? val0.getClass() : "null") +
-                ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
+            log.debug(S.toString("Finished examining entry",
+                "entryCls", e.getClass(), true,
+                "key", key0, true,
+                "keyCls", key0.getClass(), true,
+                "valCls", (val0 != null ? val0.getClass() : "null"), true,
+                "keyLdr", keyLdr, false,
+                "valLdr", valLdr, false,
+                "res", res, false));
 
         return res;
     }
