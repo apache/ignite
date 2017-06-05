@@ -20,17 +20,22 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 import javax.cache.CacheException;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -42,8 +47,11 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -88,6 +96,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Override protected void afterTest() throws Exception {
         if (client().cache("Person") != null)
             executeDdl("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
+
+
+            executeDdl("DROP TABLE IF EXISTS PUBLIC.\"City\"");
 
         super.afterTest();
     }
@@ -376,13 +387,79 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Tests index name conflict check in discovery thread.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testIndexNameConflictCheckDiscovery() throws Exception {
+        executeDdl(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
+
+        executeDdl(grid(0), "CREATE INDEX \"idx\" ON \"Person\" (\"name\")");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                QueryEntity e = new QueryEntity();
+
+                e.setTableName("City");
+                e.setKeyFields(Collections.singleton("name"));
+                e.setFields(new LinkedHashMap<>(Collections.singletonMap("name", String.class.getName())));
+                e.setIndexes(Collections.singleton(new QueryIndex("name").setName("idx")));
+                e.setValueType("CityKey");
+                e.setValueType("City");
+
+                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(),
+                    CacheAtomicityMode.ATOMIC, 10, false);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Index name must be unique in schema scope [schemaName=PUBLIC, " +
+            "indexName=idx]");
+    }
+
+    /**
+     * Tests table name conflict check in {@link DdlStatementsProcessor}.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testTableNameConflictCheckSql() throws Exception {
+        executeDdl(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override  public Object call() throws Exception {
+                executeDdl(client(), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Table name must be unique in schema scope [schemaName=PUBLIC, " +
+            "tableName=Person]");
+    }
+
+    /**
      * Execute {@code CREATE TABLE} w/given params.
      * @param params Engine parameters.
      */
     private void createTableWithParams(final String params) {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
             ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"template=cache," + params + '"'));
+            "\"template=cache," + params + '"');
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} in non-public schema causes an exception.
+     *
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCreateTableInNonPublicSchema() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeDdl("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
+                    " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+                    "\"template=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
     }
 
     /**
@@ -398,24 +475,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, expErrMsg);
-    }
-
-    /**
-     * Test that {@code CREATE TABLE} on non-public schema causes an exception.
-     *
-     * @throws Exception if failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testCreateTableNotPublicSchema() throws Exception {
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                executeDdl("CREATE TABLE \"cache_idx\".\"Person\" (\"id\" int, \"city\" varchar," +
-                    " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-                    "\"template=cache\"");
-
-                return null;
-            }
-        }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
     }
 
     /**
@@ -435,12 +494,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Execute DDL statement.
+     * Execute DDL statement on client node.
      *
      * @param sql Statement.
      */
     private void executeDdl(String sql) {
-        queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true);
+        executeDdl(client(), sql);
     }
 
     /**
@@ -514,6 +573,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Execute DDL statement on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    private void executeDdl(Ignite node, String sql) {
+        queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true);
+    }
+
+    /**
      * @return Client node.
      */
     private IgniteEx client() {
@@ -562,6 +631,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @return Cache configuration with query entities in {@code PUBLIC} schema.
      */
     private CacheConfiguration cacheConfigurationForIndexingInPublicSchema() {
-        return cacheConfigurationForIndexing().setName(INDEXED_CACHE_NAME_2).setSqlSchema(QueryUtils.DFLT_SCHEMA);
+        return cacheConfigurationForIndexing()
+            .setName(INDEXED_CACHE_NAME_2)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA)
+            .setNodeFilter(F.not(new DynamicIndexAbstractSelfTest.NodeFilter()));
     }
 }

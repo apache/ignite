@@ -1025,149 +1025,49 @@ public class QueryUtils {
     }
 
     /**
-     * Check given {@link QueryEntity} for conflicts with any query entities existing in collection of
-     * {@link DynamicCacheDescriptor}s and belonging to the same schema.
+     * Check given {@link CacheConfiguration} for conflicts in table and index names from any query entities
+     *     found in collection of {@link DynamicCacheDescriptor}s and belonging to the same schema.
      *
-     * @param schema Schema name.
-     * @param newEntity Proposed entity.
+     * @param ccfg New cache configuration.
      * @param descs Cache descriptors.
-     * @param exClo Closure to convert error message to the exception handled by calling code.
-     * @return {@link Exception} returned by {@code exClo} describing found conflict or {@code null} if none found.
+     * @return Exception message describing found conflict or {@code null} if none found.
      */
-    public static Exception checkQueryEntityConflicts(String schema, QueryEntity newEntity,
-        Collection<DynamicCacheDescriptor> descs, IgniteClosure<String, Exception> exClo) {
+    public static String checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
+        Collection<DynamicCacheDescriptor> descs) {
+        String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
+
         Set<String> idxNames = new HashSet<>();
 
-        if (!F.isEmpty(newEntity.getIndexes()))
-            for (QueryIndex idx : newEntity.getIndexes())
-                idxNames.add(idx.getName());
+        Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
-            if (!F.eq(schema, desc.cacheConfiguration().getSqlSchema()))
+            String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                desc.cacheConfiguration().getSqlSchema());
+
+            if (!F.eq(schema, descSchema))
                 continue;
 
-            for (QueryEntity entity : desc.schema().entities()) {
-                if (!F.eq(entity.getTableName(), newEntity.getTableName())) {
-                    if (!F.isEmpty(entity.getIndexes())) {
-                        for (QueryIndex idx : entity.getIndexes())
-                            if (idxNames.contains(idx.getName()))
-                                return exClo.apply("Index name must be unique in schema scope [schemaName=" + schema +
-                                    ", indexName=" + idx.getName() + ", tableName=" + entity.getTableName() + ", " +
-                                    "newTableName=" + newEntity.getTableName() + ']');
-                    }
+            for (QueryEntity e : desc.schema().entities()) {
+                tblNames.add(tableName(e));
 
-                    // The rest of the check is for entities corresponding to the same table.
-                    continue;
-                }
-
-
-                Exception res;
-
-                res = check(schema, entity.getTableName(), entity.getKeyType(), newEntity.getKeyType(),
-                    "key type names don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                res = check(schema, entity.getTableName(), entity.getValueType(), newEntity.getValueType(),
-                    "value type names don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                res = check(schema, entity.getTableName(), entity.getFields(), newEntity.getFields(),
-                    "field lists don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                res = check(schema, entity.getTableName(), entity.getKeyFields(), newEntity.getKeyFields(),
-                    "key field lists don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                res = check(schema, entity.getTableName(), entity.getAliases(), newEntity.getAliases(),
-                    "aliases don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                res = check(schema, entity.getTableName(), entity.getKeyFieldName(), newEntity.getKeyFieldName(),
-                    "key field names don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                res = check(schema, entity.getTableName(), entity.getValueFieldName(), newEntity.getValueFieldName(),
-                    "value field names don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                Map<String, QueryIndex> oldIdxs = new HashMap<>();
-
-                for (QueryIndex idx : entity.getIndexes())
-                    oldIdxs.put(idx.getName(), idx);
-
-                Map<String, QueryIndex> newIdxs = new HashMap<>();
-
-                for (QueryIndex idx : newEntity.getIndexes())
-                    newIdxs.put(idx.getName(), idx);
-
-                res = check(schema, entity.getTableName(), oldIdxs.keySet(), newIdxs.keySet(),
-                    "names of indexes don't match", exClo);
-
-                if (res != null)
-                    return res;
-
-                for (QueryIndex newIdx : newIdxs.values()) {
-                    QueryIndex oldIdx = oldIdxs.get(newIdx.getName());
-
-                    assert oldIdx != null;
-
-                    res = check(schema, entity.getTableName(), oldIdx.getFields(), newIdx.getFields(),
-                        "field lists don't match for index " + newIdx.getName(), exClo);
-
-                    if (res != null)
-                        return res;
-
-                    res = check(schema, entity.getTableName(), oldIdx.getIndexType(), newIdx.getIndexType(),
-                        "index types don't match for index " + newIdx.getName(), exClo);
-
-                    if (res != null)
-                        return res;
-
-                    res = check(schema, entity.getTableName(), oldIdx.getInlineSize(), newIdx.getInlineSize(),
-                        "inline sizes don't match for index " + newIdx.getName(), exClo);
-
-                    if (res != null)
-                        return res;
-                }
+                for (QueryIndex idx : e.getIndexes())
+                    idxNames.add(idx.getName());
             }
         }
 
-        return null;
-    }
+        for (QueryEntity e : ccfg.getQueryEntities()) {
+            String tblName = tableName(e);
+            if (!tblNames.add(tblName))
+                return "Table name must be unique in schema scope [schemaName=" + schema + ", tableName=" +
+                    tblName + ']';
 
-    /**
-     * Compare values of a single field and construct exception using given closure and base error message, if needed.
-     * @param schema Schema name.
-     * @param tblName Table name.
-     * @param oldVal Field value in existing {@link QueryEntity}.
-     * @param newVal Field value in new, validated {@link QueryEntity}.
-     * @param baseErrMsg Error message specific to this field, will be used to form resulting error message.
-     * @param exClo Closure to wrap error message into {@link Exception}.
-     * @param <T> Type of objects being compared.
-     * @return {@link Exception} returned by closure, or {@code null} if given values match.
-     */
-    private static <T> Exception check(String schema, String tblName, T oldVal, T newVal, String baseErrMsg,
-        IgniteClosure<String, Exception> exClo) {
-        if (!F.eq(oldVal, newVal))
-            return exClo.apply("Configuration conflict during attempt to create table " +schema + '.' + tblName + ": " +
-                baseErrMsg + " [oldVal=" + oldVal + ", newVal=" + newVal + ']');
-        else
-            return null;
+            for (QueryIndex idx : e.getIndexes())
+                if (!idxNames.add(idx.getName()))
+                    return "Index name must be unique in schema scope [schemaName=" + schema + ", indexName=" +
+                        idx.getName() + ']';
+        }
+
+        return null;
     }
 
     /**

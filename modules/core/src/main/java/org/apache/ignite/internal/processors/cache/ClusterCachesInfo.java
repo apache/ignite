@@ -279,6 +279,17 @@ class ClusterCachesInfo {
             AffinityTopologyVersion waitTopVer = null;
 
             if (req.start()) {
+                if (!req.clientStartOnly()) {
+                    String err = QueryUtils.checkQueryEntityConflicts(req.startCacheConfiguration(),
+                        ctx.cache().cacheDescriptors());
+
+                    if (err != null) {
+                        ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException(err));
+
+                        continue;
+                    }
+                }
+
                 if (desc == null) {
                     if (req.clientStartOnly()) {
                         ctx.cache().completeCacheStartFuture(req, false, new IgniteCheckedException("Failed to start " +
@@ -289,32 +300,6 @@ class ClusterCachesInfo {
 
                         assert req.cacheType() != null : req;
                         assert F.eq(ccfg.getName(), req.cacheName()) : req;
-
-                        boolean entityChkRes = true;
-
-                        if (!F.isEmpty(ccfg.getQueryEntities())) {
-                            for (QueryEntity e : ccfg.getQueryEntities()) {
-                                Exception ex = QueryUtils.checkQueryEntityConflicts(ccfg.getSqlSchema(), e,
-                                    ctx.cache().cacheDescriptors(),
-                                    new IgniteClosure<String, Exception>() {
-                                        @Override public Exception apply(String s) {
-                                            return new IgniteCheckedException(s);
-                                        }
-                                    });
-
-                                if (ex != null) {
-                                    ctx.cache().completeCacheStartFuture(req, false, ex);
-
-                                    entityChkRes = false;
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        // We've completed cache start future above, so we can move on to other caches.
-                        if (!entityChkRes)
-                            continue;
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
                             ccfg,
