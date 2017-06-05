@@ -2258,16 +2258,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (ctx.clientNode()) {
                 U.warn(log, "Persistent Store is not supported on client nodes (Persistent Store's" +
                     " configuration will be ignored).");
-
-                dbMgr = new IgniteCacheDatabaseSharedManager();
             }
-            else {
-                dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
 
-                pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
+            dbMgr = IgniteComponentType.DATABASE_MANAGER.create(ctx, false);
 
-                walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
-            }
+            pageStoreMgr = IgniteComponentType.PAGE_STORE_MANAGER.create(ctx, false);
+
+            walMgr = IgniteComponentType.WAL_MANAGER.create(ctx, false);
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
