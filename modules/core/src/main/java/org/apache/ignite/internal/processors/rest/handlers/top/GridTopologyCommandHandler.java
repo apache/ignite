@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -223,8 +224,12 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
 
-        for (String cacheName : nodeCaches.keySet())
-            caches.add(createCacheBean(cacheProc.cacheConfiguration(cacheName)));
+        for (String cacheName : nodeCaches.keySet()) {
+            DynamicCacheDescriptor desc = cacheProc.cacheDescriptor(cacheName);
+
+            if(desc != null) // It's possible that cache was concurrently destroyed.
+                caches.add(createCacheBean(desc.cacheConfiguration()));
+        }
 
         nodeBean.setCaches(caches);
 

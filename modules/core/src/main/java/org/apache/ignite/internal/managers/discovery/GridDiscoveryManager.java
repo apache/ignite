@@ -254,7 +254,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final Collection<IgniteInClosure<ClusterNode>> localNodeInitLsnrs = new ArrayList<>();
 
     /** Map of dynamic cache filters. */
-    private Map<String, CachePredicate> registeredCaches = new HashMap<>();
+    private ConcurrentMap<String, CachePredicate> registeredCaches = new ConcurrentHashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
