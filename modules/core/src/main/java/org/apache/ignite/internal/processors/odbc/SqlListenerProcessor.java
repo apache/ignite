@@ -189,15 +189,6 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Get configured port.
-     *
-     * @return Configured port.
-     */
-    public int port() {
-        return srv.port();
-    }
-
-    /**
      * Prepare connector configuration.
      *
      * @param cfg Ignote configuration.
