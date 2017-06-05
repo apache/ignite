@@ -55,6 +55,20 @@ namespace Apache.Ignite.Core.Configuration
         public const int DefaultThreadPoolSize = 0; // TODO: Propagate thread pool sizes.
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="SqlConnectorConfiguration"/> class.
+        /// </summary>
+        public SqlConnectorConfiguration()
+        {
+            Port = DefaultPort;
+            PortRange = DefaultPortRange;
+            SocketSendBufferSize = DefaultSocketBufferSize;
+            SocketReceiveBufferSize = DefaultSocketBufferSize;
+            TcpNoDelay = DefaultTcpNoDelay;
+            MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
+            ThreadPoolSize = DefaultThreadPoolSize;
+        }
+
+        /// <summary>
         /// Gets or sets the host.
         /// </summary>
         public string Host { get; set; }
@@ -94,5 +108,16 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultTcpNoDelay)]
         public bool TcpNoDelay { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum open cursors per connection.
+        /// </summary>
+        [DefaultValue(DefaultMaxOpenCursorsPerConnection)]
+        public int MaxOpenCursorsPerConnection { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the thread pool.
+        /// </summary>
+        public int ThreadPoolSize { get; set; }
     }
 }
