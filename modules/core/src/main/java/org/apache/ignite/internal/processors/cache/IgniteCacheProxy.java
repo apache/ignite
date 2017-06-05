@@ -536,7 +536,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         final CacheQuery<R> qry;
 
-        boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
+        boolean isKeepBinary = (opCtx != null && opCtx.isKeepBinary()) || scanQry.getFilter() == null;
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 

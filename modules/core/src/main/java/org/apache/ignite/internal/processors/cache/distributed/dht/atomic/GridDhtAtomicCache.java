@@ -865,7 +865,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        final boolean keepBinary = ctx.keepBinary(opCtx);
 
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut = update0(
             key,
@@ -935,7 +935,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        final boolean keepBinary = ctx.keepBinary(opCtx);
 
         IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> resFut = updateAll0(null,
             invokeMap,
@@ -1096,7 +1096,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
+            ctx.keepBinary(opCtx),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
 
@@ -1280,7 +1280,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.subjectIdPerCall(null, opCtx),
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
-                opCtx != null && opCtx.isKeepBinary(),
+                ctx.keepBinary(opCtx),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES
             );
@@ -1303,7 +1303,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.subjectIdPerCall(null, opCtx),
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
-                opCtx != null && opCtx.isKeepBinary(),
+                ctx.keepBinary(opCtx),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
         }
@@ -1369,7 +1369,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
+            ctx.keepBinary(opCtx),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES);
 
