@@ -23,8 +23,5 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Connection test.
  */
 public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
-    }
+    // No-op.
 }

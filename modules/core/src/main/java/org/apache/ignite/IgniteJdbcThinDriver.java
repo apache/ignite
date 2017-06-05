@@ -26,6 +26,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.IgniteVersionUtils;
@@ -101,9 +102,6 @@ import org.apache.ignite.internal.util.typedef.F;
  * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
- * // Register JDBC driver.
- * Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
- *
  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:thin//localhost:10800");
  *
@@ -133,6 +131,18 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
+    /*
+     * Static initializer.
+     */
+    static {
+        try {
+            DriverManager.registerDriver(new IgniteJdbcThinDriver());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to register " + IgniteJdbcThinDriver.class.getName(), e);
+        }
+    }
+
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 
