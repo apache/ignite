@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.sql;
 
+import junit.framework.TestCase;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -63,7 +64,6 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      */
     public void testDefault() throws Exception {
         check(new SqlConnectorConfiguration(), true);
-
         assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
     }
 
@@ -76,7 +76,11 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
         check(new SqlConnectorConfiguration().setHost("126.0.0.1"), false);
 
         check(new SqlConnectorConfiguration().setHost("127.0.0.1"), true);
+        assertJdbc("127.0.0.1", SqlConnectorConfiguration.DFLT_PORT);
+
         check(new SqlConnectorConfiguration().setHost("0.0.0.0"), true);
+        assertJdbc("0.0.0.0", SqlConnectorConfiguration.DFLT_PORT + 1);
+
     }
 
     /**
@@ -91,7 +95,10 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
         check(new SqlConnectorConfiguration().setPort(65536), false);
 
         check(new SqlConnectorConfiguration().setPort(SqlConnectorConfiguration.DFLT_PORT), true);
-        check(new SqlConnectorConfiguration().setPort(SqlConnectorConfiguration.DFLT_PORT + 1), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
+
+        check(new SqlConnectorConfiguration().setPort(SqlConnectorConfiguration.DFLT_PORT + 200), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT + 200);
     }
 
 
@@ -104,7 +111,10 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
         check(new SqlConnectorConfiguration().setPortRange(-1), false);
 
         check(new SqlConnectorConfiguration().setPortRange(0), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
+
         check(new SqlConnectorConfiguration().setPortRange(10), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT + 1);
     }
 
     /**
@@ -117,7 +127,10 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
         check(new SqlConnectorConfiguration().setSocketReceiveBufferSize(-4 * 1024), false);
 
         check(new SqlConnectorConfiguration().setSocketSendBufferSize(4 * 1024), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
+
         check(new SqlConnectorConfiguration().setSocketReceiveBufferSize(4 * 1024), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT + 1);
     }
 
     /**
@@ -127,8 +140,12 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      */
     public void testMaxOpenCusrorsPerConnection() throws Exception {
         check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(-1), false);
+
         check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(0), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
+
         check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(100), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT + 1);
     }
 
     /**
@@ -139,7 +156,9 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
     public void testThreadPoolSize() throws Exception {
         check(new SqlConnectorConfiguration().setThreadPoolSize(0), false);
         check(new SqlConnectorConfiguration().setThreadPoolSize(-1), false);
+
         check(new SqlConnectorConfiguration().setThreadPoolSize(4), true);
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
     }
 
     /**
@@ -201,16 +220,24 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
             try (Statement stmt = conn.createStatement()) {
                 ResultSet rs = stmt.executeQuery("SELECT 1");
 
-                assertEquals(1, rs.getInt(0));
+                assertTrue(rs.next());
+
+                TestCase.assertEquals(1, rs.getInt(1));
             }
         }
     }
 
+    /**
+     * Key class.
+     */
     private static class SqlConnectorKey {
         @QuerySqlField
         public int key;
     }
 
+    /**
+     * Value class.
+     */
     private static class SqlConnectorValue {
         @QuerySqlField
         public int val;
