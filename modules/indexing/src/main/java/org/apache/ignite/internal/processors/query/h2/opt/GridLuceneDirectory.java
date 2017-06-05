@@ -20,20 +20,23 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 
 /**
  * A memory-resident {@link Directory} implementation.
  */
-public class GridLuceneDirectory extends Directory {
+public class GridLuceneDirectory extends BaseDirectory {
     /** */
     protected final Map<String, GridLuceneFile> fileMap = new ConcurrentHashMap<>();
 
@@ -49,14 +52,9 @@ public class GridLuceneDirectory extends Directory {
      * @param mem Memory.
      */
     public GridLuceneDirectory(GridUnsafeMemory mem) {
-        this.mem = mem;
+        super(new GridLuceneLockFactory());
 
-        try {
-            setLockFactory(new GridLuceneLockFactory());
-        }
-        catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        this.mem = mem;
     }
 
     /** {@inheritDoc} */
@@ -75,28 +73,16 @@ public class GridLuceneDirectory extends Directory {
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean fileExists(String name) {
+    @Override public void renameFile(String source, String dest) throws IOException {
         ensureOpen();
 
-        return fileMap.containsKey(name);
-    }
+        GridLuceneFile file = fileMap.get(source);
 
-    /** {@inheritDoc} */
-    @Override public final long fileModified(String name) {
-        ensureOpen();
+        if (file == null)
+            throw new FileNotFoundException(source);
 
-        throw new IllegalStateException(name);
-    }
-
-    /**
-     * Set the modified time of an existing file to now.
-     *
-     * @throws IOException if the file does not exist
-     */
-    @Override public void touchFile(String name) throws IOException {
-        ensureOpen();
-
-        throw new IllegalStateException(name);
+        fileMap.put(dest, file);
+        fileMap.remove(source);
     }
 
     /** {@inheritDoc} */
@@ -137,7 +123,7 @@ public class GridLuceneDirectory extends Directory {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexOutput createOutput(String name) throws IOException {
+    @Override public IndexOutput createOutput(final String name, final IOContext context) throws IOException {
         ensureOpen();
 
         GridLuceneFile file = newRAMFile();
@@ -155,6 +141,11 @@ public class GridLuceneDirectory extends Directory {
         return new GridLuceneOutputStream(file);
     }
 
+    /** {@inheritDoc} */
+    @Override public void sync(final Collection<String> names) throws IOException {
+        // Noop. No fsync needed as all data is in-memory.
+    }
+
     /**
      * Returns a new {@link GridLuceneFile} for storing data. This method can be
      * overridden to return different {@link GridLuceneFile} impls, that e.g. override.
@@ -166,7 +157,7 @@ public class GridLuceneDirectory extends Directory {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexInput openInput(String name) throws IOException {
+    @Override public IndexInput openInput(final String name, final IOContext context) throws IOException {
         ensureOpen();
 
         GridLuceneFile file = fileMap.get(name);
