@@ -412,8 +412,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Index name must be unique in schema scope [schemaName=PUBLIC, " +
-            "indexName=idx]");
+        }, SchemaOperationException.class, "Index already exists: idx");
     }
 
     /**
@@ -430,8 +429,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Table name must be unique in schema scope [schemaName=PUBLIC, " +
-            "tableName=Person]");
+        }, IgniteSQLException.class, "Table already exists: Person");
     }
 
     /**
