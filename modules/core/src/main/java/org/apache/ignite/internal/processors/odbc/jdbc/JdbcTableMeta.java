@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 
 /**
  * JDBC table metadata.
@@ -52,7 +51,7 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
      */
     JdbcTableMeta(String catalog, String schema, String tbl, String tblType) {
         this.catalog = catalog;
-        this.schema = OdbcUtils.addQuotationMarksIfNeeded(schema);
+        this.schema = schema;
         this.tbl = tbl;
         this.tblType = tblType;
     }
