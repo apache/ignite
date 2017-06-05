@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -140,6 +141,7 @@ namespace Apache.Ignite.Core.Tests
                                     <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' metricsEnabled='true' rateTimeInterval='0:1:2' subIntervals='9' />
                                 </memoryPolicies>
                             </memoryConfiguration>
+                            <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -278,6 +280,17 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(TimeSpan.FromSeconds(62), memPlc.RateTimeInterval);
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
+
+            var sql = cfg.SqlConnectorConfiguration;
+            Assert.IsNotNull(sql);
+            Assert.AreEqual("bar", sql.Host);
+            Assert.AreEqual(10, sql.Port);
+            Assert.AreEqual(11, sql.PortRange);
+            Assert.AreEqual(12, sql.SocketSendBufferSize);
+            Assert.AreEqual(13, sql.SocketReceiveBufferSize);
+            Assert.IsTrue(sql.TcpNoDelay);
+            Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(15, sql.ThreadPoolSize);
         }
 
         /// <summary>
@@ -839,7 +852,18 @@ namespace Apache.Ignite.Core.Tests
                         }
                     }
                 },
-                PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain
+                PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
+                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                {
+                    Host = "foo",
+                    Port = 2,
+                    PortRange = 3,
+                    MaxOpenCursorsPerConnection = 4,
+                    SocketReceiveBufferSize = 5,
+                    SocketSendBufferSize = 6,
+                    TcpNoDelay = false,
+                    ThreadPoolSize = 7
+                }
             };
         }
 
