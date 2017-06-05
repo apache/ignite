@@ -107,20 +107,26 @@ public class JdbcThinResultSet implements ResultSet {
      * @param rows Rows.
      * @param isQuery Is Result ser for Select query
      */
-    @SuppressWarnings("OverlyStrongTypeCast") JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
-        List<List<Object>> rows, boolean isQuery) {
+    @SuppressWarnings("OverlyStrongTypeCast")
+    JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
+        List<List<Object>> rows, boolean isQuery, long updCnt) {
         assert stmt != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
         this.qryId = qryId;
         this.fetchSize = fetchSize;
-        this.rows = rows;
         this.finished = finished;
-
-        rowsIter = rows.iterator();
-
         this.isQuery = isQuery;
+
+        if (isQuery) {
+            this.fetchSize = fetchSize;
+            this.rows = rows;
+
+            rowsIter = rows.iterator();
+        }
+        else
+            this.updCnt = updCnt;
     }
 
     /** {@inheritDoc} */
@@ -130,7 +136,7 @@ public class JdbcThinResultSet implements ResultSet {
 
         if (rowsIter == null && !finished) {
             try {
-                JdbcQueryFetchResult res = stmt.connection().cliIo().queryFetch(qryId, fetchSize);
+                JdbcQueryFetchResult res = stmt.connection().io().queryFetch(qryId, fetchSize);
 
                 rows = res.items();
                 finished = res.last();
@@ -172,7 +178,7 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            stmt.connection().cliIo().queryClose(qryId);
+            stmt.connection().io().queryClose(qryId);
 
             closed = true;
         }
@@ -1612,7 +1618,7 @@ public class JdbcThinResultSet implements ResultSet {
     private List<JdbcColumnMeta> meta() throws SQLException {
         if (!metaInit) {
             try {
-                JdbcQueryMetadataResult res = stmt.connection().cliIo().queryMeta(qryId);
+                JdbcQueryMetadataResult res = stmt.connection().io().queryMeta(qryId);
 
                 meta = res.meta();
 

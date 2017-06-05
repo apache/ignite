@@ -30,7 +30,6 @@ import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -404,11 +403,6 @@ public class GridSqlQueryParser {
 
     /** */
     private static final String PARAM_ATOMICITY = "ATOMICITY";
-
-    /** Names of the params that need to be present in WITH clause of CREATE TABLE. */
-    private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
-        PARAM_TEMPLATE
-    };
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -847,6 +841,8 @@ public class GridSqlQueryParser {
     private GridSqlCreateTable parseCreateTable(CreateTable createTbl) {
         GridSqlCreateTable res = new GridSqlCreateTable();
 
+        res.templateName(QueryUtils.TEMPLATE_PARTITIONED);
+
         Query qry = CREATE_TABLE_QUERY.get(createTbl);
 
         if (qry != null)
@@ -945,11 +941,8 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("No cache value related columns found");
 
         res.columns(cols);
-
         res.primaryKeyColumns(pkCols);
-
         res.tableName(data.tableName);
-
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
         List<String> extraParams = data.tableEngineParams != null ? new ArrayList<String>() : null;
@@ -960,9 +953,9 @@ public class GridSqlQueryParser {
 
         res.params(extraParams);
 
-        Map<String, String> params = new HashMap<>();
-
         if (!F.isEmpty(extraParams)) {
+            Map<String, String> params = new HashMap<>();
+
             for (String p : extraParams) {
                 String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
@@ -981,16 +974,10 @@ public class GridSqlQueryParser {
                 if (params.put(name, val) != null)
                     throw new IgniteSQLException("Duplicate parameter: " + p, IgniteQueryErrorCode.PARSING);
             }
-        }
 
-        for (String paramName : MANDATORY_CREATE_TABLE_PARAMS) {
-            if (!params.containsKey(paramName))
-                throw new IgniteSQLException("Mandatory parameter is missing: " + paramName,
-                    IgniteQueryErrorCode.PARSING);
+            for (Map.Entry<String, String> e : params.entrySet())
+                processExtraParam(e.getKey(), e.getValue(), res);
         }
-
-        for (Map.Entry<String, String> e : params.entrySet())
-            processExtraParam(e.getKey(), e.getValue(), res);
 
         return res;
     }

@@ -246,5 +246,10 @@ mixin hibernateField(name, model, items, valid, save, newItem)
                             .details-row
                                 +number('Flush threads count:', `${model}.writeBehindFlushThreadCount`, '"writeBehindFlushThreadCount"', enabled, '1', '1',
                                     'Number of threads that will perform cache flushing')
+
+                            //- Since ignite 2.0
+                            .details-row(ng-if='$ctrl.available("2.0.0")')
+                                +checkbox-enabled('Write coalescing', model + '.writeBehindCoalescing', '"WriteBehindCoalescing"', enabled, 'Write coalescing flag for write-behind cache store')
+
             .col-sm-6
                 +preview-xml-java(model, 'cacheStore', 'domains')

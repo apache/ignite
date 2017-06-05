@@ -1290,30 +1290,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert !F.isEmpty(templateName);
         assert backups >= 0;
 
-        CacheConfiguration<?, ?> templateCfg = ctx.cache().getConfigFromTemplate(templateName);
+        CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
-        if (templateCfg == null)
-            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
+        if (ccfg == null) {
+            if (QueryUtils.TEMPLATE_PARTITIONED.equalsIgnoreCase(templateName))
+                ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.PARTITIONED);
+            else if (QueryUtils.TEMPLATE_REPLICÄTED.equalsIgnoreCase(templateName))
+                ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
+            else
+                throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
+        }
 
-        if (!F.isEmpty(templateCfg.getQueryEntities()))
-            throw new SchemaOperationException("Template cannot contain query entities [template=" +
-                templateName + ']');
+        if (!F.isEmpty(ccfg.getQueryEntities()))
+            throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
+                templateName);
 
-        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(templateCfg);
+        ccfg.setName(entity.getTableName());
 
         if (atomicityMode != null)
-            newCfg.setAtomicityMode(atomicityMode);
+            ccfg.setAtomicityMode(atomicityMode);
 
-        newCfg.setBackups(backups);
+        ccfg.setBackups(backups);
 
-        newCfg.setName(entity.getTableName());
-        newCfg.setQueryEntities(Collections.singleton(entity));
-        newCfg.setSqlSchema(schemaName);
+        ccfg.setSqlSchema(schemaName);
+        ccfg.setSqlEscapeAll(true);
+        ccfg.setQueryEntities(Collections.singleton(entity));
 
-        // Preserve user specified names as they are.
-        newCfg.setSqlEscapeAll(true);
-
-        boolean res = ctx.grid().getOrCreateCache0(newCfg, true).get2();
+        boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
 
         if (!res && !ifNotExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
@@ -1807,7 +1810,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteException("Local query is not supported without specific cache.");
 
         if (qry.getSchema() == null)
-            throw new IgniteException("Query schema is not set.");
+            qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");

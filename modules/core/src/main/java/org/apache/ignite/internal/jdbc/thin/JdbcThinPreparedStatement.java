@@ -48,6 +48,9 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     /** SQL query. */
     private final String sql;
 
+    /** Query arguments. */
+    protected ArrayList<Object> args;
+
     /**
      * Creates new prepared statement.
      *
@@ -62,9 +65,12 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        ResultSet rs = super.executeQuery(sql);
+        executeWithArguments();
 
-        args = null;
+        ResultSet rs = getResultSet();
+
+        if (rs == null)
+            throw new SQLException("The query isn't SELECT query: " + sql);
 
         return rs;
     }
@@ -76,9 +82,14 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public int executeUpdate() throws SQLException {
-        ensureNotClosed();
+        executeWithArguments();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        int res = getUpdateCount();
+
+        if (res == -1)
+            throw new SQLException("The query is not DML statememt: " + sql);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -196,7 +207,20 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
 
     /** {@inheritDoc} */
     @Override public boolean execute() throws SQLException {
-        return super.execute(sql);
+        executeWithArguments();
+
+        return rs.isQuery();
+    }
+
+    /**
+     * Execute query with arguments and nullify them afterwards.
+     *
+     * @throws SQLException If failed.
+     */
+    private void executeWithArguments() throws SQLException {
+        execute0(sql, args);
+
+        args = null;
     }
 
     /** {@inheritDoc} */

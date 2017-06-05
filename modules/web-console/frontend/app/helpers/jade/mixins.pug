@@ -66,9 +66,9 @@ mixin save-remove-clone-undo-buttons(objectName)
         .panel-tip-container(ng-show='backupItem._id')
             a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
 
-        -var actions = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
+        -var options = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
 
-        +btn-group(actions, removeTip)(ng-show='backupItem._id')
+        +btn-group(false, options, removeTip)(ng-show='backupItem._id')
 
         .panel-tip-container(ng-show='backupItem')
             i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
