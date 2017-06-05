@@ -31,7 +31,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * ODBC configuration validation tests.
  */
-public class SqlListenerProcessorValidationSelfTest extends GridCommonAbstractTest {
+@SuppressWarnings("deprecation")
+public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
 
@@ -156,10 +157,11 @@ public class SqlListenerProcessorValidationSelfTest extends GridCommonAbstractTe
     private void check(OdbcConfiguration odbcCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 
-        cfg.setIgniteInstanceName(SqlListenerProcessorValidationSelfTest.class.getName() + "-" +
+        cfg.setIgniteInstanceName(OdbcConfigurationValidationSelfTest.class.getName() + "-" +
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
+        cfg.setSqlConnectorConfiguration(null);
         cfg.setOdbcConfiguration(odbcCfg);
         cfg.setMarshaller(new BinaryMarshaller());
 

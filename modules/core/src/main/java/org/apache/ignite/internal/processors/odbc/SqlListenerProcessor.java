@@ -200,32 +200,14 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         SqlConnectorConfiguration res = cfg.getSqlConnectorConfiguration();
 
-        boolean dfltOrNull;
-
-        if (res != null) {
-            // Best effort to check for default configuration.
-            SqlConnectorConfiguration dfltConnCfg = new SqlConnectorConfiguration();
-
-            dfltOrNull = F.eq(res.getHost(), dfltConnCfg.getHost()) &&
-                F.eq(res.getPort(), dfltConnCfg.getPort()) &&
-                F.eq(res.getPortRange(), dfltConnCfg.getPortRange()) &&
-                F.eq(res.getMaxOpenCursorsPerConnection(), dfltConnCfg.getMaxOpenCursorsPerConnection()) &&
-                F.eq(res.getThreadPoolSize(), dfltConnCfg.getThreadPoolSize()) &&
-                F.eq(res.getSocketSendBufferSize(), dfltConnCfg.getSocketSendBufferSize()) &&
-                F.eq(res.getSocketReceiveBufferSize(), dfltConnCfg.getSocketReceiveBufferSize()) &&
-                F.eq(res.isTcpNoDelay(), dfltConnCfg.isTcpNoDelay());
-        }
-        else
-            dfltOrNull = true;
-
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
 
         if (odbcCfg != null) {
-            if (dfltOrNull) {
+            if (res == null) {
                 // SQL connector is either default or null, so we replace it with ODBC stuff.
                 HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
 
-                res = res != null ? new SqlConnectorConfiguration(res) : new SqlConnectorConfiguration();
+                res = new SqlConnectorConfiguration();
 
                 res.setHost(hostAndPort.host());
                 res.setPort(hostAndPort.portFrom());
@@ -238,9 +220,12 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                 U.warn(log, "Automatically converted deprecated ODBC configuration to SQL connector configuration: " +
                     res);
             }
-            else
+            else {
                 // Non-default SQL connector is set, ignore ODBC.
-                U.warn(log, "Both SQL connector and ODBC configurations are set (will ignore ODBC configuration).");
+                U.warn(log, "Deprecated ODBC configuration will be ignored because SQL connector configuration is " +
+                    "set (either migrate to new SqlConnectorConfiguration or set " +
+                    "IgniteConfiguration.sqlConnectorConfiguration to null explicitly).");
+            }
         }
 
         return res;
