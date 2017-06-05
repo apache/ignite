@@ -57,7 +57,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     private GridNioServer<byte[]> srv;
 
     /** Executor service. */
-    private ExecutorService odbcExecSvc;
+    private ExecutorService execSvc;
 
     /**
      * @param ctx Kernal context.
@@ -91,7 +91,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to resolve SQL connector host: " + host, e);
                 }
 
-                odbcExecSvc = new IgniteThreadPoolExecutor(
+                execSvc = new IgniteThreadPoolExecutor(
                     "sql-connector",
                     cfg.getIgniteInstanceName(),
                     sqlCfg.getThreadPoolSize(),
@@ -109,7 +109,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                 for (int port = sqlCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), odbcExecSvc, log) {
+                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
                                 @Override public void onSessionOpened(GridNioSession ses)
                                     throws IgniteCheckedException {
                                     proceedSessionOpened(ses);
@@ -177,10 +177,10 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
 
             ctx.ports().deregisterPorts(getClass());
 
-            if (odbcExecSvc != null) {
-                U.shutdownNow(getClass(), odbcExecSvc, log);
+            if (execSvc != null) {
+                U.shutdownNow(getClass(), execSvc, log);
 
-                odbcExecSvc = null;
+                execSvc = null;
             }
 
             if (log.isDebugEnabled())
