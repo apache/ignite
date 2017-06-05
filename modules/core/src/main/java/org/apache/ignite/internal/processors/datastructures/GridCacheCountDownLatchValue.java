@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Count down latch value.
  */
-public final class GridCacheCountDownLatchValue implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheCountDownLatchValue extends AtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -64,6 +64,11 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
      */
     public GridCacheCountDownLatchValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.COUNT_DOWN_LATCH;
     }
 
     /**

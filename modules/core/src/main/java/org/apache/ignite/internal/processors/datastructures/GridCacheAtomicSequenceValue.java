@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Sequence value.
  */
-public final class GridCacheAtomicSequenceValue implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheAtomicSequenceValue extends AtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,6 +50,11 @@ public final class GridCacheAtomicSequenceValue implements GridCacheInternal, Ex
      */
     public GridCacheAtomicSequenceValue(long val) {
         this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.ATOMIC_SEQ;
     }
 
     /**
