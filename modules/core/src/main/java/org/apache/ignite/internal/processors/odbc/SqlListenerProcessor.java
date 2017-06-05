@@ -47,9 +47,6 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     /** Default number of selectors. */
     private static final int DFLT_SELECTOR_CNT = Math.min(4, Runtime.getRuntime().availableProcessors());
 
-    /** Default TCP_NODELAY flag. */
-    private static final boolean DFLT_TCP_NODELAY = true;
-
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = false;
 
@@ -73,57 +70,69 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
-        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
+        SqlConnectorConfiguration sqlCfg = prepareConfiguration(cfg);
 
-        if (odbcCfg != null) {
+        if (sqlCfg != null) {
             try {
-                HostAndPortRange hostPort = parseOdbcEndpoint(odbcCfg);
+                validateConfiguration(sqlCfg);
 
-                assertParameter(odbcCfg.getThreadPoolSize() > 0, "threadPoolSize > 0");
+                // Resolve host.
+                String host = sqlCfg.getHost();
+
+                if (host == null)
+                    host = cfg.getLocalHost();
+
+                InetAddress hostAddr;
+
+                try {
+                    hostAddr = U.resolveLocalHost(host);
+                }
+                catch (Exception e) {
+                    throw new IgniteCheckedException("Failed to resolve SQL connector host: " + host, e);
+                }
 
                 odbcExecSvc = new IgniteThreadPoolExecutor(
-                    "odbc",
+                    "sql-connector",
                     cfg.getIgniteInstanceName(),
-                    odbcCfg.getThreadPoolSize(),
-                    odbcCfg.getThreadPoolSize(),
+                    sqlCfg.getThreadPoolSize(),
+                    sqlCfg.getThreadPoolSize(),
                     0,
                     new LinkedBlockingQueue<Runnable>());
 
-                InetAddress host;
-
-                try {
-                    host = InetAddress.getByName(hostPort.host());
-                }
-                catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to resolve SQL connector host: " + hostPort.host(), e);
-                }
-
                 Exception lastErr = null;
 
-                for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
+                int portTo = sqlCfg.getPort() + sqlCfg.getPortRange();
+
+                if (portTo <= 0) // Handle int overflow.
+                    portTo = Integer.MAX_VALUE;
+
+                for (int port = sqlCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         GridNioFilter[] filters = new GridNioFilter[] {
                             new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), odbcExecSvc, log) {
-                                @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
+                                @Override public void onSessionOpened(GridNioSession ses)
+                                    throws IgniteCheckedException {
                                     proceedSessionOpened(ses);
                                 }
                             },
                             new GridNioCodecFilter(new SqlListenerBufferedParser(), log, false)
                         };
 
+                        int maxOpenCursors = sqlCfg.getMaxOpenCursorsPerConnection();
+
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
-                            .address(host)
+                            .address(hostAddr)
                             .port(port)
-                            .listener(new SqlListenerNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
+                            .listener(new SqlListenerNioListener(ctx, busyLock, maxOpenCursors))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())
-                            .serverName("odbc")
-                            .tcpNoDelay(DFLT_TCP_NODELAY)
+                            .serverName("sql-listener")
+                            .tcpNoDelay(sqlCfg.isTcpNoDelay())
                             .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())
-                            .socketSendBufferSize(odbcCfg.getSocketSendBufferSize())
-                            .socketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize())
+                            .socketSendBufferSize(sqlCfg.getSocketSendBufferSize())
+                            .socketReceiveBufferSize(sqlCfg.getSocketReceiveBufferSize())
                             .filters(filters)
                             .directMode(false)
                             .idleTimeout(Long.MAX_VALUE)
@@ -150,7 +159,8 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
 
                 if (lastErr != null)
                     throw new IgniteCheckedException("Failed to bind to any [host:port] from the range [" +
-                        "address=" + hostPort + ", lastErr=" + lastErr + ']');
+                        "host=" + host + ", portFrom=" + sqlCfg.getPort() + ", portTo=" + portTo +
+                        ", lastErr=" + lastErr + ']');
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start SQL connector processor.", e);
@@ -189,13 +199,13 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         SqlConnectorConfiguration res = cfg.getSqlConnectorConfiguration();
 
-        boolean dflt = false;
+        boolean dfltOrNull;
 
         if (res != null) {
             // Best effort to check for default configuration.
             SqlConnectorConfiguration dfltConnCfg = new SqlConnectorConfiguration();
 
-            dflt = F.eq(res.getHost(), dfltConnCfg.getHost()) &&
+            dfltOrNull = F.eq(res.getHost(), dfltConnCfg.getHost()) &&
                 F.eq(res.getPort(), dfltConnCfg.getPort()) &&
                 F.eq(res.getPortRange(), dfltConnCfg.getPortRange()) &&
                 F.eq(res.getMaxOpenCursorsPerConnection(), dfltConnCfg.getMaxOpenCursorsPerConnection()) &&
@@ -204,15 +214,17 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
                 F.eq(res.getSocketReceiveBufferSize(), dfltConnCfg.getSocketReceiveBufferSize()) &&
                 F.eq(res.isTcpNoDelay(), dfltConnCfg.isTcpNoDelay());
         }
+        else
+            dfltOrNull = true;
 
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
 
         if (odbcCfg != null) {
-            if (dflt) {
-                // Default SQL connector is set, so we replace it with ODBC stuff.
+            if (dfltOrNull) {
+                // SQL connector is either default or null, so we replace it with ODBC stuff.
                 HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
 
-                res = new SqlConnectorConfiguration(res);
+                res = res != null ? new SqlConnectorConfiguration(res) : new SqlConnectorConfiguration();
 
                 res.setHost(hostAndPort.host());
                 res.setPort(hostAndPort.portFrom());
@@ -231,6 +243,22 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * Validate SQL connector configuration.
+     *
+     * @param cfg Configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateConfiguration(SqlConnectorConfiguration cfg) throws IgniteCheckedException {
+        assertParameter(cfg.getPort() > 0, "port > 0");
+        assertParameter(cfg.getPort() <= 65535, "port <= 65535");
+        assertParameter(cfg.getPortRange() > 0, "portRange > 0");
+        assertParameter(cfg.getSocketSendBufferSize() >= 0, "socketSendBufferSize > 0");
+        assertParameter(cfg.getSocketReceiveBufferSize() >= 0, "socketReceiveBufferSize > 0");
+        assertParameter(cfg.getMaxOpenCursorsPerConnection() >= 0, "maxOpenCursorsPerConnection() >= 0");
+        assertParameter(cfg.getThreadPoolSize() > 0, "threadPoolSize > 0");
     }
 
     /**
