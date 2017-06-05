@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -85,7 +86,7 @@ public class JdbcThinUtils {
     public static final String PROP_TCP_NO_DELAY = PROP_PREFIX + PARAM_TCP_NO_DELAY;
 
     /** Default port. */
-    public static final int DFLT_PORT = OdbcConfiguration.DFLT_TCP_PORT_FROM;
+    public static final int DFLT_PORT = SqlConnectorConfiguration.DFLT_PORT;
 
     /**
      * Trim prefix from property.
