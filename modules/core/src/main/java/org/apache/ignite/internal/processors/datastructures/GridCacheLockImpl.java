@@ -1046,22 +1046,19 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
      * @param name Reentrant lock name.
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
-     * @param ctx Cache context.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView) {
         assert name != null;
         assert key != null;
-        assert ctx != null;
         assert lockView != null;
 
         this.name = name;
         this.key = key;
         this.lockView = lockView;
-        this.ctx = ctx;
+        this.ctx = lockView.context();
 
         log = ctx.logger(getClass());
     }

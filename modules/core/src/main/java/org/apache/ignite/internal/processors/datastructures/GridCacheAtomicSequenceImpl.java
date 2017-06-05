@@ -113,7 +113,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param name Sequence name.
      * @param key Sequence key.
      * @param seqView Sequence projection.
-     * @param ctx CacheContext.
      * @param batchSize Sequence batch size.
      * @param locVal Local counter.
      * @param upBound Upper bound.
@@ -121,18 +120,16 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     public GridCacheAtomicSequenceImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
-        GridCacheContext ctx,
         int batchSize,
         long locVal,
         long upBound)
     {
         assert key != null;
         assert seqView != null;
-        assert ctx != null;
         assert locVal <= upBound;
 
         this.batchSize = batchSize;
-        this.ctx = ctx;
+        this.ctx = seqView.context();
         this.key = key;
         this.seqView = seqView;
         this.upBound = upBound;

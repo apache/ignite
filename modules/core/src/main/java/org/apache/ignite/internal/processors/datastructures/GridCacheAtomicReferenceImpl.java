@@ -92,18 +92,15 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param name Atomic reference name.
      * @param key Atomic reference key.
      * @param atomicView Atomic projection.
-     * @param ctx Cache context.
      */
     public GridCacheAtomicReferenceImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
-        GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView) {
         assert key != null;
         assert atomicView != null;
-        assert ctx != null;
         assert name != null;
 
-        this.ctx = ctx;
+        this.ctx = atomicView.context();
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;
