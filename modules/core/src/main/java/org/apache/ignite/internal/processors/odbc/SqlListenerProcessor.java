@@ -24,6 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL processor.
@@ -75,21 +77,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
 
         if (odbcCfg != null) {
             try {
-                HostAndPortRange hostPort;
-
-                if (F.isEmpty(odbcCfg.getEndpointAddress())) {
-                    hostPort = new HostAndPortRange(OdbcConfiguration.DFLT_TCP_HOST,
-                        OdbcConfiguration.DFLT_TCP_PORT_FROM,
-                        OdbcConfiguration.DFLT_TCP_PORT_TO
-                    );
-                }
-                else {
-                    hostPort = HostAndPortRange.parse(odbcCfg.getEndpointAddress(),
-                        OdbcConfiguration.DFLT_TCP_PORT_FROM,
-                        OdbcConfiguration.DFLT_TCP_PORT_TO,
-                        "Failed to parse SQL connector endpoint address"
-                    );
-                }
+                HostAndPortRange hostPort = parseOdbcEndpoint(odbcCfg);
 
                 assertParameter(odbcCfg.getThreadPoolSize() > 0, "threadPoolSize > 0");
 
@@ -188,5 +176,87 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("SQL connector processor stopped.");
         }
+    }
+
+    /**
+     * Prepare connector configuration.
+     *
+     * @param cfg Ignote configuration.
+     * @return Connector configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private SqlConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
+        throws IgniteCheckedException {
+        SqlConnectorConfiguration res = cfg.getSqlConnectorConfiguration();
+
+        boolean dflt = false;
+
+        if (res != null) {
+            // Best effort to check for default configuration.
+            SqlConnectorConfiguration dfltConnCfg = new SqlConnectorConfiguration();
+
+            dflt = F.eq(res.getHost(), dfltConnCfg.getHost()) &&
+                F.eq(res.getPort(), dfltConnCfg.getPort()) &&
+                F.eq(res.getPortRange(), dfltConnCfg.getPortRange()) &&
+                F.eq(res.getMaxOpenCursorsPerConnection(), dfltConnCfg.getMaxOpenCursorsPerConnection()) &&
+                F.eq(res.getThreadPoolSize(), dfltConnCfg.getThreadPoolSize()) &&
+                F.eq(res.getSocketSendBufferSize(), dfltConnCfg.getSocketSendBufferSize()) &&
+                F.eq(res.getSocketReceiveBufferSize(), dfltConnCfg.getSocketReceiveBufferSize()) &&
+                F.eq(res.isTcpNoDelay(), dfltConnCfg.isTcpNoDelay());
+        }
+
+        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
+
+        if (odbcCfg != null) {
+            if (dflt) {
+                // Default SQL connector is set, so we replace it with ODBC stuff.
+                HostAndPortRange hostAndPort = parseOdbcEndpoint(odbcCfg);
+
+                res = new SqlConnectorConfiguration(res);
+
+                res.setHost(hostAndPort.host());
+                res.setPort(hostAndPort.portFrom());
+                res.setPortRange(hostAndPort.portTo() - hostAndPort.portFrom());
+                res.setThreadPoolSize(odbcCfg.getThreadPoolSize());
+                res.setSocketSendBufferSize(odbcCfg.getSocketSendBufferSize());
+                res.setSocketReceiveBufferSize(odbcCfg.getSocketReceiveBufferSize());
+                res.setMaxOpenCursorsPerConnection(odbcCfg.getMaxOpenCursors());
+
+                U.warn(log, "Automatically converted deprecated ODBC configuration to SQL connector configuration: " +
+                    res);
+            }
+            else
+                // Non-default SQL connector is set, ignore ODBC.
+                U.warn(log, "Both SQL connector and ODBC configurations are set (will ignore ODBC configuration).");
+        }
+
+        return res;
+    }
+
+    /**
+     * Parse ODBC endpoint.
+     *
+     * @param odbcCfg ODBC configuration.
+     * @return ODBC host and port range.
+     * @throws IgniteCheckedException If failed.
+     */
+    private HostAndPortRange parseOdbcEndpoint(OdbcConfiguration odbcCfg) throws IgniteCheckedException {
+        HostAndPortRange res;
+
+        if (F.isEmpty(odbcCfg.getEndpointAddress())) {
+            res = new HostAndPortRange(OdbcConfiguration.DFLT_TCP_HOST,
+                OdbcConfiguration.DFLT_TCP_PORT_FROM,
+                OdbcConfiguration.DFLT_TCP_PORT_TO
+            );
+        }
+        else {
+            res = HostAndPortRange.parse(odbcCfg.getEndpointAddress(),
+                OdbcConfiguration.DFLT_TCP_PORT_FROM,
+                OdbcConfiguration.DFLT_TCP_PORT_TO,
+                "Failed to parse SQL connector endpoint address"
+            );
+        }
+
+        return res;
     }
 }
