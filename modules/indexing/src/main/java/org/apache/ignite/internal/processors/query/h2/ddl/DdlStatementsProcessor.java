@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
@@ -171,10 +170,11 @@ public class DdlStatementsProcessor {
                     ccfg.setQueryEntities(Collections.singleton(e));
                     ccfg.setSqlSchema(cmd.schemaName());
 
-                    String err = QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors());
+                    SchemaOperationException err =
+                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors());
 
                     if (err != null)
-                        throw new SchemaOperationException(err);
+                        throw err;
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(),
                         cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());

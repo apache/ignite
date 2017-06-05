@@ -1316,6 +1316,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
 
+        // TODO: Unwrap
         boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
 
         if (!res && !ifNotExists)

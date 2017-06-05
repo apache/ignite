@@ -1030,7 +1030,7 @@ public class QueryUtils {
      * @param descs Cache descriptors.
      * @return Exception message describing found conflict or {@code null} if none found.
      */
-    public static String checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
+    public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
         Collection<DynamicCacheDescriptor> descs) {
         String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
@@ -1055,13 +1055,11 @@ public class QueryUtils {
 
         for (QueryEntity e : ccfg.getQueryEntities()) {
             if (!tblNames.add(e.getTableName()))
-                return "Table name must be unique in schema scope [schemaName=" + schema + ", tableName=" +
-                    e.getTableName() + ']';
+                return new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, e.getTableName());
 
             for (QueryIndex idx : e.getIndexes())
                 if (!idxNames.add(idx.getName()))
-                    return "Index name must be unique in schema scope [schemaName=" + schema + ", indexName=" +
-                        idx.getName() + ']';
+                    return new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idx.getName());
         }
 
         return null;
