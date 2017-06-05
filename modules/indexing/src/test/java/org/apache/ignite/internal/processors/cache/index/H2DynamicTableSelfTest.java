@@ -376,13 +376,24 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testAffinityKey() throws Exception {
+        createTableWithParams("affinityKey=id");
+
+        assertEquals("id", client().binary().type("PersonKey").affinityKeyFieldName());
+
+        executeDdl("INSERT INTO \"Person\" (\"id\", \"name\") values (1, 'A'), (2, 'B'), (3, 'C')");
+    }
+
+    /**
      * Execute {@code CREATE TABLE} w/given params.
      * @param params Engine parameters.
      */
     private void createTableWithParams(final String params) {
-        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+        executeDdl("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
             ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "\"template=cache," + params + '"'));
+            "\"template=cache," + params + '"');
     }
 
     /**

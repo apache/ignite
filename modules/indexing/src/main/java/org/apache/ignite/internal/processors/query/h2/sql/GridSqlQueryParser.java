@@ -405,6 +405,9 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
+    private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1045,6 +1048,17 @@ public class GridSqlQueryParser {
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.atomicityMode(mode);
+
+                break;
+
+            case PARAM_AFFINITY_KEY:
+                ensureNotEmpty(name, val);
+
+                if (!res.columns().containsKey(val))
+                    throw new IgniteSQLException("Affinity key column with given name not found: " + val,
+                        IgniteQueryErrorCode.PARSING);
+
+                res.affinityKey(val);
 
                 break;
 

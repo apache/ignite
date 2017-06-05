@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -34,6 +35,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -45,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -1279,13 +1285,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
      * @param templateName Template name.
+     * @param affinityKey Affinity key column name.
      * @param atomicityMode Atomicity mode.
      * @param backups Backups.
      * @param ifNotExists Quietly ignore this command if table already exists.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName,
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String affinityKey,
         @Nullable CacheAtomicityMode atomicityMode, int backups, boolean ifNotExists) throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
         assert backups >= 0;
@@ -1315,6 +1322,40 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);
         ccfg.setQueryEntities(Collections.singleton(entity));
+
+        if (!F.isEmpty(affinityKey)) {
+            assert ctx.config().getMarshaller() instanceof BinaryMarshaller;
+
+            assert entity.getFields().containsKey(affinityKey) && entity.getKeyFields().contains(affinityKey);
+
+            CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+            IgniteBinary bin = ctx.grid().binary();
+
+            BinaryContext binCtx = proc0.binaryContext();
+
+            Map<String, BinaryFieldMetadata> flds = new HashMap<>();
+
+            for (String f : entity.getKeyFields()) {
+                int fldType = bin.typeId(entity.getFields().get(f));
+
+                flds.put(f, new BinaryFieldMetadata(fldType, binCtx.fieldId(fldType, f)));
+            }
+
+            int typeId = ctx.grid().binary().typeId(entity.getKeyType());
+
+            BinaryMetadata meta = new BinaryMetadata(
+                typeId,
+                entity.getKeyType(),
+                flds,
+                affinityKey,
+                null,
+                false,
+                null
+            );
+
+            binCtx.updateMetadata(typeId, meta);
+        }
 
         boolean res = ctx.grid().getOrCreateCache0(ccfg, true).get2();
 

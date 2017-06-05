@@ -163,7 +163,7 @@ public class DdlStatementsProcessor {
                 }
                 else {
                     ctx.query().dynamicTableCreate(cmd.schemaName(), toQueryEntity(cmd), cmd.templateName(),
-                        cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
+                        cmd.affinityKey(), cmd.atomicityMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
