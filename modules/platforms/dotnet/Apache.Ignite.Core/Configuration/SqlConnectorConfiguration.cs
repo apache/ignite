@@ -76,7 +76,14 @@ namespace Apache.Ignite.Core.Configuration
         internal SqlConnectorConfiguration(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
-            // TODO
+
+            Port = reader.ReadInt();
+            PortRange = reader.ReadInt();
+            SocketSendBufferSize = reader.ReadInt();
+            SocketReceiveBufferSize = reader.ReadInt();
+            TcpNoDelay = reader.ReadBoolean();
+            MaxOpenCursorsPerConnection = reader.ReadInt();
+            ThreadPoolSize = reader.ReadInt();
         }
 
         /// <summary>
@@ -86,6 +93,13 @@ namespace Apache.Ignite.Core.Configuration
         {
             Debug.Assert(writer != null);
             
+            writer.WriteInt(Port);
+            writer.WriteInt(PortRange);
+            writer.WriteInt(SocketSendBufferSize);
+            writer.WriteInt(SocketReceiveBufferSize);
+            writer.WriteBoolean(TcpNoDelay);
+            writer.WriteInt(MaxOpenCursorsPerConnection);
+            writer.WriteInt(ThreadPoolSize);
         }
 
         /// <summary>
