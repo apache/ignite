@@ -27,25 +27,28 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
  */
 public class JdbcResult implements JdbcRawBinarylizable {
     /** Execute sql result. */
-    public static final byte QRY_EXEC = 2;
+    static final byte QRY_EXEC = 2;
 
     /** Fetch query results. */
-    public static final byte QRY_FETCH = 3;
+    static final byte QRY_FETCH = 3;
 
-    /** Get columns meta query result. */
-    public static final byte QRY_META = 5;
+    /** Query result's columns metadata result. */
+    static final byte QRY_META = 5;
 
-    /** Get columns meta query result. */
-    public static final byte META_TABLES = 6;
+    /** Tables metadata result. */
+    static final byte META_TABLES = 6;
 
-    /** Get columns meta query result. */
-    public static final byte META_COLUMNS = 7;
+    /** Columns metadata result. */
+    static final byte META_COLUMNS = 7;
 
-    /** Get columns meta query result. */
-    public static final byte META_INDEXES = 8;
+    /** Indexes metadata result. */
+    static final byte META_INDEXES = 8;
 
-    /** Get columns meta query result. */
-    public static final byte META_PARAMS = 9;
+    /** SQL query parameters metadata result. */
+    static final byte META_PARAMS = 9;
+
+    /** Primary keys metadata result. */
+    static final byte META_PRIMARY_KEYS = 10;
 
     /** Success status. */
     private byte type;

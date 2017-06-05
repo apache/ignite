@@ -27,29 +27,32 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
  * SQL listener command request.
  */
 public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinarylizable {
-    /** Execute sql query. */
-    public static final byte QRY_EXEC = 2;
+    /** Execute sql query request. */
+    static final byte QRY_EXEC = 2;
 
-    /** Fetch query results. */
-    public static final byte QRY_FETCH = 3;
+    /** Fetch query results request. */
+    static final byte QRY_FETCH = 3;
 
-    /** Close query. */
-    public static final byte QRY_CLOSE = 4;
+    /** Close query request. */
+    static final byte QRY_CLOSE = 4;
 
-    /** Get columns meta query. */
-    public static final byte QRY_META = 5;
+    /** Get query result's columns metadata request. */
+    static final byte QRY_META = 5;
 
-    /** Get columns meta query. */
-    public static final byte META_TABLES = 6;
+    /** Gte tables metadata request. */
+    static final byte META_TABLES = 6;
 
-    /** Get columns meta query. */
-    public static final byte META_COLUMNS = 7;
+    /** Get columns metadata request. */
+    static final byte META_COLUMNS = 7;
 
-    /** Get columns meta query. */
-    public static final byte META_INDEXES = 8;
+    /** Get indexes metadata request. */
+    static final byte META_INDEXES = 8;
 
-    /** Get columns meta query. */
-    public static final byte META_PARAMS = 9;
+    /** Get SQL query parameters metadata request. */
+    static final byte META_PARAMS = 9;
+
+    /** Get primary keys metadata request. */
+    static final byte META_PRIMARY_KEYS = 10;
 
     /** Request type. */
     private byte type;
