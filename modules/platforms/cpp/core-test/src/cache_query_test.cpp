@@ -1915,4 +1915,56 @@ BOOST_AUTO_TEST_CASE(TestKeyValFields)
     }
 }
 
+/**
+ * Test query for CURRENT_DATE SQL scalar function.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryCurrentDateScalar)
+{
+    // Test simple query.
+    Cache<int32_t, Time> cache = grid.GetOrCreateCache<int32_t, Time>("TimeCache");
+
+    // Test query with CURRENT_DATE().
+    SqlFieldsQuery qry("select CURRENT_DATE()");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    Date value = row.GetNext<Date>();
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test query for CURDATE SQL scalar function.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryCurDateScalar)
+{
+    // Test simple query.
+    Cache<int32_t, Time> cache = grid.GetOrCreateCache<int32_t, Time>("TimeCache");
+
+    // Test query with CURDATE().
+    SqlFieldsQuery qry("select CURDATE()");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    Date value = row.GetNext<Date>();
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
