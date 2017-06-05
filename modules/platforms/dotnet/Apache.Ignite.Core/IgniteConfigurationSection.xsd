@@ -1247,6 +1247,53 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
+                </xs:element>                
+                <xs:element name="sqlConnectorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="port" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Connector host.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="portRange" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port range.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketSendBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket send buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket receive buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>TCP_NODELAY socket option.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxOpenCursorsPerConnection" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum open cursors per connection.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="threadPoolSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
                 </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
                     <xs:annotation>
