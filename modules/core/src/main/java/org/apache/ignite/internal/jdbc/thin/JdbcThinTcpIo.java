@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -80,6 +79,12 @@ public class JdbcThinTcpIo {
     /** Enforce join order. */
     private final boolean enforceJoinOrder;
 
+    /** Collocated flag. */
+    private final boolean collocated;
+
+    /** Replicated only flag. */
+    private final boolean replicatedOnly;
+
     /** Socket send buffer. */
     private final int sockSndBuf;
 
@@ -108,16 +113,20 @@ public class JdbcThinTcpIo {
      * @param port Port.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
+     * @param collocated Collocated flag.
+     * @param replicatedOnly Replicated only flag.
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, int sockSndBuf,
-        int sockRcvBuf, boolean tcpNoDelay) {
+    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
+        boolean replicatedOnly, int sockSndBuf, int sockRcvBuf, boolean tcpNoDelay) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.collocated = collocated;
+        this.replicatedOnly = replicatedOnly;
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
@@ -171,6 +180,8 @@ public class JdbcThinTcpIo {
 
         writer.writeBoolean(distributedJoins);
         writer.writeBoolean(enforceJoinOrder);
+        writer.writeBoolean(collocated);
+        writer.writeBoolean(replicatedOnly);
 
         send(writer.array());
 
@@ -340,6 +351,34 @@ public class JdbcThinTcpIo {
             endpoint.close();
 
         closed = true;
+    }
+
+    /**
+     * @return Distributed joins flag.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @return Collocated flag.
+     */
+    public boolean collocated() {
+        return collocated;
+    }
+
+    /**
+     * @return Replicated only flag.
+     */
+    public boolean replicatedOnly() {
+        return replicatedOnly;
     }
 
     /**
