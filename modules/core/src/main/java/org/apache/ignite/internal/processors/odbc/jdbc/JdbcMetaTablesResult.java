@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * JDBC tables metadata request.
+ * JDBC tables metadata result.
  */
 public class JdbcMetaTablesResult extends JdbcResult {
     /** Query result rows. */

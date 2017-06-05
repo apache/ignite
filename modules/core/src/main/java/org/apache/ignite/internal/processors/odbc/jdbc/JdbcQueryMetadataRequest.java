@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query metadata request.
+ * JDBC query metadata request.
  */
 public class JdbcQueryMetadataRequest extends JdbcRequest {
     /** Query ID. */

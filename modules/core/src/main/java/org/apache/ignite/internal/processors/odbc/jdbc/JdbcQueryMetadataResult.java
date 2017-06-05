@@ -26,7 +26,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * SQL listener query metadata result.
+ * JDBC query metadata result.
  */
 public class JdbcQueryMetadataResult extends JdbcResult {
     /** Fields metadata. */

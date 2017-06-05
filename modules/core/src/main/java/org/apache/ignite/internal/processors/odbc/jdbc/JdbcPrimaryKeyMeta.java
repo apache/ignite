@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
- * JDBC index metadata.
+ * JDBC primary key metadata.
  */
 public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     /** Cache name. */

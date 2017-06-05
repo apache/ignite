@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParamMeta;

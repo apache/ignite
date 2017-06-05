@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
- * SQL listener response.
+ * JDBS response result.
  */
 public class JdbcResult implements JdbcRawBinarylizable {
     /** Execute sql result. */

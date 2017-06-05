@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.sql.ParameterMetaData;
 import java.sql.SQLException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 
 /**
- * JDBC parameter metadata
+ * JDBC SQL query parameter metadata.
  *
  * {@see java.sql.ParameterMetaData}.
  */

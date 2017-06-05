@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC get columns metadata request.
+ * JDBC get primary keys metadata request.
  */
 public class JdbcMetaPrimaryKeysRequest extends JdbcRequest {
     /** Cache name. */

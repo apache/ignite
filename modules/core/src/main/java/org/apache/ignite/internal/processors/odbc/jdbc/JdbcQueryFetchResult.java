@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 
 /**
- * SQL listener query fetch result.
+ * JDBC query fetch result.
  */
 public class JdbcQueryFetchResult extends JdbcResult {
     /** Query result rows. */

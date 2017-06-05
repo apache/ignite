@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FE
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
 
 /**
- * SQL query handler.
+ * JDBC request handler.
  */
 public class JdbcRequestHandler implements SqlListenerRequestHandler {
     /** Query ID sequence. */
