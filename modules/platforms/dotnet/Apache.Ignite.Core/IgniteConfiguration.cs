@@ -486,6 +486,17 @@ namespace Apache.Ignite.Core
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
 
+            // Thread pools
+            _publicThreadPoolSize = r.ReadIntNullable();
+            _stripedThreadPoolSize = r.ReadIntNullable();
+            _serviceThreadPoolSize = r.ReadIntNullable();
+            _systemThreadPoolSize = r.ReadIntNullable();
+            _asyncCallbackThreadPoolSize = r.ReadIntNullable();
+            _managementThreadPoolSize = r.ReadIntNullable();
+            _dataStreamerThreadPoolSize = r.ReadIntNullable();
+            _utilityCacheThreadPoolSize = r.ReadIntNullable();
+            _queryThreadPoolSize = r.ReadIntNullable();
+
             // Cache config
             var cacheCfgCount = r.ReadInt();
             CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
