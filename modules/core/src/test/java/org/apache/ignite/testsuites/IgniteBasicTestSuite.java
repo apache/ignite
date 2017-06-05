@@ -53,7 +53,7 @@ import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessorValidationSelfTest;
+import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -145,7 +145,7 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
-        suite.addTestSuite(SqlListenerProcessorValidationSelfTest.class);
+        suite.addTestSuite(OdbcConfigurationValidationSelfTest.class);
         suite.addTestSuite(OdbcEscapeSequenceSelfTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
