@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Configuration
 {
     using System.ComponentModel;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// SQL connector configuration (for ODBC and JDBC).
@@ -66,6 +68,24 @@ namespace Apache.Ignite.Core.Configuration
             TcpNoDelay = DefaultTcpNoDelay;
             MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
             ThreadPoolSize = DefaultThreadPoolSize;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlConnectorConfiguration"/> class.
+        /// </summary>
+        internal SqlConnectorConfiguration(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+            // TODO
+        }
+
+        /// <summary>
+        /// Writes to the specified writer.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            Debug.Assert(writer != null);
+            
         }
 
         /// <summary>

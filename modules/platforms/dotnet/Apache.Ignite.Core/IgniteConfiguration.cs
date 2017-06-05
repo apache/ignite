@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
@@ -419,6 +420,17 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
+            // SQL
+            if (SqlConnectorConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                SqlConnectorConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -567,6 +579,12 @@ namespace Apache.Ignite.Core
             if (r.ReadBoolean())
             {
                 MemoryConfiguration = new MemoryConfiguration(r);
+            }
+
+            // SQL
+            if (r.ReadBoolean())
+            {
+                SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
             }
         }
 
@@ -1136,5 +1154,10 @@ namespace Apache.Ignite.Core
             get { return _queryThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _queryThreadPoolSize = value; }
         }
+
+        /// <summary>
+        /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
+        /// </summary>
+        public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
     }
 }
