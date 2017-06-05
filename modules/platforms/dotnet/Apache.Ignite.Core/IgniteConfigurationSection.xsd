@@ -1433,6 +1433,46 @@
                     <xs:documentation>Indicates whether user assemblies should be loaded on remote nodes automatically.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="publicThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the public thread pool, which processes compute jobs and user messages.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="stripedThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the striped thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="serviceThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the service thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the system thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="asyncCallbackThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the async callback thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="dataStreamerThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the data streamer thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="utilityCacheThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the utility cache thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="queryThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the query thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

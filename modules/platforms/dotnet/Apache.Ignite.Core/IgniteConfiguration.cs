@@ -1074,7 +1074,7 @@ namespace Apache.Ignite.Core
         public PeerAssemblyLoadingMode PeerAssemblyLoadingMode { get; set; }
 
         /// <summary>
-        /// Gets or sets the size of the public thread pool, which processes compute jpns and user messages.
+        /// Gets or sets the size of the public thread pool, which processes compute jobs and user messages.
         /// </summary>
         public int PublicThreadPoolSize
         {
