@@ -104,9 +104,14 @@ namespace Apache.Ignite.Core
         public static readonly TimeSpan DefaultClientFailureDetectionTimeout = TimeSpan.FromSeconds(30);
 
         /// <summary>
-        /// Default public thread pool size.
+        /// Default thread pool size.
         /// </summary>
-        public static readonly int DefaultPublicThreadPoolSize = Math.Max(8, Environment.ProcessorCount);
+        public static readonly int DefaultThreadPoolSize = Math.Max(8, Environment.ProcessorCount);
+
+        /// <summary>
+        /// Default management thread pool size.
+        /// </summary>
+        public const int DefaultManagementThreadPoolSize = 4;
 
         /** */
         private TimeSpan? _metricsExpireTime;
@@ -1044,7 +1049,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int PublicThreadPoolSize
         {
-            get { return _publicThreadPoolSize ?? DefaultPublicThreadPoolSize; }
+            get { return _publicThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _publicThreadPoolSize = value; }
         }
 
@@ -1053,7 +1058,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int StripedThreadPoolSize
         {
-            get { return _stripedThreadPoolSize; }
+            get { return _stripedThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _stripedThreadPoolSize = value; }
         }
 
@@ -1062,7 +1067,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int ServiceThreadPoolSize
         {
-            get { return _serviceThreadPoolSize; }
+            get { return _serviceThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _serviceThreadPoolSize = value; }
         }
 
@@ -1071,7 +1076,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int SystemThreadPoolSize
         {
-            get { return _systemThreadPoolSize; }
+            get { return _systemThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _systemThreadPoolSize = value; }
         }
 
@@ -1080,16 +1085,17 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int AsyncCallbackThreadPoolSize
         {
-            get { return _asyncCallbackThreadPoolSize; }
+            get { return _asyncCallbackThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _asyncCallbackThreadPoolSize = value; }
         }
 
         /// <summary>
         /// Gets or sets the size of the management thread pool, which processes internal Ignite jobs.
         /// </summary>
+        [DefaultValue(DefaultManagementThreadPoolSize)]
         public int ManagementThreadPoolSize
         {
-            get { return _managementThreadPoolSize; }
+            get { return _managementThreadPoolSize ?? DefaultManagementThreadPoolSize; }
             set { _managementThreadPoolSize = value; }
         }
 
@@ -1098,7 +1104,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int DataStreamerThreadPoolSize
         {
-            get { return _dataStreamerThreadPoolSize; }
+            get { return _dataStreamerThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _dataStreamerThreadPoolSize = value; }
         }
 
@@ -1107,7 +1113,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int UtilityCacheThreadPoolSize
         {
-            get { return _utilityCacheThreadPoolSize; }
+            get { return _utilityCacheThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _utilityCacheThreadPoolSize = value; }
         }
 
@@ -1116,7 +1122,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int QueryThreadPoolSize
         {
-            get { return _queryThreadPoolSize; }
+            get { return _queryThreadPoolSize ?? DefaultThreadPoolSize; }
             set { _queryThreadPoolSize = value; }
         }
     }
