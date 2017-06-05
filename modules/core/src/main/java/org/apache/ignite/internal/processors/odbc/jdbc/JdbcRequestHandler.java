@@ -18,37 +18,28 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.OdbcUtils;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaResult;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetTablesMetaRequest;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetTablesMetaResult;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcResponse;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcTableMeta;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
@@ -527,17 +518,27 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
             Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
 
-            Collection<JdbcIndexMeta> meta = new HashSet<>();
+            Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
 
             for (GridQueryTypeDescriptor table : tablesMeta) {
                 if (!matches(table.name(), tableName))
                     continue;
 
-                for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
-                    meta.add(new JdbcIndexMeta(cacheName, table.name(), idxDesc));
+                List<String> fields = new ArrayList<>();
+
+                for (String field : table.fields().keySet()) {
+                    if (table.property(field).key())
+                        fields.add(field);
+                }
+
+                if (fields.isEmpty())
+                    meta.add(new JdbcPrimaryKeyMeta(cacheName, table.name(), "_KEY", new String[] {"_KEY"}));
+                else
+                    meta.add(new JdbcPrimaryKeyMeta(cacheName, table.name(), table.keyFieldName(),
+                        fields.toArray(new String[fields.size()])));
             }
 
-            return new JdbcResponse(new JdbcMetaIndexesResult(meta));
+            return new JdbcResponse(new JdbcMetaPrimaryKeysResult(meta));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);

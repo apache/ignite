@@ -371,6 +371,30 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPrimaryKeyMetadata() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL);
+             ResultSet rs = conn.getMetaData().getPrimaryKeys(null, "pers", "Person")) {
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                assert "_KEY".equals(rs.getString("COLUMN_NAME"));
+
+                cnt++;
+            }
+
+            assert cnt == 1;
+        }
+        catch (Exception e) {
+            log.error("Unexpected exception", e);
+
+            fail();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");

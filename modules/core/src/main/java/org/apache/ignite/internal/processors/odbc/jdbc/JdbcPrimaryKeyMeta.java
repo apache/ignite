@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 
 /**
  * JDBC index metadata.
@@ -37,7 +34,7 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     /** Primary key name. */
     private String name;
 
-    /** Index fields */
+    /** Primary key fields. */
     private String[] fields;
 
     /**
@@ -48,10 +45,16 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param idx Index info.
+     * @param schema Schema.
+     * @param tbl Table.
+     * @param name Name.
+     * @param fields Primary key fields.
      */
-    JdbcPrimaryKeyMeta(GridQueryFieldMetadata idx) {
-
+    JdbcPrimaryKeyMeta(String schema, String tbl, String name, String [] fields) {
+        this.schema = schema;
+        this.tbl = tbl;
+        this.name = name;
+        this.fields = fields;
     }
 
     /**
@@ -109,11 +112,20 @@ public class JdbcPrimaryKeyMeta implements JdbcRawBinarylizable {
 
         JdbcPrimaryKeyMeta meta = (JdbcPrimaryKeyMeta)o;
 
+        if (schema != null ? !schema.equals(meta.schema) : meta.schema != null)
+            return false;
+
+        if (!tbl.equals(meta.tbl))
+            return false;
+
         return name.equals(meta.name);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return name.hashCode();
+        int result = schema != null ? schema.hashCode() : 0;
+        result = 31 * result + tbl.hashCode();
+        result = 31 * result + name.hashCode();
+        return result;
     }
 }

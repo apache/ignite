@@ -21,7 +21,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 
 /**
@@ -154,6 +153,7 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -161,8 +161,10 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         if (schema != null ? !schema.equals(meta.schema) : meta.schema != null)
             return false;
+
         if (!tbl.equals(meta.tbl))
             return false;
+
         return name.equals(meta.name);
     }
 

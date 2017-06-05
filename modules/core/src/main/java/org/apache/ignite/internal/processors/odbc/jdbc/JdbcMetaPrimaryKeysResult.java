@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -32,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcMetaPrimaryKeysResult extends JdbcResult {
     /** Query result rows. */
-    private Map<String, String[]> tblsPks;
+    private List<JdbcPrimaryKeyMeta> meta;
 
     /**
      * Default constructor is used for deserialization.
@@ -44,19 +43,23 @@ public class JdbcMetaPrimaryKeysResult extends JdbcResult {
     /**
      * @param meta Column metadata.
      */
-    JdbcMetaPrimaryKeysResult(List<JdbcTableMeta> meta) {
+    JdbcMetaPrimaryKeysResult(Collection<JdbcPrimaryKeyMeta> meta) {
         super(META_PRIMARY_KEYS);
+
+        this.meta = new ArrayList<>(meta);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        if (F.isEmpty(tblsPks))
+        if (F.isEmpty(meta))
             writer.writeInt(0);
         else {
-            writer.writeInt(tblsPks.size());
+            writer.writeInt(meta.size());
 
+            for(JdbcPrimaryKeyMeta m : meta)
+                m.writeBinary(writer);
         }
     }
 
@@ -67,19 +70,24 @@ public class JdbcMetaPrimaryKeysResult extends JdbcResult {
         int size = reader.readInt();
 
         if (size == 0)
-            tblsPks = Collections.emptyMap();
+            meta = Collections.emptyList();
         else {
-            tblsPks = new HashMap<>(size);
+            meta = new ArrayList<>(size);
 
             for (int i = 0; i < size; ++i) {
+                JdbcPrimaryKeyMeta m = new JdbcPrimaryKeyMeta();
+
+                m.readBinary(reader);
+
+                meta.add(m);
             }
         }
     }
 
     /**
-     * @return Primary keys map.
+     * @return Primary keys meta.
      */
-    public Map<String, String[]> primaryKeys() {
-        return tblsPks;
+    public List<JdbcPrimaryKeyMeta> meta() {
+        return meta;
     }
 }

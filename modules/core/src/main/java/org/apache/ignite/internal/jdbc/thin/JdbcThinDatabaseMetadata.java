@@ -34,7 +34,9 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 
 import static java.sql.Connection.TRANSACTION_NONE;
@@ -880,25 +882,56 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
-//        List<List<Object>> rows = new LinkedList<>();
-//
-//        for (Map.Entry<String, Map<String, Map<String, String>>> s : meta.entrySet())
-//            if (schema == null || schema.toUpperCase().equals(s.getKey()))
-//                for (Map.Entry<String, Map<String, String>> t : s.getValue().entrySet())
-//                    if (tbl == null || tbl.toUpperCase().equals(t.getKey()))
-//                        rows.add(Arrays.<Object>asList((String)null, s.getKey().toUpperCase(),
-//                            t.getKey().toUpperCase(), "_KEY", 1, "_KEY"));
-//
-//        return new JdbcThinResultSet(
-//            conn.createStatement0(),
-//            Collections.<String>emptyList(),
-//            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
-//            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
-//                String.class.getName(), Short.class.getName(), String.class.getName()),
-//            rows
-//        );
+        try {
+            if (conn.isClosed())
+                throw new SQLException("Connection is closed.");
 
-        return null;
+            JdbcMetaPrimaryKeysResult res = conn.io().primaryKeysMeta(schema, tbl);
+
+            List<List<Object>> rows = new LinkedList<>();
+
+            for (JdbcPrimaryKeyMeta pkMeta : res.meta())
+                rows.addAll(primaryKeyRows(pkMeta));
+
+            return new JdbcThinResultSet(rows, Arrays.asList(
+                new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
+                new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
+                new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
+                new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
+                new JdbcColumnMeta(null, null, "KEY_SEQ", Short.class),
+                new JdbcColumnMeta(null, null, "PK_NAME", String.class)));
+        }
+        catch (IOException e) {
+            conn.close();
+
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to query Ignite.", e);
+        }
+    }
+
+    /**
+     * @param pkMeta Primary key metadata.
+     * @return Result set rows for primary key.
+     */
+    private List<List<Object>> primaryKeyRows(JdbcPrimaryKeyMeta pkMeta) {
+        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().length);
+
+        for (int i = 0; i < pkMeta.fields().length; ++i) {
+            List<Object> row = new ArrayList<>(6);
+
+            row.add((String)null); // table catalog
+            row.add(upperCase(pkMeta.schema()));
+            row.add(upperCase(pkMeta.tableName()));
+            row.add(upperCase(pkMeta.fields()[i]));
+            row.add((Integer)i + 1); // sequence number
+            row.add(upperCase(pkMeta.name()));
+
+            rows.add(row);
+        }
+
+        return rows;
     }
 
     /** {@inheritDoc} */
@@ -934,7 +967,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             List<List<Object>> rows = new LinkedList<>();
 
             for (JdbcIndexMeta idxMeta : res.meta())
-                rows.addAll(indexRow(idxMeta));
+                rows.addAll(indexRows(idxMeta));
 
             return new JdbcThinResultSet(rows, Arrays.asList(
                 new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -965,7 +998,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
      * @param idxMeta Index metadata.
      * @return List of result rows correspond to index.
      */
-    private List<List<Object>> indexRow(JdbcIndexMeta idxMeta) {
+    private List<List<Object>> indexRows(JdbcIndexMeta idxMeta) {
         List<List<Object>> rows = new ArrayList<>(idxMeta.fields().length);
 
         for (int i = 0; i < idxMeta.fields().length; ++i) {

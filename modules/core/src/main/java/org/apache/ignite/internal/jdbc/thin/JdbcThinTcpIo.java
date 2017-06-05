@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
@@ -50,7 +52,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -330,6 +331,17 @@ public class JdbcThinTcpIo {
      */
     public JdbcMetaParamsResult parametersMeta(String schema, String sql) throws IOException, IgniteCheckedException {
         return sendRequest(new JdbcMetaParamsRequest(schema, sql), DYNAMIC_SIZE_MSG_CAP);
+    }
+
+    /**
+     * @param schema Schema.
+     * @param tbl Table.
+     * @return Result.
+     * @throws IOException On error.
+     * @throws IgniteCheckedException On error.
+     */
+    public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schema, String tbl) throws IOException, IgniteCheckedException {
+        return sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl), DYNAMIC_SIZE_MSG_CAP);
     }
 
     /**
