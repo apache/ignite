@@ -144,39 +144,32 @@ namespace Apache.Ignite.Core
         /** */
         private TimeSpan? _clientFailureDetectionTimeout;
 
+        /** */
+        private int? _publicThreadPoolSize;
 
         /** */
-        private int _publicThreadPoolSize;
+        private int? _stripedThreadPoolSize;
 
         /** */
-        private int _stripedThreadPoolSize;
+        private int? _serviceThreadPoolSize;
 
         /** */
-        private int _serviceThreadPoolSize;
+        private int? _systemThreadPoolSize;
 
         /** */
-        private int _systemThreadPoolSize;
+        private int? _asyncCallbackThreadPoolSize;
 
         /** */
-        private int _asyncCallbackThreadPoolSize;
+        private int? _managementThreadPoolSize;
 
         /** */
-        private int _managementThreadPoolSize;
+        private int? _dataStreamerThreadPoolSize;
 
         /** */
-        private int _peerClassLoadingThreadPoolSize;
+        private int? _utilityCacheThreadPoolSize;
 
         /** */
-        private int _igfsThreadPoolSize;
-
-        /** */
-        private int _dataStreamerThreadPoolSize;
-
-        /** */
-        private int _utilityCacheThreadPoolSize;
-
-        /** */
-        private int _queryThreadPoolSize;
+        private int? _queryThreadPoolSize;
 
         /// <summary>
         /// Default network retry count.
@@ -260,6 +253,17 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
+
+            // Thread pools
+            writer.WriteIntNullable(_publicThreadPoolSize);
+            writer.WriteIntNullable(_stripedThreadPoolSize);
+            writer.WriteIntNullable(_serviceThreadPoolSize);
+            writer.WriteIntNullable(_systemThreadPoolSize);
+            writer.WriteIntNullable(_asyncCallbackThreadPoolSize);
+            writer.WriteIntNullable(_managementThreadPoolSize);
+            writer.WriteIntNullable(_dataStreamerThreadPoolSize);
+            writer.WriteIntNullable(_utilityCacheThreadPoolSize);
+            writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -1040,7 +1044,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public int PublicThreadPoolSize
         {
-            get { return _publicThreadPoolSize; }
+            get { return _publicThreadPoolSize ?? DefaultPublicThreadPoolSize; }
             set { _publicThreadPoolSize = value; }
         }
 
@@ -1087,25 +1091,6 @@ namespace Apache.Ignite.Core
         {
             get { return _managementThreadPoolSize; }
             set { _managementThreadPoolSize = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the size of the peer class loading thread pool
-        /// (not to be confused with .NET peer assembly loading).
-        /// </summary>
-        public int PeerClassLoadingThreadPoolSize
-        {
-            get { return _peerClassLoadingThreadPoolSize; }
-            set { _peerClassLoadingThreadPoolSize = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the size of the IGFS thread pool.
-        /// </summary>
-        public int IgfsThreadPoolSize
-        {
-            get { return _igfsThreadPoolSize; }
-            set { _igfsThreadPoolSize = value; }
         }
 
         /// <summary>
