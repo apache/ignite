@@ -195,6 +195,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
      * @return Connector configuration.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("deprecation")
     @Nullable private SqlConnectorConfiguration prepareConfiguration(IgniteConfiguration cfg)
         throws IgniteCheckedException {
         SqlConnectorConfiguration res = cfg.getSqlConnectorConfiguration();
@@ -254,7 +255,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     private void validateConfiguration(SqlConnectorConfiguration cfg) throws IgniteCheckedException {
         assertParameter(cfg.getPort() > 0, "port > 0");
         assertParameter(cfg.getPort() <= 65535, "port <= 65535");
-        assertParameter(cfg.getPortRange() > 0, "portRange > 0");
+        assertParameter(cfg.getPortRange() >= 0, "portRange > 0");
         assertParameter(cfg.getSocketSendBufferSize() >= 0, "socketSendBufferSize > 0");
         assertParameter(cfg.getSocketReceiveBufferSize() >= 0, "socketReceiveBufferSize > 0");
         assertParameter(cfg.getMaxOpenCursorsPerConnection() >= 0, "maxOpenCursorsPerConnection() >= 0");
@@ -268,6 +269,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
      * @return ODBC host and port range.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("deprecation")
     private HostAndPortRange parseOdbcEndpoint(OdbcConfiguration odbcCfg) throws IgniteCheckedException {
         HostAndPortRange res;
 

@@ -419,6 +419,7 @@ public class IgniteConfiguration {
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** ODBC configuration. */
+    @Deprecated
     private OdbcConfiguration odbcCfg;
 
     /** Warmup closure. Will be invoked before actual grid start. */
@@ -2442,7 +2443,9 @@ public class IgniteConfiguration {
      * Gets configuration for ODBC.
      *
      * @return ODBC configuration.
+     * @deprecated Use {@link #getSqlConnectorConfiguration()} instead.
      */
+    @Deprecated
     public OdbcConfiguration getOdbcConfiguration() {
         return odbcCfg;
     }
@@ -2452,7 +2455,9 @@ public class IgniteConfiguration {
      *
      * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setSqlConnectorConfiguration(SqlConnectorConfiguration)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
         this.odbcCfg = odbcCfg;
 
