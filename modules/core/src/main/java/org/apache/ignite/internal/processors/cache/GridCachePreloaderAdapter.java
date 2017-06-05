@@ -166,10 +166,8 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload,
-        int cnt,
-        Runnable next,
+    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload,
+        int cnt, Runnable next,
         @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
         return null;
     }

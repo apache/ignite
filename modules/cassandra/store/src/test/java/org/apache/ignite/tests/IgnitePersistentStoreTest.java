@@ -704,7 +704,7 @@ public class IgnitePersistentStoreTest {
         LOGGER.info("Passed POJO transaction tests for " + concurrency +
                 " concurrency and " + isolation + " isolation level");
         LOGGER.info("-----------------------------------------------------------------------------------");
-    }
+}
 
     /** */
     public static class PojoPerson {

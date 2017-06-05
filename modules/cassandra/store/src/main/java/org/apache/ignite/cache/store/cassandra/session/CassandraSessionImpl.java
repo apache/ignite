@@ -130,7 +130,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 if (attempt != 0) {
                     log.warning("Trying " + (attempt + 1) + " attempt to execute Cassandra CQL statement: " +
-                            assistant.getStatement());
+                        assistant.getStatement());
                 }
 
                 try {
@@ -204,8 +204,8 @@ public class CassandraSessionImpl implements CassandraSession {
             while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
                 if (attempt != 0) {
                     log.warning("Trying " + (attempt + 1) + " attempt to execute Cassandra batch " +
-                            assistant.operationName() + " operation to process rest " +
-                            (dataSize - assistant.processedCount()) + " of " + dataSize + " elements");
+                        assistant.operationName() + " operation to process rest " +
+                        (dataSize - assistant.processedCount()) + " of " + dataSize + " elements");
                 }
 
                 //clean errors info before next communication with Cassandra
@@ -415,7 +415,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
         Throwable error = null;
         String errorMsg = "Failed to apply " + mutations.size() + " mutations performed withing Ignite " +
-                "transaction into Cassandra";
+            "transaction into Cassandra";
 
         int attempt = 0;
         boolean tableExistenceRequired = false;
@@ -431,7 +431,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 if (attempt != 0) {
                     log.warning("Trying " + (attempt + 1) + " attempt to apply " + mutations.size() + " mutations " +
-                            "performed withing Ignite transaction into Cassandra");
+                        "performed withing Ignite transaction into Cassandra");
                 }
 
                 try {
@@ -444,7 +444,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
                         if (st == null) {
                             st = prepareStatement(mutation.getTable(), mutation.getStatement(),
-                                    mutation.getPersistenceSettings(), mutation.tableExistenceRequired());
+                                mutation.getPersistenceSettings(), mutation.tableExistenceRequired());
 
                             if (st != null)
                                 statements.put(key, st);
@@ -468,7 +468,8 @@ public class CassandraSessionImpl implements CassandraSession {
                         session().execute(tuneStatementExecutionOptions(batch));
 
                     return;
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     error = e;
 
                     if (CassandraHelper.isTableAbsenceError(e)) {
@@ -478,13 +479,16 @@ public class CassandraSessionImpl implements CassandraSession {
                         }
                         else
                             return;
-                    } else if (CassandraHelper.isHostsAvailabilityError(e)) {
+                    }
+                    else if (CassandraHelper.isHostsAvailabilityError(e)) {
                         if (handleHostsAvailabilityError(e, attempt, errorMsg))
                             statements.clear();
-                    } else if (CassandraHelper.isPreparedStatementClusterError(e)) {
+                    }
+                    else if (CassandraHelper.isPreparedStatementClusterError(e)) {
                         handlePreparedStatementClusterError(e);
                         statements.clear();
-                    } else {
+                    }
+                    else {
                         // For an error which we don't know how to handle, we will not try next attempts and terminate.
                         throw new IgniteException(errorMsg, e);
                     }
@@ -495,9 +499,11 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 attempt++;
             }
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             error = e;
-        } finally {
+        }
+        finally {
             decrementSessionRefs();
         }
 
@@ -691,7 +697,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra table '" + tableFullName + "'");
                 log.info("-----------------------------------------------------------------------\n\n" +
-                        settings.getTableDDLStatement(table) + "\n");
+                    settings.getTableDDLStatement(table) + "\n");
                 log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getTableDDLStatement(table));
                 log.info("Cassandra table '" + tableFullName + "' was successfully created");
@@ -824,12 +830,12 @@ public class CassandraSessionImpl implements CassandraSession {
                 // Oooops... I am not the first thread who tried to handle table absence problem.
                 if (hndNum != 0) {
                     log.warning("Table " + tableFullName + " absence problem detected. " +
-                            "Another thread already fixed it.");
+                        "Another thread already fixed it.");
                     return;
                 }
 
                 log.warning("Table " + tableFullName + " absence problem detected. " +
-                        "Trying to create table.");
+                    "Trying to create table.");
 
                 IgniteException error = new IgniteException("Failed to create Cassandra table " + tableFullName);
 
@@ -867,7 +873,6 @@ public class CassandraSessionImpl implements CassandraSession {
 
     /**
      * Handles situation when prepared statement execution failed cause session to the cluster was released.
-     *
      */
     private void handlePreparedStatementClusterError(Throwable e) {
         int hndNum = prepStatementHandlersCnt.incrementAndGet();
@@ -904,17 +909,17 @@ public class CassandraSessionImpl implements CassandraSession {
     private boolean handleHostsAvailabilityError(Throwable e, int attempt, String msg) {
         if (attempt >= CQL_EXECUTION_ATTEMPTS_COUNT) {
             log.error("Host availability problem detected. " +
-                    "Number of CQL execution attempts reached maximum " + CQL_EXECUTION_ATTEMPTS_COUNT +
-                    ", exception will be thrown to upper execution layer.", e);
+                "Number of CQL execution attempts reached maximum " + CQL_EXECUTION_ATTEMPTS_COUNT +
+                ", exception will be thrown to upper execution layer.", e);
             throw msg == null ? new IgniteException(e) : new IgniteException(msg, e);
         }
 
-        if (attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 4  ||
-            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2  ||
-            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 + CQL_EXECUTION_ATTEMPTS_COUNT / 4  ||
+        if (attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 4 ||
+            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 ||
+            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 + CQL_EXECUTION_ATTEMPTS_COUNT / 4 ||
             attempt == CQL_EXECUTION_ATTEMPTS_COUNT - 1) {
             log.warning("Host availability problem detected, CQL execution attempt  " + (attempt + 1) + ", " +
-                    "refreshing Cassandra session", e);
+                "refreshing Cassandra session", e);
 
             refresh();
 
@@ -924,7 +929,7 @@ public class CassandraSessionImpl implements CassandraSession {
         }
 
         log.warning("Host availability problem detected, CQL execution attempt " + (attempt + 1) + ", " +
-                "sleeping extra " + CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT + " milliseconds", e);
+            "sleeping extra " + CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT + " milliseconds", e);
 
         try {
             Thread.sleep(CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT);
@@ -942,7 +947,7 @@ public class CassandraSessionImpl implements CassandraSession {
      */
     private RandomSleeper newSleeper() {
         return new RandomSleeper(CQL_EXECUTION_ATTEMPT_MIN_TIMEOUT,
-                CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT,
-                CQL_ATTEMPTS_TIMEOUT_INCREMENT, log);
+            CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT,
+            CQL_ATTEMPTS_TIMEOUT_INCREMENT, log);
     }
 }

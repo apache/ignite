@@ -293,6 +293,7 @@ public class GridDhtPartitionDemander {
      * @param assigns Assignments.
      * @param force {@code True} if dummy reassign.
      * @param cnt Counter.
+     * * @param forcedRebFut External future for forced rebalance.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
@@ -324,7 +325,7 @@ public class GridDhtPartitionDemander {
                 });
             }
 
-             if (forcedRebFut != null) {
+            if (forcedRebFut != null) {
                 fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> future) {
                         try {

@@ -17,16 +17,6 @@
 
 package org.apache.ignite.cache.store.cassandra.datasource;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
 import com.datastax.driver.core.AuthProvider;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -41,6 +31,16 @@ import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.policies.SpeculativeExecutionPolicy;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
@@ -55,6 +55,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class DataSource implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default expiration timeout for Cassandra driver session. */
+    public static final long DFLT_SESSION_EXPIRATION_TIMEOUT = 300000; // 5 minutes.
 
     /**
      * Null object, used as a replacement for those Cassandra connection options which
@@ -625,6 +628,7 @@ public class DataSource implements Externalizable {
 
     /**
      * Helper method used to serialize class members
+     *
      * @param out the stream to write the object to
      * @param obj the object to be written
      * @throws IOException Includes any I/O exceptions that may occur
@@ -635,10 +639,11 @@ public class DataSource implements Externalizable {
 
     /**
      * Helper method used to deserialize class members
+     *
      * @param in the stream to read data from in order to restore the object
+     * @return deserialized object
      * @throws IOException Includes any I/O exceptions that may occur
      * @throws ClassNotFoundException If the class for an object being restored cannot be found
-     * @return deserialized object
      */
     private Object readObject(ObjectInput in) throws IOException, ClassNotFoundException {
         Object obj = in.readObject();
@@ -649,7 +654,6 @@ public class DataSource implements Externalizable {
      * Parses consistency level provided as string.
      *
      * @param level consistency level string.
-     *
      * @return consistency level.
      */
     private ConsistencyLevel parseConsistencyLevel(String level) {

@@ -158,7 +158,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             assertEquals(name, 0, DummyService.cancelled(name));
 
             int servers = 2;
-            int clients = 2;
 
             latch = new CountDownLatch(servers);
 
@@ -170,11 +169,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
                 latch.await();
 
                 waitForDeployment(name, servers);
-
-                // Since we start extra nodes, there may be extra start and cancel events,
-                // so we check only the difference between start and cancel and
-                // not start and cancel events individually.
-                assertEquals(name, nodeCount() + servers,  DummyService.started(name) - DummyService.cancelled(name));
 
                 checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
             }
@@ -271,62 +265,63 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     public void testDeployLimits() throws Exception {
         final String name = "serviceWithLimitsUpdateTopology";
 
-            Ignite g = randomGrid();
+        Ignite g = randomGrid();
 
-            final int totalInstances = nodeCount() + 1;
+        final int totalInstances = nodeCount() + 1;
 
-            CountDownLatch latch = new CountDownLatch(nodeCount());
+        CountDownLatch latch = new CountDownLatch(nodeCount());
 
-            DummyService.exeLatch(name, latch);
+        DummyService.exeLatch(name, latch);
 
-            ServiceConfiguration srvcCfg = new ServiceConfiguration();
+        ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
-            srvcCfg.setName(name);
-            srvcCfg.setMaxPerNodeCount(1);
-            srvcCfg.setTotalCount(totalInstances);
-            srvcCfg.setService(new DummyService());
+        srvcCfg.setName(name);
+        srvcCfg.setMaxPerNodeCount(1);
+        srvcCfg.setTotalCount(totalInstances);
+        srvcCfg.setService(new DummyService());
 
-            IgniteServices svcs = g.services().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
-            svcs.deploy(srvcCfg);
+        svcs.deploy(srvcCfg);
 
-            IgniteFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
-            info("Deployed service: " + name);
+        info("Deployed service: " + name);
 
-            fut.get();
+        fut.get();
 
-            info("Finished waiting for service future: " + name);
+        info("Finished waiting for service future: " + name);
 
-            latch.await();
+        latch.await();
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-            checkCount(name, g.services().serviceDescriptors(), nodeCount());
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
+
 
             latch = new CountDownLatch(1);
 
-            DummyService.exeLatch(name, latch);
+        DummyService.exeLatch(name, latch);
 
         int extraNodes = 2;
 
         startExtraNodes(extraNodes);
 
-            try {
-                latch.await();
+        try {
+            latch.await();
 
             waitForDeployment(name, totalInstances);
 
             // Since we start extra nodes, there may be extra start and cancel events,
             // so we check only the difference between start and cancel and
             // not start and cancel events individually.
-            assertEquals(name, totalInstances,  DummyService.started(name) - DummyService.cancelled(name));
+            assertEquals(name, totalInstances, DummyService.started(name) - DummyService.cancelled(name));
 
-                checkCount(name, g.services().serviceDescriptors(), totalInstances);
-            }
-            finally {
-                stopExtraNodes(extraNodes);
-            }
+            checkCount(name, g.services().serviceDescriptors(), totalInstances);
+        }
+        finally {
+            stopExtraNodes(extraNodes);
+        }
     }
 }

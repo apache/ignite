@@ -71,12 +71,13 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param fut Future.
+     * @param future Future.
      * @return Internal future.
      */
-    private static IgniteInternalFuture internalFuture(IgniteFuture fut) {
-        assert fut instanceof IgniteFutureImpl;
+    private static IgniteInternalFuture internalFuture(IgniteFuture future) {
+        assert future instanceof IgniteFutureImpl;
 
-        return ((IgniteFutureImpl) fut).internalFuture();
+        return ((IgniteFutureImpl)future).internalFuture();
     }
+
 }
