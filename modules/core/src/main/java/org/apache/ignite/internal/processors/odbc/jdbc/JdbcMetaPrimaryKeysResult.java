@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -30,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcMetaPrimaryKeysResult extends JdbcResult {
     /** Query result rows. */
-    private List<JdbcTableMeta> meta;
+    private Map<String, String[]> tblsPks;
 
     /**
      * Default constructor is used for deserialization.
@@ -44,20 +46,17 @@ public class JdbcMetaPrimaryKeysResult extends JdbcResult {
      */
     JdbcMetaPrimaryKeysResult(List<JdbcTableMeta> meta) {
         super(META_PRIMARY_KEYS);
-        this.meta = meta;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        if (F.isEmpty(meta))
+        if (F.isEmpty(tblsPks))
             writer.writeInt(0);
         else {
-            writer.writeInt(meta.size());
+            writer.writeInt(tblsPks.size());
 
-            for(JdbcTableMeta m : meta)
-                m.writeBinary(writer);
         }
     }
 
@@ -68,24 +67,19 @@ public class JdbcMetaPrimaryKeysResult extends JdbcResult {
         int size = reader.readInt();
 
         if (size == 0)
-            meta = Collections.emptyList();
+            tblsPks = Collections.emptyMap();
         else {
-            meta = new ArrayList<>(size);
+            tblsPks = new HashMap<>(size);
 
             for (int i = 0; i < size; ++i) {
-                JdbcTableMeta m = new JdbcTableMeta();
-
-                m.readBinary(reader);
-
-                meta.add(m);
             }
         }
     }
 
     /**
-     * @return Query result rows.
+     * @return Primary keys map.
      */
-    public List<JdbcTableMeta> meta() {
-        return meta;
+    public Map<String, String[]> primaryKeys() {
+        return tblsPks;
     }
 }

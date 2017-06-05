@@ -459,7 +459,7 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
                     continue;
 
                 for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
-                    meta.add(new JdbcIndexMeta(idxDesc));
+                    meta.add(new JdbcIndexMeta(cacheName, table.name(), idxDesc));
             }
 
             return new JdbcResponse(new JdbcMetaIndexesResult(meta));

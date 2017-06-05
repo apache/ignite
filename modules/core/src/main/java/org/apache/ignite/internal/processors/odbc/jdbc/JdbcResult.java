@@ -118,6 +118,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
+            case META_PRIMARY_KEYS:
+                res = new JdbcMetaPrimaryKeysResult();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }

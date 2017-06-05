@@ -933,8 +933,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
             List<List<Object>> rows = new LinkedList<>();
 
-            for (int i = 0; i < res.meta().size(); ++i)
-                rows.addAll(indexRow(schema, tbl, res.meta().get(i)));
+            for (JdbcIndexMeta idxMeta : res.meta())
+                rows.addAll(indexRow(idxMeta));
 
             return new JdbcThinResultSet(rows, Arrays.asList(
                 new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
@@ -962,20 +962,18 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * @param schema Table schema name.
-     * @param tbl Table name.
      * @param idxMeta Index metadata.
      * @return List of result rows correspond to index.
      */
-    private List<List<Object>> indexRow(String schema, String tbl, JdbcIndexMeta idxMeta) {
+    private List<List<Object>> indexRow(JdbcIndexMeta idxMeta) {
         List<List<Object>> rows = new ArrayList<>(idxMeta.fields().length);
 
         for (int i = 0; i < idxMeta.fields().length; ++i) {
             List<Object> row = new ArrayList<>(13);
 
             row.add((String)null); // table catalog
-            row.add(upperCase(schema));
-            row.add(upperCase(tbl));
+            row.add(upperCase(idxMeta.schema()));
+            row.add(upperCase(idxMeta.tableName()));
             row.add(true); // non unique
             row.add(null); // index qualifier (index catalog)
             row.add(upperCase(idxMeta.name()));

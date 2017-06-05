@@ -132,6 +132,11 @@ public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinaryliza
 
                 break;
 
+            case META_PRIMARY_KEYS:
+                req = new JdbcMetaPrimaryKeysRequest();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
