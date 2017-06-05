@@ -94,14 +94,16 @@ public class GridStripedPoolSelfTest extends TestCase {
 
         fut.get();
 
-        assertTrue(pool.getPoolSize() > 0);
-        assertEquals(pool.created.sum() - pool.destroyed.sum(), pool.getPoolSize());
+        assertTrue(pool.getInPoolCount() > 0);
+        assertEquals(pool.created.sum() - pool.destroyed.sum(), pool.getInPoolCount());
         assertEquals(broken.sum(), pool.destroyed.sum());
+        assertEquals(pool.getInPoolCount(), pool.getAllAliveCount());
 
         pool.close();
 
-        assertEquals(0, pool.getPoolSize());
+        assertEquals(0, pool.getInPoolCount());
         assertEquals(pool.created.sum(), pool.destroyed.sum());
+        assertEquals(0, pool.getAllAliveCount());
     }
 
     /**
@@ -141,8 +143,9 @@ public class GridStripedPoolSelfTest extends TestCase {
 
         fut.get();
 
-        assertEquals(0, pool.getPoolSize());
+        assertEquals(0, pool.getInPoolCount());
         assertEquals(pool.created.sum(), pool.destroyed.sum());
+        assertEquals(0, pool.getAllAliveCount());
     }
 
     /**
@@ -184,6 +187,8 @@ public class GridStripedPoolSelfTest extends TestCase {
             assertEquals(State.DESTROYED, o.get());
 
             destroyed.increment();
+
+            onDestroy(o);
         }
     }
 

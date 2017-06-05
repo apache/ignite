@@ -288,6 +288,9 @@ public final class H2Connection implements GridCancelable {
         clearSessionLocalQueryContext();
 
         U.closeQuiet(conn);
+
+        if (pool != null)
+            pool.onDestroy(this);
     }
 
     /** {@inheritDoc} */
