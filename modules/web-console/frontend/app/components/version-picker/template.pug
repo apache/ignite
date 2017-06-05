@@ -14,18 +14,20 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.row
-    .col-xs-3.col-sm-3.col-md-2.border-right.section-left
-        .sidebar-nav(bs-affix)
-            version-picker
-            hr
-            ul.menu(ignite-sidebar)
-                li(ng-repeat='item in sidebar.items')
-                    a(ui-sref-active='active' ui-sref='{{::item.sref}}')
-                        span.fa-stack
-                            i.fa.fa-circle-thin.fa-stack-2x
-                            i.fa.fa-stack-1x {{::$index + 1}}
-                        | {{::item.text}}
-
-    .col-xs-9.col-sm-9.col-md-10.border-left.section-right
-        .docs-content(ui-view='')
+.btn-ignite.btn-ignite--primary(
+    bs-dropdown='$ctrl.dropdown'
+    data-trigger='hover focus'
+    bs-on-before-show='$ctrl.onDropdownShow'
+    bs-on-before-hide='$ctrl.onDropdownHide'
+    data-container='self'
+    ng-class='{"active": $ctrl.isActive }'
+)
+    | {{$ctrl.currentVersion}}
+    span.icon-right.fa.fa-caret-down
+    
+i.icon-help(
+    bs-tooltip=''
+    data-title='Web Console supports multiple Ignite versions.<br /> \
+                Select version you need to configure cluster.'
+    data-placement='right'
+)

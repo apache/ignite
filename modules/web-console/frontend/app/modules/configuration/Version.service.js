@@ -15,96 +15,148 @@
  * limitations under the License.
  */
 
+import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+
 /**
  * Utility service for version parsing and comparing
  */
 const VERSION_MATCHER = /(\d+)\.(\d+)\.(\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)?)?(-(\d+))?(-([\da-f]+))?/i;
 
+/**
+ * Tries to parse product version from it's string representation.
+ *
+ * @param {String} ver - String representation of version.
+ * @returns {{major: Number, minor: Number, maintenance: Number, stage: String, revTs: Number, revHash: String}} - Object that contains product version fields.
+ */
+const parse = (ver) => {
+    // Development or built from source ZIP.
+    ver = ver.replace(/(-DEV|-n\/a)$/i, '');
+
+    const [, major, minor, maintenance, stage, ...chunks] = ver.match(VERSION_MATCHER);
+
+    return {
+        major: parseInt(major, 10),
+        minor: parseInt(minor, 10),
+        maintenance: parseInt(maintenance, 10),
+        stage: (stage || '').substring(1),
+        revTs: chunks[2] ? parseInt(chunks[3], 10) : 0,
+        revHash: chunks[4] ? chunks[5] : null
+    };
+};
+
 const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
+/**
+ * Compare to version.
+ * @param a {Object} first compared version.
+ * @param b {Object} second compared version.
+ * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
+ */
+const compare = (a, b) => {
+    let res = numberComparator(a.major, b.major);
+
+    if (res !== 0)
+        return res;
+
+    res = numberComparator(a.minor, b.minor);
+
+    if (res !== 0)
+        return res;
+
+    res = numberComparator(a.maintenance, b.maintenance);
+
+    if (res !== 0)
+        return res;
+
+    return numberComparator(a.revTs, b.revTs);
+};
+
 export default class IgniteVersion {
-    /** Current product version. */
-    static ignite = '2.0.0';
+    constructor() {
+        this.supportedVersions = [
+            {
+                label: 'Ignite 2.0',
+                ignite: '2.0.0'
+            },
+            {
+                label: 'Ignite 1.x',
+                ignite: '1.9.0'
+            }
+        ];
 
-    /**
-     * Tries to parse product version from it's string representation.
-     *
-     * @param {String} ver - String representation of version.
-     * @returns {{major: Number, minor: Number, maintenance: Number, stage: String, revTs: Number, revHash: String}} - Object that contains product version fields.
-     */
-    parse(ver) {
-        // Development or built from source ZIP.
-        ver = ver.replace(/(-DEV|-n\/a)$/i, '');
+        /** Current product version. */
+        let current = _.head(this.supportedVersions);
 
-        const [, major, minor, maintenance, stage, ...chunks] = ver.match(VERSION_MATCHER);
+        try {
+            const ignite = localStorage.configurationVersion;
 
-        return {
-            major: parseInt(major, 10),
-            minor: parseInt(minor, 10),
-            maintenance: parseInt(maintenance, 10),
-            stage: (stage || '').substring(1),
-            revTs: chunks[2] ? parseInt(chunks[3], 10) : 0,
-            revHash: chunks[4] ? chunks[5] : null
-        };
+            const restored = _.find(this.supportedVersions, {ignite});
+
+            if (restored)
+                current = restored;
+        }
+        catch (ignored) {
+            // No-op.
+        }
+
+        this.currentSbj = new BehaviorSubject(current);
+
+        this.currentSbj.subscribe({
+            next: (ver) => {
+                try {
+                    localStorage.setItem('configurationVersion', ver.ignite);
+                }
+                catch (ignored) {
+                    // No-op.
+                }
+            }
+        });
     }
 
     /**
-     * Compare to version.
-     * @param a {String} first compared version.
-     * @param b {String} second compared version.
-     * @returns {Number} 1 if a > b, 0 if versions equals, -1 if a < b
+     * @return {String} Target Ignite version.
      */
-    compare(a, b) {
-        const pa = this.parse(a);
-        const pb = this.parse(b);
-
-        let res = numberComparator(pa.major, pb.major);
-
-        if (res !== 0)
-            return res;
-
-        res = numberComparator(pa.minor, pb.minor);
-
-        if (res !== 0)
-            return res;
-
-        res = numberComparator(pa.maintenance, pb.maintenance);
-
-        if (res !== 0)
-            return res;
-
-        return numberComparator(pa.revTs, pb.revTs);
+    get current() {
+        return this.currentSbj.getValue().ignite;
     }
 
     /**
-     * Check if node version in range
-     * @param {String} nodeVer Node version.
-     * @param {Array.<String>} ranges Version ranges to compare with.
-     * @returns {Boolean} `True` if node version is equal or greater than specified range.
+     * Check if version in range
+     * @param {String} target Target version.
+     * @param {String | Array.<String>} ranges Version ranges to compare with.
+     * @returns {Boolean} `True` if version is equal or greater than specified range.
      */
-    includes(nodeVer, ...ranges) {
-        return !!_.find(ranges, ([after, before]) =>
-            this.compare(nodeVer, after) >= 0 && (_.isNil(before) || this.compare(nodeVer, before) < 0)
-        );
+    since(target, ...ranges) {
+        const targetVer = parse(target);
+
+        return !!_.find(ranges, (range) => {
+            if (_.isArray(range)) {
+                const [after, before] = range;
+
+                return compare(targetVer, parse(after)) >= 0 &&
+                    (_.isNil(before) || compare(targetVer, parse(before)) < 0);
+            }
+
+            return compare(targetVer, parse(range)) >= 0;
+        });
     }
 
     /**
-     * Check if node version is newer or same
-     * @param {String} nodeVer Node version.
-     * @param {String} sinceVer Version to compare with.
-     * @returns {Boolean} `True` if node version is equal or greater than specified version.
+     * Check whether version before than specified version.
+     * @param {String} target Target version.
+     * @param {String} ranges Version ranges to compare with.
+     * @return {Boolean} `True` if version before than specified version.
      */
-    since(nodeVer, sinceVer) {
-        return this.includes(nodeVer, [sinceVer]);
+    before(target, ...ranges) {
+        return !this.since(target, ...ranges);
     }
 
     /**
-     * Check whether node version before than specified version.
-     * @param {String} nodeVer Node version.
-     * @param {String} sinceVer Version to compare with.
-     * @return {Boolean} `True` if node version before than specified version.
+     * Check if configuration version in range
+     * @param {String|Array.<String>} ranges Version ranges to compare with.
+     * @returns {Boolean} `True` if configuration version is equal or greater than specified range.
      */
-    before(nodeVer, sinceVer) {
-        return !this.since(nodeVer, sinceVer);
+    available(...ranges) {
+        return this.since(this.current, ...ranges);
     }
 }

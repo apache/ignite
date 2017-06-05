@@ -73,6 +73,16 @@ hr {
         cursor: default;
         pointer-events: none;
     }
+
+    version-picker {
+        margin-top: 10px;
+
+        & + hr {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            margin-right: 20px;
+        }
+    }
 }
 
 .theme-line .sidebar-nav {
@@ -317,15 +327,6 @@ h1, h2, h3, h4, h5, h6 {
     .btn {
         margin-right: 0;
     }
-}
-
-.greedy {
-    min-height: 100%;
-    height: #{"calc(100vh - 270px)"};
-}
-
-.signin-greedy {
-    height: #{"calc(100vh - 300px)"};
 }
 
 body {
