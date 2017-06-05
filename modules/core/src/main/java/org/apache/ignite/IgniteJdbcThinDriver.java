@@ -133,7 +133,6 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
-
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 

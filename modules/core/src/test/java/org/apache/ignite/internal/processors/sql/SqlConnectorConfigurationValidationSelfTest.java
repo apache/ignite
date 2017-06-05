@@ -18,14 +18,21 @@
 package org.apache.ignite.internal.processors.sql;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -36,103 +43,92 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "CACHE";
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        Class.forName("org.apache.ignite.IgniteJdbcThinDriver");
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
     /**
-     * Ensure we can start with default configuration.
+     * Test host.
      *
      * @throws Exception If failed.
      */
-    public void testAddressDefault() throws Exception {
-        check(new OdbcConfiguration(), true);
+    public void testDefault() throws Exception {
+        check(new SqlConnectorConfiguration(), true);
+
+        assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
     }
 
     /**
-     * Test address where only host is provided.
+     * Test host.
      *
      * @throws Exception If failed.
      */
-    public void testAddressHostOnly() throws Exception {
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1"), true);
+    public void testHost() throws Exception {
+        check(new SqlConnectorConfiguration().setHost("126.0.0.1"), false);
+
+        check(new SqlConnectorConfiguration().setHost("127.0.0.1"), true);
+        check(new SqlConnectorConfiguration().setHost("0.0.0.0"), true);
     }
 
     /**
-     * Test address with both host and port.
+     * Test port.
      *
      * @throws Exception If failed.
      */
-    public void testAddressHostAndPort() throws Exception {
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999"), true);
+    public void testPort() throws Exception {
+        check(new SqlConnectorConfiguration().setPort(-1), false);
+        check(new SqlConnectorConfiguration().setPort(0), false);
+        check(new SqlConnectorConfiguration().setPort(512), false);
+        check(new SqlConnectorConfiguration().setPort(65536), false);
 
-        // Shouldn't fit into range.
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999"), false);
+        check(new SqlConnectorConfiguration().setPort(SqlConnectorConfiguration.DFLT_PORT), true);
+        check(new SqlConnectorConfiguration().setPort(SqlConnectorConfiguration.DFLT_PORT + 1), true);
+    }
+
+
+    /**
+     * Test port.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPortRange() throws Exception {
+        check(new SqlConnectorConfiguration().setPortRange(-1), false);
+
+        check(new SqlConnectorConfiguration().setPortRange(0), true);
+        check(new SqlConnectorConfiguration().setPortRange(10), true);
     }
 
     /**
-     * Test address with host and port range.
+     * Test socket buffers.
      *
      * @throws Exception If failed.
      */
-    public void testAddressHostAndPortRange() throws Exception {
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999..10000"), true);
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999..10000"), true);
+    public void testSocketBuffers() throws Exception {
+        check(new SqlConnectorConfiguration().setSocketSendBufferSize(-4 * 1024), false);
+        check(new SqlConnectorConfiguration().setSocketReceiveBufferSize(-4 * 1024), false);
 
-        // Shouldn't fit into range.
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999..10000"), false);
+        check(new SqlConnectorConfiguration().setSocketSendBufferSize(4 * 1024), true);
+        check(new SqlConnectorConfiguration().setSocketReceiveBufferSize(4 * 1024), true);
     }
 
     /**
-     * Test start with invalid host.
+     * Test max open cursors per connection.
      *
      * @throws Exception If failed.
      */
-    public void testAddressInvalidHost() throws Exception {
-        check(new OdbcConfiguration().setEndpointAddress("126.0.0.1"), false);
-    }
-
-    /**
-     * Test start with invalid address format.
-     *
-     * @throws Exception If failed.
-     */
-    public void testAddressInvalidFormat() throws Exception {
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:"), false);
-
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:0"), false);
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:-1"), false);
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:111111"), false);
-
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999.."), false);
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9999..9998"), false);
-
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:a"), false);
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:a.."), false);
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:a..b"), false);
-
-        check(new OdbcConfiguration().setEndpointAddress(":9999"), false);
-        check(new OdbcConfiguration().setEndpointAddress(":9999..10000"), false);
-    }
-
-    /**
-     * Test connection parameters: sendBufferSize, receiveBufferSize, connectionTimeout.
-     *
-     * @throws Exception If failed.
-     */
-    public void testConnectionParams() throws Exception {
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
-            .setSocketSendBufferSize(4 * 1024), true);
-
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
-            .setSocketReceiveBufferSize(4 * 1024), true);
-
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
-            .setSocketSendBufferSize(-64 * 1024), false);
-
-        check(new OdbcConfiguration().setEndpointAddress("127.0.0.1:9998..10000")
-            .setSocketReceiveBufferSize(-64 * 1024), false);
+    public void testMaxOpenCusrorsPerConnection() throws Exception {
+        check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(-1), false);
+        check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(0), true);
+        check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(100), true);
     }
 
     /**
@@ -141,27 +137,26 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testThreadPoolSize() throws Exception {
-        check(new OdbcConfiguration().setThreadPoolSize(0), false);
-        check(new OdbcConfiguration().setThreadPoolSize(-1), false);
-
-        check(new OdbcConfiguration().setThreadPoolSize(4), true);
+        check(new SqlConnectorConfiguration().setThreadPoolSize(0), false);
+        check(new SqlConnectorConfiguration().setThreadPoolSize(-1), false);
+        check(new SqlConnectorConfiguration().setThreadPoolSize(4), true);
     }
 
     /**
      * Perform check.
      *
-     * @param odbcCfg ODBC configuration.
+     * @param sqlCfg SQL configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void check(OdbcConfiguration odbcCfg, boolean success) throws Exception {
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    private void check(SqlConnectorConfiguration sqlCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setIgniteInstanceName(SqlConnectorConfigurationValidationSelfTest.class.getName() + "-" +
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setOdbcConfiguration(odbcCfg);
+        cfg.setSqlConnectorConfiguration(sqlCfg);
         cfg.setMarshaller(new BinaryMarshaller());
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
@@ -169,12 +164,17 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
 
         cfg.setDiscoverySpi(spi);
 
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
+            .setIndexedTypes(SqlConnectorKey.class, SqlConnectorValue.class);
+
+        cfg.setCacheConfiguration(ccfg);
+
         if (success)
-            startGrid(cfg.getGridName(), cfg);
+            startGrid(cfg.getIgniteInstanceName(), cfg);
         else {
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    startGrid(cfg.getGridName(), cfg);
+                    startGrid(cfg.getIgniteInstanceName(), cfg);
 
                     return null;
                 }
@@ -182,4 +182,37 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
         }
     }
 
+    /**
+     * Make sure that JDBC connection is possible at the given host and port.
+     *
+     * @param host Host.
+     * @param port Port.
+     * @throws Exception If failed.
+     */
+    private void assertJdbc(@Nullable String host, int port) throws Exception {
+        if (host == null)
+            host = "127.0.0.1";
+
+        String connStr = "jdbc:ignite:thin://" + host + ":" + port;
+
+        try (Connection conn = DriverManager.getConnection(connStr)) {
+            conn.setSchema(CACHE_NAME);
+
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT 1");
+
+                assertEquals(1, rs.getInt(0));
+            }
+        }
+    }
+
+    private static class SqlConnectorKey {
+        @QuerySqlField
+        public int key;
+    }
+
+    private static class SqlConnectorValue {
+        @QuerySqlField
+        public int val;
+    }
 }

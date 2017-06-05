@@ -189,6 +189,15 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Get configured port.
+     *
+     * @return Configured port.
+     */
+    public int port() {
+        return srv.port();
+    }
+
+    /**
      * Prepare connector configuration.
      *
      * @param cfg Ignote configuration.
@@ -238,7 +247,7 @@ public class SqlListenerProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void validateConfiguration(SqlConnectorConfiguration cfg) throws IgniteCheckedException {
-        assertParameter(cfg.getPort() > 0, "port > 0");
+        assertParameter(cfg.getPort() > 1024, "port > 1024");
         assertParameter(cfg.getPort() <= 65535, "port <= 65535");
         assertParameter(cfg.getPortRange() >= 0, "portRange > 0");
         assertParameter(cfg.getSocketSendBufferSize() >= 0, "socketSendBufferSize > 0");

@@ -171,11 +171,11 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(spi);
 
         if (success)
-            startGrid(cfg.getGridName(), cfg);
+            startGrid(cfg.getIgniteInstanceName(), cfg);
         else {
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    startGrid(cfg.getGridName(), cfg);
+                    startGrid(cfg.getIgniteInstanceName(), cfg);
 
                     return null;
                 }
