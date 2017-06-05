@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -43,6 +44,8 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         node = (IgniteEx)startGrid();
+
+        startGrid(2);
     }
 
     /** {@inheritDoc} */
@@ -65,6 +68,17 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
+
+        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+
+        assertTrue(iter.hasNext());
+
+        List<?> row = iter.next();
+
+        assertEquals(1, row.size());
+        assertEquals(1, row.get(0));
+
+        assertFalse(iter.hasNext());
     }
 
     /**
@@ -86,6 +100,17 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
+
+        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+
+        assertTrue(iter.hasNext());
+
+        List<?> row = iter.next();
+
+        assertEquals(1, row.size());
+        assertEquals(1, row.get(0));
+
+        assertFalse(iter.hasNext());
     }
 
     /**

@@ -26,8 +26,8 @@ import org.jetbrains.annotations.Nullable;
  * SQL listener query execute request.
  */
 public class OdbcQueryExecuteRequest extends OdbcRequest {
-    /** Cache name. */
-    private final String cacheName;
+    /** Schema. */
+    private final String schema;
 
     /** Sql query. */
     @GridToStringInclude(sensitive = true)
@@ -38,14 +38,14 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     private final Object[] args;
 
     /**
-     * @param cacheName Cache name.
+     * @param schema Schema.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+    public OdbcQueryExecuteRequest(String schema, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
-        this.cacheName = cacheName.isEmpty() ? null : cacheName;
+        this.schema = schema.isEmpty() ? null : schema;
         this.sqlQry = sqlQry;
         this.args = args;
     }
@@ -65,10 +65,10 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema.
      */
-    @Nullable public String cacheName() {
-        return cacheName;
+    @Nullable public String schema() {
+        return schema;
     }
 
     /** {@inheritDoc} */

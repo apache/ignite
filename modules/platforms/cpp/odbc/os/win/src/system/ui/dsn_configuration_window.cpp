@@ -38,8 +38,8 @@ namespace ignite
                     nameEdit(),
                     addressLabel(),
                     addressEdit(),
-                    cacheLabel(),
-                    cacheEdit(),
+                    schemaLabel(),
+                    schemaEdit(),
                     pageSizeLabel(),
                     pageSizeEdit(),
                     distributedJoinsCheckBox(),
@@ -115,9 +115,9 @@ namespace ignite
 
                     rowPos += interval + rowSize;
 
-                    val = config.GetCache().c_str();
-                    cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ChildId::CACHE_LABEL);
-                    cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::CACHE_EDIT);
+                    val = config.GetSchema().c_str();
+                    schemaLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Schema name:", ChildId::SCHEMA_LABEL);
+                    schemaEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::SCHEMA_EDIT);
 
                     rowPos += interval + rowSize;
 
@@ -248,7 +248,7 @@ namespace ignite
                 {
                     std::string dsn;
                     std::string address;
-                    std::string cache;
+                    std::string schema;
                     std::string pageSizeStr;
                     std::string version;
 
@@ -257,7 +257,7 @@ namespace ignite
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
-                    cacheEdit->GetText(cache);
+                    schemaEdit->GetText(schema);
                     protocolVersionComboBox->GetText(version);
                     pageSizeEdit->GetText(pageSizeStr);
 
@@ -275,7 +275,7 @@ namespace ignite
                     LOG_MSG("Retriving arguments:");
                     LOG_MSG("DSN:                " << dsn);
                     LOG_MSG("Address:            " << address);
-                    LOG_MSG("Cache:              " << cache);
+                    LOG_MSG("Schema:             " << schema);
                     LOG_MSG("Page size:          " << pageSize);
                     LOG_MSG("Protocol version:   " << version);
                     LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
@@ -286,7 +286,7 @@ namespace ignite
 
                     cfg.SetDsn(dsn);
                     cfg.SetAddress(address);
-                    cfg.SetCache(cache);
+                    cfg.SetSchema(schema);
                     cfg.SetPageSize(pageSize);
                     cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);

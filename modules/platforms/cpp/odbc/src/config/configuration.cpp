@@ -34,7 +34,7 @@ namespace ignite
         {
             const std::string Configuration::Key::dsn               = "dsn";
             const std::string Configuration::Key::driver            = "driver";
-            const std::string Configuration::Key::cache             = "cache";
+            const std::string Configuration::Key::schema            = "schema";
             const std::string Configuration::Key::address           = "address";
             const std::string Configuration::Key::server            = "server";
             const std::string Configuration::Key::port              = "port";
@@ -45,7 +45,7 @@ namespace ignite
 
             const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
-            const std::string Configuration::DefaultValue::cache    = "";
+            const std::string Configuration::DefaultValue::schema   = "PUBLIC";
             const std::string Configuration::DefaultValue::address  = "";
             const std::string Configuration::DefaultValue::server   = "";
 

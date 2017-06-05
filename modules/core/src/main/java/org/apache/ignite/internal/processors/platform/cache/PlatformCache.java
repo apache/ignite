@@ -1312,6 +1312,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         int timeout = reader.readInt();
         boolean replicated = reader.readBoolean();
         boolean collocated = reader.readBoolean();
+        String schema = reader.readString();
 
         return new SqlFieldsQuery(sql)
                 .setPageSize(pageSize)
@@ -1321,7 +1322,8 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setEnforceJoinOrder(enforceJoinOrder)
                 .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated)
-                .setCollocated(collocated);
+                .setCollocated(collocated)
+                .setSchema(schema);
     }
 
     /**

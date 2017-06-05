@@ -105,7 +105,7 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            void Write(impl::binary::BinaryWriterImpl& writer) const
             {
                 writer.WriteInt8(RequestType::HANDSHAKE);
 
@@ -139,13 +139,13 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param cache Cache name.
+             * @param schema Schema.
              * @param sql SQL query.
              * @param params Query arguments.
              */
-            QueryExecuteRequest(const std::string& cache, const std::string& sql,
+            QueryExecuteRequest(const std::string& schema, const std::string& sql,
                 const app::ParameterBindingMap& params) :
-                cache(cache),
+                schema(schema),
                 sql(sql),
                 params(params)
             {
@@ -164,10 +164,10 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            void Write(impl::binary::BinaryWriterImpl& writer) const
             {
                 writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY);
-                utility::WriteString(writer, cache);
+                utility::WriteString(writer, schema);
                 utility::WriteString(writer, sql);
 
                 writer.WriteInt32(static_cast<int32_t>(params.size()));
@@ -190,8 +190,8 @@ namespace ignite
             }
 
         private:
-            /** Cache name. */
-            std::string cache;
+            /** Schema name. */
+            std::string schema;
 
             /** SQL query. */
             std::string sql;
@@ -408,11 +408,11 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param cacheName Cache name.
+             * @param schema Schema.
              * @param sqlQuery SQL query itself.
              */
-            QueryGetParamsMetaRequest(const std::string& cacheName, const std::string& sqlQuery) :
-                cacheName(cacheName),
+            QueryGetParamsMetaRequest(const std::string& schema, const std::string& sqlQuery) :
+                schema(schema),
                 sqlQuery(sqlQuery)
             {
                 // No-op.
@@ -430,17 +430,17 @@ namespace ignite
              * Write request using provided writer.
              * @param writer Writer.
              */
-            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            void Write(impl::binary::BinaryWriterImpl& writer) const
             {
                 writer.WriteInt8(RequestType::GET_PARAMS_METADATA);
 
-                utility::WriteString(writer, cacheName);
+                utility::WriteString(writer, schema);
                 utility::WriteString(writer, sqlQuery);
             }
 
         private:
-            /** Cache name. */
-            std::string cacheName;
+            /** Schema. */
+            std::string schema;
 
             /** SQL query. */
             std::string sqlQuery;
