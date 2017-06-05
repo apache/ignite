@@ -119,6 +119,7 @@ namespace ignite
                     DBG_STR_CASE(SQL_CONVERT_WVARCHAR);
                     DBG_STR_CASE(SQL_CONVERT_GUID);
                     DBG_STR_CASE(SQL_PARAM_ARRAY_ROW_COUNTS);
+                    DBG_STR_CASE(SQL_PARAM_ARRAY_SELECTS);
                 default:
                     break;
                 }
@@ -587,7 +588,7 @@ namespace ignite
 #endif //SQL_CONVERT_LONGVARBINARY
 
 #ifdef SQL_PARAM_ARRAY_ROW_COUNTS
-                // Value enumerating the driver's properties regarding the availability of row counts in a parameterized
+                // Enumerating the driver's properties regarding the availability of row counts in a parameterized
                 // execution. Has the following values:
                 //
                 // SQL_PARC_BATCH = Individual row counts are available for each set of parameters. This is conceptually
@@ -601,6 +602,24 @@ namespace ignite
                 //     one atomic unit. Errors are handled the same as if one statement were executed.
                 intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_NO_BATCH;
 #endif //SQL_PARAM_ARRAY_ROW_COUNTS
+
+#ifdef SQL_PARAM_ARRAY_SELECTS
+                // Enumerating the driver's properties regarding the availability of result sets in a parameterized
+                // execution. Has the following values:
+                //
+                // SQL_PAS_BATCH = There is one result set available per set of parameters. This is conceptually
+                //     equivalent to the driver generating a batch of SQL statements, one for each parameter set in
+                //     the array.
+                //
+                // SQL_PAS_NO_BATCH = There is only one result set available, which represents the cumulative result set
+                //     resulting from the execution of the statement for the complete array of parameters. This is
+                //     conceptually equivalent to treating the statement together with the complete parameter array as
+                //     one atomic unit.
+                //
+                // SQL_PAS_NO_SELECT = A driver does not allow a result - set generating statement to be executed with
+                //     an array of parameters.
+                intParams[SQL_PARAM_ARRAY_SELECTS] = SQL_PAS_NO_SELECT;
+#endif //SQL_PARAM_ARRAY_SELECTS
 
 #ifdef SQL_CONVERT_GUID
                 // Bitmask indicates the conversions supported by the CONVERT scalar function for target type GUID
