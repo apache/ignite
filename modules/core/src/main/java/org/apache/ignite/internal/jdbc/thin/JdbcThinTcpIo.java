@@ -53,10 +53,10 @@ public class JdbcThinTcpIo {
     private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 0);
 
     /** Initial output stream capacity for handshake. */
-    private static final int HANDSHAKE_MSG_SIZE = 10;
+    private static final int HANDSHAKE_MSG_SIZE = 12;
 
     /** Initial output for query message. */
-    private static final int QUERY_EXEC_MSG_INIT_CAP = 1024;
+    private static final int QUERY_EXEC_MSG_INIT_CAP = 256;
 
     /** Initial output for query fetch message. */
     private static final int QUERY_FETCH_MSG_SIZE = 13;
