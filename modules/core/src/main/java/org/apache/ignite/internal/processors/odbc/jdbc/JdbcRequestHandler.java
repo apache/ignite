@@ -173,8 +173,6 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             JdbcQueryCursor cur = new JdbcQueryCursor(
                 qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)cache.query(qry));
 
-            qryCursors.put(qryId, cur);
-
             JdbcQueryExecuteResult res;
 
             if (cur.isQuery())
@@ -189,6 +187,11 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
 
                 res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
             }
+
+            if (!res.last())
+                qryCursors.put(qryId, cur);
+            else
+                cur.close();
 
             return new JdbcResponse(res);
         }
@@ -249,6 +252,12 @@ public class JdbcRequestHandler implements SqlListenerRequestHandler {
             cur.pageSize(req.pageSize());
 
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
+
+            if (res.last()) {
+                qryCursors.remove(req.queryId());
+
+                cur.close();
+            }
 
             return new JdbcResponse(res);
         }

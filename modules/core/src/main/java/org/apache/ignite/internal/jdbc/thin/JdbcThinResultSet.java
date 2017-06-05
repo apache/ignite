@@ -178,7 +178,8 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            stmt.connection().io().queryClose(qryId);
+            if (!finished)
+                stmt.connection().io().queryClose(qryId);
 
             closed = true;
         }
