@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Grid cache semaphore state.
  */
-public class GridCacheSemaphoreState implements GridCacheInternal, Externalizable, Cloneable {
+public class GridCacheSemaphoreState extends AtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,6 +67,11 @@ public class GridCacheSemaphoreState implements GridCacheInternal, Externalizabl
      */
     public GridCacheSemaphoreState() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.SEMAPHORE;
     }
 
     /**

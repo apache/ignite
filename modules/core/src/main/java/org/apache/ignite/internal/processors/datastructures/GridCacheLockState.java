@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *  Grid cache reentrant lock state.
  */
-public final class GridCacheLockState implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheLockState extends AtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -102,6 +102,11 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
      */
     public GridCacheLockState() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.REENTRANT_LOCK;
     }
 
     /**

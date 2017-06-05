@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Atomic long value.
  */
-public final class GridCacheAtomicLongValue implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheAtomicLongValue extends AtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,6 +50,11 @@ public final class GridCacheAtomicLongValue implements GridCacheInternal, Extern
      */
     public GridCacheAtomicLongValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.ATOMIC_LONG;
     }
 
     /**

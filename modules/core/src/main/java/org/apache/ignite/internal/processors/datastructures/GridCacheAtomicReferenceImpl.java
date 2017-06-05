@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -62,6 +63,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** Atomic reference name. */
     private String name;
+
+    /** Group name. */
+    private String groupName;
 
     /** Status.*/
     private volatile boolean rmvd;
@@ -94,6 +98,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param ctx Cache context.
      */
     public GridCacheAtomicReferenceImpl(String name,
+        @Nullable String groupName,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
         GridCacheContext ctx) {
@@ -106,11 +111,16 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         this.key = key;
         this.atomicView = atomicView;
         this.name = name;
+        this.groupName = groupName;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    @Nullable public String groupName() {
+        return groupName;
     }
 
     /** {@inheritDoc} */
@@ -288,7 +298,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicReference(name);
+            ctx.kernalContext().dataStructures().removeAtomicReference(name, groupName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
