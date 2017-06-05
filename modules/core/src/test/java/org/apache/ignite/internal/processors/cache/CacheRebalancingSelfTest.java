@@ -26,9 +26,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -74,7 +78,10 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         fut2.get();
     }
 
+
     /**
+     * Test local cache size with and without rebalancing in case or topology change
+     *
      * @throws Exception If failed.
      */
     public void testDisableRebalancing() throws Exception {
@@ -84,53 +91,79 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
 
         IgniteEx ig2 = startGrid(2);
 
-        IgniteEx ig3 = startGrid(3);
-
-        System.out.println("ig0=" + ig0.localNode().id());
-        System.out.println("ig1=" + ig1.localNode().id());
-        System.out.println("ig2=" + ig2.localNode().id());
-        System.out.println("ig3=" + ig3.localNode().id());
-
-
-        String cacheName = "disableRebalanceTestCache";
-
         CacheConfiguration<Integer,Integer> cacheCfg = new CacheConfiguration<>();
         cacheCfg.setBackups(1);
-        cacheCfg.setName(cacheName);
+        cacheCfg.setName("disableRebalanceTestCache");
 
         IgniteCache<Integer, Integer> cache0 = ig0.getOrCreateCache(cacheCfg);
 
         IgniteCache<Integer, Integer> cache1 = ig1.getOrCreateCache(cacheCfg);
 
-
         awaitPartitionMapExchange();
 
-        Integer before0 = ig0.affinity(cacheName).primaryPartitions(ig0.localNode()).length;
-        Integer before1 = ig1.affinity(cacheName).primaryPartitions(ig1.localNode()).length;
-
+        /*
+        Disable rebalansing on node1, populate cache, tear down node2 and test that no new entries come to node1
+         */
         ig1.rebalanceEnabled(false);
 
         Random r = new Random();
-        for (int i=0;i<10240;i++)
-            cache0.put(r.nextInt(), 1);
+        Map<Integer, Integer> cacheTestMap = new HashMap<>();
+        for (int i=0;i<10240;i++){
+            int k = r.nextInt();
+
+            cache0.put(k, 1);
+
+            cacheTestMap.put(k, 1);
+        }
+
+
+        int before0 = cache0.localSize(CachePeekMode.ALL);
+        int before1 = cache1.localSize(CachePeekMode.ALL);
 
         stopGrid(2);
 
-        IgniteFuture fut2 = cache0.rebalance();
+        for (Map.Entry<Integer, Integer> testEntry : cacheTestMap.entrySet()) {
+            assert testEntry.getValue().equals(cache0.get(testEntry.getKey())) : "get " + cache0.get(testEntry.getKey())
+                + " expect " + testEntry.getValue();
+        }
 
-        fut2.get();
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return before0 < cache0.localSize(CachePeekMode.ALL);
+            }
+        }, 10_000): "ig0 local size  before= " + before0 + ", afterDisable = "
+            + cache0.localSize(CachePeekMode.ALL);
 
-        awaitPartitionMapExchange();
-        Thread.sleep(9000);
+        Thread.sleep(500);
 
-        Integer after0 = ig0.affinity(cacheName).primaryPartitions(ig0.localNode()).length;
-        Integer after1 = ig1.affinity(cacheName).primaryPartitions(ig1.localNode()).length;
+        int afterDisable0 = cache0.localSize(CachePeekMode.ALL);
+        int afterDisable1 = cache1.localSize(CachePeekMode.ALL);
 
-        //ig0.affinity(DEFAULT_CACHE_NAME).mapPartitionsToNodes()
+        assert before1 == afterDisable1: "ig1 local size  before= " + before1 + ", afterDisable = " + afterDisable1;
 
-        assert before0 < after0;
-        assert before1 == after1;
+        // Enable rebalansing on node1 and test that new entries come to node1
+        ig1.rebalanceEnabled(true);
 
+        ig1.getOrCreateCache("sss");
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return afterDisable1 < cache1.localSize(CachePeekMode.ALL);
+            }
+        }, 10_000): "ig1 local size  afterDisable = " + afterDisable1 + ", afterEnable = "
+            + cache1.localSize(CachePeekMode.ALL);
+
+        Thread.sleep(500);
+
+        int afterEnable0 = cache0.localSize(CachePeekMode.ALL);
+
+        assert afterDisable0 == afterEnable0 : "ig0 local size  afterDisable = " + afterDisable0 + ", afterEnable = "
+            + afterEnable0;
+
+        for (Map.Entry<Integer, Integer> testEntry : cacheTestMap.entrySet()) {
+            assert testEntry.getValue().equals(cache0.get(testEntry.getKey())) : "get " + cache0.get(testEntry.getKey())
+                + " expect " + testEntry.getValue();
+        }
     }
 
     /**
