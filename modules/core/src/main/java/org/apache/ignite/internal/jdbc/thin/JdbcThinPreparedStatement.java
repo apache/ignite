@@ -317,7 +317,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
-            JdbcMetaParamsResult res = conn.cliIo().parametersMeta(conn.getSchema(), sql);
+            JdbcMetaParamsResult res = conn.io().parametersMeta(conn.getSchema(), sql);
 
             return new JdbcThinParameterMetaData(res.meta());
         }

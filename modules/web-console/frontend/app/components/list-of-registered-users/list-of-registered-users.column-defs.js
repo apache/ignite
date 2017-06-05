@@ -51,7 +51,7 @@ const EMAIL_TEMPLATE = '<div class="ui-grid-cell-contents"><a ng-href="mailto:{{
 export default [
     {name: 'actions', displayName: 'Actions', categoryDisplayName: 'Actions', cellTemplate: ACTIONS_TEMPLATE, field: 'actions', minWidth: 70, width: 70, enableFiltering: false, enableSorting: false, visible: false},
     {name: 'user', displayName: 'User', categoryDisplayName: 'User', field: 'userName', cellTemplate: USER_TEMPLATE, minWidth: 160, enableFiltering: true, pinnedLeft: true, filter: { placeholder: 'Filter by name...' }},
-    {name: 'email', displayName: 'Email', categoryDisplayName: 'Email', field: 'email', cellTemplate: EMAIL_TEMPLATE, minWidth: 160, enableFiltering: false, filter: { placeholder: 'Filter by email...' }},
+    {name: 'email', displayName: 'Email', categoryDisplayName: 'Email', field: 'email', cellTemplate: EMAIL_TEMPLATE, minWidth: 160, enableFiltering: true, filter: { placeholder: 'Filter by email...' }},
     {name: 'company', displayName: 'Company', categoryDisplayName: 'Company', field: 'company', minWidth: 180, enableFiltering: true, filter: { placeholder: 'Filter by company...' }},
     {name: 'country', displayName: 'Country', categoryDisplayName: 'Country', field: 'countryCode', minWidth: 160, enableFiltering: true, filter: { placeholder: 'Filter by country...' }},
     {name: 'lastlogin', displayName: 'Last login', categoryDisplayName: 'Last login', field: 'lastLogin', cellFilter: 'date:"M/d/yy HH:mm"', minWidth: 120, width: 120, enableFiltering: false, visible: false},

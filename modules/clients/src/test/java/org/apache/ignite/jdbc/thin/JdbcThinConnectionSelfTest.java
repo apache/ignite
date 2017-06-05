@@ -17,23 +17,22 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.concurrent.Callable;
 
 /**
  * Connection test.
@@ -41,12 +40,6 @@ import org.jetbrains.annotations.NotNull;
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:ignite:thin://";
-
-    /** Host. */
-    private static final String HOST = "127.0.0.1";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -93,122 +86,152 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings({"EmptyTryBlock", "unused"})
     public void testDefaults() throws Exception {
-        String url = URL_PREFIX + HOST;
-
-        assert DriverManager.getConnection(url) != null;
-        assert DriverManager.getConnection(url + "/") != null;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFailedHandshake() throws Exception {
-        final ServerSocket srvSock = new ServerSocket(60000, 0, InetAddress.getByName("127.0.0.1"));
-
-        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    Socket s = srvSock.accept();
-
-                    s.close();
-                }
-                catch (IOException e) {
-                    log.error("Unexpected exception", e);
-                    fail();
-                }
-            }
-        });
-
-        try {
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    DriverManager.getConnection(URL_PREFIX + "127.0.0.1:60000");
-
-                    return null;
-                }
-            }, SQLException.class, "Failed to connect to Ignite cluster [host=127.0.0.1, port=60000]");
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            // No-op.
         }
-        finally {
-            f.get(3000);
 
-            srvSock.close();
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
+            // No-op.
         }
     }
 
     /**
+     * Test invalid endpoint.
+     *
      * @throws Exception If failed.
      */
-    public void testInvalidUrls() throws Exception {
+    public void testInvalidEndpoint() throws Exception {
+        assertInvalid("jdbc:ignite:thin://", "Host name is empty");
+        assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
+        assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Invalid port");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Invalid port");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:100000", "Invalid port");
+    }
+
+    /**
+     * Test invalid socket buffer sizes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSocketBuffers() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=-1",
+            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_SND_BUF);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=-1",
+            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_RCV_BUF);
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            assertEquals(0, socket(conn).socketSendBuffer());
+            assertEquals(0, socket(conn).socketReceiveBuffer());
+        }
+
+        // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=1024")) {
+            assertEquals(1024, socket(conn).socketSendBuffer());
+            assertEquals(0, socket(conn).socketReceiveBuffer());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=1024")) {
+            assertEquals(0, socket(conn).socketSendBuffer());
+            assertEquals(1024, socket(conn).socketReceiveBuffer());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
+            "socketSendBuffer=1024&socketReceiveBuffer=2048")) {
+            assertEquals(1024, socket(conn).socketSendBuffer());
+            assertEquals(2048, socket(conn).socketReceiveBuffer());
+        }
+    }
+
+    /**
+     * Test TCP no delay property handling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPropertyTcpNoDelay() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=0",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true1",
+            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            assertTrue(socket(conn).tcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true")) {
+            assertTrue(socket(conn).tcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false")) {
+            assertFalse(socket(conn).tcpNoDelay());
+        }
+    }
+
+    /**
+     * Get client socket for connection.
+     *
+     * @param conn Connection.
+     * @return Socket.
+     * @throws Exception If failed.
+     */
+    private static JdbcThinTcpIo socket(Connection conn) throws Exception {
+        JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
+
+        return conn0.io();
+    }
+
+    /**
+     * Assert that provided URL is invalid.
+     *
+     * @param url URL.
+     * @param errMsg Error message.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    private void assertInvalid(final String url, String errMsg) {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                DriverManager.getConnection("q");
+                DriverManager.getConnection(url);
 
                 return null;
             }
-        }, SQLException.class, "No suitable driver found for q");
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:-1");
-
-                return null;
-            }
-        }, SQLException.class, "Invalid port:");
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:0");
-
-                return null;
-            }
-        }, SQLException.class, "Invalid port:");
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection(URL_PREFIX + "127.0.0.1:100000");
-
-                return null;
-            }
-        }, SQLException.class, "Invalid port:");
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                DriverManager.getConnection(URL_PREFIX + "     :10000");
-
-                return null;
-            }
-        }, SQLException.class, "Host name is empty");
+        }, SQLException.class, errMsg);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testClose() throws Exception {
-        String url = URL_PREFIX + HOST;
+        final Connection conn;
 
-        final Connection conn = DriverManager.getConnection(url);
+        try (Connection conn0 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            conn = conn0;
 
-        assert conn != null;
-        assert !conn.isClosed();
-
-        conn.close();
+            assert conn != null;
+            assert !conn.isClosed();
+        }
 
         assert conn.isClosed();
 
         assert !conn.isValid(2): "Connection must be closed";
 
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    conn.isValid(-2);
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                conn.isValid(-2);
 
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Invalid timeout"
-        );
+                return null;
+            }
+        }, SQLException.class, "Invalid timeout");
     }
 }

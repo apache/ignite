@@ -694,7 +694,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
-            JdbcMetaTablesResult res = conn.cliIo().tablesMeta(catalog, schemaPtrn, tblNamePtrn, tblTypes);
+            JdbcMetaTablesResult res = conn.io().tablesMeta(catalog, schemaPtrn, tblNamePtrn, tblTypes);
 
             List<List<Object>> rows = new LinkedList<>();
 
@@ -776,7 +776,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
-            JdbcMetaColumnsResult res = conn.cliIo().columnsMeta(schemaPtrn, tblNamePtrn, colNamePtrn);
+            JdbcMetaColumnsResult res = conn.io().columnsMeta(schemaPtrn, tblNamePtrn, colNamePtrn);
 
             List<List<Object>> rows = new LinkedList<>();
 
@@ -929,7 +929,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             if (conn.isClosed())
                 throw new SQLException("Connection is closed.");
 
-            JdbcMetaIndexesResult res = conn.cliIo().indexMeta(catalog, schema, tbl, unique, approximate);
+            JdbcMetaIndexesResult res = conn.io().indexMeta(catalog, schema, tbl, unique, approximate);
 
             List<List<Object>> rows = new LinkedList<>();
 

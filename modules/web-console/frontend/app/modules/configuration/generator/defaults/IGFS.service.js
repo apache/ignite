@@ -35,14 +35,18 @@ const DFLT_IGFS = {
     fragmentizerConcurrentFiles: 0,
     fragmentizerThrottlingBlockLength: 16777216,
     fragmentizerThrottlingDelay: 200,
+    dualModeMaxPendingPutsSize: 0,
+    dualModePutExecutorServiceShutdown: false,
     blockSize: 65536,
-    bufferSize: 65536,
+    streamBufferSize: 65536,
+    maxSpaceSize: 0,
     maximumTaskRangeLength: 0,
     managementPort: 11400,
     perNodeBatchSize: 100,
     perNodeParallelBatchCount: 8,
     prefetchBlocks: 0,
     sequentialReadsBeforePrefetch: 0,
+    trashPurgeTimeout: 1000,
     colocateMetadata: true,
     relaxedConsistency: true,
     pathModes: {
@@ -50,7 +54,8 @@ const DFLT_IGFS = {
         keyField: 'path',
         valClsName: 'org.apache.ignite.igfs.IgfsMode',
         valField: 'mode'
-    }
+    },
+    updateFileLengthOnFlush: false
 };
 
 export default class IgniteIGFSDefaults {

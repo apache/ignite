@@ -1356,15 +1356,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 if (caches0.isEmpty())
-                    throw new IgniteSQLException("Failed to find at least one cache for SQL statement: " + sqlQry);
+                    twoStepQry.local(true);
+                else {
+                    //Prohibit usage indices with different numbers of segments in same query.
+                    List<Integer> cacheIds = new ArrayList<>(caches0);
 
-                //Prohibit usage indices with different numbers of segments in same query.
-                List<Integer> cacheIds = new ArrayList<>(caches0);
-
-                checkCacheIndexSegmentation(cacheIds);
-
-                twoStepQry.cacheIds(cacheIds);
-                twoStepQry.local(qry.isLocal());
+                    checkCacheIndexSegmentation(cacheIds);
+    
+                    twoStepQry.cacheIds(cacheIds);
+                    twoStepQry.local(qry.isLocal());
+                }
 
                 meta = H2Utils.meta(stmt.getMetaData());
             }
