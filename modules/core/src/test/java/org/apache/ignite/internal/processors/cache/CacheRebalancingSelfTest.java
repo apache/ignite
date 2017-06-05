@@ -134,26 +134,26 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         }, 10_000): "ig0 local size  before= " + before0 + ", afterDisable = "
             + cache0.localSize(CachePeekMode.ALL);
 
-        Thread.sleep(500);
+        Thread.sleep(1500);
 
         int afterDisable0 = cache0.localSize(CachePeekMode.ALL);
         int afterDisable1 = cache1.localSize(CachePeekMode.ALL);
 
-        assert before1 == afterDisable1: "ig1 local size  before= " + before1 + ", afterDisable = " + afterDisable1;
+        assert before1 == afterDisable1: "ig1 local size  before= " + before1 + ", afterDisable = " + afterDisable1 +
+            "(should be the same)";
 
         // Enable rebalansing on node1 and test that new entries come to node1
         ig1.rebalanceEnabled(true);
 
-        ig1.getOrCreateCache("sss");
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return afterDisable1 < cache1.localSize(CachePeekMode.ALL);
             }
         }, 10_000): "ig1 local size  afterDisable = " + afterDisable1 + ", afterEnable = "
-            + cache1.localSize(CachePeekMode.ALL);
+            + cache1.localSize(CachePeekMode.ALL) + " (but should be greater)";
 
-        Thread.sleep(500);
+        Thread.sleep(1500);
 
         int afterEnable0 = cache0.localSize(CachePeekMode.ALL);
 

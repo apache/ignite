@@ -467,6 +467,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override
     public void rebalanceEnabled(boolean rebalanceEnabled) {
         this.rebalanceEnabled = rebalanceEnabled;
+        if (rebalanceEnabled) {
+            Collection<IgniteFuture> futs = new ArrayList<>();
+
+            for (IgniteCacheProxy c : this.caches()) {
+                futs.add(c.rebalance());
+            }
+
+            for (IgniteFuture f : futs)
+                f.get();
+        }
     }
 
     /** {@inheritDoc} */
