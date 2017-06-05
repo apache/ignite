@@ -175,6 +175,16 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
                 Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
 
+                Assert.AreEqual(cfg.PublicThreadPoolSize, resCfg.PublicThreadPoolSize);
+                Assert.AreEqual(cfg.StripedThreadPoolSize, resCfg.StripedThreadPoolSize);
+                Assert.AreEqual(cfg.ServiceThreadPoolSize, resCfg.ServiceThreadPoolSize);
+                Assert.AreEqual(cfg.SystemThreadPoolSize, resCfg.SystemThreadPoolSize);
+                Assert.AreEqual(cfg.AsyncCallbackThreadPoolSize, resCfg.AsyncCallbackThreadPoolSize);
+                Assert.AreEqual(cfg.ManagementThreadPoolSize, resCfg.ManagementThreadPoolSize);
+                Assert.AreEqual(cfg.DataStreamerThreadPoolSize, resCfg.DataStreamerThreadPoolSize);
+                Assert.AreEqual(cfg.UtilityCacheThreadPoolSize, resCfg.UtilityCacheThreadPoolSize);
+                Assert.AreEqual(cfg.QueryThreadPoolSize, resCfg.QueryThreadPoolSize);
+
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
 
