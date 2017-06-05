@@ -639,7 +639,16 @@ namespace Apache.Ignite.Core.Tests
                             MetricsEnabled = true
                         } 
                     }
-                }
+                },
+                PublicThreadPoolSize = 3,
+                StripedThreadPoolSize = 5,
+                ServiceThreadPoolSize = 6,
+                SystemThreadPoolSize = 7,
+                AsyncCallbackThreadPoolSize = 8,
+                ManagementThreadPoolSize = 9,
+                DataStreamerThreadPoolSize = 10,
+                UtilityCacheThreadPoolSize = 11,
+                QueryThreadPoolSize = 12
             };
         }
     }
