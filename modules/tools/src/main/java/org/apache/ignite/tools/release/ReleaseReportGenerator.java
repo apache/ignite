@@ -44,8 +44,11 @@ public class ReleaseReportGenerator {
     /** Issue fields list for return from Jira search */
     private final static String[] jiraFields = new String[] {"key", "summary", "description"};
 
-    /** Issue fix version for search issues included in release */
+    /** Release report json tempate path */
     private static String templatePath = "./report_template.json";
+
+    /** Release report css file path */
+    private static String cssPath="./report_template.css";
 
     /**
      * Generate reports.
@@ -64,8 +67,13 @@ public class ReleaseReportGenerator {
 
         JSONObject template = new JSONObject(templateJsonStr);
 
+        String templateCss = "";
+        br = new BufferedReader(new FileReader(templatePath));
+        while ((sCurrentLine = br.readLine()) != null)
+            templateCss += sCurrentLine;
+
         PrintWriter writer = new PrintWriter(template.getString("outfile"), "UTF-8");
-        writer.println(generateHTMLReleaseReport(template));
+        writer.println(generateHTMLReleaseReport(template, templateCss));
         writer.close();
     }
 
@@ -78,6 +86,8 @@ public class ReleaseReportGenerator {
         for (String arg : args) {
             if (arg.toLowerCase().startsWith("--templatePath=") || arg.toLowerCase().startsWith("-tm="))
                 templatePath = arg.toLowerCase().replace("--templatePath=", "").replace("-tm=", "");
+            else if ((arg.toLowerCase().startsWith("--cssPath=") || arg.toLowerCase().startsWith("-css=")))
+                cssPath = arg.toLowerCase().replace("--cssPath=", "").replace("-css=", "");
         }
     }
 
@@ -86,8 +96,8 @@ public class ReleaseReportGenerator {
      *
      * @throws HttpException On search failed throws exception
      */
-    private static String generateHTMLReleaseReport(JSONObject template) throws HttpException {
-        String htmlReport = "<head>" + buildReleaseReportCss()+  "</head>\n";
+    private static String generateHTMLReleaseReport(JSONObject template, String templateCss) throws HttpException {
+        String htmlReport = "<head>\n<style>" + templateCss + "</style>\n</head>\n";
 
         htmlReport += "<body>\n";
 
@@ -170,58 +180,6 @@ public class ReleaseReportGenerator {
             searchReport +=  "</li>\n";
         }
         return searchReport;
-    }
-
-    /**
-     * Build reporting report css style string for HTML Page
-     *
-     * @return String with css formatted text
-     */
-    private static String buildReleaseReportCss() {
-        return "<style>\n" +
-                "h1 {\n" +
-                "  color: #113847;\n" +
-                "  font-size: 33px;\n" +
-                "  font-weight: bold;\n" +
-                "  margin: 30px 0 15px 0;\n" +
-                "  padding-bottom: 7px;\n" +
-                "  width: 700px;\n" +
-                "}" +
-
-                "h2 {" +
-                "  border-bottom: 2px solid #ccc;\n" +
-                "  color: #113847;\n" +
-                "  font-size: 29px;\n" +
-                "  font-weight: normal;\n" +
-                "  margin: 30px 0 15px 0;\n" +
-                "  padding-bottom: 7px;" +
-                "  width: 700px;\n" +
-                "}" +
-
-                "a {\n" +
-                "  color: #cc0000;\n" +
-                "  text-decoration: none;\n" +
-                "}\n" +
-
-                "span {\n" +
-                "  color: #cc0000;\n" +
-                "}\n" +
-
-                "a:hover {\n" +
-                "  text-decoration: underline;\n" +
-                "}" +
-
-                "ul,\n" +
-                "ol {\n" +
-                "  list-style: disc;\n" +
-                "  margin-left: 30px;\n" +
-                "}\n" +
-
-                "ul li,\n" +
-                "ol li {\n" +
-                "  margin: 5px 0;\n" +
-                "}\n" +
-                "</style>\n";
     }
 
     /**
