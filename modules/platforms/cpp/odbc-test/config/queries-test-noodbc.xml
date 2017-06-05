@@ -27,7 +27,7 @@
     <!-- Imports no-ODBC Ignite configuration -->
     <import resource="queries-default.xml"/>
 
-    <bean abstract="true" id="queries.cfg" parent="ignite.cfg">
+    <bean parent="ignite.cfg">
         <property name="sqlConnectorConfiguration">
             <null/>
         </property>
