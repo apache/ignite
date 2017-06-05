@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -104,8 +103,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        cfg.setOdbcConfiguration(new OdbcConfiguration());
 
         return cfg;
     }

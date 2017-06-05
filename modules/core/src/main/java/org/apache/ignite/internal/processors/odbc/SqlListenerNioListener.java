@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * ODBC message listener.
+ * SQL message listener.
  */
 public class SqlListenerNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** The value corresponds to ODBC driver of the parser field of the handshake request. */
