@@ -103,6 +103,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultClientFailureDetectionTimeout = TimeSpan.FromSeconds(30);
 
+        /// <summary>
+        /// Default public thread pool size.
+        /// </summary>
+        public static readonly int DefaultPublicThreadPoolSize = Math.Max(8, Environment.ProcessorCount);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -138,6 +143,40 @@ namespace Apache.Ignite.Core
 
         /** */
         private TimeSpan? _clientFailureDetectionTimeout;
+
+
+        /** */
+        private int _publicThreadPoolSize;
+
+        /** */
+        private int _stripedThreadPoolSize;
+
+        /** */
+        private int _serviceThreadPoolSize;
+
+        /** */
+        private int _systemThreadPoolSize;
+
+        /** */
+        private int _asyncCallbackThreadPoolSize;
+
+        /** */
+        private int _managementThreadPoolSize;
+
+        /** */
+        private int _peerClassLoadingThreadPoolSize;
+
+        /** */
+        private int _igfsThreadPoolSize;
+
+        /** */
+        private int _dataStreamerThreadPoolSize;
+
+        /** */
+        private int _utilityCacheThreadPoolSize;
+
+        /** */
+        private int _queryThreadPoolSize;
 
         /// <summary>
         /// Default network retry count.
@@ -999,57 +1038,101 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the size of the public thread pool, which processes compute jpns and user messages.
         /// </summary>
-        public int PublicThreadPoolSize { get; set; }
-        
+        public int PublicThreadPoolSize
+        {
+            get { return _publicThreadPoolSize; }
+            set { _publicThreadPoolSize = value; }
+        }
+
         /// <summary>
         /// Gets or sets the size of the striped thread pool, which processes cache requests.
         /// </summary>
-        public int StripedThreadPoolSize { get; set; }
+        public int StripedThreadPoolSize
+        {
+            get { return _stripedThreadPoolSize; }
+            set { _stripedThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the service thread pool, which processes Ignite services.
         /// </summary>
-        public int ServiceThreadPoolSize { get;set; }
+        public int ServiceThreadPoolSize
+        {
+            get { return _serviceThreadPoolSize; }
+            set { _serviceThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the system thread pool, which processes internal system messages.
         /// </summary>
-        public int SystemThreadPoolSize { get;set; }
+        public int SystemThreadPoolSize
+        {
+            get { return _systemThreadPoolSize; }
+            set { _systemThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the asynchronous callback thread pool.
         /// </summary>
-        public int AsyncCallbackThreadPoolSize { get;set; }
+        public int AsyncCallbackThreadPoolSize
+        {
+            get { return _asyncCallbackThreadPoolSize; }
+            set { _asyncCallbackThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the management thread pool, which processes internal Ignite jobs.
         /// </summary>
-        public int ManagementThreadPoolSize { get; set; }
+        public int ManagementThreadPoolSize
+        {
+            get { return _managementThreadPoolSize; }
+            set { _managementThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the peer class loading thread pool
         /// (not to be confused with .NET peer assembly loading).
         /// </summary>
-        public int PeerClassLoadingThreadPoolSize { get; set; }
+        public int PeerClassLoadingThreadPoolSize
+        {
+            get { return _peerClassLoadingThreadPoolSize; }
+            set { _peerClassLoadingThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the IGFS thread pool.
         /// </summary>
-        public int IgfsThreadPoolSize { get; set; }
+        public int IgfsThreadPoolSize
+        {
+            get { return _igfsThreadPoolSize; }
+            set { _igfsThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the data streamer thread pool.
         /// </summary>
-        public int DataStreamerThreadPoolSize { get; set; }
+        public int DataStreamerThreadPoolSize
+        {
+            get { return _dataStreamerThreadPoolSize; }
+            set { _dataStreamerThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the utility cache thread pool.
         /// </summary>
-        public int UtilityCacheThreadPoolSize { get; set; }
+        public int UtilityCacheThreadPoolSize
+        {
+            get { return _utilityCacheThreadPoolSize; }
+            set { _utilityCacheThreadPoolSize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the size of the query thread pool.
         /// </summary>
-        public int QueryThreadPoolSize { get; set; }
+        public int QueryThreadPoolSize
+        {
+            get { return _queryThreadPoolSize; }
+            set { _queryThreadPoolSize = value; }
+        }
     }
 }
